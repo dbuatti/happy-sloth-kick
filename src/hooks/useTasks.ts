@@ -201,21 +201,39 @@ export const useTasks = () => {
     if (statusFilter === 'all' || statusFilter === 'to-do' || statusFilter === 'skipped') {
       tempTasks = tempTasks.filter(task => {
         const taskCreatedAt = new Date(task.created_at);
-        const taskDueDate = task.due_date ? new Date(task.due_date) : null;
+        const taskDueDate = task.due_date ? parseISO(task.due_date) : null;
 
-        // 1. Tasks created on the current day (unless archived)
-        if (isSameDay(taskCreatedAt, currentDate) && task.status !== 'archived') return true;
+        // 1. Exclude archived tasks from the daily view
+        if (task.status === 'archived') return false;
 
-        // 2. Tasks due on the current day (unless archived)
-        if (taskDueDate && isSameDay(taskDueDate, currentDate) && task.status !== 'archived') return true;
+        // 2. If it's an original recurring template (not an instance)
+        if (task.recurring_type !== 'none' && task.original_task_id === null) {
+          // Only include if its due_date is TODAY and it's not completed/skipped
+          if (taskDueDate && isSameDay(taskDueDate, currentDate) && (task.status === 'to-do' || task.status === 'skipped')) {
+            return true;
+          }
+          // Otherwise, exclude the template from the daily view
+          return false;
+        }
 
-        // 3. Overdue tasks (status 'to-do' or 'skipped') from previous days
+        // 3. For all other tasks (including generated recurring instances and non-recurring tasks):
+        //    a. Created on the current day
+        if (isSameDay(taskCreatedAt, currentDate)) return true;
+
+        //    b. Due on the current day
+        if (taskDueDate && isSameDay(taskDueDate, currentDate)) return true;
+
+        //    c. Overdue tasks (from previous days, not completed/skipped)
         if ((task.status === 'to-do' || task.status === 'skipped') && taskDueDate && isPast(taskDueDate) && !isSameDay(taskDueDate, currentDate)) return true;
 
-        // 4. Undated tasks (status 'to-do' or 'skipped') created before today
-        if ((task.status === 'to-do' || task.status === 'skipped') && taskDueDate === null && taskCreatedAt < startOfCurrentDate) return true;
+        //    d. Undated tasks (non-recurring instances) created before today that are still active
+        if (
+          (task.status === 'to-do' || task.status === 'skipped') &&
+          task.due_date === null &&
+          taskCreatedAt < startOfCurrentDate
+        ) return true;
 
-        return false; // Exclude tasks that don't meet the above criteria for the daily view
+        return false; // Exclude tasks that don't meet the above criteria
       });
     }
 
