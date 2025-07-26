@@ -1,12 +1,12 @@
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Monitor, Sun, Moon, Palette } from "lucide-react";
-import { themes, ThemeName } from "@/lib/themes";
+import { Monitor, Palette } from "lucide-react";
+import { themes } from "@/lib/themes";
 import { useState, useEffect } from "react";
 
 const ThemeSelector = () => {
-  const { theme, setTheme, resolvedTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -21,34 +21,6 @@ const ThemeSelector = () => {
     );
   }
 
-  // Get the base theme (without -dark suffix)
-  const getBaseTheme = (currentTheme: string | undefined): ThemeName | 'light' | 'dark' | 'system' => {
-    if (!currentTheme) return 'light';
-    
-    // Handle system theme
-    if (currentTheme === 'system') return 'system';
-    
-    // Handle light/dark themes
-    if (currentTheme === 'light' || currentTheme === 'dark') return currentTheme;
-    
-    // Remove -dark suffix if present
-    if (currentTheme.endsWith('-dark')) {
-      const baseTheme = currentTheme.replace('-dark', '');
-      if (Object.keys(themes).includes(baseTheme)) {
-        return baseTheme as ThemeName;
-      }
-    }
-    
-    // Check if it's a custom theme
-    if (Object.keys(themes).includes(currentTheme)) {
-      return currentTheme as ThemeName;
-    }
-    
-    return 'light';
-  };
-
-  const baseTheme = getBaseTheme(theme);
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -57,7 +29,7 @@ const ThemeSelector = () => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setTheme('system')}>
+        <DropdownMenuItem onClick={() => setTheme('system')} className={theme === 'system' ? 'font-bold' : ''}>
           <Monitor className="h-4 w-4 mr-2" />
           System
         </DropdownMenuItem>
@@ -67,8 +39,8 @@ const ThemeSelector = () => {
         {Object.entries(themes).map(([themeName, themeData]) => (
           <DropdownMenuItem 
             key={themeName} 
-            onClick={() => setTheme(themeName as ThemeName)}
-            className={baseTheme === themeName ? 'font-bold' : ''}
+            onClick={() => setTheme(themeName)}
+            className={theme === themeName ? 'font-bold' : ''}
           >
             <Palette className="h-4 w-4 mr-2" />
             {themeData.name}
