@@ -1,11 +1,12 @@
 import React from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from "@/components/ui/dropdown-menu"; // Added DropdownMenuSub imports
-import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing, FolderOpen } from 'lucide-react'; // Added FolderOpen
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"; // Import AlertDialog components
+import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing, FolderOpen } from 'lucide-react';
 import { format, parseISO, isToday, isAfter, isPast } from 'date-fns';
 import { cn } from "@/lib/utils";
-import { Task } from '@/hooks/useTasks'; // Import Task interface
+import { Task } from '@/hooks/useTasks';
 
 interface TaskItemProps {
   task: Task;
@@ -15,8 +16,8 @@ interface TaskItemProps {
   onUpdate: (taskId: string, updates: Partial<Task>) => void;
   isSelected: boolean;
   onToggleSelect: (taskId: string, checked: boolean) => void;
-  sections: { id: string; name: string }[]; // Still needed for context, but not directly used in this component's UI
-  onEditTask: (task: Task) => void; // New prop to open edit dialog
+  sections: { id: string; name: string }[];
+  onEditTask: (task: Task) => void;
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -27,7 +28,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   onUpdate,
   isSelected,
   onToggleSelect,
-  sections, // Keep for type consistency, but not used in display
+  sections,
   onEditTask,
 }) => {
   const getPriorityColor = (priority: string) => {
@@ -53,19 +54,16 @@ const TaskItem: React.FC<TaskItemProps> = ({
     }
   };
 
-  // isOverdue and isUpcoming calculations are now handled in SortableTaskItem
   const isOverdue = task.due_date && task.status !== 'completed' && isPast(parseISO(task.due_date)) && !isToday(parseISO(task.due_date));
   const isUpcoming = task.due_date && task.status !== 'completed' && isToday(parseISO(task.due_date));
 
   return (
-    <div // Changed from li to div
+    <div
       className={cn(
-        "relative flex items-center space-x-3 w-full", // Added w-full to ensure it takes full width
-        task.status === 'completed' ? "opacity-70 bg-green-50/20 dark:bg-green-900/20 animate-task-completed" : "", // Keep opacity for completed
-        // isOverdue and isUpcoming border styling removed from here, now in SortableTaskItem
+        "relative flex items-center space-x-3 w-full",
+        task.status === 'completed' ? "opacity-70 bg-green-50/20 dark:bg-green-900/20 animate-task-completed" : "",
       )}
     >
-      {/* Checkbox */}
       <Checkbox
         checked={task.status === 'completed'}
         onCheckedChange={(checked) => {
@@ -79,49 +77,43 @@ const TaskItem: React.FC<TaskItemProps> = ({
         className="flex-shrink-0"
       />
 
-      {/* Task Content */}
       <div className="flex-1 min-w-0">
         <label
           htmlFor={`task-${task.id}`}
           className={cn(
             "text-base font-medium leading-tight",
             task.status === 'completed' ? 'line-through text-gray-500 dark:text-gray-400' : 'text-foreground',
-            isOverdue && "text-red-600 dark:text-red-400", // Overdue text color
-            isUpcoming && "text-orange-500 dark:text-orange-300", // Upcoming text color
+            isOverdue && "text-red-600 dark:text-red-400",
+            isUpcoming && "text-orange-500 dark:text-orange-300",
             "block truncate"
           )}
         >
           {task.description}
         </label>
 
-        {/* Compact details row */}
         <div className="flex items-center text-xs text-muted-foreground mt-1 space-x-3">
-          {/* Priority */}
           <span className={cn(
             "font-semibold",
             getPriorityColor(task.priority)
           )}>
             {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
           </span>
-          {/* Due Date */}
           {task.due_date && (
             <span className={cn(
               "flex items-center gap-1",
-              isOverdue && "text-red-600 dark:text-red-400", // Overdue due date color
-              isUpcoming && "text-orange-500 dark:text-orange-300" // Upcoming due date color
+              isOverdue && "text-red-600 dark:text-red-400",
+              isUpcoming && "text-orange-500 dark:text-orange-300"
             )}>
               <Calendar className="h-3 w-3" />
               {getDueDateDisplay(task.due_date)}
             </span>
           )}
-          {/* Reminder */}
           {task.remind_at && (
             <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
               <BellRing className="h-3 w-3" />
               {format(parseISO(task.remind_at), 'MMM d, HH:mm')}
             </span>
           )}
-          {/* Notes (only show icon if notes exist) */}
           {task.notes && (
             <span className="flex items-center gap-1">
               <StickyNote className="h-3 w-3" />
@@ -130,7 +122,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
         </div>
       </div>
 
-      {/* Actions (Edit, More) - visible on hover */}
       <div className="flex-shrink-0 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onEditTask(task); }}>
           <Edit className="h-4 w-4" />
@@ -180,9 +171,25 @@ const TaskItem: React.FC<TaskItemProps> = ({
               </DropdownMenuSubContent>
             </DropdownMenuSub>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete(task.id); }} className="text-destructive focus:text-destructive">
-              <Trash2 className="mr-2 h-4 w-4" /> Delete
-            </DropdownMenuItem>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                  <Trash2 className="mr-2 h-4 w-4" /> Delete
+                </DropdownMenuItem>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete your task: "{task.description}".
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => onDelete(task.id)}>Delete</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

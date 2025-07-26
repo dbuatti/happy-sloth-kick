@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"; // Import AlertDialog components
 import { Check, Trash2, Archive, Flag, ListRestart } from "lucide-react";
 
 interface BulkActionsProps {
@@ -54,10 +55,26 @@ const BulkActions: React.FC<BulkActionsProps> = ({ selectedTaskIds, onAction, on
           Archive
         </Button>
         
-        <Button variant="outline" size="sm" onClick={() => onAction('delete')}>
-          <Trash2 className="h-4 w-4 mr-2" />
-          Delete
-        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="outline" size="sm">
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete {selectedTaskIds.length} selected task(s).
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={() => onAction('delete')}>Delete</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
         
         <Button variant="ghost" size="sm" onClick={onClearSelection}>
           <ListRestart className="h-4 w-4" />

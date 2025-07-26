@@ -6,13 +6,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"; // Import AlertDialog components
 import { Calendar, BellRing, Trash2 } from 'lucide-react';
 import { format, parseISO, setHours, setMinutes } from 'date-fns';
 import { cn } from "@/lib/utils";
 import CategorySelector from "./CategorySelector";
 import PrioritySelector from "./PrioritySelector";
 import SectionSelector from "./SectionSelector";
-import { Task } from '@/hooks/useTasks'; // Import Task interface
+import { Task } from '@/hooks/useTasks';
 
 interface TaskDetailDialogProps {
   task: Task | null;
@@ -80,7 +81,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   };
 
   const handleDelete = () => {
-    if (task && window.confirm('Are you sure you want to delete this task?')) {
+    if (task) {
       onDelete(task.id);
       onClose();
     }
@@ -189,9 +190,25 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
           </div>
         </div>
         <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2 pt-4">
-          <Button variant="destructive" onClick={handleDelete} disabled={isSaving} className="w-full sm:w-auto mt-2 sm:mt-0">
-            <Trash2 className="mr-2 h-4 w-4" /> Delete Task
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" disabled={isSaving} className="w-full sm:w-auto mt-2 sm:mt-0">
+                <Trash2 className="mr-2 h-4 w-4" /> Delete Task
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete your task: "{task.description}".
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           <div className="flex space-x-2 w-full sm:w-auto">
             <Button variant="outline" onClick={onClose} disabled={isSaving} className="flex-1">
               Cancel
