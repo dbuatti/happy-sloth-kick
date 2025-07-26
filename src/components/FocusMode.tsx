@@ -196,12 +196,12 @@ const FocusMode: React.FC = () => {
           <div className="relative w-48 h-48 mx-auto flex items-center justify-center">
             <Progress
               value={(timeRemaining / (sessionType === 'work' ? WORK_DURATION : sessionType === 'short_break' ? SHORT_BREAK_DURATION : LONG_BREAK_DURATION)) * 100}
-              className="absolute w-full h-full rounded-full bg-muted" // Base class for the track
-              indicatorClassName={cn( // Classes for the filled indicator
+              className={cn(
+                "absolute w-full h-full rounded-full bg-muted", // Base class for the track
                 "transition-all duration-1000 ease-linear",
-                sessionType === 'work' && "bg-primary",
-                sessionType === 'short_break' && "bg-green-500",
-                sessionType === 'long_break' && "bg-blue-500"
+                sessionType === 'work' && "data-[state=complete]:bg-primary",
+                sessionType === 'short_break' && "data-[state=complete]:bg-green-500",
+                sessionType === 'long_break' && "data-[state=complete]:bg-blue-500"
               )}
             />
             <div className="relative z-10 text-5xl font-bold">
