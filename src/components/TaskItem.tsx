@@ -7,16 +7,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing, GripVertical } from 'lucide-react';
+import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing } from 'lucide-react'; // Removed GripVertical
 import { format, parseISO, isToday, isAfter, setHours, setMinutes } from 'date-fns';
 import { cn } from "@/lib/utils";
 import CategorySelector from "./CategorySelector";
 import PrioritySelector from "./PrioritySelector";
 import SectionSelector from "./SectionSelector";
-import { DraggableAttributes } from '@dnd-kit/core';
-
-// Define a local type for dnd-kit listeners
-type DndListeners = Record<string, ((event: any) => void) | undefined>;
+// Removed DraggableAttributes and DndListeners imports as they are no longer needed here
 
 interface Task {
   id: string;
@@ -42,8 +39,7 @@ interface TaskItemProps {
   isSelected: boolean;
   onToggleSelect: (taskId: string, checked: boolean) => void;
   sections: { id: string; name: string }[];
-  dragAttributes: DraggableAttributes;
-  dragListeners: DndListeners | undefined; // Use the correct type
+  // Removed dragAttributes and dragListeners props
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -55,8 +51,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   isSelected,
   onToggleSelect,
   sections,
-  dragAttributes,
-  dragListeners,
+  // Removed dragAttributes and dragListeners from destructuring
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingDescription, setEditingDescription] = useState(task.description);
@@ -125,13 +120,10 @@ const TaskItem: React.FC<TaskItemProps> = ({
   };
 
   return (
-    <li
+    <div // Changed from li to div
       className={cn(
-        "border rounded-lg p-3 transition-all duration-200 ease-in-out",
-        "bg-card dark:bg-gray-800",
-        task.status === 'completed' ? "opacity-70 border-green-300 dark:border-green-700" : "border-border", // Highlight completed
-        "group relative flex items-center space-x-3",
-        "hover:shadow-md", // Subtle shadow on hover
+        "relative flex items-center space-x-3 w-full", // Added w-full to ensure it takes full width
+        task.status === 'completed' ? "opacity-70" : "", // Keep opacity for completed
       )}
     >
       {isEditing ? (
@@ -209,7 +201,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
               <Input
                 type="time"
                 value={reminderTime}
-                onChange={(e) => setReminderTime(e.target.value)} {/* Corrected typo here */}
+                onChange={(e) => setReminderTime(e.target.value)}
                 className="w-24"
                 disabled={!editingRemindAt}
               />
@@ -235,19 +227,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
         </div>
       ) : (
         <>
-          {/* Drag Handle */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 flex-shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-grab active:cursor-grabbing"
-            {...dragAttributes}
-            {...dragListeners}
-            onClick={(e) => e.stopPropagation()} // Prevent checkbox/edit from triggering on drag handle click
-            aria-label="Drag task"
-          >
-            <GripVertical className="h-4 w-4" />
-          </Button>
-
           {/* Checkbox */}
           <Checkbox
             checked={task.status === 'completed'}
@@ -344,7 +323,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           </div>
         </>
       )}
-    </li>
+    </div>
   );
 };
 

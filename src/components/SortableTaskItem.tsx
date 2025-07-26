@@ -3,6 +3,9 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import TaskItem from './TaskItem';
 import { DraggableAttributes } from '@dnd-kit/core';
+import { GripVertical } from 'lucide-react'; // Import GripVertical for the drag handle
+import { Button } from '@/components/ui/button'; // Import Button for the drag handle
+import { cn } from '@/lib/utils'; // Import cn for class merging
 
 // Define a local type for dnd-kit listeners
 type DndListeners = Record<string, ((event: any) => void) | undefined>;
@@ -43,7 +46,13 @@ interface SortableTaskItemProps {
 
 const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   task,
-  ...props
+  userId,
+  onStatusChange,
+  onDelete,
+  onUpdate,
+  isSelected,
+  onToggleSelect,
+  sections,
 }) => {
   const {
     attributes,
@@ -52,7 +61,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: task.id });
+  } = useSortable({ id: task.id, data: { type: 'task' } }); // Add data.type for identification
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -62,14 +71,41 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   };
 
   return (
-    <div ref={setNodeRef} style={style}>
+    <li
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "border rounded-lg p-3 transition-all duration-200 ease-in-out",
+        "bg-card dark:bg-gray-800",
+        task.status === 'completed' ? "border-green-300 dark:border-green-700" : "border-border", // Highlight completed
+        "group relative", // Keep group for hover effects
+        "hover:shadow-md", // Subtle shadow on hover
+      )}
+    >
+      {/* Drag Handle */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute left-1 top-1/2 -translate-y-1/2 h-8 w-8 flex-shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-grab active:cursor-grabbing"
+        {...attributes}
+        {...listeners as DndListeners} // Cast to our local type
+        onClick={(e) => e.stopPropagation()} // Prevent checkbox/edit from triggering on drag handle click
+        aria-label="Drag task"
+      >
+        <GripVertical className="h-4 w-4" />
+      </Button>
       <TaskItem 
         task={task} 
-        dragAttributes={attributes} 
-        dragListeners={listeners as DndListeners} // Cast to our local type
-        {...props} 
+        userId={userId}
+        onStatusChange={onStatusChange}
+        onDelete={onDelete}
+        onUpdate={onUpdate}
+        isSelected={isSelected}
+        onToggleSelect={onToggleSelect}
+        sections={sections}
+        // No longer passing dragAttributes or dragListeners to TaskItem
       />
-    </div>
+    </li>
   );
 };
 
