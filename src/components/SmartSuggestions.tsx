@@ -42,25 +42,11 @@ const SmartSuggestions: React.FC = () => {
     const completedTaskIds = tasks.filter(task => task.status === 'completed').map(task => task.id);
     if (completedTaskIds.length > 0) {
       if (window.confirm(`Are you sure you want to archive ${completedTaskIds.length} completed tasks?`)) {
-        // Temporarily select tasks for bulk update
-        // This is a workaround as bulkUpdateTasks expects selectedTaskIds
-        // A more robust solution would be to pass task IDs directly to bulkUpdateTasks
-        const originalSelected = [...tasks.filter(t => completedTaskIds.includes(t.id)).map(t => t.id)];
-        await bulkUpdateTasks({ status: 'archived' });
-        // Revert selection if needed, or ensure bulkUpdateTasks clears it
-        // Corrected typo: clearSelectedSelectedTasks -> clearSelectedTasks
-        clearSelectedTasks(); // Assuming bulkUpdateTasks clears selected tasks, or we clear all here
+        await bulkUpdateTasks({ status: 'archived' }, completedTaskIds); // Pass completedTaskIds directly
+        clearSelectedTasks(); // Clear any tasks that might have been manually selected
       }
     }
   };
-
-  // Helper to clear specific selected tasks (if bulkUpdateTasks doesn't clear all)
-  // This function is no longer needed if clearSelectedTasks is called directly after bulkUpdate
-  // const clearSpecificSelectedTasks = (idsToClear: string[]) => {
-  //   // This would require modifying useTasks to allow setting selectedTaskIds directly
-  //   // For now, relying on bulkUpdateTasks to clear all selected tasks.
-  //   // If bulkUpdateTasks doesn't clear, this function would need to be implemented.
-  // };
 
   return (
     <Card className="w-full shadow-sm mb-6">

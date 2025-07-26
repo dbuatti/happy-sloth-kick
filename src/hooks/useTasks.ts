@@ -378,8 +378,9 @@ export const useTasks = () => {
     setSelectedTaskIds([]);
   };
 
-  const bulkUpdateTasks = async (updates: TaskUpdate) => {
-    if (!userId || selectedTaskIds.length === 0) {
+  const bulkUpdateTasks = async (updates: TaskUpdate, idsToUpdate?: string[]) => {
+    const targetIds = idsToUpdate && idsToUpdate.length > 0 ? idsToUpdate : selectedTaskIds;
+    if (!userId || targetIds.length === 0) {
       showError('No tasks selected for bulk update.');
       return;
     }
@@ -387,7 +388,7 @@ export const useTasks = () => {
       const { error } = await supabase
         .from('tasks')
         .update(updates)
-        .in('id', selectedTaskIds)
+        .in('id', targetIds)
         .eq('user_id', userId);
 
       if (error) {
@@ -396,8 +397,8 @@ export const useTasks = () => {
         return;
       }
       showSuccess('Tasks updated successfully!');
-      clearSelectedTasks();
-      fetchTasks();
+      clearSelectedTasks(); // Clear any currently selected tasks
+      fetchTasks(); // Re-fetch to ensure UI consistency
     } catch (err) {
       console.error('Exception bulk updating tasks:', err);
       showError('An unexpected error occurred during bulk update.');
