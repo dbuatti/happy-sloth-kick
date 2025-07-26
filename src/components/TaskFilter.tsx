@@ -7,15 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { showError } from "@/utils/toast";
-
-interface TaskFilterProps {
-  onFilterChange: (filters: {
-    search: string;
-    status: string;
-    category: string;
-    priority: string;
-  }) => void;
-}
+import { useTasks } from '@/hooks/useTasks'; // Import useTasks
 
 interface Category {
   id: string;
@@ -23,48 +15,75 @@ interface Category {
   color: string;
 }
 
-const TaskFilter: React.FC<TaskFilterProps> = ({ onFilterChange }) => {
-  const [search, setSearch] = useState('');
-  const [status, setStatus] = useState('all');
-  const [category, setCategory] = useState('all');
-  const [priority, setPriority] = useState('all');
+const TaskFilter: React.FC = () => { // No longer needs onFilterChange prop
+  const {
+    userId,
+    searchFilter,
+    setSearchFilter,
+    statusFilter,
+    setStatusFilter,
+    categoryFilter,
+    setCategoryFilter,
+    priorityFilter,
+    setPriorityFilter,
+    sectionFilter,
+    setSectionFilter,
+    sections, // Get sections from useTasks
+  } = useTasks();
+
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [userId, setUserId] = useState<string | null>(null);
+  const [localCategories, setLocalCategories] = useState<Category[]>([]); // Use local state for categories
 
   useEffect(() => {
-    const fetchUserAndCategories = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserId(user.id);
-        try {
-          const { data, error } = await supabase
-            .from('task_categories')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('name');
+    const fetchCategories = async () => {
+      if (!userId) return;
+      try {
+        const { data, error } = await supabase
+          .from('task_categories')
+          .select('*')
+          .eq('user_id', userId)
+          .order('name');
 
-          if (error) throw error;
-          setCategories(data || []);
-        } catch (error: any) {
-          showError('Failed to fetch categories for filter');
-          console.error('Error fetching categories for filter:', error);
-        }
+        if (error) throw error;
+        setLocalCategories(data || []);
+      } catch (error: any) {
+        showError('Failed to fetch categories for filter');
+        console.error('Error fetching categories for filter:', error);
       }
     };
-    fetchUserAndCategories();
-  }, []);
+    fetchCategories();
+  }, [userId]); // Depend on userId
 
-  const applyFilters = () => {
-    onFilterChange({ search, status, category, priority });
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchFilter(e.target.value);
   };
 
-  const clearFilters = () => {
-    setSearch('');
-    setStatus('all');
-    setCategory('all');
-    setPriority('all');
-    onFilterChange({ search: '', status: 'all', category: 'all', priority: 'all' });
+  const handleClearSearch = () => {
+    setSearchFilter('');
+  };
+
+  const handleStatusChange = (value: string) => {
+    setStatusFilter(value);
+  };
+
+  const handleCategoryChange = (value: string) => {
+    setCategoryFilter(value);
+  };
+
+  const handlePriorityChange = (value: string) => {
+    setPriorityFilter(value);
+  };
+
+  const handleSectionChange = (value: string) => {
+    setSectionFilter(value);
+  };
+
+  const clearAllFilters = () => {
+    setSearchFilter('');
+    setStatusFilter('all');
+    setCategoryFilter('all');
+    setPriorityFilter('all');
+    setSectionFilter('all');
   };
 
   return (
@@ -73,20 +92,16 @@ const TaskFilter: React.FC<TaskFilterProps> = ({ onFilterChange }) => {
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
         <Input
           placeholder="Search tasks..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && applyFilters()}
+          value={searchFilter}
+          onChange={handleSearchChange}
           className="pl-10"
         />
-        {search && (
+        {searchFilter && (
           <Button
             variant="ghost"
             size="sm"
             className="absolute right-2 top-1/2 h-6 w-6 -translate-y-1/2 p-0"
-            onClick={() => {
-              setSearch('');
-              applyFilters();
-            }}
+            onClick={handleClearSearch}
           >
             <X className="h-3 w-3" />
           </Button>
@@ -104,7 +119,7 @@ const TaskFilter: React.FC<TaskFilterProps> = ({ onFilterChange }) => {
           <div className="grid gap-4">
             <div className="space-y-2">
               <Label>Status</Label>
-              <Select value={status} onValueChange={setStatus}>
+              <Select value={statusFilter} onValueChange={handleStatusChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
@@ -120,14 +135,14 @@ const TaskFilter: React.FC<TaskFilterProps> = ({ onFilterChange }) => {
 
             <div className="space-y-2">
               <Label>Category</Label>
-              <Select value={category} onValueChange={setCategory}>
+              <Select value={categoryFilter} onValueChange={handleCategoryChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All</SelectItem>
                   <SelectItem value="general">General</SelectItem>
-                  {categories.map(cat => (
+                  {localCategories.map(cat => (
                     <SelectItem key={cat.id} value={cat.id}>
                       {cat.name}
                     </SelectItem>
@@ -138,7 +153,7 @@ const TaskFilter: React.FC<TaskFilterProps> = ({ onFilterChange }) => {
 
             <div className="space-y-2">
               <Label>Priority</Label>
-              <Select value={priority} onValueChange={setPriority}>
+              <Select value={priorityFilter} onValueChange={handlePriorityChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select priority" />
                 </SelectTrigger>
@@ -152,12 +167,28 @@ const TaskFilter: React.FC<TaskFilterProps> = ({ onFilterChange }) => {
               </Select>
             </div>
 
+            <div className="space-y-2">
+              <Label>Section</Label>
+              <Select value={sectionFilter} onValueChange={handleSectionChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select section" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="no-section">No Section</SelectItem>
+                  {sections.map(section => (
+                    <SelectItem key={section.id} value={section.id}>
+                      {section.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="flex gap-2">
-              <Button className="flex-1" onClick={applyFilters}>
-                Apply Filters
-              </Button>
-              <Button variant="outline" onClick={clearFilters}>
-                Clear
+              {/* Apply Filters button is no longer needed as filters apply immediately on change */}
+              <Button variant="outline" onClick={clearAllFilters} className="w-full">
+                Clear All Filters
               </Button>
             </div>
           </div>

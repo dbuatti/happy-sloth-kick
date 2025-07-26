@@ -67,7 +67,7 @@ const TaskList: React.FC = () => {
     handleAddTask,
     updateTask,
     deleteTask,
-    applyFilters,
+    // applyFilters, // No longer needed to be passed down
     selectedTaskIds,
     toggleTaskSelection,
     clearSelectedTasks,
@@ -291,7 +291,7 @@ const TaskList: React.FC = () => {
 
         <AddTaskForm onAddTask={handleNewTaskSubmit} userId={userId} />
 
-        <TaskFilter onFilterChange={applyFilters} />
+        <TaskFilter /> {/* No longer needs onFilterChange prop */}
 
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-semibold">Your Tasks</h2>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess } from '@/utils/toast';
@@ -45,7 +45,6 @@ export const useTasks = () => {
   const userId = user?.id;
 
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
@@ -53,6 +52,13 @@ export const useTasks = () => {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc'); // Default to asc for order
   const [sections, setSections] = useState<TaskSection[]>([]);
   const [noSectionDisplayName, setNoSectionDisplayName] = useState('No Section');
+
+  // Filter states, now managed within useTasks
+  const [searchFilter, setSearchFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [priorityFilter, setPriorityFilter] = useState('all');
+  const [sectionFilter, setSectionFilter] = useState('all');
 
   const fetchTasks = useCallback(async () => {
     if (!userId) {
@@ -79,7 +85,6 @@ export const useTasks = () => {
       showError('Failed to load tasks.');
     } else {
       setTasks(data || []);
-      setFilteredTasks(data || []);
     }
     setLoading(false);
   }, [userId, currentDate, sortKey, sortDirection]);
@@ -127,6 +132,35 @@ export const useTasks = () => {
     fetchNoSectionDisplayName(); // Fetch custom name on load
   }, [fetchTasks, fetchSections, fetchNoSectionDisplayName]);
 
+  // Derived filteredTasks using useMemo
+  const filteredTasks = useMemo(() => {
+    let tempTasks = [...tasks];
+
+    if (searchFilter) {
+      tempTasks = tempTasks.filter(task =>
+        task.description.toLowerCase().includes(searchFilter.toLowerCase()) ||
+        task.notes?.toLowerCase().includes(searchFilter.toLowerCase())
+      );
+    }
+    if (statusFilter && statusFilter !== 'all') {
+      tempTasks = tempTasks.filter(task => task.status === statusFilter);
+    }
+    if (categoryFilter && categoryFilter !== 'all') {
+      tempTasks = tempTasks.filter(task => task.category === categoryFilter);
+    }
+    if (priorityFilter && priorityFilter !== 'all') {
+      tempTasks = tempTasks.filter(task => task.priority === priorityFilter);
+    }
+    if (sectionFilter && sectionFilter !== 'all') {
+      if (sectionFilter === 'no-section') {
+        tempTasks = tempTasks.filter(task => task.section_id === null);
+      } else {
+        tempTasks = tempTasks.filter(task => task.section_id === sectionFilter);
+      }
+    }
+    return tempTasks;
+  }, [tasks, searchFilter, statusFilter, categoryFilter, priorityFilter, sectionFilter]);
+
   const handleAddTask = async (taskData: NewTaskData) => {
     if (!userId) {
       showError('User not authenticated.');
@@ -164,7 +198,6 @@ export const useTasks = () => {
       }
       if (data && data.length > 0) {
         setTasks(prevTasks => [...prevTasks, data[0]]);
-        setFilteredTasks(prevFilteredTasks => [...prevFilteredTasks, data[0]]);
         showSuccess('Task added successfully!');
       }
     } catch (err) {
@@ -195,9 +228,6 @@ export const useTasks = () => {
         setTasks(prevTasks =>
           prevTasks.map(task => (task.id === taskId ? { ...task, ...updates } : task))
         );
-        setFilteredTasks(prevFilteredTasks =>
-          prevFilteredTasks.map(task => (task.id === taskId ? { ...task, ...updates } : task))
-        );
         showSuccess('Task updated successfully!');
       }
     } catch (err) {
@@ -224,7 +254,6 @@ export const useTasks = () => {
         return;
       }
       setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
-      setFilteredTasks(prevFilteredTasks => prevFilteredTasks.filter(task => task.id !== taskId));
       showSuccess('Task deleted successfully!');
     } catch (err) {
       console.error('Exception deleting task:', err);
@@ -232,43 +261,14 @@ export const useTasks = () => {
     }
   };
 
+  // This function now updates the internal filter states
   const applyFilters = useCallback((filters: { search: string; status: string; category: string; priority: string; section: string }) => {
-    let tempTasks = [...tasks];
-
-    if (filters.search) {
-      tempTasks = tempTasks.filter(task =>
-        task.description.toLowerCase().includes(filters.search.toLowerCase()) ||
-        task.notes?.toLowerCase().includes(filters.search.toLowerCase())
-      );
-    }
-    if (filters.status && filters.status !== 'all') {
-      tempTasks = tempTasks.filter(task => task.status === filters.status);
-    }
-    if (filters.category && filters.category !== 'all') {
-      tempTasks = tempTasks.filter(task => task.category === filters.category);
-    }
-    if (filters.priority && filters.priority !== 'all') {
-      tempTasks = tempTasks.filter(task => task.priority === filters.priority);
-    }
-    if (filters.section && filters.section !== 'all') {
-      if (filters.section === 'no-section') {
-        tempTasks = tempTasks.filter(task => task.section_id === null);
-      } else {
-        tempTasks = tempTasks.filter(task => task.section_id === filters.section);
-      }
-    }
-
-    setFilteredTasks(tempTasks);
-  }, [tasks]);
-
-  useEffect(() => {
-    // Re-apply filters whenever tasks or filter criteria change
-    // This effect will be triggered by fetchTasks, updateTask, etc.
-    // The actual filter values are managed by TaskFilter component and passed via applyFilters
-    // For now, we'll just re-apply the last known filters if needed, or rely on explicit calls.
-    // A more robust solution would store filter state in useTasks or pass it down.
-    // For simplicity, let's assume applyFilters is called explicitly when filters change in UI.
-  }, [tasks]);
+    setSearchFilter(filters.search);
+    setStatusFilter(filters.status);
+    setCategoryFilter(filters.category);
+    setPriorityFilter(filters.priority);
+    setSectionFilter(filters.section);
+  }, []);
 
   const toggleTaskSelection = (taskId: string) => {
     setSelectedTaskIds(prev =>
@@ -533,7 +533,7 @@ export const useTasks = () => {
 
   return {
     tasks,
-    filteredTasks,
+    filteredTasks, // Now derived from useMemo
     loading,
     currentDate,
     setCurrentDate,
@@ -541,7 +541,17 @@ export const useTasks = () => {
     handleAddTask,
     updateTask,
     deleteTask,
-    applyFilters,
+    applyFilters, // Now updates internal filter states
+    searchFilter, // Expose filter states
+    statusFilter,
+    categoryFilter,
+    priorityFilter,
+    sectionFilter,
+    setSearchFilter, // Expose filter setters
+    setStatusFilter,
+    setCategoryFilter,
+    setPriorityFilter,
+    setSectionFilter,
     selectedTaskIds,
     toggleTaskSelection,
     clearSelectedTasks,
@@ -556,7 +566,7 @@ export const useTasks = () => {
     deleteSection,
     noSectionDisplayName,
     reassignNoSectionTasks,
-    reorderTasksInSameSection, // Expose new function
-    moveTaskToNewSection, // Expose new function
+    reorderTasksInSameSection,
+    moveTaskToNewSection,
   };
 };
