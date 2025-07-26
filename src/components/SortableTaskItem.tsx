@@ -2,7 +2,7 @@ import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import TaskItem from './TaskItem';
-import { DraggableAttributes, SyntheticListeners } from '@dnd-kit/core'; // Corrected import
+import { DraggableAttributes, SyntheticListenerMap } from '@dnd-kit/core'; // Corrected import
 
 interface Task {
   id: string;

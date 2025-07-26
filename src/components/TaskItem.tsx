@@ -7,13 +7,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing, FolderOpen, GripVertical } from 'lucide-react';
-import { format, parseISO, isToday, isAfter, isBefore, setHours, setMinutes } from 'date-fns';
+import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing } from 'lucide-react';
+import { format, parseISO, isToday, isAfter, setHours, setMinutes } from 'date-fns';
 import { cn } from "@/lib/utils";
 import CategorySelector from "./CategorySelector";
 import PrioritySelector from "./PrioritySelector";
 import SectionSelector from "./SectionSelector";
-import { DraggableAttributes, SyntheticListeners } from '@dnd-kit/core'; // Corrected import
+import { DraggableAttributes, SyntheticListenerMap } from '@dnd-kit/core'; // Corrected import
 
 interface Task {
   id: string;
@@ -40,7 +40,7 @@ interface TaskItemProps {
   onToggleSelect: (taskId: string, checked: boolean) => void;
   sections: { id: string; name: string }[];
   dragAttributes: DraggableAttributes;
-  dragListeners: SyntheticListeners | undefined; // Use the correct type
+  dragListeners: SyntheticListenerMap | undefined; // Use the correct type
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -67,11 +67,11 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'urgent': return 'text-red-700';
-      case 'high': return 'text-red-500';
-      case 'medium': return 'text-yellow-500';
-      case 'low': return 'text-blue-500';
-      default: return 'text-gray-500';
+      case 'urgent': return 'text-red-700 dark:text-red-400';
+      case 'high': return 'text-red-500 dark:text-red-300';
+      case 'medium': return 'text-yellow-500 dark:text-yellow-300';
+      case 'low': return 'text-blue-500 dark:text-blue-300';
+      default: return 'text-gray-500 dark:text-gray-400';
     }
   };
 
@@ -86,18 +86,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
     } else {
       return `Overdue ${format(date, 'MMM d')}`;
     }
-  };
-
-  const getReminderDisplay = (remindAt: string | null) => {
-    if (!remindAt) return null;
-    const date = parseISO(remindAt);
-    return `Reminder ${format(date, 'MMM d, HH:mm')}`;
-  };
-
-  const getSectionName = (sectionId: string | null) => {
-    if (!sectionId) return 'Unassigned';
-    const section = sections.find(s => s.id === sectionId);
-    return section ? section.name : 'Unknown Section';
   };
 
   const handleSaveEdit = async () => {
@@ -134,9 +122,20 @@ const TaskItem: React.FC<TaskItemProps> = ({
   };
 
   return (
-    <li className="border rounded-md bg-white dark:bg-gray-800 p-4">
+    <li
+      className={cn(
+        "border rounded-lg p-3 transition-all duration-200 ease-in-out",
+        "bg-card dark:bg-gray-800", // Use card background
+        task.status === 'completed' && "opacity-70", // Slightly dim completed tasks
+        "group relative flex items-center space-x-3", // For hover effects and layout
+        "cursor-grab active:cursor-grabbing", // Visual cue for drag
+      )}
+      // Removed ref={setNodeRef} as it's handled by SortableTaskItem
+      {...dragAttributes} // Apply drag attributes
+      {...dragListeners} // Apply drag listeners
+    >
       {isEditing ? (
-        <div className="space-y-4">
+        <div className="space-y-4 w-full">
           <div>
             <Label htmlFor={`edit-task-${task.id}`}>Task Description</Label>
             <Input
@@ -235,109 +234,103 @@ const TaskItem: React.FC<TaskItemProps> = ({
           </div>
         </div>
       ) : (
-        <div className="flex flex-col space-y-3">
-          <div className="flex items-start justify-between">
-            <div className="flex items-start space-x-3 flex-1">
-              {/* Drag handle */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 cursor-grab"
-                {...dragAttributes}
-                {...dragListeners}
-                aria-label="Drag task"
-              >
-                <GripVertical className="h-4 w-4 text-muted-foreground" />
-              </Button>
-              <Checkbox
-                checked={task.status === 'completed'}
-                onCheckedChange={(checked) => {
-                  if (typeof checked === 'boolean') {
-                    onToggleSelect(task.id, checked);
-                    if (checked) {
-                      onStatusChange(task.id, 'completed');
-                    } else {
-                      onStatusChange(task.id, 'to-do');
-                    }
-                  }
-                }}
-                id={`task-${task.id}`}
-              />
-              <div className="flex-1">
-                <Label
-                  htmlFor={`task-${task.id}`}
-                  className={`text-lg font-medium ${task.status === 'completed' ? 'line-through text-gray-500' : ''}`}
-                >
-                  {task.description}
-                </Label>
-                
-                {task.notes && (
-                  <div className="mt-1 p-2 bg-gray-100 dark:bg-gray-700 rounded text-sm text-gray-600 dark:text-gray-300 flex items-center">
-                    <StickyNote className="h-3 w-3 mr-1" />
-                    {task.notes}
-                  </div>
-                )}
-                
-                {getDueDateDisplay(task.due_date) && (
-                  <div className="mt-1 text-sm text-gray-500 flex items-center">
-                    <Clock className="h-3 w-3 mr-1" />
-                    {getDueDateDisplay(task.due_date)}
-                  </div>
-                )}
+        <>
+          {/* Checkbox */}
+          <Checkbox
+            checked={task.status === 'completed'}
+            onCheckedChange={(checked) => {
+              if (typeof checked === 'boolean') {
+                onToggleSelect(task.id, checked);
+                onStatusChange(task.id, checked ? 'completed' : 'to-do');
+              }
+            }}
+            id={`task-${task.id}`}
+            // Prevent drag from starting when clicking checkbox
+            onClick={(e) => e.stopPropagation()}
+            className="flex-shrink-0"
+          />
 
-                {getReminderDisplay(task.remind_at) && (
-                  <div className="mt-1 text-sm text-blue-600 dark:text-blue-400 flex items-center">
-                    <BellRing className="h-3 w-3 mr-1" />
-                    {getReminderDisplay(task.remind_at)}
-                  </div>
-                )}
+          {/* Task Content */}
+          <div className="flex-1 min-w-0">
+            <Label
+              htmlFor={`task-${task.id}`}
+              className={cn(
+                "text-base font-medium leading-tight",
+                task.status === 'completed' ? 'line-through text-gray-500 dark:text-gray-400' : 'text-foreground',
+                "block truncate" // Ensure description doesn't overflow
+              )}
+            >
+              {task.description}
+            </Label>
 
-                {task.section_id && (
-                  <div className="mt-1 text-sm text-gray-500 flex items-center">
-                    <FolderOpen className="h-3 w-3 mr-1" />
-                    {getSectionName(task.section_id)}
-                  </div>
-                )}
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <span className={`text-xs font-medium px-2 py-1 rounded ${getPriorityColor(task.priority)}`}>
-                {task.priority}
+            {/* Compact details row */}
+            <div className="flex items-center text-xs text-muted-foreground mt-1 space-x-2">
+              {/* Priority */}
+              <span className={cn(
+                "font-semibold",
+                getPriorityColor(task.priority)
+              )}>
+                {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
               </span>
-              
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="h-8 w-8 p-0">
-                    <span className="sr-only">Open menu</span>
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setIsEditing(true)}>
-                    <Edit className="mr-2 h-4 w-4" /> Edit
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onStatusChange(task.id, 'to-do')}>
-                    Mark as To-Do
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onStatusChange(task.id, 'completed')}>
-                    Mark as Completed
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onStatusChange(task.id, 'skipped')}>
-                    Mark as Skipped
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onStatusChange(task.id, 'archived')}>
-                    <Archive className="mr-2 h-4 w-4" /> Archive
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => onDelete(task.id)} className="text-red-600">
-                    <Trash2 className="mr-2 h-4 w-4" /> Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {/* Due Date */}
+              {task.due_date && (
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {getDueDateDisplay(task.due_date)}
+                </span>
+              )}
+              {/* Reminder */}
+              {task.remind_at && (
+                <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
+                  <BellRing className="h-3 w-3" />
+                  {format(parseISO(task.remind_at), 'MMM d, HH:mm')}
+                </span>
+              )}
+              {/* Notes (only show icon, full notes on hover/edit) */}
+              {task.notes && (
+                <span className="flex items-center gap-1">
+                  <StickyNote className="h-3 w-3" />
+                </span>
+              )}
             </div>
           </div>
-        </div>
+
+          {/* Actions (Edit, More) - visible on hover */}
+          <div className="flex-shrink-0 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}>
+              <Edit className="h-4 w-4" />
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-7 w-7 p-0" onClick={(e) => e.stopPropagation()}>
+                  <span className="sr-only">Open menu</span>
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}>
+                  <Edit className="mr-2 h-4 w-4" /> Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'to-do'); }}>
+                  Mark as To-Do
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'completed'); }}>
+                  Mark as Completed
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'skipped'); }}>
+                  Mark as Skipped
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'archived'); }}>
+                  <Archive className="mr-2 h-4 w-4" /> Archive
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete(task.id); }} className="text-red-600">
+                  <Trash2 className="mr-2 h-4 w-4" /> Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </>
       )}
     </li>
   );
