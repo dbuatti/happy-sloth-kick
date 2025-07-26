@@ -38,6 +38,22 @@ interface TaskSection {
   order: number | null;
 }
 
+// Define TaskUpdate type here as it's used in this component
+type TaskUpdate = Partial<Omit<Task, 'id' | 'user_id' | 'created_at'>>;
+
+// Define NewTaskData type here as it's used in this component
+interface NewTaskData {
+  description: string;
+  status?: 'to-do' | 'completed' | 'skipped' | 'archived';
+  recurring_type?: 'none' | 'daily' | 'weekly' | 'monthly';
+  category?: string;
+  priority?: string;
+  due_date?: string | null;
+  notes?: string | null;
+  remind_at?: string | null;
+  section_id?: string | null;
+}
+
 const TaskList: React.FC = () => {
   const {
     tasks,
@@ -125,6 +141,33 @@ const TaskList: React.FC = () => {
     }
   };
 
+  // Wrapper function for bulk actions to match BulkActions component's expected prop
+  const handleBulkAction = async (action: string) => {
+    let updates: TaskUpdate = {};
+    if (action === 'complete') {
+      updates = { status: 'completed' };
+    } else if (action === 'archive') {
+      updates = { status: 'archived' };
+    } else if (action === 'skip') {
+      updates = { status: 'skipped' };
+    } else if (action === 'todo') {
+      updates = { status: 'to-do' };
+    }
+    // Add more actions as needed
+    await bulkUpdateTasks(updates);
+  };
+
+  // Wrapper function for AddTaskForm and QuickAddTask to match handleAddTask's new signature
+  const handleNewTaskSubmit = async (description: string, sectionId: string | null = null) => {
+    const newTaskData: NewTaskData = {
+      description: description,
+      section_id: sectionId,
+      // Add other default properties if needed by your AddTaskForm/QuickAddTask
+      // e.g., status: 'to-do', recurring_type: 'none', etc.
+    };
+    await handleAddTask(newTaskData);
+  };
+
   const tasksGroupedBySection = useMemo(() => {
     const grouped: { [key: string]: Task[] } = {};
     const noSectionId = 'no-section';
@@ -180,6 +223,7 @@ const TaskList: React.FC = () => {
   };
   useKeyboardShortcuts(shortcuts);
 
+  // Consistent loading state rendering
   if (loading) {
     return (
       <Card className="w-full max-w-4xl mx-auto shadow-lg">
@@ -205,7 +249,8 @@ const TaskList: React.FC = () => {
           onNextDay={handleNextDay}
         />
 
-        <AddTaskForm onAddTask={handleAddTask} userId={userId} />
+        {/* AddTaskForm and QuickAddTask now correctly pass a task object */}
+        <AddTaskForm onAddTask={handleNewTaskSubmit} userId={userId} />
 
         <TaskFilter onFilterChange={applyFilters} />
 
@@ -350,12 +395,13 @@ const TaskList: React.FC = () => {
 
             <BulkActions 
               selectedTaskIds={selectedTaskIds} 
-              onAction={bulkUpdateTasks} 
+              onAction={handleBulkAction} {/* Use the new wrapper function */}
               onClearSelection={clearSelectedTasks} 
             />
           </div>
         )}
-        <QuickAddTask onAddTask={handleAddTask} userId={userId} />
+        {/* QuickAddTask now correctly passes a task object */}
+        <QuickAddTask onAddTask={handleNewTaskSubmit} userId={userId} />
       </CardContent>
     </Card>
   );
