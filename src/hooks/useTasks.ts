@@ -33,7 +33,7 @@ type TaskUpdate = Partial<Omit<Task, 'id' | 'user_id' | 'created_at'>>;
 
 interface NewTaskData {
   description: string;
-  status?: 'to-do' | 'completed' | 'skipped' | 'archiverd';
+  status?: 'to-do' | 'completed' | 'skipped' | 'archived';
   recurring_type?: 'none' | 'daily' | 'weekly' | 'monthly';
   category?: string;
   priority?: string;
@@ -260,31 +260,35 @@ export const useTasks = () => {
       return false; // Indicate failure
     }
 
+    const newTaskId = uuidv4();
+    const now = new Date().toISOString();
+
+    // Calculate order for optimistic update
+    const targetSectionTasks = tasks.filter(t => t.section_id === targetSectionId)
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
+    const newOrder = targetSectionTasks.length > 0 ? (targetSectionTasks[targetSectionTasks.length - 1].order || 0) + 1 : 0;
+
+    const taskToInsert: Task = {
+      id: newTaskId,
+      description: taskData.description,
+      user_id: userId,
+      status: taskData.status || 'to-do',
+      recurring_type: taskData.recurring_type || 'none',
+      category: taskData.category || 'general',
+      priority: taskData.priority || 'medium',
+      due_date: taskData.due_date,
+      notes: taskData.notes || null,
+      remind_at: taskData.remind_at,
+      section_id: targetSectionId,
+      order: newOrder, // Set order for optimistic update
+      original_task_id: taskData.recurring_type !== 'none' ? newTaskId : null,
+      created_at: now, // Explicitly set created_at
+    };
+
+    // Optimistic update
+    setTasks(prevTasks => [...prevTasks, taskToInsert]);
+
     try {
-      // Determine the highest order in the target section to place the new task at the end
-      const targetSectionTasks = tasks.filter(t => t.section_id === targetSectionId);
-      const maxOrder = targetSectionTasks.reduce((max, task) => Math.max(max, task.order || 0), -1);
-      const newOrder = maxOrder + 1;
-
-      // Generate ID before insert to set original_task_id if it's a recurring task
-      const newTaskId = uuidv4();
-      const taskToInsert = {
-        id: newTaskId,
-        description: taskData.description,
-        user_id: userId,
-        status: taskData.status || 'to-do',
-        recurring_type: taskData.recurring_type || 'none',
-        category: taskData.category || 'General',
-        priority: taskData.priority || 'medium',
-        due_date: taskData.due_date, // Use directly as it's already ISO string or null
-        notes: taskData.notes || null,
-        remind_at: taskData.remind_at, // Use directly as it's already ISO string or null
-        section_id: targetSectionId,
-        order: newOrder,
-        original_task_id: taskData.recurring_type !== 'none' ? newTaskId : null, // Set original_task_id if recurring
-        // Do NOT explicitly set created_at here; let the database default handle it for accuracy
-      };
-
       const { error } = await supabase
         .from('tasks')
         .insert(taskToInsert);
@@ -292,15 +296,21 @@ export const useTasks = () => {
       if (error) {
         console.error('Error adding task:', error);
         showError('Failed to add task.');
+        // Revert optimistic update on error
+        setTasks(prevTasks => prevTasks.filter(task => task.id !== newTaskId));
         return false;
       }
       
-      await fetchTasks(); // Re-fetch to ensure UI consistency
+      // Re-fetch to ensure consistency, especially for `order` if DB handles it
+      // or if other users are adding tasks.
+      await fetchTasks(); 
       showSuccess('Task added successfully!');
       return true;
     } catch (err) {
       console.error('Exception adding task:', err);
       showError('An unexpected error occurred while adding the task.');
+      // Revert optimistic update on exception
+      setTasks(prevTasks => prevTasks.filter(task => task.id !== newTaskId));
       return false;
     }
   };
