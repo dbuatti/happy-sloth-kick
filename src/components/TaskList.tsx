@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client"; // Added this import
+import { supabase } from "@/integrations/supabase/client";
 
 // dnd-kit imports
 import {
@@ -49,7 +49,7 @@ interface Task {
   notes: string | null;
   remind_at: string | null;
   section_id: string | null;
-  order: number | null; // Added order column
+  order: number | null;
 }
 
 interface TaskSection {
@@ -217,7 +217,8 @@ const TaskList: React.FC = () => {
   };
 
   const handleNewTaskSubmit = async (taskData: NewTaskData) => {
-    await handleAddTask(taskData);
+    const success = await handleAddTask(taskData);
+    return success;
   };
 
   const tasksGroupedBySection = useMemo(() => {
@@ -490,9 +491,9 @@ const TaskList: React.FC = () => {
           </div>
         </div>
         
-        {sections.length === 0 ? (
+        {sections.length === 0 && filteredTasks.length === 0 ? (
           <div className="text-center text-gray-500 p-8">
-            <p className="text-lg mb-2">No sections created yet!</p>
+            <p className="text-lg mb-2">No sections or tasks found!</p>
             <p>Please create your first section using the "Manage Sections" button above to start adding tasks.</p>
           </div>
         ) : (

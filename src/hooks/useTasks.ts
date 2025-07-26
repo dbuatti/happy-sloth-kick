@@ -16,7 +16,7 @@ interface Task {
   notes: string | null;
   remind_at: string | null;
   section_id: string | null;
-  order: number | null; // Added order column
+  order: number | null;
 }
 
 interface TaskSection {
@@ -48,16 +48,33 @@ export const useTasks = () => {
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
-  const [sortKey, setSortKey] = useState<'priority' | 'due_date' | 'created_at' | 'order'>('order'); // Default sort by order
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc'); // Default to asc for order
+  const [sortKey, setSortKey] = useState<'priority' | 'due_date' | 'created_at' | 'order'>('order');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [sections, setSections] = useState<TaskSection[]>([]);
 
-  // Filter states, now managed within useTasks
+  // Filter states
   const [searchFilter, setSearchFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [sectionFilter, setSectionFilter] = useState('all');
+
+  const fetchSections = useCallback(async () => {
+    if (!userId) return;
+    const { data, error } = await supabase
+      .from('task_sections')
+      .select('*')
+      .eq('user_id', userId)
+      .order('order', { ascending: true })
+      .order('name', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching sections:', error);
+      showError('Failed to load sections.');
+    } else {
+      setSections(data || []);
+    }
+  }, [userId]);
 
   const fetchTasks = useCallback(async () => {
     if (!userId) {
@@ -76,8 +93,8 @@ export const useTasks = () => {
       .eq('user_id', userId)
       .gte('created_at', startOfDay.toISOString())
       .lte('created_at', endOfDay.toISOString())
-      .order('order', { ascending: sortDirection === 'asc' }) // Order by 'order' first
-      .order(sortKey, { ascending: sortDirection === 'asc' }); // Then by selected sortKey
+      .order('order', { ascending: sortDirection === 'asc' })
+      .order(sortKey, { ascending: sortDirection === 'asc' });
 
     if (error) {
       console.error('Error fetching tasks:', error);
@@ -88,26 +105,52 @@ export const useTasks = () => {
     setLoading(false);
   }, [userId, currentDate, sortKey, sortDirection]);
 
-  const fetchSections = useCallback(async () => {
-    if (!userId) return;
-    const { data, error } = await supabase
-      .from('task_sections')
-      .select('*')
-      .eq('user_id', userId)
-      .order('order', { ascending: true });
-
-    if (error) {
-      console.error('Error fetching sections:', error);
-      showError('Failed to load sections.');
-    } else {
-      setSections(data || []);
-    }
-  }, [userId]);
-
+  // Effect to fetch sections and tasks on userId or date change
   useEffect(() => {
-    fetchTasks();
     fetchSections();
-  }, [fetchTasks, fetchSections]);
+    fetchTasks();
+  }, [fetchSections, fetchTasks]);
+
+  // Effect to handle migration of tasks with null section_id
+  useEffect(() => {
+    const migrateNullSectionTasks = async () => {
+      if (!userId || loading || sections.length === 0) return; // Only run if user, not loading, and sections exist
+
+      const tasksWithNullSection = tasks.filter(task => task.section_id === null);
+
+      if (tasksWithNullSection.length > 0) {
+        const defaultSectionId = sections[0].id; // Assign to the first available section
+
+        const updates = tasksWithNullSection.map(task => ({
+          id: task.id,
+          section_id: defaultSectionId,
+        }));
+
+        try {
+          const { error } = await supabase.from('tasks').upsert(updates, { onConflict: 'id' });
+          if (error) {
+            console.error('Error migrating tasks with null section_id:', error);
+            showError('Failed to migrate some tasks to a default section.');
+          } else {
+            showSuccess(`Migrated ${tasksWithNullSection.length} tasks to "${sections[0].name}" section.`);
+            fetchTasks(); // Re-fetch tasks to update state with new section_ids
+          }
+        } catch (err) {
+          console.error('Exception during null section_id migration:', err);
+          showError('An unexpected error occurred during task migration.');
+        }
+      }
+    };
+
+    // Only run migration if sections are loaded and tasks are loaded
+    // Add a check to prevent running on every 'tasks' state change if it's not necessary
+    // This might be tricky. Let's make it dependent on `tasks` and `sections` changing,
+    // but also ensure it doesn't loop if `fetchTasks` causes `tasks` to change.
+    // A simple flag might be needed, but for now, let's rely on `loading` and `sections.length`.
+    if (!loading && sections.length > 0 && tasks.some(task => task.section_id === null)) {
+      migrateNullSectionTasks();
+    }
+  }, [userId, loading, sections, tasks, fetchTasks]);
 
   // Derived filteredTasks using useMemo
   const filteredTasks = useMemo(() => {
@@ -137,7 +180,7 @@ export const useTasks = () => {
   const handleAddTask = async (taskData: NewTaskData) => {
     if (!userId) {
       showError('User not authenticated.');
-      return;
+      return false; // Indicate failure
     }
     
     let targetSectionId = taskData.section_id;
@@ -145,7 +188,7 @@ export const useTasks = () => {
       targetSectionId = sections[0].id; // Default to the first available section
     } else if (!targetSectionId && sections.length === 0) {
       showError('Please create a section first before adding tasks.');
-      return;
+      return false; // Indicate failure
     }
 
     try {
@@ -166,23 +209,26 @@ export const useTasks = () => {
           due_date: taskData.due_date || null,
           notes: taskData.notes || null,
           remind_at: taskData.remind_at || null,
-          section_id: targetSectionId, // Ensure section_id is set
-          order: newOrder, // Set the order for the new task
+          section_id: targetSectionId,
+          order: newOrder,
         })
         .select();
 
       if (error) {
         console.error('Error adding task:', error);
         showError('Failed to add task.');
-        return;
+        return false;
       }
       if (data && data.length > 0) {
         setTasks(prevTasks => [...prevTasks, data[0]]);
         showSuccess('Task added successfully!');
+        return true;
       }
+      return false;
     } catch (err) {
       console.error('Exception adding task:', err);
       showError('An unexpected error occurred while adding the task.');
+      return false;
     }
   };
 
@@ -241,7 +287,6 @@ export const useTasks = () => {
     }
   };
 
-  // This function now updates the internal filter states
   const applyFilters = useCallback((filters: { search: string; status: string; category: string; priority: string; section: string }) => {
     setSearchFilter(filters.search);
     setStatusFilter(filters.status);
@@ -389,9 +434,9 @@ export const useTasks = () => {
   const reorderTasksInSameSection = async (sectionId: string | null, startIndex: number, endIndex: number) => {
     if (!userId) return;
 
-    // Get tasks for the specific section
+    // Get tasks for the specific section from the current state
     const sectionTasks = tasks.filter(t => t.section_id === sectionId)
-      .sort((a, b) => (a.order || 0) - (b.order || 0)); // Ensure they are sorted by current order
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
 
     const result = Array.from(sectionTasks);
     const [removed] = result.splice(startIndex, 1);
@@ -423,18 +468,13 @@ export const useTasks = () => {
     if (!userId) return;
 
     try {
-      // Fetch all tasks to correctly re-index both source and destination sections
-      const { data: allUserTasks, error: fetchError } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('user_id', userId);
+      // Get current tasks from state, filter by section, and sort by order
+      const currentTasks = [...tasks];
 
-      if (fetchError) throw fetchError;
-
-      const sourceTasks = allUserTasks.filter(t => t.section_id === sourceSectionId)
+      const sourceTasks = currentTasks.filter(t => t.section_id === sourceSectionId)
         .sort((a, b) => (a.order || 0) - (b.order || 0));
 
-      const destinationTasks = allUserTasks.filter(t => t.section_id === destinationSectionId)
+      const destinationTasks = currentTasks.filter(t => t.section_id === destinationSectionId)
         .sort((a, b) => (a.order || 0) - (b.order || 0));
 
       const movedTask = sourceTasks.find(t => t.id === taskId);
@@ -470,7 +510,7 @@ export const useTasks = () => {
 
   return {
     tasks,
-    filteredTasks, // Now derived from useMemo
+    filteredTasks,
     loading,
     currentDate,
     setCurrentDate,
@@ -478,13 +518,13 @@ export const useTasks = () => {
     handleAddTask,
     updateTask,
     deleteTask,
-    applyFilters, // Now updates internal filter states
-    searchFilter, // Expose filter states
+    applyFilters,
+    searchFilter,
     statusFilter,
     categoryFilter,
     priorityFilter,
     sectionFilter,
-    setSearchFilter, // Expose filter setters
+    setSearchFilter,
     setStatusFilter,
     setCategoryFilter,
     setPriorityFilter,
