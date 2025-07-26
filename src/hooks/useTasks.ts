@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react'; // Import hooks
+import * as React from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess, showReminder } from '@/utils/toast'; // Import showReminder
@@ -33,7 +33,7 @@ type TaskUpdate = Partial<Omit<Task, 'id' | 'user_id' | 'created_at'>>;
 
 interface NewTaskData {
   description: string;
-  status?: 'to-do' | 'completed' | 'skipped' | 'archived'; // Corrected 'archiverd'
+  status?: 'to-do' | 'completed' | 'skipped' | 'archiverd';
   recurring_type?: 'none' | 'daily' | 'weekly' | 'monthly';
   category?: string;
   priority?: string;
@@ -47,25 +47,25 @@ export const useTasks = () => {
   const { user } = useAuth();
   const userId = user?.id;
 
-  const [tasks, setTasks] = useState<Task[]>([]); // This will now hold ALL tasks for the user
-  const [loading, setLoading] = useState(true);
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
-  const [sortKey, setSortKey] = useState<'priority' | 'due_date' | 'created_at' | 'order'>('order');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [sections, setSections] = useState<TaskSection[]>([]);
+  const [tasks, setTasks] = React.useState<Task[]>([]); // This will now hold ALL tasks for the user
+  const [loading, setLoading] = React.useState(true);
+  const [currentDate, setCurrentDate] = React.useState(new Date());
+  const [selectedTaskIds, setSelectedTaskIds] = React.useState<string[]>([]);
+  const [sortKey, setSortKey] = React.useState<'priority' | 'due_date' | 'created_at' | 'order'>('order');
+  const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc');
+  const [sections, setSections] = React.useState<TaskSection[]>([]);
 
   // Filter states
-  const [searchFilter, setSearchFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [priorityFilter, setPriorityFilter] = useState('all');
-  const [sectionFilter, setSectionFilter] = useState('all');
+  const [searchFilter, setSearchFilter] = React.useState('');
+  const [statusFilter, setStatusFilter] = React.useState('all');
+  const [categoryFilter, setCategoryFilter] = React.useState('all');
+  const [priorityFilter, setPriorityFilter] = React.useState('all');
+  const [sectionFilter, setSectionFilter] = React.useState('all');
 
   // Ref to keep track of tasks for which a reminder has been shown in the current session
-  const remindedTaskIdsRef = useRef<Set<string>>(new Set());
+  const remindedTaskIdsRef = React.useRef<Set<string>>(new Set());
 
-  const fetchSections = useCallback(async () => {
+  const fetchSections = React.useCallback(async () => {
     if (!userId) return;
     const { data, error } = await supabase
       .from('task_sections')
@@ -82,7 +82,7 @@ export const useTasks = () => {
     }
   }, [userId]);
 
-  const fetchTasks = useCallback(async () => {
+  const fetchTasks = React.useCallback(async () => {
     if (!userId) {
       setLoading(false);
       return;
@@ -161,13 +161,13 @@ export const useTasks = () => {
     }
   }, [userId, currentDate]); // currentDate is a dependency for recurring task generation
 
-  useEffect(() => {
+  React.useEffect(() => {
     fetchSections();
     fetchTasks();
   }, [fetchSections, fetchTasks]);
 
   // Reminder check effect
-  useEffect(() => {
+  React.useEffect(() => {
     if (!userId) return;
 
     const reminderInterval = setInterval(() => {
@@ -189,7 +189,7 @@ export const useTasks = () => {
     return () => clearInterval(reminderInterval);
   }, [tasks, userId]); // Only tasks and userId are dependencies now
 
-  const filteredTasks = useMemo(() => {
+  const filteredTasks = React.useMemo(() => {
     let tempTasks = [...tasks]; // 'tasks' now holds ALL tasks for the user
 
     const startOfCurrentDate = fnsStartOfDay(currentDate);
@@ -355,7 +355,7 @@ export const useTasks = () => {
       }
       if (data && data.length > 0) {
         setTasks(prevTasks =>
-          prevTasks.map(task => (task.id === taskId ? { ...task, ...data[0] } : task))
+          prevTasks.map(task => (task.id === taskId ? { ...task, ...data[0] as Task } : task))
         );
         showSuccess('Task updated successfully!');
       }
@@ -390,7 +390,7 @@ export const useTasks = () => {
     }
   };
 
-  const applyFilters = useCallback((filters: { search: string; status: string; category: string; priority: string; section: string }) => {
+  const applyFilters = React.useCallback((filters: { search: string; status: string; category: string; priority: string; section: string }) => {
     setSearchFilter(filters.search);
     setStatusFilter(filters.status);
     setCategoryFilter(filters.category);
@@ -457,7 +457,7 @@ export const useTasks = () => {
       }
 
       if (data && data.length > 0) {
-        setSections(prevSections => [...prevSections, data[0]]);
+        setSections(prevSections => [...prevSections, data[0] as TaskSection]);
         showSuccess('Section created successfully!');
       }
     } catch (err) {
@@ -582,7 +582,7 @@ export const useTasks = () => {
         user_id: userId, // Ensure user_id is included for RLS
       }));
 
-      const { error } = await supabase.from('tasks').upsert(updates, { onConflict: 'id' });
+      const { error } = await supabase.from('tasks').upsert(updates as any[], { onConflict: 'id' }); // Cast to any[]
       if (error) {
         console.error('Error reordering tasks:', error);
         showError(error.message);
@@ -686,7 +686,7 @@ export const useTasks = () => {
         ...newDbDestinationTasks,
       ];
 
-      const { error } = await supabase.from('tasks').upsert(updates, { onConflict: 'id' });
+      const { error } = await supabase.from('tasks').upsert(updates as any[], { onConflict: 'id' }); // Cast to any[]
       if (error) {
         console.error('Error moving task:', error);
         showError(error.message);
@@ -722,14 +722,14 @@ export const useTasks = () => {
       const [removed] = sectionsToUpdate.splice(startIndex, 1);
       sectionsToUpdate.splice(endIndex, 0, removed);
 
-      const updates: Partial<TaskSection>[] = sectionsToUpdate.map((section, index) => ({ // Explicitly type updates
+      const updates = sectionsToUpdate.map((section, index) => ({
         id: section.id,
         name: section.name, // Include the name to prevent null constraint violation
         order: index,
         user_id: userId, // IMPORTANT: Include user_id for RLS policy check
       }));
 
-      const { error } = await supabase.from('task_sections').upsert(updates, { onConflict: 'id' });
+      const { error } = await supabase.from('task_sections').upsert(updates as any[], { onConflict: 'id' }); // Cast to any[]
       if (error) {
         console.error('Error reordering sections:', error);
         showError(error.message);

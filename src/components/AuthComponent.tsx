@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import * as React from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,9 +7,9 @@ import { showSuccess, showError } from "@/utils/toast";
 import GoogleIcon from "./GoogleIcon";
 
 const AuthComponent = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [isSignUp, setIsSignUp] = React.useState(false);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import * as React from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,17 +21,17 @@ interface SectionSelectorProps {
 }
 
 const SectionSelector: React.FC<SectionSelectorProps> = ({ value, onChange, userId }) => {
-  const [sections, setSections] = useState<TaskSection[]>([]);
-  const [isOpen, setIsOpen] = useState(false);
-  const [newSectionName, setNewSectionName] = useState('');
+  const [sections, setSections] = React.useState<TaskSection[]>([]);
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [newSectionName, setNewSectionName] = React.useState('');
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (userId) {
       fetchSections();
     }
   }, [userId]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     // If no section is selected and sections exist, default to the first one
     if (!value && sections.length > 0) {
       onChange(sections[0].id);
@@ -51,7 +51,7 @@ const SectionSelector: React.FC<SectionSelectorProps> = ({ value, onChange, user
       if (error) throw error;
       setSections(data || []);
     } catch (error: any) {
-      showError('Failed to fetch sections');
+      showError('Failed to fetch sections.');
       console.error('Error fetching sections:', error);
     }
   };
@@ -77,7 +77,7 @@ const SectionSelector: React.FC<SectionSelectorProps> = ({ value, onChange, user
 
       if (error) throw error;
       
-      setSections([...sections, data]);
+      setSections([...sections, data as TaskSection]);
       setNewSectionName('');
       showSuccess('Section created successfully');
       // Automatically select the newly created section if it's the first one

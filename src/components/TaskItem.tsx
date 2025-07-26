@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from "@/components/ui/dropdown-menu";
@@ -7,7 +7,6 @@ import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, Bel
 import { format, parseISO, isToday, isAfter, isPast } from 'date-fns';
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
-import type { FC, HTMLAttributes } from 'react'; // Import FC and HTMLAttributes
 
 interface TaskItemProps {
   task: Task;
@@ -21,7 +20,7 @@ interface TaskItemProps {
   onEditTask: (task: Task) => void;
 }
 
-const TaskItem: FC<TaskItemProps> = ({ // Use FC type
+const TaskItem: React.FC<TaskItemProps> = ({
   task,
   userId,
   onStatusChange,
@@ -48,7 +47,7 @@ const TaskItem: FC<TaskItemProps> = ({ // Use FC type
     const date = parseISO(dueDate);
     if (isToday(date)) {
       return 'Today';
-    } else if (isAfter(date, new Date())) {
+    } else if (isAfter(date, new React.Date())) {
       return `Due ${format(date, 'MMM d')}`;
     } else {
       return `Overdue ${format(date, 'MMM d')}`;
@@ -60,7 +59,7 @@ const TaskItem: FC<TaskItemProps> = ({ // Use FC type
 
   return (
     <div
-      className={cn(
+      className={React.cn(
         "relative flex items-center space-x-3 w-full",
         task.status === 'completed' ? "opacity-70 bg-green-50/20 dark:bg-green-900/20 animate-task-completed" : "",
       )}
@@ -76,13 +75,13 @@ const TaskItem: FC<TaskItemProps> = ({ // Use FC type
         id={`task-${task.id}`}
         onClick={(e) => e.stopPropagation()}
         className="flex-shrink-0"
-        data-dnd-kit-disabled-draggable={true}
+        data-dnd-kit-disabled-draggable="true"
       />
 
       <div className="flex-1 min-w-0">
         <label
           htmlFor={`task-${task.id}`}
-          className={cn(
+          className={React.cn(
             "text-base font-medium leading-tight",
             task.status === 'completed' ? 'line-through text-gray-500 dark:text-gray-400' : 'text-foreground',
             isOverdue && "text-red-600 dark:text-red-400",
@@ -94,14 +93,14 @@ const TaskItem: FC<TaskItemProps> = ({ // Use FC type
         </label>
 
         <div className="flex items-center text-xs text-muted-foreground mt-1 space-x-3">
-          <span className={cn(
+          <span className={React.cn(
             "font-semibold",
             getPriorityColor(task.priority)
           )}>
             {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
           </span>
           {task.due_date && (
-            <span className={cn(
+            <span className={React.cn(
               "flex items-center gap-1",
               isOverdue && "text-red-600 dark:text-red-400",
               isUpcoming && "text-orange-500 dark:text-orange-300"
@@ -125,12 +124,12 @@ const TaskItem: FC<TaskItemProps> = ({ // Use FC type
       </div>
 
       <div className="flex-shrink-0 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onEditTask(task); }} data-dnd-kit-disabled-draggable={true}>
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onEditTask(task); }} data-dnd-kit-disabled-draggable="true">
           <Edit className="h-4 w-4" />
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-7 w-7 p-0" onClick={(e) => e.stopPropagation()} data-dnd-kit-disabled-draggable={true}>
+            <Button variant="ghost" className="h-7 w-7 p-0" onClick={(e) => e.stopPropagation()} data-dnd-kit-disabled-draggable="true">
               <span className="sr-only">Open menu</span>
               <MoreHorizontal className="h-4 w-4" />
             </Button>

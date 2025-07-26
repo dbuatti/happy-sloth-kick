@@ -1,5 +1,5 @@
-import React from 'react';
-import { useSortable } from '@dnd-kit/sortable'; // Removed the extra '1'
+import * as React from 'react';
+import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { FolderOpen, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -34,7 +34,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({ id, name,
     <div
       ref={setNodeRef}
       style={style}
-      className={cn(
+      className={React.cn(
         "relative rounded-lg bg-muted dark:bg-gray-700 text-foreground",
         "shadow-sm hover:shadow-md transition-shadow duration-200",
         "group",
@@ -59,7 +59,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({ id, name,
           aria-label={isExpanded ? "Collapse section" : "Expand section"}
           data-dnd-kit-disabled-draggable="true"
         >
-          <ChevronDown className={cn("h-5 w-5 transition-transform", isExpanded ? "rotate-0" : "-rotate-90")} />
+          <ChevronDown className={React.cn("h-5 w-5 transition-transform", isExpanded ? "rotate-0" : "-rotate-90")} />
         </Button>
       </div>
     </div>

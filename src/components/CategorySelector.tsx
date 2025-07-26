@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'; // Import useState, useEffect
+import * as React from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,7 +6,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, X } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
-import type { FC, HTMLAttributes } from 'react'; // Import FC and HTMLAttributes
 
 interface Category {
   id: string;
@@ -31,13 +30,13 @@ interface CategorySelectorProps {
   userId: string | null;
 }
 
-const CategorySelector: FC<CategorySelectorProps> = ({ value, onChange, userId }) => { // Use FC
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [isOpen, setIsOpen] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState('');
-  const [selectedColor, setSelectedColor] = useState(colors[0].value);
+const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, userId }) => {
+  const [categories, setCategories] = React.useState<Category[]>([]);
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [newCategoryName, setNewCategoryName] = React.useState('');
+  const [selectedColor, setSelectedColor] = React.useState(colors[0].value);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (userId) {
       fetchCategories();
     }
@@ -81,7 +80,7 @@ const CategorySelector: FC<CategorySelectorProps> = ({ value, onChange, userId }
 
       if (error) throw error;
       
-      setCategories([...categories, data]);
+      setCategories([...categories, data as Category]);
       setNewCategoryName('');
       setSelectedColor(colors[0].value);
       showSuccess('Category created successfully');
@@ -162,7 +161,7 @@ const CategorySelector: FC<CategorySelectorProps> = ({ value, onChange, userId }
                   {colors.map(color => (
                     <button
                       key={color.value}
-                      className={`w-8 h-8 rounded-full ${color.value} ${selectedColor === color.value ? 'ring-2 ring-offset-2 ring-primary' : ''}`}
+                      className={React.cn(`w-8 h-8 rounded-full ${color.value} ${selectedColor === color.value ? 'ring-2 ring-offset-2 ring-primary' : ''}`)}
                       onClick={() => setSelectedColor(color.value)}
                       aria-label={color.name}
                     />
@@ -177,7 +176,7 @@ const CategorySelector: FC<CategorySelectorProps> = ({ value, onChange, userId }
       
       {selectedCategory && (
         <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-          <div className={`w-3 h-3 rounded-full ${selectedCategory.color}`}></div>
+          <div className={React.cn(`w-3 h-3 rounded-full ${selectedCategory.color}`)}></div>
           <span>{selectedCategory.name}</span>
           <Button
             variant="ghost"
