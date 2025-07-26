@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, BarChart3, Settings as SettingsIcon, HelpCircle, Archive as ArchiveIcon } from 'lucide-react';
+import { Home, BarChart3, Settings as SettingsIcon, HelpCircle, Archive as ArchiveIcon, Timer } from 'lucide-react'; // Added Timer icon
 import ThemeSelector from './ThemeSelector';
 import DarkModeToggle from './DarkModeToggle';
 import { cn } from '@/lib/utils';
@@ -10,6 +10,7 @@ const Sidebar = () => {
 
   const navItems = [
     { name: 'Daily Tasks', path: '/', icon: Home },
+    { name: 'Focus Mode', path: '/focus', icon: Timer }, // New Focus Mode item
     { name: 'Analytics', path: '/analytics', icon: BarChart3 },
     { name: 'Archive', path: '/archive', icon: ArchiveIcon },
     { name: 'Settings', path: '/settings', icon: SettingsIcon },
