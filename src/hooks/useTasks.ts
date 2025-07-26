@@ -136,7 +136,7 @@ export const useTasks = () => {
 
       // Second pass: Generate new instances for daily recurring tasks
       const newRecurringInstances: Task[] = [];
-      for (const template of (fetchedTasks || [])) {
+      for (const template of (fetchedTasks || [])) { // This `fetchedTasks` already contains recurring_type.eq.daily
         if (template.recurring_type === 'daily' && new Date(template.created_at) < startOfDay) {
           // This is a daily recurring template created before today
           // Check if an instance for today already exists (either by original_task_id or if the template itself was created today and is being reused)
