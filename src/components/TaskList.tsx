@@ -173,10 +173,10 @@ interface SortableTaskItemProps {
   onStatusChange: (taskId: string, newStatus: Task['status']) => void;
   onDeleteTask: (taskId: string) => void;
   onSelectTask: (taskId: string, isSelected: boolean) => void;
-  isSelected: boolean;
+  selectedTaskIds: Set<string>; // Pass the set down
 }
 
-const SortableTaskItem: React.FC<SortableTaskItemProps> = ({ task, onStatusChange, onDeleteTask, onSelectTask, isSelected }) => {
+const SortableTaskItem: React.FC<SortableTaskItemProps> = ({ task, onStatusChange, onDeleteTask, onSelectTask, selectedTaskIds }) => {
   const {
     attributes,
     listeners,
@@ -202,11 +202,13 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({ task, onStatusChang
       className="flex items-center justify-between p-3 border rounded-md bg-gray-50 dark:bg-gray-800 cursor-grab"
     >
       <div className="flex items-center space-x-3">
-        <Checkbox
-          checked={isSelected}
-          onCheckedChange={(checked) => onSelectTask(task.id, checked as boolean)}
-          id={`select-task-${task.id}`}
-        />
+        {selectedTaskIds.size > 0 && ( // Conditionally render the select checkbox
+          <Checkbox
+            checked={selectedTaskIds.has(task.id)}
+            onCheckedChange={(checked) => onSelectTask(task.id, checked as boolean)}
+            id={`select-task-${task.id}`}
+          />
+        )}
         <Checkbox
           checked={task.status === 'completed'}
           onCheckedChange={() => onStatusChange(task.id, task.status === 'completed' ? 'to-do' : 'completed')}
@@ -288,7 +290,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({ id, title, tasks, onStatusCha
                 onStatusChange={onStatusChange}
                 onDeleteTask={onDeleteTask}
                 onSelectTask={onSelectTask}
-                isSelected={selectedTaskIds.has(task.id)}
+                selectedTaskIds={selectedTaskIds}
               />
             ))
           )}
