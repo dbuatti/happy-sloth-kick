@@ -1,14 +1,10 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-// Removed DraggableAttributes import
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils'; // Corrected: Added 'from'
 import { Task, TaskSection } from '@/hooks/useTasks';
 import TaskItem from './TaskItem';
 import { isPast, isToday, parseISO } from 'date-fns';
-
-// Define a local type for dnd-kit listeners
-type DndListeners = Record<string, ((event: any) => void) | undefined>;
 
 interface SortableTaskItemProps {
   task: Task;
@@ -57,18 +53,30 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "border rounded-lg p-3 transition-all duration-200 ease-in-out",
+        "relative border rounded-lg p-3 transition-all duration-200 ease-in-out",
         "bg-card dark:bg-gray-800",
         task.status === 'completed' ? "border-green-300 dark:border-green-700" : "border-border",
         isOverdue && "border-l-4 border-red-500 dark:border-red-700 bg-red-50/20 dark:bg-red-900/20 pl-2",
         isUpcoming && "border-l-4 border-orange-400 dark:border-orange-600 bg-orange-50/20 dark:bg-orange-900/20 pl-2",
-        "group relative",
+        "group",
         "hover:shadow-md",
-        isDragging ? "shadow-lg ring-2 ring-primary" : "cursor-grab"
+        isDragging ? "shadow-lg ring-2 ring-primary" : ""
       )}
-      {...attributes}
-      {...listeners}
     >
+      {/* Subtle drag handle on the left edge */}
+      <div 
+        className={cn(
+          "absolute left-0 top-0 bottom-0 w-4 cursor-grab active:cursor-grabbing",
+          "flex items-center justify-center",
+          "opacity-0 group-hover:opacity-100 transition-opacity duration-200" // Make it visible on hover
+        )}
+        {...attributes}
+        {...listeners}
+      >
+        {/* You can add a very subtle visual cue here if desired, e.g., a few dots */}
+        <span className="w-1 h-4 bg-gray-300 dark:bg-gray-600 rounded-full opacity-50"></span>
+      </div>
+
       <TaskItem 
         task={task} 
         userId={userId}
