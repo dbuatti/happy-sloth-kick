@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess } from '@/utils/toast';
+import { v4 as uuidv4 } from 'uuid'; // Import uuid for generating IDs
+import { isSameDay } from 'date-fns'; // Import isSameDay
 
 interface Task {
   id: string;
@@ -17,6 +19,7 @@ interface Task {
   remind_at: string | null;
   section_id: string | null;
   order: number | null;
+  original_task_id: string | null; // New field for recurring tasks
 }
 
 interface TaskSection {
@@ -87,22 +90,83 @@ export const useTasks = () => {
     const endOfDay = new Date(currentDate);
     endOfDay.setHours(23, 59, 59, 999);
 
-    const { data, error } = await supabase
-      .from('tasks')
-      .select('*')
-      .eq('user_id', userId)
-      .gte('created_at', startOfDay.toISOString())
-      .lte('created_at', endOfDay.toISOString())
-      .order('order', { ascending: sortDirection === 'asc' })
-      .order(sortKey, { ascending: sortDirection === 'asc' });
+    try {
+      // 1. Fetch tasks already existing for the current day
+      const { data: existingTasks, error: existingTasksError } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('user_id', userId)
+        .gte('created_at', startOfDay.toISOString())
+        .lte('created_at', endOfDay.toISOString());
 
-    if (error) {
-      console.error('Error fetching tasks:', error);
-      showError('Failed to load tasks.');
-    } else {
-      setTasks(data || []);
+      if (existingTasksError) throw existingTasksError;
+
+      let tasksToSet = [...(existingTasks || [])];
+      const existingOriginalIdsForToday = new Set(tasksToSet.map(t => t.original_task_id || t.id));
+
+      // 2. Fetch daily recurring task templates that should appear today
+      const { data: recurringTemplates, error: recurringTemplatesError } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('recurring_type', 'daily')
+        .lt('created_at', startOfDay.toISOString()); // Created before today
+
+      if (recurringTemplatesError) throw recurringTemplatesError;
+
+      const newRecurringInstances: Task[] = [];
+      for (const template of (recurringTemplates || [])) {
+        // Check if an instance of this recurring task already exists for today
+        // An instance for today would have its original_task_id matching the template's ID
+        // AND its created_at date being today.
+        const instanceExists = tasksToSet.some(
+          t => (t.original_task_id === template.id) &&
+               isSameDay(new Date(t.created_at), currentDate)
+        );
+
+        if (!instanceExists) {
+          // Create a new instance for today
+          const newInstance: Task = {
+            ...template,
+            id: uuidv4(), // Generate a new ID for the instance
+            created_at: currentDate.toISOString(), // Set created_at to current day
+            status: 'to-do', // Reset status for the new day's instance
+            recurring_type: 'none', // This instance is not recurring itself
+            original_task_id: template.id, // Link to the original recurring task
+            order: template.order, // Keep original order for now, reordering will adjust
+          };
+          newRecurringInstances.push(newInstance);
+        }
+      }
+
+      // Insert new recurring instances into the database
+      if (newRecurringInstances.length > 0) {
+        const { error: insertError } = await supabase
+          .from('tasks')
+          .insert(newRecurringInstances);
+
+        if (insertError) throw insertError;
+        
+        // Re-fetch all tasks for the day to include newly inserted ones
+        // This is simpler than merging manually and ensures consistency
+        const { data: updatedTasks, error: updatedTasksError } = await supabase
+          .from('tasks')
+          .select('*')
+          .eq('user_id', userId)
+          .gte('created_at', startOfDay.toISOString())
+          .lte('created_at', endOfDay.toISOString());
+
+        if (updatedTasksError) throw updatedTasksError;
+        tasksToSet = updatedTasks || [];
+      }
+      
+      setTasks(tasksToSet);
+    } catch (error: any) {
+      console.error('Error fetching or generating tasks:', error);
+      showError('Failed to load tasks, or generate recurring tasks.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [userId, currentDate, sortKey, sortDirection]);
 
   // Effect to fetch sections and tasks on userId or date change
@@ -110,47 +174,6 @@ export const useTasks = () => {
     fetchSections();
     fetchTasks();
   }, [fetchSections, fetchTasks]);
-
-  // Effect to handle migration of tasks with null section_id
-  useEffect(() => {
-    const migrateNullSectionTasks = async () => {
-      if (!userId || loading || sections.length === 0) return; // Only run if user, not loading, and sections exist
-
-      const tasksWithNullSection = tasks.filter(task => task.section_id === null);
-
-      if (tasksWithNullSection.length > 0) {
-        const defaultSectionId = sections[0].id; // Assign to the first available section
-
-        const updates = tasksWithNullSection.map(task => ({
-          id: task.id,
-          section_id: defaultSectionId,
-        }));
-
-        try {
-          const { error } = await supabase.from('tasks').upsert(updates, { onConflict: 'id' });
-          if (error) {
-            console.error('Error migrating tasks with null section_id:', error);
-            showError('Failed to migrate some tasks to a default section.');
-          } else {
-            showSuccess(`Migrated ${tasksWithNullSection.length} tasks to "${sections[0].name}" section.`);
-            fetchTasks(); // Re-fetch tasks to update state with new section_ids
-          }
-        } catch (err) {
-          console.error('Exception during null section_id migration:', err);
-          showError('An unexpected error occurred during task migration.');
-        }
-      }
-    };
-
-    // Only run migration if sections are loaded and tasks are loaded
-    // Add a check to prevent running on every 'tasks' state change if it's not necessary
-    // This might be tricky. Let's make it dependent on `tasks` and `sections` changing,
-    // but also ensure it doesn't loop if `fetchTasks` causes `tasks` to change.
-    // A simple flag might be needed, but for now, let's rely on `loading` and `sections.length`.
-    if (!loading && sections.length > 0 && tasks.some(task => task.section_id === null)) {
-      migrateNullSectionTasks();
-    }
-  }, [userId, loading, sections, tasks, fetchTasks]);
 
   // Derived filteredTasks using useMemo
   const filteredTasks = useMemo(() => {
@@ -197,21 +220,27 @@ export const useTasks = () => {
       const maxOrder = targetSectionTasks.reduce((max, task) => Math.max(max, task.order || 0), -1);
       const newOrder = maxOrder + 1;
 
+      // Generate ID before insert to set original_task_id if it's a recurring task
+      const newTaskId = uuidv4();
+      const taskToInsert = {
+        id: newTaskId,
+        description: taskData.description,
+        user_id: userId,
+        status: taskData.status || 'to-do',
+        recurring_type: taskData.recurring_type || 'none',
+        category: taskData.category || 'General',
+        priority: taskData.priority || 'medium',
+        due_date: taskData.due_date || null,
+        notes: taskData.notes || null,
+        remind_at: taskData.remind_at || null,
+        section_id: targetSectionId,
+        order: newOrder,
+        original_task_id: taskData.recurring_type !== 'none' ? newTaskId : null, // Set original_task_id if recurring
+      };
+
       const { data, error } = await supabase
         .from('tasks')
-        .insert({
-          description: taskData.description,
-          user_id: userId,
-          status: taskData.status || 'to-do',
-          recurring_type: taskData.recurring_type || 'none',
-          category: taskData.category || 'General',
-          priority: taskData.priority || 'medium',
-          due_date: taskData.due_date || null,
-          notes: taskData.notes || null,
-          remind_at: taskData.remind_at || null,
-          section_id: targetSectionId,
-          order: newOrder,
-        })
+        .insert(taskToInsert)
         .select();
 
       if (error) {
