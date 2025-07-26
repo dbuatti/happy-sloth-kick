@@ -1,5 +1,5 @@
 import React from 'react';
-import { useSortable }1 from '@dnd-kit/sortable';
+import { useSortable } from '@dnd-kit/sortable'; // Removed the extra '1'
 import { CSS } from '@dnd-kit/utilities';
 import { FolderOpen, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -57,7 +57,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({ id, name,
           onClick={onToggleExpand}
           className="flex-shrink-0"
           aria-label={isExpanded ? "Collapse section" : "Expand section"}
-          data-dnd-kit-disabled-draggable="true" {/* Reverted to string "true" */}
+          data-dnd-kit-disabled-draggable="true"
         >
           <ChevronDown className={cn("h-5 w-5 transition-transform", isExpanded ? "rotate-0" : "-rotate-90")} />
         </Button>
