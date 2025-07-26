@@ -174,9 +174,10 @@ interface SortableTaskItemProps {
   onDeleteTask: (taskId: string) => void;
   onSelectTask: (taskId: string, isSelected: boolean) => void;
   isSelected: boolean;
+  isSelectionMode: boolean; // New prop
 }
 
-const SortableTaskItem: React.FC<SortableTaskItemProps> = ({ task, onStatusChange, onDeleteTask, onSelectTask, isSelected }) => {
+const SortableTaskItem: React.FC<SortableTaskItemProps> = ({ task, onStatusChange, onDeleteTask, onSelectTask, isSelected, isSelectionMode }) => {
   const {
     attributes,
     listeners,
@@ -202,21 +203,24 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({ task, onStatusChang
       className="flex items-center justify-between p-3 border rounded-md bg-gray-50 dark:bg-gray-800 cursor-grab"
     >
       <div className="flex items-center space-x-3">
-        {/* Selection Checkbox - placed first for clarity */}
-        <Checkbox
-          checked={isSelected}
-          onCheckedChange={(checked) => onSelectTask(task.id, checked as boolean)}
-          id={`select-task-${task.id}`}
-        />
-        {/* Completion Checkbox - placed next to the label */}
-        <Checkbox
-          checked={task.status === 'completed'}
-          onCheckedChange={() => onStatusChange(task.id, task.status === 'completed' ? 'to-do' : 'completed')}
-          id={`complete-task-${task.id}`}
-        />
+        {isSelectionMode ? (
+          // Selection checkbox in selection mode
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={(checked) => onSelectTask(task.id, checked as boolean)}
+            id={`select-task-${task.id}`}
+          />
+        ) : (
+          // Completion checkbox in normal mode
+          <Checkbox
+            checked={task.status === 'completed'}
+            onCheckedChange={() => onStatusChange(task.id, task.status === 'completed' ? 'to-do' : 'completed')}
+            id={`complete-task-${task.id}`}
+          />
+        )}
         <Label
-          htmlFor={`complete-task-${task.id}`}
-          className={`text-lg ${task.status === 'completed' ? 'line-through text-gray-500' : ''}`}
+          htmlFor={isSelectionMode ? `select-task-${task.id}` : `complete-task-${task.id}`}
+          className={`text-lg ${task.status === 'completed' && !isSelectionMode ? 'line-through text-gray-500' : ''}`}
         >
           {task.description}
         </Label>
@@ -269,9 +273,10 @@ interface TaskSectionProps {
   onDeleteTask: (taskId: string) => void;
   onSelectTask: (taskId: string, isSelected: boolean) => void;
   selectedTaskIds: Set<string>;
+  isSelectionMode: boolean; // New prop
 }
 
-const TaskSection: React.FC<TaskSectionProps> = ({ id, title, tasks, onStatusChange, onDeleteTask, onSelectTask, selectedTaskIds }) => {
+const TaskSection: React.FC<TaskSectionProps> = ({ id, title, tasks, onStatusChange, onDeleteTask, onSelectTask, selectedTaskIds, isSelectionMode }) => {
   const { setNodeRef } = useSortable({ id });
   const taskIds = tasks.map(task => task.id);
 
@@ -291,6 +296,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({ id, title, tasks, onStatusCha
                 onDeleteTask={onDeleteTask}
                 onSelectTask={onSelectTask}
                 isSelected={selectedTaskIds.has(task.id)}
+                isSelectionMode={isSelectionMode}
               />
             ))
           )}
@@ -309,6 +315,7 @@ const TaskList: React.FC = () => {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
   const [newTaskSection, setNewTaskSection] = useState<TaskSection>('priorities'); // Default section for new tasks
+  const [isSelectionMode, setIsSelectionMode] = useState<boolean>(false); // New state for selection mode
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -334,6 +341,13 @@ const TaskList: React.FC = () => {
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks]);
+
+  // Clear selected tasks when toggling off selection mode
+  useEffect(() => {
+    if (!isSelectionMode) {
+      setSelectedTaskIds(new Set());
+    }
+  }, [isSelectionMode]);
 
   const handleStatusChange = async (taskId: string, newStatus: Task['status']) => {
     try {
@@ -551,22 +565,35 @@ const TaskList: React.FC = () => {
         <h2 className="text-2xl font-semibold mb-4">Your Tasks</h2>
         {tasks.length > 0 && (
           <div className="flex items-center space-x-2 mb-4">
-            <Checkbox
-              checked={allTasksSelected}
-              onCheckedChange={handleSelectAllTasks}
-              id="select-all-tasks"
-              className={someTasksSelected ? "border-gray-400 bg-gray-200" : ""}
-            />
-            <Label htmlFor="select-all-tasks">Select All</Label>
             <Button
-              variant="destructive"
+              variant="outline"
               size="sm"
-              onClick={handleDeleteSelectedTasks}
-              disabled={selectedTaskIds.size === 0}
-              className="ml-4"
+              onClick={() => setIsSelectionMode(prev => !prev)}
+              className="mr-4"
             >
-              <Trash2 className="mr-2 h-4 w-4" /> Delete Selected ({selectedTaskIds.size})
+              {isSelectionMode ? "Done Selecting" : "Select Tasks"}
             </Button>
+
+            {isSelectionMode && (
+              <>
+                <Checkbox
+                  checked={allTasksSelected}
+                  onCheckedChange={handleSelectAllTasks}
+                  id="select-all-tasks"
+                  className={someTasksSelected ? "border-gray-400 bg-gray-200" : ""}
+                />
+                <Label htmlFor="select-all-tasks">Select All</Label>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleDeleteSelectedTasks}
+                  disabled={selectedTaskIds.size === 0}
+                  className="ml-4"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" /> Delete Selected ({selectedTaskIds.size})
+                </Button>
+              </>
+            )}
           </div>
         )}
 
@@ -587,6 +614,7 @@ const TaskList: React.FC = () => {
                 onDeleteTask={handleDeleteTask}
                 onSelectTask={handleSelectTask}
                 selectedTaskIds={selectedTaskIds}
+                isSelectionMode={isSelectionMode}
               />
               <TaskSection
                 id="priorities"
@@ -596,6 +624,7 @@ const TaskList: React.FC = () => {
                 onDeleteTask={handleDeleteTask}
                 onSelectTask={handleSelectTask}
                 selectedTaskIds={selectedTaskIds}
+                isSelectionMode={isSelectionMode}
               />
               <TaskSection
                 id="dailies"
@@ -605,6 +634,7 @@ const TaskList: React.FC = () => {
                 onDeleteTask={handleDeleteTask}
                 onSelectTask={handleSelectTask}
                 selectedTaskIds={selectedTaskIds}
+                isSelectionMode={isSelectionMode}
               />
             </div>
           </DndContext>
