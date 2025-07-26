@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
 import Sidebar from "@/components/Sidebar";
 import { MadeWithDyad } from "@/components/made-with-dyad";
+import WorkHoursSettings from '@/components/WorkHoursSettings'; // Import the new component
 
 interface Profile {
   id: string;
@@ -103,49 +104,54 @@ const Settings = () => {
       <Sidebar />
       <div className="flex-1 flex flex-col">
         <main className="flex-grow p-4 flex items-center justify-center">
-          <Card className="w-full max-w-md shadow-lg">
-            <CardHeader>
-              <CardTitle className="text-2xl font-bold text-center">Profile Settings</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="text-center">Loading profile...</div>
-              ) : (
-                <form onSubmit={updateProfile} className="space-y-6">
-                  <div>
-                    <Label htmlFor="firstName">First Name</Label>
-                    <Input
-                      id="firstName"
-                      type="text"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="lastName">Last Name</Label>
-                    <Input
-                      id="lastName"
-                      type="text"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? 'Saving...' : 'Update Profile'}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full mt-4"
-                    onClick={handleSignOut}
-                    disabled={loading}
-                  >
-                    Sign Out
-                  </Button>
-                </form>
-              )}
-            </CardContent>
-          </Card>
+          <div className="w-full max-w-md mx-auto space-y-6"> {/* Added space-y-6 for spacing between cards */}
+            <Card className="w-full shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-2xl font-bold text-center">Profile Settings</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="text-center">Loading profile...</div>
+                ) : (
+                  <form onSubmit={updateProfile} className="space-y-6">
+                    <div>
+                      <Label htmlFor="firstName">First Name</Label>
+                      <Input
+                        id="firstName"
+                        type="text"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="lastName">Last Name</Label>
+                      <Input
+                        id="lastName"
+                        type="text"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                      />
+                    </div>
+                    <Button type="submit" className="w-full" disabled={loading}>
+                      {loading ? 'Saving...' : 'Update Profile'}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full mt-4"
+                      onClick={handleSignOut}
+                      disabled={loading}
+                    >
+                      Sign Out
+                    </Button>
+                  </form>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* New Work Hours Settings Card */}
+            <WorkHoursSettings />
+          </div>
         </main>
         <footer className="p-4">
           <MadeWithDyad />
