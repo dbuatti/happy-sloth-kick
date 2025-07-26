@@ -275,7 +275,7 @@ export const useTasks = () => {
       recurring_type: taskData.recurring_type || 'none',
       category: taskData.category || 'general',
       priority: taskData.priority || 'medium',
-      due_date: taskData.due_date || currentDate.toISOString(), // Default to currentDate if not provided
+      due_date: taskData.due_date,
       notes: taskData.notes || null,
       remind_at: taskData.remind_at,
       section_id: targetSectionId,
