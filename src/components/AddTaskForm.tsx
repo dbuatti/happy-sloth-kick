@@ -25,9 +25,10 @@ interface AddTaskFormProps {
     section_id: string | null; // New: for task sections
   }) => Promise<any>;
   userId: string | null;
+  onTaskAdded?: () => void; // New prop to close dialog/sheet
 }
 
-const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId }) => {
+const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdded }) => {
   const [newTaskDescription, setNewTaskDescription] = useState<string>('');
   const [newTaskRecurringType, setNewTaskRecurringType] = useState<'none' | 'daily' | 'weekly' | 'monthly'>('none');
   const [newTaskCategory, setNewTaskCategory] = useState<string>('general');
@@ -73,6 +74,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId }) => {
       setNewTaskRemindAt(undefined);
       setNewReminderTime('');
       setNewTaskSectionId(null); // Reset section_id
+      onTaskAdded?.(); // Call callback to close dialog/sheet
     }
     setIsAdding(false);
   };
@@ -84,7 +86,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId }) => {
   };
 
   return (
-    <div className="mb-8 p-6 bg-gray-50 dark:bg-card rounded-lg">
+    <div className="p-6 bg-gray-50 dark:bg-card rounded-lg">
       <h2 className="text-2xl font-semibold mb-4">Add New Task</h2>
       <div className="space-y-4">
         <div>
