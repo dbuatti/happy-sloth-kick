@@ -5,7 +5,7 @@ import { showError, showSuccess } from '@/utils/toast';
 import { v4 as uuidv4 } from 'uuid';
 import { isSameDay, isPast, startOfDay as fnsStartOfDay } from 'date-fns';
 
-interface Task {
+export interface Task {
   id: string;
   description: string;
   status: 'to-do' | 'completed' | 'skipped' | 'archived';
@@ -22,7 +22,7 @@ interface Task {
   original_task_id: string | null;
 }
 
-interface TaskSection {
+export interface TaskSection {
   id: string;
   name: string;
   user_id: string;

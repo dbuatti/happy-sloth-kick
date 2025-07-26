@@ -5,24 +5,7 @@ import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useTasks } from '@/hooks/useTasks';
 import SortableTaskItem from '@/components/SortableTaskItem';
 import { Archive as ArchiveIcon } from 'lucide-react';
-
-// Define the task type (re-import or ensure it's available if not already)
-interface Task {
-  id: string;
-  description: string;
-  status: 'to-do' | 'completed' | 'skipped' | 'archived';
-  recurring_type: 'none' | 'daily' | 'weekly' | 'monthly';
-  created_at: string;
-  user_id: string;
-  category: string;
-  priority: string;
-  due_date: string | null;
-  notes: string | null;
-  remind_at: string | null;
-  section_id: string | null;
-  order: number | null;
-  original_task_id: string | null;
-}
+import { Task } from '@/hooks/useTasks'; // Import Task interface from useTasks
 
 const Archive = () => {
   const {
@@ -39,9 +22,6 @@ const Archive = () => {
   const archivedTasks = tasks.filter(task => task.status === 'archived');
 
   // Set the status filter to 'archived' when this page loads
-  // This ensures that the useTasks hook's filteredTasks memo will correctly
-  // provide only archived tasks if it's used elsewhere with this filter.
-  // However, for this specific page, we are directly filtering the 'tasks' state.
   useEffect(() => {
     setStatusFilter('archived');
     return () => {
@@ -104,7 +84,7 @@ const Archive = () => {
                       key={task.id}
                       task={task}
                       userId={userId}
-                      onStatusChange={handleTaskStatusChange} {/* Updated here */}
+                      onStatusChange={handleTaskStatusChange}
                       onDelete={deleteTask}
                       onUpdate={updateTask}
                       isSelected={false}
