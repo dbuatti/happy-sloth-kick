@@ -91,22 +91,18 @@ export const useTasks = () => {
     endOfDay.setHours(23, 59, 59, 999);
 
     try {
+      const orClause = 
+        `and(created_at.gte.${startOfDay.toISOString()},created_at.lte.${endOfDay.toISOString()}),` +
+        `and(due_date.gte.${startOfDay.toISOString()},due_date.lte.${endOfDay.toISOString()}),` +
+        `and(status.in.("to-do","skipped"),due_date.lt.${startOfDay.toISOString()}),` +
+        `and(status.in.("to-do","skipped"),due_date.is.null,created_at.lt.${startOfDay.toISOString()}),` +
+        `recurring_type.eq.daily`;
+
       const { data: fetchedTasks, error: fetchError } = await supabase
         .from('tasks')
         .select('*')
         .eq('user_id', userId)
-        .or(
-          // 1. Tasks created on the current day
-          `created_at.gte.${startOfDay.toISOString()}.and.created_at.lte.${endOfDay.toISOString()},` +
-          // 2. Tasks due on the current day
-          `due_date.gte.${startOfDay.toISOString()}.and.due_date.lte.${endOfDay.toISOString()},` +
-          // 3. Overdue tasks that are still 'to-do' or 'skipped' (carry-over)
-          `and(status.in.("to-do","skipped"),due_date.lt.${startOfDay.toISOString()}),` +
-          // 4. Undated tasks that are still 'to-do' or 'skipped' and created before today (carry-over)
-          `and(status.in.("to-do","skipped"),due_date.is.null,created_at.lt.${startOfDay.toISOString()}),` +
-          // 5. Daily recurring templates (to generate new instances for today if needed)
-          `recurring_type.eq.daily`
-        );
+        .or(orClause);
 
       if (fetchError) throw fetchError;
 
