@@ -1,4 +1,4 @@
-import React, { useState, useEffect, FC, HTMLAttributes } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,7 +6,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, X } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
-import { cn } from "@/lib/utils"; // Import cn
 
 interface Category {
   id: string;
@@ -31,7 +30,7 @@ interface CategorySelectorProps {
   userId: string | null;
 }
 
-const CategorySelector: FC<CategorySelectorProps> = ({ value, onChange, userId }) => {
+const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, userId }) => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
@@ -81,7 +80,7 @@ const CategorySelector: FC<CategorySelectorProps> = ({ value, onChange, userId }
 
       if (error) throw error;
       
-      setCategories([...categories, data as Category]);
+      setCategories([...categories, data]);
       setNewCategoryName('');
       setSelectedColor(colors[0].value);
       showSuccess('Category created successfully');
@@ -162,7 +161,7 @@ const CategorySelector: FC<CategorySelectorProps> = ({ value, onChange, userId }
                   {colors.map(color => (
                     <button
                       key={color.value}
-                      className={cn(`w-8 h-8 rounded-full ${color.value} ${selectedColor === color.value ? 'ring-2 ring-offset-2 ring-primary' : ''}`)}
+                      className={`w-8 h-8 rounded-full ${color.value} ${selectedColor === color.value ? 'ring-2 ring-offset-2 ring-primary' : ''}`}
                       onClick={() => setSelectedColor(color.value)}
                       aria-label={color.name}
                     />
@@ -177,7 +176,7 @@ const CategorySelector: FC<CategorySelectorProps> = ({ value, onChange, userId }
       
       {selectedCategory && (
         <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-          <div className={cn(`w-3 h-3 rounded-full ${selectedCategory.color}`)}></div>
+          <div className={`w-3 h-3 rounded-full ${selectedCategory.color}`}></div>
           <span>{selectedCategory.name}</span>
           <Button
             variant="ghost"

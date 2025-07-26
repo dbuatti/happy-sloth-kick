@@ -1,4 +1,4 @@
-import React, { useState, useEffect, KeyboardEvent, FC } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -140,7 +140,7 @@ const parseNaturalLanguage = (text: string) => {
   };
 };
 
-const AddTaskForm: FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdded }) => {
+const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdded }) => {
   const [newTaskDescription, setNewTaskDescription] = useState<string>('');
   const [newTaskRecurringType, setNewTaskRecurringType] = useState<'none' | 'daily' | 'weekly' | 'monthly'>('none');
   const [newTaskCategory, setNewTaskCategory] = useState<string>('general');
@@ -221,7 +221,7 @@ const AddTaskForm: FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdded }) =
     setIsAdding(false);
   };
 
-  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter' && newTaskDescription.trim()) {
       handleSubmit();
     }

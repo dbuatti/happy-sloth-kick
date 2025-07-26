@@ -1,4 +1,4 @@
-import React, { useState, useEffect, ChangeEvent, FC } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,7 @@ interface Category {
   color: string;
 }
 
-const TaskFilter: FC = () => {
+const TaskFilter: React.FC = () => { // No longer needs onFilterChange prop
   const {
     userId,
     searchFilter,
@@ -54,7 +54,7 @@ const TaskFilter: FC = () => {
     fetchCategories();
   }, [userId]); // Depend on userId
 
-  const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchFilter(e.target.value);
   };
 

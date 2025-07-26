@@ -44,8 +44,6 @@ import DailyStreak from './DailyStreak'; // New import for DailyStreak
 import SmartSuggestions from './SmartSuggestions'; // Import SmartSuggestions
 import TaskDetailDialog from './TaskDetailDialog'; // Import the new TaskDetailDialog
 import { Task, TaskSection } from '@/hooks/useTasks'; // Import Task and TaskSection interfaces
-import NextIncompleteTask from './NextIncompleteTask'; // Import the new component
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 type TaskUpdate = Partial<Omit<Task, 'id' | 'user_id' | 'created_at'>>;
 
@@ -91,11 +89,9 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => { // Destruc
     reorderTasksInSameSection,
     moveTaskToNewSection,
     reorderSections,
-    setStatusFilter, // Added to set status filter for overdue tasks
   } = useTasks();
 
   const isMobile = useIsMobile();
-  const navigate = useNavigate(); // Initialize useNavigate
 
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
   const [newSectionName, setNewSectionName] = useState('');
@@ -257,14 +253,13 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => { // Destruc
     } else if (action.startsWith('priority-')) {
       updates = { priority: action.split('-')[1] };
     } else if (action === 'delete') {
-      // Use AlertDialog for bulk delete confirmation
-      // This part is handled by the AlertDialog in BulkActions.tsx
-      // The onAction('delete') will be called after confirmation.
-      for (const taskId of selectedTaskIds) {
-        await deleteTask(taskId);
+      if (window.confirm(`Are you sure you want to delete ${selectedTaskIds.length} selected tasks?`)) {
+        for (const taskId of selectedTaskIds) {
+          await deleteTask(taskId);
+        }
+        clearSelectedTasks();
+        return;
       }
-      clearSelectedTasks();
-      return;
     }
     await bulkUpdateTasks(updates);
   };
@@ -380,11 +375,6 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => { // Destruc
     setIsTaskDetailOpen(true);
   };
 
-  const handleReviewOverdueTasks = () => {
-    setStatusFilter('to-do'); // Filter to show only 'to-do' tasks, which will include overdue ones
-    navigate('/'); // Navigate to the main page if not already there
-  };
-
   if (loading) {
     return (
       <Card className="w-full max-w-4xl mx-auto shadow-lg">
@@ -412,22 +402,13 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => { // Destruc
           onNextDay={handleNextDay}
         />
 
-        {/* Next Incomplete Task Component */}
-        <NextIncompleteTask 
-          tasksGroupedBySection={tasksGroupedBySection} 
-          expandedSections={expandedSections} 
-        />
-
         {/* Daily Streak Component */}
         <div className="mb-6">
           <DailyStreak tasks={tasks} currentDate={currentDate} />
         </div>
 
         {/* Smart Suggestions Component */}
-        <SmartSuggestions 
-          setIsAddTaskOpen={setIsAddTaskOpen} 
-          onReviewOverdueTasks={handleReviewOverdueTasks} 
-        />
+        <SmartSuggestions />
 
         {/* Floating Action Button for Add Task - RE-INTRODUCED */}
         <Button

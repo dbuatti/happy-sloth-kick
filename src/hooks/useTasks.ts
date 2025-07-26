@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess, showReminder } from '@/utils/toast'; // Import showReminder
@@ -148,7 +148,7 @@ export const useTasks = () => {
           console.error('Error inserting recurring instance:', insertError);
           showError('Failed to generate a recurring task instance.');
         } else if (insertedData) {
-          allUserTasks.push(...insertedData as Task[]); // Cast insertedData to Task[]
+          allUserTasks.push(...insertedData);
         }
       }
       
@@ -355,7 +355,7 @@ export const useTasks = () => {
       }
       if (data && data.length > 0) {
         setTasks(prevTasks =>
-          prevTasks.map(task => (task.id === taskId ? { ...task, ...data[0] as Task } : task))
+          prevTasks.map(task => (task.id === taskId ? { ...task, ...data[0] } : task))
         );
         showSuccess('Task updated successfully!');
       }
@@ -457,7 +457,7 @@ export const useTasks = () => {
       }
 
       if (data && data.length > 0) {
-        setSections(prevSections => [...prevSections, data[0] as TaskSection]);
+        setSections(prevSections => [...prevSections, data[0]]);
         showSuccess('Section created successfully!');
       }
     } catch (err) {
@@ -582,7 +582,7 @@ export const useTasks = () => {
         user_id: userId, // Ensure user_id is included for RLS
       }));
 
-      const { error } = await supabase.from('tasks').upsert(updates as Task[], { onConflict: 'id' }); // Cast to Task[]
+      const { error } = await supabase.from('tasks').upsert(updates, { onConflict: 'id' });
       if (error) {
         console.error('Error reordering tasks:', error);
         showError(error.message);
@@ -629,7 +629,6 @@ export const useTasks = () => {
       const newDestinationTasks = tempNewDestinationTasks.map((task, index) => ({
         ...task, // Preserve all original properties
         order: index,
-        section_id: destinationSectionId, // Ensure section_id is updated for the moved task
       }));
 
       // Merge back into the main tasks array
@@ -687,7 +686,7 @@ export const useTasks = () => {
         ...newDbDestinationTasks,
       ];
 
-      const { error } = await supabase.from('tasks').upsert(updates as Task[], { onConflict: 'id' }); // Cast to Task[]
+      const { error } = await supabase.from('tasks').upsert(updates, { onConflict: 'id' });
       if (error) {
         console.error('Error moving task:', error);
         showError(error.message);
@@ -730,7 +729,7 @@ export const useTasks = () => {
         user_id: userId, // IMPORTANT: Include user_id for RLS policy check
       }));
 
-      const { error } = await supabase.from('task_sections').upsert(updates as TaskSection[], { onConflict: 'id' }); // Cast to TaskSection[]
+      const { error } = await supabase.from('task_sections').upsert(updates, { onConflict: 'id' });
       if (error) {
         console.error('Error reordering sections:', error);
         showError(error.message);
