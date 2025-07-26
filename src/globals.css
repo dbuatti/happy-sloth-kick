@@ -35,7 +35,7 @@
     --radius: 0.5rem;
   }
 
-  [data-theme="dark"] {
+  .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
 
@@ -65,7 +65,8 @@
     --ring: 212.7 26.8% 83.9%;
   }
 
-  [data-theme="adhd-friendly"] {
+  .theme-adhd-friendly,
+  .adhd-friendly {
     --background: 25 10% 96%;
     --foreground: 0 0% 20%;
     --card: 25 10% 96%;
@@ -85,7 +86,10 @@
     --ring: 0 0% 20%;
   }
 
-  [data-theme="adhd-friendly"][data-theme="dark"] {
+  .theme-adhd-friendly.dark,
+  .adhd-friendly.dark,
+  .dark .theme-adhd-friendly,
+  .dark .adhd-friendly {
     --background: 25 20% 15%;
     --foreground: 25 10% 90%;
     --card: 25 20% 20%;
@@ -105,7 +109,8 @@
     --ring: 0 0% 80%;
   }
 
-  [data-theme="calm-mist"] {
+  .theme-calm-mist,
+  .calm-mist {
     --background: 140 10% 96%;
     --foreground: 0 0% 20%;
     --card: 140 10% 96%;
@@ -125,7 +130,10 @@
     --ring: 0 0% 20%;
   }
 
-  [data-theme="calm-mist"][data-theme="dark"] {
+  .theme-calm-mist.dark,
+  .calm-mist.dark,
+  .dark .theme-calm-mist,
+  .dark .calm-mist {
     --background: 140 20% 15%;
     --foreground: 140 10% 90%;
     --card: 140 20% 20%;
@@ -145,7 +153,8 @@
     --ring: 0 0% 80%;
   }
 
-  [data-theme="warm-dawn"] {
+  .theme-warm-dawn,
+  .warm-dawn {
     --background: 30 10% 97%;
     --foreground: 0 0% 30%;
     --card: 30 10% 97%;
@@ -165,7 +174,10 @@
     --ring: 0 0% 30%;
   }
 
-  [data-theme="warm-dawn"][data-theme="dark"] {
+  .theme-warm-dawn.dark,
+  .warm-dawn.dark,
+  .dark .theme-warm-dawn,
+  .dark .warm-dawn {
     --background: 30 20% 18%;
     --foreground: 30 10% 92%;
     --card: 30 20% 23%;
@@ -185,7 +197,8 @@
     --ring: 0 0% 85%;
   }
 
-  [data-theme="gentle-night"] {
+  .theme-gentle-night,
+  .gentle-night {
     --background: 220 10% 95%;
     --foreground: 220 15% 25%;
     --card: 220 10% 95%;
@@ -205,7 +218,10 @@
     --ring: 220 15% 35%;
   }
 
-  [data-theme="gentle-night"][data-theme="dark"] {
+  .theme-gentle-night.dark,
+  .gentle-night.dark,
+  .dark .theme-gentle-night,
+  .dark .gentle-night {
     --background: 220 20% 18%;
     --foreground: 220 15% 92%;
     --card: 220 20% 23%;
@@ -225,7 +241,8 @@
     --ring: 220 20% 85%;
   }
 
-  [data-theme="cosmic-dusk"] {
+  .theme-cosmic-dusk,
+  .cosmic-dusk {
     --background: 225 15% 98%;
     --foreground: 225 20% 20%;
     --card: 225 15% 98%;
@@ -245,7 +262,10 @@
     --ring: 225 20% 25%;
   }
 
-  [data-theme="cosmic-dusk"][data-theme="dark"] {
+  .theme-cosmic-dusk.dark,
+  .cosmic-dusk.dark,
+  .dark .theme-cosmic-dusk,
+  .dark .cosmic-dusk {
     --background: 225 30% 8%;
     --foreground: 225 15% 92%;
     --card: 225 35% 12%;
@@ -265,7 +285,8 @@
     --ring: 225 20% 85%;
   }
 
-  [data-theme="focus-flow"] {
+  .theme-focus-flow,
+  .focus-flow {
     --background: 200 15% 98%;
     --foreground: 200 20% 15%;
     --card: 200 15% 98%;
@@ -285,7 +306,10 @@
     --ring: 200 20% 20%;
   }
 
-  [data-theme="focus-flow"][data-theme="dark"] {
+  .theme-focus-flow.dark,
+  .focus-flow.dark,
+  .dark .theme-focus-flow,
+  .dark .focus-flow {
     --background: 200 25% 12%;
     --foreground: 200 15% 92%;
     --card: 200 30% 16%;
