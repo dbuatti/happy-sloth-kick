@@ -211,6 +211,12 @@ const TaskList: React.FC = () => {
     }
   };
 
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter' && newTaskDescription.trim()) {
+      handleAddTask();
+    }
+  };
+
   const handlePreviousDay = () => {
     setCurrentDate(prevDate => subDays(prevDate, 1));
   };
@@ -248,6 +254,7 @@ const TaskList: React.FC = () => {
               placeholder="Task description"
               value={newTaskDescription}
               onChange={(e) => setNewTaskDescription(e.target.value)}
+              onKeyDown={handleKeyDown} // Add onKeyDown handler here
               className="flex-grow"
             />
             <div className="flex items-center space-x-2">
