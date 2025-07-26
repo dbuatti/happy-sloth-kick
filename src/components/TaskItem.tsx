@@ -1,8 +1,8 @@
 import React from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from "@/components/ui/dropdown-menu"; // Added DropdownMenuSub imports
+import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing, FolderOpen } from 'lucide-react'; // Added FolderOpen
 import { format, parseISO, isToday, isAfter, isPast } from 'date-fns';
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks'; // Import Task interface
@@ -154,6 +154,34 @@ const TaskItem: React.FC<TaskItemProps> = ({
             </DropdownMenuItem>
             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'archived'); }}>
               <Archive className="mr-2 h-4 w-4" /> Archive
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <FolderOpen className="mr-2 h-4 w-4" /> Move to Section
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                {sections.length === 0 ? (
+                  <DropdownMenuItem disabled>No sections available</DropdownMenuItem>
+                ) : (
+                  sections.map(section => (
+                    <DropdownMenuItem 
+                      key={section.id} 
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        onUpdate(task.id, { section_id: section.id }); 
+                      }}
+                      disabled={task.section_id === section.id}
+                    >
+                      {section.name}
+                    </DropdownMenuItem>
+                  ))
+                )}
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete(task.id); }} className="text-destructive focus:text-destructive">
+              <Trash2 className="mr-2 h-4 w-4" /> Delete
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
