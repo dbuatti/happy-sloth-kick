@@ -15,18 +15,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { DndContext, closestCorners, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
-import { SortableContext, sortableKeyboardCoordinates, arrayMove, useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-
-type TaskSection = 'morning-baseline' | 'priorities' | 'dailies';
 
 interface Task {
   id: string;
   description: string;
   status: 'to-do' | 'completed' | 'skipped' | 'archived';
   is_daily_recurring: boolean;
-  section: TaskSection; // New property for task section
 }
 
 // In-memory store for mock task states per day
@@ -34,13 +28,12 @@ interface Task {
 const mockDailyTaskStates = new Map<string, Task[]>();
 
 // Initial set of tasks that define the base for each day
+// IMPORTANT: This array will be mutated when new daily recurring tasks are added.
 const initialBaseTasks: Task[] = [
-  { id: '1', description: 'Wake up & Hydrate', status: 'to-do', is_daily_recurring: true, section: 'morning-baseline' },
-  { id: '2', description: 'Meditate for 10 mins', status: 'to-do', is_daily_recurring: true, section: 'morning-baseline' },
-  { id: '3', description: 'Review project proposal', status: 'to-do', is_daily_recurring: false, section: 'priorities' },
-  { id: '4', description: 'Prepare presentation slides', status: 'to-do', is_daily_recurring: false, section: 'priorities' },
-  { id: '5', description: 'Check emails', status: 'to-do', is_daily_recurring: true, section: 'dailies' },
-  { id: '6', description: 'Plan tomorrow\'s tasks', status: 'to-do', is_daily_recurring: true, section: 'dailies' },
+  { id: '1', description: 'Buy groceries', status: 'to-do', is_daily_recurring: true },
+  { id: '2', description: 'Go for a run', status: 'to-do', is_daily_recurring: true },
+  { id: '3', description: 'Call mom', status: 'to-do', is_daily_recurring: false },
+  { id: '4', description: 'Read a book', status: 'to-do', is_daily_recurring: true },
 ];
 
 const getFormattedDateKey = (date: Date) => format(date, 'yyyy-MM-dd');
@@ -101,9 +94,9 @@ const mockUpdateTaskStatus = async (date: Date, taskId: string, newStatus: Task[
 };
 
 // Mock function to add a task for a specific date
-const mockAddTask = async (description: string, isDailyRecurring: boolean, date: Date, section: TaskSection): Promise<Task> => {
+const mockAddTask = async (description: string, isDailyRecurring: boolean, date: Date): Promise<Task> => {
   const dateKey = getFormattedDateKey(date);
-  const newTask: Task = { id: String(Date.now()), description, status: 'to-do', is_daily_recurring: isDailyRecurring, section };
+  const newTask: Task = { id: String(Date.now()), description, status: 'to-do', is_daily_recurring: isDailyRecurring };
 
   // Add to the current day's tasks
   const tasksForDay = mockDailyTaskStates.get(dateKey) || [];
@@ -156,158 +149,13 @@ const mockDeleteTask = async (date: Date, taskId: string): Promise<void> => {
   });
 };
 
-// Mock function to update task section and order
-const mockUpdateTaskSectionAndOrder = async (date: Date, updatedTasks: Task[]): Promise<Task[]> => {
-  const dateKey = getFormattedDateKey(date);
-  mockDailyTaskStates.set(dateKey, updatedTasks);
-  return new Promise(resolve => {
-    setTimeout(() => {
-      showSuccess("Tasks reordered/moved successfully!");
-      resolve(updatedTasks);
-    }, 100);
-  });
-};
-
-interface SortableTaskItemProps {
-  task: Task;
-  onStatusChange: (taskId: string, newStatus: Task['status']) => void;
-  onDeleteTask: (taskId: string) => void;
-}
-
-const SortableTaskItem: React.FC<SortableTaskItemProps> = ({ task, onStatusChange, onDeleteTask }) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: task.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    zIndex: isDragging ? 100 : 'auto',
-    opacity: isDragging ? 0.5 : 1,
-  };
-
-  return (
-    <li
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      className="flex items-center justify-between p-3 border rounded-md bg-gray-50 dark:bg-gray-800 cursor-grab"
-    >
-      <div className="flex items-center space-x-3">
-        {/* Wrap checkbox in a div to stop event propagation */}
-        <div onClick={(e) => e.stopPropagation()}>
-          <Checkbox
-            checked={task.status === 'completed'}
-            onCheckedChange={() => {
-              console.log(`Checkbox clicked for task ${task.id}. Current status: ${task.status}`);
-              onStatusChange(task.id, task.status === 'completed' ? 'to-do' : 'completed');
-            }}
-            id={`complete-task-${task.id}`}
-          />
-        </div>
-        <Label
-          htmlFor={`complete-task-${task.id}`}
-          className={`text-lg ${task.status === 'completed' ? 'line-through text-gray-500' : ''}`}
-        >
-          {task.description}
-        </Label>
-        {task.is_daily_recurring && (
-          <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded-full dark:bg-blue-900 dark:text-blue-200">
-            Daily
-          </span>
-        )}
-      </div>
-      <div className="flex items-center space-x-2">
-        <span className="text-sm text-gray-500 dark:text-gray-400 capitalize">
-          {task.status}
-        </span>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onStatusChange(task.id, 'to-do')}>
-              Mark as To-Do
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onStatusChange(task.id, 'completed')}>
-              Mark as Completed
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onStatusChange(task.id, 'skipped')}>
-              Mark as Skipped
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onStatusChange(task.id, 'archived')}>
-              Mark as Archived
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => onDeleteTask(task.id)} className="text-red-600">
-              <Trash2 className="mr-2 h-4 w-4" /> Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    </li>
-  );
-};
-
-interface TaskSectionProps {
-  id: TaskSection;
-  title: string;
-  tasks: Task[];
-  onStatusChange: (taskId: string, newStatus: Task['status']) => void;
-  onDeleteTask: (taskId: string) => void;
-}
-
-const TaskSection: React.FC<TaskSectionProps> = ({ id, title, tasks, onStatusChange, onDeleteTask }) => {
-  const { setNodeRef } = useSortable({ id });
-  const taskIds = tasks.map(task => task.id);
-
-  return (
-    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md">
-      <h3 className="text-xl font-semibold mb-4 text-center">{title}</h3>
-      <SortableContext id={id} items={taskIds}>
-        <ul ref={setNodeRef} className="space-y-3 min-h-[100px] p-2 border border-dashed border-gray-300 dark:border-gray-700 rounded-md">
-          {tasks.length === 0 ? (
-            <p className="text-center text-gray-500 text-sm">Drag tasks here or add new ones!</p>
-          ) : (
-            tasks.map(task => (
-              <SortableTaskItem
-                key={task.id}
-                task={task}
-                onStatusChange={onStatusChange}
-                onDeleteTask={onDeleteTask}
-              />
-            ))
-          )}
-        </ul>
-      </SortableContext>
-    </div>
-  );
-};
-
 
 const TaskList: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTaskDescription, setNewTaskDescription] = useState<string>('');
-  const [isNewTaskDailyRecurring, setIsNewTaskDailyRecurring] = useState<boolean>(true); // Default to true
+  const [isNewTaskDailyRecurring, setIsNewTaskDailyRecurring] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
-  const [newTaskSection, setNewTaskSection] = useState<TaskSection>('priorities'); // Default section for new tasks
-
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
 
   const fetchTasks = useCallback(async () => {
     setLoading(true);
@@ -320,14 +168,13 @@ const TaskList: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [currentDate]);
+  }, [currentDate]); // Re-fetch tasks when currentDate changes
 
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks]);
 
   const handleStatusChange = async (taskId: string, newStatus: Task['status']) => {
-    console.log(`Attempting to change status for task ${taskId} to ${newStatus}`);
     try {
       await mockUpdateTaskStatus(currentDate, taskId, newStatus);
       setTasks(prevTasks =>
@@ -355,9 +202,10 @@ const TaskList: React.FC = () => {
       return;
     }
     try {
-      const addedTask = await mockAddTask(newTaskDescription, isNewTaskDailyRecurring, currentDate, newTaskSection);
+      const addedTask = await mockAddTask(newTaskDescription, isNewTaskDailyRecurring, currentDate);
       setTasks(prevTasks => [...prevTasks, addedTask]);
       setNewTaskDescription('');
+      setIsNewTaskDailyRecurring(false);
     } catch (error) {
       console.error("Error adding task:", error);
     }
@@ -377,69 +225,12 @@ const TaskList: React.FC = () => {
     setCurrentDate(prevDate => addDays(prevDate, 1));
   };
 
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (!over) return;
-
-    const activeId = String(active.id);
-    const overId = String(over.id);
-    const activeContainer = active.data.current?.sortable.containerId as TaskSection;
-    const overContainer = over.data.current?.sortable.containerId as TaskSection;
-
-    if (activeId === overId) return;
-
-    let updatedTasks = [...tasks];
-
-    // Find the task being dragged
-    const draggedTaskIndex = updatedTasks.findIndex(task => task.id === activeId);
-    if (draggedTaskIndex === -1) return;
-
-    const draggedTask = updatedTasks[draggedTaskIndex];
-
-    if (activeContainer === overContainer) {
-      // Reordering within the same container
-      const tasksInContainer = updatedTasks.filter(task => task.section === activeContainer);
-      const oldIndex = tasksInContainer.findIndex(task => task.id === activeId);
-      const newIndex = tasksInContainer.findIndex(task => task.id === overId);
-
-      if (oldIndex !== -1 && newIndex !== -1) {
-        const newOrder = arrayMove(tasksInContainer, oldIndex, newIndex);
-        // Update the main tasks array with the new order for this section
-        updatedTasks = updatedTasks.filter(task => task.section !== activeContainer).concat(newOrder);
-      }
-    } else {
-      // Moving between containers
-      const newSection = overContainer;
-      const updatedDraggedTask = { ...draggedTask, section: newSection };
-
-      // Remove from old section and add to new section
-      updatedTasks = updatedTasks.filter(task => task.id !== activeId);
-
-      // Find the index to insert into the new container
-      const overTaskIndex = updatedTasks.findIndex(task => task.id === overId);
-      if (overTaskIndex !== -1) {
-        updatedTasks.splice(overTaskIndex, 0, updatedDraggedTask);
-      } else {
-        // If overId is a container itself (empty container), add to the end of that container
-        updatedTasks.push(updatedDraggedTask);
-      }
-    }
-
-    setTasks(updatedTasks);
-    await mockUpdateTaskSectionAndOrder(currentDate, updatedTasks);
-  };
-
-  const morningBaselineTasks = tasks.filter(task => task.section === 'morning-baseline');
-  const prioritiesTasks = tasks.filter(task => task.section === 'priorities');
-  const dailiesTasks = tasks.filter(task => task.section === 'dailies');
-
   if (loading) {
     return <div className="text-center p-8">Loading tasks...</div>;
   }
 
   return (
-    <Card className="w-full max-w-4xl mx-auto shadow-lg">
+    <Card className="w-full max-w-2xl mx-auto shadow-lg">
       <CardHeader>
         <CardTitle className="text-3xl font-bold text-center">Daily Tasks</CardTitle>
       </CardHeader>
@@ -463,7 +254,7 @@ const TaskList: React.FC = () => {
               placeholder="Task description"
               value={newTaskDescription}
               onChange={(e) => setNewTaskDescription(e.target.value)}
-              onKeyDown={handleKeyDown}
+              onKeyDown={handleKeyDown} // Add onKeyDown handler here
               className="flex-grow"
             />
             <div className="flex items-center space-x-2">
@@ -474,19 +265,6 @@ const TaskList: React.FC = () => {
               />
               <Label htmlFor="daily-recurring">Daily Recurring</Label>
             </div>
-            <div className="flex items-center space-x-2">
-              <Label htmlFor="task-section">Section:</Label>
-              <select
-                id="task-section"
-                value={newTaskSection}
-                onChange={(e) => setNewTaskSection(e.target.value as TaskSection)}
-                className="p-2 border rounded-md bg-white dark:bg-gray-700 dark:text-white"
-              >
-                <option value="morning-baseline">Morning Baseline</option>
-                <option value="priorities">Priorities</option>
-                <option value="dailies">Dailies</option>
-              </select>
-            </div>
             <Button onClick={handleAddTask} className="w-full sm:w-auto">Add Task</Button>
           </div>
         </div>
@@ -495,35 +273,61 @@ const TaskList: React.FC = () => {
         {tasks.length === 0 ? (
           <p className="text-center text-gray-500">No tasks found. Add one above!</p>
         ) : (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCorners}
-            onDragEnd={handleDragEnd}
-          >
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <TaskSection
-                id="morning-baseline"
-                title="Morning Baseline"
-                tasks={morningBaselineTasks}
-                onStatusChange={handleStatusChange}
-                onDeleteTask={handleDeleteTask}
-              />
-              <TaskSection
-                id="priorities"
-                title="Priorities"
-                tasks={prioritiesTasks}
-                onStatusChange={handleStatusChange}
-                onDeleteTask={handleDeleteTask}
-              />
-              <TaskSection
-                id="dailies"
-                title="Dailies"
-                tasks={dailiesTasks}
-                onStatusChange={handleStatusChange}
-                onDeleteTask={handleDeleteTask}
-              />
-            </div>
-          </DndContext>
+          <ul className="space-y-3">
+            {tasks.map(task => (
+              <li key={task.id} className="flex items-center justify-between p-3 border rounded-md bg-gray-50 dark:bg-gray-800">
+                <div className="flex items-center space-x-3">
+                  <Checkbox
+                    checked={task.status === 'completed'}
+                    onCheckedChange={() => handleStatusChange(task.id, task.status === 'completed' ? 'to-do' : 'completed')}
+                    id={`task-${task.id}`}
+                  />
+                  <Label
+                    htmlFor={`task-${task.id}`}
+                    className={`text-lg ${task.status === 'completed' ? 'line-through text-gray-500' : ''}`}
+                  >
+                    {task.description}
+                  </Label>
+                  {task.is_daily_recurring && (
+                    <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded-full dark:bg-blue-900 dark:text-blue-200">
+                      Daily
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-500 dark:text-gray-400 capitalize">
+                    {task.status}
+                  </span>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-8 w-8 p-0">
+                        <span className="sr-only">Open menu</span>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleStatusChange(task.id, 'to-do')}>
+                        Mark as To-Do
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleStatusChange(task.id, 'completed')}>
+                        Mark as Completed
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleStatusChange(task.id, 'skipped')}>
+                        Mark as Skipped
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleStatusChange(task.id, 'archived')}>
+                        Mark as Archived
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => handleDeleteTask(task.id)} className="text-red-600">
+                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </li>
+            ))}
+          </ul>
         )}
       </CardContent>
     </Card>
