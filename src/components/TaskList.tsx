@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { showSuccess, showError } from "@/utils/toast";
 import { format, addDays, subDays, isSameDay } from 'date-fns';
-import { ChevronLeft, ChevronRight, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MoreHorizontal, Trash2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,140 +15,91 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { supabase } from "@/integrations/supabase/client";
 
+// Define the task type to match the database schema
 interface Task {
   id: string;
   description: string;
   status: 'to-do' | 'completed' | 'skipped' | 'archived';
   is_daily_recurring: boolean;
+  created_at: string;
+  user_id: string;
 }
 
-// In-memory store for mock task states per day
-// Key: YYYY-MM-DD, Value: Array of tasks for that day
-const mockDailyTaskStates = new Map<string, Task[]>();
+// Function to fetch tasks for a specific date from Supabase
+const fetchTasks = async (date: Date): Promise<Task[]> => {
+  const startOfDay = new Date(date);
+  startOfDay.setHours(0, 0, 0, 0);
+  const endOfDay = new Date(date);
+  endOfDay.setHours(23, 59, 59, 999);
 
-// Initial set of tasks that define the base for each day
-// IMPORTANT: This array will be mutated when new daily recurring tasks are added.
-const initialBaseTasks: Task[] = [
-  { id: '1', description: 'Buy groceries', status: 'to-do', is_daily_recurring: true },
-  { id: '2', description: 'Go for a run', status: 'to-do', is_daily_recurring: true },
-  { id: '3', description: 'Call mom', status: 'to-do', is_daily_recurring: false },
-  { id: '4', description: 'Read a book', status: 'to-do', is_daily_recurring: true },
-];
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('*')
+    .gte('created_at', startOfDay.toISOString())
+    .lt('created_at', endOfDay.toISOString())
+    .order('created_at', { ascending: true });
 
-const getFormattedDateKey = (date: Date) => format(date, 'yyyy-MM-dd');
-
-// Mock function to fetch tasks for a specific date
-const mockFetchTasks = async (date: Date): Promise<Task[]> => {
-  const dateKey = getFormattedDateKey(date);
-
-  if (!mockDailyTaskStates.has(dateKey)) {
-    // If no state for this date, initialize it
-    const newDayTasks = initialBaseTasks.map(task => {
-      if (task.is_daily_recurring) {
-        // Daily recurring tasks reset to 'to-do' for a new day
-        return { ...task, status: 'to-do' } as Task;
-      }
-      // Non-daily recurring tasks retain their initial status (or could be 'archived' if completed on a previous day in a real system)
-      return task;
-    });
-    mockDailyTaskStates.set(dateKey, newDayTasks);
+  if (error) {
+    console.error('Error fetching tasks:', error);
+    throw error;
   }
-  return new Promise(resolve => {
-    setTimeout(() => {
-      resolve(mockDailyTaskStates.get(dateKey)!);
-    }, 500);
-  });
+
+  return data || [];
 };
 
-// Mock function to update task status for a specific date
-const mockUpdateTaskStatus = async (date: Date, taskId: string, newStatus: Task['status']): Promise<Task> => {
-  const dateKey = getFormattedDateKey(date);
-  const tasksForDay = mockDailyTaskStates.get(dateKey);
+// Function to update a task's status in Supabase
+const updateTaskStatus = async (taskId: string, newStatus: Task['status']): Promise<Task> => {
+  const { data, error } = await supabase
+    .from('tasks')
+    .update({ status: newStatus })
+    .eq('id', taskId)
+    .select()
+    .single();
 
-  if (!tasksForDay) {
-    throw new Error("Tasks for this day not found in mock store.");
+  if (error) {
+    console.error('Error updating task:', error);
+    throw error;
   }
 
-  const updatedTasks = tasksForDay.map(task =>
-    task.id === taskId ? { ...task, status: newStatus } : task
-  );
-  mockDailyTaskStates.set(dateKey, updatedTasks);
-
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      if (Math.random() > 0.1) { // Simulate occasional failure
-        showSuccess(`Task status updated to ${newStatus}`);
-        const updatedTask = updatedTasks.find(t => t.id === taskId);
-        if (updatedTask) {
-          resolve(updatedTask);
-        } else {
-          reject(new Error("Task not found after update."));
-        }
-      } else {
-        showError("Failed to update task status.");
-        reject(new Error("Failed to update task status"));
-      }
-    }, 300);
-  });
+  showSuccess(`Task status updated to ${newStatus}`);
+  return data;
 };
 
-// Mock function to add a task for a specific date
-const mockAddTask = async (description: string, isDailyRecurring: boolean, date: Date): Promise<Task> => {
-  const dateKey = getFormattedDateKey(date);
-  const newTask: Task = { id: String(Date.now()), description, status: 'to-do', is_daily_recurring: isDailyRecurring };
+// Function to add a new task to Supabase
+const addTask = async (description: string, isDailyRecurring: boolean): Promise<Task> => {
+  const { data, error } = await supabase
+    .from('tasks')
+    .insert([
+      { description, status: 'to-do', is_daily_recurring: isDailyRecurring }
+    ])
+    .select()
+    .single();
 
-  // Add to the current day's tasks
-  const tasksForDay = mockDailyTaskStates.get(dateKey) || [];
-  mockDailyTaskStates.set(dateKey, [...tasksForDay, newTask]);
-
-  // If it's a daily recurring task, add it to the base set for future days
-  if (isDailyRecurring) {
-    initialBaseTasks.push(newTask);
+  if (error) {
+    console.error('Error adding task:', error);
+    throw error;
   }
 
-  return new Promise(resolve => {
-    setTimeout(() => {
-      showSuccess("Task added successfully!");
-      resolve(newTask);
-    }, 300);
-  });
+  showSuccess("Task added successfully!");
+  return data;
 };
 
-// Mock function to delete a task for a specific date
-const mockDeleteTask = async (date: Date, taskId: string): Promise<void> => {
-  const dateKey = getFormattedDateKey(date);
-  const tasksForDay = mockDailyTaskStates.get(dateKey);
+// Function to delete a task from Supabase
+const deleteTask = async (taskId: string): Promise<void> => {
+  const { error } = await supabase
+    .from('tasks')
+    .delete()
+    .eq('id', taskId);
 
-  if (!tasksForDay) {
-    throw new Error("Tasks for this day not found in mock store.");
+  if (error) {
+    console.error('Error deleting task:', error);
+    throw error;
   }
 
-  const updatedTasks = tasksForDay.filter(task => task.id !== taskId);
-  mockDailyTaskStates.set(dateKey, updatedTasks);
-
-  // Also remove from initialBaseTasks if it was a daily recurring task
-  const taskToDelete = tasksForDay.find(task => task.id === taskId);
-  if (taskToDelete?.is_daily_recurring) {
-    const index = initialBaseTasks.findIndex(task => task.id === taskId);
-    if (index > -1) {
-      initialBaseTasks.splice(index, 1);
-    }
-  }
-
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      if (Math.random() > 0.1) { // Simulate occasional failure
-        showSuccess("Task deleted successfully!");
-        resolve();
-      } else {
-        showError("Failed to delete task.");
-        reject(new Error("Failed to delete task"));
-      }
-    }, 300);
-  });
+  showSuccess("Task deleted successfully!");
 };
-
 
 const TaskList: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -157,10 +108,10 @@ const TaskList: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
 
-  const fetchTasks = useCallback(async () => {
+  const loadTasks = useCallback(async () => {
     setLoading(true);
     try {
-      const fetchedTasks = await mockFetchTasks(currentDate);
+      const fetchedTasks = await fetchTasks(currentDate);
       setTasks(fetchedTasks);
     } catch (error) {
       showError("Failed to load tasks.");
@@ -168,18 +119,18 @@ const TaskList: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [currentDate]); // Re-fetch tasks when currentDate changes
+  }, [currentDate]);
 
   useEffect(() => {
-    fetchTasks();
-  }, [fetchTasks]);
+    loadTasks();
+  }, [loadTasks]);
 
   const handleStatusChange = async (taskId: string, newStatus: Task['status']) => {
     try {
-      await mockUpdateTaskStatus(currentDate, taskId, newStatus);
+      const updatedTask = await updateTaskStatus(taskId, newStatus);
       setTasks(prevTasks =>
         prevTasks.map(task =>
-          task.id === taskId ? { ...task, status: newStatus } : task
+          task.id === taskId ? updatedTask : task
         )
       );
     } catch (error) {
@@ -189,7 +140,7 @@ const TaskList: React.FC = () => {
 
   const handleDeleteTask = async (taskId: string) => {
     try {
-      await mockDeleteTask(currentDate, taskId);
+      await deleteTask(taskId);
       setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
     } catch (error) {
       console.error("Error deleting task:", error);
@@ -202,7 +153,7 @@ const TaskList: React.FC = () => {
       return;
     }
     try {
-      const addedTask = await mockAddTask(newTaskDescription, isNewTaskDailyRecurring, currentDate);
+      const addedTask = await addTask(newTaskDescription, isNewTaskDailyRecurring);
       setTasks(prevTasks => [...prevTasks, addedTask]);
       setNewTaskDescription('');
       setIsNewTaskDailyRecurring(false);
@@ -254,7 +205,7 @@ const TaskList: React.FC = () => {
               placeholder="Task description"
               value={newTaskDescription}
               onChange={(e) => setNewTaskDescription(e.target.value)}
-              onKeyDown={handleKeyDown} // Add onKeyDown handler here
+              onKeyDown={handleKeyDown}
               className="flex-grow"
             />
             <div className="flex items-center space-x-2">
