@@ -42,7 +42,7 @@ interface Task {
 }
 
 // Function to fetch tasks for a specific date from Supabase
-const fetchTasks = async (date: Date): Promise<Task[]> => {
+const fetchTasks = async (date: Date, userId: string): Promise<Task[]> => {
   const startOfDay = new Date(date);
   startOfDay.setHours(0, 0, 0, 0);
   const endOfDay = new Date(date);
@@ -55,6 +55,7 @@ const fetchTasks = async (date: Date): Promise<Task[]> => {
   const { data, error } = await supabase
     .from('tasks')
     .select('*')
+    .eq('user_id', userId) // Filter by user_id
     .or(`due_date.eq.${startOfDay.toISOString()},due_date.is.null`) // Tasks due today or no due date
     .or(`is_daily_recurring.eq.true`) // Daily recurring tasks
     .not('status', 'in', '("completed", "archived")') // Exclude completed/archived tasks
@@ -108,7 +109,7 @@ const updateTaskStatus = async (taskId: string, updates: Partial<Task>): Promise
 };
 
 // Function to add a new task to Supabase
-const addTask = async (taskData: Omit<Task, 'id' | 'created_at' | 'user_id'>): Promise<Task> => {
+const addTask = async (taskData: Omit<Task, 'id' | 'created_at'>): Promise<Task> => {
   const { data, error } = await supabase
     .from('tasks')
     .insert([taskData])
@@ -161,11 +162,21 @@ const TaskList: React.FC = () => {
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterPriority, setFilterPriority] = useState('all');
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
+  const [userId, setUserId] = useState<string | null>(null); // New state for user ID
 
   const loadTasks = useCallback(async () => {
     setLoading(true);
     try {
-      const fetchedTasks = await fetchTasks(currentDate);
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError) throw userError;
+      if (!user) {
+        showError("User not authenticated. Please sign in.");
+        setLoading(false);
+        return;
+      }
+      setUserId(user.id); // Set user ID
+
+      const fetchedTasks = await fetchTasks(currentDate, user.id);
       setTasks(fetchedTasks);
       setFilteredTasks(fetchedTasks);
     } catch (error) {
@@ -244,6 +255,10 @@ const TaskList: React.FC = () => {
       showError("Task description cannot be empty.");
       return;
     }
+    if (!userId) {
+      showError("User not authenticated. Cannot add task.");
+      return;
+    }
     try {
       const taskData = {
         description: newTaskDescription,
@@ -253,6 +268,7 @@ const TaskList: React.FC = () => {
         priority: newTaskPriority,
         due_date: newTaskDueDate ? newTaskDueDate.toISOString() : null,
         notes: newTaskNotes || null,
+        user_id: userId, // Add user_id here
       };
       
       const addedTask = await addTask(taskData);
@@ -465,7 +481,7 @@ const TaskList: React.FC = () => {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <CategorySelector value={newTaskCategory} onChange={setNewTaskCategory} />
+              <CategorySelector value={newTaskCategory} onChange={setNewTaskCategory} userId={userId} />
               <PrioritySelector value={newTaskPriority} onChange={setNewTaskPriority} />
             </div>
             
@@ -560,7 +576,7 @@ const TaskList: React.FC = () => {
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <CategorySelector value={editingCategory} onChange={setEditingCategory} />
+                        <CategorySelector value={editingCategory} onChange={setEditingCategory} userId={userId} />
                         <PrioritySelector value={editingPriority} onChange={setEditingPriority} />
                       </div>
                       

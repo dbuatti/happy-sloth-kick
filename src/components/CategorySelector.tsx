@@ -27,23 +27,28 @@ const colors = [
 interface CategorySelectorProps {
   value: string;
   onChange: (categoryId: string) => void;
+  userId: string | null;
 }
 
-const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange }) => {
+const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, userId }) => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [selectedColor, setSelectedColor] = useState(colors[0].value);
 
   useEffect(() => {
-    fetchCategories();
-  }, []);
+    if (userId) {
+      fetchCategories();
+    }
+  }, [userId]);
 
   const fetchCategories = async () => {
+    if (!userId) return;
     try {
       const { data, error } = await supabase
         .from('task_categories')
         .select('*')
+        .eq('user_id', userId)
         .order('name');
 
       if (error) throw error;
@@ -59,12 +64,16 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange }) 
       showError('Category name is required');
       return;
     }
+    if (!userId) {
+      showError("User not authenticated. Cannot create category.");
+      return;
+    }
 
     try {
       const { data, error } = await supabase
         .from('task_categories')
         .insert([
-          { name: newCategoryName, color: selectedColor }
+          { name: newCategoryName, color: selectedColor, user_id: userId }
         ])
         .select()
         .single();
@@ -82,11 +91,16 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange }) 
   };
 
   const deleteCategory = async (categoryId: string) => {
+    if (!userId) {
+      showError("User not authenticated. Cannot delete category.");
+      return;
+    }
     try {
       const { error } = await supabase
         .from('task_categories')
         .delete()
-        .eq('id', categoryId);
+        .eq('id', categoryId)
+        .eq('user_id', userId);
 
       if (error) throw error;
       
