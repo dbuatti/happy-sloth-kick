@@ -210,9 +210,9 @@ const TaskList: React.FC = () => {
       }))
     ];
 
-    // Filter out empty sections, but always keep 'no-section' if it has tasks
+    // Filter out 'No Section' if it has no tasks, but keep all other sections regardless of tasks
     return allSectionGroups.filter(sectionGroup => 
-      sectionGroup.id === noSectionId || sectionGroup.tasks.length > 0
+      sectionGroup.id !== noSectionId || sectionGroup.tasks.length > 0
     );
   }, [filteredTasks, sections, noSectionDisplayName]);
 
