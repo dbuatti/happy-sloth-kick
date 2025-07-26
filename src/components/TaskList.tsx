@@ -15,7 +15,25 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-// import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd'; // Temporarily removed
+
+// dnd-kit imports
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+
+// Import the new SortableTaskItem component
+import SortableTaskItem from './SortableTaskItem';
 
 interface Task {
   id: string;
@@ -40,10 +58,8 @@ interface TaskSection {
   order: number | null;
 }
 
-// Define TaskUpdate type here as it's used in this component
 type TaskUpdate = Partial<Omit<Task, 'id' | 'user_id' | 'created_at'>>;
 
-// Define NewTaskData type here as it's used in this component
 interface NewTaskData {
   description: string;
   status?: 'to-do' | 'completed' | 'skipped' | 'archived';
@@ -81,8 +97,8 @@ const TaskList: React.FC = () => {
     deleteSection,
     noSectionDisplayName,
     reassignNoSectionTasks,
-    reorderTasksInSameSection, // New
-    moveTaskToNewSection, // New
+    reorderTasksInSameSection,
+    moveTaskToNewSection,
   } = useTasks();
 
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
@@ -92,16 +108,18 @@ const TaskList: React.FC = () => {
   const [editingNoSectionDisplayName, setEditingNoSectionDisplayName] = useState(noSectionDisplayName);
   const [isReassignNoSectionDialogOpen, setIsReassignNoSectionDialogOpen] = useState(false);
   const [targetReassignSectionId, setTargetReassignSectionId] = useState<string | null>(null);
-  // const [mounted, setMounted] = useState(false); // Temporarily removed
 
   useEffect(() => {
     setEditingNoSectionDisplayName(noSectionDisplayName);
   }, [noSectionDisplayName]);
 
-  // Set mounted to true after initial render
-  // useEffect(() => {
-  //   setMounted(true);
-  // }, []);
+  // dnd-kit sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const handlePreviousDay = () => {
     setCurrentDate(prevDate => new Date(prevDate.setDate(prevDate.getDate() - 1)));
@@ -149,7 +167,6 @@ const TaskList: React.FC = () => {
 
   const handleDeleteSection = async (sectionId: string) => {
     if (sectionId === 'no-section') {
-      // Open the reassign dialog instead of showing an error
       setIsReassignNoSectionDialogOpen(true);
       return;
     }
@@ -170,7 +187,6 @@ const TaskList: React.FC = () => {
     }
   };
 
-  // Wrapper function for bulk actions to match BulkActions component's expected prop
   const handleBulkAction = async (action: string) => {
     let updates: TaskUpdate = {};
     if (action === 'complete') {
@@ -182,11 +198,9 @@ const TaskList: React.FC = () => {
     } else if (action === 'todo') {
       updates = { status: 'to-do' };
     }
-    // Add more actions as needed
     await bulkUpdateTasks(updates);
   };
 
-  // Wrapper function for AddTaskForm and QuickAddTask to match handleAddTask's new signature
   const handleNewTaskSubmit = async (taskData: NewTaskData) => {
     await handleAddTask(taskData);
   };
@@ -195,13 +209,11 @@ const TaskList: React.FC = () => {
     const grouped: { [key: string]: Task[] } = {};
     const noSectionId = 'no-section';
 
-    // Initialize all sections, including 'no-section'
     grouped[noSectionId] = [];
     sections.forEach(section => {
       grouped[section.id] = [];
     });
 
-    // Distribute tasks into groups
     filteredTasks.forEach(task => {
       if (task.section_id && grouped[task.section_id]) {
         grouped[task.section_id].push(task);
@@ -210,12 +222,10 @@ const TaskList: React.FC = () => {
       }
     });
 
-    // Sort tasks within each group by their 'order' property
     Object.keys(grouped).forEach(sectionId => {
       grouped[sectionId].sort((a, b) => (a.order || 0) - (b.order || 0));
     });
 
-    // Create a list of all section groups with their tasks
     const allSectionGroups = [
       { id: noSectionId, name: noSectionDisplayName, tasks: grouped[noSectionId] },
       ...sections.map(section => ({
@@ -224,31 +234,67 @@ const TaskList: React.FC = () => {
       }))
     ];
 
-    // Filter out 'No Section' if it has no tasks, but keep all other sections regardless of tasks
     return allSectionGroups.filter(sectionGroup => 
       sectionGroup.id !== noSectionId || sectionGroup.tasks.length > 0
     );
   }, [filteredTasks, sections, noSectionDisplayName]);
 
-  // const onDragEnd = async (result: DropResult) => { // Temporarily removed
-  //   const { source, destination, draggableId } = result;
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
 
-  //   // Dropped outside the list
-  //   if (!destination) {
-  //     return;
-  //   }
+    if (!over) return;
 
-  //   const sourceSectionId = source.droppableId === 'no-section' ? null : source.droppableId;
-  //   const destinationSectionId = destination.droppableId === 'no-section' ? null : destination.droppableId;
+    const activeId = String(active.id);
+    const overId = String(over.id);
 
-  //   if (source.droppableId === destination.droppableId) {
-  //     // Moved within the same section
-  //     await reorderTasksInSameSection(sourceSectionId, source.index, destination.index);
-  //   } else {
-  //     // Moved to a different section
-  //     await moveTaskToNewSection(draggableId, sourceSectionId, destinationSectionId, destination.index);
-  //   }
-  // };
+    // Find the task being dragged
+    const draggedTask = tasks.find(task => task.id === activeId);
+    if (!draggedTask) return;
+
+    // Determine source and destination section IDs and indices
+    let sourceSectionId: string | null = null;
+    let sourceIndex = -1;
+    let destinationSectionId: string | null = null;
+    let destinationIndex = -1;
+
+    // Find source section and index
+    for (const sectionGroup of tasksGroupedBySection) {
+      const index = sectionGroup.tasks.findIndex(task => task.id === activeId);
+      if (index !== -1) {
+        sourceSectionId = sectionGroup.id === 'no-section' ? null : sectionGroup.id;
+        sourceIndex = index;
+        break;
+      }
+    }
+
+    // Find destination section and index
+    for (const sectionGroup of tasksGroupedBySection) {
+      const index = sectionGroup.tasks.findIndex(task => task.id === overId);
+      if (index !== -1) {
+        destinationSectionId = sectionGroup.id === 'no-section' ? null : sectionGroup.id;
+        destinationIndex = index;
+        break;
+      }
+    }
+
+    // If dropping onto a section header (meaning an empty section or just the header)
+    if (over.data.current?.type === 'section-header') {
+      destinationSectionId = overId === 'no-section' ? null : overId;
+      destinationIndex = tasksGroupedBySection.find(sg => sg.id === overId)?.tasks.length || 0; // Place at the end
+    }
+
+    if (sourceSectionId === destinationSectionId) {
+      // Moved within the same section
+      if (sourceIndex !== -1 && destinationIndex !== -1 && sourceIndex !== destinationIndex) {
+        await reorderTasksInSameSection(sourceSectionId, sourceIndex, destinationIndex);
+      }
+    } else {
+      // Moved to a different section
+      if (sourceSectionId !== null || destinationSectionId !== null) { // Ensure at least one is a valid section
+        await moveTaskToNewSection(activeId, sourceSectionId, destinationSectionId, destinationIndex);
+      }
+    }
+  };
 
   const shortcuts: ShortcutMap = {
     'arrowleft': handlePreviousDay,
@@ -268,7 +314,6 @@ const TaskList: React.FC = () => {
   };
   useKeyboardShortcuts(shortcuts);
 
-  // Consistent loading state rendering
   if (loading) {
     return (
       <Card className="w-full max-w-4xl mx-auto shadow-lg">
@@ -306,7 +351,7 @@ const TaskList: React.FC = () => {
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="order_asc">Custom Order</SelectItem> {/* New option */}
+                <SelectItem value="order_asc">Custom Order</SelectItem>
                 <SelectItem value="priority_desc">Priority (High to Low)</SelectItem>
                 <SelectItem value="priority_asc">Priority (Low to High)</SelectItem>
                 <SelectItem value="due_date_asc">Due Date (Soonest)</SelectItem>
@@ -343,7 +388,7 @@ const TaskList: React.FC = () => {
                   
                   <div className="mt-6">
                     <h3 className="text-lg font-semibold mb-2">Existing Sections</h3>
-                    {sections.length === 0 && filteredTasks.length === 0 ? ( // Simplified condition
+                    {sections.length === 0 && tasksGroupedBySection.find(s => s.id === 'no-section')?.tasks.length === 0 ? (
                       <p className="text-sm text-muted-foreground">No sections created yet.</p>
                     ) : (
                       <ul className="space-y-2">
@@ -441,43 +486,57 @@ const TaskList: React.FC = () => {
           </div>
         </div>
         
-        {filteredTasks.length === 0 && sections.length === 0 ? ( // Simplified condition
+        {filteredTasks.length === 0 && sections.length === 0 && tasksGroupedBySection.find(s => s.id === 'no-section')?.tasks.length === 0 ? (
           <div className="text-center text-gray-500 p-8">
             <p className="text-lg mb-2">No tasks or sections found for this day!</p>
             <p>Start by adding a new task above, or create your first section using the "Manage Sections" button.</p>
           </div>
         ) : (
-          <div className="space-y-6">
-            {tasksGroupedBySection.map(sectionGroup => (
-              <div key={sectionGroup.id} className="space-y-3">
-                <h3 className="text-xl font-semibold flex items-center gap-2">
-                  <FolderOpen className="h-5 w-5 text-muted-foreground" />
-                  {sectionGroup.name} ({sectionGroup.tasks.length})
-                </h3>
-                <ul className="space-y-3">
-                  {sectionGroup.tasks.map((task) => (
-                    <TaskItem
-                      key={task.id}
-                      task={task}
-                      userId={userId}
-                      onStatusChange={handleTaskStatusChange}
-                      onDelete={deleteTask}
-                      onUpdate={updateTask}
-                      isSelected={selectedTaskIds.includes(task.id)}
-                      onToggleSelect={toggleTaskSelection}
-                      sections={sections}
-                    />
-                  ))}
-                </ul>
-              </div>
-            ))}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <div className="space-y-6">
+              {tasksGroupedBySection.map(sectionGroup => (
+                <div key={sectionGroup.id} className="space-y-3">
+                  <h3 className="text-xl font-semibold flex items-center gap-2"
+                      data-dnd-kit-droppable-id={sectionGroup.id} // Mark section header as droppable
+                      data-dnd-kit-droppable-type="section-header"
+                  >
+                    <FolderOpen className="h-5 w-5 text-muted-foreground" />
+                    {sectionGroup.name} ({sectionGroup.tasks.length})
+                  </h3>
+                  <SortableContext
+                    items={sectionGroup.tasks.map(task => task.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <ul className="space-y-3">
+                      {sectionGroup.tasks.map((task) => (
+                        <SortableTaskItem
+                          key={task.id}
+                          task={task}
+                          userId={userId}
+                          onStatusChange={handleTaskStatusChange}
+                          onDelete={deleteTask}
+                          onUpdate={updateTask}
+                          isSelected={selectedTaskIds.includes(task.id)}
+                          onToggleSelect={toggleTaskSelection}
+                          sections={sections}
+                        />
+                      ))}
+                    </ul>
+                  </SortableContext>
+                </div>
+              ))}
 
-            <BulkActions 
-              selectedTaskIds={selectedTaskIds} 
-              onAction={handleBulkAction} 
-              onClearSelection={clearSelectedTasks} 
-            />
-          </div>
+              <BulkActions 
+                selectedTaskIds={selectedTaskIds} 
+                onAction={handleBulkAction} 
+                onClearSelection={clearSelectedTasks} 
+              />
+            </div>
+          </DndContext>
         )}
         <QuickAddTask onAddTask={handleNewTaskSubmit} userId={userId} />
       </CardContent>
