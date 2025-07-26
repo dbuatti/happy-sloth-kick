@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, BarChart3, Calendar } from 'lucide-react';
 import ThemeSelector from './ThemeSelector';
+import DarkModeToggle from './DarkModeToggle'; // Import the DarkModeToggle
 
 const Sidebar = () => {
   const location = useLocation();
@@ -15,7 +16,10 @@ const Sidebar = () => {
     <div className="w-64 bg-white dark:bg-gray-800 shadow-md h-screen flex flex-col">
       <div className="p-6 flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-white">TaskMaster</h1>
-        <ThemeSelector />
+        <div className="flex items-center space-x-2"> {/* Added a div to group theme controls */}
+          <ThemeSelector />
+          <DarkModeToggle /> {/* Add the DarkModeToggle here */}
+        </div>
       </div>
       <nav className="flex-1 px-4 space-y-2">
         {navItems.map((item) => {
