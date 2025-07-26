@@ -17,7 +17,7 @@ interface Task {
   id: string;
   description: string;
   status: 'to-do' | 'completed' | 'skipped' | 'archived';
-  is_daily_recurring: boolean;
+  recurring_type: 'none' | 'daily' | 'weekly' | 'monthly'; // Updated type
   created_at: string;
   user_id: string;
   category: string;

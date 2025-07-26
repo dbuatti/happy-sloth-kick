@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
-import { parseISO, isSameDay, isBefore } from 'date-fns';
+import { parseISO, isSameDay, isBefore, getDay, getDate } from 'date-fns'; // Added getDay, getDate
 
 interface Task {
   id: string;
   description: string;
   status: 'to-do' | 'completed' | 'skipped' | 'archived';
-  is_daily_recurring: boolean;
+  recurring_type: 'none' | 'daily' | 'weekly' | 'monthly'; // Updated type
   created_at: string;
   user_id: string;
   category: string;
@@ -87,13 +87,28 @@ export const useTasks = (options?: UseTasksOptions) => {
       const taskDueDate = task.due_date ? parseISO(task.due_date) : null;
       const taskCreatedAt = parseISO(task.created_at);
 
+      // 1. Tasks with a specific due date
       if (taskDueDate && (isSameDay(taskDueDate, date) || isBefore(taskDueDate, startOfDay))) {
         return true;
       }
-      if (task.is_daily_recurring && task.status === 'to-do') {
-        return true;
+      
+      // 2. Recurring tasks
+      if (task.recurring_type !== 'none' && task.status === 'to-do') {
+        if (task.recurring_type === 'daily') {
+          return true;
+        }
+        if (task.recurring_type === 'weekly') {
+          // Check if the current day of the week matches the created_at day of the week
+          return getDay(date) === getDay(taskCreatedAt);
+        }
+        if (task.recurring_type === 'monthly') {
+          // Check if the current day of the month matches the created_at day of the month
+          return getDate(date) === getDate(taskCreatedAt);
+        }
       }
-      if (!taskDueDate && isBefore(taskCreatedAt, endOfDay) && task.status === 'to-do') {
+
+      // 3. Tasks with no due date, created on or before today, and 'to-do'
+      if (!taskDueDate && task.recurring_type === 'none' && isBefore(taskCreatedAt, endOfDay) && task.status === 'to-do') {
         return true;
       }
       return false;

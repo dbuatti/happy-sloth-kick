@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { Switch } from "@/components/ui/switch"; // Keep Switch for now, will replace
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -10,12 +10,13 @@ import { Calendar } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import CategorySelector from "./CategorySelector";
 import PrioritySelector from "./PrioritySelector";
-import { format } from 'date-fns'; // Added import for format
+import { format } from 'date-fns';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Added Select imports
 
 interface AddTaskFormProps {
   onAddTask: (taskData: {
     description: string;
-    is_daily_recurring: boolean;
+    recurring_type: 'none' | 'daily' | 'weekly' | 'monthly'; // Updated type
     category: string;
     priority: string;
     due_date: string | null;
@@ -26,7 +27,7 @@ interface AddTaskFormProps {
 
 const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId }) => {
   const [newTaskDescription, setNewTaskDescription] = useState<string>('');
-  const [isNewTaskDailyRecurring, setIsNewTaskDailyRecurring] = useState<boolean>(false);
+  const [newTaskRecurringType, setNewTaskRecurringType] = useState<'none' | 'daily' | 'weekly' | 'monthly'>('none'); // New state for recurring type
   const [newTaskCategory, setNewTaskCategory] = useState<string>('general');
   const [newTaskPriority, setNewTaskPriority] = useState<string>('medium');
   const [newTaskDueDate, setNewTaskDueDate] = useState<Date | undefined>(undefined);
@@ -41,7 +42,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId }) => {
     setIsAdding(true);
     const success = await onAddTask({
       description: newTaskDescription,
-      is_daily_recurring: isNewTaskDailyRecurring,
+      recurring_type: newTaskRecurringType, // Use new recurring type
       category: newTaskCategory,
       priority: newTaskPriority,
       due_date: newTaskDueDate ? newTaskDueDate.toISOString() : null,
@@ -49,7 +50,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId }) => {
     });
     if (success) {
       setNewTaskDescription('');
-      setIsNewTaskDailyRecurring(false);
+      setNewTaskRecurringType('none'); // Reset recurring type
       setNewTaskCategory('general');
       setNewTaskPriority('medium');
       setNewTaskDueDate(undefined);
@@ -113,14 +114,23 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId }) => {
             </Popover>
           </div>
           
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="daily-recurring"
-              checked={isNewTaskDailyRecurring}
-              onCheckedChange={setIsNewTaskDailyRecurring}
+          <div className="space-y-2"> {/* Changed from flex items-center to space-y-2 for Label/Select */}
+            <Label htmlFor="recurring-type">Recurring</Label>
+            <Select 
+              value={newTaskRecurringType} 
+              onValueChange={(value) => setNewTaskRecurringType(value as 'none' | 'daily' | 'weekly' | 'monthly')} 
               disabled={isAdding}
-            />
-            <Label htmlFor="daily-recurring">Daily Recurring</Label>
+            >
+              <SelectTrigger id="recurring-type">
+                <SelectValue placeholder="Select recurrence" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                <SelectItem value="daily">Daily</SelectItem>
+                <SelectItem value="weekly">Weekly</SelectItem>
+                <SelectItem value="monthly">Monthly</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
         
