@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client'; // Updated import path
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess } from '@/utils/toast';
 
@@ -27,10 +27,9 @@ interface TaskSection {
 
 type TaskUpdate = Partial<Omit<Task, 'id' | 'user_id' | 'created_at'>>;
 
-// New interface for task data when adding a new task
 interface NewTaskData {
   description: string;
-  status?: 'to-do' | 'completed' | 'skipped' | 'archived'; // Added status property
+  status?: 'to-do' | 'completed' | 'skipped' | 'archived';
   recurring_type?: 'none' | 'daily' | 'weekly' | 'monthly';
   category?: string;
   priority?: string;
@@ -52,6 +51,7 @@ export const useTasks = () => {
   const [sortKey, setSortKey] = useState<'priority' | 'due_date' | 'created_at'>('created_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [sections, setSections] = useState<TaskSection[]>([]);
+  const [noSectionDisplayName, setNoSectionDisplayName] = useState('No Section'); // New state for custom name
 
   const fetchTasks = useCallback(async () => {
     if (!userId) {
@@ -77,7 +77,7 @@ export const useTasks = () => {
       showError('Failed to load tasks.');
     } else {
       setTasks(data || []);
-      setFilteredTasks(data || []); // Initialize filtered tasks with all tasks
+      setFilteredTasks(data || []);
     }
     setLoading(false);
   }, [userId, currentDate, sortKey, sortDirection]);
@@ -98,12 +98,33 @@ export const useTasks = () => {
     }
   }, [userId]);
 
+  const fetchNoSectionDisplayName = useCallback(async () => {
+    if (!userId) return;
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('default_no_section_name')
+        .eq('id', userId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found, which is fine for new users
+        throw error;
+      }
+      if (data) {
+        setNoSectionDisplayName(data.default_no_section_name || 'No Section');
+      }
+    } catch (error: any) {
+      console.error('Error fetching default no section name:', error);
+      showError('Failed to load custom "No Section" name.');
+    }
+  }, [userId]);
+
   useEffect(() => {
     fetchTasks();
     fetchSections();
-  }, [fetchTasks, fetchSections]);
+    fetchNoSectionDisplayName(); // Fetch custom name on load
+  }, [fetchTasks, fetchSections, fetchNoSectionDisplayName]);
 
-  // Updated handleAddTask to accept a NewTaskData object
   const handleAddTask = async (taskData: NewTaskData) => {
     if (!userId) {
       showError('User not authenticated.');
@@ -115,7 +136,7 @@ export const useTasks = () => {
         .insert({
           description: taskData.description,
           user_id: userId,
-          status: taskData.status || 'to-do', // Default to 'to-do' if not provided
+          status: taskData.status || 'to-do',
           recurring_type: taskData.recurring_type || 'none',
           category: taskData.category || 'General',
           priority: taskData.priority || 'medium',
@@ -237,7 +258,7 @@ export const useTasks = () => {
     // For now, we'll just re-apply the last known filters if needed, or rely on explicit calls.
     // A more robust solution would store filter state in useTasks or pass it down.
     // For simplicity, let's assume applyFilters is called explicitly when filters change in UI.
-  }, [tasks]); // Only re-run if tasks change, assuming filters are applied externally
+  }, [tasks]);
 
   const toggleTaskSelection = (taskId: string) => {
     setSelectedTaskIds(prev =>
@@ -268,7 +289,7 @@ export const useTasks = () => {
       }
       showSuccess('Tasks updated successfully!');
       clearSelectedTasks();
-      fetchTasks(); // Re-fetch tasks to reflect bulk changes
+      fetchTasks();
     } catch (err) {
       console.error('Exception bulk updating tasks:', err);
       showError('An unexpected error occurred during bulk update.');
@@ -308,34 +329,39 @@ export const useTasks = () => {
       return;
     }
     try {
-      console.log(`Attempting to update section ${sectionId} to name: ${newName} for user: ${userId}`);
-      const { data, error } = await supabase
-        .from('task_sections')
-        .update({ name: newName })
-        .eq('id', sectionId)
-        .eq('user_id', userId)
-        .select(); // Select the updated row to confirm
+      // If it's the 'no-section' special ID, update the user's profile
+      if (sectionId === 'no-section') {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ default_no_section_name: newName })
+          .eq('id', userId);
 
-      if (error) {
-        console.error('Error updating section:', error);
-        showError('Failed to update section.');
-        return;
-      }
-
-      if (data && data.length > 0) {
-        console.log('Section updated successfully in Supabase:', data[0]);
-        // Update the local state with the new section name
-        setSections(prevSections =>
-          prevSections.map(sec =>
-            sec.id === sectionId ? { ...sec, name: newName } : sec
-          )
-        );
-        showSuccess('Section updated successfully!');
+        if (error) throw error;
+        setNoSectionDisplayName(newName);
+        showSuccess('Default "No Section" name updated successfully!');
       } else {
-        console.warn('Section not found or no changes applied in Supabase. Data:', data);
-        showError('Section not found or no changes applied.');
+        // Otherwise, update a regular section
+        const { data, error } = await supabase
+          .from('task_sections')
+          .update({ name: newName })
+          .eq('id', sectionId)
+          .eq('user_id', userId)
+          .select();
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          setSections(prevSections =>
+            prevSections.map(sec =>
+              sec.id === sectionId ? { ...sec, name: newName } : sec
+            )
+          );
+          showSuccess('Section updated successfully!');
+        } else {
+          showError('Section not found or no changes applied.');
+        }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Exception updating section:', err);
       showError('An unexpected error occurred while updating the section.');
     }
@@ -347,8 +373,6 @@ export const useTasks = () => {
       return;
     }
     try {
-      // Start a transaction if Supabase client supports it directly, or handle sequentially
-      // For simplicity, performing sequentially.
       // First, update tasks that belong to this section to have section_id = null
       const { error: updateTasksError } = await supabase
         .from('tasks')
@@ -375,10 +399,7 @@ export const useTasks = () => {
         return;
       }
 
-      // Update local state: remove the section
       setSections(prevSections => prevSections.filter(sec => sec.id !== sectionId));
-      // Also need to update tasks state to reflect section_id = null
-      // Re-fetch tasks to ensure consistency after unassigning them
       fetchTasks();
 
       showSuccess('Section deleted successfully and tasks unassigned!');
@@ -411,5 +432,6 @@ export const useTasks = () => {
     createSection,
     updateSection,
     deleteSection,
+    noSectionDisplayName, // Expose the custom name
   };
 };

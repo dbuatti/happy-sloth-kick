@@ -78,14 +78,18 @@ const TaskList: React.FC = () => {
     createSection,
     updateSection,
     deleteSection,
+    noSectionDisplayName, // Get the custom name
   } = useTasks();
 
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
   const [newSectionName, setNewSectionName] = useState('');
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [editingSectionName, setEditingSectionName] = useState('');
-  // Removed noSectionDisplayName state as it's no longer needed for local renaming
-  // const [noSectionDisplayName, setNoSectionDisplayName] = useState('No Section'); 
+  const [editingNoSectionDisplayName, setEditingNoSectionDisplayName] = useState(noSectionDisplayName); // State for editing 'No Section' name
+
+  useEffect(() => {
+    setEditingNoSectionDisplayName(noSectionDisplayName); // Keep local state in sync
+  }, [noSectionDisplayName]);
 
   const handlePreviousDay = () => {
     setCurrentDate(prevDate => new Date(prevDate.setDate(prevDate.getDate() - 1)));
@@ -121,8 +125,7 @@ const TaskList: React.FC = () => {
     }
 
     if (sectionId === 'no-section') {
-      // Removed local renaming for 'No Section' as it's not persistent
-      showError("Cannot rename 'No Section' as it's a default grouping for unassigned tasks.");
+      await updateSection(sectionId, editingSectionName); // Use updateSection for 'no-section'
       setEditingSectionId(null);
       setEditingSectionName('');
     } else {
@@ -185,8 +188,8 @@ const TaskList: React.FC = () => {
     // Create ordered list of sections for display
     const orderedSections: { id: string; name: string }[] = [];
     
-    // Always add 'No Section' first
-    orderedSections.push({ id: noSectionId, name: 'No Section' }); // Hardcode 'No Section' display name
+    // Always add 'No Section' first, using the custom display name
+    orderedSections.push({ id: noSectionId, name: noSectionDisplayName });
 
     // Add all other sections
     sections.forEach(section => {
@@ -198,7 +201,7 @@ const TaskList: React.FC = () => {
       ...section,
       tasks: grouped[section.id],
     }));
-  }, [filteredTasks, sections]); // Removed noSectionDisplayName from dependencies
+  }, [filteredTasks, sections, noSectionDisplayName]);
 
   const shortcuts: ShortcutMap = {
     'arrowleft': handlePreviousDay,
@@ -317,7 +320,7 @@ const TaskList: React.FC = () => {
                             )}
                             
                             <div className="flex space-x-1">
-                              {editingSectionId !== sectionGroup.id && sectionGroup.id !== 'no-section' && ( // Conditionally render Edit button
+                              {editingSectionId !== sectionGroup.id && ( // Always show edit for 'No Section' now
                                 <>
                                   <Button
                                     variant="ghost"
@@ -325,7 +328,7 @@ const TaskList: React.FC = () => {
                                     className="h-6 w-6"
                                     onClick={() => {
                                       setEditingSectionId(sectionGroup.id);
-                                      setEditingSectionName(sectionGroup.name);
+                                      setEditingSectionName(sectionGroup.id === 'no-section' ? editingNoSectionDisplayName : sectionGroup.name);
                                     }}
                                     aria-label={`Rename section ${sectionGroup.name}`}
                                   >

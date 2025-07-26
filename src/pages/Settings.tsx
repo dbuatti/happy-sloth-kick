@@ -12,6 +12,7 @@ interface Profile {
   id: string;
   first_name: string | null;
   last_name: string | null;
+  default_no_section_name: string | null; // Add new field
 }
 
 const Settings = () => {
@@ -19,6 +20,7 @@ const Settings = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [defaultNoSectionName, setDefaultNoSectionName] = useState('No Section'); // State for custom name
 
   useEffect(() => {
     getProfile();
@@ -32,7 +34,7 @@ const Settings = () => {
       if (user) {
         const { data, error, status } = await supabase
           .from('profiles')
-          .select(`id, first_name, last_name`)
+          .select(`id, first_name, last_name, default_no_section_name`) // Select new field
           .eq('id', user.id)
           .single();
 
@@ -44,6 +46,7 @@ const Settings = () => {
           setProfile(data);
           setFirstName(data.first_name || '');
           setLastName(data.last_name || '');
+          setDefaultNoSectionName(data.default_no_section_name || 'No Section'); // Set initial value
         }
       }
     } catch (error: any) {
@@ -65,6 +68,7 @@ const Settings = () => {
           id: user.id,
           first_name: firstName,
           last_name: lastName,
+          default_no_section_name: defaultNoSectionName, // Include in updates
         };
 
         const { error } = await supabase.from('profiles').upsert(updates);
@@ -128,6 +132,16 @@ const Settings = () => {
                       type="text"
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="defaultNoSectionName">"No Section" Display Name</Label>
+                    <Input
+                      id="defaultNoSectionName"
+                      type="text"
+                      value={defaultNoSectionName}
+                      onChange={(e) => setDefaultNoSectionName(e.target.value)}
+                      placeholder="e.g., Unassigned Tasks"
                     />
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
