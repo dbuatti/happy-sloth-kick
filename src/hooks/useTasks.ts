@@ -551,7 +551,7 @@ export const useTasks = () => {
       result.splice(endIndex, 0, removed);
 
       const updates = result.map((task, index) => ({
-        id: task.id,
+        ...task, // Include all existing task properties
         order: index,
         user_id: userId, // Ensure user_id is included for RLS
       }));
@@ -564,9 +564,6 @@ export const useTasks = () => {
         return;
       }
       showSuccess('Tasks reordered successfully!');
-      // No need to fetchTasks here if optimistic update is correct and upsert returns nothing
-      // If upsert returns data, we could use that to update state more precisely.
-      // For now, relying on optimistic update + fetch on error.
     } catch (err) {
       console.error('Exception reordering tasks:', err);
       showError('An unexpected error occurred while reordering the tasks.');
@@ -644,7 +641,7 @@ export const useTasks = () => {
       if (!movedTaskFromDb) throw new Error('Moved task not found in source section in DB.');
 
       const newDbSourceTasks = dbSourceTasks.filter(t => t.id !== taskId).map((task, index) => ({
-        id: task.id,
+        ...task, // Include all existing task properties
         order: index,
         user_id: userId, // Ensure user_id is included for RLS
       }));
@@ -652,13 +649,13 @@ export const useTasks = () => {
       const tempNewDbDestinationTasks = Array.from(dbDestinationTasks);
       tempNewDbDestinationTasks.splice(destinationIndex, 0, { ...movedTaskFromDb, section_id: destinationSectionId }); // Ensure section_id is updated for the moved task
       const newDbDestinationTasks = tempNewDbDestinationTasks.map((task, index) => ({
-        id: task.id,
+        ...task, // Include all existing task properties
         order: index,
         section_id: destinationSectionId, // Ensure section_id is updated for the moved task
         user_id: userId, // Ensure user_id is included for RLS
       }));
 
-      const updates: { id: string; order: number; section_id?: string | null; user_id: string }[] = [
+      const updates: Task[] = [ // Type this as Task[] since we're sending full task objects
         ...newDbSourceTasks,
         ...newDbDestinationTasks,
       ];
@@ -671,9 +668,6 @@ export const useTasks = () => {
         return;
       }
       showSuccess('Task moved successfully!');
-      // No need to fetchTasks here if optimistic update is correct and upsert returns nothing
-      // If upsert returns data, we could use that to update state more precisely.
-      // For now, relying on optimistic update + fetch on error.
     } catch (err) {
       console.error('Exception moving task:', err);
       showError('An unexpected error occurred while moving the task.');
@@ -717,7 +711,6 @@ export const useTasks = () => {
         return;
       }
       showSuccess('Sections reordered successfully!');
-      // No need to fetchSections here if optimistic update is correct
     } catch (err) {
       console.error('Exception reordering sections:', err);
       showError('An unexpected error occurred while reordering sections.');
