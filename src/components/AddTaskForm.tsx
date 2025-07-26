@@ -34,7 +34,7 @@ const parseNaturalLanguage = (text: string) => {
   let remindAt: Date | undefined = undefined;
   let priority: string | undefined = undefined;
   let category: string | undefined = undefined;
-  let cleanedDescription = text;
+  let tempDescription = text; // Use a temporary variable for parsing
 
   // Priority detection
   const priorityKeywords = {
@@ -45,9 +45,9 @@ const parseNaturalLanguage = (text: string) => {
   };
   for (const [keyword, pValue] of Object.entries(priorityKeywords)) {
     const regex = new RegExp(`\\b${keyword}\\b`, 'i');
-    if (regex.test(cleanedDescription)) {
+    if (regex.test(tempDescription)) {
       priority = pValue;
-      cleanedDescription = cleanedDescription.replace(regex, '').trim();
+      tempDescription = tempDescription.replace(regex, '').trim(); // Remove keyword from temp description
       break;
     }
   }
@@ -61,31 +61,31 @@ const parseNaturalLanguage = (text: string) => {
   };
   for (const [keyword, cValue] of Object.entries(categoryKeywords)) {
     const regex = new RegExp(`\\b${keyword}\\b`, 'i');
-    if (regex.test(cleanedDescription)) {
+    if (regex.test(tempDescription)) {
       category = cValue;
-      cleanedDescription = cleanedDescription.replace(regex, '').trim();
+      tempDescription = tempDescription.replace(regex, '').trim(); // Remove keyword from temp description
       break;
     }
   }
 
   // Date detection
   const today = startOfDay(new Date());
-  if (/\btoday\b/i.test(cleanedDescription)) {
+  if (/\btoday\b/i.test(tempDescription)) {
     dueDate = today;
-    cleanedDescription = cleanedDescription.replace(/\btoday\b/i, '').trim();
-  } else if (/\btomorrow\b/i.test(cleanedDescription)) {
+    tempDescription = tempDescription.replace(/\btoday\b/i, '').trim();
+  } else if (/\btomorrow\b/i.test(tempDescription)) {
     dueDate = addDays(today, 1);
-    cleanedDescription = cleanedDescription.replace(/\btomorrow\b/i, '').trim();
-  } else if (/\bnext week\b/i.test(cleanedDescription)) {
+    tempDescription = tempDescription.replace(/\btomorrow\b/i, '').trim();
+  } else if (/\bnext week\b/i.test(tempDescription)) {
     dueDate = addWeeks(today, 1);
-    cleanedDescription = cleanedDescription.replace(/\bnext week\b/i, '').trim();
-  } else if (/\bnext month\b/i.test(cleanedDescription)) {
+    tempDescription = tempDescription.replace(/\bnext week\b/i, '').trim();
+  } else if (/\bnext month\b/i.test(tempDescription)) {
     dueDate = addMonths(today, 1);
-    cleanedDescription = cleanedDescription.replace(/\bnext month\b/i, '').trim();
+    tempDescription = tempDescription.replace(/\bnext month\b/i, '').trim();
   } else {
     // Try to parse specific dates like "on Jan 15" or "12/25"
     const dateRegex = /(on|by)?\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+\d{1,2}(,\s*\d{4})?|\d{1,2}\/\d{1,2}(?:[/]\d{2,4})?/i;
-    const match = cleanedDescription.match(dateRegex);
+    const match = tempDescription.match(dateRegex);
     if (match) {
       try {
         const parsedDate = parse(match[0], 'MMM d, yyyy', new Date()); // Try with year
@@ -98,7 +98,7 @@ const parseNaturalLanguage = (text: string) => {
         } else {
           dueDate = parsedDate;
         }
-        cleanedDescription = cleanedDescription.replace(match[0], '').trim();
+        tempDescription = tempDescription.replace(match[0], '').trim();
       } catch (e) {
         // Ignore parsing errors
       }
@@ -107,11 +107,11 @@ const parseNaturalLanguage = (text: string) => {
 
   // Time detection for reminder
   const timeRegex = /(at|by)\s*(\d{1,2}(:\d{2})?\s*(am|pm)?)/i;
-  const timeMatch = cleanedDescription.match(timeRegex);
+  const timeMatch = tempDescription.match(timeRegex);
   let reminderTimeStr: string | undefined = undefined;
   if (timeMatch) {
     reminderTimeStr = timeMatch[2];
-    cleanedDescription = cleanedDescription.replace(timeMatch[0], '').trim();
+    tempDescription = tempDescription.replace(timeMatch[0], '').trim();
   }
 
   if (reminderTimeStr) {
@@ -131,7 +131,7 @@ const parseNaturalLanguage = (text: string) => {
   }
 
   return {
-    description: cleanedDescription,
+    description: text, // Return original description, not the temporary one
     dueDate,
     remindAt,
     reminderTimeStr,
@@ -155,13 +155,12 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
   // AI-powered suggestions based on description
   useEffect(() => {
     const {
-      description: parsedDescription,
       dueDate,
       remindAt,
       reminderTimeStr,
       priority,
       category,
-    } = parseNaturalLanguage(newTaskDescription);
+    } = parseNaturalLanguage(newTaskDescription); // Parse the current description
 
     // Only update if the user hasn't manually changed it from the default
     // This is a simple heuristic; more advanced logic could track user overrides
@@ -180,11 +179,8 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
         setNewReminderTime(format(remindAt, 'HH:mm'));
       }
     }
-    // Update description to the cleaned version
-    if (parsedDescription !== newTaskDescription) {
-      setNewTaskDescription(parsedDescription);
-    }
-  }, [newTaskDescription]); // Depend on description changes
+    // Removed: setNewTaskDescription(parsedDescription);
+  }, [newTaskDescription, newTaskPriority, newTaskCategory, newTaskDueDate, newTaskRemindAt]); // Add other dependencies to prevent infinite loops if they are also updated by parsing
 
   const handleSubmit = async () => {
     if (!newTaskDescription.trim()) {

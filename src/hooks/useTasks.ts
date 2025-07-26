@@ -85,14 +85,15 @@ export const useTasks = () => {
       return;
     }
     setLoading(true);
-    const startOfCurrentDate = fnsStartOfDay(currentDate);
     
     try {
-      // Fetch ALL tasks for the user. Filtering for display will happen in filteredTasks memo.
+      // Fetch ALL tasks for the user.
+      // The filtering for 'archived' status for the main dashboard
+      // and date relevance will happen in the `filteredTasks` memo.
       const { data: fetchedTasks, error: fetchError } = await supabase
         .from('tasks')
         .select('*')
-        .eq('user_id', userId);
+        .eq('user_id', userId); // Fetch all tasks for the user
 
       if (fetchError) throw fetchError;
 
@@ -101,15 +102,18 @@ export const useTasks = () => {
       // --- Recurring task generation logic ---
       const dailyRecurringTemplates: Task[] = [];
       const existingOriginalIdsForToday = new Set<string>();
+      const startOfCurrentDate = fnsStartOfDay(currentDate);
 
       for (const task of allUserTasks) {
         const taskCreatedAt = new Date(task.created_at);
-        if (task.recurring_type === 'daily') {
+        // Only consider non-archived tasks for recurring generation
+        if (task.recurring_type === 'daily' && task.status !== 'archived') {
           dailyRecurringTemplates.push(task);
           if (isSameDay(taskCreatedAt, currentDate)) {
             existingOriginalIdsForToday.add(task.id);
           }
         }
+        // Also check for existing instances created today
         if (task.original_task_id && isSameDay(taskCreatedAt, currentDate)) {
           existingOriginalIdsForToday.add(task.original_task_id);
         }
@@ -152,7 +156,7 @@ export const useTasks = () => {
     } finally {
       setLoading(false);
     }
-  }, [userId, currentDate]);
+  }, [userId, currentDate]); // currentDate is a dependency for recurring task generation
 
   useEffect(() => {
     fetchSections();
@@ -163,38 +167,31 @@ export const useTasks = () => {
     let tempTasks = [...tasks]; // 'tasks' now holds ALL tasks for the user
 
     const startOfCurrentDate = fnsStartOfDay(currentDate);
-    const endOfCurrentDate = new Date(currentDate);
-    endOfCurrentDate.setHours(23, 59, 59, 999);
 
     // Apply date relevance filter based on the current view (Daily Tasks)
-    // This logic applies unless a specific status filter (like 'archived' or 'completed') is active.
+    // This logic applies ONLY if the statusFilter is 'all', 'to-do', or 'skipped'.
+    // If statusFilter is 'completed' or 'archived', we skip this date relevance filter
+    // and let the subsequent status filter handle it.
     if (statusFilter === 'all' || statusFilter === 'to-do' || statusFilter === 'skipped') {
       tempTasks = tempTasks.filter(task => {
         const taskCreatedAt = new Date(task.created_at);
         const taskDueDate = task.due_date ? new Date(task.due_date) : null;
 
-        // Show tasks created on the current day (unless archived)
+        // 1. Tasks created on the current day (unless archived)
         if (isSameDay(taskCreatedAt, currentDate) && task.status !== 'archived') return true;
 
-        // Show tasks due on the current day (unless archived)
+        // 2. Tasks due on the current day (unless archived)
         if (taskDueDate && isSameDay(taskDueDate, currentDate) && task.status !== 'archived') return true;
 
-        // Carry over overdue tasks (to-do or skipped)
+        // 3. Overdue tasks (status 'to-do' or 'skipped') from previous days
         if ((task.status === 'to-do' || task.status === 'skipped') && taskDueDate && isPast(taskDueDate) && !isSameDay(taskDueDate, currentDate)) return true;
 
-        // Carry over undated tasks (to-do or skipped) created before today
+        // 4. Undated tasks (status 'to-do' or 'skipped') created before today
         if ((task.status === 'to-do' || task.status === 'skipped') && taskDueDate === null && taskCreatedAt < startOfCurrentDate) return true;
 
         return false; // Exclude tasks that don't meet the above criteria for the daily view
       });
-    } else if (statusFilter === 'completed') {
-      // If status filter is 'completed', show all completed tasks regardless of date
-      tempTasks = tempTasks.filter(task => task.status === 'completed');
-    } else if (statusFilter === 'archived') {
-      // If status filter is 'archived', show all archived tasks regardless of date
-      tempTasks = tempTasks.filter(task => task.status === 'archived');
     }
-    // Note: 'skipped' filter is handled by the initial date relevance filter for 'to-do'/'skipped' tasks
 
     // Apply search, category, priority, section filters
     if (searchFilter) {
@@ -203,7 +200,9 @@ export const useTasks = () => {
         task.notes?.toLowerCase().includes(searchFilter.toLowerCase())
       );
     }
-    if (statusFilter && statusFilter !== 'all') {
+    // Apply status filter if it's not 'all'.
+    // This will correctly filter for 'completed' or 'archived' if those filters are selected.
+    if (statusFilter !== 'all') {
       tempTasks = tempTasks.filter(task => task.status === statusFilter);
     }
     if (categoryFilter && categoryFilter !== 'all') {
