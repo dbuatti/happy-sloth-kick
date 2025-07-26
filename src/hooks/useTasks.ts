@@ -20,6 +20,7 @@ export interface Task {
   section_id: string | null;
   order: number | null;
   original_task_id: string | null;
+  parent_task_id: string | null; // New: for sub-tasks
 }
 
 export interface TaskSection {
@@ -41,6 +42,7 @@ interface NewTaskData {
   notes?: string | null;
   remind_at?: string | null;
   section_id?: string | null;
+  parent_task_id?: string | null; // New: for sub-tasks
 }
 
 export const useTasks = () => {
@@ -153,6 +155,7 @@ export const useTasks = () => {
             // Setting them to null here ensures they don't carry over old specific dates.
             due_date: null, 
             remind_at: null,
+            parent_task_id: null, // New instances are top-level by default
           };
           newRecurringInstances.push(newInstance);
         }
@@ -394,6 +397,7 @@ export const useTasks = () => {
         section_id: targetSectionId,
         order: newOrder,
         original_task_id: taskData.recurring_type !== 'none' ? newTaskId : null, // Set original_task_id if recurring
+        parent_task_id: taskData.parent_task_id || null, // New: Set parent_task_id
         // Do NOT explicitly set created_at here; let the database default handle it for accuracy
       };
 
@@ -635,7 +639,7 @@ export const useTasks = () => {
     // Optimistically update UI
     setTasks(prevTasks => {
       const newTasks = [...prevTasks];
-      const sectionTasks = newTasks.filter(t => t.section_id === sectionId)
+      const sectionTasks = newTasks.filter(t => t.section_id === sectionId && t.parent_task_id === null) // Only top-level tasks
         .sort((a, b) => (a.order || 0) - (b.order || 0));
       
       const [removed] = sectionTasks.splice(startIndex, 1);
@@ -655,7 +659,7 @@ export const useTasks = () => {
     });
 
     try {
-      const sectionTasksToUpdate = tasks.filter(t => t.section_id === sectionId)
+      const sectionTasksToUpdate = tasks.filter(t => t.section_id === sectionId && t.parent_task_id === null) // Only top-level tasks
         .sort((a, b) => (a.order || 0) - (b.order || 0));
       
       const result = Array.from(sectionTasksToUpdate);
@@ -695,9 +699,9 @@ export const useTasks = () => {
     setTasks(prevTasks => {
       const newTasks = [...prevTasks];
       
-      const sourceTasks = newTasks.filter(t => t.section_id === sourceSectionId)
+      const sourceTasks = newTasks.filter(t => t.section_id === sourceSectionId && t.parent_task_id === null) // Only top-level tasks
         .sort((a, b) => (a.order || 0) - (b.order || 0));
-      const destinationTasks = newTasks.filter(t => t.section_id === destinationSectionId)
+      const destinationTasks = newTasks.filter(t => t.section_id === destinationSectionId && t.parent_task_id === null) // Only top-level tasks
         .sort((a, b) => (a.order || 0) - (b.order || 0));
 
       const movedTask = sourceTasks.find(t => t.id === taskId);
@@ -715,6 +719,7 @@ export const useTasks = () => {
       const newDestinationTasks = tempNewDestinationTasks.map((task, index) => ({
         ...task, // Preserve all original properties
         order: index,
+        section_id: destinationSectionId, // Ensure section_id is updated for the moved task
       }));
 
       // Merge back into the main tasks array
@@ -744,9 +749,9 @@ export const useTasks = () => {
         return;
       }
 
-      const dbSourceTasks = currentDbTasks.filter(t => t.section_id === sourceSectionId)
+      const dbSourceTasks = currentDbTasks.filter(t => t.section_id === sourceSectionId && t.parent_task_id === null) // Only top-level tasks
         .sort((a, b) => (a.order || 0) - (b.order || 0));
-      const dbDestinationTasks = currentDbTasks.filter(t => t.section_id === destinationSectionId)
+      const dbDestinationTasks = currentDbTasks.filter(t => t.section_id === destinationSectionId && t.parent_task_id === null) // Only top-level tasks
         .sort((a, b) => (a.order || 0) - (b.order || 0));
 
       const movedTaskFromDb = dbSourceTasks.find(t => t.id === taskId);

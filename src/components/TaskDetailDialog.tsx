@@ -5,15 +5,17 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Calendar, BellRing, Trash2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { Calendar, BellRing, Trash2, Plus, CheckCircle2 } from 'lucide-react'; // Added Plus and CheckCircle2
 import { format, parseISO, setHours, setMinutes } from 'date-fns';
 import { cn } from "@/lib/utils";
 import CategorySelector from "./CategorySelector";
 import PrioritySelector from "./PrioritySelector";
 import SectionSelector from "./SectionSelector";
 import { Task } from '@/hooks/useTasks'; // Import Task interface
-import { useTasks } from '@/hooks/useTasks'; // Import useTasks to get sections
+import { useTasks } from '@/hooks/useTasks'; // Import useTasks to get sections and handleAddTask
+import AddTaskForm from './AddTaskForm'; // Import AddTaskForm
+import { Checkbox } from "@/components/ui/checkbox"; // Added Checkbox import
 
 interface TaskDetailDialogProps {
   task: Task | null;
@@ -32,7 +34,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   onUpdate,
   onDelete,
 }) => {
-  const { sections } = useTasks(); // Get sections from useTasks
+  const { sections, tasks: allTasks, handleAddTask, updateTask } = useTasks(); // Get allTasks and handleAddTask
   const [editingDescription, setEditingDescription] = useState('');
   const [editingNotes, setEditingNotes] = useState('');
   const [editingDueDate, setEditingDueDate] = useState<Date | undefined>(undefined);
@@ -42,6 +44,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   const [reminderTime, setReminderTime] = useState('');
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isAddSubtaskOpen, setIsAddSubtaskOpen] = useState(false); // State for sub-task dialog
 
   useEffect(() => {
     if (task) {
@@ -55,6 +58,9 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
       setEditingSectionId(task.section_id);
     }
   }, [task]);
+
+  const subtasks = allTasks.filter(t => t.parent_task_id === task?.id)
+    .sort((a, b) => (a.order || 0) - (b.order || 0)); // Sort subtasks by order
 
   const handleSave = async () => {
     if (!task) return;
@@ -82,10 +88,27 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   };
 
   const handleDelete = () => {
-    if (task && window.confirm('Are you sure you want to delete this task?')) {
+    if (task && window.confirm('Are you sure you want to delete this task and all its sub-tasks?')) {
       onDelete(task.id);
       onClose();
     }
+  };
+
+  const handleAddSubtask = async (subtaskData: any) => {
+    if (!task || !userId) return false;
+    const success = await handleAddTask({
+      ...subtaskData,
+      parent_task_id: task.id,
+      section_id: task.section_id, // Inherit section from parent
+    });
+    if (success) {
+      setIsAddSubtaskOpen(false);
+    }
+    return success;
+  };
+
+  const handleSubtaskStatusChange = async (subtaskId: string, newStatus: Task['status']) => {
+    await updateTask(subtaskId, { status: newStatus });
   };
 
   if (!task) return null;
@@ -188,6 +211,61 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
               rows={3}
               disabled={isSaving}
             />
+          </div>
+
+          {/* Sub-tasks Section */}
+          <div className="space-y-3 mt-4 border-t pt-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold">Sub-tasks ({subtasks.length})</h3>
+              <Dialog open={isAddSubtaskOpen} onOpenChange={setIsAddSubtaskOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Plus className="mr-2 h-4 w-4" /> Add Sub-task
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add Sub-task for "{task.description}"</DialogTitle>
+                  </DialogHeader>
+                  <AddTaskForm 
+                    onAddTask={handleAddSubtask} 
+                    userId={userId} 
+                    onTaskAdded={() => setIsAddSubtaskOpen(false)} 
+                  />
+                </DialogContent>
+              </Dialog>
+            </div>
+            {subtasks.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No sub-tasks yet. Break down this task into smaller steps!</p>
+            ) : (
+              <ul className="space-y-2">
+                {subtasks.map(subtask => (
+                  <li key={subtask.id} className="flex items-center space-x-2 p-2 border rounded-md bg-background">
+                    <Checkbox
+                      checked={subtask.status === 'completed'}
+                      onCheckedChange={(checked) => {
+                        if (typeof checked === 'boolean') {
+                          handleSubtaskStatusChange(subtask.id, checked ? 'completed' : 'to-do');
+                        }
+                      }}
+                      id={`subtask-${subtask.id}`}
+                      className="flex-shrink-0"
+                    />
+                    <label
+                      htmlFor={`subtask-${subtask.id}`}
+                      className={cn(
+                        "flex-1 text-sm font-medium leading-tight",
+                        subtask.status === 'completed' ? 'line-through text-gray-500 dark:text-gray-400' : 'text-foreground',
+                        "block truncate"
+                      )}
+                    >
+                      {subtask.description}
+                    </label>
+                    {subtask.status === 'completed' && <CheckCircle2 className="h-4 w-4 text-green-500" />}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
         <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2 pt-4">

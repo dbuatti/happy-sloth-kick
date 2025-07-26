@@ -17,6 +17,8 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Checkbox } from "@/components/ui/checkbox"; // Added Checkbox import
+import { cn } from "@/lib/utils"; // Added cn import
 
 // dnd-kit imports
 import {
@@ -265,25 +267,32 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => { // Destruc
   };
 
   const tasksGroupedBySection = useMemo(() => {
-    const grouped: { [key: string]: Task[] } = {};
+    const grouped: { [key: string]: { parentTasks: Task[]; subtasks: Task[] } } = {};
 
     sections.forEach(section => {
-      grouped[section.id] = [];
+      grouped[section.id] = { parentTasks: [], subtasks: [] };
     });
 
     filteredTasks.forEach(task => {
-      if (task.section_id && grouped[task.section_id]) {
-        grouped[task.section_id].push(task);
+      if (task.parent_task_id) {
+        // This is a subtask
+        grouped[task.section_id || 'no-section']?.subtasks.push(task);
+      } else {
+        // This is a parent task
+        grouped[task.section_id || 'no-section']?.parentTasks.push(task);
       }
     });
 
+    // Sort parent tasks within each section
     Object.keys(grouped).forEach(sectionId => {
-      grouped[sectionId].sort((a, b) => (a.order || 0) - (b.order || 0));
+      grouped[sectionId].parentTasks.sort((a, b) => (a.order || 0) - (b.order || 0));
+      // Subtasks will be sorted when rendered within their parent
     });
 
     return sections.map(section => ({
       ...section,
-      tasks: grouped[section.id] || [],
+      parentTasks: grouped[section.id]?.parentTasks || [],
+      subtasks: grouped[section.id]?.subtasks || [], // All subtasks for the section, to be filtered by parent
     }));
   }, [filteredTasks, sections]);
 
@@ -314,7 +323,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => { // Destruc
       }
     } else if (isDraggingTask) {
       const draggedTask = tasks.find(task => task.id === activeId);
-      if (!draggedTask) {
+      if (!draggedTask || draggedTask.parent_task_id) { // Prevent dragging subtasks for now
         setActiveId(null);
         return;
       }
@@ -325,23 +334,32 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => { // Destruc
 
       if (over.data.current?.type === 'task') {
         const overTask = tasks.find(task => task.id === overId);
-        if (overTask) {
+        if (overTask && overTask.parent_task_id === null) { // Only drop onto top-level tasks
           destinationSectionId = overTask.section_id;
-          const overSectionTasks = tasksGroupedBySection.find(sg => sg.id === destinationSectionId)?.tasks || [];
-          destinationIndex = overSectionTasks.findIndex(task => task.id === overId);
+          const overSectionParentTasks = tasksGroupedBySection.find(sg => sg.id === destinationSectionId)?.parentTasks || [];
+          destinationIndex = overSectionParentTasks.findIndex(task => task.id === overId);
+        } else if (overTask && overTask.parent_task_id !== null) { // Dropped onto a subtask, find its parent
+          const parentOfOverTask = tasks.find(t => t.id === overTask.parent_task_id);
+          if (parentOfOverTask) {
+            destinationSectionId = parentOfOverTask.section_id;
+            const overSectionParentTasks = tasksGroupedBySection.find(sg => sg.id === destinationSectionId)?.parentTasks || [];
+            destinationIndex = overSectionParentTasks.findIndex(task => task.id === parentOfOverTask.id);
+            // If dropping onto a subtask, we want to place it after the parent task
+            if (destinationIndex !== -1) destinationIndex++;
+          }
         }
       }
       else if (over.data.current?.type === 'section-header') {
         destinationSectionId = overId;
-        destinationIndex = tasksGroupedBySection.find(sg => sg.id === overId)?.tasks.length || 0;
+        destinationIndex = tasksGroupedBySection.find(sg => sg.id === overId)?.parentTasks.length || 0;
       } else {
         setActiveId(null);
         return;
       }
 
       if (sourceSectionId === destinationSectionId) {
-        const sourceSectionTasks = tasksGroupedBySection.find(sg => sg.id === sourceSectionId)?.tasks || [];
-        const sourceIndex = sourceSectionTasks.findIndex(task => task.id === activeId);
+        const sourceSectionParentTasks = tasksGroupedBySection.find(sg => sg.id === sourceSectionId)?.parentTasks || [];
+        const sourceIndex = sourceSectionParentTasks.findIndex(task => task.id === activeId);
 
         if (sourceIndex !== -1 && destinationIndex !== -1 && sourceIndex !== destinationIndex) {
           await reorderTasksInSameSection(sourceSectionId, sourceIndex, destinationIndex);
@@ -586,29 +604,61 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => { // Destruc
                     <SortableSectionHeader
                       id={sectionGroup.id}
                       name={sectionGroup.name}
-                      taskCount={sectionGroup.tasks.length}
+                      taskCount={sectionGroup.parentTasks.length + sectionGroup.subtasks.length} // Count all tasks
                       isExpanded={expandedSections[sectionGroup.id] ?? true} // Default to true
                       onToggleExpand={() => handleToggleSectionExpand(sectionGroup.id)}
                     />
                     {(expandedSections[sectionGroup.id] ?? true) && ( // Conditionally render tasks
                       <SortableContext
-                        items={sectionGroup.tasks.map(task => task.id)}
+                        items={sectionGroup.parentTasks.map(task => task.id)} // Only sort parent tasks
                         strategy={verticalListSortingStrategy}
                       >
                         <ul className="space-y-3">
-                          {sectionGroup.tasks.map((task) => (
-                            <SortableTaskItem
-                              key={task.id}
-                              task={task}
-                              userId={userId}
-                              onStatusChange={handleTaskStatusChange}
-                              onDelete={deleteTask}
-                              onUpdate={updateTask}
-                              isSelected={selectedTaskIds.includes(task.id)}
-                              onToggleSelect={toggleTaskSelection}
-                              sections={sections}
-                              onEditTask={handleEditTask} // Pass the new prop
-                            />
+                          {sectionGroup.parentTasks.map((task) => (
+                            <React.Fragment key={task.id}>
+                              <SortableTaskItem
+                                task={task}
+                                userId={userId}
+                                onStatusChange={handleTaskStatusChange}
+                                onDelete={deleteTask}
+                                onUpdate={updateTask}
+                                isSelected={selectedTaskIds.includes(task.id)}
+                                onToggleSelect={toggleTaskSelection}
+                                sections={sections}
+                                onEditTask={handleEditTask}
+                              />
+                              {/* Render subtasks if they exist for this parent task */}
+                              {sectionGroup.subtasks
+                                .filter(sub => sub.parent_task_id === task.id)
+                                .sort((a, b) => (a.order || 0) - (b.order || 0)) // Sort subtasks
+                                .map(subtask => (
+                                  <li key={subtask.id} className="ml-8 border rounded-lg p-3 bg-card dark:bg-gray-800 shadow-sm flex items-center space-x-3">
+                                    <Checkbox
+                                      checked={subtask.status === 'completed'}
+                                      onCheckedChange={(checked) => {
+                                        if (typeof checked === 'boolean') {
+                                          updateTask(subtask.id, { status: checked ? 'completed' : 'to-do' });
+                                        }
+                                      }}
+                                      id={`subtask-${subtask.id}`}
+                                      className="flex-shrink-0"
+                                    />
+                                    <label
+                                      htmlFor={`subtask-${subtask.id}`}
+                                      className={cn(
+                                        "flex-1 text-sm font-medium leading-tight",
+                                        subtask.status === 'completed' ? 'line-through text-gray-500 dark:text-gray-400' : 'text-foreground',
+                                        "block truncate"
+                                      )}
+                                    >
+                                      {subtask.description}
+                                    </label>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditTask(subtask)}>
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                  </li>
+                                ))}
+                            </React.Fragment>
                           ))}
                         </ul>
                       </SortableContext>
@@ -629,13 +679,13 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => { // Destruc
                   isSelected={selectedTaskIds.includes(activeTask.id)}
                   onToggleSelect={toggleTaskSelection}
                   sections={sections}
-                  onEditTask={handleEditTask} // Pass the new prop
+                  onEditTask={handleEditTask}
                 />
               ) : activeSection ? (
                 <SortableSectionHeader
                   id={activeSection.id}
                   name={activeSection.name}
-                  taskCount={tasksGroupedBySection.find(s => s.id === activeSection.id)?.tasks.length || 0}
+                  taskCount={tasksGroupedBySection.find(s => s.id === activeSection.id)?.parentTasks.length || 0}
                   isExpanded={expandedSections[activeSection.id] ?? true} // Default to true
                   onToggleExpand={() => {}} // No-op for drag overlay
                 />
