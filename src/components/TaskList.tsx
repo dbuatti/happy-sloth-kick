@@ -7,7 +7,14 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { showSuccess, showError } from "@/utils/toast";
 import { format, addDays, subDays, isSameDay } from 'date-fns';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Task {
   id: string;
@@ -108,6 +115,40 @@ const mockAddTask = async (description: string, isDailyRecurring: boolean, date:
   });
 };
 
+// Mock function to delete a task for a specific date
+const mockDeleteTask = async (date: Date, taskId: string): Promise<void> => {
+  const dateKey = getFormattedDateKey(date);
+  const tasksForDay = mockDailyTaskStates.get(dateKey);
+
+  if (!tasksForDay) {
+    throw new Error("Tasks for this day not found in mock store.");
+  }
+
+  const updatedTasks = tasksForDay.filter(task => task.id !== taskId);
+  mockDailyTaskStates.set(dateKey, updatedTasks);
+
+  // Also remove from initialBaseTasks if it was a daily recurring task
+  const taskToDelete = tasksForDay.find(task => task.id === taskId);
+  if (taskToDelete?.is_daily_recurring) {
+    const index = initialBaseTasks.findIndex(task => task.id === taskId);
+    if (index > -1) {
+      initialBaseTasks.splice(index, 1);
+    }
+  }
+
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      if (Math.random() > 0.1) { // Simulate occasional failure
+        showSuccess("Task deleted successfully!");
+        resolve();
+      } else {
+        showError("Failed to delete task.");
+        reject(new Error("Failed to delete task"));
+      }
+    }, 300);
+  });
+};
+
 
 const TaskList: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -133,8 +174,7 @@ const TaskList: React.FC = () => {
     fetchTasks();
   }, [fetchTasks]);
 
-  const handleStatusChange = async (taskId: string, currentStatus: Task['status']) => {
-    const newStatus = currentStatus === 'to-do' ? 'completed' : 'to-do';
+  const handleStatusChange = async (taskId: string, newStatus: Task['status']) => {
     try {
       await mockUpdateTaskStatus(currentDate, taskId, newStatus);
       setTasks(prevTasks =>
@@ -144,6 +184,15 @@ const TaskList: React.FC = () => {
       );
     } catch (error) {
       console.error("Error updating task status:", error);
+    }
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      await mockDeleteTask(currentDate, taskId);
+      setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+    } catch (error) {
+      console.error("Error deleting task:", error);
     }
   };
 
@@ -223,7 +272,7 @@ const TaskList: React.FC = () => {
                 <div className="flex items-center space-x-3">
                   <Checkbox
                     checked={task.status === 'completed'}
-                    onCheckedChange={() => handleStatusChange(task.id, task.status)}
+                    onCheckedChange={() => handleStatusChange(task.id, task.status === 'completed' ? 'to-do' : 'completed')}
                     id={`task-${task.id}`}
                   />
                   <Label
@@ -238,8 +287,36 @@ const TaskList: React.FC = () => {
                     </span>
                   )}
                 </div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">
-                  Status: <span className="capitalize">{task.status}</span>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-500 dark:text-gray-400 capitalize">
+                    {task.status}
+                  </span>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-8 w-8 p-0">
+                        <span className="sr-only">Open menu</span>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleStatusChange(task.id, 'to-do')}>
+                        Mark as To-Do
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleStatusChange(task.id, 'completed')}>
+                        Mark as Completed
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleStatusChange(task.id, 'skipped')}>
+                        Mark as Skipped
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleStatusChange(task.id, 'archived')}>
+                        Mark as Archived
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => handleDeleteTask(task.id)} className="text-red-600">
+                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </li>
             ))}
