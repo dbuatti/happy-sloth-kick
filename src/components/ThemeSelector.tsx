@@ -5,8 +5,6 @@ import { Monitor, Sun, Moon, Palette } from "lucide-react";
 import { themes, ThemeName } from "@/lib/themes";
 import { useState, useEffect } from "react";
 
-type AvailableTheme = ThemeName | 'light' | 'dark' | 'system';
-
 const ThemeSelector = () => {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -23,12 +21,12 @@ const ThemeSelector = () => {
     );
   }
 
-  const getThemeIcon = (themeName: AvailableTheme) => {
-    if (themeName === 'light') return <Sun className="h-4 w-4 mr-2" />;
-    if (themeName === 'dark') return <Moon className="h-4 w-4 mr-2" />;
-    if (themeName === 'system') return <Monitor className="h-4 w-4 mr-2" />;
-    return <Palette className="h-4 w-4 mr-2" />;
-  };
+  // Determine if we're in a custom theme
+  const isCustomTheme = theme && 
+    ['adhd-friendly', 'calm-mist', 'warm-dawn', 'gentle-night', 'cosmic-dusk', 'focus-flow'].includes(theme);
+
+  // Get the base theme name (without -dark suffix)
+  const baseTheme = isCustomTheme ? theme : 'light';
 
   return (
     <DropdownMenu>
@@ -42,14 +40,6 @@ const ThemeSelector = () => {
           <Monitor className="h-4 w-4 mr-2" />
           System
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('light')}>
-          <Sun className="h-4 w-4 mr-2" />
-          Light
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('dark')}>
-          <Moon className="h-4 w-4 mr-2" />
-          Dark
-        </DropdownMenuItem>
         
         <div className="my-1 h-px bg-muted" />
         
@@ -57,8 +47,9 @@ const ThemeSelector = () => {
           <DropdownMenuItem 
             key={themeName} 
             onClick={() => setTheme(themeName as ThemeName)}
+            className={isCustomTheme && themeName === baseTheme ? 'font-bold' : ''}
           >
-            {getThemeIcon(themeName as AvailableTheme)}
+            <Palette className="h-4 w-4 mr-2" />
             {themeData.name}
           </DropdownMenuItem>
         ))}

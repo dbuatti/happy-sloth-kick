@@ -177,7 +177,7 @@ export const themes = {
       '--secondary': '220 15% 85%',
       '--secondary-foreground': '220 15% 92%',
       '--muted': '220 20% 23%',
-      '--muted-foreground': '220 15% 75%',
+      '--muted-foreground': '220 15% 70%',
       '--accent': '30 30% 70%',
       '--accent-foreground': '220 15% 92%',
       '--destructive': '15 70% 70%',

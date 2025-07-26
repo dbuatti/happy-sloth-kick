@@ -242,99 +242,34 @@
   }
 
   .theme-cosmic-dusk,
-  .cosmic-dusk {
-    --background: 225 15% 98%;
-    --foreground: 225 20% 20%;
-    --card: 225 15% 98%;
-    --card-foreground: 225 20% 20%;
-    --primary: 225 30% 50%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 225 20% 80%;
-    --secondary-foreground: 225 20% 20%;
-    --muted: 225 15% 98%;
-    --muted-foreground: 225 15% 45%;
-    --accent: 345 40% 60%;
-    --accent-foreground: 225 20% 20%;
-    --destructive: 25 60% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 225 15% 90%;
-    --input: 225 15% 90%;
-    --ring: 225 20% 25%;
-  }
+ I see the issue now. The theme system is treating "light" and "dark" as separate themes rather than variants of the selected custom theme. Let me fix this by restructuring the theme system to properly handle theme variants.
 
-  .theme-cosmic-dusk.dark,
-  .cosmic-dusk.dark,
-  .dark .theme-cosmic-dusk,
-  .dark .cosmic-dusk {
-    --background: 225 30% 8%;
-    --foreground: 225 15% 92%;
-    --card: 225 35% 12%;
-    --card-foreground: 225 15% 92%;
-    --primary: 225 45% 55%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 225 30% 65%;
-    --secondary-foreground: 225 15% 92%;
-    --muted: 225 35% 12%;
-    --muted-foreground: 225 15% 70%;
-    --accent: 345 55% 70%;
-    --accent-foreground: 225 15% 92%;
-    --destructive: 25 75% 65%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 225 30% 20%;
-    --input: 225 30% 20%;
-    --ring: 225 20% 85%;
-  }
+<dyad-write path="src/components/theme-provider.tsx" description="Fixing ThemeProvider to properly handle theme variants">
+"use client";
 
-  .theme-focus-flow,
-  .focus-flow {
-    --background: 200 15% 98%;
-    --foreground: 200 20% 15%;
-    --card: 200 15% 98%;
-    --card-foreground: 200 20% 15%;
-    --primary: 200 60% 35%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 30 40% 75%;
-    --secondary-foreground: 200 20% 15%;
-    --muted: 200 15% 98%;
-    --muted-foreground: 200 10% 45%;
-    --accent: 60 70% 45%;
-    --accent-foreground: 200 20% 15%;
-    --destructive: 0 70% 55%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 200 15% 90%;
-    --input: 200 15% 90%;
-    --ring: 200 20% 20%;
-  }
+import * as React from "react";
+import { ThemeProvider as NextThemesProvider } from "next-themes";
+import { type ThemeProviderProps } from "next-themes/dist/types";
 
-  .theme-focus-flow.dark,
-  .focus-flow.dark,
-  .dark .theme-focus-flow,
-  .dark .focus-flow {
-    --background: 200 25% 12%;
-    --foreground: 200 15% 92%;
-    --card: 200 30% 16%;
-    --card-foreground: 200 15% 92%;
-    --primary: 200 65% 45%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 30 45% 80%;
-    --secondary-foreground: 200 15% 92%;
-    --muted: 200 30% 16%;
-    --muted-foreground: 200 15% 70%;
-    --accent: 60 75% 55%;
-    --accent-foreground: 200 15% 92%;
-    --destructive: 0 75% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 200 30% 25%;
-    --input: 200 30% 25%;
-    --ring: 200 25% 85%;
-  }
-
-  * {
-    @apply border-border;
-  }
-
-  body {
-    @apply bg-background text-foreground;
-    transition: background-color 0.2s, color 0.2s;
-  }
+export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
+  return (
+    <NextThemesProvider 
+      attribute="class"
+      enableSystem
+      defaultTheme="system"
+      themes={[
+        "light",
+        "dark",
+        "adhd-friendly",
+        "calm-mist",
+        "warm-dawn",
+        "gentle-night",
+        "cosmic-dusk",
+        "focus-flow"
+      ]}
+      {...props}
+    >
+      {children}
+    </NextThemesProvider>
+  );
 }
