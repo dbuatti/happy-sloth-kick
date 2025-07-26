@@ -2,6 +2,12 @@ import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import TaskItem from './TaskItem';
+import { DraggableAttributes } from '@dnd-kit/core'; // Keep DraggableAttributes
+
+// Define SyntheticListeners type locally
+type SyntheticListeners = {
+  [key: string]: EventListener;
+};
 
 interface Task {
   id: string;
@@ -58,8 +64,13 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <TaskItem task={task} {...props} />
+    <div ref={setNodeRef} style={style}>
+      <TaskItem 
+        task={task} 
+        dragAttributes={attributes} 
+        dragListeners={listeners} 
+        {...props} 
+      />
     </div>
   );
 };

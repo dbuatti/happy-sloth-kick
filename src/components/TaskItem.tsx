@@ -7,12 +7,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing, FolderOpen } from 'lucide-react'; // Added BellRing, FolderOpen
+import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing, FolderOpen, GripVertical } from 'lucide-react';
 import { format, parseISO, isToday, isAfter, isBefore, setHours, setMinutes } from 'date-fns';
 import { cn } from "@/lib/utils";
 import CategorySelector from "./CategorySelector";
 import PrioritySelector from "./PrioritySelector";
-import SectionSelector from "./SectionSelector"; // Import SectionSelector
+import SectionSelector from "./SectionSelector";
+import { DraggableAttributes } from '@dnd-kit/core'; // Keep DraggableAttributes
+
+// Define SyntheticListeners type locally
+type SyntheticListeners = {
+  [key: string]: EventListener;
+};
 
 interface Task {
   id: string;
@@ -26,7 +32,7 @@ interface Task {
   due_date: string | null;
   notes: string | null;
   remind_at: string | null;
-  section_id: string | null; // New: for task sections
+  section_id: string | null;
 }
 
 interface TaskItemProps {
@@ -37,7 +43,9 @@ interface TaskItemProps {
   onUpdate: (taskId: string, updates: Partial<Task>) => void;
   isSelected: boolean;
   onToggleSelect: (taskId: string, checked: boolean) => void;
-  sections: { id: string; name: string }[]; // Pass sections to display name
+  sections: { id: string; name: string }[];
+  dragAttributes: DraggableAttributes;
+  dragListeners: SyntheticListeners | undefined; // Use the locally defined type
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -49,6 +57,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
   isSelected,
   onToggleSelect,
   sections,
+  dragAttributes,
+  dragListeners,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingDescription, setEditingDescription] = useState(task.description);
@@ -58,7 +68,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const [editingPriority, setEditingPriority] = useState(task.priority);
   const [editingRemindAt, setEditingRemindAt] = useState<Date | undefined>(task.remind_at ? parseISO(task.remind_at) : undefined);
   const [reminderTime, setReminderTime] = useState<string>(task.remind_at ? format(parseISO(task.remind_at), 'HH:mm') : '');
-  const [editingSectionId, setEditingSectionId] = useState<string | null>(task.section_id); // New state for section_id
+  const [editingSectionId, setEditingSectionId] = useState<string | null>(task.section_id);
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -90,7 +100,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   };
 
   const getSectionName = (sectionId: string | null) => {
-    if (!sectionId) return 'Unassigned'; // Fallback if section_id is null, though it should always be assigned now
+    if (!sectionId) return 'Unassigned';
     const section = sections.find(s => s.id === sectionId);
     return section ? section.name : 'Unknown Section';
   };
@@ -111,7 +121,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
       category: editingCategory,
       priority: editingPriority,
       remind_at: finalRemindAt ? finalRemindAt.toISOString() : null,
-      section_id: editingSectionId, // Save section_id
+      section_id: editingSectionId,
     });
     setIsEditing(false);
   };
@@ -125,7 +135,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
     setEditingPriority(task.priority);
     setEditingRemindAt(task.remind_at ? parseISO(task.remind_at) : undefined);
     setReminderTime(task.remind_at ? format(parseISO(task.remind_at), 'HH:mm') : '');
-    setEditingSectionId(task.section_id); // Reset section_id
+    setEditingSectionId(task.section_id);
   };
 
   return (
@@ -205,7 +215,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
               <Input
                 type="time"
                 value={reminderTime}
-                onChange={(e) => setReminderTime(e.target.value)}
+                onChange={(e) => setReminderTime(e.target.value)} // Corrected setter
                 className="w-24"
                 disabled={!editingRemindAt}
               />
@@ -233,15 +243,26 @@ const TaskItem: React.FC<TaskItemProps> = ({
         <div className="flex flex-col space-y-3">
           <div className="flex items-start justify-between">
             <div className="flex items-start space-x-3 flex-1">
+              {/* Drag handle */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 cursor-grab"
+                {...dragAttributes}
+                {...dragListeners}
+                aria-label="Drag task"
+              >
+                <GripVertical className="h-4 w-4 text-muted-foreground" />
+              </Button>
               <Checkbox
-                checked={isSelected || task.status === 'completed'}
+                checked={task.status === 'completed'}
                 onCheckedChange={(checked) => {
                   if (typeof checked === 'boolean') {
                     onToggleSelect(task.id, checked);
-                    if (!checked) {
-                      if (task.status === 'completed') {
-                        onStatusChange(task.id, 'to-do');
-                      }
+                    if (checked) {
+                      onStatusChange(task.id, 'completed');
+                    } else {
+                      onStatusChange(task.id, 'to-do');
                     }
                   }
                 }}
