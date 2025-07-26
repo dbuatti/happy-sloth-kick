@@ -209,7 +209,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
               <Input
                 type="time"
                 value={reminderTime}
-                onChange={(e) => setNewReminderTime(e.target.value)}
+                onChange={(e) => setReminderTime(e.target.value)} {/* Corrected typo here */}
                 className="w-24"
                 disabled={!editingRemindAt}
               />

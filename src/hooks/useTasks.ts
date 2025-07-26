@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext'; // Corrected '=>' to 'from'
+import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess } from '@/utils/toast';
 import { v4 as uuidv4 } from 'uuid'; // Import uuid for generating IDs
 import { isSameDay } from 'date-fns'; // Import isSameDay
@@ -167,7 +167,7 @@ export const useTasks = () => {
     } finally {
       setLoading(false);
     }
-  }, [userId, currentDate]); // Removed sortKey, sortDirection from dependencies as they are for display, not fetch logic
+  }, [userId, currentDate]);
 
   // Effect to fetch sections and tasks on userId or date change
   useEffect(() => {
@@ -304,13 +304,13 @@ export const useTasks = () => {
         .select();
 
       if (error) {
-        console.error('Error updating task:', error); // Log the full error object
+        console.error('Error updating task:', error);
         showError(error.message);
         return;
       }
       if (data && data.length > 0) {
         setTasks(prevTasks =>
-          prevTasks.map(task => (task.id === taskId ? { ...task, ...data[0] } : task)) // Use data[0] for full updated object
+          prevTasks.map(task => (task.id === taskId ? { ...task, ...data[0] } : task))
         );
         showSuccess('Task updated successfully!');
       }
@@ -333,7 +333,7 @@ export const useTasks = () => {
         .eq('user_id', userId);
 
       if (error) {
-        console.error('Error deleting task:', error); // Log the full error object
+        console.error('Error deleting task:', error);
         showError(error.message);
         return;
       }
@@ -395,9 +395,13 @@ export const useTasks = () => {
       return;
     }
     try {
+      // Determine the highest order for new section
+      const maxOrder = sections.reduce((max, section) => Math.max(max, section.order || 0), -1);
+      const newOrder = maxOrder + 1;
+
       const { data, error } = await supabase
         .from('task_sections')
-        .insert({ name, user_id: userId })
+        .insert({ name, user_id: userId, order: newOrder })
         .select();
 
       if (error) {
@@ -576,9 +580,9 @@ export const useTasks = () => {
       }));
 
       // Add to destination section's list at the correct index and re-index
-      const newDestinationTasks = Array.from(destinationTasks);
-      newDestinationTasks.splice(destinationIndex, 0, { ...movedTask, section_id: destinationSectionId });
-      const updatedDestinationTasks = newDestinationTasks.map((task, index) => ({
+      const tempNewDestinationTasks = Array.from(destinationTasks);
+      tempNewDestinationTasks.splice(destinationIndex, 0, { ...movedTask, section_id: destinationSectionId });
+      const newDestinationTasks = tempNewDestinationTasks.map((task, index) => ({
         ...task,
         order: index,
       }));
@@ -590,7 +594,7 @@ export const useTasks = () => {
         }
         const updatedSourceTask = newSourceTasks.find(t => t.id === task.id);
         if (updatedSourceTask) return updatedSourceTask;
-        const updatedDestTask = updatedDestinationTasks.find(t => t.id === task.id);
+        const updatedDestTask = newDestinationTasks.find(t => t.id === task.id);
         if (updatedDestTask) return updatedDestTask;
         return task;
       });
@@ -654,6 +658,48 @@ export const useTasks = () => {
     }
   };
 
+  const reorderSections = async (startIndex: number, endIndex: number) => {
+    if (!userId) return;
+
+    // Optimistically update UI
+    setSections(prevSections => {
+      const newSections = Array.from(prevSections);
+      const [removed] = newSections.splice(startIndex, 1);
+      newSections.splice(endIndex, 0, removed);
+
+      // Re-assign order values
+      return newSections.map((section, index) => ({
+        ...section,
+        order: index,
+      }));
+    });
+
+    try {
+      const sectionsToUpdate = Array.from(sections);
+      const [removed] = sectionsToUpdate.splice(startIndex, 1);
+      sectionsToUpdate.splice(endIndex, 0, removed);
+
+      const updates = sectionsToUpdate.map((section, index) => ({
+        id: section.id,
+        order: index,
+      }));
+
+      const { error } = await supabase.from('task_sections').upsert(updates, { onConflict: 'id' });
+      if (error) {
+        console.error('Error reordering sections:', error);
+        showError(error.message);
+        fetchSections(); // Revert to server state on error
+        return;
+      }
+      showSuccess('Sections reordered successfully!');
+      // No need to fetchSections here if optimistic update is correct
+    } catch (err) {
+      console.error('Exception reordering sections:', err);
+      showError('An unexpected error occurred while reordering sections.');
+      fetchSections(); // Revert to server state on error
+    }
+  };
+
   return {
     tasks,
     filteredTasks,
@@ -689,5 +735,6 @@ export const useTasks = () => {
     deleteSection,
     reorderTasksInSameSection,
     moveTaskToNewSection,
+    reorderSections, // Expose the new function
   };
 };

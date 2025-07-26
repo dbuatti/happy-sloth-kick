@@ -32,10 +32,12 @@ import {
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
+  arrayMove, // Import arrayMove for reordering logic
 } from '@dnd-kit/sortable';
 
 // Import the new SortableTaskItem component
 import SortableTaskItem from './SortableTaskItem';
+import SortableSectionHeader from './SortableSectionHeader'; // Import new component
 
 interface Task {
   id: string;
@@ -93,12 +95,13 @@ const TaskList: React.FC = () => {
     setSortKey,
     sortDirection,
     setSortDirection,
-    sections,
+    sections, // Get sections from useTasks
     createSection,
     updateSection,
     deleteSection,
     reorderTasksInSameSection,
     moveTaskToNewSection,
+    reorderSections, // New: reorderSections from useTasks
   } = useTasks();
 
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
@@ -264,47 +267,58 @@ const TaskList: React.FC = () => {
     const activeId = String(active.id);
     const overId = String(over.id);
 
-    // Find the task being dragged
-    const draggedTask = tasks.find(task => task.id === activeId);
-    if (!draggedTask) return;
+    // Determine if we are dragging a section or a task
+    const isDraggingSection = active.data.current?.type === 'section-header';
+    const isDraggingTask = active.data.current?.type === 'task';
 
-    // Determine source and destination section IDs and indices
-    let sourceSectionId: string | null = draggedTask.section_id;
-    let destinationSectionId: string | null = null;
-    let destinationIndex = -1;
+    if (isDraggingSection) {
+      const oldIndex = sections.findIndex(section => section.id === activeId);
+      const newIndex = sections.findIndex(section => section.id === overId);
 
-    // Case 1: Dropped onto another task
-    if (over.data.current?.type === 'task') {
-      const overTask = tasks.find(task => task.id === overId);
-      if (overTask) {
-        destinationSectionId = overTask.section_id;
-        // Find the index of the overTask within its section's sorted tasks
-        const overSectionTasks = tasksGroupedBySection.find(sg => sg.id === destinationSectionId)?.tasks || [];
-        destinationIndex = overSectionTasks.findIndex(task => task.id === overId);
+      if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+        await reorderSections(oldIndex, newIndex);
       }
-    } 
-    // Case 2: Dropped onto a section header (meaning an empty section or just the header)
-    else if (over.data.current?.type === 'section-header') {
-      destinationSectionId = overId;
-      // Place at the end of this section
-      destinationIndex = tasksGroupedBySection.find(sg => sg.id === overId)?.tasks.length || 0;
-    } else {
-      // If dropped outside any valid droppable, revert or handle as needed
-      return;
-    }
+    } else if (isDraggingTask) {
+      const draggedTask = tasks.find(task => task.id === activeId);
+      if (!draggedTask) return;
 
-    if (sourceSectionId === destinationSectionId) {
-      // Moved within the same section
-      const sourceSectionTasks = tasksGroupedBySection.find(sg => sg.id === sourceSectionId)?.tasks || [];
-      const sourceIndex = sourceSectionTasks.findIndex(task => task.id === activeId);
+      let sourceSectionId: string | null = draggedTask.section_id;
+      let destinationSectionId: string | null = null;
+      let destinationIndex = -1;
 
-      if (sourceIndex !== -1 && destinationIndex !== -1 && sourceIndex !== destinationIndex) {
-        await reorderTasksInSameSection(sourceSectionId, sourceIndex, destinationIndex);
+      // Case 1: Dropped onto another task
+      if (over.data.current?.type === 'task') {
+        const overTask = tasks.find(task => task.id === overId);
+        if (overTask) {
+          destinationSectionId = overTask.section_id;
+          // Find the index of the overTask within its section's sorted tasks
+          const overSectionTasks = tasksGroupedBySection.find(sg => sg.id === destinationSectionId)?.tasks || [];
+          destinationIndex = overSectionTasks.findIndex(task => task.id === overId);
+        }
+      } 
+      // Case 2: Dropped onto a section header (meaning an empty section or just the header)
+      else if (over.data.current?.type === 'section-header') {
+        destinationSectionId = overId;
+        // Place at the end of this section
+        destinationIndex = tasksGroupedBySection.find(sg => sg.id === overId)?.tasks.length || 0;
+      } else {
+        // If dropped outside any valid droppable, revert or handle as needed
+        return;
       }
-    } else {
-      // Moved to a different section
-      if (sourceSectionId !== null && destinationSectionId !== null) {
-        await moveTaskToNewSection(activeId, sourceSectionId, destinationSectionId, destinationIndex);
+
+      if (sourceSectionId === destinationSectionId) {
+        // Moved within the same section
+        const sourceSectionTasks = tasksGroupedBySection.find(sg => sg.id === sourceSectionId)?.tasks || [];
+        const sourceIndex = sourceSectionTasks.findIndex(task => task.id === activeId);
+
+        if (sourceIndex !== -1 && destinationIndex !== -1 && sourceIndex !== destinationIndex) {
+          await reorderTasksInSameSection(sourceSectionId, sourceIndex, destinationIndex);
+        }
+      } else {
+        // Moved to a different section
+        if (sourceSectionId !== null && destinationSectionId !== null) {
+          await moveTaskToNewSection(activeId, sourceSectionId, destinationSectionId, destinationIndex);
+        }
       }
     }
   };
@@ -512,45 +526,48 @@ const TaskList: React.FC = () => {
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
           >
-            <div className="space-y-6">
-              {tasksGroupedBySection.map(sectionGroup => (
-                <div key={sectionGroup.id} className="space-y-3">
-                  <h3 className="text-xl font-semibold flex items-center gap-2"
-                      data-dnd-kit-droppable-id={sectionGroup.id} // Mark section header as droppable
-                      data-dnd-kit-droppable-type="section-header"
-                  >
-                    <FolderOpen className="h-5 w-5 text-muted-foreground" />
-                    {sectionGroup.name} ({sectionGroup.tasks.length})
-                  </h3>
-                  <SortableContext
-                    items={sectionGroup.tasks.map(task => task.id)}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    <ul className="space-y-3">
-                      {sectionGroup.tasks.map((task) => (
-                        <SortableTaskItem
-                          key={task.id}
-                          task={task}
-                          userId={userId}
-                          onStatusChange={handleTaskStatusChange}
-                          onDelete={deleteTask}
-                          onUpdate={updateTask}
-                          isSelected={selectedTaskIds.includes(task.id)}
-                          onToggleSelect={toggleTaskSelection}
-                          sections={sections}
-                        />
-                      ))}
-                    </ul>
-                  </SortableContext>
-                </div>
-              ))}
+            <SortableContext
+              items={sections.map(s => s.id)} // Make sections sortable
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-6">
+                {tasksGroupedBySection.map(sectionGroup => (
+                  <div key={sectionGroup.id} className="space-y-3">
+                    <SortableSectionHeader
+                      id={sectionGroup.id}
+                      name={sectionGroup.name}
+                      taskCount={sectionGroup.tasks.length}
+                    />
+                    <SortableContext
+                      items={sectionGroup.tasks.map(task => task.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <ul className="space-y-3">
+                        {sectionGroup.tasks.map((task) => (
+                          <SortableTaskItem
+                            key={task.id}
+                            task={task}
+                            userId={userId}
+                            onStatusChange={handleTaskStatusChange}
+                            onDelete={deleteTask}
+                            onUpdate={updateTask}
+                            isSelected={selectedTaskIds.includes(task.id)}
+                            onToggleSelect={toggleTaskSelection}
+                            sections={sections}
+                          />
+                        ))}
+                      </ul>
+                    </SortableContext>
+                  </div>
+                ))}
+              </div>
+            </SortableContext>
 
-              <BulkActions 
-                selectedTaskIds={selectedTaskIds} 
-                onAction={handleBulkAction} 
-                onClearSelection={clearSelectedTasks} 
-              />
-            </div>
+            <BulkActions 
+              selectedTaskIds={selectedTaskIds} 
+              onAction={handleBulkAction} 
+              onClearSelection={clearSelectedTasks} 
+            />
           </DndContext>
         )}
         <QuickAddTask onAddTask={handleNewTaskSubmit} userId={userId} />
