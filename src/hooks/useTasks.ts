@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess } from '@/utils/toast';
-import { v4 as uuidv4 } from 'uuid'; // Import uuid for generating IDs
-import { isSameDay, isPast } from 'date-fns'; // Import isSameDay and isPast
+import { v4 as uuidv4 } from 'uuid';
+import { isSameDay, isPast, startOfDay as fnsStartOfDay } from 'date-fns';
 
 interface Task {
   id: string;
@@ -19,7 +19,7 @@ interface Task {
   remind_at: string | null;
   section_id: string | null;
   order: number | null;
-  original_task_id: string | null; // New field for recurring tasks
+  original_task_id: string | null;
 }
 
 interface TaskSection {
@@ -47,7 +47,7 @@ export const useTasks = () => {
   const { user } = useAuth();
   const userId = user?.id;
 
-  const [tasks, setTasks] = useState<Task[]>([]); // This will now hold a broader set of tasks
+  const [tasks, setTasks] = useState<Task[]>([]); // This will now hold ALL tasks for the user
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
@@ -85,29 +85,18 @@ export const useTasks = () => {
       return;
     }
     setLoading(true);
-    const startOfCurrentDate = new Date(currentDate);
-    startOfCurrentDate.setHours(0, 0, 0, 0);
-    const endOfCurrentDate = new Date(currentDate);
-    endOfCurrentDate.setHours(23, 59, 59, 999);
-
+    const startOfCurrentDate = fnsStartOfDay(currentDate);
+    
     try {
-      // Fetch all tasks for the user that are not archived,
-      // OR are archived/completed on the current day (for daily view context),
-      // OR are recurring templates.
+      // Fetch ALL tasks for the user. Filtering for display will happen in filteredTasks memo.
       const { data: fetchedTasks, error: fetchError } = await supabase
         .from('tasks')
         .select('*')
-        .eq('user_id', userId)
-        .or(
-          `status.neq.archived, ` + // All non-archived tasks
-          `and(status.eq.archived, created_at.gte.${startOfCurrentDate.toISOString()}, created_at.lte.${endOfCurrentDate.toISOString()}), ` + // Archived today
-          `and(status.eq.completed, created_at.gte.${startOfCurrentDate.toISOString()}, created_at.lte.${endOfCurrentDate.toISOString()})` // Completed today
-          // Recurring templates are implicitly included if they are not archived
-        );
+        .eq('user_id', userId);
 
       if (fetchError) throw fetchError;
 
-      let allUserTasks: Task[] = fetchedTasks || []; // This will hold all tasks from DB
+      let allUserTasks: Task[] = fetchedTasks || [];
 
       // --- Recurring task generation logic ---
       const dailyRecurringTemplates: Task[] = [];
@@ -118,33 +107,30 @@ export const useTasks = () => {
         if (task.recurring_type === 'daily') {
           dailyRecurringTemplates.push(task);
           if (isSameDay(taskCreatedAt, currentDate)) {
-            existingOriginalIdsForToday.add(task.id); // Template itself acts as today's instance
+            existingOriginalIdsForToday.add(task.id);
           }
         }
         if (task.original_task_id && isSameDay(taskCreatedAt, currentDate)) {
-          existingOriginalIdsForToday.add(task.original_task_id); // An instance of this recurring task already exists for today
+          existingOriginalIdsForToday.add(task.original_task_id);
         }
       }
 
       const newRecurringInstances: Task[] = [];
       for (const template of dailyRecurringTemplates) {
-        // Only generate if the template was created *before* today
-        // AND an instance for today doesn't already exist (checked by original_task_id or template ID itself)
         if (new Date(template.created_at) < startOfCurrentDate && !existingOriginalIdsForToday.has(template.id)) {
           const newInstance: Task = {
             ...template,
-            id: uuidv4(), // Generate a new ID for the instance
-            created_at: currentDate.toISOString(), // Set created_at to current day
-            status: 'to-do', // Reset status for the new day's instance
-            recurring_type: 'none', // This instance is not recurring itself
-            original_task_id: template.id, // Link to the original recurring task
+            id: uuidv4(),
+            created_at: currentDate.toISOString(),
+            status: 'to-do',
+            recurring_type: 'none',
+            original_task_id: template.id,
             order: template.order,
           };
           newRecurringInstances.push(newInstance);
         }
       }
 
-      // Insert new recurring instances into the database
       if (newRecurringInstances.length > 0) {
         const { data: insertedData, error: insertError } = await supabase
           .from('tasks')
@@ -155,7 +141,7 @@ export const useTasks = () => {
           console.error('Error inserting recurring instance:', insertError);
           showError('Failed to generate a recurring task instance.');
         } else if (insertedData) {
-          allUserTasks.push(...insertedData); // Add newly inserted instances to the full list
+          allUserTasks.push(...insertedData);
         }
       }
       
@@ -168,46 +154,49 @@ export const useTasks = () => {
     }
   }, [userId, currentDate]);
 
-  // Effect to fetch sections and tasks on userId or date change
   useEffect(() => {
     fetchSections();
     fetchTasks();
   }, [fetchSections, fetchTasks]);
 
-  // Derived filteredTasks using useMemo
   const filteredTasks = useMemo(() => {
-    let tempTasks = [...tasks]; // 'tasks' now holds all relevant tasks for the user
+    let tempTasks = [...tasks]; // 'tasks' now holds ALL tasks for the user
 
-    const startOfCurrentDate = new Date(currentDate);
-    startOfCurrentDate.setHours(0, 0, 0, 0);
+    const startOfCurrentDate = fnsStartOfDay(currentDate);
     const endOfCurrentDate = new Date(currentDate);
     endOfCurrentDate.setHours(23, 59, 59, 999);
 
-    // First, filter by date relevance for the current view
-    tempTasks = tempTasks.filter(task => {
-      const taskCreatedAt = new Date(task.created_at);
-      const taskDueDate = task.due_date ? new Date(task.due_date) : null;
+    // Apply date relevance filter based on the current view (Daily Tasks)
+    // This logic applies unless a specific status filter (like 'archived' or 'completed') is active.
+    if (statusFilter === 'all' || statusFilter === 'to-do' || statusFilter === 'skipped') {
+      tempTasks = tempTasks.filter(task => {
+        const taskCreatedAt = new Date(task.created_at);
+        const taskDueDate = task.due_date ? new Date(task.due_date) : null;
 
-      // Always show tasks created on the current day
-      if (isSameDay(taskCreatedAt, currentDate)) return true;
+        // Show tasks created on the current day (unless archived)
+        if (isSameDay(taskCreatedAt, currentDate) && task.status !== 'archived') return true;
 
-      // Always show tasks due on the current day
-      if (taskDueDate && isSameDay(taskDueDate, currentDate)) return true;
+        // Show tasks due on the current day (unless archived)
+        if (taskDueDate && isSameDay(taskDueDate, currentDate) && task.status !== 'archived') return true;
 
-      // Carry over overdue tasks (to-do or skipped)
-      if ((task.status === 'to-do' || task.status === 'skipped') && taskDueDate && isPast(taskDueDate) && !isSameDay(taskDueDate, currentDate)) return true;
+        // Carry over overdue tasks (to-do or skipped)
+        if ((task.status === 'to-do' || task.status === 'skipped') && taskDueDate && isPast(taskDueDate) && !isSameDay(taskDueDate, currentDate)) return true;
 
-      // Carry over undated tasks (to-do or skipped) created before today
-      if ((task.status === 'to-do' || task.status === 'skipped') && taskDueDate === null && taskCreatedAt < startOfCurrentDate) return true;
+        // Carry over undated tasks (to-do or skipped) created before today
+        if ((task.status === 'to-do' || task.status === 'skipped') && taskDueDate === null && taskCreatedAt < startOfCurrentDate) return true;
 
-      // Show tasks that were completed or archived on the current day
-      if ((task.status === 'completed' || task.status === 'archived') && isSameDay(taskCreatedAt, currentDate)) return true;
+        return false; // Exclude tasks that don't meet the above criteria for the daily view
+      });
+    } else if (statusFilter === 'completed') {
+      // If status filter is 'completed', show all completed tasks regardless of date
+      tempTasks = tempTasks.filter(task => task.status === 'completed');
+    } else if (statusFilter === 'archived') {
+      // If status filter is 'archived', show all archived tasks regardless of date
+      tempTasks = tempTasks.filter(task => task.status === 'archived');
+    }
+    // Note: 'skipped' filter is handled by the initial date relevance filter for 'to-do'/'skipped' tasks
 
-      // Do not show tasks with future due dates or future created_at dates unless they meet other criteria above
-      return false;
-    });
-
-    // Apply search, status, category, priority, section filters
+    // Apply search, category, priority, section filters
     if (searchFilter) {
       tempTasks = tempTasks.filter(task =>
         task.description.toLowerCase().includes(searchFilter.toLowerCase()) ||
@@ -767,6 +756,6 @@ export const useTasks = () => {
     deleteSection,
     reorderTasksInSameSection,
     moveTaskToNewSection,
-    reorderSections, // Expose the new function
+    reorderSections,
   };
 };

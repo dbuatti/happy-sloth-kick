@@ -36,7 +36,7 @@ interface TaskSection {
 interface SortableTaskItemProps {
   task: Task;
   userId: string | null;
-  onStatusChange: (taskId: string, newStatus: Task['status']) => void;
+  onStatusChange: (taskId: string, newStatus: Task['status']) => Promise<void>; // Changed to Promise<void>
   onDelete: (taskId: string) => void;
   onUpdate: (taskId: string, updates: Partial<Task>) => void;
   isSelected: boolean;

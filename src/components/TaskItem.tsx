@@ -32,7 +32,7 @@ interface Task {
 interface TaskItemProps {
   task: Task;
   userId: string | null;
-  onStatusChange: (taskId: string, newStatus: Task['status']) => void;
+  onStatusChange: (taskId: string, newStatus: Task['status']) => Promise<void>; // Changed to Promise<void>
   onDelete: (taskId: string) => void;
   onUpdate: (taskId: string, updates: Partial<Task>) => void;
   isSelected: boolean;
@@ -307,9 +307,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}>
-                  <Edit className="mr-2 h-4 w-4" /> Edit
-                </DropdownMenuItem>
                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'to-do'); }}>
                   Mark as To-Do
                 </DropdownMenuItem>
@@ -321,10 +318,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'archived'); }}>
                   <Archive className="mr-2 h-4 w-4" /> Archive
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete(task.id); }} className="text-red-600">
-                  <Trash2 className="mr-2 h-4 w-4" /> Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
