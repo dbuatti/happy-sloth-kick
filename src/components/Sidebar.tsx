@@ -1,8 +1,8 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, BarChart3, Calendar } from 'lucide-react';
+import { Home, BarChart3, Settings as SettingsIcon } from 'lucide-react'; // Import SettingsIcon
 import ThemeSelector from './ThemeSelector';
-import DarkModeToggle from './DarkModeToggle'; // Import the DarkModeToggle
+import DarkModeToggle from './DarkModeToggle';
 
 const Sidebar = () => {
   const location = useLocation();
@@ -10,15 +10,16 @@ const Sidebar = () => {
   const navItems = [
     { name: 'Daily Tasks', path: '/', icon: Home },
     { name: 'Analytics', path: '/analytics', icon: BarChart3 },
+    { name: 'Settings', path: '/settings', icon: SettingsIcon }, // Add Settings item
   ];
 
   return (
     <div className="w-64 bg-white dark:bg-gray-800 shadow-md h-screen flex flex-col">
       <div className="p-6 flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-white">TaskMaster</h1>
-        <div className="flex items-center space-x-2"> {/* Added a div to group theme controls */}
+        <div className="flex items-center space-x-2">
           <ThemeSelector />
-          <DarkModeToggle /> {/* Add the DarkModeToggle here */}
+          <DarkModeToggle />
         </div>
       </div>
       <nav className="flex-1 px-4 space-y-2">

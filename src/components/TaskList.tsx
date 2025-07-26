@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { showSuccess, showError } from "@/utils/toast";
-import { format, addDays, subDays, isSameDay, parseISO, isAfter, isToday } from 'date-fns';
+import { format, addDays, subDays, isSameDay, parseISO, isAfter, isToday, isBefore } from 'date-fns';
 import { ChevronLeft, ChevronRight, MoreHorizontal, Trash2, Edit, Calendar, Clock, StickyNote, Search, Archive } from 'lucide-react';
 import {
   DropdownMenu,
@@ -48,11 +48,16 @@ const fetchTasks = async (date: Date): Promise<Task[]> => {
   const endOfDay = new Date(date);
   endOfDay.setHours(23, 59, 59, 999);
 
+  // Fetch tasks that are:
+  // 1. Due on the current date (or overdue and not completed/archived)
+  // 2. Daily recurring and not completed/archived
+  // 3. Have no due date and are not completed/archived
   const { data, error } = await supabase
     .from('tasks')
     .select('*')
-    .gte('created_at', startOfDay.toISOString())
-    .lt('created_at', endOfDay.toISOString())
+    .or(`due_date.eq.${startOfDay.toISOString()},due_date.is.null`) // Tasks due today or no due date
+    .or(`is_daily_recurring.eq.true`) // Daily recurring tasks
+    .not('status', 'in', '("completed", "archived")') // Exclude completed/archived tasks
     .order('priority', { ascending: false })
     .order('created_at', { ascending: true });
 
@@ -61,7 +66,27 @@ const fetchTasks = async (date: Date): Promise<Task[]> => {
     throw error;
   }
 
-  return data || [];
+  // Filter tasks client-side to match the specific daily view logic
+  const filteredData = (data || []).filter(task => {
+    const taskDueDate = task.due_date ? parseISO(task.due_date) : null;
+    const taskCreatedAt = parseISO(task.created_at);
+
+    // Case 1: Task is due on the current date or overdue
+    if (taskDueDate && (isSameDay(taskDueDate, date) || isBefore(taskDueDate, startOfDay))) {
+      return true;
+    }
+    // Case 2: Task is daily recurring and not completed/archived
+    if (task.is_daily_recurring && task.status !== 'completed' && task.status !== 'archived') {
+      return true;
+    }
+    // Case 3: Task has no due date and was created on or before today, and not completed/archived
+    if (!taskDueDate && isBefore(taskCreatedAt, endOfDay) && task.status !== 'completed' && task.status !== 'archived') {
+      return true;
+    }
+    return false;
+  });
+
+  return filteredData;
 };
 
 // Function to update a task's status in Supabase
@@ -504,9 +529,19 @@ const TaskList: React.FC = () => {
         </div>
         
         {filteredTasks.length === 0 ? (
-          <p className="text-center text-gray-500">
-            {tasks.length === 0 ? "No tasks found. Add one above!" : "No tasks match your filters."}
-          </p>
+          <div className="text-center text-gray-500 p-8">
+            {tasks.length === 0 ? (
+              <>
+                <p className="text-lg mb-2">No tasks found for this day!</p>
+                <p>Start by adding a new task above, or navigate to a different day.</p>
+              </>
+            ) : (
+              <>
+                <p className="text-lg mb-2">No tasks match your current filters.</p>
+                <p>Try adjusting your search or filter options.</p>
+              </>
+            )}
+          </div>
         ) : (
           <div>
             <ul className="space-y-3">
