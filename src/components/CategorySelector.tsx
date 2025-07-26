@@ -1,4 +1,4 @@
-import * as React from 'react';
+import React, { useState, useEffect, FC } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,13 +30,13 @@ interface CategorySelectorProps {
   userId: string | null;
 }
 
-const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, userId }) => {
-  const [categories, setCategories] = React.useState<Category[]>([]);
-  const [isOpen, setIsOpen] = React.useState(false);
-  const [newCategoryName, setNewCategoryName] = React.useState('');
-  const [selectedColor, setSelectedColor] = React.useState(colors[0].value);
+const CategorySelector: FC<CategorySelectorProps> = ({ value, onChange, userId }) => {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isOpen, setIsOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [selectedColor, setSelectedColor] = useState(colors[0].value);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (userId) {
       fetchCategories();
     }
@@ -80,7 +80,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
 
       if (error) throw error;
       
-      setCategories([...categories, data as Category]);
+      setCategories([...categories, data]);
       setNewCategoryName('');
       setSelectedColor(colors[0].value);
       showSuccess('Category created successfully');
@@ -161,7 +161,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
                   {colors.map(color => (
                     <button
                       key={color.value}
-                      className={React.cn(`w-8 h-8 rounded-full ${color.value} ${selectedColor === color.value ? 'ring-2 ring-offset-2 ring-primary' : ''}`)}
+                      className={`w-8 h-8 rounded-full ${color.value} ${selectedColor === color.value ? 'ring-2 ring-offset-2 ring-primary' : ''}`}
                       onClick={() => setSelectedColor(color.value)}
                       aria-label={color.name}
                     />
@@ -176,7 +176,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
       
       {selectedCategory && (
         <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-          <div className={React.cn(`w-3 h-3 rounded-full ${selectedCategory.color}`)}></div>
+          <div className={`w-3 h-3 rounded-full ${selectedCategory.color}`}></div>
           <span>{selectedCategory.name}</span>
           <Button
             variant="ghost"

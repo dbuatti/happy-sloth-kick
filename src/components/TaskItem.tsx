@@ -1,4 +1,4 @@
-import * as React from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, forwardRef, ElementRef, ComponentPropsWithoutRef, ReactNode, FC, KeyboardEvent, SVGProps, FormEvent, CSSProperties, ComponentProps, ButtonHTMLAttributes, HTMLAttributes, ThHTMLAttributes, TdHTMLAttributes } from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from "@/components/ui/dropdown-menu";
@@ -47,7 +47,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
     const date = parseISO(dueDate);
     if (isToday(date)) {
       return 'Today';
-    } else if (isAfter(date, new React.Date())) {
+    } else if (isAfter(date, new Date())) {
       return `Due ${format(date, 'MMM d')}`;
     } else {
       return `Overdue ${format(date, 'MMM d')}`;
@@ -59,7 +59,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
   return (
     <div
-      className={React.cn(
+      className={cn(
         "relative flex items-center space-x-3 w-full",
         task.status === 'completed' ? "opacity-70 bg-green-50/20 dark:bg-green-900/20 animate-task-completed" : "",
       )}
@@ -81,7 +81,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
       <div className="flex-1 min-w-0">
         <label
           htmlFor={`task-${task.id}`}
-          className={React.cn(
+          className={cn(
             "text-base font-medium leading-tight",
             task.status === 'completed' ? 'line-through text-gray-500 dark:text-gray-400' : 'text-foreground',
             isOverdue && "text-red-600 dark:text-red-400",
@@ -93,14 +93,14 @@ const TaskItem: React.FC<TaskItemProps> = ({
         </label>
 
         <div className="flex items-center text-xs text-muted-foreground mt-1 space-x-3">
-          <span className={React.cn(
+          <span className={cn(
             "font-semibold",
             getPriorityColor(task.priority)
           )}>
             {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
           </span>
           {task.due_date && (
-            <span className={React.cn(
+            <span className={cn(
               "flex items-center gap-1",
               isOverdue && "text-red-600 dark:text-red-400",
               isUpcoming && "text-orange-500 dark:text-orange-300"

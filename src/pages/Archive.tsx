@@ -7,6 +7,7 @@ import SortableTaskItem from '@/components/SortableTaskItem';
 import { Archive as ArchiveIcon } from 'lucide-react';
 import { Task } from '@/hooks/useTasks'; // Import Task interface from useTasks
 import TaskDetailDialog from '@/components/TaskDetailDialog'; // Import TaskDetailDialog
+import { Button } from '@/components/ui/button'; // Import Button for unarchive
 
 const Archive = () => {
   const {
@@ -43,6 +44,10 @@ const Archive = () => {
   const handleEditTask = (task: Task) => {
     setTaskToEdit(task);
     setIsTaskDetailOpen(true);
+  };
+
+  const handleUnarchiveTask = async (taskId: string) => {
+    await updateTask(taskId, { status: 'to-do' });
   };
 
   if (loading) {
@@ -90,18 +95,35 @@ const Archive = () => {
               ) : (
                 <ul className="space-y-3">
                   {archivedTasks.map((task) => (
-                    <SortableTaskItem
-                      key={task.id}
-                      task={task}
-                      userId={userId}
-                      onStatusChange={handleTaskStatusChange}
-                      onDelete={deleteTask}
-                      onUpdate={updateTask}
-                      isSelected={false}
-                      onToggleSelect={() => {}}
-                      sections={sections}
-                      onEditTask={handleEditTask} // Pass the new prop
-                    />
+                    <li 
+                      key={task.id} 
+                      className="relative border rounded-lg p-3 transition-all duration-200 ease-in-out bg-card dark:bg-gray-800 border-border group hover:shadow-md"
+                    >
+                      <div className="flex items-center justify-between space-x-3 w-full">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-base font-medium leading-tight line-through text-gray-500 dark:text-gray-400 block truncate">
+                            {task.description}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">Archived on: {new Date(task.created_at).toLocaleDateString()}</p>
+                        </div>
+                        <div className="flex-shrink-0 flex items-center space-x-1">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => handleUnarchiveTask(task.id)}
+                          >
+                            Unarchive
+                          </Button>
+                          <Button 
+                            variant="destructive" 
+                            size="sm" 
+                            onClick={() => { if(window.confirm('Are you sure you want to permanently delete this task?')) deleteTask(task.id); }}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
+                    </li>
                   ))}
                 </ul>
               )}
