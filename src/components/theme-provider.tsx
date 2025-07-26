@@ -18,7 +18,8 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
         "warm-dawn",
         "gentle-night",
         "cosmic-dusk",
-        "focus-flow"
+        "focus-flow",
+        "retro-wave" // Added the new theme
       ]}
       {...props}
     >

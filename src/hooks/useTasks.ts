@@ -51,7 +51,6 @@ export const useTasks = () => {
   const [sortKey, setSortKey] = useState<'priority' | 'due_date' | 'created_at' | 'order'>('order'); // Default sort by order
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc'); // Default to asc for order
   const [sections, setSections] = useState<TaskSection[]>([]);
-  const [noSectionDisplayName, setNoSectionDisplayName] = useState('No Section');
 
   // Filter states, now managed within useTasks
   const [searchFilter, setSearchFilter] = useState('');
@@ -105,32 +104,10 @@ export const useTasks = () => {
     }
   }, [userId]);
 
-  const fetchNoSectionDisplayName = useCallback(async () => {
-    if (!userId) return;
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('default_no_section_name')
-        .eq('id', userId)
-        .single();
-
-      if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found, which is fine for new users
-        throw error;
-      }
-      if (data) {
-        setNoSectionDisplayName(data.default_no_section_name || 'No Section');
-      }
-    } catch (error: any) {
-      console.error('Error fetching default no section name:', error);
-      showError('Failed to load custom "No Section" name.');
-    }
-  }, [userId]);
-
   useEffect(() => {
     fetchTasks();
     fetchSections();
-    fetchNoSectionDisplayName(); // Fetch custom name on load
-  }, [fetchTasks, fetchSections, fetchNoSectionDisplayName]);
+  }, [fetchTasks, fetchSections]);
 
   // Derived filteredTasks using useMemo
   const filteredTasks = useMemo(() => {
@@ -152,11 +129,7 @@ export const useTasks = () => {
       tempTasks = tempTasks.filter(task => task.priority === priorityFilter);
     }
     if (sectionFilter && sectionFilter !== 'all') {
-      if (sectionFilter === 'no-section') {
-        tempTasks = tempTasks.filter(task => task.section_id === null);
-      } else {
-        tempTasks = tempTasks.filter(task => task.section_id === sectionFilter);
-      }
+      tempTasks = tempTasks.filter(task => task.section_id === sectionFilter);
     }
     return tempTasks;
   }, [tasks, searchFilter, statusFilter, categoryFilter, priorityFilter, sectionFilter]);
@@ -166,11 +139,18 @@ export const useTasks = () => {
       showError('User not authenticated.');
       return;
     }
+    
+    let targetSectionId = taskData.section_id;
+    if (!targetSectionId && sections.length > 0) {
+      targetSectionId = sections[0].id; // Default to the first available section
+    } else if (!targetSectionId && sections.length === 0) {
+      showError('Please create a section first before adding tasks.');
+      return;
+    }
+
     try {
       // Determine the highest order in the target section to place the new task at the end
-      const targetSectionTasks = tasks.filter(t => 
-        (t.section_id === taskData.section_id) || (t.section_id === null && taskData.section_id === null)
-      );
+      const targetSectionTasks = tasks.filter(t => t.section_id === targetSectionId);
       const maxOrder = targetSectionTasks.reduce((max, task) => Math.max(max, task.order || 0), -1);
       const newOrder = maxOrder + 1;
 
@@ -186,7 +166,7 @@ export const useTasks = () => {
           due_date: taskData.due_date || null,
           notes: taskData.notes || null,
           remind_at: taskData.remind_at || null,
-          section_id: taskData.section_id || null,
+          section_id: targetSectionId, // Ensure section_id is set
           order: newOrder, // Set the order for the new task
         })
         .select();
@@ -339,37 +319,24 @@ export const useTasks = () => {
       return;
     }
     try {
-      // If it's the 'no-section' special ID, update the user's profile
-      if (sectionId === 'no-section') {
-        const { error } = await supabase
-          .from('profiles')
-          .update({ default_no_section_name: newName })
-          .eq('id', userId);
+      const { data, error } = await supabase
+        .from('task_sections')
+        .update({ name: newName })
+        .eq('id', sectionId)
+        .eq('user_id', userId)
+        .select();
 
-        if (error) throw error;
-        setNoSectionDisplayName(newName);
-        showSuccess('Default "No Section" name updated successfully!');
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        setSections(prevSections =>
+          prevSections.map(sec =>
+            sec.id === sectionId ? { ...sec, name: newName } : sec
+          )
+        );
+        showSuccess('Section updated successfully!');
       } else {
-        // Otherwise, update a regular section
-        const { data, error } = await supabase
-          .from('task_sections')
-          .update({ name: newName })
-          .eq('id', sectionId)
-          .eq('user_id', userId)
-          .select();
-
-        if (error) throw error;
-
-        if (data && data.length > 0) {
-          setSections(prevSections =>
-            prevSections.map(sec =>
-              sec.id === sectionId ? { ...sec, name: newName } : sec
-            )
-          );
-          showSuccess('Section updated successfully!');
-        } else {
-          showError('Section not found or no changes applied.');
-        }
+        showError('Section not found or no changes applied.');
       }
     } catch (err: any) {
       console.error('Exception updating section:', err);
@@ -377,22 +344,22 @@ export const useTasks = () => {
     }
   };
 
-  const deleteSection = async (sectionId: string) => {
+  const deleteSection = async (sectionId: string, reassignToSectionId: string | null) => {
     if (!userId) {
       showError('User not authenticated.');
       return;
     }
     try {
-      // First, update tasks that belong to this section to have section_id = null
+      // Update tasks that belong to this section to the new reassignToSectionId
       const { error: updateTasksError } = await supabase
         .from('tasks')
-        .update({ section_id: null })
+        .update({ section_id: reassignToSectionId })
         .eq('section_id', sectionId)
         .eq('user_id', userId);
 
       if (updateTasksError) {
-        console.error('Error unassigning tasks from section:', updateTasksError);
-        showError('Failed to unassign tasks from section.');
+        console.error('Error reassigning tasks from section:', updateTasksError);
+        showError('Failed to reassign tasks from section.');
         return;
       }
 
@@ -410,49 +377,21 @@ export const useTasks = () => {
       }
 
       setSections(prevSections => prevSections.filter(sec => sec.id !== sectionId));
-      fetchTasks();
+      fetchTasks(); // Re-fetch tasks to update the UI with new section assignments
 
-      showSuccess('Section deleted successfully and tasks unassigned!');
+      showSuccess('Section deleted successfully and tasks reassigned!');
     } catch (err) {
       console.error('Exception deleting section:', err);
       showError('An unexpected error occurred while deleting the section.');
     }
   };
 
-  const reassignNoSectionTasks = async (targetSectionId: string) => {
-    if (!userId) {
-      showError('User not authenticated.');
-      return false;
-    }
-    try {
-      const { error } = await supabase
-        .from('tasks')
-        .update({ section_id: targetSectionId })
-        .is('section_id', null) // Target tasks with section_id = null
-        .eq('user_id', userId);
-
-      if (error) {
-        console.error('Error reassigning "No Section" tasks:', error);
-        showError('Failed to reassign tasks from "No Section".');
-        return false;
-      }
-      showSuccess('All tasks from "No Section" have been reassigned!');
-      fetchTasks(); // Re-fetch tasks to update the UI
-      return true;
-    } catch (err) {
-      console.error('Exception reassigning "No Section" tasks:', err);
-      showError('An unexpected error occurred while reassigning tasks.');
-      return false;
-    }
-  };
-
   const reorderTasksInSameSection = async (sectionId: string | null, startIndex: number, endIndex: number) => {
     if (!userId) return;
 
-    // Get tasks for the specific section, including 'no-section' tasks if sectionId is null
-    const sectionTasks = tasks.filter(t => 
-      (t.section_id === sectionId) || (t.section_id === null && sectionId === 'no-section')
-    ).sort((a, b) => (a.order || 0) - (b.order || 0)); // Ensure they are sorted by current order
+    // Get tasks for the specific section
+    const sectionTasks = tasks.filter(t => t.section_id === sectionId)
+      .sort((a, b) => (a.order || 0) - (b.order || 0)); // Ensure they are sorted by current order
 
     const result = Array.from(sectionTasks);
     const [removed] = result.splice(startIndex, 1);
@@ -492,13 +431,11 @@ export const useTasks = () => {
 
       if (fetchError) throw fetchError;
 
-      const sourceTasks = allUserTasks.filter(t => 
-        (t.section_id === sourceSectionId) || (t.section_id === null && sourceSectionId === 'no-section')
-      ).sort((a, b) => (a.order || 0) - (b.order || 0));
+      const sourceTasks = allUserTasks.filter(t => t.section_id === sourceSectionId)
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
 
-      const destinationTasks = allUserTasks.filter(t => 
-        (t.section_id === destinationSectionId) || (t.section_id === null && destinationSectionId === 'no-section')
-      ).sort((a, b) => (a.order || 0) - (b.order || 0));
+      const destinationTasks = allUserTasks.filter(t => t.section_id === destinationSectionId)
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
 
       const movedTask = sourceTasks.find(t => t.id === taskId);
       if (!movedTask) throw new Error('Moved task not found in source section.');
@@ -564,8 +501,6 @@ export const useTasks = () => {
     createSection,
     updateSection,
     deleteSection,
-    noSectionDisplayName,
-    reassignNoSectionTasks,
     reorderTasksInSameSection,
     moveTaskToNewSection,
   };

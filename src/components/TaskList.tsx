@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client"; // Added this import
 
 // dnd-kit imports
 import {
@@ -95,8 +96,6 @@ const TaskList: React.FC = () => {
     createSection,
     updateSection,
     deleteSection,
-    noSectionDisplayName,
-    reassignNoSectionTasks,
     reorderTasksInSameSection,
     moveTaskToNewSection,
   } = useTasks();
@@ -105,13 +104,9 @@ const TaskList: React.FC = () => {
   const [newSectionName, setNewSectionName] = useState('');
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [editingSectionName, setEditingSectionName] = useState('');
-  const [editingNoSectionDisplayName, setEditingNoSectionDisplayName] = useState(noSectionDisplayName);
-  const [isReassignNoSectionDialogOpen, setIsReassignNoSectionDialogOpen] = useState(false);
+  const [isReassignTasksDialogOpen, setIsReassignTasksDialogOpen] = useState(false);
+  const [sectionToDeleteId, setSectionToDeleteId] = useState<string | null>(null);
   const [targetReassignSectionId, setTargetReassignSectionId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setEditingNoSectionDisplayName(noSectionDisplayName);
-  }, [noSectionDisplayName]);
 
   // dnd-kit sensors
   const sensors = useSensors(
@@ -153,35 +148,45 @@ const TaskList: React.FC = () => {
       showError('Section name cannot be empty.');
       return;
     }
-
-    if (sectionId === 'no-section') {
-      await updateSection(sectionId, editingSectionName);
-      setEditingSectionId(null);
-      setEditingSectionName('');
-    } else {
-      await updateSection(sectionId, editingSectionName);
-      setEditingSectionId(null);
-      setEditingSectionName('');
-    }
+    await updateSection(sectionId, editingSectionName);
+    setEditingSectionId(null);
+    setEditingSectionName('');
   };
 
-  const handleDeleteSection = async (sectionId: string) => {
-    if (sectionId === 'no-section') {
-      setIsReassignNoSectionDialogOpen(true);
+  const confirmDeleteSection = async (sectionId: string) => {
+    if (sections.length === 1 && sections[0].id === sectionId) {
+      showError("Cannot delete the last section. Please create another section first or delete all tasks in this section.");
       return;
     }
-    if (window.confirm('Are you sure you want to delete this section? All tasks in this section will become unassigned.')) {
-      await deleteSection(sectionId);
+
+    const { data: tasksInSection, error } = await supabase
+      .from('tasks')
+      .select('id')
+      .eq('section_id', sectionId)
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('Error checking tasks in section:', error);
+      showError('Failed to check tasks in section.');
+      return;
+    }
+
+    if (tasksInSection && tasksInSection.length > 0) {
+      setSectionToDeleteId(sectionId);
+      setIsReassignTasksDialogOpen(true);
+    } else {
+      if (window.confirm('Are you sure you want to delete this section?')) {
+        await deleteSection(sectionId, null); // No tasks to reassign, so pass null
+      }
     }
   };
 
-  const handleReassignNoSectionTasks = async () => {
-    if (targetReassignSectionId) {
-      const success = await reassignNoSectionTasks(targetReassignSectionId);
-      if (success) {
-        setIsReassignNoSectionDialogOpen(false);
-        setTargetReassignSectionId(null);
-      }
+  const handleReassignAndDeleteSection = async () => {
+    if (sectionToDeleteId && targetReassignSectionId) {
+      await deleteSection(sectionToDeleteId, targetReassignSectionId);
+      setIsReassignTasksDialogOpen(false);
+      setSectionToDeleteId(null);
+      setTargetReassignSectionId(null);
     } else {
       showError('Please select a section to move tasks to.');
     }
@@ -197,6 +202,16 @@ const TaskList: React.FC = () => {
       updates = { status: 'skipped' };
     } else if (action === 'todo') {
       updates = { status: 'to-do' };
+    } else if (action.startsWith('priority-')) {
+      updates = { priority: action.split('-')[1] };
+    } else if (action === 'delete') {
+      if (window.confirm(`Are you sure you want to delete ${selectedTaskIds.length} selected tasks?`)) {
+        for (const taskId of selectedTaskIds) {
+          await deleteTask(taskId);
+        }
+        clearSelectedTasks();
+        return;
+      }
     }
     await bulkUpdateTasks(updates);
   };
@@ -207,9 +222,7 @@ const TaskList: React.FC = () => {
 
   const tasksGroupedBySection = useMemo(() => {
     const grouped: { [key: string]: Task[] } = {};
-    const noSectionId = 'no-section';
 
-    grouped[noSectionId] = [];
     sections.forEach(section => {
       grouped[section.id] = [];
     });
@@ -217,8 +230,6 @@ const TaskList: React.FC = () => {
     filteredTasks.forEach(task => {
       if (task.section_id && grouped[task.section_id]) {
         grouped[task.section_id].push(task);
-      } else {
-        grouped[noSectionId].push(task);
       }
     });
 
@@ -226,18 +237,11 @@ const TaskList: React.FC = () => {
       grouped[sectionId].sort((a, b) => (a.order || 0) - (b.order || 0));
     });
 
-    const allSectionGroups = [
-      { id: noSectionId, name: noSectionDisplayName, tasks: grouped[noSectionId] },
-      ...sections.map(section => ({
-        ...section,
-        tasks: grouped[section.id],
-      }))
-    ];
-
-    return allSectionGroups.filter(sectionGroup => 
-      sectionGroup.id !== noSectionId || sectionGroup.tasks.length > 0
-    );
-  }, [filteredTasks, sections, noSectionDisplayName]);
+    return sections.map(section => ({
+      ...section,
+      tasks: grouped[section.id] || [],
+    }));
+  }, [filteredTasks, sections]);
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
@@ -261,7 +265,7 @@ const TaskList: React.FC = () => {
     for (const sectionGroup of tasksGroupedBySection) {
       const index = sectionGroup.tasks.findIndex(task => task.id === activeId);
       if (index !== -1) {
-        sourceSectionId = sectionGroup.id === 'no-section' ? null : sectionGroup.id;
+        sourceSectionId = sectionGroup.id;
         sourceIndex = index;
         break;
       }
@@ -271,7 +275,7 @@ const TaskList: React.FC = () => {
     for (const sectionGroup of tasksGroupedBySection) {
       const index = sectionGroup.tasks.findIndex(task => task.id === overId);
       if (index !== -1) {
-        destinationSectionId = sectionGroup.id === 'no-section' ? null : sectionGroup.id;
+        destinationSectionId = sectionGroup.id;
         destinationIndex = index;
         break;
       }
@@ -279,7 +283,7 @@ const TaskList: React.FC = () => {
 
     // If dropping onto a section header (meaning an empty section or just the header)
     if (over.data.current?.type === 'section-header') {
-      destinationSectionId = overId === 'no-section' ? null : overId;
+      destinationSectionId = overId;
       destinationIndex = tasksGroupedBySection.find(sg => sg.id === overId)?.tasks.length || 0; // Place at the end
     }
 
@@ -290,7 +294,7 @@ const TaskList: React.FC = () => {
       }
     } else {
       // Moved to a different section
-      if (sourceSectionId !== null || destinationSectionId !== null) { // Ensure at least one is a valid section
+      if (sourceSectionId !== null && destinationSectionId !== null) {
         await moveTaskToNewSection(activeId, sourceSectionId, destinationSectionId, destinationIndex);
       }
     }
@@ -388,11 +392,11 @@ const TaskList: React.FC = () => {
                   
                   <div className="mt-6">
                     <h3 className="text-lg font-semibold mb-2">Existing Sections</h3>
-                    {sections.length === 0 && tasksGroupedBySection.find(s => s.id === 'no-section')?.tasks.length === 0 ? (
+                    {sections.length === 0 ? (
                       <p className="text-sm text-muted-foreground">No sections created yet.</p>
                     ) : (
                       <ul className="space-y-2">
-                        {tasksGroupedBySection.map(sectionGroup => (
+                        {sections.map(sectionGroup => (
                           <li key={sectionGroup.id} className="flex items-center justify-between p-2 border rounded-md">
                             {editingSectionId === sectionGroup.id ? (
                               <div className="flex-1 flex items-center gap-2">
@@ -421,7 +425,7 @@ const TaskList: React.FC = () => {
                                     className="h-6 w-6"
                                     onClick={() => {
                                       setEditingSectionId(sectionGroup.id);
-                                      setEditingSectionName(sectionGroup.id === 'no-section' ? editingNoSectionDisplayName : sectionGroup.name);
+                                      setEditingSectionName(sectionGroup.name);
                                     }}
                                     aria-label={`Rename section ${sectionGroup.name}`}
                                   >
@@ -431,7 +435,7 @@ const TaskList: React.FC = () => {
                                     variant="ghost"
                                     size="icon"
                                     className="h-6 w-6"
-                                    onClick={() => handleDeleteSection(sectionGroup.id)}
+                                    onClick={() => confirmDeleteSection(sectionGroup.id)}
                                     aria-label={`Delete section ${sectionGroup.name}`}
                                   >
                                     <Trash2 className="h-3 w-3" />
@@ -447,14 +451,14 @@ const TaskList: React.FC = () => {
                 </div>
               </DialogContent>
             </Dialog>
-            {/* Dialog for reassigning 'No Section' tasks */}
-            <Dialog open={isReassignNoSectionDialogOpen} onOpenChange={setIsReassignNoSectionDialogOpen}>
+            {/* Dialog for reassigning tasks before deleting a section */}
+            <Dialog open={isReassignTasksDialogOpen} onOpenChange={setIsReassignTasksDialogOpen}>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Reassign "No Section" Tasks</DialogTitle>
+                  <DialogTitle>Reassign Tasks Before Deleting Section</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
-                  <p>The "{noSectionDisplayName}" group cannot be deleted directly. To remove it from your view, you must reassign all tasks currently in it to another section.</p>
+                  <p>This section contains tasks. To delete it, you must reassign these tasks to another section.</p>
                   <div>
                     <Label htmlFor="reassign-section">Move tasks to:</Label>
                     <Select value={targetReassignSectionId || ''} onValueChange={setTargetReassignSectionId}>
@@ -462,10 +466,10 @@ const TaskList: React.FC = () => {
                         <SelectValue placeholder="Select a section" />
                       </SelectTrigger>
                       <SelectContent>
-                        {sections.length === 0 ? (
+                        {sections.filter(s => s.id !== sectionToDeleteId).length === 0 ? (
                           <SelectItem value="" disabled>No other sections available</SelectItem>
                         ) : (
-                          sections.map(section => (
+                          sections.filter(s => s.id !== sectionToDeleteId).map(section => (
                             <SelectItem key={section.id} value={section.id}>
                               {section.name}
                             </SelectItem>
@@ -476,9 +480,9 @@ const TaskList: React.FC = () => {
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsReassignNoSectionDialogOpen(false)}>Cancel</Button>
-                  <Button onClick={handleReassignNoSectionTasks} disabled={!targetReassignSectionId}>
-                    Move and Hide
+                  <Button variant="outline" onClick={() => setIsReassignTasksDialogOpen(false)}>Cancel</Button>
+                  <Button onClick={handleReassignAndDeleteSection} disabled={!targetReassignSectionId}>
+                    Move and Delete Section
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -486,10 +490,10 @@ const TaskList: React.FC = () => {
           </div>
         </div>
         
-        {filteredTasks.length === 0 && sections.length === 0 && tasksGroupedBySection.find(s => s.id === 'no-section')?.tasks.length === 0 ? (
+        {sections.length === 0 ? (
           <div className="text-center text-gray-500 p-8">
-            <p className="text-lg mb-2">No tasks or sections found for this day!</p>
-            <p>Start by adding a new task above, or create your first section using the "Manage Sections" button.</p>
+            <p className="text-lg mb-2">No sections created yet!</p>
+            <p>Please create your first section using the "Manage Sections" button above to start adding tasks.</p>
           </div>
         ) : (
           <DndContext

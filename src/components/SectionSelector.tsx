@@ -31,6 +31,13 @@ const SectionSelector: React.FC<SectionSelectorProps> = ({ value, onChange, user
     }
   }, [userId]);
 
+  useEffect(() => {
+    // If no section is selected and sections exist, default to the first one
+    if (!value && sections.length > 0) {
+      onChange(sections[0].id);
+    }
+  }, [value, sections, onChange]);
+
   const fetchSections = async () => {
     if (!userId) return;
     try {
@@ -73,6 +80,10 @@ const SectionSelector: React.FC<SectionSelectorProps> = ({ value, onChange, user
       setSections([...sections, data]);
       setNewSectionName('');
       showSuccess('Section created successfully');
+      // Automatically select the newly created section if it's the first one
+      if (sections.length === 0) {
+        onChange(data.id);
+      }
     } catch (error: any) {
       showError('Failed to create section');
       console.error('Error creating section:', error);
@@ -84,14 +95,37 @@ const SectionSelector: React.FC<SectionSelectorProps> = ({ value, onChange, user
       showError("User not authenticated. Cannot delete section.");
       return;
     }
-    try {
-      // First, update tasks associated with this section to null
-      await supabase
-        .from('tasks')
-        .update({ section_id: null })
-        .eq('section_id', sectionId)
-        .eq('user_id', userId);
+    if (sections.length === 1 && sections[0].id === sectionId) {
+      showError("Cannot delete the last section. Please create another section first or delete all tasks in this section.");
+      return;
+    }
 
+    const tasksInSection = await supabase
+      .from('tasks')
+      .select('id')
+      .eq('section_id', sectionId)
+      .eq('user_id', userId);
+
+    if (tasksInSection.data && tasksInSection.data.length > 0) {
+      // If there are tasks, prompt for reassignment
+      const otherSections = sections.filter(s => s.id !== sectionId);
+      if (otherSections.length === 0) {
+        showError("Cannot delete this section as it contains tasks and no other sections exist to reassign them to. Please create another section first.");
+        return;
+      }
+      const targetSection = otherSections[0]; // Default to the first available other section
+      if (window.confirm(`This section contains ${tasksInSection.data.length} tasks. They will be moved to "${targetSection.name}". Are you sure you want to delete this section?`)) {
+        await supabase
+          .from('tasks')
+          .update({ section_id: targetSection.id })
+          .eq('section_id', sectionId)
+          .eq('user_id', userId);
+      } else {
+        return; // User cancelled
+      }
+    }
+
+    try {
       const { error } = await supabase
         .from('task_sections')
         .delete()
@@ -102,7 +136,7 @@ const SectionSelector: React.FC<SectionSelectorProps> = ({ value, onChange, user
       
       setSections(sections.filter(sec => sec.id !== sectionId));
       if (value === sectionId) {
-        onChange(null); // If the deleted section was selected, deselect it
+        onChange(sections.length > 1 ? sections.filter(s => s.id !== sectionId)[0].id : null); // Select another section or null if none left
       }
       showSuccess('Section deleted successfully');
     } catch (error: any) {
@@ -123,12 +157,15 @@ const SectionSelector: React.FC<SectionSelectorProps> = ({ value, onChange, user
             onChange={(e) => onChange(e.target.value === '' ? null : e.target.value)}
             className="w-full p-2 border rounded-md bg-background"
           >
-            <option value="">No Section</option>
-            {sections.map(section => (
-              <option key={section.id} value={section.id}>
-                {section.name}
-              </option>
-            ))}
+            {sections.length === 0 ? (
+              <option value="" disabled>No sections available</option>
+            ) : (
+              sections.map(section => (
+                <option key={section.id} value={section.id}>
+                  {section.name}
+                </option>
+              ))
+            )}
           </select>
         </div>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>

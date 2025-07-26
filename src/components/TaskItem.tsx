@@ -90,7 +90,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   };
 
   const getSectionName = (sectionId: string | null) => {
-    if (!sectionId) return 'No Section';
+    if (!sectionId) return 'Unassigned'; // Fallback if section_id is null, though it should always be assigned now
     const section = sections.find(s => s.id === sectionId);
     return section ? section.name : 'Unknown Section';
   };

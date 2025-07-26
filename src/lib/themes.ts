@@ -280,6 +280,53 @@ export const themes = {
       '--input': '200 30% 25%',
       '--ring': '200 25% 85%',
     }
+  },
+  'retro-wave': {
+    name: 'Retro Wave',
+    description: 'Vibrant neons and deep tones for a modern retro feel',
+    light: {
+      '--background': '240 20% 98%',
+      '--foreground': '240 10% 20%',
+      '--card': '240 20% 98%',
+      '--card-foreground': '240 10% 20%',
+      '--popover': '240 20% 98%',
+      '--popover-foreground': '240 10% 20%',
+      '--primary': '300 80% 55%', /* Vibrant Pink/Magenta */
+      '--primary-foreground': '0 0% 100%',
+      '--secondary': '180 70% 50%', /* Bright Cyan */
+      '--secondary-foreground': '240 10% 20%',
+      '--muted': '240 10% 90%',
+      '--muted-foreground': '240 5% 45%',
+      '--accent': '40 90% 60%', /* Glowing Yellow/Orange */
+      '--accent-foreground': '240 10% 20%',
+      '--destructive': '0 80% 60%', /* Sharp Red */
+      '--destructive-foreground': '0 0% 100%',
+      '--border': '240 10% 85%',
+      '--input': '240 10% 85%',
+      '--ring': '240 10% 20%',
+      '--radius': '0.5rem',
+    },
+    dark: {
+      '--background': '260 40% 8%', /* Deep Purple-Blue */
+      '--foreground': '240 10% 95%',
+      '--card': '260 35% 12%',
+      '--card-foreground': '240 10% 95%',
+      '--popover': '260 35% 12%',
+      '--popover-foreground': '240 10% 95%',
+      '--primary': '300 90% 65%', /* Brighter Pink/Magenta */
+      '--primary-foreground': '0 0% 100%',
+      '--secondary': '180 80% 60%', /* Brighter Cyan */
+      '--secondary-foreground': '240 10% 95%',
+      '--muted': '260 30% 18%',
+      '--muted-foreground': '240 10% 70%',
+      '--accent': '40 95% 70%', /* Brighter Yellow/Orange */
+      '--accent-foreground': '240 10% 95%',
+      '--destructive': '0 90% 70%', /* Brighter Red */
+      '--destructive-foreground': '0 0% 100%',
+      '--border': '260 30% 25%',
+      '--input': '260 30% 25%',
+      '--ring': '240 10% 85%',
+    }
   }
 };
 
