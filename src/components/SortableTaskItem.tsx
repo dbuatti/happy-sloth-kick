@@ -2,12 +2,7 @@ import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import TaskItem from './TaskItem';
-import { DraggableAttributes } from '@dnd-kit/core'; // Keep DraggableAttributes
-
-// Define SyntheticListeners type locally
-type SyntheticListeners = {
-  [key: string]: EventListener;
-};
+import { DraggableAttributes, SyntheticListeners } from '@dnd-kit/core'; // Corrected import
 
 interface Task {
   id: string;
