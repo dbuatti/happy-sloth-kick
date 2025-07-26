@@ -33,6 +33,8 @@ const WorkHoursSettings: React.FC = () => {
   const [workHours, setWorkHours] = useState<WorkHour[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [allStartTime, setAllStartTime] = useState('09:00');
+  const [allEndTime, setAllEndTime] = useState('17:00');
 
   const defaultTime = {
     start: '09:00',
@@ -85,6 +87,19 @@ const WorkHoursSettings: React.FC = () => {
         wh.day_of_week === day ? { ...wh, enabled: checked } : wh
       )
     );
+  };
+
+  const handleSetAllHours = () => {
+    setWorkHours(prevHours => {
+      const anyEnabled = prevHours.some(wh => wh.enabled);
+      return prevHours.map(wh => ({
+        ...wh,
+        start_time: allStartTime,
+        end_time: allEndTime,
+        enabled: anyEnabled ? wh.enabled : true, // If no days were enabled, enable all
+      }));
+    });
+    showSuccess('Hours applied to all days!');
   };
 
   const handleSaveWorkHours = async () => {
@@ -147,6 +162,36 @@ const WorkHoursSettings: React.FC = () => {
         <p className="text-sm text-muted-foreground">Set your daily working hours to help manage your productivity.</p>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="border rounded-md p-3 bg-gray-50 dark:bg-gray-700/50">
+          <h3 className="text-lg font-semibold mb-3">Apply to All Days</h3>
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            <div className="flex-1 w-full">
+              <Label htmlFor="all-start-time" className="sr-only">Start Time</Label>
+              <Input
+                id="all-start-time"
+                type="time"
+                value={allStartTime}
+                onChange={(e) => setAllStartTime(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            <span className="text-muted-foreground">-</span>
+            <div className="flex-1 w-full">
+              <Label htmlFor="all-end-time" className="sr-only">End Time</Label>
+              <Input
+                id="all-end-time"
+                type="time"
+                value={allEndTime}
+                onChange={(e) => setAllEndTime(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            <Button onClick={handleSetAllHours} className="w-full sm:w-auto">
+              Apply to All
+            </Button>
+          </div>
+        </div>
+
         {workHours.map(dayHour => (
           <div key={dayHour.day_of_week} className="flex items-center space-x-4 p-2 border rounded-md">
             <Checkbox
