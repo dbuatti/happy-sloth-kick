@@ -1,4 +1,4 @@
-import React, { useState, useEffect, FC } from 'react';
+import { useState, useEffect, FC, HTMLAttributes } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -80,7 +80,7 @@ const CategorySelector: FC<CategorySelectorProps> = ({ value, onChange, userId }
 
       if (error) throw error;
       
-      setCategories([...categories, data]);
+      setCategories([...categories, data as Category]);
       setNewCategoryName('');
       setSelectedColor(colors[0].value);
       showSuccess('Category created successfully');

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, FC, ChangeEvent } from 'react';
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { showError } from "@/utils/toast";
-import { useTasks } from '@/hooks/useTasks'; // Import useTasks
+import { useTasks } from '@/hooks/useTasks';
 
 interface Category {
   id: string;
@@ -15,7 +15,7 @@ interface Category {
   color: string;
 }
 
-const TaskFilter: React.FC = () => { // No longer needs onFilterChange prop
+const TaskFilter: FC = () => {
   const {
     userId,
     searchFilter,
@@ -54,7 +54,7 @@ const TaskFilter: React.FC = () => { // No longer needs onFilterChange prop
     fetchCategories();
   }, [userId]); // Depend on userId
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
     setSearchFilter(e.target.value);
   };
 

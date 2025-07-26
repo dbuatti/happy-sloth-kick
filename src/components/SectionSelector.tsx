@@ -1,4 +1,4 @@
-import React, { useState, useEffect, FC } from 'react';
+import { useState, useEffect, HTMLAttributes } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,7 +20,7 @@ interface SectionSelectorProps {
   userId: string | null;
 }
 
-const SectionSelector: FC<SectionSelectorProps> = ({ value, onChange, userId }) => {
+const SectionSelector: React.FC<SectionSelectorProps> = ({ value, onChange, userId }) => {
   const [sections, setSections] = useState<TaskSection[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [newSectionName, setNewSectionName] = useState('');
@@ -49,7 +49,7 @@ const SectionSelector: FC<SectionSelectorProps> = ({ value, onChange, userId }) 
         .order('name', { ascending: true });
 
       if (error) throw error;
-      setSections(data || []);
+      setSections(data as TaskSection[] || []);
     } catch (error: any) {
       showError('Failed to fetch sections');
       console.error('Error fetching sections:', error);
@@ -77,7 +77,7 @@ const SectionSelector: FC<SectionSelectorProps> = ({ value, onChange, userId }) 
 
       if (error) throw error;
       
-      setSections([...sections, data]);
+      setSections([...sections, data as TaskSection]);
       setNewSectionName('');
       showSuccess('Section created successfully');
       // Automatically select the newly created section if it's the first one
