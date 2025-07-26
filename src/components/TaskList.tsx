@@ -110,7 +110,7 @@ const TaskList: React.FC = () => {
   const isMobile = useIsMobile();
 
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
-  const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
+  // Removed isAddTaskOpen state as it's now managed by CommandPalette
   const [newSectionName, setNewSectionName] = useState('');
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [editingSectionName, setEditingSectionName] = useState('');
@@ -233,13 +233,7 @@ const TaskList: React.FC = () => {
     await bulkUpdateTasks(updates);
   };
 
-  const handleNewTaskSubmit = async (taskData: NewTaskData) => {
-    const success = await handleAddTask(taskData);
-    if (success) {
-      setIsAddTaskOpen(false);
-    }
-    return success;
-  };
+  // Removed handleNewTaskSubmit as it's now handled by CommandPalette
 
   const tasksGroupedBySection = useMemo(() => {
     const grouped: { [key: string]: Task[] } = {};
@@ -335,9 +329,7 @@ const TaskList: React.FC = () => {
   const shortcuts: ShortcutMap = {
     'arrowleft': handlePreviousDay,
     'arrowright': handleNextDay,
-    'n': (e) => {
-      setIsAddTaskOpen(true);
-    },
+    // Removed 'n' shortcut as CommandPalette handles Add Task
     'f': (e) => {
       const searchInput = document.querySelector('input[placeholder="Search tasks..."]');
       if (searchInput) {
@@ -365,11 +357,7 @@ const TaskList: React.FC = () => {
     );
   }
 
-  const AddTaskWrapper = isMobile ? Sheet : Dialog;
-  const AddTaskTrigger = isMobile ? SheetTrigger : DialogTrigger;
-  const AddTaskContent = isMobile ? SheetContent : DialogContent;
-  const AddTaskHeader = isMobile ? SheetHeader : DialogHeader;
-  const AddTaskTitle = isMobile ? SheetTitle : DialogTitle;
+  // Removed AddTaskWrapper, AddTaskTrigger, AddTaskContent, AddTaskHeader, AddTaskTitle as they are now in CommandPalette
 
   return (
     <Card className="w-full max-w-4xl mx-auto shadow-lg">
@@ -388,8 +376,8 @@ const TaskList: React.FC = () => {
           <DailyStreak tasks={tasks} currentDate={currentDate} />
         </div>
 
-        {/* Floating Action Button for Add Task */}
-        <AddTaskWrapper open={isAddTaskOpen} onOpenChange={setIsAddTaskOpen}>
+        {/* Floating Action Button for Add Task - REMOVED, now handled by CommandPalette */}
+        {/* <AddTaskWrapper open={isAddTaskOpen} onOpenChange={setIsAddTaskOpen}>
           <AddTaskTrigger asChild>
             <Button
               className="fixed bottom-6 right-6 rounded-full h-14 w-14 shadow-lg z-50 md:bottom-8 md:right-8"
@@ -404,7 +392,7 @@ const TaskList: React.FC = () => {
             </AddTaskHeader>
             <AddTaskForm onAddTask={handleNewTaskSubmit} userId={userId} onTaskAdded={() => setIsAddTaskOpen(false)} />
           </AddTaskContent>
-        </AddTaskWrapper>
+        </AddTaskWrapper> */}
 
         <TaskFilter />
 

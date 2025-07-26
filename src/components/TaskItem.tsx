@@ -7,13 +7,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing } from 'lucide-react'; // Removed GripVertical
-import { format, parseISO, isToday, isAfter, setHours, setMinutes } from 'date-fns';
+import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing } from 'lucide-react';
+import { format, parseISO, isToday, isAfter, setHours, setMinutes, isPast, addDays } from 'date-fns';
 import { cn } from "@/lib/utils";
 import CategorySelector from "./CategorySelector";
 import PrioritySelector from "./PrioritySelector";
 import SectionSelector from "./SectionSelector";
-// Removed DraggableAttributes and DndListeners imports as they are no longer needed here
 
 interface Task {
   id: string;
@@ -39,7 +38,6 @@ interface TaskItemProps {
   isSelected: boolean;
   onToggleSelect: (taskId: string, checked: boolean) => void;
   sections: { id: string; name: string }[];
-  // Removed dragAttributes and dragListeners props
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -51,7 +49,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
   isSelected,
   onToggleSelect,
   sections,
-  // Removed dragAttributes and dragListeners from destructuring
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingDescription, setEditingDescription] = useState(task.description);
@@ -119,11 +116,16 @@ const TaskItem: React.FC<TaskItemProps> = ({
     setEditingSectionId(task.section_id);
   };
 
+  const isOverdue = task.due_date && task.status !== 'completed' && isPast(parseISO(task.due_date)) && !isToday(parseISO(task.due_date));
+  const isUpcoming = task.due_date && task.status !== 'completed' && isToday(parseISO(task.due_date)); // Due today
+
   return (
     <div // Changed from li to div
       className={cn(
         "relative flex items-center space-x-3 w-full", // Added w-full to ensure it takes full width
         task.status === 'completed' ? "opacity-70 bg-green-50/20 dark:bg-green-900/20 animate-task-completed" : "", // Keep opacity for completed
+        isOverdue && "border-l-4 border-red-500 dark:border-red-700 pl-2", // Overdue visual cue
+        isUpcoming && "border-l-4 border-orange-400 dark:border-orange-600 pl-2" // Upcoming visual cue
       )}
     >
       {isEditing ? (
@@ -248,6 +250,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
               className={cn(
                 "text-base font-medium leading-tight",
                 task.status === 'completed' ? 'line-through text-gray-500 dark:text-gray-400' : 'text-foreground',
+                isOverdue && "text-red-600 dark:text-red-400", // Overdue text color
+                isUpcoming && "text-orange-500 dark:text-orange-300", // Upcoming text color
                 "block truncate"
               )}
             >
@@ -265,7 +269,11 @@ const TaskItem: React.FC<TaskItemProps> = ({
               </span>
               {/* Due Date */}
               {task.due_date && (
-                <span className="flex items-center gap-1">
+                <span className={cn(
+                  "flex items-center gap-1",
+                  isOverdue && "text-red-600 dark:text-red-400", // Overdue due date color
+                  isUpcoming && "text-orange-500 dark:text-orange-300" // Upcoming due date color
+                )}>
                   <Calendar className="h-3 w-3" />
                   {getDueDateDisplay(task.due_date)}
                 </span>
