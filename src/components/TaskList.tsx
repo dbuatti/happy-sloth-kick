@@ -21,6 +21,7 @@ interface Task {
 const mockDailyTaskStates = new Map<string, Task[]>();
 
 // Initial set of tasks that define the base for each day
+// IMPORTANT: This array will be mutated when new daily recurring tasks are added.
 const initialBaseTasks: Task[] = [
   { id: '1', description: 'Buy groceries', status: 'to-do', is_daily_recurring: true },
   { id: '2', description: 'Go for a run', status: 'to-do', is_daily_recurring: true },
@@ -39,7 +40,7 @@ const mockFetchTasks = async (date: Date): Promise<Task[]> => {
     const newDayTasks = initialBaseTasks.map(task => {
       if (task.is_daily_recurring) {
         // Daily recurring tasks reset to 'to-do' for a new day
-        return { ...task, status: 'to-do' } as Task; // Explicitly cast to Task
+        return { ...task, status: 'to-do' } as Task;
       }
       // Non-daily recurring tasks retain their initial status (or could be 'archived' if completed on a previous day in a real system)
       return task;
@@ -88,9 +89,16 @@ const mockUpdateTaskStatus = async (date: Date, taskId: string, newStatus: Task[
 // Mock function to add a task for a specific date
 const mockAddTask = async (description: string, isDailyRecurring: boolean, date: Date): Promise<Task> => {
   const dateKey = getFormattedDateKey(date);
-  const tasksForDay = mockDailyTaskStates.get(dateKey) || [];
   const newTask: Task = { id: String(Date.now()), description, status: 'to-do', is_daily_recurring: isDailyRecurring };
+
+  // Add to the current day's tasks
+  const tasksForDay = mockDailyTaskStates.get(dateKey) || [];
   mockDailyTaskStates.set(dateKey, [...tasksForDay, newTask]);
+
+  // If it's a daily recurring task, add it to the base set for future days
+  if (isDailyRecurring) {
+    initialBaseTasks.push(newTask);
+  }
 
   return new Promise(resolve => {
     setTimeout(() => {
