@@ -596,7 +596,7 @@ export const useTasks = () => {
 
       // Remove from source section's list and re-index
       const newSourceTasks = sourceTasks.filter(t => t.id !== taskId).map((task, index) => ({
-        ...task,
+        ...task, // Preserve all original properties
         order: index,
       }));
 
@@ -604,7 +604,7 @@ export const useTasks = () => {
       const tempNewDestinationTasks = Array.from(destinationTasks);
       tempNewDestinationTasks.splice(destinationIndex, 0, { ...movedTask, section_id: destinationSectionId });
       const newDestinationTasks = tempNewDestinationTasks.map((task, index) => ({
-        ...task,
+        ...task, // Preserve all original properties
         order: index,
       }));
 
@@ -704,6 +704,7 @@ export const useTasks = () => {
 
       const updates = sectionsToUpdate.map((section, index) => ({
         id: section.id,
+        name: section.name, // Include the name to prevent null constraint violation
         order: index,
         user_id: userId, // IMPORTANT: Include user_id for RLS policy check
       }));
