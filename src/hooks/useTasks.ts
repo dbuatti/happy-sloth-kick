@@ -285,23 +285,19 @@ export const useTasks = () => {
         // Do NOT explicitly set created_at here; let the database default handle it for accuracy
       };
 
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('tasks')
-        .insert(taskToInsert)
-        .select();
+        .insert(taskToInsert);
 
       if (error) {
         console.error('Error adding task:', error);
         showError('Failed to add task.');
         return false;
       }
-      if (data && data.length > 0) {
-        // Instead of optimistically adding, re-fetch to ensure consistency with DB
-        await fetchTasks(); 
-        showSuccess('Task added successfully!');
-        return true;
-      }
-      return false;
+      
+      await fetchTasks(); // Re-fetch to ensure UI consistency
+      showSuccess('Task added successfully!');
+      return true;
     } catch (err) {
       console.error('Exception adding task:', err);
       showError('An unexpected error occurred while adding the task.');
@@ -315,24 +311,19 @@ export const useTasks = () => {
       return;
     }
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('tasks')
         .update(updates)
         .eq('id', taskId)
-        .eq('user_id', userId)
-        .select();
+        .eq('user_id', userId);
 
       if (error) {
         console.error('Error updating task:', error);
         showError(error.message);
         return;
       }
-      if (data && data.length > 0) {
-        setTasks(prevTasks =>
-          prevTasks.map(task => (task.id === taskId ? { ...task, ...data[0] } : task))
-        );
-        showSuccess('Task updated successfully!');
-      }
+      await fetchTasks(); // Re-fetch after update to ensure consistency
+      showSuccess('Task updated successfully!');
     } catch (err) {
       console.error('Exception updating task:', err);
       showError('An unexpected error occurred while updating the task.');
@@ -356,7 +347,7 @@ export const useTasks = () => {
         showError(error.message);
         return;
       }
-      setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+      await fetchTasks(); // Re-fetch after delete
       showSuccess('Task deleted successfully!');
     } catch (err) {
       console.error('Exception deleting task:', err);
@@ -402,7 +393,7 @@ export const useTasks = () => {
       }
       showSuccess('Tasks updated successfully!');
       clearSelectedTasks(); // Clear any currently selected tasks
-      fetchTasks(); // Re-fetch to ensure UI consistency
+      await fetchTasks(); // Re-fetch to ensure UI consistency
     } catch (err) {
       console.error('Exception bulk updating tasks:', err);
       showError('An unexpected error occurred during bulk update.');
@@ -419,10 +410,9 @@ export const useTasks = () => {
       const maxOrder = sections.reduce((max, section) => Math.max(max, section.order || 0), -1);
       const newOrder = maxOrder + 1;
 
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('task_sections')
-        .insert({ name, user_id: userId, order: newOrder })
-        .select();
+        .insert({ name, user_id: userId, order: newOrder });
 
       if (error) {
         console.error('Error creating section:', error);
@@ -430,10 +420,8 @@ export const useTasks = () => {
         return;
       }
 
-      if (data && data.length > 0) {
-        setSections(prevSections => [...prevSections, data[0]]);
-        showSuccess('Section created successfully!');
-      }
+      await fetchSections(); // Re-fetch sections to update UI
+      showSuccess('Section created successfully!');
     } catch (err) {
       console.error('Exception creating section:', err);
       showError('An unexpected error occurred while creating the section.');
@@ -446,12 +434,11 @@ export const useTasks = () => {
       return;
     }
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('task_sections')
         .update({ name: newName })
         .eq('id', sectionId)
-        .eq('user_id', userId)
-        .select();
+        .eq('user_id', userId);
 
       if (error) {
         console.error('Error updating section:', error);
@@ -459,16 +446,8 @@ export const useTasks = () => {
         return;
       }
 
-      if (data && data.length > 0) {
-        setSections(prevSections =>
-          prevSections.map(sec =>
-            sec.id === sectionId ? { ...sec, name: newName } : sec
-          )
-        );
-        showSuccess('Section updated successfully!');
-      } else {
-        showError('Section not found or no changes applied.');
-      }
+      await fetchSections(); // Re-fetch sections to update UI
+      showSuccess('Section updated successfully!');
     } catch (err: any) {
       console.error('Exception updating section:', err);
       showError('An unexpected error occurred while updating the section.');
@@ -507,8 +486,8 @@ export const useTasks = () => {
         return;
       }
 
-      setSections(prevSections => prevSections.filter(sec => sec.id !== sectionId));
-      fetchTasks(); // Re-fetch tasks to update the UI with new section assignments
+      await fetchSections(); // Re-fetch sections to update UI
+      await fetchTasks(); // Re-fetch tasks to update the UI with new section assignments
 
       showSuccess('Section deleted successfully and tasks reassigned!');
     } catch (err) {
@@ -519,28 +498,6 @@ export const useTasks = () => {
 
   const reorderTasksInSameSection = async (sectionId: string | null, startIndex: number, endIndex: number) => {
     if (!userId) return;
-
-    // Optimistically update UI
-    setTasks(prevTasks => {
-      const newTasks = [...prevTasks];
-      const sectionTasks = newTasks.filter(t => t.section_id === sectionId)
-        .sort((a, b) => (a.order || 0) - (b.order || 0));
-      
-      const [removed] = sectionTasks.splice(startIndex, 1);
-      sectionTasks.splice(endIndex, 0, removed);
-
-      // Re-assign order values for the affected section
-      const updatedSectionTasks = sectionTasks.map((task, index) => ({
-        ...task,
-        order: index,
-      }));
-
-      // Merge back into the main tasks array
-      return newTasks.map(task => {
-        const updatedTask = updatedSectionTasks.find(t => t.id === task.id);
-        return updatedTask || task;
-      });
-    });
 
     try {
       const sectionTasksToUpdate = tasks.filter(t => t.section_id === sectionId)
@@ -559,17 +516,14 @@ export const useTasks = () => {
       if (error) {
         console.error('Error reordering tasks:', error);
         showError(error.message);
-        fetchTasks(); // Revert to server state on error
         return;
       }
+      await fetchTasks(); // Re-fetch after successful DB update
       showSuccess('Tasks reordered successfully!');
-      // No need to fetchTasks here if optimistic update is correct and upsert returns nothing
-      // If upsert returns data, we could use that to update state more precisely.
-      // For now, relying on optimistic update + fetch on error.
     } catch (err) {
       console.error('Exception reordering tasks:', err);
       showError('An unexpected error occurred while reordering the tasks.');
-      fetchTasks(); // Revert to server state on error
+      await fetchTasks(); // Revert to server state on error
     }
   };
 
@@ -581,45 +535,6 @@ export const useTasks = () => {
   ) => {
     if (!userId) return;
 
-    // Optimistically update UI
-    setTasks(prevTasks => {
-      const newTasks = [...prevTasks];
-      
-      const sourceTasks = newTasks.filter(t => t.section_id === sourceSectionId)
-        .sort((a, b) => (a.order || 0) - (b.order || 0));
-      const destinationTasks = newTasks.filter(t => t.section_id === destinationSectionId)
-        .sort((a, b) => (a.order || 0) - (b.order || 0));
-
-      const movedTask = sourceTasks.find(t => t.id === taskId);
-      if (!movedTask) return prevTasks; // Should not happen
-
-      // Remove from source section's list and re-index
-      const newSourceTasks = sourceTasks.filter(t => t.id !== taskId).map((task, index) => ({
-        ...task,
-        order: index,
-      }));
-
-      // Add to destination section's list at the correct index and re-index
-      const tempNewDestinationTasks = Array.from(destinationTasks);
-      tempNewDestinationTasks.splice(destinationIndex, 0, { ...movedTask, section_id: destinationSectionId });
-      const newDestinationTasks = tempNewDestinationTasks.map((task, index) => ({
-        ...task,
-        order: index,
-      }));
-
-      // Merge back into the main tasks array
-      return newTasks.map(task => {
-        if (task.id === taskId) {
-          return { ...task, section_id: destinationSectionId, order: destinationIndex };
-        }
-        const updatedSourceTask = newSourceTasks.find(t => t.id === task.id);
-        if (updatedSourceTask) return updatedSourceTask;
-        const updatedDestTask = newDestinationTasks.find(t => t.id === task.id);
-        if (updatedDestTask) return updatedDestTask;
-        return task;
-      });
-    });
-
     try {
       // Fetch current state from DB to ensure accurate re-indexing for persistence
       const { data: currentDbTasks, error: dbFetchError } = await supabase
@@ -630,7 +545,6 @@ export const useTasks = () => {
       if (dbFetchError) {
         console.error('Error fetching tasks for move operation:', dbFetchError);
         showError(dbFetchError.message);
-        fetchTasks(); // Revert to server state on error
         return;
       }
 
@@ -664,35 +578,19 @@ export const useTasks = () => {
       if (error) {
         console.error('Error moving task:', error);
         showError(error.message);
-        fetchTasks(); // Revert to server state on error
         return;
       }
+      await fetchTasks(); // Re-fetch after successful DB update
       showSuccess('Task moved successfully!');
-      // No need to fetchTasks here if optimistic update is correct and upsert returns nothing
-      // If upsert returns data, we could use that to update state more precisely.
-      // For now, relying on optimistic update + fetch on error.
     } catch (err) {
       console.error('Exception moving task:', err);
       showError('An unexpected error occurred while moving the task.');
-      fetchTasks(); // Revert to server state on error
+      await fetchTasks(); // Revert to server state on error
     }
   };
 
   const reorderSections = async (startIndex: number, endIndex: number) => {
     if (!userId) return;
-
-    // Optimistically update UI
-    setSections(prevSections => {
-      const newSections = Array.from(prevSections);
-      const [removed] = newSections.splice(startIndex, 1);
-      newSections.splice(endIndex, 0, removed);
-
-      // Re-assign order values
-      return newSections.map((section, index) => ({
-        ...section,
-        order: index,
-      }));
-    });
 
     try {
       const sectionsToUpdate = Array.from(sections);
@@ -708,15 +606,14 @@ export const useTasks = () => {
       if (error) {
         console.error('Error reordering sections:', error);
         showError(error.message);
-        fetchSections(); // Revert to server state on error
         return;
       }
+      await fetchSections(); // Re-fetch after successful DB update
       showSuccess('Sections reordered successfully!');
-      // No need to fetchSections here if optimistic update is correct
     } catch (err) {
       console.error('Exception reordering sections:', err);
       showError('An unexpected error occurred while reordering sections.');
-      fetchSections(); // Revert to server state on error
+      await fetchSections(); // Revert to server state on error
     }
   };
 
