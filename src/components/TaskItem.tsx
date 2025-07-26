@@ -7,24 +7,26 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing } from 'lucide-react'; // Added BellRing
-import { format, parseISO, isToday, isAfter, isBefore, setHours, setMinutes } from 'date-fns'; // Added setHours, setMinutes
+import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing, FolderOpen } from 'lucide-react'; // Added BellRing, FolderOpen
+import { format, parseISO, isToday, isAfter, isBefore, setHours, setMinutes } from 'date-fns';
 import { cn } from "@/lib/utils";
 import CategorySelector from "./CategorySelector";
 import PrioritySelector from "./PrioritySelector";
+import SectionSelector from "./SectionSelector"; // Import SectionSelector
 
 interface Task {
   id: string;
   description: string;
   status: 'to-do' | 'completed' | 'skipped' | 'archived';
-  recurring_type: 'none' | 'daily' | 'weekly' | 'monthly'; // Updated type
+  recurring_type: 'none' | 'daily' | 'weekly' | 'monthly';
   created_at: string;
   user_id: string;
   category: string;
   priority: string;
   due_date: string | null;
   notes: string | null;
-  remind_at: string | null; // New: for reminders
+  remind_at: string | null;
+  section_id: string | null; // New: for task sections
 }
 
 interface TaskItemProps {
@@ -35,6 +37,7 @@ interface TaskItemProps {
   onUpdate: (taskId: string, updates: Partial<Task>) => void;
   isSelected: boolean;
   onToggleSelect: (taskId: string, checked: boolean) => void;
+  sections: { id: string; name: string }[]; // Pass sections to display name
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -45,6 +48,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   onUpdate,
   isSelected,
   onToggleSelect,
+  sections,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingDescription, setEditingDescription] = useState(task.description);
@@ -52,8 +56,9 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const [editingDueDate, setEditingDueDate] = useState<Date | undefined>(task.due_date ? parseISO(task.due_date) : undefined);
   const [editingCategory, setEditingCategory] = useState(task.category);
   const [editingPriority, setEditingPriority] = useState(task.priority);
-  const [editingRemindAt, setEditingRemindAt] = useState<Date | undefined>(task.remind_at ? parseISO(task.remind_at) : undefined); // New state for remind_at
+  const [editingRemindAt, setEditingRemindAt] = useState<Date | undefined>(task.remind_at ? parseISO(task.remind_at) : undefined);
   const [reminderTime, setReminderTime] = useState<string>(task.remind_at ? format(parseISO(task.remind_at), 'HH:mm') : '');
+  const [editingSectionId, setEditingSectionId] = useState<string | null>(task.section_id); // New state for section_id
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -84,13 +89,18 @@ const TaskItem: React.FC<TaskItemProps> = ({
     return `Reminder ${format(date, 'MMM d, HH:mm')}`;
   };
 
+  const getSectionName = (sectionId: string | null) => {
+    if (!sectionId) return 'No Section';
+    const section = sections.find(s => s.id === sectionId);
+    return section ? section.name : 'Unknown Section';
+  };
+
   const handleSaveEdit = async () => {
     let finalRemindAt = editingRemindAt;
     if (finalRemindAt && reminderTime) {
       const [hours, minutes] = reminderTime.split(':').map(Number);
       finalRemindAt = setMinutes(setHours(finalRemindAt, hours), minutes);
     } else if (finalRemindAt && !reminderTime) {
-      // If date is selected but time is cleared, clear the reminder
       finalRemindAt = undefined;
     }
 
@@ -100,7 +110,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
       due_date: editingDueDate ? editingDueDate.toISOString() : null,
       category: editingCategory,
       priority: editingPriority,
-      remind_at: finalRemindAt ? finalRemindAt.toISOString() : null, // Save remind_at
+      remind_at: finalRemindAt ? finalRemindAt.toISOString() : null,
+      section_id: editingSectionId, // Save section_id
     });
     setIsEditing(false);
   };
@@ -114,6 +125,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
     setEditingPriority(task.priority);
     setEditingRemindAt(task.remind_at ? parseISO(task.remind_at) : undefined);
     setReminderTime(task.remind_at ? format(parseISO(task.remind_at), 'HH:mm') : '');
+    setEditingSectionId(task.section_id); // Reset section_id
   };
 
   return (
@@ -133,6 +145,10 @@ const TaskItem: React.FC<TaskItemProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <CategorySelector value={editingCategory} onChange={setEditingCategory} userId={userId} />
             <PrioritySelector value={editingPriority} onChange={setEditingPriority} />
+          </div>
+
+          <div>
+            <SectionSelector value={editingSectionId} onChange={setEditingSectionId} userId={userId} />
           </div>
           
           <div>
@@ -222,7 +238,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
                 onCheckedChange={(checked) => {
                   if (typeof checked === 'boolean') {
                     onToggleSelect(task.id, checked);
-                    if (!checked) { // If unchecking, also revert status if it was completed
+                    if (!checked) {
                       if (task.status === 'completed') {
                         onStatusChange(task.id, 'to-do');
                       }
@@ -257,6 +273,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
                   <div className="mt-1 text-sm text-blue-600 dark:text-blue-400 flex items-center">
                     <BellRing className="h-3 w-3 mr-1" />
                     {getReminderDisplay(task.remind_at)}
+                  </div>
+                )}
+
+                {task.section_id && (
+                  <div className="mt-1 text-sm text-gray-500 flex items-center">
+                    <FolderOpen className="h-3 w-3 mr-1" />
+                    {getSectionName(task.section_id)}
                   </div>
                 )}
               </div>

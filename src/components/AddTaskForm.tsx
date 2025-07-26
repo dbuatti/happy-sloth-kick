@@ -5,11 +5,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar, BellRing } from 'lucide-react'; // Added BellRing
+import { Calendar, BellRing } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import CategorySelector from "./CategorySelector";
 import PrioritySelector from "./PrioritySelector";
-import { format, setHours, setMinutes } from 'date-fns'; // Added setHours, setMinutes
+import SectionSelector from "./SectionSelector"; // Import SectionSelector
+import { format, setHours, setMinutes } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface AddTaskFormProps {
@@ -20,7 +21,8 @@ interface AddTaskFormProps {
     priority: string;
     due_date: string | null;
     notes: string | null;
-    remind_at: string | null; // New: for reminders
+    remind_at: string | null;
+    section_id: string | null; // New: for task sections
   }) => Promise<any>;
   userId: string | null;
 }
@@ -32,13 +34,13 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId }) => {
   const [newTaskPriority, setNewTaskPriority] = useState<string>('medium');
   const [newTaskDueDate, setNewTaskDueDate] = useState<Date | undefined>(undefined);
   const [newTaskNotes, setNewTaskNotes] = useState<string>('');
-  const [newTaskRemindAt, setNewTaskRemindAt] = useState<Date | undefined>(undefined); // New state for remind_at date
-  const [newReminderTime, setNewReminderTime] = useState<string>(''); // New state for remind_at time
+  const [newTaskRemindAt, setNewTaskRemindAt] = useState<Date | undefined>(undefined);
+  const [newReminderTime, setNewReminderTime] = useState<string>('');
+  const [newTaskSectionId, setNewTaskSectionId] = useState<string | null>(null); // New state for section_id
   const [isAdding, setIsAdding] = useState(false);
 
   const handleSubmit = async () => {
     if (!newTaskDescription.trim()) {
-      // Error handling is done in useTasks hook
       return;
     }
 
@@ -47,7 +49,6 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId }) => {
       const [hours, minutes] = newReminderTime.split(':').map(Number);
       finalRemindAt = setMinutes(setHours(finalRemindAt, hours), minutes);
     } else if (finalRemindAt && !newReminderTime) {
-      // If date is selected but time is cleared, clear the reminder
       finalRemindAt = undefined;
     }
 
@@ -59,7 +60,8 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId }) => {
       priority: newTaskPriority,
       due_date: newTaskDueDate ? newTaskDueDate.toISOString() : null,
       notes: newTaskNotes || null,
-      remind_at: finalRemindAt ? finalRemindAt.toISOString() : null, // Save remind_at
+      remind_at: finalRemindAt ? finalRemindAt.toISOString() : null,
+      section_id: newTaskSectionId, // Save section_id
     });
     if (success) {
       setNewTaskDescription('');
@@ -68,8 +70,9 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId }) => {
       setNewTaskPriority('medium');
       setNewTaskDueDate(undefined);
       setNewTaskNotes('');
-      setNewTaskRemindAt(undefined); // Reset reminder date
-      setNewReminderTime(''); // Reset reminder time
+      setNewTaskRemindAt(undefined);
+      setNewReminderTime('');
+      setNewTaskSectionId(null); // Reset section_id
     }
     setIsAdding(false);
   };
@@ -99,6 +102,10 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <CategorySelector value={newTaskCategory} onChange={setNewTaskCategory} userId={userId} />
           <PrioritySelector value={newTaskPriority} onChange={setNewTaskPriority} />
+        </div>
+
+        <div>
+          <SectionSelector value={newTaskSectionId} onChange={setNewTaskSectionId} userId={userId} />
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

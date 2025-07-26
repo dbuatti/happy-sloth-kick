@@ -1,20 +1,28 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
-import { parseISO, isSameDay, isBefore, getDay, getDate } from 'date-fns'; // Added getDay, getDate
+import { parseISO, isSameDay, isBefore, getDay, getDate } from 'date-fns';
 
 interface Task {
   id: string;
   description: string;
   status: 'to-do' | 'completed' | 'skipped' | 'archived';
-  recurring_type: 'none' | 'daily' | 'weekly' | 'monthly'; // Updated type
+  recurring_type: 'none' | 'daily' | 'weekly' | 'monthly';
   created_at: string;
   user_id: string;
   category: string;
   priority: string;
   due_date: string | null;
   notes: string | null;
-  remind_at: string | null; // New: for reminders
+  remind_at: string | null;
+  section_id: string | null; // New: for task sections
+}
+
+interface TaskSection {
+  id: string;
+  name: string;
+  user_id: string;
+  order: number | null;
 }
 
 interface UseTasksOptions {
@@ -34,6 +42,7 @@ export const useTasks = (options?: UseTasksOptions) => {
   const [userId, setUserId] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<'priority' | 'due_date' | 'created_at'>('priority');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [sections, setSections] = useState<TaskSection[]>([]); // New state for sections
 
   // Store timeouts for reminders
   const reminderTimeouts = new Map<string, NodeJS.Timeout>();
@@ -49,7 +58,7 @@ export const useTasks = (options?: UseTasksOptions) => {
       }
       setUserId(user?.id || null);
       if (!user) {
-        setLoading(false); // If no user, stop loading and show empty state
+        setLoading(false);
       }
     };
     fetchUser();
@@ -65,7 +74,6 @@ export const useTasks = (options?: UseTasksOptions) => {
   }, []);
 
   const scheduleReminder = useCallback((task: Task) => {
-    // Clear existing timeout for this task
     if (reminderTimeouts.has(task.id)) {
       clearTimeout(reminderTimeouts.get(task.id));
       reminderTimeouts.delete(task.id);
@@ -87,12 +95,79 @@ export const useTasks = (options?: UseTasksOptions) => {
           } else {
             console.log(`Reminder for: ${task.description} (Notifications blocked)`);
           }
-          // Optionally, mark task as reminded or update status
         }, delay);
         reminderTimeouts.set(task.id, timeoutId);
       }
     }
   }, []);
+
+  const fetchSections = useCallback(async (currentUserId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('task_sections')
+        .select('*')
+        .eq('user_id', currentUserId)
+        .order('order', { ascending: true })
+        .order('name', { ascending: true });
+
+      if (error) throw error;
+      setSections(data || []);
+    } catch (error: any) {
+      showError('Failed to fetch sections');
+      console.error('Error fetching sections:', error);
+    }
+  }, []);
+
+  const createSection = async (name: string) => {
+    if (!userId) {
+      showError("User not authenticated. Cannot create section.");
+      return null;
+    }
+    try {
+      const { data, error } = await supabase
+        .from('task_sections')
+        .insert([{ name, user_id: userId }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      setSections(prev => [...prev, data]);
+      showSuccess('Section created successfully!');
+      return data;
+    } catch (error: any) {
+      showError('Failed to create section.');
+      console.error('Error creating section:', error);
+      return null;
+    }
+  };
+
+  const deleteSection = async (sectionId: string) => {
+    if (!userId) {
+      showError("User not authenticated. Cannot delete section.");
+      return;
+    }
+    try {
+      // First, update tasks associated with this section to null
+      await supabase
+        .from('tasks')
+        .update({ section_id: null })
+        .eq('section_id', sectionId)
+        .eq('user_id', userId);
+
+      const { error } = await supabase
+        .from('task_sections')
+        .delete()
+        .eq('id', sectionId)
+        .eq('user_id', userId);
+
+      if (error) throw error;
+      setSections(prev => prev.filter(s => s.id !== sectionId));
+      showSuccess('Section deleted successfully!');
+    } catch (error: any) {
+      showError('Failed to delete section.');
+      console.error('Error deleting section:', error);
+    }
+  };
 
   const fetchTasks = useCallback(async (date: Date, currentUserId: string): Promise<Task[]> => {
     const startOfDay = new Date(date);
@@ -106,17 +181,15 @@ export const useTasks = (options?: UseTasksOptions) => {
       .eq('user_id', currentUserId)
       .not('status', 'in', '("completed", "archived", "skipped")');
 
-    // Apply sorting based on state
     if (sortKey === 'priority') {
       query = query.order('priority', { ascending: sortDirection === 'asc' });
-      // Add a secondary sort for consistency if primary is priority
       query = query.order('created_at', { ascending: true });
     } else if (sortKey === 'due_date') {
-      query = query.order('due_date', { ascending: sortDirection === 'asc', nullsFirst: false }); // Nulls last for due dates
-      query = query.order('priority', { ascending: false }); // Secondary sort
+      query = query.order('due_date', { ascending: sortDirection === 'asc', nullsFirst: false });
+      query = query.order('priority', { ascending: false });
     } else if (sortKey === 'created_at') {
       query = query.order('created_at', { ascending: sortDirection === 'asc' });
-      query = query.order('priority', { ascending: false }); // Secondary sort
+      query = query.order('priority', { ascending: false });
     }
 
     const { data, error } = await query;
@@ -130,27 +203,22 @@ export const useTasks = (options?: UseTasksOptions) => {
       const taskDueDate = task.due_date ? parseISO(task.due_date) : null;
       const taskCreatedAt = parseISO(task.created_at);
 
-      // 1. Tasks with a specific due date
       if (taskDueDate && (isSameDay(taskDueDate, date) || isBefore(taskDueDate, startOfDay))) {
         return true;
       }
       
-      // 2. Recurring tasks
       if (task.recurring_type !== 'none' && task.status === 'to-do') {
         if (task.recurring_type === 'daily') {
           return true;
         }
         if (task.recurring_type === 'weekly') {
-          // Check if the current day of the week matches the created_at day of the week
           return getDay(date) === getDay(taskCreatedAt);
         }
         if (task.recurring_type === 'monthly') {
-          // Check if the current day of the month matches the created_at day of the month
           return getDate(date) === getDate(taskCreatedAt);
         }
       }
 
-      // 3. Tasks with no due date, created on or before today, and 'to-do'
       if (!taskDueDate && task.recurring_type === 'none' && isBefore(taskCreatedAt, endOfDay) && task.status === 'to-do') {
         return true;
       }
@@ -160,29 +228,30 @@ export const useTasks = (options?: UseTasksOptions) => {
     return filteredData;
   }, [sortKey, sortDirection]);
 
-  const loadTasks = useCallback(async () => {
+  const loadTasksAndSections = useCallback(async () => {
     if (!userId) {
       setLoading(false);
       return;
     }
     setLoading(true);
     try {
+      await fetchSections(userId); // Fetch sections first
       const fetchedTasks = await fetchTasks(currentDate, userId);
       setTasks(fetchedTasks);
-      fetchedTasks.forEach(scheduleReminder); // Schedule reminders for fetched tasks
+      fetchedTasks.forEach(scheduleReminder);
     } catch (error) {
-      showError("Failed to load tasks.");
-      console.error("Error fetching tasks:", error);
+      showError("Failed to load data.");
+      console.error("Error loading data:", error);
     } finally {
       setLoading(false);
     }
-  }, [currentDate, userId, fetchTasks, scheduleReminder]);
+  }, [currentDate, userId, fetchTasks, fetchSections, scheduleReminder]);
 
   useEffect(() => {
     if (userId) {
-      loadTasks();
+      loadTasksAndSections();
     }
-  }, [loadTasks, userId]);
+  }, [loadTasksAndSections, userId]);
 
   useEffect(() => {
     let filtered = [...tasks];
@@ -212,7 +281,7 @@ export const useTasks = (options?: UseTasksOptions) => {
   const handleAddTask = async (taskData: Omit<Task, 'id' | 'created_at' | 'user_id'>) => {
     if (!userId) {
       showError("User not authenticated. Cannot add task.");
-      return;
+      return null;
     }
     try {
       const { data, error } = await supabase
@@ -225,7 +294,7 @@ export const useTasks = (options?: UseTasksOptions) => {
       
       setTasks(prevTasks => {
         const newTasks = [...prevTasks, data];
-        scheduleReminder(data); // Schedule reminder for the new task
+        scheduleReminder(data);
         return newTasks;
       });
       showSuccess("Task added successfully!");
@@ -252,7 +321,7 @@ export const useTasks = (options?: UseTasksOptions) => {
         const updatedTasks = prevTasks.map(task =>
           task.id === taskId ? data : task
         );
-        scheduleReminder(data); // Reschedule reminder for the updated task
+        scheduleReminder(data);
         return updatedTasks;
       });
       showSuccess(`Task updated successfully`);
@@ -274,7 +343,7 @@ export const useTasks = (options?: UseTasksOptions) => {
       if (error) throw error;
 
       setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
-      if (reminderTimeouts.has(taskId)) { // Clear reminder timeout on delete
+      if (reminderTimeouts.has(taskId)) {
         clearTimeout(reminderTimeouts.get(taskId));
         reminderTimeouts.delete(taskId);
       }
@@ -323,7 +392,7 @@ export const useTasks = (options?: UseTasksOptions) => {
             break;
           case 'delete':
             await deleteTask(taskId);
-            continue; // Skip update for deleted tasks
+            continue;
           case 'priority-low':
             updates.priority = 'low';
             break;
@@ -343,10 +412,9 @@ export const useTasks = (options?: UseTasksOptions) => {
       }
     }
     clearSelectedTasks();
-    loadTasks(); // Reload tasks to reflect all changes
-  }, [selectedTaskIds, updateTask, deleteTask, clearSelectedTasks, loadTasks]);
+    loadTasksAndSections();
+  }, [selectedTaskIds, updateTask, deleteTask, clearSelectedTasks, loadTasksAndSections]);
 
-  // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
       reminderTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
@@ -373,5 +441,8 @@ export const useTasks = (options?: UseTasksOptions) => {
     setSortKey,
     sortDirection,
     setSortDirection,
+    sections, // Expose sections
+    createSection, // Expose createSection
+    deleteSection, // Expose deleteSection
   };
 };
