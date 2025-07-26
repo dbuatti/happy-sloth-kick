@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/AuthContext'; // Corrected '=>' to 'from'
 import { showError, showSuccess } from '@/utils/toast';
 import { v4 as uuidv4 } from 'uuid'; // Import uuid for generating IDs
 import { isSameDay } from 'date-fns'; // Import isSameDay
@@ -304,13 +304,13 @@ export const useTasks = () => {
         .select();
 
       if (error) {
-        console.error('Error updating task:', error);
-        showError('Failed to update task.');
+        console.error('Error updating task:', error); // Log the full error object
+        showError(error.message);
         return;
       }
       if (data && data.length > 0) {
         setTasks(prevTasks =>
-          prevTasks.map(task => (task.id === taskId ? { ...task, ...updates } : task))
+          prevTasks.map(task => (task.id === taskId ? { ...task, ...data[0] } : task)) // Use data[0] for full updated object
         );
         showSuccess('Task updated successfully!');
       }
@@ -333,8 +333,8 @@ export const useTasks = () => {
         .eq('user_id', userId);
 
       if (error) {
-        console.error('Error deleting task:', error);
-        showError('Failed to delete task.');
+        console.error('Error deleting task:', error); // Log the full error object
+        showError(error.message);
         return;
       }
       setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
@@ -377,7 +377,7 @@ export const useTasks = () => {
 
       if (error) {
         console.error('Error bulk updating tasks:', error);
-        showError('Failed to bulk update tasks.');
+        showError(error.message);
         return;
       }
       showSuccess('Tasks updated successfully!');
@@ -402,7 +402,7 @@ export const useTasks = () => {
 
       if (error) {
         console.error('Error creating section:', error);
-        showError('Failed to create section.');
+        showError(error.message);
         return;
       }
 
@@ -429,7 +429,11 @@ export const useTasks = () => {
         .eq('user_id', userId)
         .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating section:', error);
+        showError(error.message);
+        return;
+      }
 
       if (data && data.length > 0) {
         setSections(prevSections =>
@@ -462,7 +466,7 @@ export const useTasks = () => {
 
       if (updateTasksError) {
         console.error('Error reassigning tasks from section:', updateTasksError);
-        showError('Failed to reassign tasks from section.');
+        showError(updateTasksError.message);
         return;
       }
 
@@ -475,7 +479,7 @@ export const useTasks = () => {
 
       if (deleteSectionError) {
         console.error('Error deleting section:', deleteSectionError);
-        showError('Failed to delete section.');
+        showError(deleteSectionError.message);
         return;
       }
 
@@ -528,12 +532,19 @@ export const useTasks = () => {
       }));
 
       const { error } = await supabase.from('tasks').upsert(updates, { onConflict: 'id' });
-      if (error) throw error;
+      if (error) {
+        console.error('Error reordering tasks:', error);
+        showError(error.message);
+        fetchTasks(); // Revert to server state on error
+        return;
+      }
       showSuccess('Tasks reordered successfully!');
-      fetchTasks(); // Re-fetch to ensure UI consistency and handle any potential discrepancies
+      // No need to fetchTasks here if optimistic update is correct and upsert returns nothing
+      // If upsert returns data, we could use that to update state more precisely.
+      // For now, relying on optimistic update + fetch on error.
     } catch (err) {
-      console.error('Error reordering tasks:', err);
-      showError('Failed to reorder tasks.');
+      console.error('Exception reordering tasks:', err);
+      showError('An unexpected error occurred while reordering the tasks.');
       fetchTasks(); // Revert to server state on error
     }
   };
@@ -592,7 +603,12 @@ export const useTasks = () => {
         .select('*')
         .eq('user_id', userId);
       
-      if (dbFetchError) throw dbFetchError;
+      if (dbFetchError) {
+        console.error('Error fetching tasks for move operation:', dbFetchError);
+        showError(dbFetchError.message);
+        fetchTasks(); // Revert to server state on error
+        return;
+      }
 
       const dbSourceTasks = currentDbTasks.filter(t => t.section_id === sourceSectionId)
         .sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -621,12 +637,19 @@ export const useTasks = () => {
       ];
 
       const { error } = await supabase.from('tasks').upsert(updates, { onConflict: 'id' });
-      if (error) throw error;
+      if (error) {
+        console.error('Error moving task:', error);
+        showError(error.message);
+        fetchTasks(); // Revert to server state on error
+        return;
+      }
       showSuccess('Task moved successfully!');
-      fetchTasks(); // Re-fetch to ensure UI consistency
+      // No need to fetchTasks here if optimistic update is correct and upsert returns nothing
+      // If upsert returns data, we could use that to update state more precisely.
+      // For now, relying on optimistic update + fetch on error.
     } catch (err) {
-      console.error('Error moving task:', err);
-      showError('Failed to move task.');
+      console.error('Exception moving task:', err);
+      showError('An unexpected error occurred while moving the task.');
       fetchTasks(); // Revert to server state on error
     }
   };

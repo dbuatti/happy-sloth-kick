@@ -15,8 +15,8 @@ import PrioritySelector from "./PrioritySelector";
 import SectionSelector from "./SectionSelector";
 import { DraggableAttributes } from '@dnd-kit/core';
 
-// Define SyntheticListeners locally as it's not directly exported from @dnd-kit/core
-type SyntheticListeners = Record<string, EventListener>;
+// Define a local type for dnd-kit listeners
+type DndListeners = Record<string, ((event: any) => void) | undefined>;
 
 interface Task {
   id: string;
@@ -43,7 +43,7 @@ interface TaskItemProps {
   onToggleSelect: (taskId: string, checked: boolean) => void;
   sections: { id: string; name: string }[];
   dragAttributes: DraggableAttributes;
-  dragListeners: SyntheticListeners | undefined; // Use the correct type
+  dragListeners: DndListeners | undefined; // Use the correct type
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -209,7 +209,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
               <Input
                 type="time"
                 value={reminderTime}
-                onChange={(e) => setReminderTime(e.target.value)}
+                onChange={(e) => setNewReminderTime(e.target.value)}
                 className="w-24"
                 disabled={!editingRemindAt}
               />

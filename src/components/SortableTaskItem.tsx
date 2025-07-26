@@ -4,8 +4,8 @@ import { CSS } from '@dnd-kit/utilities';
 import TaskItem from './TaskItem';
 import { DraggableAttributes } from '@dnd-kit/core';
 
-// Define SyntheticListeners locally as it's not directly exported from @dnd-kit/core
-type SyntheticListeners = Record<string, EventListener>;
+// Define a local type for dnd-kit listeners
+type DndListeners = Record<string, ((event: any) => void) | undefined>;
 
 interface Task {
   id: string;
@@ -66,7 +66,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
       <TaskItem 
         task={task} 
         dragAttributes={attributes} 
-        dragListeners={listeners} 
+        dragListeners={listeners as DndListeners} // Cast to our local type
         {...props} 
       />
     </div>
