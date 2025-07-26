@@ -203,23 +203,21 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({ task, onStatusChang
       className="flex items-center justify-between p-3 border rounded-md bg-gray-50 dark:bg-gray-800 cursor-grab"
     >
       <div className="flex items-center space-x-3">
-        {isSelectionMode ? (
-          // Selection checkbox in selection mode
+        {isSelectionMode && ( // Only show selection checkbox if in selection mode
           <Checkbox
             checked={isSelected}
             onCheckedChange={(checked) => onSelectTask(task.id, checked as boolean)}
             id={`select-task-${task.id}`}
           />
-        ) : (
-          // Completion checkbox in normal mode
-          <Checkbox
-            checked={task.status === 'completed'}
-            onCheckedChange={() => onStatusChange(task.id, task.status === 'completed' ? 'to-do' : 'completed')}
-            id={`complete-task-${task.id}`}
-          />
         )}
+        {/* Always show completion checkbox */}
+        <Checkbox
+          checked={task.status === 'completed'}
+          onCheckedChange={() => onStatusChange(task.id, task.status === 'completed' ? 'to-do' : 'completed')}
+          id={`complete-task-${task.id}`}
+        />
         <Label
-          htmlFor={isSelectionMode ? `select-task-${task.id}` : `complete-task-${task.id}`}
+          htmlFor={`complete-task-${task.id}`} // Label always for completion checkbox
           className={`text-lg ${task.status === 'completed' && !isSelectionMode ? 'line-through text-gray-500' : ''}`}
         >
           {task.description}
