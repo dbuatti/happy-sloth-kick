@@ -7,8 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive } from 'lucide-react';
-import { format, parseISO, isToday, isAfter, isBefore } from 'date-fns';
+import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing } from 'lucide-react'; // Added BellRing
+import { format, parseISO, isToday, isAfter, isBefore, setHours, setMinutes } from 'date-fns'; // Added setHours, setMinutes
 import { cn } from "@/lib/utils";
 import CategorySelector from "./CategorySelector";
 import PrioritySelector from "./PrioritySelector";
@@ -24,6 +24,7 @@ interface Task {
   priority: string;
   due_date: string | null;
   notes: string | null;
+  remind_at: string | null; // New: for reminders
 }
 
 interface TaskItemProps {
@@ -51,6 +52,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const [editingDueDate, setEditingDueDate] = useState<Date | undefined>(task.due_date ? parseISO(task.due_date) : undefined);
   const [editingCategory, setEditingCategory] = useState(task.category);
   const [editingPriority, setEditingPriority] = useState(task.priority);
+  const [editingRemindAt, setEditingRemindAt] = useState<Date | undefined>(task.remind_at ? parseISO(task.remind_at) : undefined); // New state for remind_at
+  const [reminderTime, setReminderTime] = useState<string>(task.remind_at ? format(parseISO(task.remind_at), 'HH:mm') : '');
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -75,13 +78,29 @@ const TaskItem: React.FC<TaskItemProps> = ({
     }
   };
 
+  const getReminderDisplay = (remindAt: string | null) => {
+    if (!remindAt) return null;
+    const date = parseISO(remindAt);
+    return `Reminder ${format(date, 'MMM d, HH:mm')}`;
+  };
+
   const handleSaveEdit = async () => {
+    let finalRemindAt = editingRemindAt;
+    if (finalRemindAt && reminderTime) {
+      const [hours, minutes] = reminderTime.split(':').map(Number);
+      finalRemindAt = setMinutes(setHours(finalRemindAt, hours), minutes);
+    } else if (finalRemindAt && !reminderTime) {
+      // If date is selected but time is cleared, clear the reminder
+      finalRemindAt = undefined;
+    }
+
     await onUpdate(task.id, {
       description: editingDescription,
       notes: editingNotes || null,
       due_date: editingDueDate ? editingDueDate.toISOString() : null,
       category: editingCategory,
       priority: editingPriority,
+      remind_at: finalRemindAt ? finalRemindAt.toISOString() : null, // Save remind_at
     });
     setIsEditing(false);
   };
@@ -93,6 +112,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
     setEditingDueDate(task.due_date ? parseISO(task.due_date) : undefined);
     setEditingCategory(task.category);
     setEditingPriority(task.priority);
+    setEditingRemindAt(task.remind_at ? parseISO(task.remind_at) : undefined);
+    setReminderTime(task.remind_at ? format(parseISO(task.remind_at), 'HH:mm') : '');
   };
 
   return (
@@ -138,6 +159,41 @@ const TaskItem: React.FC<TaskItemProps> = ({
                 />
               </PopoverContent>
             </Popover>
+          </div>
+
+          <div>
+            <Label>Reminder</Label>
+            <div className="flex gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "flex-1 justify-start text-left font-normal",
+                      !editingRemindAt && "text-muted-foreground"
+                    )}
+                  >
+                    <BellRing className="mr-2 h-4 w-4" />
+                    {editingRemindAt ? format(editingRemindAt, "PPP") : <span>Set reminder date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <CalendarComponent
+                    mode="single"
+                    selected={editingRemindAt}
+                    onSelect={setEditingRemindAt}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              <Input
+                type="time"
+                value={reminderTime}
+                onChange={(e) => setReminderTime(e.target.value)}
+                className="w-24"
+                disabled={!editingRemindAt}
+              />
+            </div>
           </div>
           
           <div>
@@ -194,6 +250,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
                   <div className="mt-1 text-sm text-gray-500 flex items-center">
                     <Clock className="h-3 w-3 mr-1" />
                     {getDueDateDisplay(task.due_date)}
+                  </div>
+                )}
+
+                {getReminderDisplay(task.remind_at) && (
+                  <div className="mt-1 text-sm text-blue-600 dark:text-blue-400 flex items-center">
+                    <BellRing className="h-3 w-3 mr-1" />
+                    {getReminderDisplay(task.remind_at)}
                   </div>
                 )}
               </div>

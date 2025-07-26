@@ -14,6 +14,7 @@ interface Task {
   priority: string;
   due_date: string | null;
   notes: string | null;
+  remind_at: string | null; // New: for reminders
 }
 
 interface UseTasksOptions {
@@ -34,6 +35,9 @@ export const useTasks = (options?: UseTasksOptions) => {
   const [sortKey, setSortKey] = useState<'priority' | 'due_date' | 'created_at'>('priority');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
+  // Store timeouts for reminders
+  const reminderTimeouts = new Map<string, NodeJS.Timeout>();
+
   useEffect(() => {
     const fetchUser = async () => {
       const { data: { user }, error } = await supabase.auth.getUser();
@@ -49,6 +53,45 @@ export const useTasks = (options?: UseTasksOptions) => {
       }
     };
     fetchUser();
+  }, []);
+
+  // Request notification permission
+  useEffect(() => {
+    if (!("Notification" in window)) {
+      console.warn("This browser does not support desktop notification");
+    } else if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+      Notification.requestPermission();
+    }
+  }, []);
+
+  const scheduleReminder = useCallback((task: Task) => {
+    // Clear existing timeout for this task
+    if (reminderTimeouts.has(task.id)) {
+      clearTimeout(reminderTimeouts.get(task.id));
+      reminderTimeouts.delete(task.id);
+    }
+
+    if (task.remind_at && task.status === 'to-do') {
+      const reminderTime = parseISO(task.remind_at).getTime();
+      const now = Date.now();
+      const delay = reminderTime - now;
+
+      if (delay > 0) {
+        const timeoutId = setTimeout(() => {
+          if (Notification.permission === "granted") {
+            new Notification(`Task Reminder: ${task.description}`, {
+              body: task.notes || 'Time to get this done!',
+              icon: '/favicon.ico',
+            });
+            showSuccess(`Reminder for: ${task.description}`);
+          } else {
+            console.log(`Reminder for: ${task.description} (Notifications blocked)`);
+          }
+          // Optionally, mark task as reminded or update status
+        }, delay);
+        reminderTimeouts.set(task.id, timeoutId);
+      }
+    }
   }, []);
 
   const fetchTasks = useCallback(async (date: Date, currentUserId: string): Promise<Task[]> => {
@@ -126,13 +169,14 @@ export const useTasks = (options?: UseTasksOptions) => {
     try {
       const fetchedTasks = await fetchTasks(currentDate, userId);
       setTasks(fetchedTasks);
+      fetchedTasks.forEach(scheduleReminder); // Schedule reminders for fetched tasks
     } catch (error) {
       showError("Failed to load tasks.");
       console.error("Error fetching tasks:", error);
     } finally {
       setLoading(false);
     }
-  }, [currentDate, userId, fetchTasks]);
+  }, [currentDate, userId, fetchTasks, scheduleReminder]);
 
   useEffect(() => {
     if (userId) {
@@ -179,7 +223,11 @@ export const useTasks = (options?: UseTasksOptions) => {
 
       if (error) throw error;
       
-      setTasks(prevTasks => [...prevTasks, data]);
+      setTasks(prevTasks => {
+        const newTasks = [...prevTasks, data];
+        scheduleReminder(data); // Schedule reminder for the new task
+        return newTasks;
+      });
       showSuccess("Task added successfully!");
       return data;
     } catch (error: any) {
@@ -200,11 +248,13 @@ export const useTasks = (options?: UseTasksOptions) => {
 
       if (error) throw error;
 
-      setTasks(prevTasks =>
-        prevTasks.map(task =>
+      setTasks(prevTasks => {
+        const updatedTasks = prevTasks.map(task =>
           task.id === taskId ? data : task
-        )
-      );
+        );
+        scheduleReminder(data); // Reschedule reminder for the updated task
+        return updatedTasks;
+      });
       showSuccess(`Task updated successfully`);
       return data;
     } catch (error: any) {
@@ -224,6 +274,10 @@ export const useTasks = (options?: UseTasksOptions) => {
       if (error) throw error;
 
       setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+      if (reminderTimeouts.has(taskId)) { // Clear reminder timeout on delete
+        clearTimeout(reminderTimeouts.get(taskId));
+        reminderTimeouts.delete(taskId);
+      }
       showSuccess("Task deleted successfully!");
     } catch (error: any) {
       showError("Failed to delete task.");
@@ -291,6 +345,14 @@ export const useTasks = (options?: UseTasksOptions) => {
     clearSelectedTasks();
     loadTasks(); // Reload tasks to reflect all changes
   }, [selectedTaskIds, updateTask, deleteTask, clearSelectedTasks, loadTasks]);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      reminderTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
+      reminderTimeouts.clear();
+    };
+  }, [reminderTimeouts]);
 
   return {
     tasks,
