@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 
 // Define the keyboard shortcut types
 type ShortcutHandler = (e: KeyboardEvent) => void;
-type ShortcutMap = {
+export type ShortcutMap = { // Added export
   [key: string]: ShortcutHandler;
 };
 

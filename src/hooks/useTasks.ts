@@ -31,6 +31,8 @@ export const useTasks = (options?: UseTasksOptions) => {
   const [filterPriority, setFilterPriority] = useState('all');
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
+  const [sortKey, setSortKey] = useState<'priority' | 'due_date' | 'created_at'>('priority');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -55,13 +57,26 @@ export const useTasks = (options?: UseTasksOptions) => {
     const endOfDay = new Date(date);
     endOfDay.setHours(23, 59, 59, 999);
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('tasks')
       .select('*')
       .eq('user_id', currentUserId)
-      .not('status', 'in', '("completed", "archived", "skipped")')
-      .order('priority', { ascending: false })
-      .order('created_at', { ascending: true });
+      .not('status', 'in', '("completed", "archived", "skipped")');
+
+    // Apply sorting based on state
+    if (sortKey === 'priority') {
+      query = query.order('priority', { ascending: sortDirection === 'asc' });
+      // Add a secondary sort for consistency if primary is priority
+      query = query.order('created_at', { ascending: true });
+    } else if (sortKey === 'due_date') {
+      query = query.order('due_date', { ascending: sortDirection === 'asc', nullsFirst: false }); // Nulls last for due dates
+      query = query.order('priority', { ascending: false }); // Secondary sort
+    } else if (sortKey === 'created_at') {
+      query = query.order('created_at', { ascending: sortDirection === 'asc' });
+      query = query.order('priority', { ascending: false }); // Secondary sort
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error('Error fetching tasks:', error);
@@ -85,7 +100,7 @@ export const useTasks = (options?: UseTasksOptions) => {
     });
 
     return filteredData;
-  }, []);
+  }, [sortKey, sortDirection]);
 
   const loadTasks = useCallback(async () => {
     if (!userId) {
@@ -277,5 +292,9 @@ export const useTasks = (options?: UseTasksOptions) => {
     toggleTaskSelection,
     clearSelectedTasks,
     bulkUpdateTasks,
+    sortKey,
+    setSortKey,
+    sortDirection,
+    setSortDirection,
   };
 };
