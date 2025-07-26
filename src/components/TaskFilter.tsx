@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react'; // Import useState, useEffect
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { showError } from "@/utils/toast";
 import { useTasks } from '@/hooks/useTasks'; // Import useTasks
+import type { FC } from 'react'; // Import FC
 
 interface Category {
   id: string;
@@ -15,7 +16,7 @@ interface Category {
   color: string;
 }
 
-const TaskFilter: React.FC = () => { // No longer needs onFilterChange prop
+const TaskFilter: FC = () => { // Use FC
   const {
     userId,
     searchFilter,

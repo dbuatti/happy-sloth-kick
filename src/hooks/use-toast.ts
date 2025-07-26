@@ -1,15 +1,18 @@
-import * as React from "react";
+import React, { useState, useEffect } from "react"; // Import useState, useEffect
 
 import type { ToastActionElement, ToastProps } from "@/components/ui/toast";
+import type { ReactNode } from 'react'; // Import ReactNode
 
 const TOAST_LIMIT = 1;
 const TOAST_REMOVE_DELAY = 1000000;
 
 type ToasterToast = ToastProps & {
   id: string;
-  title?: React.ReactNode;
-  description?: React.ReactNode;
+  title?: ReactNode; // Use ReactNode
+  description?: ReactNode; // Use ReactNode
   action?: ToastActionElement;
+  open?: boolean; // Add open property
+  onOpenChange?: (open: boolean) => void; // Add onOpenChange property
 };
 
 const _actionTypes = {
@@ -166,9 +169,9 @@ function toast({ ...props }: Toast) {
 }
 
 function useToast() {
-  const [state, setState] = React.useState<State>(memoryState);
+  const [state, setState] = useState<State>(memoryState); // Use useState
 
-  React.useEffect(() => {
+  useEffect(() => { // Use useEffect
     listeners.push(setState);
     return () => {
       const index = listeners.indexOf(setState);

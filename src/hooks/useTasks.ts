@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'; // Import hooks
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess, showReminder } from '@/utils/toast'; // Import showReminder
@@ -33,7 +33,7 @@ type TaskUpdate = Partial<Omit<Task, 'id' | 'user_id' | 'created_at'>>;
 
 interface NewTaskData {
   description: string;
-  status?: 'to-do' | 'completed' | 'skipped' | 'archiverd';
+  status?: 'to-do' | 'completed' | 'skipped' | 'archived'; // Corrected 'archiverd'
   recurring_type?: 'none' | 'daily' | 'weekly' | 'monthly';
   category?: string;
   priority?: string;
@@ -722,7 +722,7 @@ export const useTasks = () => {
       const [removed] = sectionsToUpdate.splice(startIndex, 1);
       sectionsToUpdate.splice(endIndex, 0, removed);
 
-      const updates = sectionsToUpdate.map((section, index) => ({
+      const updates: Partial<TaskSection>[] = sectionsToUpdate.map((section, index) => ({ // Explicitly type updates
         id: section.id,
         name: section.name, // Include the name to prevent null constraint violation
         order: index,

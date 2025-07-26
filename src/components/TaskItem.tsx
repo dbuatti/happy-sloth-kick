@@ -7,6 +7,7 @@ import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, Bel
 import { format, parseISO, isToday, isAfter, isPast } from 'date-fns';
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
+import type { FC, HTMLAttributes } from 'react'; // Import FC and HTMLAttributes
 
 interface TaskItemProps {
   task: Task;
@@ -20,7 +21,7 @@ interface TaskItemProps {
   onEditTask: (task: Task) => void;
 }
 
-const TaskItem: React.FC<TaskItemProps> = ({
+const TaskItem: FC<TaskItemProps> = ({ // Use FC type
   task,
   userId,
   onStatusChange,
@@ -75,7 +76,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
         id={`task-${task.id}`}
         onClick={(e) => e.stopPropagation()}
         className="flex-shrink-0"
-        data-dnd-kit-disabled-draggable="true" {/* Reverted to string "true" */}
+        data-dnd-kit-disabled-draggable={true}
       />
 
       <div className="flex-1 min-w-0">
@@ -124,12 +125,12 @@ const TaskItem: React.FC<TaskItemProps> = ({
       </div>
 
       <div className="flex-shrink-0 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onEditTask(task); }} data-dnd-kit-disabled-draggable="true"> {/* Reverted to string "true" */}
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onEditTask(task); }} data-dnd-kit-disabled-draggable={true}>
           <Edit className="h-4 w-4" />
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-7 w-7 p-0" onClick={(e) => e.stopPropagation()} data-dnd-kit-disabled-draggable="true"> {/* Reverted to string "true" */}
+            <Button variant="ghost" className="h-7 w-7 p-0" onClick={(e) => e.stopPropagation()} data-dnd-kit-disabled-draggable={true}>
               <span className="sr-only">Open menu</span>
               <MoreHorizontal className="h-4 w-4" />
             </Button>

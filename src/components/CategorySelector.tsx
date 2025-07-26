@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react'; // Import useState, useEffect
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, X } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
+import type { FC, HTMLAttributes } from 'react'; // Import FC and HTMLAttributes
 
 interface Category {
   id: string;
@@ -30,7 +31,7 @@ interface CategorySelectorProps {
   userId: string | null;
 }
 
-const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, userId }) => {
+const CategorySelector: FC<CategorySelectorProps> = ({ value, onChange, userId }) => { // Use FC
   const [categories, setCategories] = useState<Category[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
