@@ -22,7 +22,7 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
-        <Sonner position="top-right" /> {/* Changed position to top-right */}
+        <Sonner />
         <AuthProvider>
           <BrowserRouter>
             <Routes>
