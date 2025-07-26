@@ -96,14 +96,14 @@ export const useTasks = () => {
         .select('*')
         .eq('user_id', userId)
         .or(
-          // 1. Tasks created on the current day (regardless of due_date)
-          `created_at.gte.${startOfDay.toISOString()},created_at.lte.${endOfDay.toISOString()},` +
-          // 2. Tasks due on the current day (regardless of created_at)
-          `due_date.gte.${startOfDay.toISOString()},due_date.lte.${endOfDay.toISOString()},` +
+          // 1. Tasks created on the current day
+          `created_at.gte.${startOfDay.toISOString()}.and.created_at.lte.${endOfDay.toISOString()},` +
+          // 2. Tasks due on the current day
+          `due_date.gte.${startOfDay.toISOString()}.and.due_date.lte.${endOfDay.toISOString()},` +
           // 3. Overdue tasks that are still 'to-do' or 'skipped' (carry-over)
-          `(status.in.("to-do","skipped"),due_date.lt.${startOfDay.toISOString()}),` +
+          `and(status.in.("to-do","skipped"),due_date.lt.${startOfDay.toISOString()}),` +
           // 4. Undated tasks that are still 'to-do' or 'skipped' and created before today (carry-over)
-          `(status.in.("to-do","skipped"),due_date.is.null,created_at.lt.${startOfDay.toISOString()}),` +
+          `and(status.in.("to-do","skipped"),due_date.is.null,created_at.lt.${startOfDay.toISOString()}),` +
           // 5. Daily recurring templates (to generate new instances for today if needed)
           `recurring_type.eq.daily`
         );
@@ -111,67 +111,69 @@ export const useTasks = () => {
       if (fetchError) throw fetchError;
 
       let tasksForDisplay: Task[] = [];
+      const dailyRecurringTemplates: Task[] = [];
       const existingOriginalIdsForToday = new Set<string>(); // To track recurring instances already present for today
 
-      // First pass: Add tasks that are directly relevant (created today, due today, or carry-over)
       for (const task of (fetchedTasks || [])) {
         const taskCreatedAt = new Date(task.created_at);
         const taskDueDate = task.due_date ? new Date(task.due_date) : null;
 
-        const isCreatedToday = isSameDay(taskCreatedAt, currentDate);
-        const isDueToday = taskDueDate && isSameDay(taskDueDate, currentDate);
-        const isOverdueCarryOver = (task.status === 'to-do' || task.status === 'skipped') && taskDueDate && taskDueDate < startOfDay;
-        const isUndatedCarryOver = (task.status === 'to-do' || task.status === 'skipped') && taskDueDate === null && taskCreatedAt < startOfDay;
+        // Identify tasks that should be displayed for the currentDate
+        const shouldDisplay = 
+          isSameDay(taskCreatedAt, currentDate) || // Created today
+          (taskDueDate && isSameDay(taskDueDate, currentDate)) || // Due today
+          ((task.status === 'to-do' || task.status === 'skipped') && taskDueDate && taskDueDate < startOfDay) || // Overdue carry-over
+          ((task.status === 'to-do' || task.status === 'skipped') && taskDueDate === null && taskCreatedAt < startOfDay); // Undated carry-over
 
-        if (isCreatedToday || isDueToday || isOverdueCarryOver || isUndatedCarryOver) {
+        if (shouldDisplay) {
           tasksForDisplay.push(task);
-          // Track original IDs for recurring tasks already present for today
-          if (task.original_task_id) {
-            existingOriginalIdsForToday.add(task.original_task_id);
-          } else if (task.recurring_type === 'daily') { // If it's a template itself and created today
+        }
+
+        // Identify daily recurring templates for potential instance generation
+        if (task.recurring_type === 'daily') {
+          dailyRecurringTemplates.push(task);
+          // If a daily template itself was created today, it acts as today's instance
+          if (isSameDay(taskCreatedAt, currentDate)) {
             existingOriginalIdsForToday.add(task.id);
           }
         }
+        // Also track if an instance of a recurring task already exists for today
+        if (task.original_task_id && isSameDay(taskCreatedAt, currentDate)) {
+          existingOriginalIdsForToday.add(task.original_task_id);
+        }
       }
 
-      // Second pass: Generate new instances for daily recurring tasks
+      // Generate new instances for daily recurring tasks
       const newRecurringInstances: Task[] = [];
-      for (const template of (fetchedTasks || [])) { // This `fetchedTasks` already contains recurring_type.eq.daily
-        if (template.recurring_type === 'daily' && new Date(template.created_at) < startOfDay) {
-          // This is a daily recurring template created before today
-          // Check if an instance for today already exists (either by original_task_id or if the template itself was created today and is being reused)
-          const instanceExists = tasksForDisplay.some(
-            t => (t.original_task_id === template.id && isSameDay(new Date(t.created_at), currentDate)) ||
-                 (t.id === template.id && isSameDay(new Date(t.created_at), currentDate)) // Case where template itself is shown today
-          );
-
-          if (!instanceExists) {
-            const newInstance: Task = {
-              ...template,
-              id: uuidv4(), // Generate a new ID for the instance
-              created_at: currentDate.toISOString(), // Set created_at to current day
-              status: 'to-do', // Reset status for the new day's instance
-              recurring_type: 'none', // This instance is not recurring itself
-              original_task_id: template.id, // Link to the original recurring task
-              order: template.order,
-            };
-            newRecurringInstances.push(newInstance);
-          }
+      for (const template of dailyRecurringTemplates) {
+        // Only generate if the template was created *before* today
+        // AND an instance for today doesn't already exist (checked by original_task_id or template ID itself)
+        if (new Date(template.created_at) < startOfDay && !existingOriginalIdsForToday.has(template.id)) {
+          const newInstance: Task = {
+            ...template,
+            id: uuidv4(), // Generate a new ID for the instance
+            created_at: currentDate.toISOString(), // Set created_at to current day
+            status: 'to-do', // Reset status for the new day's instance
+            recurring_type: 'none', // This instance is not recurring itself
+            original_task_id: template.id, // Link to the original recurring task
+            order: template.order,
+          };
+          newRecurringInstances.push(newInstance);
         }
       }
 
       // Insert new recurring instances into the database
       if (newRecurringInstances.length > 0) {
-        const { error: insertError } = await supabase
+        const { data: insertedData, error: insertError } = await supabase
           .from('tasks')
-          .insert(newRecurringInstances);
+          .insert(newRecurringInstances)
+          .select(); // Select to get the inserted data, including DB-generated created_at
 
         if (insertError) {
           console.error('Error inserting recurring instance:', insertError);
           showError('Failed to generate a recurring task instance.');
-        } else {
-          // Add newly inserted instances to tasksForDisplay
-          tasksForDisplay.push(...newRecurringInstances);
+        } else if (insertedData) {
+          tasksForDisplay.push(...insertedData); // Add newly inserted instances to tasksForDisplay
         }
       }
       
