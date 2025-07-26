@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { showSuccess, showError } from "@/utils/toast";
 import { format, addDays, subDays, isSameDay, parseISO, isAfter, isToday } from 'date-fns';
-import { ChevronLeft, ChevronRight, MoreHorizontal, Trash2, Edit, Calendar, Clock, StickyNote } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MoreHorizontal, Trash2, Edit, Calendar, Clock, StickyNote, Search } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,6 +23,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import TaskFilter from "./TaskFilter";
+import useKeyboardShortcuts from "@/hooks/useKeyboardShortcuts";
 
 // Define the task type to match the database schema
 interface Task {
@@ -113,6 +115,7 @@ const deleteTask = async (taskId: string): Promise<void> => {
 
 const TaskList: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [newTaskDescription, setNewTaskDescription] = useState<string>('');
   const [isNewTaskDailyRecurring, setIsNewTaskDailyRecurring] = useState<boolean>(false);
   const [newTaskCategory, setNewTaskCategory] = useState<string>('general');
@@ -127,12 +130,17 @@ const TaskList: React.FC = () => {
   const [editingDueDate, setEditingDueDate] = useState<Date | undefined>(undefined);
   const [editingCategory, setEditingCategory] = useState<string>('general');
   const [editingPriority, setEditingPriority] = useState<string>('medium');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterCategory, setFilterCategory] = useState('all');
+  const [filterPriority, setFilterPriority] = useState('all');
 
   const loadTasks = useCallback(async () => {
     setLoading(true);
     try {
       const fetchedTasks = await fetchTasks(currentDate);
       setTasks(fetchedTasks);
+      setFilteredTasks(fetchedTasks);
     } catch (error) {
       showError("Failed to load tasks.");
       console.error("Error fetching tasks:", error);
@@ -144,6 +152,32 @@ const TaskList: React.FC = () => {
   useEffect(() => {
     loadTasks();
   }, [loadTasks]);
+
+  useEffect(() => {
+    // Apply filters whenever tasks or filter criteria change
+    let filtered = [...tasks];
+
+    if (searchTerm) {
+      filtered = filtered.filter(task =>
+        task.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (task.notes && task.notes.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+    }
+
+    if (filterStatus !== 'all') {
+      filtered = filtered.filter(task => task.status === filterStatus);
+    }
+
+    if (filterCategory !== 'all') {
+      filtered = filtered.filter(task => task.category === filterCategory);
+    }
+
+    if (filterPriority !== 'all') {
+      filtered = filtered.filter(task => task.priority === filterPriority);
+    }
+
+    setFilteredTasks(filtered);
+  }, [tasks, searchTerm, filterStatus, filterCategory, filterPriority]);
 
   const handleStatusChange = async (taskId: string, newStatus: Task['status']) => {
     try {
@@ -271,6 +305,36 @@ const TaskList: React.FC = () => {
     }
   };
 
+  const handleFilterChange = (filters: {
+    search: string;
+    status: string;
+    category: string;
+    priority: string;
+  }) => {
+    setSearchTerm(filters.search);
+    setFilterStatus(filters.status);
+    setFilterCategory(filters.category);
+    setFilterPriority(filters.priority);
+  };
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    'arrowleft': handlePreviousDay,
+    'arrowright': handleNextDay,
+    'n': () => {
+      const input = document.getElementById('new-task-description');
+      if (input) {
+        input.focus();
+      }
+    },
+    'f': () => {
+      const searchInput = document.querySelector('input[placeholder="Search tasks..."]');
+      if (searchInput) {
+        (searchInput as HTMLInputElement).focus();
+      }
+    },
+  });
+
   if (loading) {
     return <div className="text-center p-8">Loading tasks...</div>;
   }
@@ -292,6 +356,8 @@ const TaskList: React.FC = () => {
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
+
+        <TaskFilter onFilterChange={handleFilterChange} />
 
         <div className="mb-8 p-6 bg-gray-50 dark:bg-gray-800 rounded-lg">
           <h2 className="text-2xl font-semibold mb-4">Add New Task</h2>
@@ -364,12 +430,20 @@ const TaskList: React.FC = () => {
           </div>
         </div>
 
-        <h2 className="text-2xl font-semibold mb-4">Your Tasks</h2>
-        {tasks.length === 0 ? (
-          <p className="text-center text-gray-500">No tasks found. Add one above!</p>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-semibold">Your Tasks</h2>
+          <div className="text-sm text-gray-500">
+            {filteredTasks.length} of {tasks.length} tasks shown
+          </div>
+        </div>
+        
+        {filteredTasks.length === 0 ? (
+          <p className="text-center text-gray-500">
+            {tasks.length === 0 ? "No tasks found. Add one above!" : "No tasks match your filters."}
+          </p>
         ) : (
           <ul className="space-y-3">
-            {tasks.map(task => (
+            {filteredTasks.map(task => (
               <li key={task.id} className="border rounded-md bg-white dark:bg-gray-800 p-4">
                 {editingTask?.id === task.id ? (
                   <div className="space-y-4">
