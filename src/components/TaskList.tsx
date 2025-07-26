@@ -9,7 +9,8 @@ import DateNavigator from "./DateNavigator";
 import BulkActions from "./BulkActions";
 import useKeyboardShortcuts, { ShortcutMap } from "@/hooks/useKeyboardShortcuts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FolderOpen } from 'lucide-react'; // Added FolderOpen import
+import { FolderOpen } from 'lucide-react';
+import QuickAddTask from './QuickAddTask'; // Import the new QuickAddTask component
 
 interface Task {
   id: string;
@@ -53,7 +54,7 @@ const TaskList: React.FC = () => {
     setSortKey,
     sortDirection,
     setSortDirection,
-    sections, // Get sections from useTasks
+    sections,
   } = useTasks();
 
   const handlePreviousDay = () => {
@@ -74,16 +75,14 @@ const TaskList: React.FC = () => {
     setSortDirection(direction as 'asc' | 'desc');
   };
 
-  // Group tasks by section
   const tasksGroupedBySection = useMemo(() => {
     const grouped: { [key: string]: Task[] } = {};
-    const noSectionId = 'no-section'; // A special key for tasks without a section
+    const noSectionId = 'no-section';
 
-    // Initialize groups for all existing sections
     sections.forEach(section => {
       grouped[section.id] = [];
     });
-    grouped[noSectionId] = []; // Initialize 'No Section' group
+    grouped[noSectionId] = [];
 
     filteredTasks.forEach(task => {
       if (task.section_id && grouped[task.section_id]) {
@@ -93,7 +92,6 @@ const TaskList: React.FC = () => {
       }
     });
 
-    // Create an ordered array of sections, with 'No Section' first if it has tasks
     const orderedSections: { id: string; name: string }[] = [];
     if (grouped[noSectionId].length > 0) {
       orderedSections.push({ id: noSectionId, name: 'No Section' });
@@ -110,7 +108,6 @@ const TaskList: React.FC = () => {
     }));
   }, [filteredTasks, sections]);
 
-  // Keyboard shortcuts
   const shortcuts: ShortcutMap = {
     'arrowleft': handlePreviousDay,
     'arrowright': handleNextDay,
@@ -145,6 +142,8 @@ const TaskList: React.FC = () => {
           onNextDay={handleNextDay}
         />
 
+        <AddTaskForm onAddTask={handleAddTask} userId={userId} />
+
         <TaskFilter onFilterChange={applyFilters} />
 
         <div className="flex justify-end mb-4">
@@ -175,7 +174,7 @@ const TaskList: React.FC = () => {
             {tasks.length === 0 ? (
               <>
                 <p className="text-lg mb-2">No tasks found for this day!</p>
-                <p>Start by adding a new task below, or navigate to a different day.</p>
+                <p>Start by adding a new task above, or navigate to a different day.</p>
               </>
             ) : (
               <>
@@ -203,7 +202,7 @@ const TaskList: React.FC = () => {
                       onUpdate={updateTask}
                       isSelected={selectedTaskIds.includes(task.id)}
                       onToggleSelect={toggleTaskSelection}
-                      sections={sections} // Pass sections to TaskItem
+                      sections={sections}
                     />
                   ))}
                 </ul>
@@ -217,9 +216,7 @@ const TaskList: React.FC = () => {
             />
           </div>
         )}
-        <div className="mt-8"> {/* Moved AddTaskForm to the bottom */}
-          <AddTaskForm onAddTask={handleAddTask} userId={userId} />
-        </div>
+        <QuickAddTask onAddTask={handleAddTask} userId={userId} /> {/* New quick add field at the bottom */}
       </CardContent>
     </Card>
   );
