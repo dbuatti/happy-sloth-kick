@@ -14,7 +14,7 @@ import QuickAddTask from './QuickAddTask';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button"; // Added Button import
+import { Button } from "@/components/ui/button";
 
 interface Task {
   id: string;
@@ -68,6 +68,7 @@ const TaskList: React.FC = () => {
   const [newSectionName, setNewSectionName] = useState('');
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [editingSectionName, setEditingSectionName] = useState('');
+  const [noSectionDisplayName, setNoSectionDisplayName] = useState('No Section'); // New state for 'No Section' display name
 
   const handlePreviousDay = () => {
     setCurrentDate(prevDate => new Date(prevDate.setDate(prevDate.getDate() - 1)));
@@ -97,16 +98,28 @@ const TaskList: React.FC = () => {
   };
 
   const handleRenameSection = async (sectionId: string) => {
-    if (editingSectionName.trim()) {
-      await updateSection(sectionId, editingSectionName);
+    if (!editingSectionName.trim()) {
+      showError('Section name cannot be empty.');
+      return;
+    }
+
+    if (sectionId === 'no-section') {
+      setNoSectionDisplayName(editingSectionName);
+      showSuccess('Section name updated locally!');
       setEditingSectionId(null);
       setEditingSectionName('');
     } else {
-      showError('Section name cannot be empty.');
+      await updateSection(sectionId, editingSectionName);
+      setEditingSectionId(null);
+      setEditingSectionName('');
     }
   };
 
   const handleDeleteSection = async (sectionId: string) => {
+    if (sectionId === 'no-section') {
+      showError("The 'No Section' group cannot be deleted.");
+      return;
+    }
     if (window.confirm('Are you sure you want to delete this section? All tasks in this section will become unassigned.')) {
       await deleteSection(sectionId);
     }
@@ -130,8 +143,9 @@ const TaskList: React.FC = () => {
     });
 
     const orderedSections: { id: string; name: string }[] = [];
-    if (grouped[noSectionId].length > 0) {
-      orderedSections.push({ id: noSectionId, name: 'No Section' });
+    // Add 'No Section' first if it has tasks or if it's the only group
+    if (grouped[noSectionId].length > 0 || sections.length === 0) {
+      orderedSections.push({ id: noSectionId, name: noSectionDisplayName });
     }
     sections.forEach(section => {
       if (grouped[section.id] && grouped[section.id].length > 0) {
@@ -143,7 +157,7 @@ const TaskList: React.FC = () => {
       ...section,
       tasks: grouped[section.id],
     }));
-  }, [filteredTasks, sections]);
+  }, [filteredTasks, sections, noSectionDisplayName]); // Add noSectionDisplayName to dependencies
 
   const shortcuts: ShortcutMap = {
     'arrowleft': handlePreviousDay,
