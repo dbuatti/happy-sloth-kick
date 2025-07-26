@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd'; // Import D&D components
 
 interface Task {
   id: string;
@@ -29,6 +30,7 @@ interface Task {
   notes: string | null;
   remind_at: string | null;
   section_id: string | null;
+  order: number | null; // Added order column
 }
 
 interface TaskSection {
@@ -79,7 +81,9 @@ const TaskList: React.FC = () => {
     updateSection,
     deleteSection,
     noSectionDisplayName,
-    reassignNoSectionTasks, // Use the new function
+    reassignNoSectionTasks,
+    reorderTasksInSameSection, // New
+    moveTaskToNewSection, // New
   } = useTasks();
 
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
@@ -108,7 +112,7 @@ const TaskList: React.FC = () => {
 
   const handleSortChange = (value: string) => {
     const [key, direction] = value.split('_');
-    setSortKey(key as 'priority' | 'due_date' | 'created_at');
+    setSortKey(key as 'priority' | 'due_date' | 'created_at' | 'order');
     setSortDirection(direction as 'asc' | 'desc');
   };
 
@@ -201,6 +205,11 @@ const TaskList: React.FC = () => {
       }
     });
 
+    // Sort tasks within each group by their 'order' property
+    Object.keys(grouped).forEach(sectionId => {
+      grouped[sectionId].sort((a, b) => (a.order || 0) - (b.order || 0));
+    });
+
     // Create a list of all section groups with their tasks
     const allSectionGroups = [
       { id: noSectionId, name: noSectionDisplayName, tasks: grouped[noSectionId] },
@@ -215,6 +224,26 @@ const TaskList: React.FC = () => {
       sectionGroup.id !== noSectionId || sectionGroup.tasks.length > 0
     );
   }, [filteredTasks, sections, noSectionDisplayName]);
+
+  const onDragEnd = async (result: DropResult) => {
+    const { source, destination, draggableId } = result;
+
+    // Dropped outside the list
+    if (!destination) {
+      return;
+    }
+
+    const sourceSectionId = source.droppableId === 'no-section' ? null : source.droppableId;
+    const destinationSectionId = destination.droppableId === 'no-section' ? null : destination.droppableId;
+
+    if (source.droppableId === destination.droppableId) {
+      // Moved within the same section
+      await reorderTasksInSameSection(sourceSectionId, source.index, destination.index);
+    } else {
+      // Moved to a different section
+      await moveTaskToNewSection(draggableId, sourceSectionId, destinationSectionId, destination.index);
+    }
+  };
 
   const shortcuts: ShortcutMap = {
     'arrowleft': handlePreviousDay,
@@ -272,6 +301,7 @@ const TaskList: React.FC = () => {
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="order_asc">Custom Order</SelectItem> {/* New option */}
                 <SelectItem value="priority_desc">Priority (High to Low)</SelectItem>
                 <SelectItem value="priority_asc">Priority (Low to High)</SelectItem>
                 <SelectItem value="due_date_asc">Due Date (Soonest)</SelectItem>
@@ -412,30 +442,49 @@ const TaskList: React.FC = () => {
             <p>Start by adding a new task above, or create your first section using the "Manage Sections" button.</p>
           </div>
         ) : (
-          <div className="space-y-6">
-            {tasksGroupedBySection.map(sectionGroup => (
-              <div key={sectionGroup.id} className="space-y-3">
-                <h3 className="text-xl font-semibold flex items-center gap-2">
-                  <FolderOpen className="h-5 w-5 text-muted-foreground" />
-                  {sectionGroup.name} ({sectionGroup.tasks.length})
-                </h3>
-                <ul className="space-y-3">
-                  {sectionGroup.tasks.map(task => (
-                    <TaskItem
-                      key={task.id}
-                      task={task}
-                      userId={userId}
-                      onStatusChange={handleTaskStatusChange}
-                      onDelete={deleteTask}
-                      onUpdate={updateTask}
-                      isSelected={selectedTaskIds.includes(task.id)}
-                      onToggleSelect={toggleTaskSelection}
-                      sections={sections}
-                    />
-                  ))}
-                </ul>
-              </div>
-            ))}
+          <DragDropContext onDragEnd={onDragEnd}> {/* Wrap with DragDropContext */}
+            <div className="space-y-6">
+              {tasksGroupedBySection.map(sectionGroup => (
+                <div key={sectionGroup.id} className="space-y-3">
+                  <h3 className="text-xl font-semibold flex items-center gap-2">
+                    <FolderOpen className="h-5 w-5 text-muted-foreground" />
+                    {sectionGroup.name} ({sectionGroup.tasks.length})
+                  </h3>
+                  <Droppable droppableId={sectionGroup.id}> {/* Wrap section tasks with Droppable */}
+                    {(provided) => (
+                      <ul
+                        className="space-y-3"
+                        {...provided.droppableProps}
+                        ref={provided.innerRef}
+                      >
+                        {sectionGroup.tasks.map((task, index) => (
+                          <Draggable key={task.id} draggableId={task.id} index={index}> {/* Wrap TaskItem with Draggable */}
+                            {(provided) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                {...provided.dragHandleProps}
+                              >
+                                <TaskItem
+                                  task={task}
+                                  userId={userId}
+                                  onStatusChange={handleTaskStatusChange}
+                                  onDelete={deleteTask}
+                                  onUpdate={updateTask}
+                                  isSelected={selectedTaskIds.includes(task.id)}
+                                  onToggleSelect={toggleTaskSelection}
+                                  sections={sections}
+                                />
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </ul>
+                    )}
+                  </Droppable>
+                </div>
+              ))}
 
             <BulkActions 
               selectedTaskIds={selectedTaskIds} 
@@ -443,6 +492,7 @@ const TaskList: React.FC = () => {
               onClearSelection={clearSelectedTasks} 
             />
           </div>
+          </DragDropContext>
         )}
         <QuickAddTask onAddTask={handleNewTaskSubmit} userId={userId} />
       </CardContent>

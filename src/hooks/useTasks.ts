@@ -16,6 +16,7 @@ interface Task {
   notes: string | null;
   remind_at: string | null;
   section_id: string | null;
+  order: number | null; // Added order column
 }
 
 interface TaskSection {
@@ -48,10 +49,10 @@ export const useTasks = () => {
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
-  const [sortKey, setSortKey] = useState<'priority' | 'due_date' | 'created_at'>('created_at');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [sortKey, setSortKey] = useState<'priority' | 'due_date' | 'created_at' | 'order'>('order'); // Default sort by order
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc'); // Default to asc for order
   const [sections, setSections] = useState<TaskSection[]>([]);
-  const [noSectionDisplayName, setNoSectionDisplayName] = useState('No Section'); // New state for custom name
+  const [noSectionDisplayName, setNoSectionDisplayName] = useState('No Section');
 
   const fetchTasks = useCallback(async () => {
     if (!userId) {
@@ -70,7 +71,8 @@ export const useTasks = () => {
       .eq('user_id', userId)
       .gte('created_at', startOfDay.toISOString())
       .lte('created_at', endOfDay.toISOString())
-      .order(sortKey, { ascending: sortDirection === 'asc' });
+      .order('order', { ascending: sortDirection === 'asc' }) // Order by 'order' first
+      .order(sortKey, { ascending: sortDirection === 'asc' }); // Then by selected sortKey
 
     if (error) {
       console.error('Error fetching tasks:', error);
@@ -131,6 +133,13 @@ export const useTasks = () => {
       return;
     }
     try {
+      // Determine the highest order in the target section to place the new task at the end
+      const targetSectionTasks = tasks.filter(t => 
+        (t.section_id === taskData.section_id) || (t.section_id === null && taskData.section_id === null)
+      );
+      const maxOrder = targetSectionTasks.reduce((max, task) => Math.max(max, task.order || 0), -1);
+      const newOrder = maxOrder + 1;
+
       const { data, error } = await supabase
         .from('tasks')
         .insert({
@@ -144,6 +153,7 @@ export const useTasks = () => {
           notes: taskData.notes || null,
           remind_at: taskData.remind_at || null,
           section_id: taskData.section_id || null,
+          order: newOrder, // Set the order for the new task
         })
         .select();
 
@@ -436,6 +446,91 @@ export const useTasks = () => {
     }
   };
 
+  const reorderTasksInSameSection = async (sectionId: string | null, startIndex: number, endIndex: number) => {
+    if (!userId) return;
+
+    // Get tasks for the specific section, including 'no-section' tasks if sectionId is null
+    const sectionTasks = tasks.filter(t => 
+      (t.section_id === sectionId) || (t.section_id === null && sectionId === 'no-section')
+    ).sort((a, b) => (a.order || 0) - (b.order || 0)); // Ensure they are sorted by current order
+
+    const result = Array.from(sectionTasks);
+    const [removed] = result.splice(startIndex, 1);
+    result.splice(endIndex, 0, removed);
+
+    // Prepare updates for all tasks in this section
+    const updates = result.map((task, index) => ({
+      id: task.id,
+      order: index, // Assign new sequential order
+    }));
+
+    try {
+      const { error } = await supabase.from('tasks').upsert(updates, { onConflict: 'id' });
+      if (error) throw error;
+      showSuccess('Tasks reordered successfully!');
+      fetchTasks(); // Re-fetch to ensure UI consistency
+    } catch (err) {
+      console.error('Error reordering tasks:', err);
+      showError('Failed to reorder tasks.');
+    }
+  };
+
+  const moveTaskToNewSection = async (
+    taskId: string,
+    sourceSectionId: string | null,
+    destinationSectionId: string | null,
+    destinationIndex: number
+  ) => {
+    if (!userId) return;
+
+    try {
+      // Fetch all tasks to correctly re-index both source and destination sections
+      const { data: allUserTasks, error: fetchError } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('user_id', userId);
+
+      if (fetchError) throw fetchError;
+
+      const sourceTasks = allUserTasks.filter(t => 
+        (t.section_id === sourceSectionId) || (t.section_id === null && sourceSectionId === 'no-section')
+      ).sort((a, b) => (a.order || 0) - (b.order || 0));
+
+      const destinationTasks = allUserTasks.filter(t => 
+        (t.section_id === destinationSectionId) || (t.section_id === null && destinationSectionId === 'no-section')
+      ).sort((a, b) => (a.order || 0) - (b.order || 0));
+
+      const movedTask = sourceTasks.find(t => t.id === taskId);
+      if (!movedTask) throw new Error('Moved task not found in source section.');
+
+      // Remove from source section's list
+      const newSourceTasks = sourceTasks.filter(t => t.id !== taskId);
+
+      // Add to destination section's list at the correct index
+      const newDestinationTasks = Array.from(destinationTasks);
+      newDestinationTasks.splice(destinationIndex, 0, { ...movedTask, section_id: destinationSectionId });
+
+      // Prepare updates for both sections
+      const updates: { id: string; order: number; section_id?: string | null }[] = [];
+
+      newSourceTasks.forEach((task, index) => {
+        updates.push({ id: task.id, order: index });
+      });
+      newDestinationTasks.forEach((task, index) => {
+        updates.push({ id: task.id, order: index, section_id: task.section_id });
+      });
+
+      // Perform a batch upsert
+      const { error } = await supabase.from('tasks').upsert(updates, { onConflict: 'id' });
+      if (error) throw error;
+      showSuccess('Task moved successfully!');
+      fetchTasks(); // Re-fetch to ensure UI consistency
+    } catch (err) {
+      console.error('Error moving task:', err);
+      showError('Failed to move task.');
+    }
+  };
+
   return {
     tasks,
     filteredTasks,
@@ -459,7 +554,9 @@ export const useTasks = () => {
     createSection,
     updateSection,
     deleteSection,
-    noSectionDisplayName, // Expose the custom name
-    reassignNoSectionTasks, // Expose the new function
+    noSectionDisplayName,
+    reassignNoSectionTasks,
+    reorderTasksInSameSection, // Expose new function
+    moveTaskToNewSection, // Expose new function
   };
 };
