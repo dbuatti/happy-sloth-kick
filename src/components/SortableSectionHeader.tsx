@@ -40,7 +40,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({ id, name,
         "flex items-center justify-between p-3 rounded-lg bg-muted dark:bg-gray-700 text-foreground",
         "shadow-sm hover:shadow-md transition-shadow duration-200",
         "cursor-grab active:cursor-grabbing",
-        isDragging ? "ring-2 ring-primary" : ""
+        isDragging ? "ring-2 ring-primary shadow-lg" : "" // Add shadow and ring when dragging
       )}
       {...attributes}
     >

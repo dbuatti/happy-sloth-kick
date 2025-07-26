@@ -123,7 +123,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
     <div // Changed from li to div
       className={cn(
         "relative flex items-center space-x-3 w-full", // Added w-full to ensure it takes full width
-        task.status === 'completed' ? "opacity-70" : "", // Keep opacity for completed
+        task.status === 'completed' ? "opacity-70 bg-green-50/20 dark:bg-green-900/20" : "", // Keep opacity for completed
       )}
     >
       {isEditing ? (

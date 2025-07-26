@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Home, BarChart3, Settings as SettingsIcon } from 'lucide-react'; // Import SettingsIcon
 import ThemeSelector from './ThemeSelector';
 import DarkModeToggle from './DarkModeToggle';
+import { cn } from '@/lib/utils'; // Import cn for class merging
 
 const Sidebar = () => {
   const location = useLocation();
@@ -14,7 +15,7 @@ const Sidebar = () => {
   ];
 
   return (
-    <div className="w-64 bg-white dark:bg-gray-800 shadow-md h-screen flex flex-col">
+    <div className="w-64 bg-white dark:bg-gray-800 shadow-lg h-screen flex flex-col"> {/* Added shadow-lg */}
       <div className="p-6 flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-white">TaskMaster</h1>
         <div className="flex items-center space-x-2">
@@ -30,11 +31,12 @@ const Sidebar = () => {
             <Link
               key={item.path}
               to={item.path}
-              className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+              className={cn(
+                "flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors duration-200",
                 isActive
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
-              }`}
+                  ? 'bg-primary text-primary-foreground shadow-sm' // Added shadow-sm for active state
+                  : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary dark:hover:text-primary-foreground' // Improved hover
+              )}
             >
               <Icon className="h-5 w-5" />
               <span className="font-medium">{item.name}</span>

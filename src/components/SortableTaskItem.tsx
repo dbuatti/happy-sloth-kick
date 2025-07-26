@@ -80,6 +80,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         task.status === 'completed' ? "border-green-300 dark:border-green-700" : "border-border", // Highlight completed
         "group relative", // Keep group for hover effects
         "hover:shadow-md", // Subtle shadow on hover
+        isDragging ? "shadow-lg ring-2 ring-primary" : "cursor-grab" // Add shadow and ring when dragging, cursor-grab when not
       )}
     >
       {/* Drag Handle */}

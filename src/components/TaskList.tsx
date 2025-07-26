@@ -9,7 +9,7 @@ import DateNavigator from "./DateNavigator";
 import BulkActions from "./BulkActions";
 import useKeyboardShortcuts, { ShortcutMap } from "@/hooks/useKeyboardShortcuts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FolderOpen, Settings, Plus, Edit, Trash2 } from 'lucide-react';
+import { FolderOpen, Settings, Plus, Edit, Trash2, PlusCircle } from 'lucide-react'; // Added PlusCircle
 import QuickAddTask from './QuickAddTask';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -516,9 +516,10 @@ const TaskList: React.FC = () => {
         </div>
         
         {sections.length === 0 && filteredTasks.length === 0 ? (
-          <div className="text-center text-gray-500 p-8">
+          <div className="text-center text-gray-500 p-8 flex flex-col items-center justify-center">
+            <PlusCircle className="h-16 w-16 text-muted-foreground mb-4" />
             <p className="text-lg mb-2">No sections or tasks found!</p>
-            <p>Please create your first section using the "Manage Sections" button above to start adding tasks.</p>
+            <p>Start by creating your first section using the "Manage Sections" button above, then add your tasks.</p>
           </div>
         ) : (
           <DndContext
