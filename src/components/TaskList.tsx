@@ -105,6 +105,50 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => { // Destruc
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
 
+  // State for expanded/collapsed sections
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+
+  // Load expanded sections from local storage on mount
+  useEffect(() => {
+    try {
+      const storedExpandedSections = localStorage.getItem('expandedSections');
+      if (storedExpandedSections) {
+        setExpandedSections(JSON.parse(storedExpandedSections));
+      }
+    } catch (error) {
+      console.error("Failed to parse expanded sections from local storage:", error);
+      // Fallback to default if parsing fails
+      setExpandedSections({});
+    }
+  }, []);
+
+  // Update local storage when expanded sections change
+  useEffect(() => {
+    localStorage.setItem('expandedSections', JSON.stringify(expandedSections));
+  }, [expandedSections]);
+
+  // Ensure new sections are expanded by default
+  useEffect(() => {
+    if (sections.length > 0) {
+      setExpandedSections(prev => {
+        const newExpansions = { ...prev };
+        sections.forEach(section => {
+          if (newExpansions[section.id] === undefined) {
+            newExpansions[section.id] = true; // Default new sections to expanded
+          }
+        });
+        return newExpansions;
+      });
+    }
+  }, [sections]);
+
+  const handleToggleSectionExpand = (sectionId: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [sectionId]: !prev[sectionId],
+    }));
+  };
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -543,28 +587,32 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => { // Destruc
                       id={sectionGroup.id}
                       name={sectionGroup.name}
                       taskCount={sectionGroup.tasks.length}
+                      isExpanded={expandedSections[sectionGroup.id] ?? true} // Default to true
+                      onToggleExpand={() => handleToggleSectionExpand(sectionGroup.id)}
                     />
-                    <SortableContext
-                      items={sectionGroup.tasks.map(task => task.id)}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      <ul className="space-y-3">
-                        {sectionGroup.tasks.map((task) => (
-                          <SortableTaskItem
-                            key={task.id}
-                            task={task}
-                            userId={userId}
-                            onStatusChange={handleTaskStatusChange}
-                            onDelete={deleteTask}
-                            onUpdate={updateTask}
-                            isSelected={selectedTaskIds.includes(task.id)}
-                            onToggleSelect={toggleTaskSelection}
-                            sections={sections}
-                            onEditTask={handleEditTask} // Pass the new prop
-                          />
-                        ))}
-                      </ul>
-                    </SortableContext>
+                    {(expandedSections[sectionGroup.id] ?? true) && ( // Conditionally render tasks
+                      <SortableContext
+                        items={sectionGroup.tasks.map(task => task.id)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        <ul className="space-y-3">
+                          {sectionGroup.tasks.map((task) => (
+                            <SortableTaskItem
+                              key={task.id}
+                              task={task}
+                              userId={userId}
+                              onStatusChange={handleTaskStatusChange}
+                              onDelete={deleteTask}
+                              onUpdate={updateTask}
+                              isSelected={selectedTaskIds.includes(task.id)}
+                              onToggleSelect={toggleTaskSelection}
+                              sections={sections}
+                              onEditTask={handleEditTask} // Pass the new prop
+                            />
+                          ))}
+                        </ul>
+                      </SortableContext>
+                    )}
                   </div>
                 ))}
               </div>
@@ -588,6 +636,8 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => { // Destruc
                   id={activeSection.id}
                   name={activeSection.name}
                   taskCount={tasksGroupedBySection.find(s => s.id === activeSection.id)?.tasks.length || 0}
+                  isExpanded={expandedSections[activeSection.id] ?? true} // Default to true
+                  onToggleExpand={() => {}} // No-op for drag overlay
                 />
               ) : null}
             </DragOverlay>

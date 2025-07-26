@@ -1,20 +1,19 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-// Removed DraggableAttributes import
-import { FolderOpen } from 'lucide-react';
+import { FolderOpen, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-// Define a local type for dnd-kit listeners
-type DndListeners = Record<string, ((event: any) => void) | undefined>;
+import { Button } from '@/components/ui/button'; // Import Button
 
 interface SortableSectionHeaderProps {
   id: string;
   name: string;
   taskCount: number;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
 }
 
-const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({ id, name, taskCount }) => {
+const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({ id, name, taskCount, isExpanded, onToggleExpand }) => {
   const {
     attributes,
     listeners,
@@ -50,6 +49,18 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({ id, name,
           {name} ({taskCount})
         </h3>
       </div>
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={(e) => {
+          e.stopPropagation(); // Prevent drag from starting when clicking the button
+          onToggleExpand();
+        }}
+        className="flex-shrink-0"
+        aria-label={isExpanded ? "Collapse section" : "Expand section"}
+      >
+        <ChevronDown className={cn("h-5 w-5 transition-transform", isExpanded ? "rotate-0" : "-rotate-90")} />
+      </Button>
     </div>
   );
 };
