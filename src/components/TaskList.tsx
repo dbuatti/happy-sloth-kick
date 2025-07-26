@@ -44,6 +44,7 @@ import DailyStreak from './DailyStreak'; // New import for DailyStreak
 import SmartSuggestions from './SmartSuggestions'; // Import SmartSuggestions
 import TaskDetailDialog from './TaskDetailDialog'; // Import the new TaskDetailDialog
 import { Task, TaskSection } from '@/hooks/useTasks'; // Import Task and TaskSection interfaces
+import NextIncompleteTask from './NextIncompleteTask'; // Import the new component
 
 type TaskUpdate = Partial<Omit<Task, 'id' | 'user_id' | 'created_at'>>;
 
@@ -253,13 +254,14 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => { // Destruc
     } else if (action.startsWith('priority-')) {
       updates = { priority: action.split('-')[1] };
     } else if (action === 'delete') {
-      if (window.confirm(`Are you sure you want to delete ${selectedTaskIds.length} selected tasks?`)) {
-        for (const taskId of selectedTaskIds) {
-          await deleteTask(taskId);
-        }
-        clearSelectedTasks();
-        return;
+      // Use AlertDialog for bulk delete confirmation
+      // This part is handled by the AlertDialog in BulkActions.tsx
+      // The onAction('delete') will be called after confirmation.
+      for (const taskId of selectedTaskIds) {
+        await deleteTask(taskId);
       }
+      clearSelectedTasks();
+      return;
     }
     await bulkUpdateTasks(updates);
   };
@@ -400,6 +402,12 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => { // Destruc
           currentDate={currentDate}
           onPreviousDay={handlePreviousDay}
           onNextDay={handleNextDay}
+        />
+
+        {/* Next Incomplete Task Component */}
+        <NextIncompleteTask 
+          tasksGroupedBySection={tasksGroupedBySection} 
+          expandedSections={expandedSections} 
         />
 
         {/* Daily Streak Component */}
