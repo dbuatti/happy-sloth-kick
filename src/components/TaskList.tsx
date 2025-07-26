@@ -317,7 +317,7 @@ const TaskList: React.FC = () => {
                             )}
                             
                             <div className="flex space-x-1">
-                              {editingSectionId !== sectionGroup.id && (
+                              {editingSectionId !== sectionGroup.id && sectionGroup.id !== 'no-section' && ( // Conditionally render Edit button
                                 <>
                                   <Button
                                     variant="ghost"
