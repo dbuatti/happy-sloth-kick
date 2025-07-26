@@ -220,7 +220,7 @@ export const useTasks = () => {
       tempTasks.sort((a, b) => {
         const orderA = a.order === null ? Infinity : a.order;
         const orderB = b.order === null ? Infinity : b.order;
-        return sortDirection === 'asc' ? orderA - orderB : orderB - orderA;
+        return sortDirection === 'asc' ? orderA - orderB : orderB - a.order;
       });
     } else if (sortKey === 'priority') {
       const priorityOrder: { [key: string]: number } = { 'urgent': 4, 'high': 3, 'medium': 2, 'low': 1, 'none': 0 };
@@ -553,6 +553,7 @@ export const useTasks = () => {
       const updates = result.map((task, index) => ({
         id: task.id,
         order: index,
+        user_id: userId, // Ensure user_id is included for RLS
       }));
 
       const { error } = await supabase.from('tasks').upsert(updates, { onConflict: 'id' });
@@ -645,6 +646,7 @@ export const useTasks = () => {
       const newDbSourceTasks = dbSourceTasks.filter(t => t.id !== taskId).map((task, index) => ({
         id: task.id,
         order: index,
+        user_id: userId, // Ensure user_id is included for RLS
       }));
 
       const tempNewDbDestinationTasks = Array.from(dbDestinationTasks);
@@ -653,9 +655,10 @@ export const useTasks = () => {
         id: task.id,
         order: index,
         section_id: destinationSectionId, // Ensure section_id is updated for the moved task
+        user_id: userId, // Ensure user_id is included for RLS
       }));
 
-      const updates: { id: string; order: number; section_id?: string | null }[] = [
+      const updates: { id: string; order: number; section_id?: string | null; user_id: string }[] = [
         ...newDbSourceTasks,
         ...newDbDestinationTasks,
       ];
@@ -702,6 +705,7 @@ export const useTasks = () => {
       const updates = sectionsToUpdate.map((section, index) => ({
         id: section.id,
         order: index,
+        user_id: userId, // IMPORTANT: Include user_id for RLS policy check
       }));
 
       const { error } = await supabase.from('task_sections').upsert(updates, { onConflict: 'id' });
