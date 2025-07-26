@@ -6,7 +6,7 @@ import { themes, ThemeName } from "@/lib/themes";
 import { useState, useEffect } from "react";
 
 const ThemeSelector = () => {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -21,12 +21,33 @@ const ThemeSelector = () => {
     );
   }
 
-  // Determine if we're in a custom theme
-  const isCustomTheme = theme && 
-    ['adhd-friendly', 'calm-mist', 'warm-dawn', 'gentle-night', 'cosmic-dusk', 'focus-flow'].includes(theme);
+  // Get the base theme (without -dark suffix)
+  const getBaseTheme = (currentTheme: string | undefined): ThemeName | 'light' | 'dark' | 'system' => {
+    if (!currentTheme) return 'light';
+    
+    // Handle system theme
+    if (currentTheme === 'system') return 'system';
+    
+    // Handle light/dark themes
+    if (currentTheme === 'light' || currentTheme === 'dark') return currentTheme;
+    
+    // Remove -dark suffix if present
+    if (currentTheme.endsWith('-dark')) {
+      const baseTheme = currentTheme.replace('-dark', '');
+      if (Object.keys(themes).includes(baseTheme)) {
+        return baseTheme as ThemeName;
+      }
+    }
+    
+    // Check if it's a custom theme
+    if (Object.keys(themes).includes(currentTheme)) {
+      return currentTheme as ThemeName;
+    }
+    
+    return 'light';
+  };
 
-  // Get the base theme name (without -dark suffix)
-  const baseTheme = isCustomTheme ? theme : 'light';
+  const baseTheme = getBaseTheme(theme);
 
   return (
     <DropdownMenu>
@@ -47,7 +68,7 @@ const ThemeSelector = () => {
           <DropdownMenuItem 
             key={themeName} 
             onClick={() => setTheme(themeName as ThemeName)}
-            className={isCustomTheme && themeName === baseTheme ? 'font-bold' : ''}
+            className={baseTheme === themeName ? 'font-bold' : ''}
           >
             <Palette className="h-4 w-4 mr-2" />
             {themeData.name}
