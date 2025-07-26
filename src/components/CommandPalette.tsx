@@ -20,7 +20,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { setCurrentDate, handleAddTask, sections } = useTasks();
+  const { setCurrentDate, handleAddTask, sections, currentDate } = useTasks(); // Destructure currentDate
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -192,7 +192,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
             <SheetHeader>
               <SheetTitle>Add New Task</SheetTitle>
             </SheetHeader>
-            <AddTaskForm onAddTask={handleNewTaskSubmit} userId={user?.id || null} onTaskAdded={() => setIsAddTaskOpen(false)} />
+            <AddTaskForm onAddTask={handleNewTaskSubmit} userId={user?.id || null} onTaskAdded={() => setIsAddTaskOpen(false)} currentDate={currentDate} />
           </SheetContent>
         </Sheet>
       ) : (
@@ -201,7 +201,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
             <DialogHeader>
               <DialogTitle>Add New Task</DialogTitle>
             </DialogHeader>
-            <AddTaskForm onAddTask={handleNewTaskSubmit} userId={user?.id || null} onTaskAdded={() => setIsAddTaskOpen(false)} />
+            <AddTaskForm onAddTask={handleNewTaskSubmit} userId={user?.id || null} onTaskAdded={() => setIsAddTaskOpen(false)} currentDate={currentDate} />
           </DialogContent>
         </Dialog>
       )}

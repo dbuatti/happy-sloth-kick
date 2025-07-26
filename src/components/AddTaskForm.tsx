@@ -26,6 +26,7 @@ interface AddTaskFormProps {
   }) => Promise<any>;
   userId: string | null;
   onTaskAdded?: () => void; // New prop to close dialog/sheet
+  currentDate: Date; // New prop: current date from TaskList
 }
 
 // Helper function for natural language parsing
@@ -140,12 +141,12 @@ const parseNaturalLanguage = (text: string) => {
   };
 };
 
-const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdded }) => {
+const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdded, currentDate }) => {
   const [newTaskDescription, setNewTaskDescription] = useState<string>('');
   const [newTaskRecurringType, setNewTaskRecurringType] = useState<'none' | 'daily' | 'weekly' | 'monthly'>('none');
   const [newTaskCategory, setNewTaskCategory] = useState<string>('general');
   const [newTaskPriority, setNewTaskPriority] = useState<string>('medium');
-  const [newTaskDueDate, setNewTaskDueDate] = useState<Date | undefined>(undefined);
+  const [newTaskDueDate, setNewTaskDueDate] = useState<Date | undefined>(currentDate); // Initialize with currentDate
   const [newTaskNotes, setNewTaskNotes] = useState<string>('');
   const [newTaskRemindAt, setNewTaskRemindAt] = useState<Date | undefined>(undefined);
   const [newReminderTime, setNewReminderTime] = useState<string>('');
@@ -170,6 +171,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
     if (category && (newTaskCategory === 'general' || !newTaskCategory)) {
       setNewTaskCategory(category);
     }
+    // Only set dueDate from natural language if it's not already set by user or default
     if (dueDate && !newTaskDueDate) {
       setNewTaskDueDate(dueDate);
     }
@@ -179,8 +181,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
         setNewReminderTime(format(remindAt, 'HH:mm'));
       }
     }
-    // Removed: setNewTaskDescription(parsedDescription);
-  }, [newTaskDescription, newTaskPriority, newTaskCategory, newTaskDueDate, newTaskRemindAt]); // Add other dependencies to prevent infinite loops if they are also updated by parsing
+  }, [newTaskDescription, newTaskPriority, newTaskCategory, newTaskDueDate, newTaskRemindAt]);
 
   const handleSubmit = async () => {
     if (!newTaskDescription.trim()) {
@@ -211,7 +212,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
       setNewTaskRecurringType('none');
       setNewTaskCategory('general');
       setNewTaskPriority('medium');
-      setNewTaskDueDate(undefined);
+      setNewTaskDueDate(currentDate); // Reset to current date after adding
       setNewTaskNotes('');
       setNewTaskRemindAt(undefined);
       setNewReminderTime('');
