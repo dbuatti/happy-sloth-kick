@@ -7,7 +7,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
-import Help from "./pages/Help"; // Import the new Help page
+import Help from "./pages/Help";
 import { AuthProvider } from "@/context/AuthContext";
 import CommandPalette from "./components/CommandPalette";
 import { useState } from 'react';
@@ -28,12 +28,13 @@ const App = () => {
               <Route path="/" element={<Index />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/settings" element={<Settings />} />
-              <Route path="/help" element={<Help />} /> {/* New route for Help page */}
+              <Route path="/help" element={<Help />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            {/* CommandPalette moved inside BrowserRouter */}
+            <CommandPalette isAddTaskOpen={isAddTaskOpen} setIsAddTaskOpen={setIsAddTaskOpen} />
           </BrowserRouter>
-          <CommandPalette isAddTaskOpen={isAddTaskOpen} setIsAddTaskOpen={setIsAddTaskOpen} />
         </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
