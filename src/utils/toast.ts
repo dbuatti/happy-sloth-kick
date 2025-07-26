@@ -15,3 +15,14 @@ export const showLoading = (message: string) => {
 export const dismissToast = (toastId: string) => {
   toast.dismiss(toastId);
 };
+
+export const showReminder = (message: string, taskId?: string) => {
+  toast.info(message, {
+    id: taskId, // Use task ID for dismiss if needed
+    duration: 10000, // Keep reminder visible for 10 seconds
+    action: {
+      label: "Dismiss",
+      onClick: () => toast.dismiss(taskId),
+    },
+  });
+};

@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { showError, showSuccess } from '@/utils/toast';
+import { showError, showSuccess, showReminder } from '@/utils/toast'; // Import showReminder
 import { v4 as uuidv4 } from 'uuid';
-import { isSameDay, isPast, startOfDay as fnsStartOfDay } from 'date-fns';
+import { isSameDay, isPast, startOfDay as fnsStartOfDay, parseISO } from 'date-fns'; // Import parseISO
 
 export interface Task {
   id: string;
@@ -61,6 +61,9 @@ export const useTasks = () => {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [sectionFilter, setSectionFilter] = useState('all');
+
+  // Ref to keep track of tasks for which a reminder has been shown in the current session
+  const remindedTaskIdsRef = useRef<Set<string>>(new Set());
 
   const fetchSections = useCallback(async () => {
     if (!userId) return;
@@ -162,6 +165,29 @@ export const useTasks = () => {
     fetchSections();
     fetchTasks();
   }, [fetchSections, fetchTasks]);
+
+  // Reminder check effect
+  useEffect(() => {
+    if (!userId) return;
+
+    const reminderInterval = setInterval(() => {
+      const now = new Date();
+      tasks.forEach(task => {
+        if (task.remind_at && task.status === 'to-do' && !remindedTaskIdsRef.current.has(task.id)) {
+          const reminderTime = parseISO(task.remind_at);
+          const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000); // Consider a window for reminders
+          
+          // If reminderTime is in the past (or now) and within the last 5 minutes (to avoid old reminders)
+          if (reminderTime <= now && reminderTime > fiveMinutesAgo) {
+            showReminder(`Reminder: ${task.description}`, task.id);
+            remindedTaskIdsRef.current.add(task.id);
+          }
+        }
+      });
+    }, 30 * 1000); // Check every 30 seconds
+
+    return () => clearInterval(reminderInterval);
+  }, [tasks, userId]); // Only tasks and userId are dependencies now
 
   const filteredTasks = useMemo(() => {
     let tempTasks = [...tasks]; // 'tasks' now holds ALL tasks for the user
