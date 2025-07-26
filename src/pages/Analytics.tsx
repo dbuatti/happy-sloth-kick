@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { format, subDays, isSameDay, eachDayOfInterval, startOfMonth, endOfMonth, isToday } from 'date-fns';
+import { format, subDays, isSameDay, eachDayOfInterval, startOfMonth, endOfMonth, isToday, startOfWeek, endOfWeek } from 'date-fns';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
-import { CalendarIcon, TrendingUp, Target, Clock } from 'lucide-react';
+import { CalendarIcon, TrendingUp, Target, Clock, CheckCircle2, ListTodo } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import Sidebar from "@/components/Sidebar";
 import { supabase } from "@/integrations/supabase/client";
+import { DateRange } from 'react-day-picker';
 
 // Define the task type
 interface Task {
@@ -25,10 +26,11 @@ interface Task {
 }
 
 // Function to get aggregated task data for analytics
-const getAnalyticsData = async (startDate: Date, endDate: Date) => {
+const getAnalyticsData = async (startDate: Date, endDate: Date, userId: string) => {
   const { data, error } = await supabase
     .from('tasks')
     .select('*')
+    .eq('user_id', userId)
     .gte('created_at', startDate.toISOString())
     .lt('created_at', endDate.toISOString());
 
@@ -102,23 +104,33 @@ const getAnalyticsData = async (startDate: Date, endDate: Date) => {
 };
 
 const Analytics = () => {
-  const [date, setDate] = useState<Date | undefined>(new Date());
-  const [dateRange, setDateRange] = useState<{ start: Date; end: Date }>({
-    start: startOfMonth(new Date()),
-    end: new Date()
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: startOfMonth(new Date()),
+    to: new Date(),
   });
   const [chartData, setChartData] = useState<any[]>([]);
   const [categoryData, setCategoryData] = useState<any[]>([]);
   const [priorityData, setPriorityData] = useState<any>({});
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
 
   const colors = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
   useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserId(user?.id || null);
+    };
+    fetchUser();
+  }, []);
+
+  useEffect(() => {
     const fetchData = async () => {
+      if (!dateRange?.from || !dateRange?.to || !userId) return;
+
       setLoading(true);
       try {
-        const { dailyData, categoryData, priorityData } = await getAnalyticsData(dateRange.start, dateRange.end);
+        const { dailyData, categoryData, priorityData } = await getAnalyticsData(dateRange.from, dateRange.to, userId);
         setChartData(dailyData);
         setCategoryData(categoryData);
         setPriorityData(priorityData);
@@ -129,8 +141,10 @@ const Analytics = () => {
       }
     };
 
-    fetchData();
-  }, [dateRange]);
+    if (userId) {
+      fetchData();
+    }
+  }, [dateRange, userId]);
 
   // Calculate summary statistics from the chart data
   const totalTasksCompleted = chartData.reduce((sum, day) => sum + day.tasksCompleted, 0);
@@ -155,22 +169,36 @@ const Analytics = () => {
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
+                        id="date"
                         variant={"outline"}
                         className={cn(
-                          "w-[280px] justify-start text-left font-normal",
-                          !date && "text-muted-foreground"
+                          "w-[300px] justify-start text-left font-normal",
+                          !dateRange?.from && "text-muted-foreground"
                         )}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {date ? format(date, "PPP") : <span>Pick a date</span>}
+                        {dateRange?.from ? (
+                          dateRange.to ? (
+                            <>
+                              {format(dateRange.from, "LLL dd, y")} -{" "}
+                              {format(dateRange.to, "LLL dd, y")}
+                            </>
+                          ) : (
+                            format(dateRange.from, "LLL dd, y")
+                          )
+                        ) : (
+                          <span>Pick a date range</span>
+                        )}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
+                    <PopoverContent className="w-auto p-0" align="end">
                       <Calendar
-                        mode="single"
-                        selected={date}
-                        onSelect={setDate}
                         initialFocus
+                        mode="range"
+                        defaultMonth={dateRange?.from}
+                        selected={dateRange}
+                        onSelect={setDateRange}
+                        numberOfMonths={2}
                       />
                     </PopoverContent>
                   </Popover>
@@ -188,7 +216,7 @@ const Analytics = () => {
                     <Card>
                       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Total Tasks Completed</CardTitle>
-                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                        <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold">{totalTasksCompleted}</div>
@@ -202,7 +230,7 @@ const Analytics = () => {
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold">{averageCompletionRate}%</div>
-                        <p className="text-xs text-muted-foreground">Tasks completed per day</p>
+                        <p className="text-xs text-muted-foreground">Overall completion rate</p>
                       </CardContent>
                     </Card>
                     <Card>
@@ -213,26 +241,18 @@ const Analytics = () => {
                       <CardContent>
                         <div className="text-2xl font-bold">{mostProductiveDay ? mostProductiveDay.date : 'N/A'}</div>
                         <p className="text-xs text-muted-foreground">
-                          {mostProductiveDay ? `${mostProductiveDay.tasksCompleted} tasks` : 'No data'}
+                          {mostProductiveDay ? `${mostProductiveDay.tasksCompleted} tasks completed` : 'No data'}
                         </p>
                       </CardContent>
                     </Card>
                     <Card>
                       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Completion Trend</CardTitle>
-                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                        <CardTitle className="text-sm font-medium">Total Tasks Created</CardTitle>
+                        <ListTodo className="h-4 w-4 text-muted-foreground" />
                       </CardHeader>
                       <CardContent>
-                        <div className="text-2xl font-bold">
-                          {chartData.length > 1 ? 
-                            (chartData[chartData.length - 1].completionRate - chartData[0].completionRate) >= 0 ? '↑' : '↓' 
-                            : '→'}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          {chartData.length > 1 ? 
-                            `${Math.abs(chartData[chartData.length - 1].completionRate - chartData[0].completionRate)}% change` 
-                            : 'Insufficient data'}
-                        </p>
+                        <div className="text-2xl font-bold">{totalTasksCreated}</div>
+                        <p className="text-xs text-muted-foreground">Across selected period</p>
                       </CardContent>
                     </Card>
                   </div>

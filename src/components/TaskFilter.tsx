@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Search, Filter, X } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import CategorySelector from "./CategorySelector";
+import { supabase } from "@/integrations/supabase/client";
+import { showError } from "@/utils/toast";
 
 interface TaskFilterProps {
   onFilterChange: (filters: {
@@ -17,12 +17,43 @@ interface TaskFilterProps {
   }) => void;
 }
 
+interface Category {
+  id: string;
+  name: string;
+  color: string;
+}
+
 const TaskFilter: React.FC<TaskFilterProps> = ({ onFilterChange }) => {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
   const [category, setCategory] = useState('all');
   const [priority, setPriority] = useState('all');
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchUserAndCategories = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+        try {
+          const { data, error } = await supabase
+            .from('task_categories')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('name');
+
+          if (error) throw error;
+          setCategories(data || []);
+        } catch (error: any) {
+          showError('Failed to fetch categories for filter');
+          console.error('Error fetching categories for filter:', error);
+        }
+      }
+    };
+    fetchUserAndCategories();
+  }, []);
 
   const applyFilters = () => {
     onFilterChange({ search, status, category, priority });
@@ -96,7 +127,11 @@ const TaskFilter: React.FC<TaskFilterProps> = ({ onFilterChange }) => {
                 <SelectContent>
                   <SelectItem value="all">All</SelectItem>
                   <SelectItem value="general">General</SelectItem>
-                  {/* Categories will be populated dynamically */}
+                  {categories.map(cat => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

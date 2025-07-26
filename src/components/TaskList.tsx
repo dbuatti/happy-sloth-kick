@@ -56,9 +56,7 @@ const fetchTasks = async (date: Date, userId: string): Promise<Task[]> => {
     .from('tasks')
     .select('*')
     .eq('user_id', userId) // Filter by user_id
-    .or(`due_date.eq.${startOfDay.toISOString()},due_date.is.null`) // Tasks due today or no due date
-    .or(`is_daily_recurring.eq.true`) // Daily recurring tasks
-    .not('status', 'in', '("completed", "archived")') // Exclude completed/archived tasks
+    .not('status', 'in', '("completed", "archived", "skipped")') // Exclude completed, archived, and skipped tasks
     .order('priority', { ascending: false })
     .order('created_at', { ascending: true });
 
@@ -76,12 +74,12 @@ const fetchTasks = async (date: Date, userId: string): Promise<Task[]> => {
     if (taskDueDate && (isSameDay(taskDueDate, date) || isBefore(taskDueDate, startOfDay))) {
       return true;
     }
-    // Case 2: Task is daily recurring and not completed/archived
-    if (task.is_daily_recurring && task.status !== 'completed' && task.status !== 'archived') {
+    // Case 2: Task is daily recurring and not completed/archived/skipped
+    if (task.is_daily_recurring && task.status === 'to-do') { // Only show if status is 'to-do'
       return true;
     }
-    // Case 3: Task has no due date and was created on or before today, and not completed/archived
-    if (!taskDueDate && isBefore(taskCreatedAt, endOfDay) && task.status !== 'completed' && task.status !== 'archived') {
+    // Case 3: Task has no due date and was created on or before today, and not completed/archived/skipped
+    if (!taskDueDate && isBefore(taskCreatedAt, endOfDay) && task.status === 'to-do') { // Only show if status is 'to-do'
       return true;
     }
     return false;
