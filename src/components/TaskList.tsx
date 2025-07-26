@@ -203,21 +203,24 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({ task, onStatusChang
       className="flex items-center justify-between p-3 border rounded-md bg-gray-50 dark:bg-gray-800 cursor-grab"
     >
       <div className="flex items-center space-x-3">
-        {isSelectionMode && ( // Only show selection checkbox if in selection mode
+        {isSelectionMode ? (
+          // In selection mode, show only the selection checkbox
           <Checkbox
             checked={isSelected}
             onCheckedChange={(checked) => onSelectTask(task.id, checked as boolean)}
             id={`select-task-${task.id}`}
           />
+        ) : (
+          // In normal mode, show only the completion checkbox
+          <Checkbox
+            checked={task.status === 'completed'}
+            onCheckedChange={() => onStatusChange(task.id, task.status === 'completed' ? 'to-do' : 'completed')}
+            id={`complete-task-${task.id}`}
+          />
         )}
-        {/* Always show completion checkbox */}
-        <Checkbox
-          checked={task.status === 'completed'}
-          onCheckedChange={() => onStatusChange(task.id, task.status === 'completed' ? 'to-do' : 'completed')}
-          id={`complete-task-${task.id}`}
-        />
         <Label
-          htmlFor={`complete-task-${task.id}`} // Label always for completion checkbox
+          // Link label to the currently visible checkbox
+          htmlFor={isSelectionMode ? `select-task-${task.id}` : `complete-task-${task.id}`}
           className={`text-lg ${task.status === 'completed' && !isSelectionMode ? 'line-through text-gray-500' : ''}`}
         >
           {task.description}
@@ -240,6 +243,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({ task, onStatusChang
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            {/* These options are always available for status change */}
             <DropdownMenuItem onClick={() => onStatusChange(task.id, 'to-do')}>
               Mark as To-Do
             </DropdownMenuItem>
