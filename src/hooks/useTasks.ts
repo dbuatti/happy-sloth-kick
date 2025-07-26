@@ -141,6 +141,31 @@ export const useTasks = (options?: UseTasksOptions) => {
     }
   };
 
+  const updateSection = async (sectionId: string, newName: string) => {
+    if (!userId) {
+      showError("User not authenticated. Cannot update section.");
+      return null;
+    }
+    try {
+      const { data, error } = await supabase
+        .from('task_sections')
+        .update({ name: newName })
+        .eq('id', sectionId)
+        .eq('user_id', userId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      setSections(prev => prev.map(s => s.id === sectionId ? data : s));
+      showSuccess('Section updated successfully!');
+      return data;
+    } catch (error: any) {
+      showError('Failed to update section.');
+      console.error('Error updating section:', error);
+      return null;
+    }
+  };
+
   const deleteSection = async (sectionId: string) => {
     if (!userId) {
       showError("User not authenticated. Cannot delete section.");
@@ -443,6 +468,7 @@ export const useTasks = (options?: UseTasksOptions) => {
     setSortDirection,
     sections, // Expose sections
     createSection, // Expose createSection
+    updateSection, // Expose updateSection
     deleteSection, // Expose deleteSection
   };
 };
