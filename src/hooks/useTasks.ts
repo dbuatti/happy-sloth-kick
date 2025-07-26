@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess } from '@/utils/toast';
 import { v4 as uuidv4 } from 'uuid'; // Import uuid for generating IDs
-import { isSameDay } from 'date-fns'; // Import isSameDay
+import { isSameDay, isPast } from 'date-fns'; // Import isSameDay and isPast
 
 interface Task {
   id: string;
@@ -47,7 +47,7 @@ export const useTasks = () => {
   const { user } = useAuth();
   const userId = user?.id;
 
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]); // This will now hold a broader set of tasks
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
@@ -85,66 +85,52 @@ export const useTasks = () => {
       return;
     }
     setLoading(true);
-    const startOfDay = new Date(currentDate);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(currentDate);
-    endOfDay.setHours(23, 59, 59, 999);
+    const startOfCurrentDate = new Date(currentDate);
+    startOfCurrentDate.setHours(0, 0, 0, 0);
+    const endOfCurrentDate = new Date(currentDate);
+    endOfCurrentDate.setHours(23, 59, 59, 999);
 
     try {
-      const orClause = 
-        `and(created_at.gte.${startOfDay.toISOString()},created_at.lte.${endOfDay.toISOString()}),` +
-        `and(due_date.gte.${startOfDay.toISOString()},due_date.lte.${endOfDay.toISOString()}),` +
-        `and(status.in.("to-do","skipped"),due_date.lt.${startOfDay.toISOString()}),` +
-        `and(status.in.("to-do","skipped"),due_date.is.null,created_at.lt.${startOfDay.toISOString()}),` +
-        `recurring_type.eq.daily`;
-
+      // Fetch all tasks for the user that are not archived,
+      // OR are archived/completed on the current day (for daily view context),
+      // OR are recurring templates.
       const { data: fetchedTasks, error: fetchError } = await supabase
         .from('tasks')
         .select('*')
         .eq('user_id', userId)
-        .or(orClause);
+        .or(
+          `status.neq.archived, ` + // All non-archived tasks
+          `and(status.eq.archived, created_at.gte.${startOfCurrentDate.toISOString()}, created_at.lte.${endOfCurrentDate.toISOString()}), ` + // Archived today
+          `and(status.eq.completed, created_at.gte.${startOfCurrentDate.toISOString()}, created_at.lte.${endOfCurrentDate.toISOString()})` // Completed today
+          // Recurring templates are implicitly included if they are not archived
+        );
 
       if (fetchError) throw fetchError;
 
-      let tasksForDisplay: Task[] = [];
+      let allUserTasks: Task[] = fetchedTasks || []; // This will hold all tasks from DB
+
+      // --- Recurring task generation logic ---
       const dailyRecurringTemplates: Task[] = [];
-      const existingOriginalIdsForToday = new Set<string>(); // To track recurring instances already present for today
+      const existingOriginalIdsForToday = new Set<string>();
 
-      for (const task of (fetchedTasks || [])) {
+      for (const task of allUserTasks) {
         const taskCreatedAt = new Date(task.created_at);
-        const taskDueDate = task.due_date ? new Date(task.due_date) : null;
-
-        // Identify tasks that should be displayed for the currentDate
-        const shouldDisplay = 
-          isSameDay(taskCreatedAt, currentDate) || // Created today
-          (taskDueDate && isSameDay(taskDueDate, currentDate)) || // Due today
-          ((task.status === 'to-do' || task.status === 'skipped') && taskDueDate && taskDueDate < startOfDay) || // Overdue carry-over
-          ((task.status === 'to-do' || task.status === 'skipped') && taskDueDate === null && taskCreatedAt < startOfDay); // Undated carry-over
-
-        if (shouldDisplay) {
-          tasksForDisplay.push(task);
-        }
-
-        // Identify daily recurring templates for potential instance generation
         if (task.recurring_type === 'daily') {
           dailyRecurringTemplates.push(task);
-          // If a daily template itself was created today, it acts as today's instance
           if (isSameDay(taskCreatedAt, currentDate)) {
-            existingOriginalIdsForToday.add(task.id);
+            existingOriginalIdsForToday.add(task.id); // Template itself acts as today's instance
           }
         }
-        // Also track if an instance of a recurring task already exists for today
         if (task.original_task_id && isSameDay(taskCreatedAt, currentDate)) {
-          existingOriginalIdsForToday.add(task.original_task_id);
+          existingOriginalIdsForToday.add(task.original_task_id); // An instance of this recurring task already exists for today
         }
       }
 
-      // Generate new instances for daily recurring tasks
       const newRecurringInstances: Task[] = [];
       for (const template of dailyRecurringTemplates) {
         // Only generate if the template was created *before* today
         // AND an instance for today doesn't already exist (checked by original_task_id or template ID itself)
-        if (new Date(template.created_at) < startOfDay && !existingOriginalIdsForToday.has(template.id)) {
+        if (new Date(template.created_at) < startOfCurrentDate && !existingOriginalIdsForToday.has(template.id)) {
           const newInstance: Task = {
             ...template,
             id: uuidv4(), // Generate a new ID for the instance
@@ -163,17 +149,17 @@ export const useTasks = () => {
         const { data: insertedData, error: insertError } = await supabase
           .from('tasks')
           .insert(newRecurringInstances)
-          .select(); // Select to get the inserted data, including DB-generated created_at
+          .select();
 
         if (insertError) {
           console.error('Error inserting recurring instance:', insertError);
           showError('Failed to generate a recurring task instance.');
         } else if (insertedData) {
-          tasksForDisplay.push(...insertedData); // Add newly inserted instances to tasksForDisplay
+          allUserTasks.push(...insertedData); // Add newly inserted instances to the full list
         }
       }
       
-      setTasks(tasksForDisplay);
+      setTasks(allUserTasks); // Set the full list of tasks here
     } catch (error: any) {
       console.error('Error fetching or generating tasks:', error);
       showError('An unexpected error occurred while loading tasks.');
@@ -190,8 +176,38 @@ export const useTasks = () => {
 
   // Derived filteredTasks using useMemo
   const filteredTasks = useMemo(() => {
-    let tempTasks = [...tasks];
+    let tempTasks = [...tasks]; // 'tasks' now holds all relevant tasks for the user
 
+    const startOfCurrentDate = new Date(currentDate);
+    startOfCurrentDate.setHours(0, 0, 0, 0);
+    const endOfCurrentDate = new Date(currentDate);
+    endOfCurrentDate.setHours(23, 59, 59, 999);
+
+    // First, filter by date relevance for the current view
+    tempTasks = tempTasks.filter(task => {
+      const taskCreatedAt = new Date(task.created_at);
+      const taskDueDate = task.due_date ? new Date(task.due_date) : null;
+
+      // Always show tasks created on the current day
+      if (isSameDay(taskCreatedAt, currentDate)) return true;
+
+      // Always show tasks due on the current day
+      if (taskDueDate && isSameDay(taskDueDate, currentDate)) return true;
+
+      // Carry over overdue tasks (to-do or skipped)
+      if ((task.status === 'to-do' || task.status === 'skipped') && taskDueDate && isPast(taskDueDate) && !isSameDay(taskDueDate, currentDate)) return true;
+
+      // Carry over undated tasks (to-do or skipped) created before today
+      if ((task.status === 'to-do' || task.status === 'skipped') && taskDueDate === null && taskCreatedAt < startOfCurrentDate) return true;
+
+      // Show tasks that were completed or archived on the current day
+      if ((task.status === 'completed' || task.status === 'archived') && isSameDay(taskCreatedAt, currentDate)) return true;
+
+      // Do not show tasks with future due dates or future created_at dates unless they meet other criteria above
+      return false;
+    });
+
+    // Apply search, status, category, priority, section filters
     if (searchFilter) {
       tempTasks = tempTasks.filter(task =>
         task.description.toLowerCase().includes(searchFilter.toLowerCase()) ||
@@ -211,7 +227,7 @@ export const useTasks = () => {
       tempTasks = tempTasks.filter(task => task.section_id === sectionFilter);
     }
 
-    // Apply user-selected sorting for display
+    // Apply user-selected sorting
     if (sortKey === 'order') {
       tempTasks.sort((a, b) => {
         const orderA = a.order === null ? Infinity : a.order;
@@ -240,7 +256,7 @@ export const useTasks = () => {
     }
 
     return tempTasks;
-  }, [tasks, searchFilter, statusFilter, categoryFilter, priorityFilter, sectionFilter, sortKey, sortDirection]);
+  }, [tasks, currentDate, searchFilter, statusFilter, categoryFilter, priorityFilter, sectionFilter, sortKey, sortDirection]);
 
   const handleAddTask = async (taskData: NewTaskData) => {
     if (!userId) {
