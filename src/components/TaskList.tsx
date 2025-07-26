@@ -156,19 +156,21 @@ const TaskList: React.FC = () => {
   const [isNewTaskDailyRecurring, setIsNewTaskDailyRecurring] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
 
   const fetchTasks = useCallback(async () => {
     setLoading(true);
     try {
       const fetchedTasks = await mockFetchTasks(currentDate);
       setTasks(fetchedTasks);
+      setSelectedTaskIds(new Set()); // Clear selection on date change
     } catch (error) {
       showError("Failed to load tasks.");
       console.error("Error fetching tasks:", error);
     } finally {
       setLoading(false);
     }
-  }, [currentDate]); // Re-fetch tasks when currentDate changes
+  }, [currentDate]);
 
   useEffect(() => {
     fetchTasks();
@@ -191,6 +193,11 @@ const TaskList: React.FC = () => {
     try {
       await mockDeleteTask(currentDate, taskId);
       setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+      setSelectedTaskIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(taskId);
+        return newSet;
+      });
     } catch (error) {
       console.error("Error deleting task:", error);
     }
@@ -225,6 +232,50 @@ const TaskList: React.FC = () => {
     setCurrentDate(prevDate => addDays(prevDate, 1));
   };
 
+  const handleSelectTask = (taskId: string, isSelected: boolean) => {
+    setSelectedTaskIds(prev => {
+      const newSet = new Set(prev);
+      if (isSelected) {
+        newSet.add(taskId);
+      } else {
+        newSet.delete(taskId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAllTasks = (checked: boolean) => {
+    if (checked) {
+      const allTaskIds = new Set(tasks.map(task => task.id));
+      setSelectedTaskIds(allTaskIds);
+    } else {
+      setSelectedTaskIds(new Set());
+    }
+  };
+
+  const handleDeleteSelectedTasks = async () => {
+    if (selectedTaskIds.size === 0) {
+      showError("No tasks selected for deletion.");
+      return;
+    }
+    try {
+      // Create a copy of selectedTaskIds to iterate over, as the original set will be mutated
+      const idsToDelete = Array.from(selectedTaskIds);
+      for (const taskId of idsToDelete) {
+        await mockDeleteTask(currentDate, taskId);
+      }
+      showSuccess("Selected tasks deleted successfully!");
+      setSelectedTaskIds(new Set()); // Clear selection after deletion
+      fetchTasks(); // Re-fetch tasks to ensure UI is consistent
+    } catch (error) {
+      showError("Failed to delete selected tasks.");
+      console.error("Error deleting selected tasks:", error);
+    }
+  };
+
+  const allTasksSelected = tasks.length > 0 && selectedTaskIds.size === tasks.length;
+  const someTasksSelected = selectedTaskIds.size > 0 && selectedTaskIds.size < tasks.length;
+
   if (loading) {
     return <div className="text-center p-8">Loading tasks...</div>;
   }
@@ -254,7 +305,7 @@ const TaskList: React.FC = () => {
               placeholder="Task description"
               value={newTaskDescription}
               onChange={(e) => setNewTaskDescription(e.target.value)}
-              onKeyDown={handleKeyDown} // Add onKeyDown handler here
+              onKeyDown={handleKeyDown}
               className="flex-grow"
             />
             <div className="flex items-center space-x-2">
@@ -270,6 +321,27 @@ const TaskList: React.FC = () => {
         </div>
 
         <h2 className="text-2xl font-semibold mb-4">Your Tasks</h2>
+        {tasks.length > 0 && (
+          <div className="flex items-center space-x-2 mb-4">
+            <Checkbox
+              checked={allTasksSelected}
+              onCheckedChange={handleSelectAllTasks}
+              id="select-all-tasks"
+              className={someTasksSelected ? "border-gray-400 bg-gray-200" : ""}
+            />
+            <Label htmlFor="select-all-tasks">Select All</Label>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleDeleteSelectedTasks}
+              disabled={selectedTaskIds.size === 0}
+              className="ml-4"
+            >
+              <Trash2 className="mr-2 h-4 w-4" /> Delete Selected ({selectedTaskIds.size})
+            </Button>
+          </div>
+        )}
+
         {tasks.length === 0 ? (
           <p className="text-center text-gray-500">No tasks found. Add one above!</p>
         ) : (
@@ -278,12 +350,17 @@ const TaskList: React.FC = () => {
               <li key={task.id} className="flex items-center justify-between p-3 border rounded-md bg-gray-50 dark:bg-gray-800">
                 <div className="flex items-center space-x-3">
                   <Checkbox
+                    checked={selectedTaskIds.has(task.id)}
+                    onCheckedChange={(checked) => handleSelectTask(task.id, checked as boolean)}
+                    id={`select-task-${task.id}`}
+                  />
+                  <Checkbox
                     checked={task.status === 'completed'}
                     onCheckedChange={() => handleStatusChange(task.id, task.status === 'completed' ? 'to-do' : 'completed')}
-                    id={`task-${task.id}`}
+                    id={`complete-task-${task.id}`}
                   />
                   <Label
-                    htmlFor={`task-${task.id}`}
+                    htmlFor={`complete-task-${task.id}`}
                     className={`text-lg ${task.status === 'completed' ? 'line-through text-gray-500' : ''}`}
                   >
                     {task.description}
