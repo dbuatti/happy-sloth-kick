@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd'; // Import D&D components
+// import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd'; // Temporarily removed
 
 interface Task {
   id: string;
@@ -92,16 +92,16 @@ const TaskList: React.FC = () => {
   const [editingNoSectionDisplayName, setEditingNoSectionDisplayName] = useState(noSectionDisplayName);
   const [isReassignNoSectionDialogOpen, setIsReassignNoSectionDialogOpen] = useState(false);
   const [targetReassignSectionId, setTargetReassignSectionId] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false); // New state for mounting
+  // const [mounted, setMounted] = useState(false); // Temporarily removed
 
   useEffect(() => {
     setEditingNoSectionDisplayName(noSectionDisplayName);
   }, [noSectionDisplayName]);
 
   // Set mounted to true after initial render
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // useEffect(() => {
+  //   setMounted(true);
+  // }, []);
 
   const handlePreviousDay = () => {
     setCurrentDate(prevDate => new Date(prevDate.setDate(prevDate.getDate() - 1)));
@@ -230,25 +230,25 @@ const TaskList: React.FC = () => {
     );
   }, [filteredTasks, sections, noSectionDisplayName]);
 
-  const onDragEnd = async (result: DropResult) => {
-    const { source, destination, draggableId } = result;
+  // const onDragEnd = async (result: DropResult) => { // Temporarily removed
+  //   const { source, destination, draggableId } = result;
 
-    // Dropped outside the list
-    if (!destination) {
-      return;
-    }
+  //   // Dropped outside the list
+  //   if (!destination) {
+  //     return;
+  //   }
 
-    const sourceSectionId = source.droppableId === 'no-section' ? null : source.droppableId;
-    const destinationSectionId = destination.droppableId === 'no-section' ? null : destination.droppableId;
+  //   const sourceSectionId = source.droppableId === 'no-section' ? null : source.droppableId;
+  //   const destinationSectionId = destination.droppableId === 'no-section' ? null : destination.droppableId;
 
-    if (source.droppableId === destination.droppableId) {
-      // Moved within the same section
-      await reorderTasksInSameSection(sourceSectionId, source.index, destination.index);
-    } else {
-      // Moved to a different section
-      await moveTaskToNewSection(draggableId, sourceSectionId, destinationSectionId, destination.index);
-    }
-  };
+  //   if (source.droppableId === destination.droppableId) {
+  //     // Moved within the same section
+  //     await reorderTasksInSameSection(sourceSectionId, source.index, destination.index);
+  //   } else {
+  //     // Moved to a different section
+  //     await moveTaskToNewSection(draggableId, sourceSectionId, destinationSectionId, destination.index);
+  //   }
+  // };
 
   const shortcuts: ShortcutMap = {
     'arrowleft': handlePreviousDay,
@@ -296,7 +296,7 @@ const TaskList: React.FC = () => {
 
         <AddTaskForm onAddTask={handleNewTaskSubmit} userId={userId} />
 
-        <TaskFilter /> {/* Removed onFilterChange prop */}
+        <TaskFilter />
 
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-semibold">Your Tasks</h2>
@@ -343,7 +343,7 @@ const TaskList: React.FC = () => {
                   
                   <div className="mt-6">
                     <h3 className="text-lg font-semibold mb-2">Existing Sections</h3>
-                    {sections.length === 0 && tasksGroupedBySection.find(s => s.id === 'no-section')?.tasks.length === 0 ? (
+                    {sections.length === 0 && filteredTasks.length === 0 ? ( // Simplified condition
                       <p className="text-sm text-muted-foreground">No sections created yet.</p>
                     ) : (
                       <ul className="space-y-2">
@@ -441,65 +441,43 @@ const TaskList: React.FC = () => {
           </div>
         </div>
         
-        {filteredTasks.length === 0 && sections.length === 0 && tasksGroupedBySection.find(s => s.id === 'no-section')?.tasks.length === 0 ? (
+        {filteredTasks.length === 0 && sections.length === 0 ? ( // Simplified condition
           <div className="text-center text-gray-500 p-8">
             <p className="text-lg mb-2">No tasks or sections found for this day!</p>
             <p>Start by adding a new task above, or create your first section using the "Manage Sections" button.</p>
           </div>
         ) : (
-          mounted && ( // Conditionally render DragDropContext
-            <DragDropContext onDragEnd={onDragEnd}> {/* Wrap with DragDropContext */}
-              <div className="space-y-6">
-                {tasksGroupedBySection.map(sectionGroup => (
-                  <div key={sectionGroup.id} className="space-y-3">
-                    <h3 className="text-xl font-semibold flex items-center gap-2">
-                      <FolderOpen className="h-5 w-5 text-muted-foreground" />
-                      {sectionGroup.name} ({sectionGroup.tasks.length})
-                    </h3>
-                    <Droppable droppableId={sectionGroup.id}> {/* Wrap section tasks with Droppable */}
-                      {(provided) => (
-                        <ul
-                          className="space-y-3"
-                          {...provided.droppableProps}
-                          ref={provided.innerRef}
-                        >
-                          {sectionGroup.tasks.map((task, index) => (
-                            <Draggable key={task.id} draggableId={task.id} index={index}> {/* Wrap TaskItem with Draggable */}
-                              {(provided) => (
-                                <div
-                                  ref={provided.innerRef}
-                                  {...provided.draggableProps}
-                                  {...provided.dragHandleProps}
-                                >
-                                  <TaskItem
-                                    task={task}
-                                    userId={userId}
-                                    onStatusChange={handleTaskStatusChange}
-                                    onDelete={deleteTask}
-                                    onUpdate={updateTask}
-                                    isSelected={selectedTaskIds.includes(task.id)}
-                                    onToggleSelect={toggleTaskSelection}
-                                    sections={sections}
-                                  />
-                                </div>
-                              )}
-                            </Draggable>
-                          ))}
-                          {provided.placeholder}
-                        </ul>
-                      )}
-                    </Droppable>
-                  </div>
-                ))}
+          <div className="space-y-6">
+            {tasksGroupedBySection.map(sectionGroup => (
+              <div key={sectionGroup.id} className="space-y-3">
+                <h3 className="text-xl font-semibold flex items-center gap-2">
+                  <FolderOpen className="h-5 w-5 text-muted-foreground" />
+                  {sectionGroup.name} ({sectionGroup.tasks.length})
+                </h3>
+                <ul className="space-y-3">
+                  {sectionGroup.tasks.map((task) => (
+                    <TaskItem
+                      key={task.id}
+                      task={task}
+                      userId={userId}
+                      onStatusChange={handleTaskStatusChange}
+                      onDelete={deleteTask}
+                      onUpdate={updateTask}
+                      isSelected={selectedTaskIds.includes(task.id)}
+                      onToggleSelect={toggleTaskSelection}
+                      sections={sections}
+                    />
+                  ))}
+                </ul>
+              </div>
+            ))}
 
-              <BulkActions 
-                selectedTaskIds={selectedTaskIds} 
-                onAction={handleBulkAction} 
-                onClearSelection={clearSelectedTasks} 
-              />
-            </div>
-            </DragDropContext>
-          )
+            <BulkActions 
+              selectedTaskIds={selectedTaskIds} 
+              onAction={handleBulkAction} 
+              onClearSelection={clearSelectedTasks} 
+            />
+          </div>
         )}
         <QuickAddTask onAddTask={handleNewTaskSubmit} userId={userId} />
       </CardContent>
