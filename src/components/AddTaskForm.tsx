@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import CategorySelector from "./CategorySelector";
 import PrioritySelector from "./PrioritySelector";
 import SectionSelector from "./SectionSelector"; // Import SectionSelector
-import { format, setHours, setMinutes } from 'date-fns';
+import { format, setHours, setMinutes, parse, addDays, addWeeks, addMonths, startOfDay } from 'date-fns'; // Added parse, addDays, addWeeks, addMonths, startOfDay
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface AddTaskFormProps {
@@ -28,6 +28,118 @@ interface AddTaskFormProps {
   onTaskAdded?: () => void; // New prop to close dialog/sheet
 }
 
+// Helper function for natural language parsing
+const parseNaturalLanguage = (text: string) => {
+  let dueDate: Date | undefined = undefined;
+  let remindAt: Date | undefined = undefined;
+  let priority: string | undefined = undefined;
+  let category: string | undefined = undefined;
+  let cleanedDescription = text;
+
+  // Priority detection
+  const priorityKeywords = {
+    'urgent': 'urgent', 'critical': 'urgent',
+    'high': 'high', 'important': 'high',
+    'medium': 'medium', 'normal': 'medium',
+    'low': 'low', 'minor': 'low',
+  };
+  for (const [keyword, pValue] of Object.entries(priorityKeywords)) {
+    const regex = new RegExp(`\\b${keyword}\\b`, 'i');
+    if (regex.test(cleanedDescription)) {
+      priority = pValue;
+      cleanedDescription = cleanedDescription.replace(regex, '').trim();
+      break;
+    }
+  }
+
+  // Category detection (example keywords, can be expanded)
+  const categoryKeywords = {
+    'work': 'work', 'project': 'work', 'meeting': 'work',
+    'personal': 'personal', 'home': 'personal', 'family': 'personal',
+    'shopping': 'shopping', 'buy': 'shopping', 'groceries': 'shopping',
+    'study': 'study', 'learn': 'study', 'read': 'study',
+  };
+  for (const [keyword, cValue] of Object.entries(categoryKeywords)) {
+    const regex = new RegExp(`\\b${keyword}\\b`, 'i');
+    if (regex.test(cleanedDescription)) {
+      category = cValue;
+      cleanedDescription = cleanedDescription.replace(regex, '').trim();
+      break;
+    }
+  }
+
+  // Date detection
+  const today = startOfDay(new Date());
+  if (/\btoday\b/i.test(cleanedDescription)) {
+    dueDate = today;
+    cleanedDescription = cleanedDescription.replace(/\btoday\b/i, '').trim();
+  } else if (/\btomorrow\b/i.test(cleanedDescription)) {
+    dueDate = addDays(today, 1);
+    cleanedDescription = cleanedDescription.replace(/\btomorrow\b/i, '').trim();
+  } else if (/\bnext week\b/i.test(cleanedDescription)) {
+    dueDate = addWeeks(today, 1);
+    cleanedDescription = cleanedDescription.replace(/\bnext week\b/i, '').trim();
+  } else if (/\bnext month\b/i.test(cleanedDescription)) {
+    dueDate = addMonths(today, 1);
+    cleanedDescription = cleanedDescription.replace(/\bnext month\b/i, '').trim();
+  } else {
+    // Try to parse specific dates like "on Jan 15" or "12/25"
+    const dateRegex = /(on|by)?\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+\d{1,2}(,\s*\d{4})?|\d{1,2}\/\d{1,2}(?:[/]\d{2,4})?/i;
+    const match = cleanedDescription.match(dateRegex);
+    if (match) {
+      try {
+        const parsedDate = parse(match[0], 'MMM d, yyyy', new Date()); // Try with year
+        if (isNaN(parsedDate.getTime())) {
+          const currentYear = new Date().getFullYear();
+          const parsedDateNoYear = parse(`${match[0]} ${currentYear}`, 'MMM d yyyy', new Date()); // Try without year, add current
+          if (!isNaN(parsedDateNoYear.getTime())) {
+            dueDate = parsedDateNoYear;
+          }
+        } else {
+          dueDate = parsedDate;
+        }
+        cleanedDescription = cleanedDescription.replace(match[0], '').trim();
+      } catch (e) {
+        // Ignore parsing errors
+      }
+    }
+  }
+
+  // Time detection for reminder
+  const timeRegex = /(at|by)\s*(\d{1,2}(:\d{2})?\s*(am|pm)?)/i;
+  const timeMatch = cleanedDescription.match(timeRegex);
+  let reminderTimeStr: string | undefined = undefined;
+  if (timeMatch) {
+    reminderTimeStr = timeMatch[2];
+    cleanedDescription = cleanedDescription.replace(timeMatch[0], '').trim();
+  }
+
+  if (reminderTimeStr) {
+    try {
+      // Attempt to parse time. If no date is set, use today.
+      const baseDate = dueDate || new Date();
+      let parsedTime = parse(reminderTimeStr, 'h:mm a', baseDate);
+      if (isNaN(parsedTime.getTime())) {
+        parsedTime = parse(reminderTimeStr, 'H:mm', baseDate);
+      }
+      if (!isNaN(parsedTime.getTime())) {
+        remindAt = parsedTime;
+      }
+    } catch (e) {
+      // Ignore parsing errors
+    }
+  }
+
+  return {
+    description: cleanedDescription,
+    dueDate,
+    remindAt,
+    reminderTimeStr,
+    priority,
+    category,
+  };
+};
+
 const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdded }) => {
   const [newTaskDescription, setNewTaskDescription] = useState<string>('');
   const [newTaskRecurringType, setNewTaskRecurringType] = useState<'none' | 'daily' | 'weekly' | 'monthly'>('none');
@@ -42,31 +154,35 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
 
   // AI-powered suggestions based on description
   useEffect(() => {
-    const description = newTaskDescription.toLowerCase();
-    let suggestedCategory = 'general';
-    let suggestedPriority = 'medium';
-
-    if (description.includes('work') || description.includes('project') || description.includes('meeting')) {
-      suggestedCategory = 'work'; 
-      suggestedPriority = 'high';
-    } else if (description.includes('groceries') || description.includes('shop') || description.includes('buy')) {
-      suggestedCategory = 'shopping'; 
-      suggestedPriority = 'low';
-    } else if (description.includes('urgent') || description.includes('now') || description.includes('deadline')) {
-      suggestedPriority = 'urgent';
-    } else if (description.includes('personal') || description.includes('home') || description.includes('family')) {
-      suggestedCategory = 'personal'; 
-    } else if (description.includes('study') || description.includes('learn') || description.includes('read')) {
-      suggestedCategory = 'study';
-    }
+    const {
+      description: parsedDescription,
+      dueDate,
+      remindAt,
+      reminderTimeStr,
+      priority,
+      category,
+    } = parseNaturalLanguage(newTaskDescription);
 
     // Only update if the user hasn't manually changed it from the default
     // This is a simple heuristic; more advanced logic could track user overrides
-    if (newTaskCategory === 'general' || !newTaskCategory) { 
-      setNewTaskCategory(suggestedCategory);
+    if (priority && (newTaskPriority === 'medium' || !newTaskPriority)) {
+      setNewTaskPriority(priority);
     }
-    if (newTaskPriority === 'medium' || !newTaskPriority) { 
-      setNewTaskPriority(suggestedPriority);
+    if (category && (newTaskCategory === 'general' || !newTaskCategory)) {
+      setNewTaskCategory(category);
+    }
+    if (dueDate && !newTaskDueDate) {
+      setNewTaskDueDate(dueDate);
+    }
+    if (remindAt && !newTaskRemindAt) {
+      setNewTaskRemindAt(remindAt);
+      if (reminderTimeStr) {
+        setNewReminderTime(format(remindAt, 'HH:mm'));
+      }
+    }
+    // Update description to the cleaned version
+    if (parsedDescription !== newTaskDescription) {
+      setNewTaskDescription(parsedDescription);
     }
   }, [newTaskDescription]); // Depend on description changes
 

@@ -41,6 +41,7 @@ import {
 import SortableTaskItem from './SortableTaskItem';
 import SortableSectionHeader from './SortableSectionHeader';
 import DailyStreak from './DailyStreak'; // New import for DailyStreak
+import SmartSuggestions from './SmartSuggestions'; // Import SmartSuggestions
 
 interface Task {
   id: string;
@@ -373,6 +374,9 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => { // Destruc
         <div className="mb-6">
           <DailyStreak tasks={tasks} currentDate={currentDate} />
         </div>
+
+        {/* Smart Suggestions Component */}
+        <SmartSuggestions />
 
         {/* Floating Action Button for Add Task - RE-INTRODUCED */}
         <Button
