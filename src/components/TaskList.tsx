@@ -1,11 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { showSuccess, showError } from "@/utils/toast"; // Assuming you have a toast utility
+import { showSuccess, showError } from "@/utils/toast";
+import { format, addDays, subDays, isSameDay } from 'date-fns';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Task {
   id: string;
@@ -14,27 +16,67 @@ interface Task {
   is_daily_recurring: boolean;
 }
 
-// This would typically come from your Supabase client
-// For demonstration, we'll mock it.
-const mockFetchTasks = async (): Promise<Task[]> => {
+// In-memory store for mock task states per day
+// Key: YYYY-MM-DD, Value: Array of tasks for that day
+const mockDailyTaskStates = new Map<string, Task[]>();
+
+// Initial set of tasks that define the base for each day
+const initialBaseTasks: Task[] = [
+  { id: '1', description: 'Buy groceries', status: 'to-do', is_daily_recurring: true },
+  { id: '2', description: 'Go for a run', status: 'to-do', is_daily_recurring: true },
+  { id: '3', description: 'Call mom', status: 'to-do', is_daily_recurring: false },
+  { id: '4', description: 'Read a book', status: 'to-do', is_daily_recurring: true },
+];
+
+const getFormattedDateKey = (date: Date) => format(date, 'yyyy-MM-dd');
+
+// Mock function to fetch tasks for a specific date
+const mockFetchTasks = async (date: Date): Promise<Task[]> => {
+  const dateKey = getFormattedDateKey(date);
+
+  if (!mockDailyTaskStates.has(dateKey)) {
+    // If no state for this date, initialize it
+    const newDayTasks = initialBaseTasks.map(task => {
+      if (task.is_daily_recurring) {
+        // Daily recurring tasks reset to 'to-do' for a new day
+        return { ...task, status: 'to-do' } as Task; // Explicitly cast to Task
+      }
+      // Non-daily recurring tasks retain their initial status (or could be 'archived' if completed on a previous day in a real system)
+      return task;
+    });
+    mockDailyTaskStates.set(dateKey, newDayTasks);
+  }
   return new Promise(resolve => {
     setTimeout(() => {
-      resolve([
-        { id: '1', description: 'Buy groceries', status: 'to-do', is_daily_recurring: true },
-        { id: '2', description: 'Go for a run', status: 'completed', is_daily_recurring: true },
-        { id: '3', description: 'Call mom', status: 'to-do', is_daily_recurring: false },
-        { id: '4', description: 'Read a book', status: 'skipped', is_daily_recurring: true },
-      ]);
+      resolve(mockDailyTaskStates.get(dateKey)!);
     }, 500);
   });
 };
 
-const mockUpdateTaskStatus = async (taskId: string, newStatus: Task['status']): Promise<Task> => {
+// Mock function to update task status for a specific date
+const mockUpdateTaskStatus = async (date: Date, taskId: string, newStatus: Task['status']): Promise<Task> => {
+  const dateKey = getFormattedDateKey(date);
+  const tasksForDay = mockDailyTaskStates.get(dateKey);
+
+  if (!tasksForDay) {
+    throw new Error("Tasks for this day not found in mock store.");
+  }
+
+  const updatedTasks = tasksForDay.map(task =>
+    task.id === taskId ? { ...task, status: newStatus } : task
+  );
+  mockDailyTaskStates.set(dateKey, updatedTasks);
+
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       if (Math.random() > 0.1) { // Simulate occasional failure
         showSuccess(`Task status updated to ${newStatus}`);
-        resolve({ id: taskId, description: 'Updated Task', status: newStatus, is_daily_recurring: true }); // Mock updated task
+        const updatedTask = updatedTasks.find(t => t.id === taskId);
+        if (updatedTask) {
+          resolve(updatedTask);
+        } else {
+          reject(new Error("Task not found after update."));
+        }
       } else {
         showError("Failed to update task status.");
         reject(new Error("Failed to update task status"));
@@ -43,11 +85,17 @@ const mockUpdateTaskStatus = async (taskId: string, newStatus: Task['status']): 
   });
 };
 
-const mockAddTask = async (description: string, isDailyRecurring: boolean): Promise<Task> => {
+// Mock function to add a task for a specific date
+const mockAddTask = async (description: string, isDailyRecurring: boolean, date: Date): Promise<Task> => {
+  const dateKey = getFormattedDateKey(date);
+  const tasksForDay = mockDailyTaskStates.get(dateKey) || [];
+  const newTask: Task = { id: String(Date.now()), description, status: 'to-do', is_daily_recurring: isDailyRecurring };
+  mockDailyTaskStates.set(dateKey, [...tasksForDay, newTask]);
+
   return new Promise(resolve => {
     setTimeout(() => {
       showSuccess("Task added successfully!");
-      resolve({ id: String(Date.now()), description, status: 'to-do', is_daily_recurring: isDailyRecurring });
+      resolve(newTask);
     }, 300);
   });
 };
@@ -58,12 +106,12 @@ const TaskList: React.FC = () => {
   const [newTaskDescription, setNewTaskDescription] = useState<string>('');
   const [isNewTaskDailyRecurring, setIsNewTaskDailyRecurring] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
 
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     setLoading(true);
     try {
-      // In a real app, this would be `const { data, error } = await supabase.from('tasks').select('*').eq('user_id', currentUserId);`
-      const fetchedTasks = await mockFetchTasks();
+      const fetchedTasks = await mockFetchTasks(currentDate);
       setTasks(fetchedTasks);
     } catch (error) {
       showError("Failed to load tasks.");
@@ -71,17 +119,16 @@ const TaskList: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentDate]); // Re-fetch tasks when currentDate changes
 
   useEffect(() => {
     fetchTasks();
-  }, []);
+  }, [fetchTasks]);
 
   const handleStatusChange = async (taskId: string, currentStatus: Task['status']) => {
     const newStatus = currentStatus === 'to-do' ? 'completed' : 'to-do';
     try {
-      // In a real app: `await supabase.from('tasks').update({ status: newStatus }).eq('id', taskId);`
-      await mockUpdateTaskStatus(taskId, newStatus);
+      await mockUpdateTaskStatus(currentDate, taskId, newStatus);
       setTasks(prevTasks =>
         prevTasks.map(task =>
           task.id === taskId ? { ...task, status: newStatus } : task
@@ -98,14 +145,21 @@ const TaskList: React.FC = () => {
       return;
     }
     try {
-      // In a real app: `await supabase.from('tasks').insert([{ description: newTaskDescription, is_daily_recurring: isNewTaskDailyRecurring, user_id: currentUserId }]);`
-      const addedTask = await mockAddTask(newTaskDescription, isNewTaskDailyRecurring);
+      const addedTask = await mockAddTask(newTaskDescription, isNewTaskDailyRecurring, currentDate);
       setTasks(prevTasks => [...prevTasks, addedTask]);
       setNewTaskDescription('');
       setIsNewTaskDailyRecurring(false);
     } catch (error) {
       console.error("Error adding task:", error);
     }
+  };
+
+  const handlePreviousDay = () => {
+    setCurrentDate(prevDate => subDays(prevDate, 1));
+  };
+
+  const handleNextDay = () => {
+    setCurrentDate(prevDate => addDays(prevDate, 1));
   };
 
   if (loading) {
@@ -118,6 +172,18 @@ const TaskList: React.FC = () => {
         <CardTitle className="text-3xl font-bold text-center">Daily Tasks</CardTitle>
       </CardHeader>
       <CardContent>
+        <div className="flex items-center justify-between mb-6">
+          <Button variant="outline" size="icon" onClick={handlePreviousDay}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <h3 className="text-xl font-semibold">
+            {isSameDay(currentDate, new Date()) ? 'Today' : format(currentDate, 'EEEE, MMMM d, yyyy')}
+          </h3>
+          <Button variant="outline" size="icon" onClick={handleNextDay}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+
         <div className="mb-6 space-y-4">
           <h2 className="text-2xl font-semibold mb-4">Add New Task</h2>
           <div className="flex flex-col sm:flex-row gap-4 items-center">
