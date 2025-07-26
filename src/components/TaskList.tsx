@@ -129,11 +129,13 @@ const TaskList: React.FC = () => {
     const grouped: { [key: string]: Task[] } = {};
     const noSectionId = 'no-section';
 
+    // Initialize all sections, including 'no-section'
+    grouped[noSectionId] = [];
     sections.forEach(section => {
       grouped[section.id] = [];
     });
-    grouped[noSectionId] = [];
 
+    // Distribute tasks into groups
     filteredTasks.forEach(task => {
       if (task.section_id && grouped[task.section_id]) {
         grouped[task.section_id].push(task);
@@ -142,17 +144,18 @@ const TaskList: React.FC = () => {
       }
     });
 
+    // Create ordered list of sections for display
     const orderedSections: { id: string; name: string }[] = [];
-    // Add 'No Section' first if it has tasks or if it's the only group
-    if (grouped[noSectionId].length > 0 || sections.length === 0) {
-      orderedSections.push({ id: noSectionId, name: noSectionDisplayName });
-    }
+    
+    // Always add 'No Section' first
+    orderedSections.push({ id: noSectionId, name: noSectionDisplayName });
+
+    // Add all other sections
     sections.forEach(section => {
-      if (grouped[section.id] && grouped[section.id].length > 0) {
-        orderedSections.push(section);
-      }
+      orderedSections.push(section);
     });
 
+    // Map to final structure, including empty sections
     return orderedSections.map(section => ({
       ...section,
       tasks: grouped[section.id],
@@ -178,7 +181,16 @@ const TaskList: React.FC = () => {
   useKeyboardShortcuts(shortcuts);
 
   if (loading) {
-    return <div className="text-center p-8">Loading tasks...</div>;
+    return (
+      <Card className="w-full max-w-4xl mx-auto shadow-lg">
+        <CardHeader>
+          <CardTitle className="text-3xl font-bold text-center">Daily Tasks</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center p-8">Loading tasks...</div>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
@@ -305,19 +317,10 @@ const TaskList: React.FC = () => {
           </div>
         </div>
         
-        {filteredTasks.length === 0 ? (
+        {filteredTasks.length === 0 && sections.length === 0 && tasksGroupedBySection.find(s => s.id === 'no-section')?.tasks.length === 0 ? (
           <div className="text-center text-gray-500 p-8">
-            {tasks.length === 0 ? (
-              <>
-                <p className="text-lg mb-2">No tasks found for this day!</p>
-                <p>Start by adding a new task above, or navigate to a different day.</p>
-              </>
-            ) : (
-              <>
-                <p className="text-lg mb-2">No tasks match your current filters.</p>
-                <p>Try adjusting your search or filter options.</p>
-              </>
-            )}
+            <p className="text-lg mb-2">No tasks or sections found for this day!</p>
+            <p>Start by adding a new task above, or create your first section using the "Manage Sections" button.</p>
           </div>
         ) : (
           <div className="space-y-6">
