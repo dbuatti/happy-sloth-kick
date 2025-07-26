@@ -11,7 +11,7 @@ import useKeyboardShortcuts, { ShortcutMap } from "@/hooks/useKeyboardShortcuts"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FolderOpen, Settings, Plus, Edit, Trash2 } from 'lucide-react';
 import QuickAddTask from './QuickAddTask';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -78,17 +78,20 @@ const TaskList: React.FC = () => {
     createSection,
     updateSection,
     deleteSection,
-    noSectionDisplayName, // Get the custom name
+    noSectionDisplayName,
+    reassignNoSectionTasks, // Use the new function
   } = useTasks();
 
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
   const [newSectionName, setNewSectionName] = useState('');
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [editingSectionName, setEditingSectionName] = useState('');
-  const [editingNoSectionDisplayName, setEditingNoSectionDisplayName] = useState(noSectionDisplayName); // State for editing 'No Section' name
+  const [editingNoSectionDisplayName, setEditingNoSectionDisplayName] = useState(noSectionDisplayName);
+  const [isReassignNoSectionDialogOpen, setIsReassignNoSectionDialogOpen] = useState(false);
+  const [targetReassignSectionId, setTargetReassignSectionId] = useState<string | null>(null);
 
   useEffect(() => {
-    setEditingNoSectionDisplayName(noSectionDisplayName); // Keep local state in sync
+    setEditingNoSectionDisplayName(noSectionDisplayName);
   }, [noSectionDisplayName]);
 
   const handlePreviousDay = () => {
@@ -125,7 +128,7 @@ const TaskList: React.FC = () => {
     }
 
     if (sectionId === 'no-section') {
-      await updateSection(sectionId, editingSectionName); // Use updateSection for 'no-section'
+      await updateSection(sectionId, editingSectionName);
       setEditingSectionId(null);
       setEditingSectionName('');
     } else {
@@ -137,11 +140,24 @@ const TaskList: React.FC = () => {
 
   const handleDeleteSection = async (sectionId: string) => {
     if (sectionId === 'no-section') {
-      showError("The 'No Section' group cannot be deleted.");
+      // Open the reassign dialog instead of showing an error
+      setIsReassignNoSectionDialogOpen(true);
       return;
     }
     if (window.confirm('Are you sure you want to delete this section? All tasks in this section will become unassigned.')) {
       await deleteSection(sectionId);
+    }
+  };
+
+  const handleReassignNoSectionTasks = async () => {
+    if (targetReassignSectionId) {
+      const success = await reassignNoSectionTasks(targetReassignSectionId);
+      if (success) {
+        setIsReassignNoSectionDialogOpen(false);
+        setTargetReassignSectionId(null);
+      }
+    } else {
+      showError('Please select a section to move tasks to.');
     }
   };
 
@@ -185,22 +201,19 @@ const TaskList: React.FC = () => {
       }
     });
 
-    // Create ordered list of sections for display
-    const orderedSections: { id: string; name: string }[] = [];
-    
-    // Always add 'No Section' first, using the custom display name
-    orderedSections.push({ id: noSectionId, name: noSectionDisplayName });
+    // Create a list of all section groups with their tasks
+    const allSectionGroups = [
+      { id: noSectionId, name: noSectionDisplayName, tasks: grouped[noSectionId] },
+      ...sections.map(section => ({
+        ...section,
+        tasks: grouped[section.id],
+      }))
+    ];
 
-    // Add all other sections
-    sections.forEach(section => {
-      orderedSections.push(section);
-    });
-
-    // Map to final structure, including empty sections
-    return orderedSections.map(section => ({
-      ...section,
-      tasks: grouped[section.id],
-    }));
+    // Filter out empty sections, but always keep 'no-section' if it has tasks
+    return allSectionGroups.filter(sectionGroup => 
+      sectionGroup.id === noSectionId || sectionGroup.tasks.length > 0
+    );
   }, [filteredTasks, sections, noSectionDisplayName]);
 
   const shortcuts: ShortcutMap = {
@@ -320,7 +333,7 @@ const TaskList: React.FC = () => {
                             )}
                             
                             <div className="flex space-x-1">
-                              {editingSectionId !== sectionGroup.id && ( // Always show edit for 'No Section' now
+                              {editingSectionId !== sectionGroup.id && (
                                 <>
                                   <Button
                                     variant="ghost"
@@ -334,17 +347,15 @@ const TaskList: React.FC = () => {
                                   >
                                     <Edit className="h-3 w-3" />
                                   </Button>
-                                  {sectionGroup.id !== 'no-section' && ( // Prevent deleting 'No Section'
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-6 w-6"
-                                      onClick={() => handleDeleteSection(sectionGroup.id)}
-                                      aria-label={`Delete section ${sectionGroup.name}`}
-                                    >
-                                      <Trash2 className="h-3 w-3" />
-                                    </Button>
-                                  )}
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    onClick={() => handleDeleteSection(sectionGroup.id)}
+                                    aria-label={`Delete section ${sectionGroup.name}`}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
                                 </>
                               )}
                             </div>
@@ -354,6 +365,42 @@ const TaskList: React.FC = () => {
                     )}
                   </div>
                 </div>
+              </DialogContent>
+            </Dialog>
+            {/* Dialog for reassigning 'No Section' tasks */}
+            <Dialog open={isReassignNoSectionDialogOpen} onOpenChange={setIsReassignNoSectionDialogOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Reassign "No Section" Tasks</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <p>The "{noSectionDisplayName}" group cannot be deleted directly. To remove it from your view, you must reassign all tasks currently in it to another section.</p>
+                  <div>
+                    <Label htmlFor="reassign-section">Move tasks to:</Label>
+                    <Select value={targetReassignSectionId || ''} onValueChange={setTargetReassignSectionId}>
+                      <SelectTrigger id="reassign-section">
+                        <SelectValue placeholder="Select a section" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {sections.length === 0 ? (
+                          <SelectItem value="" disabled>No other sections available</SelectItem>
+                        ) : (
+                          sections.map(section => (
+                            <SelectItem key={section.id} value={section.id}>
+                              {section.name}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsReassignNoSectionDialogOpen(false)}>Cancel</Button>
+                  <Button onClick={handleReassignNoSectionTasks} disabled={!targetReassignSectionId}>
+                    Move and Hide
+                  </Button>
+                </DialogFooter>
               </DialogContent>
             </Dialog>
           </div>

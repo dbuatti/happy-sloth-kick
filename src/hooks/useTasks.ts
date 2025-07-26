@@ -409,6 +409,33 @@ export const useTasks = () => {
     }
   };
 
+  const reassignNoSectionTasks = async (targetSectionId: string) => {
+    if (!userId) {
+      showError('User not authenticated.');
+      return false;
+    }
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ section_id: targetSectionId })
+        .is('section_id', null) // Target tasks with section_id = null
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('Error reassigning "No Section" tasks:', error);
+        showError('Failed to reassign tasks from "No Section".');
+        return false;
+      }
+      showSuccess('All tasks from "No Section" have been reassigned!');
+      fetchTasks(); // Re-fetch tasks to update the UI
+      return true;
+    } catch (err) {
+      console.error('Exception reassigning "No Section" tasks:', err);
+      showError('An unexpected error occurred while reassigning tasks.');
+      return false;
+    }
+  };
+
   return {
     tasks,
     filteredTasks,
@@ -433,5 +460,6 @@ export const useTasks = () => {
     updateSection,
     deleteSection,
     noSectionDisplayName, // Expose the custom name
+    reassignNoSectionTasks, // Expose the new function
   };
 };
