@@ -13,6 +13,7 @@ import CategorySelector from "./CategorySelector";
 import PrioritySelector from "./PrioritySelector";
 import SectionSelector from "./SectionSelector";
 import { Task } from '@/hooks/useTasks'; // Import Task interface
+import { useTasks } from '@/hooks/useTasks'; // Import useTasks to get sections
 
 interface TaskDetailDialogProps {
   task: Task | null;
@@ -31,6 +32,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   onUpdate,
   onDelete,
 }) => {
+  const { sections } = useTasks(); // Get sections from useTasks
   const [editingDescription, setEditingDescription] = useState('');
   const [editingNotes, setEditingNotes] = useState('');
   const [editingDueDate, setEditingDueDate] = useState<Date | undefined>(undefined);
@@ -111,7 +113,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
           </div>
 
           <div className="space-y-2">
-            <SectionSelector value={editingSectionId} onChange={setEditingSectionId} userId={userId} />
+            <SectionSelector value={editingSectionId} onChange={setEditingSectionId} userId={userId} sections={sections} />
           </div>
 
           <div className="space-y-2">

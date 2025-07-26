@@ -12,6 +12,7 @@ import PrioritySelector from "./PrioritySelector";
 import SectionSelector from "./SectionSelector"; // Import SectionSelector
 import { format, setHours, setMinutes, parse, addDays, addWeeks, addMonths, startOfDay } from 'date-fns'; // Added parse, addDays, addWeeks, addMonths, startOfDay
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useTasks } from '@/hooks/useTasks'; // Import useTasks to get sections
 
 interface AddTaskFormProps {
   onAddTask: (taskData: {
@@ -141,6 +142,7 @@ const parseNaturalLanguage = (text: string) => {
 };
 
 const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdded }) => {
+  const { sections } = useTasks(); // Get sections from useTasks
   const [newTaskDescription, setNewTaskDescription] = useState<string>('');
   const [newTaskRecurringType, setNewTaskRecurringType] = useState<'none' | 'daily' | 'weekly' | 'monthly'>('none');
   const [newTaskCategory, setNewTaskCategory] = useState<string>('general');
@@ -249,7 +251,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
         </div>
 
         <div>
-          <SectionSelector value={newTaskSectionId} onChange={setNewTaskSectionId} userId={userId} />
+          <SectionSelector value={newTaskSectionId} onChange={setNewTaskSectionId} userId={userId} sections={sections} />
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
