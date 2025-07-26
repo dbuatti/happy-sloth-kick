@@ -310,7 +310,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({ id, title, tasks, onStatusCha
 const TaskList: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTaskDescription, setNewTaskDescription] = useState<string>('');
-  const [isNewTaskDailyRecurring, setIsNewTaskDailyRecurring] = useState<boolean>(false);
+  const [isNewTaskDailyRecurring, setIsNewTaskDailyRecurring] = useState<boolean>(true); // Default to true
   const [loading, setLoading] = useState<boolean>(true);
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
@@ -385,7 +385,7 @@ const TaskList: React.FC = () => {
       const addedTask = await mockAddTask(newTaskDescription, isNewTaskDailyRecurring, currentDate, newTaskSection);
       setTasks(prevTasks => [...prevTasks, addedTask]);
       setNewTaskDescription('');
-      setIsNewTaskDailyRecurring(false);
+      // Removed: setIsNewTaskDailyRecurring(false); to retain state
     } catch (error) {
       console.error("Error adding task:", error);
     }
