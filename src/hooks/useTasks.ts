@@ -33,7 +33,7 @@ type TaskUpdate = Partial<Omit<Task, 'id' | 'user_id' | 'created_at'>>;
 
 interface NewTaskData {
   description: string;
-  status?: 'to-do' | 'completed' | 'skipped' | 'archived';
+  status?: 'to-do' | 'completed' | 'skipped' | 'archiverd';
   recurring_type?: 'none' | 'daily' | 'weekly' | 'monthly';
   category?: string;
   priority?: string;
@@ -249,64 +249,62 @@ export const useTasks = () => {
   const handleAddTask = async (taskData: NewTaskData) => {
     if (!userId) {
       showError('User not authenticated.');
-      return false;
+      return false; // Indicate failure
     }
     
     let targetSectionId = taskData.section_id;
     if (!targetSectionId && sections.length > 0) {
-      targetSectionId = sections[0].id;
+      targetSectionId = sections[0].id; // Default to the first available section
     } else if (!targetSectionId && sections.length === 0) {
       showError('Please create a section first before adding tasks.');
-      return false;
+      return false; // Indicate failure
     }
 
-    const newTaskId = uuidv4();
-    const now = new Date().toISOString();
-
-    const targetSectionTasks = tasks.filter(t => t.section_id === targetSectionId)
-      .sort((a, b) => (a.order || 0) - (b.order || 0));
-    const newOrder = targetSectionTasks.length > 0 ? (targetSectionTasks[targetSectionTasks.length - 1].order || 0) + 1 : 0;
-
-    const taskToInsert: Task = {
-      id: newTaskId,
-      description: taskData.description,
-      user_id: userId,
-      status: taskData.status || 'to-do',
-      recurring_type: taskData.recurring_type || 'none',
-      category: taskData.category || 'general',
-      priority: taskData.priority || 'medium',
-      due_date: taskData.due_date,
-      notes: taskData.notes || null,
-      remind_at: taskData.remind_at,
-      section_id: targetSectionId,
-      order: newOrder,
-      original_task_id: taskData.recurring_type !== 'none' ? newTaskId : null,
-      created_at: now,
-    };
-
-    // Optimistic update
-    setTasks(prevTasks => [...prevTasks, taskToInsert]);
-
     try {
-      const { error } = await supabase
+      // Determine the highest order in the target section to place the new task at the end
+      const targetSectionTasks = tasks.filter(t => t.section_id === targetSectionId);
+      const maxOrder = targetSectionTasks.reduce((max, task) => Math.max(max, task.order || 0), -1);
+      const newOrder = maxOrder + 1;
+
+      // Generate ID before insert to set original_task_id if it's a recurring task
+      const newTaskId = uuidv4();
+      const taskToInsert = {
+        id: newTaskId,
+        description: taskData.description,
+        user_id: userId,
+        status: taskData.status || 'to-do',
+        recurring_type: taskData.recurring_type || 'none',
+        category: taskData.category || 'General',
+        priority: taskData.priority || 'medium',
+        due_date: taskData.due_date, // Use directly as it's already ISO string or null
+        notes: taskData.notes || null,
+        remind_at: taskData.remind_at, // Use directly as it's already ISO string or null
+        section_id: targetSectionId,
+        order: newOrder,
+        original_task_id: taskData.recurring_type !== 'none' ? newTaskId : null, // Set original_task_id if recurring
+        // Do NOT explicitly set created_at here; let the database default handle it for accuracy
+      };
+
+      const { data, error } = await supabase
         .from('tasks')
-        .insert(taskToInsert);
+        .insert(taskToInsert)
+        .select();
 
       if (error) {
         console.error('Error adding task:', error);
         showError('Failed to add task.');
-        // Revert optimistic update on error
-        setTasks(prevTasks => prevTasks.filter(task => task.id !== newTaskId));
         return false;
       }
-      
-      showSuccess('Task added successfully!');
-      return true;
+      if (data && data.length > 0) {
+        // Instead of optimistically adding, re-fetch to ensure consistency with DB
+        await fetchTasks(); 
+        showSuccess('Task added successfully!');
+        return true;
+      }
+      return false;
     } catch (err) {
       console.error('Exception adding task:', err);
       showError('An unexpected error occurred while adding the task.');
-      // Revert optimistic update on exception
-      setTasks(prevTasks => prevTasks.filter(task => task.id !== newTaskId));
       return false;
     }
   };
@@ -316,29 +314,28 @@ export const useTasks = () => {
       showError('User not authenticated.');
       return;
     }
-    const prevTasks = tasks; // Capture current state for rollback
-
-    // Optimistic update
-    setTasks(prevTasks => prevTasks.map(task => (task.id === taskId ? { ...task, ...updates } : task)));
-
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('tasks')
         .update(updates)
         .eq('id', taskId)
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .select();
 
       if (error) {
         console.error('Error updating task:', error);
         showError(error.message);
-        setTasks(prevTasks); // Revert optimistic update
         return;
       }
-      showSuccess('Task updated successfully!');
+      if (data && data.length > 0) {
+        setTasks(prevTasks =>
+          prevTasks.map(task => (task.id === taskId ? { ...task, ...data[0] } : task))
+        );
+        showSuccess('Task updated successfully!');
+      }
     } catch (err) {
       console.error('Exception updating task:', err);
       showError('An unexpected error occurred while updating the task.');
-      setTasks(prevTasks); // Revert optimistic update
     }
   };
 
@@ -347,12 +344,6 @@ export const useTasks = () => {
       showError('User not authenticated.');
       return;
     }
-    const prevTasks = tasks; // Capture current state for rollback
-    const deletedTask = tasks.find(task => task.id === taskId);
-
-    // Optimistic update
-    setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
-
     try {
       const { error } = await supabase
         .from('tasks')
@@ -363,18 +354,13 @@ export const useTasks = () => {
       if (error) {
         console.error('Error deleting task:', error);
         showError(error.message);
-        if (deletedTask) {
-          setTasks(prevTasks => [...prevTasks, deletedTask]); // Revert optimistic update
-        }
         return;
       }
+      setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
       showSuccess('Task deleted successfully!');
     } catch (err) {
       console.error('Exception deleting task:', err);
       showError('An unexpected error occurred while deleting the task.');
-      if (deletedTask) {
-        setTasks(prevTasks => [...prevTasks, deletedTask]); // Revert optimistic update
-      }
     }
   };
 
@@ -402,11 +388,6 @@ export const useTasks = () => {
       showError('No tasks selected for bulk update.');
       return;
     }
-    const prevTasks = tasks; // Capture current state for rollback
-
-    // Optimistic update
-    setTasks(prevTasks => prevTasks.map(task => targetIds.includes(task.id) ? { ...task, ...updates } : task));
-
     try {
       const { error } = await supabase
         .from('tasks')
@@ -417,15 +398,14 @@ export const useTasks = () => {
       if (error) {
         console.error('Error bulk updating tasks:', error);
         showError(error.message);
-        setTasks(prevTasks); // Revert optimistic update
         return;
       }
       showSuccess('Tasks updated successfully!');
-      clearSelectedTasks();
+      clearSelectedTasks(); // Clear any currently selected tasks
+      fetchTasks(); // Re-fetch to ensure UI consistency
     } catch (err) {
       console.error('Exception bulk updating tasks:', err);
       showError('An unexpected error occurred during bulk update.');
-      setTasks(prevTasks); // Revert optimistic update
     }
   };
 
@@ -434,32 +414,29 @@ export const useTasks = () => {
       showError('User not authenticated.');
       return;
     }
-    const prevSections = sections; // Capture current state for rollback
-    const newSectionId = uuidv4();
-    const maxOrder = sections.reduce((max, section) => Math.max(max, section.order || 0), -1);
-    const newOrder = maxOrder + 1;
-
-    const newSection: TaskSection = { id: newSectionId, name, user_id: userId, order: newOrder };
-
-    // Optimistic update
-    setSections(prevSections => [...prevSections, newSection]);
-
     try {
-      const { error } = await supabase
+      // Determine the highest order for new section
+      const maxOrder = sections.reduce((max, section) => Math.max(max, section.order || 0), -1);
+      const newOrder = maxOrder + 1;
+
+      const { data, error } = await supabase
         .from('task_sections')
-        .insert({ id: newSectionId, name, user_id: userId, order: newOrder });
+        .insert({ name, user_id: userId, order: newOrder })
+        .select();
 
       if (error) {
         console.error('Error creating section:', error);
         showError(error.message);
-        setSections(prevSections); // Revert optimistic update
         return;
       }
-      showSuccess('Section created successfully!');
+
+      if (data && data.length > 0) {
+        setSections(prevSections => [...prevSections, data[0]]);
+        showSuccess('Section created successfully!');
+      }
     } catch (err) {
       console.error('Exception creating section:', err);
       showError('An unexpected error occurred while creating the section.');
-      setSections(prevSections); // Revert optimistic update
     }
   };
 
@@ -468,29 +445,33 @@ export const useTasks = () => {
       showError('User not authenticated.');
       return;
     }
-    const prevSections = sections; // Capture current state for rollback
-
-    // Optimistic update
-    setSections(prevSections => prevSections.map(sec => sec.id === sectionId ? { ...sec, name: newName } : sec));
-
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('task_sections')
         .update({ name: newName })
         .eq('id', sectionId)
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .select();
 
       if (error) {
         console.error('Error updating section:', error);
         showError(error.message);
-        setSections(prevSections); // Revert optimistic update
         return;
       }
-      showSuccess('Section updated successfully!');
+
+      if (data && data.length > 0) {
+        setSections(prevSections =>
+          prevSections.map(sec =>
+            sec.id === sectionId ? { ...sec, name: newName } : sec
+          )
+        );
+        showSuccess('Section updated successfully!');
+      } else {
+        showError('Section not found or no changes applied.');
+      }
     } catch (err: any) {
       console.error('Exception updating section:', err);
       showError('An unexpected error occurred while updating the section.');
-      setSections(prevSections); // Revert optimistic update
     }
   };
 
@@ -499,14 +480,6 @@ export const useTasks = () => {
       showError('User not authenticated.');
       return;
     }
-    const prevSections = sections; // Capture current state for rollback
-    const prevTasks = tasks; // Capture current state for rollback
-    const deletedSection = sections.find(sec => sec.id === sectionId);
-
-    // Optimistic update
-    setSections(prevSections => prevSections.filter(sec => sec.id !== sectionId));
-    setTasks(prevTasks => prevTasks.map(task => task.section_id === sectionId ? { ...task, section_id: reassignToSectionId } : task));
-
     try {
       // Update tasks that belong to this section to the new reassignToSectionId
       const { error: updateTasksError } = await supabase
@@ -518,8 +491,6 @@ export const useTasks = () => {
       if (updateTasksError) {
         console.error('Error reassigning tasks from section:', updateTasksError);
         showError(updateTasksError.message);
-        setSections(prevSections); // Revert optimistic update
-        setTasks(prevTasks); // Revert optimistic update
         return;
       }
 
@@ -533,25 +504,23 @@ export const useTasks = () => {
       if (deleteSectionError) {
         console.error('Error deleting section:', deleteSectionError);
         showError(deleteSectionError.message);
-        setSections(prevSections); // Revert optimistic update
-        setTasks(prevTasks); // Revert optimistic update
         return;
       }
+
+      setSections(prevSections => prevSections.filter(sec => sec.id !== sectionId));
+      fetchTasks(); // Re-fetch tasks to update the UI with new section assignments
 
       showSuccess('Section deleted successfully and tasks reassigned!');
     } catch (err) {
       console.error('Exception deleting section:', err);
       showError('An unexpected error occurred while deleting the section.');
-      setSections(prevSections); // Revert optimistic update
-      setTasks(prevTasks); // Revert optimistic update
     }
   };
 
   const reorderTasksInSameSection = async (sectionId: string | null, startIndex: number, endIndex: number) => {
     if (!userId) return;
-    const prevTasks = tasks; // Capture current state for rollback
 
-    // Optimistic update
+    // Optimistically update UI
     setTasks(prevTasks => {
       const newTasks = [...prevTasks];
       const sectionTasks = newTasks.filter(t => t.section_id === sectionId)
@@ -560,11 +529,13 @@ export const useTasks = () => {
       const [removed] = sectionTasks.splice(startIndex, 1);
       sectionTasks.splice(endIndex, 0, removed);
 
+      // Re-assign order values for the affected section
       const updatedSectionTasks = sectionTasks.map((task, index) => ({
         ...task,
         order: index,
       }));
 
+      // Merge back into the main tasks array
       return newTasks.map(task => {
         const updatedTask = updatedSectionTasks.find(t => t.id === task.id);
         return updatedTask || task;
@@ -572,7 +543,7 @@ export const useTasks = () => {
     });
 
     try {
-      const sectionTasksToUpdate = prevTasks.filter(t => t.section_id === sectionId)
+      const sectionTasksToUpdate = tasks.filter(t => t.section_id === sectionId)
         .sort((a, b) => (a.order || 0) - (b.order || 0));
       
       const result = Array.from(sectionTasksToUpdate);
@@ -588,14 +559,17 @@ export const useTasks = () => {
       if (error) {
         console.error('Error reordering tasks:', error);
         showError(error.message);
-        setTasks(prevTasks); // Revert optimistic update
+        fetchTasks(); // Revert to server state on error
         return;
       }
       showSuccess('Tasks reordered successfully!');
+      // No need to fetchTasks here if optimistic update is correct and upsert returns nothing
+      // If upsert returns data, we could use that to update state more precisely.
+      // For now, relying on optimistic update + fetch on error.
     } catch (err) {
       console.error('Exception reordering tasks:', err);
       showError('An unexpected error occurred while reordering the tasks.');
-      setTasks(prevTasks); // Revert optimistic update
+      fetchTasks(); // Revert to server state on error
     }
   };
 
@@ -606,9 +580,8 @@ export const useTasks = () => {
     destinationIndex: number
   ) => {
     if (!userId) return;
-    const prevTasks = tasks; // Capture current state for rollback
 
-    // Optimistic update
+    // Optimistically update UI
     setTasks(prevTasks => {
       const newTasks = [...prevTasks];
       
@@ -618,13 +591,15 @@ export const useTasks = () => {
         .sort((a, b) => (a.order || 0) - (b.order || 0));
 
       const movedTask = sourceTasks.find(t => t.id === taskId);
-      if (!movedTask) return prevTasks;
+      if (!movedTask) return prevTasks; // Should not happen
 
+      // Remove from source section's list and re-index
       const newSourceTasks = sourceTasks.filter(t => t.id !== taskId).map((task, index) => ({
         ...task,
         order: index,
       }));
 
+      // Add to destination section's list at the correct index and re-index
       const tempNewDestinationTasks = Array.from(destinationTasks);
       tempNewDestinationTasks.splice(destinationIndex, 0, { ...movedTask, section_id: destinationSectionId });
       const newDestinationTasks = tempNewDestinationTasks.map((task, index) => ({
@@ -632,6 +607,7 @@ export const useTasks = () => {
         order: index,
       }));
 
+      // Merge back into the main tasks array
       return newTasks.map(task => {
         if (task.id === taskId) {
           return { ...task, section_id: destinationSectionId, order: destinationIndex };
@@ -654,7 +630,7 @@ export const useTasks = () => {
       if (dbFetchError) {
         console.error('Error fetching tasks for move operation:', dbFetchError);
         showError(dbFetchError.message);
-        setTasks(prevTasks); // Revert optimistic update
+        fetchTasks(); // Revert to server state on error
         return;
       }
 
@@ -672,11 +648,11 @@ export const useTasks = () => {
       }));
 
       const tempNewDbDestinationTasks = Array.from(dbDestinationTasks);
-      tempNewDbDestinationTasks.splice(destinationIndex, 0, { ...movedTaskFromDb, section_id: destinationSectionId });
+      tempNewDbDestinationTasks.splice(destinationIndex, 0, { ...movedTaskFromDb, section_id: destinationSectionId }); // Ensure section_id is updated for the moved task
       const newDbDestinationTasks = tempNewDbDestinationTasks.map((task, index) => ({
         id: task.id,
         order: index,
-        section_id: destinationSectionId,
+        section_id: destinationSectionId, // Ensure section_id is updated for the moved task
       }));
 
       const updates: { id: string; order: number; section_id?: string | null }[] = [
@@ -688,27 +664,30 @@ export const useTasks = () => {
       if (error) {
         console.error('Error moving task:', error);
         showError(error.message);
-        setTasks(prevTasks); // Revert optimistic update
+        fetchTasks(); // Revert to server state on error
         return;
       }
       showSuccess('Task moved successfully!');
+      // No need to fetchTasks here if optimistic update is correct and upsert returns nothing
+      // If upsert returns data, we could use that to update state more precisely.
+      // For now, relying on optimistic update + fetch on error.
     } catch (err) {
       console.error('Exception moving task:', err);
       showError('An unexpected error occurred while moving the task.');
-      setTasks(prevTasks); // Revert optimistic update
+      fetchTasks(); // Revert to server state on error
     }
   };
 
   const reorderSections = async (startIndex: number, endIndex: number) => {
     if (!userId) return;
-    const prevSections = sections; // Capture current state for rollback
 
-    // Optimistic update
+    // Optimistically update UI
     setSections(prevSections => {
       const newSections = Array.from(prevSections);
       const [removed] = newSections.splice(startIndex, 1);
       newSections.splice(endIndex, 0, removed);
 
+      // Re-assign order values
       return newSections.map((section, index) => ({
         ...section,
         order: index,
@@ -716,7 +695,7 @@ export const useTasks = () => {
     });
 
     try {
-      const sectionsToUpdate = Array.from(prevSections);
+      const sectionsToUpdate = Array.from(sections);
       const [removed] = sectionsToUpdate.splice(startIndex, 1);
       sectionsToUpdate.splice(endIndex, 0, removed);
 
@@ -729,14 +708,15 @@ export const useTasks = () => {
       if (error) {
         console.error('Error reordering sections:', error);
         showError(error.message);
-        setSections(prevSections); // Revert optimistic update
+        fetchSections(); // Revert to server state on error
         return;
       }
       showSuccess('Sections reordered successfully!');
+      // No need to fetchSections here if optimistic update is correct
     } catch (err) {
       console.error('Exception reordering sections:', err);
       showError('An unexpected error occurred while reordering sections.');
-      setSections(prevSections); // Revert optimistic update
+      fetchSections(); // Revert to server state on error
     }
   };
 
