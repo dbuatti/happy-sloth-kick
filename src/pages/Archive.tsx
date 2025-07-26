@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Sidebar from "@/components/Sidebar";
 import { MadeWithDyad } from "@/components/made-with-dyad";
@@ -6,6 +6,7 @@ import { useTasks } from '@/hooks/useTasks';
 import SortableTaskItem from '@/components/SortableTaskItem';
 import { Archive as ArchiveIcon } from 'lucide-react';
 import { Task } from '@/hooks/useTasks'; // Import Task interface from useTasks
+import TaskDetailDialog from '@/components/TaskDetailDialog'; // Import TaskDetailDialog
 
 const Archive = () => {
   const {
@@ -17,6 +18,10 @@ const Archive = () => {
     sections,
     setStatusFilter,
   } = useTasks();
+
+  // State for TaskDetailDialog
+  const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
 
   // Filter tasks to show only archived ones
   const archivedTasks = tasks.filter(task => task.status === 'archived');
@@ -33,6 +38,11 @@ const Archive = () => {
   // Handler for status changes specifically for SortableTaskItem
   const handleTaskStatusChange = async (taskId: string, newStatus: Task['status']) => {
     await updateTask(taskId, { status: newStatus });
+  };
+
+  const handleEditTask = (task: Task) => {
+    setTaskToEdit(task);
+    setIsTaskDetailOpen(true);
   };
 
   if (loading) {
@@ -90,6 +100,7 @@ const Archive = () => {
                       isSelected={false}
                       onToggleSelect={() => {}}
                       sections={sections}
+                      onEditTask={handleEditTask} // Pass the new prop
                     />
                   ))}
                 </ul>
@@ -101,6 +112,16 @@ const Archive = () => {
           <MadeWithDyad />
         </footer>
       </div>
+      {taskToEdit && (
+        <TaskDetailDialog
+          task={taskToEdit}
+          userId={userId}
+          isOpen={isTaskDetailOpen}
+          onClose={() => setIsTaskDetailOpen(false)}
+          onUpdate={updateTask}
+          onDelete={deleteTask}
+        />
+      )}
     </div>
   );
 };

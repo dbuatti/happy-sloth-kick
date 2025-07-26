@@ -1,37 +1,15 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import TaskItem from './TaskItem';
 import { DraggableAttributes } from '@dnd-kit/core';
 import { GripVertical } from 'lucide-react'; // Import GripVertical for the drag handle
 import { Button } from '@/components/ui/button'; // Import Button for the drag handle
 import { cn } from '@/lib/utils'; // Import cn for class merging
+import { Task, TaskSection } from '@/hooks/useTasks'; // Import Task and TaskSection interfaces
+import TaskItem from './TaskItem'; // Import TaskItem
 
 // Define a local type for dnd-kit listeners
 type DndListeners = Record<string, ((event: any) => void) | undefined>;
-
-interface Task {
-  id: string;
-  description: string;
-  status: 'to-do' | 'completed' | 'skipped' | 'archived';
-  recurring_type: 'none' | 'daily' | 'weekly' | 'monthly';
-  created_at: string;
-  user_id: string;
-  category: string;
-  priority: string;
-  due_date: string | null;
-  notes: string | null;
-  remind_at: string | null;
-  section_id: string | null;
-  order: number | null;
-}
-
-interface TaskSection {
-  id: string;
-  name: string;
-  user_id: string;
-  order: number | null;
-}
 
 interface SortableTaskItemProps {
   task: Task;
@@ -41,7 +19,8 @@ interface SortableTaskItemProps {
   onUpdate: (taskId: string, updates: Partial<Task>) => void;
   isSelected: boolean;
   onToggleSelect: (taskId: string, checked: boolean) => void;
-  sections: TaskSection[];
+  sections: TaskSection[]; // Use imported TaskSection
+  onEditTask: (task: Task) => void; // New prop to open edit dialog
 }
 
 const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
@@ -53,6 +32,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   isSelected,
   onToggleSelect,
   sections,
+  onEditTask,
 }) => {
   const {
     attributes,
@@ -104,6 +84,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         isSelected={isSelected}
         onToggleSelect={onToggleSelect}
         sections={sections}
+        onEditTask={onEditTask} // Pass the new prop
         // No longer passing dragAttributes or dragListeners to TaskItem
       />
     </li>

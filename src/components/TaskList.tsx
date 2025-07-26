@@ -42,35 +42,14 @@ import SortableTaskItem from './SortableTaskItem';
 import SortableSectionHeader from './SortableSectionHeader';
 import DailyStreak from './DailyStreak'; // New import for DailyStreak
 import SmartSuggestions from './SmartSuggestions'; // Import SmartSuggestions
-
-interface Task {
-  id: string;
-  description: string;
-  status: 'to-do' | 'completed' | 'skipped' | 'archived';
-  recurring_type: 'none' | 'daily' | 'weekly' | 'monthly';
-  created_at: string;
-  user_id: string;
-  category: string;
-  priority: string;
-  due_date: string | null;
-  notes: string | null;
-  remind_at: string | null;
-  section_id: string | null;
-  order: number | null;
-}
-
-interface TaskSection {
-  id: string;
-  name: string;
-  user_id: string;
-  order: number | null;
-}
+import TaskDetailDialog from './TaskDetailDialog'; // Import the new TaskDetailDialog
+import { Task, TaskSection } from '@/hooks/useTasks'; // Import Task and TaskSection interfaces
 
 type TaskUpdate = Partial<Omit<Task, 'id' | 'user_id' | 'created_at'>>;
 
 interface NewTaskData {
   description: string;
-  status?: 'to-do' | 'completed' | 'skipped' | 'archived';
+  status?: 'to-do' | 'completed' | 'skipped' | 'archiverd';
   recurring_type?: 'none' | 'daily' | 'weekly' | 'monthly';
   category?: string;
   priority?: string;
@@ -121,6 +100,10 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => { // Destruc
   const [isReassignTasksDialogOpen, setIsReassignTasksDialogOpen] = useState(false);
   const [sectionToDeleteId, setSectionToDeleteId] = useState<string | null>(null);
   const [targetReassignSectionId, setTargetReassignSectionId] = useState<string | null>(null);
+
+  // State for TaskDetailDialog
+  const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -342,6 +325,11 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => { // Destruc
 
   const activeTask = activeId ? tasks.find(t => t.id === activeId) : null;
   const activeSection = activeId ? sections.find(s => s.id === activeId) : null;
+
+  const handleEditTask = (task: Task) => {
+    setTaskToEdit(task);
+    setIsTaskDetailOpen(true);
+  };
 
   if (loading) {
     return (
@@ -572,6 +560,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => { // Destruc
                             isSelected={selectedTaskIds.includes(task.id)}
                             onToggleSelect={toggleTaskSelection}
                             sections={sections}
+                            onEditTask={handleEditTask} // Pass the new prop
                           />
                         ))}
                       </ul>
@@ -592,6 +581,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => { // Destruc
                   isSelected={selectedTaskIds.includes(activeTask.id)}
                   onToggleSelect={toggleTaskSelection}
                   sections={sections}
+                  onEditTask={handleEditTask} // Pass the new prop
                 />
               ) : activeSection ? (
                 <SortableSectionHeader
@@ -610,6 +600,16 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => { // Destruc
           </DndContext>
         )}
       </CardContent>
+      {taskToEdit && (
+        <TaskDetailDialog
+          task={taskToEdit}
+          userId={userId}
+          isOpen={isTaskDetailOpen}
+          onClose={() => setIsTaskDetailOpen(false)}
+          onUpdate={updateTask}
+          onDelete={deleteTask}
+        />
+      )}
     </Card>
   );
 };
