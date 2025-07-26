@@ -425,7 +425,7 @@ const TaskList: React.FC = () => {
 
         <TaskFilter onFilterChange={handleFilterChange} />
 
-        <div className="mb-8 p-6 bg-gray-50 dark:bg-gray-800 rounded-lg">
+        <div className="mb-8 p-6 bg-gray-50 dark:bg-card rounded-lg">
           <h2 className="text-2xl font-semibold mb-4">Add New Task</h2>
           <div className="space-y-4">
             <div>
