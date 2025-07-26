@@ -79,7 +79,11 @@ interface NewTaskData {
   section_id?: string | null;
 }
 
-const TaskList: React.FC = () => {
+interface TaskListProps {
+  setIsAddTaskOpen: (open: boolean) => void; // New prop
+}
+
+const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => { // Destructure new prop
   const {
     tasks,
     filteredTasks,
@@ -110,7 +114,6 @@ const TaskList: React.FC = () => {
   const isMobile = useIsMobile();
 
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
-  // Removed isAddTaskOpen state as it's now managed by CommandPalette
   const [newSectionName, setNewSectionName] = useState('');
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [editingSectionName, setEditingSectionName] = useState('');
@@ -233,8 +236,6 @@ const TaskList: React.FC = () => {
     await bulkUpdateTasks(updates);
   };
 
-  // Removed handleNewTaskSubmit as it's now handled by CommandPalette
-
   const tasksGroupedBySection = useMemo(() => {
     const grouped: { [key: string]: Task[] } = {};
 
@@ -329,7 +330,6 @@ const TaskList: React.FC = () => {
   const shortcuts: ShortcutMap = {
     'arrowleft': handlePreviousDay,
     'arrowright': handleNextDay,
-    // Removed 'n' shortcut as CommandPalette handles Add Task
     'f': (e) => {
       const searchInput = document.querySelector('input[placeholder="Search tasks..."]');
       if (searchInput) {
@@ -357,8 +357,6 @@ const TaskList: React.FC = () => {
     );
   }
 
-  // Removed AddTaskWrapper, AddTaskTrigger, AddTaskContent, AddTaskHeader, AddTaskTitle as they are now in CommandPalette
-
   return (
     <Card className="w-full max-w-4xl mx-auto shadow-lg">
       <CardHeader>
@@ -376,23 +374,14 @@ const TaskList: React.FC = () => {
           <DailyStreak tasks={tasks} currentDate={currentDate} />
         </div>
 
-        {/* Floating Action Button for Add Task - REMOVED, now handled by CommandPalette */}
-        {/* <AddTaskWrapper open={isAddTaskOpen} onOpenChange={setIsAddTaskOpen}>
-          <AddTaskTrigger asChild>
-            <Button
-              className="fixed bottom-6 right-6 rounded-full h-14 w-14 shadow-lg z-50 md:bottom-8 md:right-8"
-              aria-label="Add new task"
-            >
-              <Plus className="h-6 w-6" />
-            </Button>
-          </AddTaskTrigger>
-          <AddTaskContent className={isMobile ? "h-full" : ""}>
-            <AddTaskHeader>
-              <AddTaskTitle>Add New Task</AddTaskTitle>
-            </AddTaskHeader>
-            <AddTaskForm onAddTask={handleNewTaskSubmit} userId={userId} onTaskAdded={() => setIsAddTaskOpen(false)} />
-          </AddTaskContent>
-        </AddTaskWrapper> */}
+        {/* Floating Action Button for Add Task - RE-INTRODUCED */}
+        <Button
+          className="fixed bottom-6 right-6 rounded-full h-14 w-14 shadow-lg z-50 md:bottom-8 md:right-8"
+          aria-label="Add new task"
+          onClick={() => setIsAddTaskOpen(true)} // Open the Add Task form
+        >
+          <Plus className="h-6 w-6" />
+        </Button>
 
         <TaskFilter />
 

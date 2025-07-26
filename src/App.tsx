@@ -25,7 +25,7 @@ const App = () => {
         <AuthProvider>
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={<Index />} />
+              <Route path="/" element={<Index setIsAddTaskOpen={setIsAddTaskOpen} />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/help" element={<Help />} />

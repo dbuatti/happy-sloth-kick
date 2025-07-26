@@ -5,7 +5,11 @@ import Sidebar from "@/components/Sidebar";
 import AuthComponent from "@/components/AuthComponent";
 import { supabase } from "@/integrations/supabase/client";
 
-const Index = () => {
+interface IndexProps {
+  setIsAddTaskOpen: (open: boolean) => void;
+}
+
+const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen }) => {
   const [session, setSession] = useState<any>(null);
 
   useEffect(() => {
@@ -29,7 +33,7 @@ const Index = () => {
           <Sidebar />
           <div className="flex-1 flex flex-col">
             <main className="flex-grow flex items-center justify-center p-4">
-              <TaskList />
+              <TaskList setIsAddTaskOpen={setIsAddTaskOpen} />
             </main>
             <footer className="p-4">
               <MadeWithDyad />
