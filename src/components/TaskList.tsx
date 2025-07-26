@@ -40,6 +40,7 @@ import {
 // Import the new SortableTaskItem component
 import SortableTaskItem from './SortableTaskItem';
 import SortableSectionHeader from './SortableSectionHeader';
+import DailyStreak from './DailyStreak'; // New import for DailyStreak
 
 interface Task {
   id: string;
@@ -382,6 +383,12 @@ const TaskList: React.FC = () => {
           onNextDay={handleNextDay}
         />
 
+        {/* Daily Streak Component */}
+        <div className="mb-6">
+          <DailyStreak tasks={tasks} currentDate={currentDate} />
+        </div>
+
+        {/* Floating Action Button for Add Task */}
         <AddTaskWrapper open={isAddTaskOpen} onOpenChange={setIsAddTaskOpen}>
           <AddTaskTrigger asChild>
             <Button

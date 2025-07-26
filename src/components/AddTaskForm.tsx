@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,6 +39,36 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
   const [newReminderTime, setNewReminderTime] = useState<string>('');
   const [newTaskSectionId, setNewTaskSectionId] = useState<string | null>(null); // New state for section_id
   const [isAdding, setIsAdding] = useState(false);
+
+  // AI-powered suggestions based on description
+  useEffect(() => {
+    const description = newTaskDescription.toLowerCase();
+    let suggestedCategory = 'general';
+    let suggestedPriority = 'medium';
+
+    if (description.includes('work') || description.includes('project') || description.includes('meeting')) {
+      suggestedCategory = 'work'; 
+      suggestedPriority = 'high';
+    } else if (description.includes('groceries') || description.includes('shop') || description.includes('buy')) {
+      suggestedCategory = 'shopping'; 
+      suggestedPriority = 'low';
+    } else if (description.includes('urgent') || description.includes('now') || description.includes('deadline')) {
+      suggestedPriority = 'urgent';
+    } else if (description.includes('personal') || description.includes('home') || description.includes('family')) {
+      suggestedCategory = 'personal'; 
+    } else if (description.includes('study') || description.includes('learn') || description.includes('read')) {
+      suggestedCategory = 'study';
+    }
+
+    // Only update if the user hasn't manually changed it from the default
+    // This is a simple heuristic; more advanced logic could track user overrides
+    if (newTaskCategory === 'general' || !newTaskCategory) { 
+      setNewTaskCategory(suggestedCategory);
+    }
+    if (newTaskPriority === 'medium' || !newTaskPriority) { 
+      setNewTaskPriority(suggestedPriority);
+    }
+  }, [newTaskDescription]); // Depend on description changes
 
   const handleSubmit = async () => {
     if (!newTaskDescription.trim()) {
