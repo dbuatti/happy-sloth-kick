@@ -94,14 +94,19 @@ const WorkHoursSettings: React.FC = () => {
     }
     setIsSaving(true);
     try {
-      const updates = workHours.map(wh => ({
-        id: wh.id, // Include ID for upsert to update existing records
-        user_id: userId,
-        day_of_week: wh.day_of_week,
-        start_time: wh.start_time,
-        end_time: wh.end_time,
-        enabled: wh.enabled,
-      }));
+      const updates = workHours.map(wh => {
+        const updateObject: any = {
+          user_id: userId,
+          day_of_week: wh.day_of_week,
+          start_time: wh.start_time,
+          end_time: wh.end_time,
+          enabled: wh.enabled,
+        };
+        if (wh.id) { // Only include id if it exists (for existing records)
+          updateObject.id = wh.id;
+        }
+        return updateObject;
+      });
 
       const { error } = await supabase
         .from('user_work_hours')
