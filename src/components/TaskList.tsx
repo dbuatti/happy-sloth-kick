@@ -45,6 +45,7 @@ import SmartSuggestions from './SmartSuggestions'; // Import SmartSuggestions
 import TaskDetailDialog from './TaskDetailDialog'; // Import the new TaskDetailDialog
 import { Task, TaskSection } from '@/hooks/useTasks'; // Import Task and TaskSection interfaces
 import NextIncompleteTask from './NextIncompleteTask'; // Import the new component
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 type TaskUpdate = Partial<Omit<Task, 'id' | 'user_id' | 'created_at'>>;
 
@@ -90,9 +91,11 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => { // Destruc
     reorderTasksInSameSection,
     moveTaskToNewSection,
     reorderSections,
+    setStatusFilter, // Added to set status filter for overdue tasks
   } = useTasks();
 
   const isMobile = useIsMobile();
+  const navigate = useNavigate(); // Initialize useNavigate
 
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
   const [newSectionName, setNewSectionName] = useState('');
@@ -377,6 +380,11 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => { // Destruc
     setIsTaskDetailOpen(true);
   };
 
+  const handleReviewOverdueTasks = () => {
+    setStatusFilter('to-do'); // Filter to show only 'to-do' tasks, which will include overdue ones
+    navigate('/'); // Navigate to the main page if not already there
+  };
+
   if (loading) {
     return (
       <Card className="w-full max-w-4xl mx-auto shadow-lg">
@@ -416,7 +424,10 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => { // Destruc
         </div>
 
         {/* Smart Suggestions Component */}
-        <SmartSuggestions />
+        <SmartSuggestions 
+          setIsAddTaskOpen={setIsAddTaskOpen} 
+          onReviewOverdueTasks={handleReviewOverdueTasks} 
+        />
 
         {/* Floating Action Button for Add Task - RE-INTRODUCED */}
         <Button

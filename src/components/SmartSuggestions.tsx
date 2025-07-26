@@ -5,7 +5,12 @@ import { Archive, Clock, CheckCircle2, ListTodo, Plus } from 'lucide-react'; // 
 import { useTasks } from '@/hooks/useTasks';
 import { isPast, isToday, format } from 'date-fns';
 
-const SmartSuggestions: React.FC = () => {
+interface SmartSuggestionsProps {
+  setIsAddTaskOpen: (open: boolean) => void;
+  onReviewOverdueTasks: () => void;
+}
+
+const SmartSuggestions: React.FC<SmartSuggestionsProps> = ({ setIsAddTaskOpen, onReviewOverdueTasks }) => {
   const { tasks, bulkUpdateTasks, clearSelectedTasks, currentDate } = useTasks();
 
   const {
@@ -21,9 +26,9 @@ const SmartSuggestions: React.FC = () => {
 
     const overdue = tasks.filter(task => 
       task.due_date && 
-      task.status !== 'completed' && 
+      (task.status === 'to-do' || task.status === 'skipped') && // Only count 'to-do' or 'skipped' as overdue
       isPast(new Date(task.due_date)) && 
-      !isToday(new Date(task.due_date))
+      !isToday(new Date(task.due_date)) // Exclude tasks due today that are past current time
     ).length;
 
     const archived = tasks.filter(task => task.status === 'archived').length;
@@ -54,7 +59,7 @@ const SmartSuggestions: React.FC = () => {
         <h3 className="text-lg font-semibold mb-3">Smart Suggestions</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {overdueTasksCount > 0 && (
-            <Button variant="outline" className="justify-start gap-2">
+            <Button variant="outline" className="justify-start gap-2" onClick={onReviewOverdueTasks}>
               <Clock className="h-4 w-4 text-red-500" />
               Review {overdueTasksCount} Overdue Task{overdueTasksCount > 1 ? 's' : ''}
             </Button>
@@ -66,7 +71,7 @@ const SmartSuggestions: React.FC = () => {
             </Button>
           )}
           {totalTasksToday === 0 && (
-            <Button variant="outline" className="justify-start gap-2">
+            <Button variant="outline" className="justify-start gap-2" onClick={() => setIsAddTaskOpen(true)}>
               <Plus className="h-4 w-4 text-green-500" />
               Add Your First Task Today!
             </Button>
