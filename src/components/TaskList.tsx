@@ -6,8 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { showSuccess, showError } from "@/utils/toast";
-import { format, addDays, subDays, isSameDay } from 'date-fns';
-import { ChevronLeft, ChevronRight, MoreHorizontal, Trash2 } from 'lucide-react';
+import { format, addDays, subDays, isSameDay, parseISO, isAfter, isToday } from 'date-fns';
+import { ChevronLeft, ChevronRight, MoreHorizontal, Trash2, Edit, Calendar, Clock, StickyNote } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +16,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
+import CategorySelector from "./CategorySelector";
+import PrioritySelector from "./PrioritySelector";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 // Define the task type to match the database schema
 interface Task {
@@ -25,6 +32,10 @@ interface Task {
   is_daily_recurring: boolean;
   created_at: string;
   user_id: string;
+  category: string;
+  priority: string;
+  due_date: string | null;
+  notes: string | null;
 }
 
 // Function to fetch tasks for a specific date from Supabase
@@ -39,6 +50,7 @@ const fetchTasks = async (date: Date): Promise<Task[]> => {
     .select('*')
     .gte('created_at', startOfDay.toISOString())
     .lt('created_at', endOfDay.toISOString())
+    .order('priority', { ascending: false })
     .order('created_at', { ascending: true });
 
   if (error) {
@@ -50,10 +62,10 @@ const fetchTasks = async (date: Date): Promise<Task[]> => {
 };
 
 // Function to update a task's status in Supabase
-const updateTaskStatus = async (taskId: string, newStatus: Task['status']): Promise<Task> => {
+const updateTaskStatus = async (taskId: string, updates: Partial<Task>): Promise<Task> => {
   const { data, error } = await supabase
     .from('tasks')
-    .update({ status: newStatus })
+    .update(updates)
     .eq('id', taskId)
     .select()
     .single();
@@ -63,17 +75,15 @@ const updateTaskStatus = async (taskId: string, newStatus: Task['status']): Prom
     throw error;
   }
 
-  showSuccess(`Task status updated to ${newStatus}`);
+  showSuccess(`Task updated successfully`);
   return data;
 };
 
 // Function to add a new task to Supabase
-const addTask = async (description: string, isDailyRecurring: boolean): Promise<Task> => {
+const addTask = async (taskData: Omit<Task, 'id' | 'created_at' | 'user_id'>): Promise<Task> => {
   const { data, error } = await supabase
     .from('tasks')
-    .insert([
-      { description, status: 'to-do', is_daily_recurring: isDailyRecurring }
-    ])
+    .insert([taskData])
     .select()
     .single();
 
@@ -105,8 +115,18 @@ const TaskList: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTaskDescription, setNewTaskDescription] = useState<string>('');
   const [isNewTaskDailyRecurring, setIsNewTaskDailyRecurring] = useState<boolean>(false);
+  const [newTaskCategory, setNewTaskCategory] = useState<string>('general');
+  const [newTaskPriority, setNewTaskPriority] = useState<string>('medium');
+  const [newTaskDueDate, setNewTaskDueDate] = useState<Date | undefined>(undefined);
+  const [newTaskNotes, setNewTaskNotes] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [editingDescription, setEditingDescription] = useState<string>('');
+  const [editingNotes, setEditingNotes] = useState<string>('');
+  const [editingDueDate, setEditingDueDate] = useState<Date | undefined>(undefined);
+  const [editingCategory, setEditingCategory] = useState<string>('general');
+  const [editingPriority, setEditingPriority] = useState<string>('medium');
 
   const loadTasks = useCallback(async () => {
     setLoading(true);
@@ -127,7 +147,7 @@ const TaskList: React.FC = () => {
 
   const handleStatusChange = async (taskId: string, newStatus: Task['status']) => {
     try {
-      const updatedTask = await updateTaskStatus(taskId, newStatus);
+      const updatedTask = await updateTaskStatus(taskId, { status: newStatus });
       setTasks(prevTasks =>
         prevTasks.map(task =>
           task.id === taskId ? updatedTask : task
@@ -153,10 +173,24 @@ const TaskList: React.FC = () => {
       return;
     }
     try {
-      const addedTask = await addTask(newTaskDescription, isNewTaskDailyRecurring);
+      const taskData = {
+        description: newTaskDescription,
+        status: 'to-do' as const,
+        is_daily_recurring: isNewTaskDailyRecurring,
+        category: newTaskCategory,
+        priority: newTaskPriority,
+        due_date: newTaskDueDate ? newTaskDueDate.toISOString() : null,
+        notes: newTaskNotes || null,
+      };
+      
+      const addedTask = await addTask(taskData);
       setTasks(prevTasks => [...prevTasks, addedTask]);
       setNewTaskDescription('');
       setIsNewTaskDailyRecurring(false);
+      setNewTaskCategory('general');
+      setNewTaskPriority('medium');
+      setNewTaskDueDate(undefined);
+      setNewTaskNotes('');
     } catch (error) {
       console.error("Error adding task:", error);
     }
@@ -176,12 +210,73 @@ const TaskList: React.FC = () => {
     setCurrentDate(prevDate => addDays(prevDate, 1));
   };
 
+  const startEditingTask = (task: Task) => {
+    setEditingTask(task);
+    setEditingDescription(task.description);
+    setEditingNotes(task.notes || '');
+    setEditingDueDate(task.due_date ? parseISO(task.due_date) : undefined);
+    setEditingCategory(task.category);
+    setEditingPriority(task.priority);
+  };
+
+  const saveEditedTask = async () => {
+    if (!editingTask) return;
+    
+    try {
+      const updatedTask = await updateTaskStatus(editingTask.id, {
+        description: editingDescription,
+        notes: editingNotes || null,
+        due_date: editingDueDate ? editingDueDate.toISOString() : null,
+        category: editingCategory,
+        priority: editingPriority,
+      });
+      
+      setTasks(prevTasks =>
+        prevTasks.map(task =>
+          task.id === updatedTask.id ? updatedTask : task
+        )
+      );
+      
+      setEditingTask(null);
+      setEditingDescription('');
+      setEditingNotes('');
+      setEditingDueDate(undefined);
+      setEditingCategory('general');
+      setEditingPriority('medium');
+    } catch (error) {
+      console.error("Error updating task:", error);
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'urgent': return 'text-red-700';
+      case 'high': return 'text-red-500';
+      case 'medium': return 'text-yellow-500';
+      case 'low': return 'text-blue-500';
+      default: return 'text-gray-500';
+    }
+  };
+
+  const getDueDateDisplay = (dueDate: string | null) => {
+    if (!dueDate) return null;
+    
+    const date = parseISO(dueDate);
+    if (isToday(date)) {
+      return 'Today';
+    } else if (isAfter(date, new Date())) {
+      return `Due ${format(date, 'MMM d')}`;
+    } else {
+      return `Overdue ${format(date, 'MMM d')}`;
+    }
+  };
+
   if (loading) {
     return <div className="text-center p-8">Loading tasks...</div>;
   }
 
   return (
-    <Card className="w-full max-w-2xl mx-auto shadow-lg">
+    <Card className="w-full max-w-4xl mx-auto shadow-lg">
       <CardHeader>
         <CardTitle className="text-3xl font-bold text-center">Daily Tasks</CardTitle>
       </CardHeader>
@@ -198,25 +293,74 @@ const TaskList: React.FC = () => {
           </Button>
         </div>
 
-        <div className="mb-6 space-y-4">
+        <div className="mb-8 p-6 bg-gray-50 dark:bg-gray-800 rounded-lg">
           <h2 className="text-2xl font-semibold mb-4">Add New Task</h2>
-          <div className="flex flex-col sm:flex-row gap-4 items-center">
-            <Input
-              placeholder="Task description"
-              value={newTaskDescription}
-              onChange={(e) => setNewTaskDescription(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="flex-grow"
-            />
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="daily-recurring"
-                checked={isNewTaskDailyRecurring}
-                onCheckedChange={setIsNewTaskDailyRecurring}
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="new-task-description">Task Description</Label>
+              <Input
+                id="new-task-description"
+                placeholder="Task description"
+                value={newTaskDescription}
+                onChange={(e) => setNewTaskDescription(e.target.value)}
+                onKeyDown={handleKeyDown}
               />
-              <Label htmlFor="daily-recurring">Daily Recurring</Label>
             </div>
-            <Button onClick={handleAddTask} className="w-full sm:w-auto">Add Task</Button>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <CategorySelector value={newTaskCategory} onChange={setNewTaskCategory} />
+              <PrioritySelector value={newTaskPriority} onChange={setNewTaskPriority} />
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label>Due Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !newTaskDueDate && "text-muted-foreground"
+                      )}
+                    >
+                      <Calendar className="mr-2 h-4 w-4" />
+                      {newTaskDueDate ? format(newTaskDueDate, "PPP") : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <CalendarComponent
+                      mode="single"
+                      selected={newTaskDueDate}
+                      onSelect={setNewTaskDueDate}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="daily-recurring"
+                  checked={isNewTaskDailyRecurring}
+                  onCheckedChange={setIsNewTaskDailyRecurring}
+                />
+                <Label htmlFor="daily-recurring">Daily Recurring</Label>
+              </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="new-task-notes">Notes</Label>
+              <Textarea
+                id="new-task-notes"
+                placeholder="Add notes about this task..."
+                value={newTaskNotes}
+                onChange={(e) => setNewTaskNotes(e.target.value)}
+                rows={3}
+              />
+            </div>
+            
+            <Button onClick={handleAddTask} className="w-full">Add Task</Button>
           </div>
         </div>
 
@@ -226,56 +370,145 @@ const TaskList: React.FC = () => {
         ) : (
           <ul className="space-y-3">
             {tasks.map(task => (
-              <li key={task.id} className="flex items-center justify-between p-3 border rounded-md bg-gray-50 dark:bg-gray-800">
-                <div className="flex items-center space-x-3">
-                  <Checkbox
-                    checked={task.status === 'completed'}
-                    onCheckedChange={() => handleStatusChange(task.id, task.status === 'completed' ? 'to-do' : 'completed')}
-                    id={`task-${task.id}`}
-                  />
-                  <Label
-                    htmlFor={`task-${task.id}`}
-                    className={`text-lg ${task.status === 'completed' ? 'line-through text-gray-500' : ''}`}
-                  >
-                    {task.description}
-                  </Label>
-                  {task.is_daily_recurring && (
-                    <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded-full dark:bg-blue-900 dark:text-blue-200">
-                      Daily
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-500 dark:text-gray-400 capitalize">
-                    {task.status}
-                  </span>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">Open menu</span>
-                        <MoreHorizontal className="h-4 w-4" />
+              <li key={task.id} className="border rounded-md bg-white dark:bg-gray-800 p-4">
+                {editingTask?.id === task.id ? (
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor={`edit-task-${task.id}`}>Task Description</Label>
+                      <Input
+                        id={`edit-task-${task.id}`}
+                        value={editingDescription}
+                        onChange={(e) => setEditingDescription(e.target.value)}
+                        autoFocus
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <CategorySelector value={editingCategory} onChange={setEditingCategory} />
+                      <PrioritySelector value={editingPriority} onChange={setEditingPriority} />
+                    </div>
+                    
+                    <div>
+                      <Label>Due Date</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !editingDueDate && "text-muted-foreground"
+                            )}
+                          >
+                            <Calendar className="mr-2 h-4 w-4" />
+                            {editingDueDate ? format(editingDueDate, "PPP") : <span>Pick a date</span>}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <CalendarComponent
+                            mode="single"
+                            selected={editingDueDate}
+                            onSelect={setEditingDueDate}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor={`edit-notes-${task.id}`}>Notes</Label>
+                      <Textarea
+                        id={`edit-notes-${task.id}`}
+                        value={editingNotes}
+                        onChange={(e) => setEditingNotes(e.target.value)}
+                        rows={3}
+                      />
+                    </div>
+                    
+                    <div className="flex justify-end space-x-2">
+                      <Button variant="outline" onClick={() => {
+                        setEditingTask(null);
+                        setEditingDescription('');
+                        setEditingNotes('');
+                        setEditingDueDate(undefined);
+                        setEditingCategory('general');
+                        setEditingPriority('medium');
+                      }}>
+                        Cancel
                       </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleStatusChange(task.id, 'to-do')}>
-                        Mark as To-Do
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleStatusChange(task.id, 'completed')}>
-                        Mark as Completed
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleStatusChange(task.id, 'skipped')}>
-                        Mark as Skipped
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleStatusChange(task.id, 'archived')}>
-                        Mark as Archived
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => handleDeleteTask(task.id)} className="text-red-600">
-                        <Trash2 className="mr-2 h-4 w-4" /> Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+                      <Button onClick={saveEditedTask}>Save</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start space-x-3 flex-1">
+                        <Checkbox
+                          checked={task.status === 'completed'}
+                          onCheckedChange={() => handleStatusChange(task.id, task.status === 'completed' ? 'to-do' : 'completed')}
+                          id={`task-${task.id}`}
+                        />
+                        <div className="flex-1">
+                          <Label
+                            htmlFor={`task-${task.id}`}
+                            className={`text-lg font-medium ${task.status === 'completed' ? 'line-through text-gray-500' : ''}`}
+                          >
+                            {task.description}
+                          </Label>
+                          
+                          {task.notes && (
+                            <div className="mt-1 p-2 bg-gray-100 dark:bg-gray-700 rounded text-sm text-gray-600 dark:text-gray-300 flex items-center">
+                              <StickyNote className="h-3 w-3 mr-1" />
+                              {task.notes}
+                            </div>
+                          )}
+                          
+                          {getDueDateDisplay(task.due_date) && (
+                            <div className="mt-1 text-sm text-gray-500 flex items-center">
+                              <Clock className="h-3 w-3 mr-1" />
+                              {getDueDateDisplay(task.due_date)}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <span className={`text-xs font-medium px-2 py-1 rounded ${getPriorityColor(task.priority)}`}>
+                          {task.priority}
+                        </span>
+                        
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <span className="sr-only">Open menu</span>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => startEditingTask(task)}>
+                              <Edit className="mr-2 h-4 w-4" /> Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleStatusChange(task.id, 'to-do')}>
+                              Mark as To-Do
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleStatusChange(task.id, 'completed')}>
+                              Mark as Completed
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleStatusChange(task.id, 'skipped')}>
+                              Mark as Skipped
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleStatusChange(task.id, 'archived')}>
+                              Mark as Archived
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handleDeleteTask(task.id)} className="text-red-600">
+                              <Trash2 className="mr-2 h-4 w-4" /> Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </li>
             ))}
           </ul>
