@@ -26,6 +26,7 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
+  UniqueIdentifier,
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -173,6 +174,13 @@ const TaskList: React.FC = () => {
 
     if (tasksInSection && tasksInSection.length > 0) {
       setSectionToDeleteId(sectionId);
+      // Set a default target section if available
+      const otherSections = sections.filter(s => s.id !== sectionId);
+      if (otherSections.length > 0) {
+        setTargetReassignSectionId(otherSections[0].id);
+      } else {
+        setTargetReassignSectionId(null); // No other sections to reassign to
+      }
       setIsReassignTasksDialogOpen(true);
     } else {
       if (window.confirm('Are you sure you want to delete this section?')) {
@@ -224,20 +232,24 @@ const TaskList: React.FC = () => {
   const tasksGroupedBySection = useMemo(() => {
     const grouped: { [key: string]: Task[] } = {};
 
+    // Initialize groups for all sections
     sections.forEach(section => {
       grouped[section.id] = [];
     });
 
+    // Distribute filtered tasks into their respective section groups
     filteredTasks.forEach(task => {
       if (task.section_id && grouped[task.section_id]) {
         grouped[task.section_id].push(task);
       }
     });
 
+    // Sort tasks within each group by their 'order' property
     Object.keys(grouped).forEach(sectionId => {
       grouped[sectionId].sort((a, b) => (a.order || 0) - (b.order || 0));
     });
 
+    // Return sections with their sorted tasks, maintaining section order
     return sections.map(section => ({
       ...section,
       tasks: grouped[section.id] || [],
@@ -257,39 +269,35 @@ const TaskList: React.FC = () => {
     if (!draggedTask) return;
 
     // Determine source and destination section IDs and indices
-    let sourceSectionId: string | null = null;
-    let sourceIndex = -1;
+    let sourceSectionId: string | null = draggedTask.section_id;
     let destinationSectionId: string | null = null;
     let destinationIndex = -1;
 
-    // Find source section and index
-    for (const sectionGroup of tasksGroupedBySection) {
-      const index = sectionGroup.tasks.findIndex(task => task.id === activeId);
-      if (index !== -1) {
-        sourceSectionId = sectionGroup.id;
-        sourceIndex = index;
-        break;
+    // Case 1: Dropped onto another task
+    if (over.data.current?.type === 'task') {
+      const overTask = tasks.find(task => task.id === overId);
+      if (overTask) {
+        destinationSectionId = overTask.section_id;
+        // Find the index of the overTask within its section's sorted tasks
+        const overSectionTasks = tasksGroupedBySection.find(sg => sg.id === destinationSectionId)?.tasks || [];
+        destinationIndex = overSectionTasks.findIndex(task => task.id === overId);
       }
-    }
-
-    // Find destination section and index
-    for (const sectionGroup of tasksGroupedBySection) {
-      const index = sectionGroup.tasks.findIndex(task => task.id === overId);
-      if (index !== -1) {
-        destinationSectionId = sectionGroup.id;
-        destinationIndex = index;
-        break;
-      }
-    }
-
-    // If dropping onto a section header (meaning an empty section or just the header)
-    if (over.data.current?.type === 'section-header') {
+    } 
+    // Case 2: Dropped onto a section header (meaning an empty section or just the header)
+    else if (over.data.current?.type === 'section-header') {
       destinationSectionId = overId;
-      destinationIndex = tasksGroupedBySection.find(sg => sg.id === overId)?.tasks.length || 0; // Place at the end
+      // Place at the end of this section
+      destinationIndex = tasksGroupedBySection.find(sg => sg.id === overId)?.tasks.length || 0;
+    } else {
+      // If dropped outside any valid droppable, revert or handle as needed
+      return;
     }
 
     if (sourceSectionId === destinationSectionId) {
       // Moved within the same section
+      const sourceSectionTasks = tasksGroupedBySection.find(sg => sg.id === sourceSectionId)?.tasks || [];
+      const sourceIndex = sourceSectionTasks.findIndex(task => task.id === activeId);
+
       if (sourceIndex !== -1 && destinationIndex !== -1 && sourceIndex !== destinationIndex) {
         await reorderTasksInSameSection(sourceSectionId, sourceIndex, destinationIndex);
       }
@@ -326,7 +334,9 @@ const TaskList: React.FC = () => {
           <CardTitle className="text-3xl font-bold text-center">Daily Tasks</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center p-8">Loading tasks...</div>
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </div>
         </CardContent>
       </Card>
     );

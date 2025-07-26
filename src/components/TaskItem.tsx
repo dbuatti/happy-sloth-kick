@@ -7,13 +7,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing } from 'lucide-react';
+import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing, GripVertical } from 'lucide-react';
 import { format, parseISO, isToday, isAfter, setHours, setMinutes } from 'date-fns';
 import { cn } from "@/lib/utils";
 import CategorySelector from "./CategorySelector";
 import PrioritySelector from "./PrioritySelector";
 import SectionSelector from "./SectionSelector";
-import { DraggableAttributes, SyntheticListenerMap } from '@dnd-kit/core'; // Corrected import
+import { DraggableAttributes } from '@dnd-kit/core';
+
+// Define SyntheticListeners locally as it's not directly exported from @dnd-kit/core
+type SyntheticListeners = Record<string, EventListener>;
 
 interface Task {
   id: string;
@@ -40,7 +43,7 @@ interface TaskItemProps {
   onToggleSelect: (taskId: string, checked: boolean) => void;
   sections: { id: string; name: string }[];
   dragAttributes: DraggableAttributes;
-  dragListeners: SyntheticListenerMap | undefined; // Use the correct type
+  dragListeners: SyntheticListeners | undefined; // Use the correct type
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -125,14 +128,11 @@ const TaskItem: React.FC<TaskItemProps> = ({
     <li
       className={cn(
         "border rounded-lg p-3 transition-all duration-200 ease-in-out",
-        "bg-card dark:bg-gray-800", // Use card background
-        task.status === 'completed' && "opacity-70", // Slightly dim completed tasks
-        "group relative flex items-center space-x-3", // For hover effects and layout
-        "cursor-grab active:cursor-grabbing", // Visual cue for drag
+        "bg-card dark:bg-gray-800",
+        task.status === 'completed' ? "opacity-70 border-green-300 dark:border-green-700" : "border-border", // Highlight completed
+        "group relative flex items-center space-x-3",
+        "hover:shadow-md", // Subtle shadow on hover
       )}
-      // Removed ref={setNodeRef} as it's handled by SortableTaskItem
-      {...dragAttributes} // Apply drag attributes
-      {...dragListeners} // Apply drag listeners
     >
       {isEditing ? (
         <div className="space-y-4 w-full">
@@ -235,6 +235,19 @@ const TaskItem: React.FC<TaskItemProps> = ({
         </div>
       ) : (
         <>
+          {/* Drag Handle */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 flex-shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-grab active:cursor-grabbing"
+            {...dragAttributes}
+            {...dragListeners}
+            onClick={(e) => e.stopPropagation()} // Prevent checkbox/edit from triggering on drag handle click
+            aria-label="Drag task"
+          >
+            <GripVertical className="h-4 w-4" />
+          </Button>
+
           {/* Checkbox */}
           <Checkbox
             checked={task.status === 'completed'}
@@ -245,7 +258,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
               }
             }}
             id={`task-${task.id}`}
-            // Prevent drag from starting when clicking checkbox
             onClick={(e) => e.stopPropagation()}
             className="flex-shrink-0"
           />
@@ -257,14 +269,14 @@ const TaskItem: React.FC<TaskItemProps> = ({
               className={cn(
                 "text-base font-medium leading-tight",
                 task.status === 'completed' ? 'line-through text-gray-500 dark:text-gray-400' : 'text-foreground',
-                "block truncate" // Ensure description doesn't overflow
+                "block truncate"
               )}
             >
               {task.description}
             </Label>
 
             {/* Compact details row */}
-            <div className="flex items-center text-xs text-muted-foreground mt-1 space-x-2">
+            <div className="flex items-center text-xs text-muted-foreground mt-1 space-x-3">
               {/* Priority */}
               <span className={cn(
                 "font-semibold",
@@ -275,7 +287,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
               {/* Due Date */}
               {task.due_date && (
                 <span className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
+                  <Calendar className="h-3 w-3" />
                   {getDueDateDisplay(task.due_date)}
                 </span>
               )}
@@ -286,7 +298,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
                   {format(parseISO(task.remind_at), 'MMM d, HH:mm')}
                 </span>
               )}
-              {/* Notes (only show icon, full notes on hover/edit) */}
+              {/* Notes (only show icon if notes exist) */}
               {task.notes && (
                 <span className="flex items-center gap-1">
                   <StickyNote className="h-3 w-3" />

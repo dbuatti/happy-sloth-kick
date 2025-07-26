@@ -167,7 +167,7 @@ export const useTasks = () => {
     } finally {
       setLoading(false);
     }
-  }, [userId, currentDate, sortKey, sortDirection]);
+  }, [userId, currentDate]); // Removed sortKey, sortDirection from dependencies as they are for display, not fetch logic
 
   // Effect to fetch sections and tasks on userId or date change
   useEffect(() => {
@@ -197,8 +197,37 @@ export const useTasks = () => {
     if (sectionFilter && sectionFilter !== 'all') {
       tempTasks = tempTasks.filter(task => task.section_id === sectionFilter);
     }
+
+    // Apply user-selected sorting for display
+    if (sortKey === 'order') {
+      tempTasks.sort((a, b) => {
+        const orderA = a.order === null ? Infinity : a.order;
+        const orderB = b.order === null ? Infinity : b.order;
+        return sortDirection === 'asc' ? orderA - orderB : orderB - orderA;
+      });
+    } else if (sortKey === 'priority') {
+      const priorityOrder: { [key: string]: number } = { 'urgent': 4, 'high': 3, 'medium': 2, 'low': 1, 'none': 0 };
+      tempTasks.sort((a, b) => {
+        const valA = priorityOrder[a.priority] || 0;
+        const valB = priorityOrder[b.priority] || 0;
+        return sortDirection === 'asc' ? valA - valB : valB - valA;
+      });
+    } else if (sortKey === 'due_date') {
+      tempTasks.sort((a, b) => {
+        const dateA = a.due_date ? new Date(a.due_date).getTime() : Infinity;
+        const dateB = b.due_date ? new Date(b.due_date).getTime() : Infinity;
+        return sortDirection === 'asc' ? dateA - dateB : dateB - dateA;
+      });
+    } else if (sortKey === 'created_at') {
+      tempTasks.sort((a, b) => {
+        const dateA = new Date(a.created_at).getTime();
+        const dateB = new Date(b.created_at).getTime();
+        return sortDirection === 'asc' ? dateA - dateB : dateB - dateA;
+      });
+    }
+
     return tempTasks;
-  }, [tasks, searchFilter, statusFilter, categoryFilter, priorityFilter, sectionFilter]);
+  }, [tasks, searchFilter, statusFilter, categoryFilter, priorityFilter, sectionFilter, sortKey, sortDirection]);
 
   const handleAddTask = async (taskData: NewTaskData) => {
     if (!userId) {
@@ -463,28 +492,49 @@ export const useTasks = () => {
   const reorderTasksInSameSection = async (sectionId: string | null, startIndex: number, endIndex: number) => {
     if (!userId) return;
 
-    // Get tasks for the specific section from the current state
-    const sectionTasks = tasks.filter(t => t.section_id === sectionId)
-      .sort((a, b) => (a.order || 0) - (b.order || 0));
+    // Optimistically update UI
+    setTasks(prevTasks => {
+      const newTasks = [...prevTasks];
+      const sectionTasks = newTasks.filter(t => t.section_id === sectionId)
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
+      
+      const [removed] = sectionTasks.splice(startIndex, 1);
+      sectionTasks.splice(endIndex, 0, removed);
 
-    const result = Array.from(sectionTasks);
-    const [removed] = result.splice(startIndex, 1);
-    result.splice(endIndex, 0, removed);
+      // Re-assign order values for the affected section
+      const updatedSectionTasks = sectionTasks.map((task, index) => ({
+        ...task,
+        order: index,
+      }));
 
-    // Prepare updates for all tasks in this section
-    const updates = result.map((task, index) => ({
-      id: task.id,
-      order: index, // Assign new sequential order
-    }));
+      // Merge back into the main tasks array
+      return newTasks.map(task => {
+        const updatedTask = updatedSectionTasks.find(t => t.id === task.id);
+        return updatedTask || task;
+      });
+    });
 
     try {
+      const sectionTasksToUpdate = tasks.filter(t => t.section_id === sectionId)
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
+      
+      const result = Array.from(sectionTasksToUpdate);
+      const [removed] = result.splice(startIndex, 1);
+      result.splice(endIndex, 0, removed);
+
+      const updates = result.map((task, index) => ({
+        id: task.id,
+        order: index,
+      }));
+
       const { error } = await supabase.from('tasks').upsert(updates, { onConflict: 'id' });
       if (error) throw error;
       showSuccess('Tasks reordered successfully!');
-      fetchTasks(); // Re-fetch to ensure UI consistency
+      fetchTasks(); // Re-fetch to ensure UI consistency and handle any potential discrepancies
     } catch (err) {
       console.error('Error reordering tasks:', err);
       showError('Failed to reorder tasks.');
+      fetchTasks(); // Revert to server state on error
     }
   };
 
@@ -496,37 +546,80 @@ export const useTasks = () => {
   ) => {
     if (!userId) return;
 
-    try {
-      // Get current tasks from state, filter by section, and sort by order
-      const currentTasks = [...tasks];
-
-      const sourceTasks = currentTasks.filter(t => t.section_id === sourceSectionId)
+    // Optimistically update UI
+    setTasks(prevTasks => {
+      const newTasks = [...prevTasks];
+      
+      const sourceTasks = newTasks.filter(t => t.section_id === sourceSectionId)
         .sort((a, b) => (a.order || 0) - (b.order || 0));
-
-      const destinationTasks = currentTasks.filter(t => t.section_id === destinationSectionId)
+      const destinationTasks = newTasks.filter(t => t.section_id === destinationSectionId)
         .sort((a, b) => (a.order || 0) - (b.order || 0));
 
       const movedTask = sourceTasks.find(t => t.id === taskId);
-      if (!movedTask) throw new Error('Moved task not found in source section.');
+      if (!movedTask) return prevTasks; // Should not happen
 
-      // Remove from source section's list
-      const newSourceTasks = sourceTasks.filter(t => t.id !== taskId);
+      // Remove from source section's list and re-index
+      const newSourceTasks = sourceTasks.filter(t => t.id !== taskId).map((task, index) => ({
+        ...task,
+        order: index,
+      }));
 
-      // Add to destination section's list at the correct index
+      // Add to destination section's list at the correct index and re-index
       const newDestinationTasks = Array.from(destinationTasks);
       newDestinationTasks.splice(destinationIndex, 0, { ...movedTask, section_id: destinationSectionId });
+      const updatedDestinationTasks = newDestinationTasks.map((task, index) => ({
+        ...task,
+        order: index,
+      }));
 
-      // Prepare updates for both sections
-      const updates: { id: string; order: number; section_id?: string | null }[] = [];
-
-      newSourceTasks.forEach((task, index) => {
-        updates.push({ id: task.id, order: index });
+      // Merge back into the main tasks array
+      return newTasks.map(task => {
+        if (task.id === taskId) {
+          return { ...task, section_id: destinationSectionId, order: destinationIndex };
+        }
+        const updatedSourceTask = newSourceTasks.find(t => t.id === task.id);
+        if (updatedSourceTask) return updatedSourceTask;
+        const updatedDestTask = updatedDestinationTasks.find(t => t.id === task.id);
+        if (updatedDestTask) return updatedDestTask;
+        return task;
       });
-      newDestinationTasks.forEach((task, index) => {
-        updates.push({ id: task.id, order: index, section_id: task.section_id });
-      });
+    });
 
-      // Perform a batch upsert
+    try {
+      // Fetch current state from DB to ensure accurate re-indexing for persistence
+      const { data: currentDbTasks, error: dbFetchError } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('user_id', userId);
+      
+      if (dbFetchError) throw dbFetchError;
+
+      const dbSourceTasks = currentDbTasks.filter(t => t.section_id === sourceSectionId)
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
+      const dbDestinationTasks = currentDbTasks.filter(t => t.section_id === destinationSectionId)
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+      const movedTaskFromDb = dbSourceTasks.find(t => t.id === taskId);
+      if (!movedTaskFromDb) throw new Error('Moved task not found in source section in DB.');
+
+      const newDbSourceTasks = dbSourceTasks.filter(t => t.id !== taskId).map((task, index) => ({
+        id: task.id,
+        order: index,
+      }));
+
+      const tempNewDbDestinationTasks = Array.from(dbDestinationTasks);
+      tempNewDbDestinationTasks.splice(destinationIndex, 0, movedTaskFromDb);
+      const newDbDestinationTasks = tempNewDbDestinationTasks.map((task, index) => ({
+        id: task.id,
+        order: index,
+        section_id: destinationSectionId, // Ensure section_id is updated for the moved task
+      }));
+
+      const updates: { id: string; order: number; section_id?: string | null }[] = [
+        ...newDbSourceTasks,
+        ...newDbDestinationTasks,
+      ];
+
       const { error } = await supabase.from('tasks').upsert(updates, { onConflict: 'id' });
       if (error) throw error;
       showSuccess('Task moved successfully!');
@@ -534,6 +627,7 @@ export const useTasks = () => {
     } catch (err) {
       console.error('Error moving task:', err);
       showError('Failed to move task.');
+      fetchTasks(); // Revert to server state on error
     }
   };
 
