@@ -1,4 +1,4 @@
-import { useState, useEffect, FC, KeyboardEvent } from 'react';
+import React, { useState, useEffect, KeyboardEvent, FC } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

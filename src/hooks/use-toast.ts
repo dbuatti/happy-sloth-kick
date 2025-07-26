@@ -1,4 +1,4 @@
-import { useState, useEffect, ReactNode } from "react";
+import React, { useState, useEffect, ReactNode } from "react";
 
 import type { ToastActionElement, ToastProps } from "@/components/ui/toast";
 
@@ -10,8 +10,6 @@ type ToasterToast = ToastProps & {
   title?: ReactNode;
   description?: ReactNode;
   action?: ToastActionElement;
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
 };
 
 const _actionTypes = {

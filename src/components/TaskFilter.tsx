@@ -1,4 +1,4 @@
-import { useState, useEffect, FC, ChangeEvent } from 'react';
+import React, { useState, useEffect, ChangeEvent, FC } from 'react';
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { showError } from "@/utils/toast";
-import { useTasks } from '@/hooks/useTasks';
+import { useTasks } from '@/hooks/useTasks'; // Import useTasks
 
 interface Category {
   id: string;

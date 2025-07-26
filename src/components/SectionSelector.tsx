@@ -1,4 +1,4 @@
-import { useState, useEffect, HTMLAttributes } from 'react';
+import React, { useState, useEffect, FC, HTMLAttributes } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, X, FolderOpen } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
+import { cn } from "@/lib/utils"; // Import cn
 
 interface TaskSection {
   id: string;
@@ -20,7 +21,7 @@ interface SectionSelectorProps {
   userId: string | null;
 }
 
-const SectionSelector: React.FC<SectionSelectorProps> = ({ value, onChange, userId }) => {
+const SectionSelector: FC<SectionSelectorProps> = ({ value, onChange, userId }) => {
   const [sections, setSections] = useState<TaskSection[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [newSectionName, setNewSectionName] = useState('');
@@ -49,9 +50,9 @@ const SectionSelector: React.FC<SectionSelectorProps> = ({ value, onChange, user
         .order('name', { ascending: true });
 
       if (error) throw error;
-      setSections(data as TaskSection[] || []);
+      setSections(data || []);
     } catch (error: any) {
-      showError('Failed to fetch sections');
+      showError('Failed to fetch sections.');
       console.error('Error fetching sections:', error);
     }
   };

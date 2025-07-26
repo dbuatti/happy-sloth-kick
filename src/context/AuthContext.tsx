@@ -1,43 +1,39 @@
-import { createContext, useContext, useState, useEffect, FC, ReactNode } from 'react';
+import React, { createContext, useState, useEffect, FC, ReactNode, useContext } from 'react';
 import { User } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
-
-interface Profile {
-  id: string;
-  first_name: string | null;
-  last_name: string | null;
-}
+import { supabase } from '@/integrations/supabase/client'; // Updated import path
 
 interface AuthContextType {
   user: User | null;
-  profile: Profile | null;
   loading: boolean;
+  profile: { first_name: string | null; last_name: string | null } | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<{ first_name: string | null; last_name: string | null } | null>(null);
 
   useEffect(() => {
-    const fetchUserAndProfile = async (sessionUser: User | null) => {
-      setUser(sessionUser);
-      if (sessionUser) {
-        const { data, error } = await supabase
+    const fetchUserAndProfile = async () => {
+      setLoading(true);
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      setUser(currentUser);
+
+      if (currentUser) {
+        const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('id, first_name, last_name')
-          .eq('id', sessionUser.id)
+          .select('first_name, last_name')
+          .eq('id', currentUser.id)
           .single();
 
-        if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found, which is fine for new users
-          console.error('Error fetching profile:', error);
-          setProfile(null);
-        } else if (data) {
-          setProfile(data);
+        if (profileError && profileError.code !== 'PGRST116') { // PGRST116 means no rows found
+          console.error('Error fetching profile:', profileError);
+        } else if (profileData) {
+          setProfile(profileData);
         } else {
-          setProfile(null);
+          setProfile(null); // No profile found
         }
       } else {
         setProfile(null);
@@ -45,16 +41,31 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
       setLoading(false);
     };
 
+    fetchUserAndProfile();
+
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        fetchUserAndProfile(session?.user || null);
+        setUser(session?.user || null);
+        if (session?.user) {
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('first_name, last_name')
+            .eq('id', session.user.id)
+            .single();
+
+          if (profileError && profileError.code !== 'PGRST116') {
+            console.error('Error fetching profile on auth change:', profileError);
+          } else if (profileData) {
+            setProfile(profileData);
+          } else {
+            setProfile(null);
+          }
+        } else {
+          setProfile(null);
+        }
+        setLoading(false);
       }
     );
-
-    // Check initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      fetchUserAndProfile(session?.user || null);
-    });
 
     return () => {
       authListener.subscription.unsubscribe();
@@ -62,7 +73,7 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading }}>
+    <AuthContext.Provider value={{ user, loading, profile }}>
       {children}
     </AuthContext.Provider>
   );

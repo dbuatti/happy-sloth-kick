@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { showError, showSuccess, showReminder } from '@/utils/toast';
+import { showError, showSuccess, showReminder } from '@/utils/toast'; // Import showReminder
 import { v4 as uuidv4 } from 'uuid';
-import { isSameDay, isPast, startOfDay as fnsStartOfDay, parseISO } from 'date-fns';
+import { isSameDay, isPast, startOfDay as fnsStartOfDay, parseISO } from 'date-fns'; // Import parseISO
 
 export interface Task {
   id: string;
@@ -33,7 +33,7 @@ type TaskUpdate = Partial<Omit<Task, 'id' | 'user_id' | 'created_at'>>;
 
 interface NewTaskData {
   description: string;
-  status?: 'to-do' | 'completed' | 'skipped' | 'archived';
+  status?: 'to-do' | 'completed' | 'skipped' | 'archiverd';
   recurring_type?: 'none' | 'daily' | 'weekly' | 'monthly';
   category?: string;
   priority?: string;
@@ -47,7 +47,7 @@ export const useTasks = () => {
   const { user } = useAuth();
   const userId = user?.id;
 
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]); // This will now hold ALL tasks for the user
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
@@ -78,7 +78,7 @@ export const useTasks = () => {
       console.error('Error fetching sections:', error);
       showError('Failed to load sections.');
     } else {
-      setSections(data as TaskSection[] || []); // Cast data to TaskSection[]
+      setSections(data || []);
     }
   }, [userId]);
 
@@ -100,7 +100,7 @@ export const useTasks = () => {
 
       if (fetchError) throw fetchError;
 
-      let allUserTasks: Task[] = fetchedTasks as Task[] || []; // Cast data to Task[]
+      let allUserTasks: Task[] = fetchedTasks || [];
 
       // --- Recurring task generation logic ---
       const dailyRecurringTemplates: Task[] = [];
@@ -148,7 +148,7 @@ export const useTasks = () => {
           console.error('Error inserting recurring instance:', insertError);
           showError('Failed to generate a recurring task instance.');
         } else if (insertedData) {
-          allUserTasks.push(...(insertedData as Task[])); // Cast insertedData to Task[]
+          allUserTasks.push(...insertedData as Task[]); // Cast insertedData to Task[]
         }
       }
       
@@ -355,7 +355,7 @@ export const useTasks = () => {
       }
       if (data && data.length > 0) {
         setTasks(prevTasks =>
-          prevTasks.map(task => (task.id === taskId ? { ...task, ...data[0] as Task } : task)) // Cast data[0] to Task
+          prevTasks.map(task => (task.id === taskId ? { ...task, ...data[0] as Task } : task))
         );
         showSuccess('Task updated successfully!');
       }
@@ -457,7 +457,7 @@ export const useTasks = () => {
       }
 
       if (data && data.length > 0) {
-        setSections(prevSections => [...prevSections, data[0] as TaskSection]); // Cast data[0] to TaskSection
+        setSections(prevSections => [...prevSections, data[0] as TaskSection]);
         showSuccess('Section created successfully!');
       }
     } catch (err) {
@@ -582,7 +582,7 @@ export const useTasks = () => {
         user_id: userId, // Ensure user_id is included for RLS
       }));
 
-      const { error } = await supabase.from('tasks').upsert(updates, { onConflict: 'id' });
+      const { error } = await supabase.from('tasks').upsert(updates as Task[], { onConflict: 'id' }); // Cast to Task[]
       if (error) {
         console.error('Error reordering tasks:', error);
         showError(error.message);
@@ -687,7 +687,7 @@ export const useTasks = () => {
         ...newDbDestinationTasks,
       ];
 
-      const { error } = await supabase.from('tasks').upsert(updates, { onConflict: 'id' });
+      const { error } = await supabase.from('tasks').upsert(updates as Task[], { onConflict: 'id' }); // Cast to Task[]
       if (error) {
         console.error('Error moving task:', error);
         showError(error.message);
@@ -723,14 +723,14 @@ export const useTasks = () => {
       const [removed] = sectionsToUpdate.splice(startIndex, 1);
       sectionsToUpdate.splice(endIndex, 0, removed);
 
-      const updates: Partial<TaskSection>[] = sectionsToUpdate.map((section, index) => ({ // Explicitly type updates
+      const updates = sectionsToUpdate.map((section, index) => ({
         id: section.id,
         name: section.name, // Include the name to prevent null constraint violation
         order: index,
         user_id: userId, // IMPORTANT: Include user_id for RLS policy check
       }));
 
-      const { error } = await supabase.from('task_sections').upsert(updates, { onConflict: 'id' });
+      const { error } = await supabase.from('task_sections').upsert(updates as TaskSection[], { onConflict: 'id' }); // Cast to TaskSection[]
       if (error) {
         console.error('Error reordering sections:', error);
         showError(error.message);
@@ -738,8 +738,7 @@ export const useTasks = () => {
         return;
       }
       showSuccess('Sections reordered successfully!');
-    }
-    catch (err) {
+    } catch (err) {
       console.error('Exception reordering sections:', err);
       showError('An unexpected error occurred while reordering sections.');
       fetchSections(); // Revert to server state on error

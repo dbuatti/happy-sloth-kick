@@ -1,4 +1,4 @@
-import { useState, useEffect, FC, HTMLAttributes } from 'react';
+import React, { useState, useEffect, FC, HTMLAttributes } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, X } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
+import { cn } from "@/lib/utils"; // Import cn
 
 interface Category {
   id: string;
@@ -161,7 +162,7 @@ const CategorySelector: FC<CategorySelectorProps> = ({ value, onChange, userId }
                   {colors.map(color => (
                     <button
                       key={color.value}
-                      className={`w-8 h-8 rounded-full ${color.value} ${selectedColor === color.value ? 'ring-2 ring-offset-2 ring-primary' : ''}`}
+                      className={cn(`w-8 h-8 rounded-full ${color.value} ${selectedColor === color.value ? 'ring-2 ring-offset-2 ring-primary' : ''}`)}
                       onClick={() => setSelectedColor(color.value)}
                       aria-label={color.name}
                     />
@@ -176,7 +177,7 @@ const CategorySelector: FC<CategorySelectorProps> = ({ value, onChange, userId }
       
       {selectedCategory && (
         <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-          <div className={`w-3 h-3 rounded-full ${selectedCategory.color}`}></div>
+          <div className={cn(`w-3 h-3 rounded-full ${selectedCategory.color}`)}></div>
           <span>{selectedCategory.name}</span>
           <Button
             variant="ghost"
