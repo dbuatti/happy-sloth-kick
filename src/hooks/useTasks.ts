@@ -33,7 +33,7 @@ type TaskUpdate = Partial<Omit<Task, 'id' | 'user_id' | 'created_at'>>;
 
 interface NewTaskData {
   description: string;
-  status?: 'to-do' | 'completed' | 'skipped' | 'archived';
+  status?: 'to-do' | 'completed' | 'skipped' | 'archiverd';
   recurring_type?: 'none' | 'daily' | 'weekly' | 'monthly';
   category?: string;
   priority?: string;
@@ -259,12 +259,13 @@ export const useTasks = () => {
         recurring_type: taskData.recurring_type || 'none',
         category: taskData.category || 'General',
         priority: taskData.priority || 'medium',
-        due_date: taskData.due_date || null,
+        due_date: taskData.due_date, // Use directly as it's already ISO string or null
         notes: taskData.notes || null,
-        remind_at: taskData.remind_at || null,
+        remind_at: taskData.remind_at, // Use directly as it's already ISO string or null
         section_id: targetSectionId,
         order: newOrder,
         original_task_id: taskData.recurring_type !== 'none' ? newTaskId : null, // Set original_task_id if recurring
+        // Do NOT explicitly set created_at here; let the database default handle it for accuracy
       };
 
       const { data, error } = await supabase
@@ -278,7 +279,8 @@ export const useTasks = () => {
         return false;
       }
       if (data && data.length > 0) {
-        setTasks(prevTasks => [...prevTasks, data[0]]);
+        // Instead of optimistically adding, re-fetch to ensure consistency with DB
+        await fetchTasks(); 
         showSuccess('Task added successfully!');
         return true;
       }
@@ -628,7 +630,7 @@ export const useTasks = () => {
       }));
 
       const tempNewDbDestinationTasks = Array.from(dbDestinationTasks);
-      tempNewDbDestinationTasks.splice(destinationIndex, 0, movedTaskFromDb);
+      tempNewDbDestinationTasks.splice(destinationIndex, 0, { ...movedTaskFromDb, section_id: destinationSectionId }); // Ensure section_id is updated for the moved task
       const newDbDestinationTasks = tempNewDbDestinationTasks.map((task, index) => ({
         id: task.id,
         order: index,
