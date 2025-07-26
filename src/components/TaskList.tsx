@@ -172,12 +172,9 @@ interface SortableTaskItemProps {
   task: Task;
   onStatusChange: (taskId: string, newStatus: Task['status']) => void;
   onDeleteTask: (taskId: string) => void;
-  onSelectTask: (taskId: string, isSelected: boolean) => void;
-  isSelected: boolean;
-  isSelectionMode: boolean; // New prop
 }
 
-const SortableTaskItem: React.FC<SortableTaskItemProps> = ({ task, onStatusChange, onDeleteTask, onSelectTask, isSelected, isSelectionMode }) => {
+const SortableTaskItem: React.FC<SortableTaskItemProps> = ({ task, onStatusChange, onDeleteTask }) => {
   const {
     attributes,
     listeners,
@@ -203,25 +200,15 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({ task, onStatusChang
       className="flex items-center justify-between p-3 border rounded-md bg-gray-50 dark:bg-gray-800 cursor-grab"
     >
       <div className="flex items-center space-x-3">
-        {isSelectionMode ? (
-          // In selection mode, show only the selection checkbox
-          <Checkbox
-            checked={isSelected}
-            onCheckedChange={(checked) => onSelectTask(task.id, checked as boolean)}
-            id={`select-task-${task.id}`}
-          />
-        ) : (
-          // In normal mode, show only the completion checkbox
-          <Checkbox
-            checked={task.status === 'completed'}
-            onCheckedChange={() => onStatusChange(task.id, task.status === 'completed' ? 'to-do' : 'completed')}
-            id={`complete-task-${task.id}`}
-          />
-        )}
+        {/* Always show completion checkbox */}
+        <Checkbox
+          checked={task.status === 'completed'}
+          onCheckedChange={() => onStatusChange(task.id, task.status === 'completed' ? 'to-do' : 'completed')}
+          id={`complete-task-${task.id}`}
+        />
         <Label
-          // Link label to the currently visible checkbox
-          htmlFor={isSelectionMode ? `select-task-${task.id}` : `complete-task-${task.id}`}
-          className={`text-lg ${task.status === 'completed' && !isSelectionMode ? 'line-through text-gray-500' : ''}`}
+          htmlFor={`complete-task-${task.id}`}
+          className={`text-lg ${task.status === 'completed' ? 'line-through text-gray-500' : ''}`}
         >
           {task.description}
         </Label>
@@ -243,7 +230,6 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({ task, onStatusChang
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            {/* These options are always available for status change */}
             <DropdownMenuItem onClick={() => onStatusChange(task.id, 'to-do')}>
               Mark as To-Do
             </DropdownMenuItem>
@@ -273,12 +259,9 @@ interface TaskSectionProps {
   tasks: Task[];
   onStatusChange: (taskId: string, newStatus: Task['status']) => void;
   onDeleteTask: (taskId: string) => void;
-  onSelectTask: (taskId: string, isSelected: boolean) => void;
-  selectedTaskIds: Set<string>;
-  isSelectionMode: boolean; // New prop
 }
 
-const TaskSection: React.FC<TaskSectionProps> = ({ id, title, tasks, onStatusChange, onDeleteTask, onSelectTask, selectedTaskIds, isSelectionMode }) => {
+const TaskSection: React.FC<TaskSectionProps> = ({ id, title, tasks, onStatusChange, onDeleteTask }) => {
   const { setNodeRef } = useSortable({ id });
   const taskIds = tasks.map(task => task.id);
 
@@ -296,9 +279,6 @@ const TaskSection: React.FC<TaskSectionProps> = ({ id, title, tasks, onStatusCha
                 task={task}
                 onStatusChange={onStatusChange}
                 onDeleteTask={onDeleteTask}
-                onSelectTask={onSelectTask}
-                isSelected={selectedTaskIds.has(task.id)}
-                isSelectionMode={isSelectionMode}
               />
             ))
           )}
@@ -315,9 +295,7 @@ const TaskList: React.FC = () => {
   const [isNewTaskDailyRecurring, setIsNewTaskDailyRecurring] = useState<boolean>(true); // Default to true
   const [loading, setLoading] = useState<boolean>(true);
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
-  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
   const [newTaskSection, setNewTaskSection] = useState<TaskSection>('priorities'); // Default section for new tasks
-  const [isSelectionMode, setIsSelectionMode] = useState<boolean>(false); // New state for selection mode
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -331,7 +309,6 @@ const TaskList: React.FC = () => {
     try {
       const fetchedTasks = await mockFetchTasks(currentDate);
       setTasks(fetchedTasks);
-      setSelectedTaskIds(new Set()); // Clear selection on date change
     } catch (error) {
       showError("Failed to load tasks.");
       console.error("Error fetching tasks:", error);
@@ -343,13 +320,6 @@ const TaskList: React.FC = () => {
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks]);
-
-  // Clear selected tasks when toggling off selection mode
-  useEffect(() => {
-    if (!isSelectionMode) {
-      setSelectedTaskIds(new Set());
-    }
-  }, [isSelectionMode]);
 
   const handleStatusChange = async (taskId: string, newStatus: Task['status']) => {
     try {
@@ -368,11 +338,6 @@ const TaskList: React.FC = () => {
     try {
       await mockDeleteTask(currentDate, taskId);
       setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
-      setSelectedTaskIds(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(taskId);
-        return newSet;
-      });
     } catch (error) {
       console.error("Error deleting task:", error);
     }
@@ -387,7 +352,6 @@ const TaskList: React.FC = () => {
       const addedTask = await mockAddTask(newTaskDescription, isNewTaskDailyRecurring, currentDate, newTaskSection);
       setTasks(prevTasks => [...prevTasks, addedTask]);
       setNewTaskDescription('');
-      // Removed: setIsNewTaskDailyRecurring(false); to retain state
     } catch (error) {
       console.error("Error adding task:", error);
     }
@@ -405,46 +369,6 @@ const TaskList: React.FC = () => {
 
   const handleNextDay = () => {
     setCurrentDate(prevDate => addDays(prevDate, 1));
-  };
-
-  const handleSelectTask = (taskId: string, isSelected: boolean) => {
-    setSelectedTaskIds(prev => {
-      const newSet = new Set(prev);
-      if (isSelected) {
-        newSet.add(taskId);
-      } else {
-        newSet.delete(taskId);
-      }
-      return newSet;
-    });
-  };
-
-  const handleSelectAllTasks = (checked: boolean) => {
-    if (checked) {
-      const allTaskIds = new Set(tasks.map(task => task.id));
-      setSelectedTaskIds(allTaskIds);
-    } else {
-      setSelectedTaskIds(new Set());
-    }
-  };
-
-  const handleDeleteSelectedTasks = async () => {
-    if (selectedTaskIds.size === 0) {
-      showError("No tasks selected for deletion.");
-      return;
-    }
-    try {
-      const idsToDelete = Array.from(selectedTaskIds);
-      for (const taskId of idsToDelete) {
-        await mockDeleteTask(currentDate, taskId);
-      }
-      showSuccess("Selected tasks deleted successfully!");
-      setSelectedTaskIds(new Set());
-      fetchTasks();
-    } catch (error) {
-      showError("Failed to delete selected tasks.");
-      console.error("Error deleting selected tasks:", error);
-    }
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -499,9 +423,6 @@ const TaskList: React.FC = () => {
     setTasks(updatedTasks);
     await mockUpdateTaskSectionAndOrder(currentDate, updatedTasks);
   };
-
-  const allTasksSelected = tasks.length > 0 && selectedTaskIds.size === tasks.length;
-  const someTasksSelected = selectedTaskIds.size > 0 && selectedTaskIds.size < tasks.length;
 
   const morningBaselineTasks = tasks.filter(task => task.section === 'morning-baseline');
   const prioritiesTasks = tasks.filter(task => task.section === 'priorities');
@@ -565,40 +486,6 @@ const TaskList: React.FC = () => {
         </div>
 
         <h2 className="text-2xl font-semibold mb-4">Your Tasks</h2>
-        {tasks.length > 0 && (
-          <div className="flex items-center space-x-2 mb-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsSelectionMode(prev => !prev)}
-              className="mr-4"
-            >
-              {isSelectionMode ? "Done Selecting" : "Select Tasks"}
-            </Button>
-
-            {isSelectionMode && (
-              <>
-                <Checkbox
-                  checked={allTasksSelected}
-                  onCheckedChange={handleSelectAllTasks}
-                  id="select-all-tasks"
-                  className={someTasksSelected ? "border-gray-400 bg-gray-200" : ""}
-                />
-                <Label htmlFor="select-all-tasks">Select All</Label>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={handleDeleteSelectedTasks}
-                  disabled={selectedTaskIds.size === 0}
-                  className="ml-4"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" /> Delete Selected ({selectedTaskIds.size})
-                </Button>
-              </>
-            )}
-          </div>
-        )}
-
         {tasks.length === 0 ? (
           <p className="text-center text-gray-500">No tasks found. Add one above!</p>
         ) : (
@@ -614,9 +501,6 @@ const TaskList: React.FC = () => {
                 tasks={morningBaselineTasks}
                 onStatusChange={handleStatusChange}
                 onDeleteTask={handleDeleteTask}
-                onSelectTask={handleSelectTask}
-                selectedTaskIds={selectedTaskIds}
-                isSelectionMode={isSelectionMode}
               />
               <TaskSection
                 id="priorities"
@@ -624,9 +508,6 @@ const TaskList: React.FC = () => {
                 tasks={prioritiesTasks}
                 onStatusChange={handleStatusChange}
                 onDeleteTask={handleDeleteTask}
-                onSelectTask={handleSelectTask}
-                selectedTaskIds={selectedTaskIds}
-                isSelectionMode={isSelectionMode}
               />
               <TaskSection
                 id="dailies"
@@ -634,9 +515,6 @@ const TaskList: React.FC = () => {
                 tasks={dailiesTasks}
                 onStatusChange={handleStatusChange}
                 onDeleteTask={handleDeleteTask}
-                onSelectTask={handleSelectTask}
-                selectedTaskIds={selectedTaskIds}
-                isSelectionMode={isSelectionMode}
               />
             </div>
           </DndContext>
