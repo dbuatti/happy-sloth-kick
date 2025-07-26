@@ -99,32 +99,37 @@ export const useTasks = () => {
 
       let allUserTasks: Task[] = fetchedTasks || [];
 
-      // Identify daily recurring templates (tasks with recurring_type 'daily' and no original_task_id)
+      // --- Recurring task generation logic ---
       const dailyRecurringTemplates = allUserTasks.filter(
         task => task.recurring_type === 'daily' && task.original_task_id === null
       );
 
-      // Identify existing instances or templates that are relevant for the current day
       // This set will store the original_task_id (or task.id if it's a template)
       // for any task that is already present and should be considered for today's view.
+      // This helps prevent generating new instances if one already exists for the template for today.
       const existingRelevantOriginalIdsForToday = new Set<string>();
       const startOfCurrentDate = fnsStartOfDay(currentDate);
 
       for (const task of allUserTasks) {
         const taskCreatedAt = parseISO(task.created_at);
         const taskDueDate = task.due_date ? parseISO(task.due_date) : null;
-        const originalId = task.original_task_id || task.id; // Use original_task_id for instances, or task.id for templates/non-recurring
+        const originalId = task.original_task_id || task.id;
 
-        // A task is "relevant for today" if:
-        // 1. It was created today (this covers newly generated instances)
-        // 2. It has a due_date today
-        // 3. It's an overdue task (to-do/skipped, due_date in past, not created today)
-        // 4. It's an undated, active task created before today (should still appear in daily view)
-        if (isSameDay(taskCreatedAt, currentDate) ||
-            (taskDueDate && isSameDay(taskDueDate, currentDate)) ||
-            ((task.status === 'to-do' || task.status === 'skipped') && taskDueDate && isPast(taskDueDate) && !isSameDay(taskDueDate, currentDate)) ||
-            ((task.status === 'to-do' || task.status === 'skipped') && task.due_date === null && taskCreatedAt < startOfCurrentDate)
-        ) {
+        // A task is "relevant for today" if it's active (to-do/skipped) AND:
+        // 1. Created today
+        // 2. OR due today
+        // 3. OR overdue
+        // 4. OR undated and created before today
+        // OR if it's completed TODAY (to prevent generating a new instance if user completed it today)
+        const isRelevantAndActive = (task.status === 'to-do' || task.status === 'skipped') && (
+          isSameDay(taskCreatedAt, currentDate) ||
+          (taskDueDate && isSameDay(taskDueDate, currentDate)) ||
+          (taskDueDate && isPast(taskDueDate) && !isSameDay(taskDueDate, currentDate)) ||
+          (task.due_date === null && taskCreatedAt < startOfCurrentDate)
+        );
+        const isCompletedToday = task.status === 'completed' && isSameDay(taskCreatedAt, currentDate);
+
+        if (isRelevantAndActive || isCompletedToday) {
           existingRelevantOriginalIdsForToday.add(originalId);
         }
       }
@@ -135,7 +140,6 @@ export const useTasks = () => {
         // 1. The template itself was created before today (i.e., it's an old template)
         // 2. AND no task (template or instance) related to this template's ID
         //    is already marked as "relevant for today" in existingRelevantOriginalIdsForToday.
-        // This prevents generating duplicates if an instance already exists or if the template itself is relevant for today.
         if (parseISO(template.created_at) < startOfCurrentDate && !existingRelevantOriginalIdsForToday.has(template.id)) {
           const newInstance: Task = {
             ...template,
@@ -206,134 +210,139 @@ export const useTasks = () => {
   }, [tasks, userId]); // Only tasks and userId are dependencies now
 
   const filteredTasks = useMemo(() => {
-    let tempTasks = [...tasks];
+    let workingTasks = [...tasks];
     const startOfCurrentDate = fnsStartOfDay(currentDate);
-    const seenOriginalTaskIds = new Set<string>();
-    const dailyViewTasks: Task[] = [];
 
-    // Step 1: Apply the explicit status filter first if it's not 'all'
-    if (statusFilter !== 'all') {
-      tempTasks = tempTasks.filter(task => task.status === statusFilter);
-    } else {
-      // If statusFilter is 'all', we need to apply daily view logic.
-      // Sort tasks to prioritize the "most relevant" version of a recurring task for today.
-      tempTasks.sort((a, b) => {
+    // Step 1: Group tasks by their original_task_id (or their own ID if not an instance)
+    const groupedTasks = new Map<string, Task[]>();
+    for (const task of workingTasks) {
+      const key = task.original_task_id || task.id;
+      if (!groupedTasks.has(key)) {
+        groupedTasks.set(key, []);
+      }
+      groupedTasks.get(key)!.push(task);
+    }
+
+    const dailyViewCandidates: Task[] = [];
+
+    for (const [originalId, taskGroup] of groupedTasks.entries()) {
+      // Sort tasks within the group to find the "best" one for today's display
+      // Prioritization:
+      // 1. Active tasks (to-do, skipped) that are relevant for today (created/due today, overdue, undated-old)
+      // 2. Completed tasks that were completed today
+      // 3. Other active tasks (e.g., future due dates, but still active)
+      // 4. Other completed/skipped tasks (from previous days)
+      taskGroup.sort((a, b) => {
         const aCreatedAt = parseISO(a.created_at);
         const bCreatedAt = parseISO(b.created_at);
         const aDueDate = a.due_date ? parseISO(a.due_date) : null;
         const bDueDate = b.due_date ? parseISO(b.due_date) : null;
 
-        // Priority 1: Tasks created today (instances or non-recurring)
-        const aIsCreatedToday = isSameDay(aCreatedAt, currentDate);
-        const bIsCreatedToday = isSameDay(bCreatedAt, currentDate);
-        if (aIsCreatedToday && !bIsCreatedToday) return -1;
-        if (!aIsCreatedToday && bIsCreatedToday) return 1;
-
-        // Priority 2: Tasks due today
-        const aIsDueToday = aDueDate && isSameDay(aDueDate, currentDate);
-        const bIsDueToday = bDueDate && isSameDay(bDueDate, currentDate);
-        if (aIsDueToday && !bIsDueToday) return -1;
-        if (!aIsDueToday && bIsDueToday) return 1;
-
-        // Priority 3: Active (to-do/skipped) tasks
         const aIsActive = a.status === 'to-do' || a.status === 'skipped';
         const bIsActive = b.status === 'to-do' || b.status === 'skipped';
+
+        const aIsRelevantForToday = isSameDay(aCreatedAt, currentDate) || (aDueDate && isSameDay(aDueDate, currentDate)) || (aDueDate && isPast(aDueDate) && !isSameDay(aDueDate, currentDate)) || (a.due_date === null && aCreatedAt < startOfCurrentDate);
+        const bIsRelevantForToday = isSameDay(bCreatedAt, currentDate) || (bDueDate && isSameDay(bDueDate, currentDate)) || (bDueDate && isPast(bDueDate) && !isSameDay(bDueDate, currentDate)) || (b.due_date === null && bCreatedAt < startOfCurrentDate);
+
+        const aIsCompletedToday = a.status === 'completed' && isSameDay(aCreatedAt, currentDate);
+        const bIsCompletedToday = b.status === 'completed' && isSameDay(bCreatedAt, currentDate);
+
+        // Prioritize active and relevant for today
+        if (aIsActive && aIsRelevantForToday && (!bIsActive || !bIsRelevantForToday)) return -1;
+        if ((!aIsActive || !aIsRelevantForToday) && bIsActive && bIsRelevantForToday) return 1;
+
+        // Then prioritize completed today
+        if (aIsCompletedToday && !bIsCompletedToday) return -1;
+        if (!aIsCompletedToday && bIsCompletedToday) return 1;
+
+        // Then prioritize any active task (e.g., future tasks)
         if (aIsActive && !bIsActive) return -1;
         if (!aIsActive && bIsActive) return 1;
-
-        // Priority 4: Overdue tasks (older due dates first)
-        const aIsOverdue = aDueDate && isPast(aDueDate);
-        const bIsOverdue = bDueDate && isPast(bDueDate);
-        if (aIsOverdue && !bIsOverdue) return -1;
-        if (!aIsOverdue && bIsOverdue) return 1;
-        if (aIsOverdue && bIsOverdue) return aDueDate!.getTime() - bDueDate!.getTime(); // Older overdue first
-
-        // Priority 5: Undated tasks (older created_at first)
-        const aIsUndated = a.due_date === null;
-        const bIsUndated = b.due_date === null;
-        if (aIsUndated && !bIsUndated) return -1;
-        if (!aIsUndated && bIsUndated) return 1;
-        if (aIsUndated && bIsUndated) return aCreatedAt.getTime() - bCreatedAt.getTime(); // Older undated first
 
         // Fallback: sort by created_at (newest first)
         return bCreatedAt.getTime() - aCreatedAt.getTime();
       });
 
-      for (const task of tempTasks) {
-        const taskCreatedAt = parseISO(task.created_at);
-        const taskDueDate = task.due_date ? parseISO(task.due_date) : null;
-        const originalId = task.original_task_id || task.id;
+      const bestTask = taskGroup[0]; // The first task after sorting is the "best" candidate
 
-        // If we've already added a task for this recurring series, skip
-        if (seenOriginalTaskIds.has(originalId)) {
-          continue;
-        }
+      // Now, determine if this "bestTask" should be included in the daily view
+      const bestTaskCreatedAt = parseISO(bestTask.created_at);
+      const bestTaskDueDate = bestTask.due_date ? parseISO(bestTask.due_date) : null;
 
-        // Exclude archived tasks from the daily view (they should only appear if statusFilter is 'archived')
-        if (task.status === 'archived') continue;
+      const isCreatedToday = isSameDay(bestTaskCreatedAt, currentDate);
+      const isDueToday = bestTaskDueDate && isSameDay(bestTaskDueDate, currentDate);
+      const isOverdueAndActive = (bestTask.status === 'to-do' || bestTask.status === 'skipped') && bestTaskDueDate && isPast(bestTaskDueDate) && !isSameDay(bestTaskDueDate, currentDate);
+      const isUndatedActiveAndOld = (bestTask.status === 'to-do' || bestTask.status === 'skipped') && bestTask.due_date === null && bestTaskCreatedAt < startOfCurrentDate;
+      const isCompletedToday = bestTask.status === 'completed' && isSameDay(bestTaskCreatedAt, currentDate);
 
-        // Conditions for inclusion in daily view:
-        const isCreatedToday = isSameDay(taskCreatedAt, currentDate);
-        const isDueToday = taskDueDate && isSameDay(taskDueDate, currentDate);
-        const isOverdueAndActive = (task.status === 'to-do' || task.status === 'skipped') && taskDueDate && isPast(taskDueDate);
-        const isUndatedActiveAndOld = (task.status === 'to-do' || task.status === 'skipped') && task.due_date === null && taskCreatedAt < startOfCurrentDate;
-
-        if (isCreatedToday || isDueToday || isOverdueAndActive || isUndatedActiveAndOld) {
-          dailyViewTasks.push(task);
-          seenOriginalTaskIds.add(originalId);
+      // Exclude templates from daily view, they are for generating instances
+      if (bestTask.recurring_type !== 'none' && bestTask.original_task_id === null) {
+        // If it's a template, only include if it's explicitly due today and active (edge case for one-off recurring)
+        // Otherwise, templates should not appear in the daily view.
+        if (!(bestTaskDueDate && isSameDay(bestTaskDueDate, currentDate) && (bestTask.status === 'to-do' || bestTask.status === 'skipped'))) {
+          continue; // Skip this template
         }
       }
-      tempTasks = dailyViewTasks;
+
+      // Include if it meets any of the daily view criteria AND is not archived
+      if (bestTask.status !== 'archived' && (isCreatedToday || isDueToday || isOverdueAndActive || isUndatedActiveAndOld || isCompletedToday)) {
+        dailyViewCandidates.push(bestTask);
+      }
     }
 
-    // Apply search, category, priority, section filters (these apply AFTER date relevance/status filter)
+    let finalFilteredTasks = dailyViewCandidates;
+
+    // Apply search, category, priority, section filters
     if (searchFilter) {
-      tempTasks = tempTasks.filter(task =>
+      finalFilteredTasks = finalFilteredTasks.filter(task =>
         task.description.toLowerCase().includes(searchFilter.toLowerCase()) ||
         task.notes?.toLowerCase().includes(searchFilter.toLowerCase())
       );
     }
-    // No need to re-apply statusFilter here, it's handled above.
-
+    // Apply status filter if it's not 'all'.
+    // This will correctly filter for 'completed' or 'archived' if those filters are selected.
+    if (statusFilter !== 'all') {
+      finalFilteredTasks = finalFilteredTasks.filter(task => task.status === statusFilter);
+    }
     if (categoryFilter && categoryFilter !== 'all') {
-      tempTasks = tempTasks.filter(task => task.category === categoryFilter);
+      finalFilteredTasks = finalFilteredTasks.filter(task => task.category === categoryFilter);
     }
     if (priorityFilter && priorityFilter !== 'all') {
-      tempTasks = tempTasks.filter(task => task.priority === priorityFilter);
+      finalFilteredTasks = finalFilteredTasks.filter(task => task.priority === priorityFilter);
     }
     if (sectionFilter && sectionFilter !== 'all') {
-      tempTasks = tempTasks.filter(task => task.section_id === sectionFilter);
+      finalFilteredTasks = finalFilteredTasks.filter(task => task.section_id === sectionFilter);
     }
 
     // Apply user-selected sorting (this is the final sort for display order)
     if (sortKey === 'order') {
-      tempTasks.sort((a, b) => {
+      finalFilteredTasks.sort((a, b) => {
         const orderA = a.order === null ? Infinity : a.order;
         const orderB = b.order === null ? Infinity : b.order;
         return sortDirection === 'asc' ? orderA - orderB : orderB - a.order;
       });
     } else if (sortKey === 'priority') {
       const priorityOrder: { [key: string]: number } = { 'urgent': 4, 'high': 3, 'medium': 2, 'low': 1, 'none': 0 };
-      tempTasks.sort((a, b) => {
+      finalFilteredTasks.sort((a, b) => {
         const valA = priorityOrder[a.priority] || 0;
         const valB = priorityOrder[b.priority] || 0;
         return sortDirection === 'asc' ? valA - valB : valB - valA;
       });
     } else if (sortKey === 'due_date') {
-      tempTasks.sort((a, b) => {
+      finalFilteredTasks.sort((a, b) => {
         const dateA = a.due_date ? new Date(a.due_date).getTime() : Infinity;
         const dateB = b.due_date ? new Date(b.due_date).getTime() : Infinity;
         return sortDirection === 'asc' ? dateA - dateB : dateB - dateA;
       });
     } else if (sortKey === 'created_at') {
-      tempTasks.sort((a, b) => {
+      finalFilteredTasks.sort((a, b) => {
         const dateA = new Date(a.created_at).getTime();
         const dateB = new Date(b.created_at).getTime();
         return sortDirection === 'asc' ? dateA - dateB : dateB - dateA;
       });
     }
 
-    return tempTasks;
+    return finalFilteredTasks;
   }, [tasks, currentDate, searchFilter, statusFilter, categoryFilter, priorityFilter, sectionFilter, sortKey, sortDirection]);
 
   const handleAddTask = async (taskData: NewTaskData) => {
