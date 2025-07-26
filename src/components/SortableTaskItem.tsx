@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'; // Import Button for the drag h
 import { cn } from '@/lib/utils'; // Import cn for class merging
 import { Task, TaskSection } from '@/hooks/useTasks'; // Import Task and TaskSection interfaces
 import TaskItem from './TaskItem'; // Import TaskItem
+import { isPast, isToday, parseISO } from 'date-fns'; // Import date-fns for date calculations
 
 // Define a local type for dnd-kit listeners
 type DndListeners = Record<string, ((event: any) => void) | undefined>;
@@ -50,6 +51,10 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
     opacity: isDragging ? 0.8 : 1, // Make dragged item slightly transparent
   };
 
+  // Calculate urgency states here to apply to the main li element
+  const isOverdue = task.due_date && task.status !== 'completed' && isPast(parseISO(task.due_date)) && !isToday(parseISO(task.due_date));
+  const isUpcoming = task.due_date && task.status !== 'completed' && isToday(parseISO(task.due_date));
+
   return (
     <li
       ref={setNodeRef}
@@ -58,6 +63,8 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         "border rounded-lg p-3 transition-all duration-200 ease-in-out",
         "bg-card dark:bg-gray-800",
         task.status === 'completed' ? "border-green-300 dark:border-green-700" : "border-border", // Highlight completed
+        isOverdue && "border-l-4 border-red-500 dark:border-red-700 bg-red-50/20 dark:bg-red-900/20 pl-2", // Overdue visual cue with background
+        isUpcoming && "border-l-4 border-orange-400 dark:border-orange-600 bg-orange-50/20 dark:bg-orange-900/20 pl-2", // Upcoming visual cue with background
         "group relative", // Keep group for hover effects
         "hover:shadow-md", // Subtle shadow on hover
         isDragging ? "shadow-lg ring-2 ring-primary" : "cursor-grab" // Add shadow and ring when dragging, cursor-grab when not

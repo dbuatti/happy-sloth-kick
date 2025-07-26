@@ -53,16 +53,16 @@ const TaskItem: React.FC<TaskItemProps> = ({
     }
   };
 
+  // isOverdue and isUpcoming calculations are now handled in SortableTaskItem
   const isOverdue = task.due_date && task.status !== 'completed' && isPast(parseISO(task.due_date)) && !isToday(parseISO(task.due_date));
-  const isUpcoming = task.due_date && task.status !== 'completed' && isToday(parseISO(task.due_date)); // Due today
+  const isUpcoming = task.due_date && task.status !== 'completed' && isToday(parseISO(task.due_date));
 
   return (
     <div // Changed from li to div
       className={cn(
         "relative flex items-center space-x-3 w-full", // Added w-full to ensure it takes full width
         task.status === 'completed' ? "opacity-70 bg-green-50/20 dark:bg-green-900/20 animate-task-completed" : "", // Keep opacity for completed
-        isOverdue && "border-l-4 border-red-500 dark:border-red-700 pl-2", // Overdue visual cue
-        isUpcoming && "border-l-4 border-orange-400 dark:border-orange-600 pl-2" // Upcoming visual cue
+        // isOverdue and isUpcoming border styling removed from here, now in SortableTaskItem
       )}
     >
       {/* Checkbox */}
