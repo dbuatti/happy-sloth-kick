@@ -4,9 +4,11 @@ import { Home, BarChart3, Settings as SettingsIcon, HelpCircle, Archive as Archi
 import ThemeSelector from './ThemeSelector';
 import DarkModeToggle from './DarkModeToggle';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 const Sidebar = () => {
   const location = useLocation();
+  const { user, profile } = useAuth(); // Use the useAuth hook
 
   const navItems = [
     { name: 'Daily Tasks', path: '/', icon: Home },
@@ -16,6 +18,8 @@ const Sidebar = () => {
     { name: 'Help', path: '/help', icon: HelpCircle },
   ];
 
+  const displayName = profile?.first_name || user?.email?.split('@')[0] || 'Guest';
+
   return (
     <div className="w-64 bg-white dark:bg-gray-800 shadow-lg h-screen flex flex-col">
       <div className="p-6 flex justify-between items-center">
@@ -24,6 +28,9 @@ const Sidebar = () => {
           <ThemeSelector />
           <DarkModeToggle />
         </div>
+      </div>
+      <div className="px-6 pb-4 text-sm text-gray-600 dark:text-gray-300">
+        Welcome, {displayName}!
       </div>
       <nav className="flex-1 px-4 space-y-2">
         {navItems.map((item) => {
