@@ -84,7 +84,8 @@ const TaskList: React.FC = () => {
   const [newSectionName, setNewSectionName] = useState('');
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [editingSectionName, setEditingSectionName] = useState('');
-  const [noSectionDisplayName, setNoSectionDisplayName] = useState('No Section'); // New state for 'No Section' display name
+  // Removed noSectionDisplayName state as it's no longer needed for local renaming
+  // const [noSectionDisplayName, setNoSectionDisplayName] = useState('No Section'); 
 
   const handlePreviousDay = () => {
     setCurrentDate(prevDate => new Date(prevDate.setDate(prevDate.getDate() - 1)));
@@ -120,8 +121,8 @@ const TaskList: React.FC = () => {
     }
 
     if (sectionId === 'no-section') {
-      setNoSectionDisplayName(editingSectionName);
-      showSuccess('Section name updated locally!');
+      // Removed local renaming for 'No Section' as it's not persistent
+      showError("Cannot rename 'No Section' as it's a default grouping for unassigned tasks.");
       setEditingSectionId(null);
       setEditingSectionName('');
     } else {
@@ -158,14 +159,8 @@ const TaskList: React.FC = () => {
   };
 
   // Wrapper function for AddTaskForm and QuickAddTask to match handleAddTask's new signature
-  const handleNewTaskSubmit = async (description: string, sectionId: string | null = null) => {
-    const newTaskData: NewTaskData = {
-      description: description,
-      section_id: sectionId,
-      // Add other default properties if needed by your AddTaskForm/QuickAddTask
-      // e.g., status: 'to-do', recurring_type: 'none', etc.
-    };
-    await handleAddTask(newTaskData);
+  const handleNewTaskSubmit = async (taskData: NewTaskData) => {
+    await handleAddTask(taskData);
   };
 
   const tasksGroupedBySection = useMemo(() => {
@@ -191,7 +186,7 @@ const TaskList: React.FC = () => {
     const orderedSections: { id: string; name: string }[] = [];
     
     // Always add 'No Section' first
-    orderedSections.push({ id: noSectionId, name: noSectionDisplayName });
+    orderedSections.push({ id: noSectionId, name: 'No Section' }); // Hardcode 'No Section' display name
 
     // Add all other sections
     sections.forEach(section => {
@@ -203,7 +198,7 @@ const TaskList: React.FC = () => {
       ...section,
       tasks: grouped[section.id],
     }));
-  }, [filteredTasks, sections, noSectionDisplayName]); // Add noSectionDisplayName to dependencies
+  }, [filteredTasks, sections]); // Removed noSectionDisplayName from dependencies
 
   const shortcuts: ShortcutMap = {
     'arrowleft': handlePreviousDay,
@@ -249,7 +244,6 @@ const TaskList: React.FC = () => {
           onNextDay={handleNextDay}
         />
 
-        {/* AddTaskForm and QuickAddTask now correctly pass a task object */}
         <AddTaskForm onAddTask={handleNewTaskSubmit} userId={userId} />
 
         <TaskFilter onFilterChange={applyFilters} />
@@ -395,12 +389,11 @@ const TaskList: React.FC = () => {
 
             <BulkActions 
               selectedTaskIds={selectedTaskIds} 
-              onAction={handleBulkAction} {/* Use the new wrapper function */}
+              onAction={handleBulkAction} 
               onClearSelection={clearSelectedTasks} 
             />
           </div>
         )}
-        {/* QuickAddTask now correctly passes a task object */}
         <QuickAddTask onAddTask={handleNewTaskSubmit} userId={userId} />
       </CardContent>
     </Card>
