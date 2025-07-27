@@ -61,6 +61,7 @@ const WorkHoursSettings: React.FC = () => {
         id: fetchedHoursMap.get(day.id)?.id,
       }));
       setWorkHours(initialWorkHours);
+      console.log('Fetched work hours:', initialWorkHours); // Debug log
     } catch (error: any) {
       showError('Failed to load work hours.');
       console.error('Error fetching work hours:', error.message);
@@ -91,12 +92,11 @@ const WorkHoursSettings: React.FC = () => {
 
   const handleSetAllHours = () => {
     setWorkHours(prevHours => {
-      const anyEnabled = prevHours.some(wh => wh.enabled);
       return prevHours.map(wh => ({
         ...wh,
         start_time: allStartTime,
         end_time: allEndTime,
-        enabled: anyEnabled ? wh.enabled : true, // If no days were enabled, enable all
+        enabled: true, // Always enable when "Apply to All" is clicked
       }));
     });
     showSuccess('Hours applied to all days!');
@@ -122,6 +122,8 @@ const WorkHoursSettings: React.FC = () => {
         }
         return updateObject;
       });
+
+      console.log('Saving work hours updates:', updates); // Debug log
 
       const { error } = await supabase
         .from('user_work_hours')

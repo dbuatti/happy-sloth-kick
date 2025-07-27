@@ -31,11 +31,13 @@ export const useWorkHours = (date: Date) => {
     if (!userId) {
       setWorkHours(null);
       setLoading(false);
+      console.log('useWorkHours: No user ID, skipping fetch.'); // Debug log
       return;
     }
 
     setLoading(true);
     const dayOfWeekString = dayMap[date.getDay()];
+    console.log(`useWorkHours: Fetching for user ${userId}, day ${dayOfWeekString}`); // Debug log
 
     try {
       const { data, error } = await supabase
@@ -51,6 +53,7 @@ export const useWorkHours = (date: Date) => {
       }
 
       setWorkHours(data || null);
+      console.log('useWorkHours: Fetched data:', data); // Debug log
     } catch (error: any) {
       console.error('Error fetching work hours for day:', error.message);
       showError('Failed to load work hours for the day.');
