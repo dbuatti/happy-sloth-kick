@@ -339,6 +339,18 @@ const TimeBlockSchedule: React.FC = () => {
       <footer className="p-4">
         <MadeWithDyad />
       </footer>
+      <AppointmentForm
+        isOpen={isAppointmentFormOpen}
+        onClose={() => {
+          setIsAppointmentFormOpen(false);
+          setEditingAppointment(null); // Clear editing state on close
+          setSelectedTimeSlotForNew(null); // Clear selected slot on close
+        }}
+        onSave={handleSaveAppointment}
+        initialData={editingAppointment}
+        selectedDate={currentDate}
+        selectedTimeSlot={selectedTimeSlotForNew}
+      />
     </div>
   );
 };
