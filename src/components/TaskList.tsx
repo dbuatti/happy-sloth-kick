@@ -28,7 +28,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"; // Import AlertDialog components
+} from "@/components/ui/alert-dialog";
 
 // dnd-kit imports
 import {
@@ -68,7 +68,7 @@ interface NewTaskData {
   due_date?: string | null;
   notes?: string | null;
   remind_at?: string | null;
-  section_id?: string | null; // New: for task sections
+  section_id?: string | null;
 }
 
 interface TaskListProps {
@@ -113,18 +113,13 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
   const [sectionToDeleteId, setSectionToDeleteId] = useState<string | null>(null);
   const [targetReassignSectionId, setTargetReassignSectionId] = useState<string | null>(null);
 
-  // State for TaskDetailDialog
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
 
-  // State for expanded/collapsed sections
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
 
-  // AlertDialog state for bulk delete
   const [showConfirmBulkDeleteDialog, setShowConfirmBulkDeleteDialog] = useState(false);
 
-
-  // Load expanded sections from local storage on mount
   useEffect(() => {
     try {
       const storedExpandedSections = localStorage.getItem('expandedSections');
@@ -133,24 +128,21 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
       }
     } catch (error) {
       console.error("Failed to parse expanded sections from local storage:", error);
-      // Fallback to default if parsing fails
       setExpandedSections({});
     }
   }, []);
 
-  // Update local storage when expanded sections change
   useEffect(() => {
     localStorage.setItem('expandedSections', JSON.stringify(expandedSections));
   }, [expandedSections]);
 
-  // Ensure new sections are expanded by default
   useEffect(() => {
     if (sections.length > 0) {
       setExpandedSections(prev => {
         const newExpansions = { ...prev };
         sections.forEach(section => {
           if (newExpansions[section.id] === undefined) {
-            newExpansions[section.id] = true; // Default new sections to expanded
+            newExpansions[section.id] = true;
           }
         });
         return newExpansions;
@@ -166,7 +158,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
   };
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }), // Added activationConstraint
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -243,9 +235,8 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
       }
       setIsReassignTasksDialogOpen(true);
     } else {
-      // If no tasks, directly confirm deletion with AlertDialog
-      setSectionToDeleteId(sectionId); // Set for the AlertDialog
-      setShowConfirmBulkDeleteDialog(true); // Reuse this dialog for simple section delete
+      setSectionToDeleteId(sectionId);
+      setShowConfirmBulkDeleteDialog(true);
     }
   };
 
@@ -278,7 +269,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
       updates = { priority: action.split('-')[1] };
       await bulkUpdateTasks(updates);
     } else if (action === 'delete') {
-      setShowConfirmBulkDeleteDialog(true); // Open confirmation dialog
+      setShowConfirmBulkDeleteDialog(true);
     }
   };
 
@@ -288,29 +279,27 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
         await deleteTask(taskId);
       }
       clearSelectedTasks();
-    } else if (sectionToDeleteId) { // This path is for deleting an empty section
+    } else if (sectionToDeleteId) {
       await deleteSection(sectionToDeleteId, null);
       setSectionToDeleteId(null);
     }
     setShowConfirmBulkDeleteDialog(false);
   };
 
-  const tasksGroupedBySection = useMemo<(TaskSection & { parentTasks: Task[]; subtasks: Task[]; })[]>(() => {
+  const tasksGroupedBySection = useMemo(() => {
     const grouped: { [key: string]: { parentTasks: Task[]; subtasks: Task[] } } = {};
     const allSectionIds = new Set<string>();
 
-    // Initialize groups for existing sections
     sections.forEach(section => {
       grouped[section.id] = { parentTasks: [], subtasks: [] };
       allSectionIds.add(section.id);
     });
 
-    // Populate groups with filtered tasks
     filteredTasks.forEach(task => {
       const targetSectionId = task.section_id || 'no-section';
       if (!grouped[targetSectionId]) {
         grouped[targetSectionId] = { parentTasks: [], subtasks: [] };
-        allSectionIds.add(targetSectionId); // Add 'no-section' if it exists
+        allSectionIds.add(targetSectionId);
       }
 
       if (task.parent_task_id) {
@@ -320,17 +309,13 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
       }
     });
 
-    // Sort parent tasks within each group
     Object.keys(grouped).forEach(sectionId => {
       grouped[sectionId].parentTasks.sort((a, b) => (a.order || 0) - (b.order || 0));
     });
 
-    // Create the final list of sections to render, including 'no-section' if applicable
     const sectionsToRender: (TaskSection & { parentTasks: Task[]; subtasks: Task[] })[] = [];
 
-    // Add actual sections first, maintaining their order
     sections.forEach(section => {
-      // Only include actual sections if they have tasks or were explicitly created
       if (grouped[section.id] && (grouped[section.id].parentTasks.length > 0 || grouped[section.id].subtasks.length > 0)) {
         sectionsToRender.push({
           ...section,
@@ -340,13 +325,12 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
       }
     });
 
-    // Add "No Section" at the end if it contains tasks
     if (grouped['no-section'] && (grouped['no-section'].parentTasks.length > 0 || grouped['no-section'].subtasks.length > 0)) {
       sectionsToRender.push({
         id: 'no-section',
         name: 'No Section',
-        user_id: userId ? userId : '', // Changed from userId || ''
-        order: Infinity, // Always at the end
+        user_id: userId || '',
+        order: Infinity,
         parentTasks: grouped['no-section'].parentTasks,
         subtasks: grouped['no-section'].subtasks,
       });
@@ -381,7 +365,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
       }
     } else if (isDraggingTask) {
       const draggedTask = tasks.find(task => task.id === activeId);
-      if (!draggedTask || draggedTask.parent_task_id) { // Prevent dragging subtasks for now
+      if (!draggedTask || draggedTask.parent_task_id) {
         setActiveId(null);
         return;
       }
@@ -392,17 +376,16 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
 
       if (over.data.current?.type === 'task') {
         const overTask = tasks.find(task => task.id === overId);
-        if (overTask && overTask.parent_task_id === null) { // Only drop onto top-level tasks
+        if (overTask && overTask.parent_task_id === null) {
           destinationSectionId = overTask.section_id;
           const overSectionParentTasks = tasksGroupedBySection.find(sg => sg.id === destinationSectionId)?.parentTasks || [];
           destinationIndex = overSectionParentTasks.findIndex(task => task.id === overId);
-        } else if (overTask && overTask.parent_task_id !== null) { // Dropped onto a subtask, find its parent
+        } else if (overTask && overTask.parent_task_id !== null) {
           const parentOfOverTask = tasks.find(t => t.id === overTask.parent_task_id);
           if (parentOfOverTask) {
             destinationSectionId = parentOfOverTask.section_id;
             const overSectionParentTasks = tasksGroupedBySection.find(sg => sg.id === destinationSectionId)?.parentTasks || [];
             destinationIndex = overSectionParentTasks.findIndex(task => task.id === parentOfOverTask.id);
-            // If dropping onto a subtask, we want to place it after the parent task
             if (destinationIndex !== -1) destinationIndex++;
           }
         }
@@ -442,7 +425,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
   const shortcuts: ShortcutMap = {
     'arrowleft': handlePreviousDay,
     'arrowright': handleNextDay,
-    't': handleGoToToday, // New shortcut for 'Go to Today'
+    't': handleGoToToday,
     'f': (e) => {
       const searchInput = document.querySelector('input[placeholder="Search tasks..."]');
       if (searchInput) {
@@ -458,7 +441,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
         <CardHeader>
           <CardTitle className="text-3xl font-bold text-center">Daily Tasks</CardTitle>
         </CardHeader>
-        <CardContent className="p-4"> {/* Reduced padding */}
+        <CardContent className="p-4">
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
           </div>
@@ -468,28 +451,25 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
   }
 
   return (
-    <> {/* Added React.Fragment to wrap multiple top-level elements */}
+    <>
       <Card className="w-full max-w-4xl mx-auto shadow-lg">
         <CardHeader>
           <CardTitle className="text-3xl font-bold text-center">Daily Tasks</CardTitle>
         </CardHeader>
-        <CardContent className="p-4"> {/* Reduced padding */}
+        <CardContent className="p-4">
           <DateNavigator
             currentDate={currentDate}
             onPreviousDay={handlePreviousDay}
             onNextDay={handleNextDay}
-            onGoToToday={handleGoToToday} // Pass the new prop
+            onGoToToday={handleGoToToday}
           />
 
-          {/* Daily Streak Component */}
-          <div className="mb-4"> {/* Reduced margin */}
+          <div className="mb-4">
             <DailyStreak tasks={tasks} currentDate={currentDate} />
           </div>
 
-          {/* Smart Suggestions Component */}
           <SmartSuggestions />
 
-          {/* Floating Action Button for Add Task - RE-INTRODUCED */}
           <Button
             className="fixed bottom-6 right-6 rounded-full h-14 w-14 shadow-lg z-50 md:bottom-8 md:right-8"
             aria-label="Add new task"
@@ -536,7 +516,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
                           value={newSectionName}
                           onChange={(e) => setNewSectionName(e.target.value)}
                           placeholder="e.g., Work, Personal"
-                          autoFocus // Added autoFocus
+                          autoFocus
                         />
                         <Button onClick={handleCreateSection} disabled={!newSectionName.trim()}>
                           <Plus className="h-4 w-4 mr-2" /> Add
@@ -660,7 +640,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
                 items={sections.map(s => s.id)}
                 strategy={verticalListSortingStrategy}
               >
-                <div className="space-y-4"> {/* Reduced space-y from 6 to 4 */}
+                <div className="space-y-4">
                   {tasksGroupedBySection.map(sectionGroup => (
                     <div key={sectionGroup.id} className="space-y-3">
                       <SortableSectionHeader
@@ -689,7 +669,6 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
                                   sections={sections}
                                   onEditTask={handleEditTask}
                                 />
-                                {/* Render subtasks if they exist for this parent task */}
                                 {sectionGroup.subtasks
                                   .filter(sub => sub.parent_task_id === task.id)
                                   .sort((a, b) => (a.order || 0) - (b.order || 0))
@@ -760,8 +739,9 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
                 onClearSelection={clearSelectedTasks}
               />
             </DndContext>
-          </CardContent>
-        </Card>
+          )}
+        </CardContent>
+      </Card>
       {taskToEdit && (
         <TaskDetailDialog
           task={taskToEdit}
@@ -773,7 +753,6 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
         />
       )}
 
-      {/* Bulk Delete Confirmation Dialog */}
       <AlertDialog open={showConfirmBulkDeleteDialog} onOpenChange={setShowConfirmBulkDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
