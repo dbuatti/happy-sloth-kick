@@ -3,7 +3,7 @@ import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, C
 import { useTasks } from '@/hooks/useTasks';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Settings, BarChart3, Home, FolderOpen, ChevronLeft, ChevronRight, LogOut, LayoutGrid, CalendarClock, CalendarDays } from 'lucide-react'; // Added CalendarDays
+import { Plus, Settings, BarChart3, Home, FolderOpen, ChevronLeft, ChevronRight, LogOut, LayoutGrid, CalendarClock, CalendarDays } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -212,7 +212,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
       {/* Add Task Dialog/Sheet, controlled by Command Palette */}
       {isMobile ? (
         <Sheet open={isAddTaskOpen} onOpenChange={setIsAddTaskOpen}>
-          <SheetContent className="h-full">
+          <SheetContent className="h-full sm:max-w-md"> {/* Added sm:max-w-md */}
             <SheetHeader>
               <SheetTitle>Add New Task</SheetTitle>
             </SheetHeader>
@@ -221,7 +221,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
         </Sheet>
       ) : (
         <Dialog open={isAddTaskOpen} onOpenChange={setIsAddTaskOpen}>
-          <DialogContent>
+          <DialogContent className="sm:max-w-md"> {/* Added sm:max-w-md */}
             <DialogHeader>
               <DialogTitle>Add New Task</DialogTitle>
             </DialogHeader>

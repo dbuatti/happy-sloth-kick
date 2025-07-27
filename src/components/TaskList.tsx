@@ -62,7 +62,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
     const grouped: Record<string, Task[]> = { 'no-section': [] };
     
     // Initialize groups for all sections
-    sections.forEach((currentSection: TaskSection) => { // Changed 'section' to 'currentSection'
+    sections.forEach((currentSection: TaskSection) => {
       grouped[currentSection.id] = [];
     });
 
@@ -70,7 +70,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
     filteredTasks.forEach(task => {
       const sectionId = task.section_id;
       if (sectionId && grouped[sectionId] !== undefined) {
-        grouped[sectionId].push(task); // Corrected: Use sectionId here
+        grouped[sectionId].push(task);
       } else {
         grouped['no-section'].push(task);
       }
@@ -85,8 +85,8 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
     
     if (!over) return;
 
-    const activeId = String(active.id); // Convert to string
-    const overId = String(over.id);     // Convert to string
+    const activeId = String(active.id);
+    const overId = String(over.id);
 
     // Handle section reordering
     if (active.data.current?.type === 'section-header' && over.data.current?.type === 'section-header') {
@@ -173,18 +173,18 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
     if (editingSectionId && editingSectionName.trim()) {
       await updateSection(editingSectionId, editingSectionName.trim());
       setEditingSectionId(null);
-      setNewEditingSectionName(''); // Use the new setter
+      setNewEditingSectionName('');
     }
   };
 
-  const handleEditSectionClick = (currentSection: TaskSection) => { // Changed 'section' to 'currentSection'
+  const handleEditSectionClick = (currentSection: TaskSection) => {
     setEditingSectionId(currentSection.id);
-    setNewEditingSectionName(currentSection.name); // Use the new setter
+    setNewEditingSectionName(currentSection.name);
   };
 
   const handleCancelSectionEdit = () => {
     setEditingSectionId(null);
-    setNewEditingSectionName(''); // Use the new setter
+    setNewEditingSectionName('');
   };
 
   const handleAddSection = async () => {
@@ -251,7 +251,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
 
               <DndContext onDragEnd={handleDragEnd}>
                 <SortableContext items={sections.map(s => s.id)} strategy={verticalListSortingStrategy}>
-                  {sections.map((currentSection: TaskSection) => { // Changed 'section' to 'currentSection'
+                  {sections.map((currentSection: TaskSection) => {
                     const isExpanded = expandedSections[currentSection.id] !== false;
                     const sectionTasks = tasksBySection[currentSection.id] || [];
                     
@@ -265,7 +265,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
                           onToggleExpand={() => toggleSection(currentSection.id)}
                           isEditing={editingSectionId === currentSection.id}
                           editingName={editingSectionName}
-                          onNameChange={setNewEditingSectionName} // Use the new setter
+                          onNameChange={setNewEditingSectionName}
                           onSaveEdit={() => handleRenameSection()}
                           onCancelEdit={handleCancelSectionEdit}
                           onEditClick={() => handleEditSectionClick(currentSection)}
@@ -273,26 +273,28 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
                         {isExpanded && (
                           <div className="mt-2 space-y-2 pl-2">
                             <SortableContext items={sectionTasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
-                              {sectionTasks.length === 0 ? (
-                                <div className="text-center text-gray-500 py-4">
-                                  No tasks in this section
-                                </div>
-                              ) : (
-                                sectionTasks.map(task => (
-                                  <SortableTaskItem
-                                    key={task.id}
-                                    task={task}
-                                    userId={userId}
-                                    onStatusChange={handleStatusChange}
-                                    onDelete={deleteTask}
-                                    onUpdate={updateTask}
-                                    isSelected={selectedTaskIds.includes(task.id)}
-                                    onToggleSelect={toggleTaskSelection}
-                                    sections={sections}
-                                    onEditTask={handleEditTask}
-                                  />
-                                ))
-                              )}
+                              <ul className="list-none space-y-2"> {/* Added list-none here */}
+                                {sectionTasks.length === 0 ? (
+                                  <div className="text-center text-gray-500 py-4">
+                                    No tasks in this section
+                                  </div>
+                                ) : (
+                                  sectionTasks.map(task => (
+                                    <SortableTaskItem
+                                      key={task.id}
+                                      task={task}
+                                      userId={userId}
+                                      onStatusChange={handleStatusChange}
+                                      onDelete={deleteTask}
+                                      onUpdate={updateTask}
+                                      isSelected={selectedTaskIds.includes(task.id)}
+                                      onToggleSelect={toggleTaskSelection}
+                                      sections={sections}
+                                      onEditTask={handleEditTask}
+                                    />
+                                  ))
+                                )}
+                              </ul>
                             </SortableContext>
                           </div>
                         )}
@@ -313,20 +315,22 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
                     </div>
                     <div className="mt-2 space-y-2 pl-2">
                       <SortableContext items={tasksBySection['no-section'].map(t => t.id)} strategy={verticalListSortingStrategy}>
-                        {tasksBySection['no-section'].map(task => (
-                          <SortableTaskItem
-                            key={task.id}
-                            task={task}
-                            userId={userId}
-                            onStatusChange={handleStatusChange}
-                            onDelete={deleteTask}
-                            onUpdate={updateTask}
-                            isSelected={selectedTaskIds.includes(task.id)}
-                            onToggleSelect={toggleTaskSelection}
-                            sections={sections}
-                            onEditTask={handleEditTask}
-                          />
-                        ))}
+                        <ul className="list-none space-y-2"> {/* Added list-none here */}
+                          {tasksBySection['no-section'].map(task => (
+                            <SortableTaskItem
+                              key={task.id}
+                              task={task}
+                              userId={userId}
+                              onStatusChange={handleStatusChange}
+                              onDelete={deleteTask}
+                              onUpdate={updateTask}
+                              isSelected={selectedTaskIds.includes(task.id)}
+                              onToggleSelect={toggleTaskSelection}
+                              sections={sections}
+                              onEditTask={handleEditTask}
+                            />
+                          ))}
+                        </ul>
                       </SortableContext>
                     </div>
                   </div>
@@ -338,14 +342,21 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
       </div>
 
       {/* Add Task Dialog */}
-      <AddTaskForm
-        onAddTask={handleAddTaskSubmit}
-        userId={userId}
-        onTaskAdded={() => {
-          setIsAddTaskForm(false);
-          setIsAddTaskOpen(false);
-        }}
-      />
+      <Dialog open={isAddTaskFormOpen} onOpenChange={setIsAddTaskForm}>
+        <DialogContent className="sm:max-w-md"> {/* Added max-w-md */}
+          <DialogHeader>
+            <DialogTitle>Add New Task</DialogTitle>
+          </DialogHeader>
+          <AddTaskForm
+            onAddTask={handleAddTaskSubmit}
+            userId={userId}
+            onTaskAdded={() => {
+              setIsAddTaskForm(false);
+              setIsAddTaskOpen(false);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
 
       {/* Task Detail Dialog */}
       {taskToEdit && (
