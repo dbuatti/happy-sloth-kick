@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext'; // Changed '=' to 'from'
+import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess, showReminder } from '@/utils/toast';
 import { v4 as uuidv4 } from 'uuid';
 import { isSameDay, isPast, startOfDay as fnsStartOfDay, parseISO, format, isAfter } from 'date-fns';
@@ -53,13 +53,19 @@ const getInitialFilter = (key: string, defaultValue: string) => {
   return defaultValue;
 };
 
+// Helper to get UTC start of day
+const getUTCStartOfDay = (date: Date) => {
+  return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+};
+
 export const useTasks = () => {
   const { user } = useAuth();
   const userId = user?.id;
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentDate, setCurrentDate] = useState(() => fnsStartOfDay(new Date()));
+  // Initialize currentDate to UTC midnight using the helper
+  const [currentDate, setCurrentDate] = useState(() => getUTCStartOfDay(new Date()));
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [sortKey, setSortKey] = useState<'priority' | 'due_date' | 'created_at' | 'order'>('order');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -141,17 +147,18 @@ export const useTasks = () => {
       const newRecurringInstances: Task[] = [];
 
       for (const template of dailyRecurringTemplates) {
-        const startOfToday = fnsStartOfDay(currentDate).toISOString();
-        const endOfToday = new Date(fnsStartOfDay(currentDate).getTime() + 24 * 60 * 60 * 1000 - 1).toISOString();
-        console.log(`fetchTasks: Checking for existing instance of template "${template.description}" (ID: ${template.id}) for today (${startOfToday} - ${endOfToday})`);
+        // Use the consistent UTC currentDate for checking existing instances
+        const startOfCurrentUTC = currentDate.toISOString(); // currentDate is already UTC midnight
+        const endOfCurrentUTC = new Date(currentDate.getTime() + 24 * 60 * 60 * 1000 - 1).toISOString();
+        console.log(`fetchTasks: Checking for existing instance of template "${template.description}" (ID: ${template.id}) for today (UTC: ${startOfCurrentUTC} - ${endOfCurrentUTC})`);
 
         const { data: existingInstances, error: checkError } = await supabase
           .from('tasks')
           .select('id')
           .eq('original_task_id', template.id)
           .eq('user_id', userId)
-          .gte('created_at', startOfToday)
-          .lt('created_at', endOfToday)
+          .gte('created_at', startOfCurrentUTC)
+          .lt('created_at', endOfCurrentUTC)
           .in('status', ['to-do', 'skipped']);
 
         if (checkError) throw checkError;
@@ -161,7 +168,7 @@ export const useTasks = () => {
           const newInstance: Task = {
             ...template,
             id: uuidv4(),
-            created_at: fnsStartOfDay(currentDate).toISOString(),
+            created_at: currentDate.toISOString(), // Use the consistent UTC currentDate
             status: 'to-do',
             recurring_type: 'none',
             original_task_id: template.id,
@@ -184,7 +191,6 @@ export const useTasks = () => {
         if (insertError) throw insertError;
         console.log('fetchTasks: Inserted data:', insertedData);
         
-        // After inserting, re-fetch all tasks to ensure the local state is fully synchronized
         console.log('fetchTasks: Re-fetching all tasks after insertion.');
         const { data: refreshedTasks, error: refreshError } = await supabase
           .from('tasks')
@@ -249,7 +255,7 @@ export const useTasks = () => {
     try {
       const { data, error } = await supabase
         .from('tasks')
-        .insert({ ...newTaskData, user_id: userId, created_at: fnsStartOfDay(currentDate).toISOString() })
+        .insert({ ...newTaskData, user_id: userId, created_at: currentDate.toISOString() }) // Use consistent UTC currentDate
         .select()
         .single();
 
@@ -422,7 +428,8 @@ export const useTasks = () => {
         task.section_id === sectionId ? { ...task, section_id: null } : task
       ));
       showSuccess('Section deleted successfully!');
-    } catch (error: any) {
+    }
+    catch (error: any) {
       showError('Failed to delete section.');
       console.error('Error deleting section:', error);
     }
@@ -489,7 +496,7 @@ export const useTasks = () => {
   const filteredTasks = useMemo(() => {
     console.log('filteredTasks: Starting filter process for currentDate:', currentDate.toISOString(), 'statusFilter:', statusFilter);
     let workingTasks = [...tasks];
-    const effectiveCurrentDate = fnsStartOfDay(currentDate);
+    const effectiveCurrentDate = currentDate; // currentDate is now consistently UTC midnight
     console.log('filteredTasks: Initial tasks count:', workingTasks.length);
 
     // 1. Filter out subtasks (they are handled within parent tasks)
@@ -499,11 +506,12 @@ export const useTasks = () => {
     // 2. Apply main daily view logic (if not in 'archived' filter)
     if (statusFilter !== 'archived') {
       workingTasks = workingTasks.filter(task => {
-        const taskCreatedAt = parseISO(task.created_at);
+        const taskCreatedAt = parseISO(task.created_at); // This is a UTC date
+        // Compare UTC dates for isSameDay
         const isTaskCreatedToday = isSameDay(taskCreatedAt, effectiveCurrentDate);
         const isTaskActive = task.status === 'to-do' || task.status === 'skipped';
         const isTaskCompleted = task.status === 'completed';
-        const isRecurringTemplate = task.recurring_type !== 'none' && task.original_task_id === null;
+        const isRecurringTemplate = task.recurring_type === 'daily' && task.original_task_id === null;
         const isRecurringInstance = task.original_task_id !== null;
 
         // Log each task's properties for debugging
@@ -512,7 +520,7 @@ export const useTasks = () => {
             recurring_type: ${task.recurring_type},
             original_task_id: ${task.original_task_id},
             created_at: ${task.created_at},
-            isTaskCreatedToday: ${isTaskCreatedToday},
+            isTaskCreatedToday (UTC): ${isTaskCreatedToday},
             isTaskActive: ${isTaskActive},
             isTaskCompleted: ${isTaskCompleted},
             isRecurringTemplate: ${isRecurringTemplate},
