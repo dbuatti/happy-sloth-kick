@@ -130,7 +130,9 @@ export const useTasks = () => {
       if (fetchError) throw fetchError;
       console.log('fetchTasks: All tasks fetched:', allTasks);
 
-      const dailyRecurringTemplates = allTasks.filter(
+      let currentTasks = allTasks || []; // Start with all tasks fetched initially
+
+      const dailyRecurringTemplates = currentTasks.filter(
         task => task.recurring_type === 'daily' && task.original_task_id === null
       );
       console.log('fetchTasks: Daily recurring templates found:', dailyRecurringTemplates);
@@ -181,19 +183,15 @@ export const useTasks = () => {
         if (insertError) throw insertError;
         console.log('fetchTasks: Inserted data:', insertedData);
         
-        // After potential insertion, fetch the definitive list of tasks
-        const { data: finalTasks, error: finalFetchError } = await supabase
-          .from('tasks')
-          .select('*')
-          .eq('user_id', userId);
-
-        if (finalFetchError) throw finalFetchError;
-        setTasks(finalTasks || []);
-        console.log('fetchTasks: Final tasks set after processing recurring logic.');
+        // Combine existing tasks with newly inserted ones directly
+        currentTasks = [...currentTasks, ...(insertedData as Task[])];
+        console.log('fetchTasks: Tasks state updated with new instances directly.');
       } else {
-        setTasks(allTasks || []);
-        console.log('fetchTasks: No new instances to insert, setting tasks from initial fetch.');
+        console.log('fetchTasks: No new instances to insert.');
       }
+      
+      setTasks(currentTasks); // Set the final combined list of tasks
+      console.log('fetchTasks: Final tasks set after processing recurring logic.');
       
     } catch (error: any) {
       console.error('Error in fetchDataAndSections:', error);
