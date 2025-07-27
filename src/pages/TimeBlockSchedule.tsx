@@ -96,11 +96,9 @@ const TimeBlockSchedule: React.FC = () => {
                   {timeBlocks.map((block, index) => (
                     <div key={index} className="relative flex items-center justify-center h-24 bg-card dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
                       <span className="absolute inset-0 flex items-center justify-center text-5xl font-extrabold text-foreground opacity-10 pointer-events-none select-none">
-                        {format(block.start, 'h:mm')} {/* Changed to h:mm for full time */}
+                        {format(block.start, 'h:mm')}
                       </span>
-                      <span className="relative z-10 text-sm font-medium text-muted-foreground">
-                        {format(block.start, 'h:mm a')} - {format(block.end, 'h:mm a')} {/* Foreground: full time range */}
-                      </span>
+                      {/* Removed the overlaying span for the full time range */}
                     </div>
                   ))}
                 </div>
