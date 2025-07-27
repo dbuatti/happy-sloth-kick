@@ -112,7 +112,7 @@ export const useTasks = () => {
     }
   }, [userId]);
 
-  const fetchTasks = useCallback(async () => {
+  const fetchTasks = useCallback(async (dateToFetch: Date) => { // Added dateToFetch parameter
     if (!userId) {
       setLoading(false);
       return;
@@ -128,7 +128,7 @@ export const useTasks = () => {
       if (fetchError) throw fetchError;
 
       let allUserTasks: Task[] = fetchedTasks || [];
-      console.log('useTasks LOG 1: Fetched all user tasks:', allUserTasks);
+      const fetchedTasksForCheck = [...allUserTasks]; // Create a copy for the check
 
       const dailyRecurringTemplates = allUserTasks.filter(
         task => task.recurring_type === 'daily' && task.original_task_id === null
@@ -136,16 +136,14 @@ export const useTasks = () => {
       console.log('useTasks LOG 2: Daily recurring templates found:', dailyRecurringTemplates);
 
       const newRecurringInstances: Task[] = [];
-      // Format currentDate to YYYY-MM-DD string for consistent comparison
-      const currentDayFormatted = format(currentDate, 'yyyy-MM-dd'); 
+      const currentDayFormatted = format(dateToFetch, 'yyyy-MM-dd'); 
 
       for (const template of dailyRecurringTemplates) {
         // Check if *any* instance (regardless of status) exists for the current date
         // An instance is identified by its original_task_id pointing to the template's ID
-        // Compare the date part of created_at with the currentDayFormatted string
-        const instanceExistsForToday = allUserTasks.some(task =>
-          task.original_task_id === template.id && // Only check instances, not the template itself
-          format(parseISO(task.created_at), 'yyyy-MM-dd') === currentDayFormatted
+        const instanceExistsForToday = fetchedTasksForCheck.some(task =>
+          task.original_task_id === template.id && 
+          isSameDay(parseISO(task.created_at), dateToFetch)
         );
         console.log(`useTasks LOG 3: Template "${template.description}" (ID: ${template.id}): Instance exists for today (${currentDayFormatted})? ${instanceExistsForToday}`);
 
@@ -154,8 +152,7 @@ export const useTasks = () => {
           const newInstance: Task = {
             ...template,
             id: uuidv4(),
-            // Set created_at to UTC midnight of the current day for consistency
-            created_at: fnsStartOfDay(currentDate).toISOString(), 
+            created_at: fnsStartOfDay(dateToFetch).toISOString(), // Use dateToFetch
             status: 'to-do', // New instances are always 'to-do'
             recurring_type: 'none', // Instances are not recurring themselves
             original_task_id: template.id, // Link back to the template
@@ -192,12 +189,12 @@ export const useTasks = () => {
     } finally {
       setLoading(false);
     }
-  }, [userId, currentDate]);
+  }, [userId]); // Dependency only on userId now
 
   useEffect(() => {
     fetchSections();
-    fetchTasks();
-  }, [fetchSections, fetchTasks]);
+    fetchTasks(currentDate); // Pass currentDate explicitly
+  }, [fetchSections, fetchTasks, currentDate]); // currentDate is now a dependency for useEffect
 
   useEffect(() => {
     if (!userId) return;
@@ -483,16 +480,15 @@ export const useTasks = () => {
     }
 
     // 2. Filter tasks to show only those relevant to the currentDate
-    // This ensures the daily view is strictly for tasks generated/relevant for that day.
     workingTasks = workingTasks.filter(task => {
       // Exclude recurring templates from the daily view
       if (task.recurring_type !== 'none' && task.original_task_id === null) {
-        return false;
+        return false; // Templates should never be displayed directly
       }
       
-      // Only show tasks whose 'created_at' date matches the 'currentDate'
-      // Compare date strings to avoid timezone issues with isSameDay
-      return format(parseISO(task.created_at), 'yyyy-MM-dd') === format(currentDate, 'yyyy-MM-dd');
+      // For all other tasks (non-recurring or recurring instances),
+      // only show if their 'created_at' date matches the 'currentDate'.
+      return isSameDay(parseISO(task.created_at), currentDate);
     });
 
     // 3. Filter out subtasks (they are displayed within parent tasks)
