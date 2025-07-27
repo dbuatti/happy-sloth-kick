@@ -99,7 +99,11 @@ export const useTasks = () => {
 
 
   const fetchSections = useCallback(async () => {
-    if (!userId) return;
+    if (!userId) {
+      console.log('useTasks: fetchSections - No user ID, skipping fetch.');
+      return;
+    }
+    console.log('useTasks: fetchSections - Fetching sections for user:', userId);
     const { data, error } = await supabase
       .from('task_sections')
       .select('*')
@@ -108,19 +112,22 @@ export const useTasks = () => {
       .order('name', { ascending: true });
 
     if (error) {
-      console.error('Error fetching sections:', error);
+      console.error('useTasks: Error fetching sections:', error);
       showError('Failed to load sections.');
     } else {
       setSections(data || []);
+      console.log('useTasks: Fetched sections:', data);
     }
   }, [userId]);
 
   const fetchTasks = useCallback(async () => {
     if (!userId) {
       setLoading(false);
+      console.log('useTasks: fetchTasks - No user ID, skipping fetch.');
       return;
     }
     setLoading(true);
+    console.log('useTasks: fetchTasks - Fetching tasks for user:', userId);
     
     try {
       const { data: fetchedTasks, error: fetchError } = await supabase
@@ -129,6 +136,7 @@ export const useTasks = () => {
         .eq('user_id', userId);
 
       if (fetchError) throw fetchError;
+      console.log('useTasks: Raw tasks fetched from DB:', fetchedTasks);
 
       let allUserTasks: Task[] = fetchedTasks || [];
 
@@ -167,22 +175,25 @@ export const useTasks = () => {
       }
 
       if (newRecurringInstances.length > 0) {
+        console.log('useTasks: New recurring instances to insert:', newRecurringInstances);
         const { data: insertedData, error: insertError } = await supabase
           .from('tasks')
           .insert(newRecurringInstances)
           .select();
 
         if (insertError) {
-          console.error('Error inserting recurring instance:', insertError);
+          console.error('useTasks: Error inserting recurring instance:', insertError);
           showError('Failed to generate a recurring task instance.');
         } else if (insertedData) {
           allUserTasks.push(...insertedData);
+          console.log('useTasks: Inserted recurring instances:', insertedData);
         }
       }
       
       setTasks(allUserTasks);
+      console.log('useTasks: All user tasks after recurring logic:', allUserTasks);
     } catch (error: any) {
-      console.error('Error fetching or generating tasks:', error);
+      console.error('useTasks: Error fetching or generating tasks:', error);
       showError('An unexpected error occurred while loading tasks.');
     } finally {
       setLoading(false);
@@ -220,6 +231,7 @@ export const useTasks = () => {
   const filteredTasks = useMemo(() => {
     let workingTasks = [...tasks];
     const startOfCurrentDate = fnsStartOfDay(currentDate);
+    console.log('useTasks: filteredTasks - Current status filter:', statusFilter);
 
     if (statusFilter === 'all') {
       // Filter for tasks relevant to the current day view
@@ -363,7 +375,7 @@ export const useTasks = () => {
         return sortDirection === 'asc' ? dateA - dateB : dateB - dateA;
       });
     }
-
+    console.log('useTasks: Final filtered tasks (before returning from useMemo):', workingTasks);
     return workingTasks;
   }, [tasks, currentDate, searchFilter, statusFilter, categoryFilter, priorityFilter, sectionFilter, sortKey, sortDirection]);
 

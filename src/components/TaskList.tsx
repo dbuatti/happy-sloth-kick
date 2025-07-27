@@ -292,6 +292,9 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
   };
 
   const tasksGroupedBySection = useMemo(() => {
+    console.log('TaskList: tasksGroupedBySection - filteredTasks:', filteredTasks);
+    console.log('TaskList: tasksGroupedBySection - sections:', sections);
+
     const grouped: { [key: string]: { parentTasks: Task[]; subtasks: Task[] } } = {};
     const allSectionIds = new Set<string>();
 
@@ -347,7 +350,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
         subtasks: grouped['no-section'].subtasks,
       });
     }
-
+    console.log('TaskList: tasksGroupedBySection - Final sections to render:', sectionsToRender);
     return sectionsToRender;
   }, [filteredTasks, sections, userId]);
 
@@ -428,6 +431,14 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
     setActiveId(null);
   };
 
+  const activeTask = activeId ? tasks.find(t => t.id === activeId) : null;
+  const activeSection = activeId ? sections.find(s => s.id === activeId) : null;
+
+  const handleEditTask = (task: Task) => {
+    setTaskToEdit(task);
+    setIsTaskDetailOpen(true);
+  };
+
   const shortcuts: ShortcutMap = {
     'arrowleft': handlePreviousDay,
     'arrowright': handleNextDay,
@@ -439,14 +450,6 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
     },
   };
   useKeyboardShortcuts(shortcuts);
-
-  const activeTask = activeId ? tasks.find(t => t.id === activeId) : null;
-  const activeSection = activeId ? sections.find(s => s.id === activeId) : null;
-
-  const handleEditTask = (task: Task) => {
-    setTaskToEdit(task);
-    setIsTaskDetailOpen(true);
-  };
 
   if (loading) {
     return (
