@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Edit, Trash2, Sparkles, RefreshCcw, Lightbulb } from 'lucide-react';
+import { Plus, Edit, Trash2, Sparkles, RefreshCcw, Lightbulb, RotateCcw } from 'lucide-react'; // Added RotateCcw icon
 import Sidebar from "@/components/Sidebar";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useProjects, Project } from '@/hooks/useProjects';
@@ -101,6 +101,12 @@ const ProjectBalanceTracker: React.FC = () => {
 
   const handleIncrement = async (projectId: string) => {
     await incrementProjectCount(projectId);
+  };
+
+  const handleResetIndividualProject = async (projectId: string) => {
+    if (window.confirm('Are you sure you want to reset this project\'s counter to 0?')) {
+      await updateProject(projectId, { current_count: 0 });
+    }
   };
 
   const handleResetAll = async () => {
@@ -301,6 +307,15 @@ const ProjectBalanceTracker: React.FC = () => {
                                 aria-label={`Edit ${project.name}`}
                               >
                                 <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                onClick={(e) => { e.stopPropagation(); handleResetIndividualProject(project.id); }}
+                                aria-label={`Reset ${project.name}`}
+                              >
+                                <RotateCcw className="h-4 w-4" />
                               </Button>
                               <Button
                                 variant="ghost"
