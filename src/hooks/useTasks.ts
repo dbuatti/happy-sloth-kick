@@ -139,13 +139,16 @@ export const useTasks = () => {
       const startOfCurrentDate = fnsStartOfDay(currentDate);
 
       for (const template of dailyRecurringTemplates) {
-        const instanceExistsForToday = allUserTasks.some(task =>
+        // Check if an ACTIVE instance (to-do or skipped) exists for the current date
+        const activeInstanceExistsForToday = allUserTasks.some(task =>
           (task.original_task_id === template.id || task.id === template.id) &&
-          isSameDay(parseISO(task.created_at), currentDate)
+          isSameDay(parseISO(task.created_at), currentDate) &&
+          (task.status === 'to-do' || task.status === 'skipped')
         );
-        console.log(`useTasks LOG 3: Template "${template.description}" (ID: ${template.id}): Instance exists for today (${format(currentDate, 'yyyy-MM-dd')})?`, instanceExistsForToday);
+        console.log(`useTasks LOG 3: Template "${template.description}" (ID: ${template.id}): Active instance exists for today (${format(currentDate, 'yyyy-MM-dd')})? ${activeInstanceExistsForToday}`);
 
-        if (!instanceExistsForToday) {
+        if (!activeInstanceExistsForToday) {
+          // If no active instance exists for today, create a new 'to-do' instance
           const newInstance: Task = {
             ...template,
             id: uuidv4(),
@@ -472,91 +475,50 @@ export const useTasks = () => {
   const filteredTasks = useMemo(() => {
     let workingTasks = [...tasks];
 
-    workingTasks = workingTasks.filter(task => task.status !== 'archived');
-
-    if (statusFilter === 'all') {
-      const uniqueTasksMap = new Map<string, Task>();
-
-      workingTasks.forEach(task => {
-        const key = task.original_task_id || task.id;
-        const existingTask = uniqueTasksMap.get(key);
-
-        if (!existingTask) {
-          uniqueTasksMap.set(key, task);
-          return;
-        }
-
-        const existingCreatedAt = parseISO(existingTask.created_at);
-        const currentCreatedAt = parseISO(task.created_at);
-
-        const existingIsCurrentDayInstance = existingTask.original_task_id !== null && isSameDay(existingCreatedAt, currentDate);
-        const currentIsCurrentDayInstance = task.original_task_id !== null && isSameDay(currentCreatedAt, currentDate);
-
-        const existingIsActive = existingTask.status === 'to-do' || existingTask.status === 'skipped';
-        const currentIsActive = task.status === 'to-do' || task.status === 'skipped';
-
-        if (currentIsCurrentDayInstance && !existingIsCurrentDayInstance) {
-          uniqueTasksMap.set(key, task);
-          return;
-        }
-        if (!currentIsCurrentDayInstance && existingIsCurrentDayInstance) {
-          return;
-        }
-
-        if (currentIsActive && !existingIsActive) {
-          uniqueTasksMap.set(key, task);
-          return;
-        }
-        if (!currentIsActive && existingIsActive) {
-          return;
-        }
-
-        if (task.due_date && !existingTask.due_date) {
-          uniqueTasksMap.set(key, task);
-          return;
-        }
-        if (task.due_date && existingTask.due_date) {
-          if (parseISO(task.due_date) < parseISO(existingTask.due_date)) {
-            uniqueTasksMap.set(key, task);
-            return;
-          }
-        }
-
-        if (currentCreatedAt > existingCreatedAt) {
-          uniqueTasksMap.set(key, task);
-          return;
-        }
-      });
-      workingTasks = Array.from(uniqueTasksMap.values());
-
-      workingTasks = workingTasks.filter(task => {
-        if (task.status === 'completed') {
-          return isSameDay(parseISO(task.created_at), currentDate);
-        }
-        return true;
-      });
-
-    } else {
-      workingTasks = workingTasks.filter(task =>
-        task.status === statusFilter &&
-        !(task.recurring_type !== 'none' && task.original_task_id === null)
-      );
+    // 1. Filter out archived tasks (always, unless on the archive page)
+    if (statusFilter !== 'archived') {
+      workingTasks = workingTasks.filter(task => task.status !== 'archived');
     }
 
+    // 2. Filter tasks to show only those relevant to the currentDate
+    // This handles both non-recurring tasks and recurring instances for the current day.
+    workingTasks = workingTasks.filter(task => {
+      // If it's a recurring template (original_task_id is null and recurring_type is not 'none'),
+      // it should NOT be displayed directly in the daily view. Its instances are.
+      if (task.recurring_type !== 'none' && task.original_task_id === null) {
+        return false;
+      }
+      
+      // For all other tasks (non-recurring or recurring instances),
+      // only show if their 'created_at' date matches the 'currentDate'.
+      // This ensures the daily view is strictly for tasks generated/relevant for that day.
+      return isSameDay(parseISO(task.created_at), currentDate);
+    });
+
+    // 3. Filter out subtasks (they are displayed within parent tasks)
     workingTasks = workingTasks.filter(task => task.parent_task_id === null);
 
+    // 4. Apply status filter (if not 'all')
+    if (statusFilter !== 'all') {
+      workingTasks = workingTasks.filter(task => task.status === statusFilter);
+    }
+
+    // 5. Apply search filter
     if (searchFilter) {
       workingTasks = workingTasks.filter(task =>
         task.description.toLowerCase().includes(searchFilter.toLowerCase()) ||
         task.notes?.toLowerCase().includes(searchFilter.toLowerCase())
       );
     }
+    // 6. Apply category filter
     if (categoryFilter && categoryFilter !== 'all') {
       workingTasks = workingTasks.filter(task => task.category === categoryFilter);
     }
+    // 7. Apply priority filter
     if (priorityFilter && priorityFilter !== 'all') {
       workingTasks = workingTasks.filter(task => task.priority === priorityFilter);
     }
+    // 8. Apply section filter
     if (sectionFilter && sectionFilter !== 'all') {
       workingTasks = workingTasks.filter(task => {
         if (sectionFilter === 'no-section') {
@@ -566,11 +528,12 @@ export const useTasks = () => {
       });
     }
 
+    // 9. Apply sorting
     if (sortKey === 'order') {
       workingTasks.sort((a, b) => {
         const orderA = a.order === null ? Infinity : a.order;
         const orderB = b.order === null ? Infinity : b.order;
-        return sortDirection === 'asc' ? orderA - orderB : orderB - a.order;
+        return sortDirection === 'asc' ? orderA - orderB : orderB - orderA;
       });
     } else if (sortKey === 'priority') {
       const priorityOrder: { [key: string]: number } = { 'urgent': 4, 'high': 3, 'medium': 2, 'low': 1, 'none': 0 };
