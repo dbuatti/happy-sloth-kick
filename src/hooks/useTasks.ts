@@ -485,34 +485,33 @@ export const useTasks = () => {
         const isTaskActive = task.status === 'to-do' || task.status === 'skipped';
         const isTaskCompleted = task.status === 'completed';
         const isRecurringTemplate = task.recurring_type !== 'none' && task.original_task_id === null;
+        const isRecurringInstance = task.original_task_id !== null;
 
         // Rule A: Never show recurring templates in the daily view
         if (isRecurringTemplate) {
           return false;
         }
 
-        // Rule B: Never show tasks created for future dates
-        if (isAfter(taskCreatedAt, effectiveCurrentDate)) {
-          return false;
-        }
-
-        // Rule C: If the task is active (to-do/skipped), show it if it was created today OR if it's a carry-over from a past day
-        if (isTaskActive) {
-          return isTaskCreatedToday || isPast(taskCreatedAt); // isPast(taskCreatedAt) implies it's from a previous day
-        }
-
-        // Rule D: If the task is completed, only show it if it was created (and thus completed) on the effectiveCurrentDate
-        // Tasks completed on previous days should NOT show up in the current daily view.
-        if (isTaskCompleted) {
-          return isTaskCreatedToday; // Only show if created/completed on THIS day
-        }
-
-        // Rule E: Archived tasks should never show in the daily view
+        // Rule B: Archived tasks should never show in the daily view
         if (task.status === 'archived') {
           return false;
         }
 
-        return false; // Default to false if no rule matches (shouldn't happen with comprehensive rules)
+        // Rule C: If the task is active (to-do/skipped), show it if it's a recurring instance for today,
+        // or if it's a general task (not a recurring instance) regardless of its created_at date.
+        if (isTaskActive) {
+          if (isRecurringInstance) {
+            return isTaskCreatedToday; // Only show recurring instances if created for today
+          }
+          return true; // Show all other active tasks (admin/priorities, carry-overs)
+        }
+
+        // Rule D: If the task is completed, only show it if it was created (and thus completed) on the effectiveCurrentDate
+        if (isTaskCompleted) {
+          return isTaskCreatedToday;
+        }
+
+        return false; // Default to false if no rule matches
       });
     } else {
       // For 'archived' status filter, only show archived tasks
