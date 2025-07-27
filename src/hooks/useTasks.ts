@@ -59,7 +59,8 @@ export const useTasks = () => {
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentDate, setCurrentDate] = useState(fnsStartOfDay(new Date())); 
+  // ✅ FIX: Ensure currentDate is always the UTC start of the day
+  const [currentDate, setCurrentDate] = useState(() => fnsStartOfDay(new Date()));
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [sortKey, setSortKey] = useState<'priority' | 'due_date' | 'created_at' | 'order'>('order');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
