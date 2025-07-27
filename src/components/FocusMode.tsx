@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { Task, useTasks } from '@/hooks/useTasks';
 import { cn } from '@/lib/utils';
+import { MadeWithDyad } from "@/components/made-with-dyad"; // Ensure MadeWithDyad is imported
 
 const WORK_DURATION = 25 * 60; // 25 minutes in seconds
 const SHORT_BREAK_DURATION = 5 * 60; // 5 minutes in seconds
@@ -69,46 +70,12 @@ const FocusMode: React.FC = () => {
       });
       if (error) throw error;
       console.log('Focus session logged successfully!');
-    } catch (error: any) {
+    }
+    catch (error: any) {
       console.error('Error logging focus session:', error.message);
       showError('Failed to log focus session.');
     }
   }, [userId]);
-
-  const startTimer = useCallback(() => {
-    if (!isRunning) {
-      setIsRunning(true);
-      setSessionStartTime(new Date());
-      timerRef.current = setInterval(() => {
-        setTimeRemaining(prevTime => {
-          if (prevTime <= 1) {
-            clearInterval(timerRef.current!);
-            handleSessionEnd();
-            return 0;
-          }
-          return prevTime - 1;
-        });
-      }, 1000);
-    }
-  }, [isRunning]);
-
-  const pauseTimer = useCallback(() => {
-    setIsRunning(false);
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-  }, []);
-
-  const resetTimer = useCallback(() => {
-    pauseTimer();
-    setTimeRemaining(WORK_DURATION);
-    setSessionType('work');
-    setPomodoroCount(0);
-    setCurrentTaskId(null);
-    setSessionStartTime(null);
-    fetchSuggestedTasks(); // Refresh suggestions on reset
-  }, [pauseTimer, fetchSuggestedTasks]);
 
   const handleSessionEnd = useCallback(() => {
     const endTime = new Date();
@@ -139,6 +106,41 @@ const FocusMode: React.FC = () => {
     setCurrentTaskId(null); // Clear focused task after session
     fetchSuggestedTasks(); // Refresh suggestions for next work session
   }, [sessionType, pomodoroCount, sessionStartTime, currentTaskId, logSession, fetchSuggestedTasks]);
+
+  const startTimer = useCallback(() => {
+    if (!isRunning) {
+      setIsRunning(true);
+      setSessionStartTime(new Date());
+      timerRef.current = setInterval(() => {
+        setTimeRemaining(prevTime => {
+          if (prevTime <= 1) {
+            clearInterval(timerRef.current!);
+            handleSessionEnd();
+            return 0;
+          }
+          return prevTime - 1;
+        });
+      }, 1000);
+    }
+  }, [isRunning, handleSessionEnd]);
+
+  const pauseTimer = useCallback(() => {
+    setIsRunning(false);
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  const resetTimer = useCallback(() => {
+    pauseTimer();
+    setTimeRemaining(WORK_DURATION);
+    setSessionType('work');
+    setPomodoroCount(0);
+    setCurrentTaskId(null);
+    setSessionStartTime(null);
+    fetchSuggestedTasks(); // Refresh suggestions on reset
+  }, [pauseTimer, fetchSuggestedTasks]);
 
   useEffect(() => {
     return () => {
@@ -184,7 +186,7 @@ const FocusMode: React.FC = () => {
   const currentTaskDetails = currentTaskId ? tasks.find(t => t.id === currentTaskId) : null;
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
+    <div className="flex-1 flex flex-col items-center justify-center p-4"> {/* Removed min-h-screen and bg classes */}
       <Card className="w-full max-w-md shadow-lg text-center">
         <CardHeader>
           <CardTitle className="text-3xl font-bold">Focus Mode</CardTitle>
@@ -282,6 +284,9 @@ const FocusMode: React.FC = () => {
           </p>
         </CardContent>
       </Card>
+      <footer className="p-4">
+        <MadeWithDyad />
+      </footer>
     </div>
   );
 };

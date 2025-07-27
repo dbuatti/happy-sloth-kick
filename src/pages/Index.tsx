@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import TaskList from "@/components/TaskList";
-import Sidebar from "@/components/Sidebar";
 import AuthComponent from "@/components/AuthComponent";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -27,18 +26,15 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen }) => {
   }, []);
 
   return (
-    <div className="min-h-screen flex bg-gray-100 dark:bg-gray-900">
+    <div className="flex-1 flex flex-col"> {/* Removed min-h-screen and bg classes */}
       {session ? (
         <>
-          <Sidebar />
-          <div className="flex-1 flex flex-col">
-            <main className="flex-grow flex items-center justify-center p-4">
-              <TaskList setIsAddTaskOpen={setIsAddTaskOpen} />
-            </main>
-            <footer className="p-4">
-              <MadeWithDyad />
-            </footer>
-          </div>
+          <main className="flex-grow flex items-center justify-center p-4">
+            <TaskList setIsAddTaskOpen={setIsAddTaskOpen} />
+          </main>
+          <footer className="p-4">
+            <MadeWithDyad />
+          </footer>
         </>
       ) : (
         <div className="flex-1 flex items-center justify-center p-4">

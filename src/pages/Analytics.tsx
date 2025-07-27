@@ -7,9 +7,9 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { CalendarIcon, TrendingUp, Target, Clock, CheckCircle2, ListTodo } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import Sidebar from "@/components/Sidebar";
 import { supabase } from "@/integrations/supabase/client";
 import { DateRange } from 'react-day-picker';
+import { MadeWithDyad } from "@/components/made-with-dyad"; // Ensure MadeWithDyad is imported
 
 // Define the task type
 interface Task {
@@ -157,196 +157,193 @@ const Analytics = () => {
     : null;
 
   return (
-    <div className="min-h-screen flex bg-gray-100 dark:bg-gray-900">
-      <Sidebar />
-      <div className="flex-1 flex flex-col">
-        <main className="flex-grow p-4">
-          <Card className="w-full shadow-lg">
-            <CardHeader>
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
-                <CardTitle className="text-3xl font-bold">Task Analytics</CardTitle>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        id="date"
-                        variant={"outline"}
-                        className={cn(
-                          "w-[300px] justify-start text-left font-normal",
-                          !dateRange?.from && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {dateRange?.from ? (
-                          dateRange.to ? (
-                            <>
-                              {format(dateRange.from, "LLL dd, y")} -{" "}
-                              {format(dateRange.to, "LLL dd, y")}
-                            </>
-                          ) : (
-                            format(dateRange.from, "LLL dd, y")
-                          )
+    <div className="flex-1 flex flex-col"> {/* Removed min-h-screen and bg classes */}
+      <main className="flex-grow p-4">
+        <Card className="w-full shadow-lg">
+          <CardHeader>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
+              <CardTitle className="text-3xl font-bold">Task Analytics</CardTitle>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id="date"
+                      variant={"outline"}
+                      className={cn(
+                        "w-[300px] justify-start text-left font-normal",
+                        !dateRange?.from && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dateRange?.from ? (
+                        dateRange.to ? (
+                          <>
+                            {format(dateRange.from, "LLL dd, y")} -{" "}
+                            {format(dateRange.to, "LLL dd, y")}
+                          </>
                         ) : (
-                          <span>Pick a date range</span>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="end">
-                      <Calendar
-                        initialFocus
-                        mode="range"
-                        defaultMonth={dateRange?.from}
-                        selected={dateRange}
-                        onSelect={setDateRange}
-                        numberOfMonths={2}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
+                          format(dateRange.from, "LLL dd, y")
+                        )
+                      ) : (
+                        <span>Pick a date range</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="end">
+                    <Calendar
+                      initialFocus
+                      mode="range"
+                      defaultMonth={dateRange?.from}
+                      selected={dateRange}
+                      onSelect={setDateRange}
+                      numberOfMonths={2}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="flex justify-center items-center h-64">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+              </div>
+            ) : (
+              <div className="space-y-8">
+                <div className="grid gap-6 md:grid-cols-4">
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Total Tasks Completed</CardTitle>
+                      <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{totalTasksCompleted}</div>
+                      <p className="text-xs text-muted-foreground">Out of {totalTasksCreated} created</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Average Completion Rate</CardTitle>
+                      <Target className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{averageCompletionRate}%</div>
+                      <p className="text-xs text-muted-foreground">Overall completion rate</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Most Productive Day</CardTitle>
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{mostProductiveDay ? mostProductiveDay.date : 'N/A'}</div>
+                      <p className="text-xs text-muted-foreground">
+                        {mostProductiveDay ? `${mostProductiveDay.tasksCompleted} tasks completed` : 'No data'}
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Total Tasks Created</CardTitle>
+                      <ListTodo className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{totalTasksCreated}</div>
+                      <p className="text-xs text-muted-foreground">Across selected period</p>
+                    </CardContent>
+                  </Card>
                 </div>
-              ) : (
+
                 <div className="space-y-8">
-                  <div className="grid gap-6 md:grid-cols-4">
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Tasks Completed</CardTitle>
-                        <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">{totalTasksCompleted}</div>
-                        <p className="text-xs text-muted-foreground">Out of {totalTasksCreated} created</p>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Average Completion Rate</CardTitle>
-                        <Target className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">{averageCompletionRate}%</div>
-                        <p className="text-xs text-muted-foreground">Overall completion rate</p>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Most Productive Day</CardTitle>
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">{mostProductiveDay ? mostProductiveDay.date : 'N/A'}</div>
-                        <p className="text-xs text-muted-foreground">
-                          {mostProductiveDay ? `${mostProductiveDay.tasksCompleted} tasks completed` : 'No data'}
-                        </p>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Tasks Created</CardTitle>
-                        <ListTodo className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">{totalTasksCreated}</div>
-                        <p className="text-xs text-muted-foreground">Across selected period</p>
-                      </CardContent>
-                    </Card>
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4">Tasks Completed Per Day</h3>
+                    <div className="h-80">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={chartData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="date" />
+                          <YAxis />
+                          <Tooltip />
+                          <Bar dataKey="tasksCompleted" fill="hsl(var(--primary))" name="Completed" />
+                          <Bar dataKey="totalTasks" fill="hsl(var(--muted))" name="Total" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
                   </div>
 
-                  <div className="space-y-8">
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4">Daily Completion Rate</h3>
+                    <div className="h-80">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={chartData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="date" />
+                          <YAxis domain={[0, 100]} />
+                          <Tooltip />
+                          <Line type="monotone" dataKey="completionRate" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-8">
                     <div>
-                      <h3 className="text-lg font-semibold mb-4">Tasks Completed Per Day</h3>
+                      <h3 className="text-lg font-semibold mb-4">Tasks by Category</h3>
                       <div className="h-80">
                         <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={chartData}>
+                          <PieChart>
+                            <Pie
+                              data={categoryData}
+                              cx="50%"
+                              cy="50%"
+                              labelLine={false}
+                              outerRadius={80}
+                              fill="#8884d8"
+                              dataKey="value"
+                              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                            >
+                              {categoryData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+                              ))}
+                            </Pie>
+                            <Tooltip />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-lg font-semibold mb-4">Tasks by Priority</h3>
+                      <div className="h-80">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={Object.entries(priorityData).map(([priority, data]: [string, any]) => ({
+                            priority,
+                            total: data.total,
+                            completed: data.completed
+                          }))}>
                             <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="date" />
+                            <XAxis dataKey="priority" />
                             <YAxis />
                             <Tooltip />
-                            <Bar dataKey="tasksCompleted" fill="hsl(var(--primary))" name="Completed" />
-                            <Bar dataKey="totalTasks" fill="hsl(var(--muted))" name="Total" />
+                            <Bar dataKey="completed" fill="hsl(var(--primary))" name="Completed" />
+                            <Bar dataKey="total" fill="hsl(var(--muted))" name="Total" />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
                     </div>
-
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4">Daily Completion Rate</h3>
-                      <div className="h-80">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={chartData}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="date" />
-                            <YAxis domain={[0, 100]} />
-                            <Tooltip />
-                            <Line type="monotone" dataKey="completionRate" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-8">
-                      <div>
-                        <h3 className="text-lg font-semibold mb-4">Tasks by Category</h3>
-                        <div className="h-80">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                              <Pie
-                                data={categoryData}
-                                cx="50%"
-                                cy="50%"
-                                labelLine={false}
-                                outerRadius={80}
-                                fill="#8884d8"
-                                dataKey="value"
-                                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                              >
-                                {categoryData.map((entry, index) => (
-                                  <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
-                                ))}
-                              </Pie>
-                              <Tooltip />
-                            </PieChart>
-                          </ResponsiveContainer>
-                        </div>
-                      </div>
-
-                      <div>
-                        <h3 className="text-lg font-semibold mb-4">Tasks by Priority</h3>
-                        <div className="h-80">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={Object.entries(priorityData).map(([priority, data]: [string, any]) => ({
-                              priority,
-                              total: data.total,
-                              completed: data.completed
-                            }))}>
-                              <CartesianGrid strokeDasharray="3 3" />
-                              <XAxis dataKey="priority" />
-                              <YAxis />
-                              <Tooltip />
-                              <Bar dataKey="completed" fill="hsl(var(--primary))" name="Completed" />
-                              <Bar dataKey="total" fill="hsl(var(--muted))" name="Total" />
-                            </BarChart>
-                          </ResponsiveContainer>
-                        </div>
-                      </div>
-                    </div>
                   </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </main>
-        <footer className="p-4">
-          <div className="text-center text-sm text-gray-500 dark:text-gray-400">
-            &copy; {new Date().getFullYear()} TaskMaster. Made with Dyad.
-          </div>
-        </footer>
-      </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </main>
+      <footer className="p-4">
+        <div className="text-center text-sm text-gray-500 dark:text-gray-400">
+          &copy; {new Date().getFullYear()} TaskMaster. Made with Dyad.
+        </div>
+      </footer>
     </div>
   );
 };

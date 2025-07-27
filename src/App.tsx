@@ -10,10 +10,11 @@ import Help from "./pages/Help";
 import Archive from "./pages/Archive";
 import FocusMode from "./components/FocusMode";
 import ProjectBalanceTracker from "./pages/ProjectBalanceTracker";
-import TimeBlockSchedule from "./pages/TimeBlockSchedule"; // Import the new page
+import TimeBlockSchedule from "./pages/TimeBlockSchedule";
 import { AuthProvider } from "@/context/AuthContext";
 import CommandPalette from "./components/CommandPalette";
 import { useState } from 'react';
+import Sidebar from "./components/Sidebar"; // Import the new Sidebar layout component
 
 const queryClient = new QueryClient();
 
@@ -26,18 +27,20 @@ const App = () => {
         <Sonner position="top-right" />
         <AuthProvider>
           <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index setIsAddTaskOpen={setIsAddTaskOpen} />} />
-              <Route path="/analytics" element={<Analytics />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/help" element={<Help />} />
-              <Route path="/archive" element={<Archive />} />
-              <Route path="/focus" element={<FocusMode />} />
-              <Route path="/projects" element={<ProjectBalanceTracker />} />
-              <Route path="/schedule" element={<TimeBlockSchedule />} /> {/* New Time Block Schedule Route */}
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <Sidebar> {/* Wrap all routes with the Sidebar layout */}
+              <Routes>
+                <Route path="/" element={<Index setIsAddTaskOpen={setIsAddTaskOpen} />} />
+                <Route path="/analytics" element={<Analytics />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/help" element={<Help />} />
+                <Route path="/archive" element={<Archive />} />
+                <Route path="/focus" element={<FocusMode />} />
+                <Route path="/projects" element={<ProjectBalanceTracker />} />
+                <Route path="/schedule" element={<TimeBlockSchedule />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Sidebar>
             <CommandPalette isAddTaskOpen={isAddTaskOpen} setIsAddTaskOpen={setIsAddTaskOpen} />
           </BrowserRouter>
         </AuthProvider>

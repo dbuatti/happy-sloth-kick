@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import Sidebar from "@/components/Sidebar";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useWorkHours } from '@/hooks/useWorkHours';
 import { format, addMinutes, parse, isBefore, isSameHour, isSameMinute, setHours, setMinutes, getMinutes, getHours, isSameDay } from 'date-fns';
@@ -224,136 +223,120 @@ const TimeBlockSchedule: React.FC = () => {
   const totalLoading = workHoursLoading || appointmentsLoading;
 
   return (
-    <div className="min-h-screen flex bg-gray-100 dark:bg-gray-900">
-      <Sidebar />
-      <div className="flex-1 flex flex-col">
-        <main className="flex-grow p-4">
-          <Card className="w-full max-w-4xl mx-auto shadow-lg">
-            <CardHeader>
-              <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
-                <CalendarDays className="h-7 w-7" /> Dynamic Schedule
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <DateNavigator
-                currentDate={currentDate}
-                onPreviousDay={handlePreviousDay}
-                onNextDay={handleNextDay}
-              />
+    <div className="flex-1 flex flex-col"> {/* Removed min-h-screen and bg classes */}
+      <main className="flex-grow p-4">
+        <Card className="w-full max-w-4xl mx-auto shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
+              <CalendarDays className="h-7 w-7" /> Dynamic Schedule
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <DateNavigator
+              currentDate={currentDate}
+              onPreviousDay={handlePreviousDay}
+              onNextDay={handleNextDay}
+            />
 
-              {totalLoading ? (
-                <div className="flex justify-center items-center h-64">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            {totalLoading ? (
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+              </div>
+            ) : !workHours || !workHours.enabled ? (
+              <div className="text-center text-gray-500 p-8">
+                <p className="text-lg mb-2">No work hours set or enabled for this day.</p>
+                <p>Please go to <a href="/settings" className="text-blue-500 hover:underline">Settings</a> to define your work hours.</p>
+              </div>
+            ) : timeBlocks.length === 0 ? (
+              <div className="text-center text-gray-500 p-8">
+                <p className="text-lg mb-2">No time blocks generated.</p>
+                <p>Please check your work hour settings for this day.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-[60px_1fr] gap-x-2"> {/* Main grid for time labels and schedule */}
+                {/* Left column for time labels */}
+                <div className="grid" style={{
+                  gridTemplateRows: `repeat(${timeBlocks.length}, 48px)`, // Each 30 min block is 48px
+                  height: `${timeBlocks.length * 48 + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * 4 : 0)}px`, // Account for gaps
+                }}>
+                  {timeBlocks.map((block, index) => (
+                    // Only show label for every hour
+                    getMinutes(block.start) === 0 && (
+                      <div
+                        key={`label-${format(block.start, 'HH:mm')}`}
+                        className="flex items-start justify-end pr-2 text-xs text-muted-foreground"
+                        style={{ gridRow: `${index + 1} / span 2` }} // Span 2 30-min blocks (1 hour)
+                      >
+                        <span>{format(block.start, 'h a')}</span>
+                      </div>
+                    )
+                  ))}
                 </div>
-              ) : !workHours || !workHours.enabled ? (
-                <div className="text-center text-gray-500 p-8">
-                  <p className="text-lg mb-2">No work hours set or enabled for this day.</p>
-                  <p>Please go to <a href="/settings" className="text-blue-500 hover:underline">Settings</a> to define your work hours.</p>
-                </div>
-              ) : timeBlocks.length === 0 ? (
-                <div className="text-center text-gray-500 p-8">
-                  <p className="text-lg mb-2">No time blocks generated.</p>
-                  <p>Please check your work hour settings for this day.</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-[60px_1fr] gap-x-2"> {/* Main grid for time labels and schedule */}
-                  {/* Left column for time labels */}
-                  <div className="grid" style={{
+
+                {/* Right column for time blocks and appointments */}
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragStart={handleDragStart}
+                  onDragEnd={handleDragEnd}
+                >
+                  <div className="relative grid gap-1" style={{
                     gridTemplateRows: `repeat(${timeBlocks.length}, 48px)`, // Each 30 min block is 48px
                     height: `${timeBlocks.length * 48 + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * 4 : 0)}px`, // Account for gaps
                   }}>
                     {timeBlocks.map((block, index) => (
-                      // Only show label for every hour
-                      getMinutes(block.start) === 0 && (
-                        <div
-                          key={`label-${format(block.start, 'HH:mm')}`}
-                          className="flex items-start justify-end pr-2 text-xs text-muted-foreground"
-                          style={{ gridRow: `${index + 1} / span 2` }} // Span 2 30-min blocks (1 hour)
-                        >
-                          <span>{format(block.start, 'h a')}</span>
-                        </div>
-                      )
-                    ))}
-                  </div>
-
-                  {/* Right column for time blocks and appointments */}
-                  <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
-                  >
-                    <div className="relative grid gap-1" style={{
-                      gridTemplateRows: `repeat(${timeBlocks.length}, 48px)`, // Each 30 min block is 48px
-                      height: `${timeBlocks.length * 48 + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * 4 : 0)}px`, // Account for gaps
-                    }}>
-                      {timeBlocks.map((block, index) => (
-                        <div
-                          key={format(block.start, 'HH:mm')}
-                          id={`time-block-${format(block.start, 'HH:mm')}`} // ID for drag target
-                          className="relative flex items-center justify-center h-12 bg-card dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-dashed border-border/50 hover:border-primary/50 transition-colors duration-150 cursor-pointer"
-                          style={{ gridRow: `${index + 1}` }} // Each block is now a single row
-                          onClick={() => handleTimeBlockClick(block.start, block.end)}
-                        >
-                          <span className="absolute inset-0 flex items-center justify-center text-5xl font-extrabold text-foreground opacity-10 pointer-events-none select-none">
-                            {format(block.start, 'h:mm')}
-                          </span>
-                        </div>
-                      ))}
-
-                      <SortableContext
-                        items={appointments.map(app => app.id)}
-                        strategy={verticalListSortingStrategy}
+                      <div
+                        key={format(block.start, 'HH:mm')}
+                        id={`time-block-${format(block.start, 'HH:mm')}`} // ID for drag target
+                        className="relative flex items-center justify-center h-12 bg-card dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-dashed border-border/50 hover:border-primary/50 transition-colors duration-150 cursor-pointer"
+                        style={{ gridRow: `${index + 1}` }} // Each block is now a single row
+                        onClick={() => handleTimeBlockClick(block.start, block.end)}
                       >
-                        {appointmentsWithPositions.map((app) => (
-                          <AppointmentCard
-                            key={app.id}
-                            appointment={app}
-                            onEdit={handleEditAppointment}
-                            onDelete={handleDeleteAppointment}
-                            gridRowStart={app.gridRowStart} // Pass original 30-min block indices
-                            gridRowEnd={app.gridRowEnd}     // Pass original 30-min block indices
-                            overlapOffset={app.overlapOffset}
-                          />
-                        ))}
-                      </SortableContext>
+                        <span className="absolute inset-0 flex items-center justify-center text-5xl font-extrabold text-foreground opacity-10 pointer-events-none select-none">
+                          {format(block.start, 'h:mm')}
+                        </span>
+                      </div>
+                    ))}
 
-                      <DragOverlay>
-                        {activeAppointment ? (
-                          <AppointmentCard
-                            appointment={activeAppointment}
-                            onEdit={handleEditAppointment}
-                            onDelete={handleDeleteAppointment}
-                            gridRowStart={1} // Dummy values for overlay
-                            gridRowEnd={2}   // Dummy values for overlay
-                            overlapOffset={0}
-                          />
-                        ) : null}
-                      </DragOverlay>
-                    </div>
-                  </DndContext>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </main>
-        <footer className="p-4">
-          <MadeWithDyad />
-        </footer>
-      </div>
+                    <SortableContext
+                      items={appointments.map(app => app.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {appointmentsWithPositions.map((app) => (
+                        <AppointmentCard
+                          key={app.id}
+                          appointment={app}
+                          onEdit={handleEditAppointment}
+                          onDelete={handleDeleteAppointment}
+                          gridRowStart={app.gridRowStart} // Pass original 30-min block indices
+                          gridRowEnd={app.gridRowEnd}     // Pass original 30-min block indices
+                          overlapOffset={app.overlapOffset}
+                        />
+                      ))}
+                    </SortableContext>
 
-      <AppointmentForm
-        isOpen={isAppointmentFormOpen}
-        onClose={() => {
-          setIsAppointmentFormOpen(false);
-          setEditingAppointment(null);
-          setSelectedTimeSlotForNew(null);
-        }}
-        onSave={handleSaveAppointment}
-        initialData={editingAppointment}
-        selectedDate={currentDate}
-        selectedTimeSlot={selectedTimeSlotForNew}
-      />
+                    <DragOverlay>
+                      {activeAppointment ? (
+                        <AppointmentCard
+                          appointment={activeAppointment}
+                          onEdit={handleEditAppointment}
+                          onDelete={handleDeleteAppointment}
+                          gridRowStart={1} // Dummy values for overlay
+                          gridRowEnd={2}   // Dummy values for overlay
+                          overlapOffset={0}
+                        />
+                      ) : null}
+                    </DragOverlay>
+                  </div>
+                </DndContext>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </main>
+      <footer className="p-4">
+        <MadeWithDyad />
+      </footer>
     </div>
   );
 };

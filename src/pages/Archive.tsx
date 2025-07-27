@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import Sidebar from "@/components/Sidebar";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useTasks } from '@/hooks/useTasks';
 import SortableTaskItem from '@/components/SortableTaskItem';
 import { Archive as ArchiveIcon } from 'lucide-react';
-import { Task } from '@/hooks/useTasks'; // Import Task interface from useTasks
-import TaskDetailDialog from '@/components/TaskDetailDialog'; // Import TaskDetailDialog
+import { Task } from '@/hooks/useTasks';
+import TaskDetailDialog from '@/components/TaskDetailDialog';
 
 const Archive = () => {
   const {
@@ -47,64 +46,16 @@ const Archive = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex bg-gray-100 dark:bg-gray-900">
-        <Sidebar />
-        <div className="flex-1 flex flex-col">
-          <main className="flex-grow p-4 flex items-center justify-center">
-            <Card className="w-full max-w-4xl mx-auto shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-3xl font-bold text-center">Archived Tasks</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex justify-center items-center h-64">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-                </div>
-              </CardContent>
-            </Card>
-          </main>
-          <footer className="p-4">
-            <MadeWithDyad />
-          </footer>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen flex bg-gray-100 dark:bg-gray-900">
-      <Sidebar />
-      <div className="flex-1 flex flex-col">
-        <main className="flex-grow p-4">
+      <div className="flex-1 flex flex-col"> {/* Removed min-h-screen and bg classes */}
+        <main className="flex-grow p-4 flex items-center justify-center">
           <Card className="w-full max-w-4xl mx-auto shadow-lg">
             <CardHeader>
-              <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
-                <ArchiveIcon className="h-7 w-7" /> Archived Tasks
-              </CardTitle>
+              <CardTitle className="text-3xl font-bold text-center">Archived Tasks</CardTitle>
             </CardHeader>
             <CardContent>
-              {archivedTasks.length === 0 ? (
-                <div className="text-center text-gray-500 p-8">
-                  <p className="text-lg mb-2">No archived tasks found.</p>
-                  <p>Completed tasks will appear here once you archive them.</p>
-                </div>
-              ) : (
-                <ul className="space-y-3">
-                  {archivedTasks.map((task) => (
-                    <SortableTaskItem
-                      key={task.id}
-                      task={task}
-                      userId={userId}
-                      onStatusChange={handleTaskStatusChange}
-                      onDelete={deleteTask}
-                      onUpdate={updateTask}
-                      isSelected={false}
-                      onToggleSelect={() => {}}
-                      sections={sections}
-                      onEditTask={handleEditTask} // Pass the new prop
-                    />
-                  ))}
-                </ul>
-              )}
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+              </div>
             </CardContent>
           </Card>
         </main>
@@ -112,6 +63,48 @@ const Archive = () => {
           <MadeWithDyad />
         </footer>
       </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 flex flex-col"> {/* Removed min-h-screen and bg classes */}
+      <main className="flex-grow p-4">
+        <Card className="w-full max-w-4xl mx-auto shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
+              <ArchiveIcon className="h-7 w-7" /> Archived Tasks
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {archivedTasks.length === 0 ? (
+              <div className="text-center text-gray-500 p-8">
+                <p className="text-lg mb-2">No archived tasks found.</p>
+                <p>Completed tasks will appear here once you archive them.</p>
+              </div>
+            ) : (
+              <ul className="space-y-3">
+                {archivedTasks.map((task) => (
+                  <SortableTaskItem
+                    key={task.id}
+                    task={task}
+                    userId={userId}
+                    onStatusChange={handleTaskStatusChange}
+                    onDelete={deleteTask}
+                    onUpdate={updateTask}
+                    isSelected={false}
+                    onToggleSelect={() => {}}
+                    sections={sections}
+                    onEditTask={handleEditTask}
+                  />
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      </main>
+      <footer className="p-4">
+        <MadeWithDyad />
+      </footer>
       {taskToEdit && (
         <TaskDetailDialog
           task={taskToEdit}
