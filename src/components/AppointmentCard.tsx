@@ -12,10 +12,9 @@ interface AppointmentCardProps {
   appointment: Appointment;
   onEdit: (appointment: Appointment) => void;
   onDelete: (id: string) => void;
-  // These props will be passed from the parent to calculate position
-  gridRowStart: number;
-  gridRowEnd: number;
-  overlapOffset: number; // For visual stacking of overlapping appointments
+  gridRowStart: number; // These are now the 30-min block indices (e.g., 3 for 11:00)
+  gridRowEnd: number;   // These are now the 30-min block indices (e.g., 6 for 12:30 line)
+  overlapOffset: number;
 }
 
 const AppointmentCard: React.FC<AppointmentCardProps> = ({
@@ -35,16 +34,26 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
     isDragging,
   } = useSortable({ id: appointment.id, data: { type: 'appointment', appointment } });
 
+  const rowHeight = 48; // Height of a 30-minute block in px (from h-12)
+  const gapHeight = 4;  // Gap between blocks in px (from gap-1)
+
+  // Calculate top position: (start_block_index - 1) * (row_height + gap_height)
+  const calculatedTop = (gridRowStart - 1) * (rowHeight + gapHeight);
+  
+  // Calculate height: (number_of_blocks_spanned) * row_height + (number_of_gaps_within_span) * gap_height
+  const numberOfBlocksSpanned = gridRowEnd - gridRowStart;
+  const calculatedHeight = numberOfBlocksSpanned * rowHeight + (numberOfBlocksSpanned > 0 ? (numberOfBlocksSpanned - 1) * gapHeight : 0);
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 100 : 'auto',
     opacity: isDragging ? 0.8 : 1,
-    gridRowStart: gridRowStart,
-    gridRowEnd: gridRowEnd,
+    top: `${calculatedTop}px`,
+    height: `${calculatedHeight}px`,
     backgroundColor: appointment.color,
-    left: `${overlapOffset * 10}px`, // Apply offset for visual stacking
-    width: `calc(100% - ${overlapOffset * 10}px)`, // Adjust width
+    left: `${overlapOffset * 10}px`,
+    width: `calc(100% - ${overlapOffset * 10}px)`,
   };
 
   const startTime = parseISO(`2000-01-01T${appointment.start_time}`);
@@ -55,7 +64,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "absolute top-0 left-0 right-0 rounded-lg p-2 text-white shadow-md cursor-grab active:cursor-grabbing",
+        "absolute rounded-lg p-2 text-white shadow-md cursor-grab active:cursor-grabbing",
         "flex flex-col justify-between transition-all duration-200 ease-in-out",
         "group", // For hover effects
         isDragging ? "ring-2 ring-primary" : ""
@@ -84,7 +93,6 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
 
       <div
         className="absolute top-1 right-1 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
-        // No need for data-dnd-kit-disabled-draggable="true" here anymore as activationConstraint handles it
       >
         <Button
           variant="ghost"
