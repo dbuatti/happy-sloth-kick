@@ -23,6 +23,7 @@ interface AddTaskFormProps {
     notes: string | null;
     remind_at: string | null;
     section_id: string | null; // New: for task sections
+    recurring_type: 'none' | 'daily' | 'weekly' | 'monthly'; // New: for recurring tasks
   }) => Promise<any>;
   userId: string | null;
   onTaskAdded?: () => void; // New prop to close dialog/sheet
@@ -150,6 +151,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
   const [newTaskRemindAt, setNewTaskRemindAt] = useState<Date | undefined>(undefined);
   const [newReminderTime, setNewReminderTime] = useState<string>('');
   const [newTaskSectionId, setNewTaskSectionId] = useState<string | null>(null); // New state for section_id
+  const [newTaskRecurringType, setNewTaskRecurringType] = useState<'none' | 'daily' | 'weekly' | 'monthly'>('none'); // New state for recurring type
   const [isAdding, setIsAdding] = useState(false);
 
   // AI-powered suggestions based on description
@@ -204,6 +206,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
       notes: newTaskNotes || null,
       remind_at: finalRemindAt ? finalRemindAt.toISOString() : null,
       section_id: newTaskSectionId, // Save section_id
+      recurring_type: newTaskRecurringType, // Save recurring_type
     });
     if (success) {
       setNewTaskDescription('');
@@ -214,6 +217,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
       setNewTaskRemindAt(undefined);
       setNewReminderTime('');
       setNewTaskSectionId(null); // Reset section_id
+      setNewTaskRecurringType('none'); // Reset recurring_type
       onTaskAdded?.(); // Call callback to close dialog/sheet
     }
     setIsAdding(false);
@@ -279,7 +283,20 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
             </Popover>
           </div>
           
-          {/* Removed Recurring Type Selector */}
+          <div>
+            <Label>Recurring</Label>
+            <Select value={newTaskRecurringType} onValueChange={(value: 'none' | 'daily' | 'weekly' | 'monthly') => setNewTaskRecurringType(value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select recurrence" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                <SelectItem value="daily">Daily</SelectItem>
+                <SelectItem value="weekly">Weekly</SelectItem>
+                <SelectItem value="monthly">Monthly</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <div>
