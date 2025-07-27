@@ -12,6 +12,11 @@ interface IndexProps {
   setIsAddTaskOpen: (open: boolean) => void;
 }
 
+// Helper to get UTC start of day
+const getUTCStartOfDay = (date: Date) => {
+  return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+};
+
 const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen }) => {
   const [session, setSession] = useState<any>(null);
   const { setStatusFilter, currentDate, setCurrentDate } = useTasks();
@@ -25,6 +30,8 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen }) => {
       setSession(session);
     });
 
+    // Set initial currentDate to UTC start of today
+    setCurrentDate(getUTCStartOfDay(new Date())); 
     setStatusFilter('all');
 
     return () => {
@@ -32,18 +39,18 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen }) => {
         subscription.unsubscribe();
       }
     };
-  }, [setStatusFilter]);
+  }, [setStatusFilter, setCurrentDate]); // Added setCurrentDate to dependencies
 
   const handlePreviousDay = () => {
-    setCurrentDate(prevDate => startOfDay(addDays(prevDate, -1)));
+    setCurrentDate(prevDate => getUTCStartOfDay(addDays(prevDate, -1)));
   };
 
   const handleNextDay = () => {
-    setCurrentDate(prevDate => startOfDay(addDays(prevDate, 1)));
+    setCurrentDate(prevDate => getUTCStartOfDay(addDays(prevDate, 1)));
   };
 
   const handleGoToToday = () => {
-    setCurrentDate(startOfDay(new Date()));
+    setCurrentDate(getUTCStartOfDay(new Date()));
   };
 
   // Define keyboard shortcuts
@@ -59,7 +66,7 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen }) => {
     <div className="flex-1 flex flex-col">
       {session ? (
         <>
-          <main className="flex-grow p-6"> {/* Increased padding from p-4 to p-6 */}
+          <main className="flex-grow p-6">
             <DateNavigator
               currentDate={currentDate}
               onPreviousDay={handlePreviousDay}
@@ -68,12 +75,12 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen }) => {
             />
             <TaskList setIsAddTaskOpen={setIsAddTaskOpen} />
           </main>
-          <footer className="p-6"> {/* Increased padding from p-4 to p-6 */}
+          <footer className="p-6">
             <MadeWithDyad />
           </footer>
         </>
       ) : (
-        <div className="flex-1 flex items-center justify-center p-6"> {/* Increased padding from p-4 to p-6 */}
+        <div className="flex-1 flex items-center justify-center p-6">
           <AuthComponent />
         </div>
       )}

@@ -59,7 +59,8 @@ export const useTasks = () => {
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentDate, setCurrentDate] = useState(fnsStartOfDay(new Date()));
+  // currentDate is now expected to be UTC midnight from Index.tsx
+  const [currentDate, setCurrentDate] = useState(fnsStartOfDay(new Date())); 
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [sortKey, setSortKey] = useState<'priority' | 'due_date' | 'created_at' | 'order'>('order');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -112,7 +113,7 @@ export const useTasks = () => {
     }
   }, [userId]);
 
-  const fetchTasks = useCallback(async (dateToFetch: Date) => { // Added dateToFetch parameter
+  const fetchTasks = useCallback(async () => { // Removed dateToFetch parameter, now uses currentDate from state
     if (!userId) {
       setLoading(false);
       return;
@@ -136,23 +137,25 @@ export const useTasks = () => {
       console.log('useTasks LOG 2: Daily recurring templates found:', dailyRecurringTemplates);
 
       const newRecurringInstances: Task[] = [];
-      const startOfDateToFetch = fnsStartOfDay(dateToFetch); // Ensure dateToFetch is at midnight local time
+      // currentDate is already UTC midnight from Index.tsx
+      const currentDayUTC = currentDate; 
 
       for (const template of dailyRecurringTemplates) {
-        // Check if an *active* instance (to-do or skipped) exists for the current date
+        // Check if an instance exists for the current day that is NOT completed or archived.
+        // This means if a task was completed yesterday, a new 'to-do' instance will be created for today.
         const activeInstanceExistsForToday = fetchedTasksForCheck.some(task =>
           task.original_task_id === template.id && 
-          isSameDay(parseISO(task.created_at), startOfDateToFetch) &&
+          isSameDay(parseISO(task.created_at), currentDayUTC) &&
           (task.status === 'to-do' || task.status === 'skipped')
         );
-        console.log(`useTasks LOG 3: Template "${template.description}" (ID: ${template.id}): Active instance exists for today (${format(startOfDateToFetch, 'yyyy-MM-dd')})? ${activeInstanceExistsForToday}`);
+        console.log(`useTasks LOG 3: Template "${template.description}" (ID: ${template.id}): Active instance exists for today (${format(currentDayUTC, 'yyyy-MM-dd')})? ${activeInstanceExistsForToday}`);
 
         if (!activeInstanceExistsForToday) {
           // If no active instance exists for today, create a new 'to-do' instance
           const newInstance: Task = {
             ...template,
             id: uuidv4(),
-            created_at: startOfDateToFetch.toISOString(), // Use the precise ISO string for midnight UTC of the target day
+            created_at: currentDayUTC.toISOString(), // Use the precise UTC ISO string for midnight of the target day
             status: 'to-do', // New instances are always 'to-do'
             recurring_type: 'none', // Instances are not recurring themselves
             original_task_id: template.id, // Link back to the template
@@ -189,12 +192,12 @@ export const useTasks = () => {
     } finally {
       setLoading(false);
     }
-  }, [userId]); // Dependency only on userId now
+  }, [userId, currentDate]); // currentDate is now a dependency for fetchTasks
 
   useEffect(() => {
     fetchSections();
-    fetchTasks(currentDate); // Pass currentDate explicitly
-  }, [fetchSections, fetchTasks, currentDate]); // currentDate is now a dependency for useEffect
+    fetchTasks(); // Call fetchTasks without explicit dateToFetch, it uses currentDate from state
+  }, [fetchSections, fetchTasks]); // fetchTasks is now a dependency for useEffect
 
   useEffect(() => {
     if (!userId) return;
