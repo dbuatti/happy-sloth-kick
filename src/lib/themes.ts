@@ -327,6 +327,53 @@ export const themes = {
       '--input': '260 30% 25%',
       '--ring': '240 10% 85%',
     }
+  },
+  'sepia-dusk': {
+    name: 'Sepia Dusk',
+    description: 'Warm, earthy tones for a classic and comfortable feel',
+    light: {
+      '--background': '29 17% 88%', // gray0f
+      '--foreground': '25 23% 6%',  // gray01
+      '--card': '29 17% 84%',      // gray0e
+      '--card-foreground': '25 23% 6%', // gray01
+      '--popover': '29 17% 84%',   // gray0e
+      '--popover-foreground': '25 23% 6%', // gray01
+      '--primary': '270 28% 36%',  // purpleLight
+      '--primary-foreground': '270 28% 98%', // purple0f
+      '--secondary': '29 17% 73%', // gray0c
+      '--secondary-foreground': '25 23% 6%', // gray01
+      '--muted': '29 17% 78%',     // gray0d
+      '--muted-foreground': '25 28% 33%', // gray06
+      '--accent': '99 34% 30%',    // greenLight
+      '--accent-foreground': '25 23% 6%', // gray01
+      '--destructive': '6 48% 31%', // redLight
+      '--destructive-foreground': '270 28% 98%', // purple0f
+      '--border': '29 17% 73%',    // gray0c
+      '--input': '29 17% 78%',     // gray0d
+      '--ring': '270 28% 36%',     // purpleLight
+      '--radius': '0.5rem',
+    },
+    dark: {
+      '--background': '25 23% 17%', // gray03
+      '--foreground': '29 17% 61%', // gray0a
+      '--card': '25 23% 11%',      // gray02
+      '--card-foreground': '29 17% 61%', // gray0a
+      '--popover': '25 23% 11%',   // gray02
+      '--popover-foreground': '29 17% 61%', // gray0a
+      '--primary': '270 28% 54%',  // purple
+      '--primary-foreground': '270 28% 98%', // purple0f
+      '--secondary': '25 28% 21%', // gray04
+      '--secondary-foreground': '29 17% 61%', // gray0a
+      '--muted': '25 28% 21%',     // gray04
+      '--muted-foreground': '25 28% 44%', // gray08
+      '--accent': '99 34% 38%',    // green
+      '--accent-foreground': '29 17% 61%', // gray0a
+      '--destructive': '6 48% 46%', // red
+      '--destructive-foreground': '270 28% 98%', // purple0f
+      '--border': '25 28% 27%',    // gray05
+      '--input': '25 28% 21%',     // gray04
+      '--ring': '270 28% 54%',     // purple
+    }
   }
 };
 
