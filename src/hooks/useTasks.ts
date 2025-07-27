@@ -129,7 +129,9 @@ export const useTasks = () => {
 
       console.group('🔍 Diagnosing Duplicates: fetchTasks');
       console.log('📥 Raw data from DB:', allTasks);
-      console.log('📅 Current Date (UTC):', currentDate.toISOString());
+      // ✅ FIX: Force currentDate to be the start of the day for this function
+      const effectiveCurrentDate = fnsStartOfDay(currentDate);
+      console.log('📅 Effective Current Date (UTC):', effectiveCurrentDate.toISOString());
 
       let processedTasks: Task[] = allTasks || [];
 
@@ -144,7 +146,7 @@ export const useTasks = () => {
       for (const template of dailyRecurringTemplates) {
         const activeInstanceExistsForToday = processedTasks.some(task =>
           task.original_task_id === template.id && 
-          isSameDay(parseISO(task.created_at), currentDate) &&
+          isSameDay(parseISO(task.created_at), effectiveCurrentDate) &&
           (task.status === 'to-do' || task.status === 'skipped')
         );
 
@@ -152,11 +154,10 @@ export const useTasks = () => {
         console.log(`   → Active instance for today exists: ${activeInstanceExistsForToday}`);
 
         if (!activeInstanceExistsForToday) {
-          // ✅ FIX: Use fnsStartOfDay to ensure the created_at is the start of the day
           const newInstance: Task = {
             ...template,
             id: uuidv4(),
-            created_at: fnsStartOfDay(currentDate).toISOString(), // This is the key fix
+            created_at: effectiveCurrentDate.toISOString(),
             status: 'to-do',
             recurring_type: 'none',
             original_task_id: template.id,
@@ -235,9 +236,10 @@ export const useTasks = () => {
     }
     try {
       // ✅ FIX: Use fnsStartOfDay to ensure the created_at is the start of the day
+      const effectiveCurrentDate = fnsStartOfDay(currentDate);
       const { data, error } = await supabase
         .from('tasks')
-        .insert({ ...newTaskData, user_id: userId, created_at: fnsStartOfDay(currentDate).toISOString() })
+        .insert({ ...newTaskData, user_id: userId, created_at: effectiveCurrentDate.toISOString() })
         .select()
         .single();
 
@@ -479,7 +481,9 @@ export const useTasks = () => {
 
     console.group('🔍 Diagnosing Duplicates: filteredTasks');
     console.log('📥 Raw tasks from state:', workingTasks);
-    console.log('📅 Filtering for date:', currentDate.toISOString());
+    // ✅ FIX: Force currentDate to be the start of the day for this function
+    const effectiveCurrentDate = fnsStartOfDay(currentDate);
+    console.log('📅 Filtering for date:', effectiveCurrentDate.toISOString());
 
     if (statusFilter !== 'archived') {
       workingTasks = workingTasks.filter(task => task.status !== 'archived');
@@ -490,13 +494,13 @@ export const useTasks = () => {
     workingTasks = workingTasks.filter(task => {
       // If it's a recurring template, only show it on its creation day
       if (task.recurring_type !== 'none' && task.original_task_id === null) {
-        const result = isSameDay(parseISO(task.created_at), currentDate);
-        console.log(`📋 Template "${task.description}" (ID: ${task.id}) created on ${format(parseISO(task.created_at), 'yyyy-MM-dd')}, showing for ${format(currentDate, 'yyyy-MM-dd')}: ${result}`);
+        const result = isSameDay(parseISO(task.created_at), effectiveCurrentDate);
+        console.log(`📋 Template "${task.description}" (ID: ${task.id}) created on ${format(parseISO(task.created_at), 'yyyy-MM-dd')}, showing for ${format(effectiveCurrentDate, 'yyyy-MM-dd')}: ${result}`);
         return result;
       }
       // For instances, check if they belong to the current date
-      const result = isSameDay(parseISO(task.created_at), currentDate);
-      console.log(`📝 Instance "${task.description}" (ID: ${task.id}, original: ${task.original_task_id}) created on ${format(parseISO(task.created_at), 'yyyy-MM-dd')}, showing for ${format(currentDate, 'yyyy-MM-dd')}: ${result}`);
+      const result = isSameDay(parseISO(task.created_at), effectiveCurrentDate);
+      console.log(`📝 Instance "${task.description}" (ID: ${task.id}, original: ${task.original_task_id}) created on ${format(parseISO(task.created_at), 'yyyy-MM-dd')}, showing for ${format(effectiveCurrentDate, 'yyyy-MM-dd')}: ${result}`);
       return result;
     });
 
