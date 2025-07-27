@@ -36,7 +36,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: task.id, data: { type: 'task', sectionId: task.section_id } }); // Pass sectionId for drag logic
+  } = useSortable({ id: task.id, data: { type: 'task', sectionId: task.section_id } });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -53,16 +53,16 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "relative border rounded-lg p-3 transition-all duration-200 ease-in-out", // Removed cursor-grab/active:cursor-grabbing
+        "relative border rounded-lg p-3 transition-all duration-200 ease-in-out",
         "group",
         "hover:shadow-md",
-        task.status === 'completed' ? "border-green-300 dark:border-green-700 bg-green-50/20 dark:bg-green-900/20" : "border-border bg-card dark:bg-gray-800", // Apply green background for completed
-        isOverdue && "border-l-4 border-red-500 dark:border-red-700 bg-red-100 dark:bg-red-900/30 pl-2", // More prominent red background for overdue
+        task.status === 'completed' ? "border-green-300 dark:border-green-700 bg-green-50/20 dark:bg-green-900/20" : "border-border bg-card dark:bg-gray-800",
+        isOverdue && "border-l-4 border-red-500 dark:border-red-700 bg-red-100 dark:bg-red-900/30 pl-2",
         isUpcoming && "border-l-4 border-orange-400 dark:border-orange-600 bg-orange-50/20 dark:bg-orange-900/20 pl-2",
         isDragging ? "shadow-lg ring-2 ring-primary" : ""
       )}
       {...attributes}
-      {...listeners}
+      {...listeners} {/* Apply listeners directly here */}
     >
       <TaskItem 
         task={task} 

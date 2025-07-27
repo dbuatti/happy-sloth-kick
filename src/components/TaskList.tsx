@@ -10,13 +10,14 @@ import BulkActions from './BulkActions';
 import AddTaskForm from './AddTaskForm';
 import DailyStreak from './DailyStreak';
 import SmartSuggestions from './SmartSuggestions';
-import { DndContext, DragEndEvent, UniqueIdentifier, PointerSensor, KeyboardSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, DragEndEvent, UniqueIdentifier, KeyboardSensor, useSensor, useSensors } from '@dnd-kit/core'; // Removed PointerSensor from here
 import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import SortableSectionHeader from './SortableSectionHeader';
 import { Task, TaskSection } from '@/hooks/useTasks';
 import TaskDetailDialog from './TaskDetailDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { CustomPointerSensor } from '@/lib/CustomPointerSensor'; // Import the custom sensor
 
 interface TaskListProps {
   setIsAddTaskOpen: (open: boolean) => void;
@@ -59,17 +60,9 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
 
   // Configure Dnd-kit sensors
   const sensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(CustomPointerSensor, { // Use CustomPointerSensor here
       activationConstraint: {
         distance: 5, // Allow a small drag distance before activating
-      },
-      // Prevent drag from starting on elements with data-no-dnd="true"
-      shouldHandleEvent: ({ event: pointerEvent }) => {
-        const target = pointerEvent.target as HTMLElement;
-        if (target.closest('[data-no-dnd="true"]')) {
-          return false;
-        }
-        return true;
       },
     }),
     useSensor(KeyboardSensor, {
