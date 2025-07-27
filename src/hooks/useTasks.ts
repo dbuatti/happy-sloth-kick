@@ -127,19 +127,26 @@ export const useTasks = () => {
       if (fetchError) throw fetchError;
 
       let processedTasks: Task[] = allTasks || [];
+      console.log('--- Daily Recurring Task Check ---');
+      console.log('Current Date for Daily Task Generation:', format(fnsStartOfDay(currentDate), 'yyyy-MM-dd'));
 
       const dailyRecurringTemplates = processedTasks.filter(
         task => task.recurring_type === 'daily' && task.original_task_id === null
       );
+      console.log('Identified Daily Recurring Templates:', dailyRecurringTemplates.map(t => ({ id: t.id, description: t.description })));
 
       const newRecurringInstances: Task[] = [];
 
       for (const template of dailyRecurringTemplates) {
-        const activeInstanceExistsForToday = processedTasks.some(task =>
-          task.original_task_id === template.id && 
-          isSameDay(parseISO(task.created_at), fnsStartOfDay(currentDate)) &&
-          (task.status === 'to-do' || task.status === 'skipped')
-        );
+        const activeInstanceExistsForToday = processedTasks.some(task => {
+          const isInstance = task.original_task_id === template.id;
+          const isCreatedOnCurrentDate = isSameDay(parseISO(task.created_at), fnsStartOfDay(currentDate));
+          const isActiveStatus = (task.status === 'to-do' || task.status === 'skipped');
+          
+          const exists = isInstance && isCreatedOnCurrentDate && isActiveStatus;
+          console.log(`  Template "${template.description}" (ID: ${template.id}): Checking instance "${task.description}" (ID: ${task.id}, original: ${task.original_task_id}) created on ${format(parseISO(task.created_at), 'yyyy-MM-dd')}, status: ${task.status}. Exists for today: ${exists}`);
+          return exists;
+        });
 
         if (!activeInstanceExistsForToday) {
           const newInstance: Task = {
@@ -147,17 +154,21 @@ export const useTasks = () => {
             id: uuidv4(),
             created_at: fnsStartOfDay(currentDate).toISOString(),
             status: 'to-do',
-            recurring_type: 'none',
-            original_task_id: template.id,
-            due_date: null,
-            remind_at: null,
-            parent_task_id: null,
+            recurring_type: 'none', // New instance is a regular task, not recurring itself
+            original_task_id: template.id, // Link back to the template
+            due_date: null, // Reset due date for new instance
+            remind_at: null, // Reset reminder for new instance
+            parent_task_id: null, // Ensure it's a top-level task
           };
           newRecurringInstances.push(newInstance);
+          console.log(`  Creating new instance for "${template.description}". New ID: ${newInstance.id}`);
+        } else {
+          console.log(`  Active instance for "${template.description}" already exists for today. Skipping creation.`);
         }
       }
 
       if (newRecurringInstances.length > 0) {
+        console.log('New Recurring Instances to Insert:', newRecurringInstances.map(t => ({ id: t.id, description: t.description, original_task_id: t.original_task_id })));
         const { data: insertedData, error: insertError } = await supabase
           .from('tasks')
           .insert(newRecurringInstances)
@@ -165,7 +176,11 @@ export const useTasks = () => {
 
         if (insertError) throw insertError;
         processedTasks = [...processedTasks, ...(insertedData || [])];
+        console.log('Successfully inserted new recurring instances.');
+      } else {
+        console.log('No new recurring instances to insert.');
       }
+      console.log('--- End Daily Recurring Task Check ---');
       
       setTasks(processedTasks);
     } catch (error: any) {
