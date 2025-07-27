@@ -415,7 +415,7 @@ export const useTasks = () => {
       const maxOrder = targetSectionTasks.reduce((max, task) => Math.max(max, task.order || 0), -1);
       const newOrder = maxOrder + 1;
 
-      // Generate ID before insert to set original_task_id if it's a recurring task
+      // Generate ID before insert
       const newTaskId = uuidv4();
       const taskToInsert = {
         id: newTaskId,
@@ -430,7 +430,9 @@ export const useTasks = () => {
         remind_at: taskData.remind_at, // Use directly as it's already ISO string or null
         section_id: targetSectionId,
         order: newOrder,
-        original_task_id: taskData.recurring_type !== 'none' ? newTaskId : null, // Set original_task_id if recurring
+        // CORRECTED: original_task_id should ONLY be set when an instance is generated from a template.
+        // When creating a new task (which might be a template itself), it should be null.
+        original_task_id: null, 
         parent_task_id: taskData.parent_task_id || null, // New: Set parent_task_id
         // Do NOT explicitly set created_at here; let the database default handle it for accuracy
       };
@@ -754,6 +756,7 @@ export const useTasks = () => {
         ...task, // Preserve all original properties
         order: index,
         section_id: destinationSectionId, // Ensure section_id is updated for the moved task
+        user_id: userId, // Ensure user_id is included for RLS
       }));
 
       // Merge back into the main tasks array
