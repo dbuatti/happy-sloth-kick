@@ -182,6 +182,10 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
     setCurrentDate(prevDate => new Date(prevDate.setDate(prevDate.getDate() + 1)));
   };
 
+  const handleGoToToday = () => {
+    setCurrentDate(new Date());
+  };
+
   const handleTaskStatusChange = async (taskId: string, newStatus: 'to-do' | 'completed' | 'skipped' | 'archived') => {
     await updateTask(taskId, { status: newStatus });
   };
@@ -472,6 +476,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
           currentDate={currentDate}
           onPreviousDay={handlePreviousDay}
           onNextDay={handleNextDay}
+          onGoToToday={handleGoToToday} // Pass the new prop
         />
 
         {/* Daily Streak Component */}
@@ -549,7 +554,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
                               <div className="flex-1 flex items-center gap-2">
                                 <Input
                                   value={editingSectionName}
-                                  onChange={(e) => setNewSectionName(e.target.value)}
+                                  onChange={(e) => setEditingSectionName(e.target.value)}
                                   onKeyDown={(e) => e.key === 'Enter' && handleRenameSection(sectionGroup.id)}
                                   autoFocus
                                 />

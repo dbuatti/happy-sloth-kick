@@ -60,6 +60,10 @@ const TimeBlockSchedule: React.FC = () => {
     });
   };
 
+  const handleGoToToday = () => {
+    setCurrentDate(new Date());
+  };
+
   const timeBlocks = useMemo(() => {
     if (!workHours || !workHours.enabled) return [];
 
@@ -238,6 +242,7 @@ const TimeBlockSchedule: React.FC = () => {
               currentDate={currentDate}
               onPreviousDay={handlePreviousDay}
               onNextDay={handleNextDay}
+              onGoToToday={handleGoToToday} // Pass the new prop
             />
 
             {totalLoading ? (
