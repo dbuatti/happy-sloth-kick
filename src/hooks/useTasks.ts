@@ -151,10 +151,11 @@ export const useTasks = () => {
         console.log(`   → Active instance for today exists: ${activeInstanceExistsForToday}`);
 
         if (!activeInstanceExistsForToday) {
+          // ✅ FIX: Use fnsStartOfDay to ensure the created_at is the start of the day
           const newInstance: Task = {
             ...template,
             id: uuidv4(),
-            created_at: currentDate.toISOString(),
+            created_at: fnsStartOfDay(currentDate).toISOString(), // This is the key fix
             status: 'to-do',
             recurring_type: 'none',
             original_task_id: template.id,
@@ -232,6 +233,7 @@ export const useTasks = () => {
       return false;
     }
     try {
+      // ✅ FIX: Use fnsStartOfDay to ensure the created_at is the start of the day
       const { data, error } = await supabase
         .from('tasks')
         .insert({ ...newTaskData, user_id: userId, created_at: fnsStartOfDay(currentDate).toISOString() })
