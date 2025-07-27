@@ -251,7 +251,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
 
               <DndContext onDragEnd={handleDragEnd}>
                 <SortableContext items={sections.map(s => s.id)} strategy={verticalListSortingStrategy}>
-                  {sections.map(section => {
+                  {sections.map((section: TaskSection) => { // Explicitly type 'section' here
                     const isExpanded = expandedSections[section.id] !== false;
                     const sectionTasks = tasksBySection[section.id] || [];
                     
@@ -266,7 +266,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
                           isEditing={editingSectionId === section.id}
                           editingName={editingSectionName}
                           onNameChange={setEditingSectionName}
-                          onSaveEdit={() => handleRenameSection()} {/* Wrapped in arrow function */}
+                          onSaveEdit={() => handleRenameSection()}
                           onCancelEdit={handleCancelSectionEdit}
                           onEditClick={() => handleEditSectionClick(section)}
                         />
