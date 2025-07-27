@@ -118,9 +118,6 @@ export const useTasks = () => {
     }
     setLoading(true);
     
-    console.log('--- fetchTasks started ---');
-    console.log('Current Date for fetchTasks:', format(currentDate, 'yyyy-MM-dd'));
-
     try {
       const { data: allTasks, error: fetchError } = await supabase
         .from('tasks')
@@ -128,26 +125,29 @@ export const useTasks = () => {
         .eq('user_id', userId);
 
       if (fetchError) throw fetchError;
-      console.log('Fetched all tasks from DB:', allTasks.length, 'tasks');
 
       let processedTasks: Task[] = allTasks || [];
 
       const dailyRecurringTemplates = processedTasks.filter(
         task => task.recurring_type === 'daily' && task.original_task_id === null
       );
-      console.log('Identified Daily Recurring Templates:', dailyRecurringTemplates.length, 'templates');
 
       const newRecurringInstances: Task[] = [];
 
       for (const template of dailyRecurringTemplates) {
-        const activeInstanceExistsForToday = processedTasks.some(task =>
-          task.original_task_id === template.id && 
-          isSameDay(parseISO(task.created_at), fnsStartOfDay(currentDate)) &&
-          (task.status === 'to-do' || task.status === 'skipped')
-        );
-        console.log(`  Template "${template.description}" (ID: ${template.id}): Active instance exists for today: ${activeInstanceExistsForToday}`);
+        // Check the database directly for an active instance for today
+        const { data: existingInstance, error: checkError } = await supabase
+          .from('tasks')
+          .select('id')
+          .eq('original_task_id', template.id)
+          .eq('user_id', userId)
+          .eq('created_at', fnsStartOfDay(currentDate).toISOString()) // Check for instance created specifically for today
+          .in('status', ['to-do', 'skipped']) // Only consider active instances
+          .maybeSingle(); // Use maybeSingle to get null if not found, or the single record
 
-        if (!activeInstanceExistsForToday) {
+        if (checkError) throw checkError;
+
+        if (!existingInstance) { // If no active instance exists for today, create one
           const newInstance: Task = {
             ...template,
             id: uuidv4(),
@@ -160,32 +160,33 @@ export const useTasks = () => {
             parent_task_id: null, // Ensure it's a top-level task
           };
           newRecurringInstances.push(newInstance);
-          console.log(`  Adding new instance for "${template.description}" (New ID: ${newInstance.id})`);
         }
       }
 
       if (newRecurringInstances.length > 0) {
-        console.log('Attempting to insert new recurring instances:', newRecurringInstances.length);
         const { data: insertedData, error: insertError } = await supabase
           .from('tasks')
           .insert(newRecurringInstances)
           .select();
 
         if (insertError) throw insertError;
-        console.log('Successfully inserted new instances:', insertedData.length);
-        processedTasks = [...processedTasks, ...(insertedData || [])];
+        // After inserting, re-fetch all tasks to ensure the local state is fully synchronized
+        const { data: refreshedTasks, error: refreshError } = await supabase
+          .from('tasks')
+          .select('*')
+          .eq('user_id', userId);
+        if (refreshError) throw refreshError;
+        setTasks(refreshedTasks || []);
       } else {
-        console.log('No new recurring instances to insert.');
+        // If no new instances were inserted, just set tasks from the initial fetch
+        setTasks(processedTasks);
       }
       
-      console.log('Final processedTasks before setTasks:', processedTasks.length, 'tasks');
-      setTasks(processedTasks);
     } catch (error: any) {
       console.error('Error in fetchTasks:', error);
       showError('An unexpected error occurred while loading tasks.');
     } finally {
       setLoading(false);
-      console.log('--- fetchTasks finished ---');
     }
   }, [userId, currentDate]);
 
@@ -473,46 +474,49 @@ export const useTasks = () => {
     // 1. Filter out subtasks (they are handled within parent tasks)
     workingTasks = workingTasks.filter(task => task.parent_task_id === null);
 
-    // 2. Apply date and status filtering based on the current view
-    if (statusFilter === 'archived') {
-      // For the Archive page, show all archived tasks regardless of creation date
-      workingTasks = workingTasks.filter(task => task.status === 'archived');
-    } else {
-      // For the main Daily Tasks page (statusFilter is 'all', 'to-do', etc.)
+    // 2. Apply main daily view logic (if not in 'archived' filter)
+    if (statusFilter !== 'archived') {
       workingTasks = workingTasks.filter(task => {
         const taskCreatedAt = parseISO(task.created_at);
+        const isTaskCreatedToday = isSameDay(taskCreatedAt, effectiveCurrentDate);
+        const isTaskActive = task.status === 'to-do' || task.status === 'skipped';
+        const isTaskCompleted = task.status === 'completed';
+        const isRecurringTemplate = task.recurring_type !== 'none' && task.original_task_id === null;
 
-        // Rule 1: Exclude recurring templates from the daily view
-        if (task.recurring_type !== 'none' && task.original_task_id === null) {
+        // Rule A: Never show recurring templates in the daily view
+        if (isRecurringTemplate) {
           return false;
         }
 
-        // Rule 2: Exclude tasks created for future dates
+        // Rule B: Never show tasks created for future dates
         if (isAfter(taskCreatedAt, effectiveCurrentDate)) {
           return false;
         }
 
-        // Rule 3: Exclude tasks that were completed/archived on a previous day
-        if ((task.status === 'completed' || task.status === 'archived') && !isSameDay(taskCreatedAt, effectiveCurrentDate)) {
-            return false;
+        // Rule C: If the task is active (to-do/skipped), show it if it was created today OR if it's a carry-over from a past day
+        if (isTaskActive) {
+          return isTaskCreatedToday || isPast(taskCreatedAt); // isPast(taskCreatedAt) implies it's from a previous day
         }
 
-        // Rule 4: Include tasks created on the current date (regardless of status, as they belong to today)
-        if (isSameDay(taskCreatedAt, effectiveCurrentDate)) {
-          return true;
+        // Rule D: If the task is completed, only show it if it was created (and thus completed) on the effectiveCurrentDate
+        // Tasks completed on previous days should NOT show up in the current daily view.
+        if (isTaskCompleted) {
+          return isTaskCreatedToday; // Only show if created/completed on THIS day
         }
 
-        // Rule 5: Include active (to-do/skipped) tasks that were created on a *previous* day
-        if ((task.status === 'to-do' || task.status === 'skipped') && isPast(taskCreatedAt)) {
-          return true;
+        // Rule E: Archived tasks should never show in the daily view
+        if (task.status === 'archived') {
+          return false;
         }
-        
-        // If none of the above inclusion rules are met, exclude the task.
-        return false;
+
+        return false; // Default to false if no rule matches (shouldn't happen with comprehensive rules)
       });
+    } else {
+      // For 'archived' status filter, only show archived tasks
+      workingTasks = workingTasks.filter(task => task.status === 'archived');
     }
 
-    // 3. Apply other filters
+    // 3. Apply other filters (search, category, priority, section)
     if (searchFilter) {
       workingTasks = workingTasks.filter(task =>
         task.description.toLowerCase().includes(searchFilter.toLowerCase()) ||
@@ -534,7 +538,7 @@ export const useTasks = () => {
       });
     }
 
-    // 4. Apply final status filter for non-archived views
+    // 4. Apply final status filter for non-archived views (if statusFilter is not 'all')
     if (statusFilter !== 'all' && statusFilter !== 'archived') {
       workingTasks = workingTasks.filter(task => task.status === statusFilter);
     }
