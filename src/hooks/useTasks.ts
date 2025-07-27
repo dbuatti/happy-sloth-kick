@@ -138,18 +138,21 @@ export const useTasks = () => {
 
       for (const template of dailyRecurringTemplates) {
         // Check the database directly for an active instance for today
-        const { data: existingInstance, error: checkError } = await supabase
+        const startOfToday = fnsStartOfDay(currentDate).toISOString();
+        const endOfToday = new Date(fnsStartOfDay(currentDate).getTime() + 24 * 60 * 60 * 1000 - 1).toISOString(); // End of day
+
+        const { data: existingInstances, error: checkError } = await supabase
           .from('tasks')
           .select('id')
           .eq('original_task_id', template.id)
           .eq('user_id', userId)
-          .eq('created_at', fnsStartOfDay(currentDate).toISOString()) // Check for instance created specifically for today
-          .in('status', ['to-do', 'skipped']) // Only consider active instances
-          .maybeSingle(); // Use maybeSingle to get null if not found, or the single record
+          .gte('created_at', startOfToday)
+          .lt('created_at', endOfToday)
+          .in('status', ['to-do', 'skipped']); // Only consider active instances
 
         if (checkError) throw checkError;
 
-        if (!existingInstance) { // If no active instance exists for today, create one
+        if (!existingInstances || existingInstances.length === 0) { // If no active instance exists for today, create one
           const newInstance: Task = {
             ...template,
             id: uuidv4(),
