@@ -186,7 +186,6 @@ const TaskFilter: React.FC = () => { // No longer needs onFilterChange prop
             </div>
 
             <div className="flex gap-2">
-              {/* Apply Filters button is no longer needed as filters apply immediately on change */}
               <Button variant="outline" onClick={clearAllFilters} className="w-full">
                 Clear All Filters
               </Button>
