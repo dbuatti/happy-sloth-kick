@@ -78,7 +78,7 @@ export const useTasks = () => {
   const [sectionFilter, setSectionFilter] = useState(() => getInitialFilter('section', 'all'));
 
   const remindedTaskIdsRef = useRef<Set<string>>(new Set());
-  const isFetchingRef = useRef(false); // Simple boolean flag for fetch in progress
+  const isFetchingRef = useRef<string | null>(null); // Stores the key of the fetch in progress
 
   useEffect(() => {
     localStorage.setItem('task_filter_search', searchFilter);
@@ -101,11 +101,12 @@ export const useTasks = () => {
   }, [sectionFilter]);
 
   const fetchDataAndSections = useCallback(async () => {
-    if (isFetchingRef.current) { // Check flag at the very beginning
-      console.log('fetchDataAndSections: Already in progress, skipping.');
+    const currentFetchKey = `${userId}-${currentDate.toISOString()}`;
+    if (isFetchingRef.current === currentFetchKey) { // Check if this specific fetch is already in progress
+      console.log(`fetchDataAndSections: Already fetching for ${currentFetchKey}, skipping.`);
       return;
     }
-    isFetchingRef.current = true; // Set flag
+    isFetchingRef.current = currentFetchKey; // Mark this specific fetch as in progress
     setLoading(true);
 
     try {
@@ -198,7 +199,9 @@ export const useTasks = () => {
       showError('An unexpected error occurred while loading data.');
     } finally {
       setLoading(false);
-      isFetchingRef.current = false; // Reset the flag after fetch completes
+      if (isFetchingRef.current === currentFetchKey) { // Only reset if it's *this* fetch that's completing
+        isFetchingRef.current = null;
+      }
       console.log('fetchTasks: Fetch process completed.');
     }
   }, [userId, currentDate]); // Dependencies for fetchDataAndSections
@@ -210,6 +213,7 @@ export const useTasks = () => {
       setTasks([]);
       setSections([]);
       setLoading(false);
+      isFetchingRef.current = null; // Ensure reset if user logs out
       console.log('useTasks useEffect: No user ID, clearing tasks and sections.');
     }
   }, [userId, currentDate, fetchDataAndSections]); // Add fetchDataAndSections to dependencies
@@ -499,38 +503,44 @@ export const useTasks = () => {
         const taskCreatedAtUTC = getUTCStartOfDay(taskCreatedAt); // Convert task's created_at to UTC midnight for comparison
 
         const isTaskCreatedOnCurrentDate = isSameDay(taskCreatedAtUTC, effectiveCurrentDateUTC);
+        const isRecurringTemplate = task.recurring_type === 'daily' && task.original_task_id === null;
+        const isRecurringInstance = task.original_task_id !== null;
+        const isActiveStatus = task.status === 'to-do' || task.status === 'skipped';
+        const isCompletedStatus = task.status === 'completed';
+        const isArchivedStatus = task.status === 'archived';
 
         console.log(`  Task "${task.description}" (ID: ${task.id}):`);
-        console.log(`    taskCreatedAt: ${task.created_at} -> ${taskCreatedAt.toISOString()}`);
-        console.log(`    taskCreatedAtUTC: ${taskCreatedAtUTC.toISOString()}`);
-        console.log(`    effectiveCurrentDateUTC: ${effectiveCurrentDateUTC.toISOString()}`);
-        console.log(`    isTaskCreatedOnCurrentDate: ${isTaskCreatedOnCurrentDate}`);
+        console.log(`    created_at: ${task.created_at} (UTC: ${taskCreatedAtUTC.toISOString()})`);
+        console.log(`    currentDate (UTC): ${effectiveCurrentDateUTC.toISOString()}`);
+        console.log(`    isCreatedOnCurrentDate: ${isTaskCreatedOnCurrentDate}`);
         console.log(`    status: ${task.status}, recurring_type: ${task.recurring_type}, original_task_id: ${task.original_task_id}`);
+        console.log(`    isRecurringTemplate: ${isRecurringTemplate}, isRecurringInstance: ${isRecurringInstance}`);
+        console.log(`    isActiveStatus: ${isActiveStatus}, isCompletedStatus: ${isCompletedStatus}, isArchivedStatus: ${isArchivedStatus}`);
 
         // Rule 1: Exclude recurring templates from daily view
-        if (task.recurring_type === 'daily' && task.original_task_id === null) {
-          console.log(`    -> Excluded (Rule 1: Recurring Template)`);
+        if (isRecurringTemplate) {
+          console.log(`    -> Excluded (Rule 1: Is a Recurring Template)`);
           return false;
         }
 
-        // Rule 2: Exclude archived tasks from daily view
-        if (task.status === 'archived') {
-          console.log(`    -> Excluded (Rule 2: Archived)`);
+        // Rule 2: Exclude archived tasks from daily view (unless statusFilter is 'archived')
+        if (isArchivedStatus) {
+          console.log(`    -> Excluded (Rule 2: Is Archived)`);
           return false;
         }
 
         // Rule 3: Handle recurring instances (tasks generated from a template)
         // These should ONLY show if they were generated for the current day.
-        if (task.original_task_id !== null) {
+        if (isRecurringInstance) {
           const shouldInclude = isTaskCreatedOnCurrentDate;
-          console.log(`    -> Rule 3: Recurring Instance. Should include: ${shouldInclude}`);
+          console.log(`    -> Rule 3: Is Recurring Instance. Included if created on current date: ${shouldInclude}`);
           return shouldInclude;
         }
 
         // Rule 4: Handle general tasks (non-recurring, not instances)
         // These should always be visible if active (to-do/skipped), regardless of creation date.
-        if (task.status === 'to-do' || task.status === 'skipped') {
-          console.log(`    -> Rule 4: Active General Task. Included.`);
+        if (isActiveStatus) {
+          console.log(`    -> Rule 4: Is Active General Task. Included.`);
           return true;
         }
 
@@ -538,13 +548,13 @@ export const useTasks = () => {
         // These should ONLY show if they were completed on the current day.
         // We rely on 'created_at' for this, assuming completion happens on the same day or
         // we only want to show completed tasks on the day they were created/generated.
-        if (task.status === 'completed') {
+        if (isCompletedStatus) {
           const shouldInclude = isTaskCreatedOnCurrentDate;
-          console.log(`    -> Rule 5: Completed General Task. Should include: ${shouldInclude}`);
+          console.log(`    -> Rule 5: Is Completed General Task. Included if created on current date: ${shouldInclude}`);
           return shouldInclude;
         }
         
-        console.log(`    -> Excluded (No rule matched)`);
+        console.log(`    -> Excluded (No specific rule matched for daily view)`);
         return false;
       });
       console.log('filteredTasks: After daily view logic, count:', workingTasks.length);
