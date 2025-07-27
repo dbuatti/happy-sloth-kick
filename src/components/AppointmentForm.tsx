@@ -48,8 +48,10 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
+    console.log('AppointmentForm useEffect triggered. isOpen:', isOpen);
     if (isOpen) {
       if (initialData) {
+        console.log('AppointmentForm: Initializing for edit with data:', initialData);
         setTitle(initialData.title);
         setDescription(initialData.description || '');
         setDate(parseISO(initialData.date));
@@ -57,7 +59,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
         setEndTime(initialData.end_time.substring(0, 5));     // HH:MM
         setColor(initialData.color);
       } else {
-        // For new appointments, pre-fill based on selected slot or current time
+        console.log('AppointmentForm: Initializing for new appointment with slot:', selectedTimeSlot);
         setTitle('');
         setDescription('');
         setDate(selectedDate);
@@ -76,7 +78,9 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   }, [isOpen, initialData, selectedDate, selectedTimeSlot]);
 
   const handleSubmit = async () => {
+    console.log('AppointmentForm: handleSubmit called');
     if (!title.trim() || !date || !startTime || !endTime) {
+      console.log('AppointmentForm: Validation failed');
       alert('Title, date, start time, and end time are required.');
       return;
     }
@@ -85,16 +89,26 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     const parsedEndTime = parse(endTime, 'HH:mm', date);
 
     if (!isValid(parsedStartTime) || !isValid(parsedEndTime)) {
+      console.log('AppointmentForm: Invalid time format');
       alert('Invalid time format. Please use HH:MM.');
       return;
     }
 
     if (parsedStartTime >= parsedEndTime) {
+      console.log('AppointmentForm: End time before start time');
       alert('End time must be after start time.');
       return;
     }
 
     setIsSaving(true);
+    console.log('AppointmentForm: Calling onSave with data:', {
+      title: title.trim(),
+      description: description.trim() || null,
+      date: format(date, 'yyyy-MM-dd'),
+      start_time: format(parsedStartTime, 'HH:mm:ss'),
+      end_time: format(parsedEndTime, 'HH:mm:ss'),
+      color: color,
+    });
     const success = await onSave({
       title: title.trim(),
       description: description.trim() || null,
@@ -104,6 +118,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
       color: color,
     });
     setIsSaving(false);
+    console.log('AppointmentForm: onSave returned:', success);
     if (success) {
       onClose();
     }

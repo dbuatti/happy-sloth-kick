@@ -86,9 +86,11 @@ const TimeBlockSchedule: React.FC = () => {
   }, [workHours, currentDate]);
 
   const handleTimeBlockClick = (blockStart: Date, blockEnd: Date) => {
+    console.log('Time block clicked:', format(blockStart, 'HH:mm'), format(blockEnd, 'HH:mm'));
     setEditingAppointment(null); // Ensure we're adding, not editing
     setSelectedTimeSlotForNew({ start: blockStart, end: blockEnd });
     setIsAppointmentFormOpen(true);
+    console.log('isAppointmentFormOpen set to true');
   };
 
   const handleSaveAppointment = async (data: NewAppointmentData) => {

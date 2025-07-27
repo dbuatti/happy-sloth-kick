@@ -60,8 +60,10 @@ export const useAppointments = (currentDate: Date) => {
   }, [fetchAppointments]);
 
   const addAppointment = useCallback(async (newAppointment: NewAppointmentData) => {
+    console.log('useAppointments: addAppointment called with:', newAppointment);
     if (!userId) {
       showError('User not authenticated.');
+      console.error('useAppointments: User not authenticated for addAppointment.');
       return null;
     }
     try {
@@ -74,17 +76,20 @@ export const useAppointments = (currentDate: Date) => {
       if (error) throw error;
       setAppointments(prev => [...prev, data].sort((a, b) => a.start_time.localeCompare(b.start_time)));
       showSuccess('Appointment added successfully!');
+      console.log('useAppointments: addAppointment success, data:', data);
       return data;
     } catch (error: any) {
-      console.error('Error adding appointment:', error.message);
+      console.error('useAppointments: Error adding appointment:', error.message);
       showError('Failed to add appointment.');
       return null;
     }
   }, [userId]);
 
   const updateAppointment = useCallback(async (id: string, updates: UpdateAppointmentData) => {
+    console.log('useAppointments: updateAppointment called for ID:', id, 'with updates:', updates);
     if (!userId) {
       showError('User not authenticated.');
+      console.error('useAppointments: User not authenticated for updateAppointment.');
       return null;
     }
     try {
@@ -99,17 +104,20 @@ export const useAppointments = (currentDate: Date) => {
       if (error) throw error;
       setAppointments(prev => prev.map(app => (app.id === id ? data : app)).sort((a, b) => a.start_time.localeCompare(b.start_time)));
       showSuccess('Appointment updated successfully!');
+      console.log('useAppointments: updateAppointment success, data:', data);
       return data;
     } catch (error: any) {
-      console.error('Error updating appointment:', error.message);
+      console.error('useAppointments: Error updating appointment:', error.message);
       showError('Failed to update appointment.');
       return null;
     }
   }, [userId]);
 
   const deleteAppointment = useCallback(async (id: string) => {
+    console.log('useAppointments: deleteAppointment called for ID:', id);
     if (!userId) {
       showError('User not authenticated.');
+      console.error('useAppointments: User not authenticated for deleteAppointment.');
       return false;
     }
     try {
@@ -122,9 +130,10 @@ export const useAppointments = (currentDate: Date) => {
       if (error) throw error;
       setAppointments(prev => prev.filter(app => app.id !== id));
       showSuccess('Appointment deleted successfully!');
+      console.log('useAppointments: deleteAppointment success.');
       return true;
     } catch (error: any) {
-      console.error('Error deleting appointment:', error.message);
+      console.error('useAppointments: Error deleting appointment:', error.message);
       showError('Failed to delete appointment.');
       return false;
     }
