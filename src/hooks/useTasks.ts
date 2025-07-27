@@ -119,16 +119,18 @@ export const useTasks = () => {
     setLoading(true);
     
     try {
-      const { data: fetchedTasks, error: fetchError } = await supabase
+      // Step 1: Fetch ALL tasks in a single query
+      const { data: allTasks, error: fetchError } = await supabase
         .from('tasks')
         .select('*')
         .eq('user_id', userId);
 
       if (fetchError) throw fetchError;
 
-      let allUserTasks: Task[] = fetchedTasks || [];
+      // Step 2: Process the data and create new instances in memory
+      let processedTasks: Task[] = allTasks || [];
 
-      const dailyRecurringTemplates = allUserTasks.filter(
+      const dailyRecurringTemplates = processedTasks.filter(
         task => task.recurring_type === 'daily' && task.original_task_id === null
       );
 
@@ -136,7 +138,7 @@ export const useTasks = () => {
       const currentDayUTC = currentDate; 
 
       for (const template of dailyRecurringTemplates) {
-        const activeInstanceExistsForToday = allUserTasks.some(task =>
+        const activeInstanceExistsForToday = processedTasks.some(task =>
           task.original_task_id === template.id && 
           isSameDay(parseISO(task.created_at), currentDayUTC) &&
           (task.status === 'to-do' || task.status === 'skipped')
@@ -158,6 +160,7 @@ export const useTasks = () => {
         }
       }
 
+      // Step 3: Perform the database insert
       if (newRecurringInstances.length > 0) {
         const { data: insertedData, error: insertError } = await supabase
           .from('tasks')
@@ -165,12 +168,12 @@ export const useTasks = () => {
           .select();
 
         if (insertError) throw insertError;
-        if (insertedData) {
-          allUserTasks = [...allUserTasks, ...insertedData];
-        }
+        // Step 4: Update the state with ALL tasks (fetched + inserted) in a single, atomic operation
+        processedTasks = [...processedTasks, ...(insertedData || [])];
       }
       
-      setTasks(allUserTasks);
+      // Step 5: Set the state
+      setTasks(processedTasks);
     } catch (error: any) {
       console.error('Error in fetchTasks:', error);
       showError('An unexpected error occurred while loading tasks.');
