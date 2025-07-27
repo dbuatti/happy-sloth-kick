@@ -9,7 +9,8 @@ import Settings from "./pages/Settings";
 import Help from "./pages/Help";
 import Archive from "./pages/Archive";
 import FocusMode from "./components/FocusMode";
-import ProjectBalanceTracker from "./pages/ProjectBalanceTracker"; // Import the new page
+import ProjectBalanceTracker from "./pages/ProjectBalanceTracker";
+import TimeBlockSchedule from "./pages/TimeBlockSchedule"; // Import the new page
 import { AuthProvider } from "@/context/AuthContext";
 import CommandPalette from "./components/CommandPalette";
 import { useState } from 'react';
@@ -32,7 +33,8 @@ const App = () => {
               <Route path="/help" element={<Help />} />
               <Route path="/archive" element={<Archive />} />
               <Route path="/focus" element={<FocusMode />} />
-              <Route path="/projects" element={<ProjectBalanceTracker />} /> {/* New Project Balance Tracker Route */}
+              <Route path="/projects" element={<ProjectBalanceTracker />} />
+              <Route path="/schedule" element={<TimeBlockSchedule />} /> {/* New Time Block Schedule Route */}
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

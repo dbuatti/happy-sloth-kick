@@ -3,7 +3,7 @@ import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, C
 import { useTasks } from '@/hooks/useTasks';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Settings, BarChart3, Home, FolderOpen, ChevronLeft, ChevronRight, LogOut, LayoutGrid } from 'lucide-react'; // Added LayoutGrid
+import { Plus, Settings, BarChart3, Home, FolderOpen, ChevronLeft, ChevronRight, LogOut, LayoutGrid, CalendarClock } from 'lucide-react'; // Added CalendarClock
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -86,6 +86,10 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
                     <LayoutGrid className="mr-2 h-4 w-4" />
                     <span>Go to Project Balance</span>
                   </CommandItem>
+                  <CommandItem onSelect={() => handleSelect(() => navigate('/schedule'))}>
+                    <CalendarClock className="mr-2 h-4 w-4" />
+                    <span>Go to Time Blocks</span>
+                  </CommandItem>
                   <CommandItem onSelect={() => handleSelect(() => navigate('/analytics'))}>
                     <BarChart3 className="mr-2 h-4 w-4" />
                     <span>Go to Analytics</span>
@@ -149,6 +153,10 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
                 <LayoutGrid className="mr-2 h-4 w-4" />
                 <span>Go to Project Balance</span>
               </CommandItem>
+              <CommandItem onSelect={() => handleSelect(() => navigate('/schedule'))}>
+                <CalendarClock className="mr-2 h-4 w-4" />
+                <span>Go to Time Blocks</span>
+              </CommandItem>
               <CommandItem onSelect={() => handleSelect(() => navigate('/analytics'))}>
                 <BarChart3 className="mr-2 h-4 w-4" />
                 <span>Go to Analytics</span>
@@ -177,18 +185,18 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
             )}
 
             {sections.length > 0 && (
-              <CommandGroup heading="Sections">
-                {sections.map(section => (
-                  <CommandItem key={section.id} onSelect={() => handleSelect(() => {
-                    console.log(`Selected section: ${section.name}`);
-                    navigate('/');
-                  })}>
-                    <FolderOpen className="mr-2 h-4 w-4" />
-                    <span>Go to {section.name}</span>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            )}
+                  <CommandGroup heading="Sections">
+                    {sections.map(section => (
+                      <CommandItem key={section.id} onSelect={() => handleSelect(() => {
+                        console.log(`Selected section: ${section.name}`);
+                        navigate('/');
+                      })}>
+                        <FolderOpen className="mr-2 h-4 w-4" />
+                        <span>Go to {section.name}</span>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                )}
           </CommandList>
         </CommandDialog>
       )}
