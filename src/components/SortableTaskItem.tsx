@@ -62,7 +62,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         isDragging ? "shadow-lg ring-2 ring-primary" : ""
       )}
       {...attributes}
-      {...(listeners || {})} {/* Fixed: Ensure listeners is always an object for spreading */}
+      {...Object.assign({}, listeners)} {/* Fixed: Ensure listeners is always an object for spreading */}
     >
       <TaskItem 
         task={task} 
