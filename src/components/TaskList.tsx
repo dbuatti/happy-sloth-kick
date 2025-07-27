@@ -62,7 +62,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
     const grouped: Record<string, Task[]> = { 'no-section': [] };
     
     // Initialize groups for all sections
-    sections.forEach((section: TaskSection) => { // Explicitly type 'section' here
+    sections.forEach((section: TaskSection) => { // Explicitly type 'section' here to fix TS2552
       grouped[section.id] = [];
     });
 
@@ -367,6 +367,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete {selectedTaskIds.length > 0 ? `${selectedTaskIds.length} selected tasks` : 'this section'}.
             </AlertDialogDescription>
+          </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
