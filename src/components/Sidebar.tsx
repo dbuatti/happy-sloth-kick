@@ -59,14 +59,14 @@ const Sidebar: React.FC<SidebarProps> = ({ children }) => {
     return (
       <div className="min-h-screen flex flex-col">
         {/* Mobile Header */}
-        <header className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 shadow-md">
+        <header className="flex items-center justify-between p-4 bg-card shadow-md"> {/* Changed bg-white dark:bg-gray-800 to bg-card */}
           <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" aria-label="Open menu">
                 <Menu className="h-6 w-6" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-64 bg-white dark:bg-gray-800 flex flex-col">
+            <SheetContent side="left" className="w-64 bg-card flex flex-col"> {/* Changed bg-white dark:bg-gray-800 to bg-card */}
               <div className="p-6 flex justify-between items-center">
                 <h1 className="text-2xl font-bold text-gray-800 dark:text-white">TaskMaster</h1>
               </div>
@@ -98,8 +98,8 @@ const Sidebar: React.FC<SidebarProps> = ({ children }) => {
 
   // Desktop View
   return (
-    <div className="min-h-screen flex bg-gray-100 dark:bg-gray-900">
-      <div className="w-64 bg-white dark:bg-gray-800 shadow-lg h-screen flex flex-col">
+    <div className="min-h-screen flex bg-background"> {/* Changed bg-gray-100 dark:bg-gray-900 to bg-background */}
+      <div className="w-64 bg-card shadow-lg h-screen flex flex-col"> {/* Changed bg-white dark:bg-gray-800 to bg-card */}
         <div className="p-6 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white">TaskMaster</h1>
         </div>
