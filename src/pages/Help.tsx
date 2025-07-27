@@ -44,6 +44,7 @@ const Help = () => {
                 <li><kbd>N</kbd>: (Within Command Palette) Quickly open the "Add New Task" form.</li>
                 <li><kbd>ArrowLeft</kbd>: Navigate to the **Previous Day** in the Daily Tasks view.</li>
                 <li><kbd>ArrowRight</kbd>: Navigate to the **Next Day** in the Daily Tasks view.</li>
+                <li><kbd>T</kbd>: Jump to **Today** in the Daily Tasks view.</li>
                 <li><kbd>F</kbd>: Focus on the **Search Tasks** input field.</li>
               </ul>
             </section>
@@ -71,7 +72,7 @@ const Help = () => {
                 <li><strong>AI-Powered Suggestions:</strong> When adding a new task, the app intelligently suggests a category and priority based on your description.</li>
                 <li><strong>Daily Progress:</strong> The "Today's Progress" card on the Daily Tasks page provides a quick overview of your completed tasks for the day.</li>
                 <li><strong>Visual Urgency Cues:</strong> Tasks that are overdue are highlighted with a red border, and tasks due today have an orange border, making prioritization intuitive.</li>
-                <li><strong>Drag-and-Drop Reordering:</strong> Easily reorder tasks within sections or move them between sections using intuitive drag-and-drop functionality. You can also reorder sections themselves.</li>
+                <li><strong>Drag-and-Drop Reordering:</strong> Easily reorder **top-level tasks** within sections or move them between sections using intuitive drag-and-drop functionality. You can also reorder sections themselves. Sub-tasks are not currently draggable.</li>
                 <li><strong>Task Completion Animation:</strong> A subtle animation plays when you mark a task as complete, providing satisfying visual feedback.</li>
                 <li><strong>Analytics Page:</strong> Visit the <BarChart3 className="inline-block h-4 w-4" /> Analytics page to view your task completion trends, category breakdown, and priority distribution over time.</li>
               </ul>
