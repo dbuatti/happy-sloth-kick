@@ -292,9 +292,6 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
   };
 
   const tasksGroupedBySection = useMemo(() => {
-    console.log('TaskList: tasksGroupedBySection - filteredTasks:', filteredTasks);
-    console.log('TaskList: tasksGroupedBySection - sections:', sections);
-
     const grouped: { [key: string]: { parentTasks: Task[]; subtasks: Task[] } } = {};
     const allSectionIds = new Set<string>();
 
@@ -350,7 +347,6 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
         subtasks: grouped['no-section'].subtasks,
       });
     }
-    console.log('TaskList: tasksGroupedBySection - Final sections to render:', sectionsToRender);
     return sectionsToRender;
   }, [filteredTasks, sections, userId]);
 
@@ -553,7 +549,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
                               <div className="flex-1 flex items-center gap-2">
                                 <Input
                                   value={editingSectionName}
-                                  onChange={(e) => setEditingSectionName(e.target.value)}
+                                  onChange={(e) => setNewSectionName(e.target.value)}
                                   onKeyDown={(e) => e.key === 'Enter' && handleRenameSection(sectionGroup.id)}
                                   autoFocus
                                 />

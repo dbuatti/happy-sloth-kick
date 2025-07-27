@@ -3,6 +3,7 @@ import { MadeWithDyad } from "@/components/made-with-dyad";
 import TaskList from "@/components/TaskList";
 import AuthComponent from "@/components/AuthComponent";
 import { supabase } from "@/integrations/supabase/client";
+import { useTasks } from '@/hooks/useTasks'; // Import useTasks
 
 interface IndexProps {
   setIsAddTaskOpen: (open: boolean) => void;
@@ -10,6 +11,7 @@ interface IndexProps {
 
 const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen }) => {
   const [session, setSession] = useState<any>(null);
+  const { setStatusFilter } = useTasks(); // Get setStatusFilter from useTasks
 
   useEffect(() => {
     // Get the current session
@@ -22,8 +24,11 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen }) => {
       setSession(session);
     });
 
+    // Explicitly set status filter to 'all' when this page loads
+    setStatusFilter('all');
+
     return () => subscription.unsubscribe();
-  }, []);
+  }, [setStatusFilter]); // Add setStatusFilter to dependencies
 
   return (
     <div className="flex-1 flex flex-col"> {/* Removed min-h-screen and bg classes */}

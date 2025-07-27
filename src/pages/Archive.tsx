@@ -26,10 +26,7 @@ const Archive = () => {
   // Set the status filter to 'archived' when this page loads
   useEffect(() => {
     setStatusFilter('archived');
-    return () => {
-      // Optionally reset filter when leaving the page if needed for other views
-      // setStatusFilter('all'); 
-    };
+    // No need to return a cleanup function to reset, as Index.tsx will set it to 'all'
   }, [setStatusFilter]);
 
   // Handler for status changes specifically for SortableTaskItem
