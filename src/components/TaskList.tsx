@@ -70,7 +70,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
     filteredTasks.forEach(task => {
       const sectionId = task.section_id;
       if (sectionId && grouped[sectionId] !== undefined) {
-        grouped[section.id].push(task);
+        grouped[sectionId].push(task); // Corrected: Use sectionId here
       } else {
         grouped['no-section'].push(task);
       }
