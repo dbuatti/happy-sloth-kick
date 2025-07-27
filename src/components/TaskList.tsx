@@ -532,7 +532,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
                         placeholder="e.g., Work, Personal"
                         autoFocus // Added autoFocus
                       />
-                      <Button onClick={handleCreateSection}>
+                      <Button onClick={handleCreateSection} disabled={!newSectionName.trim()}>
                         <Plus className="h-4 w-4 mr-2" /> Add
                       </Button>
                     </div>
@@ -550,11 +550,11 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
                               <div className="flex-1 flex items-center gap-2">
                                 <Input
                                   value={editingSectionName}
-                                  onChange={(e) => setNewSectionName(e.target.value)}
+                                  onChange={(e) => setEditingSectionName(e.target.value)}
                                   onKeyDown={(e) => e.key === 'Enter' && handleRenameSection(sectionGroup.id)}
                                   autoFocus
                                 />
-                                <Button size="sm" onClick={() => handleRenameSection(sectionGroup.id)}>Save</Button>
+                                <Button size="sm" onClick={() => handleRenameSection(sectionGroup.id)} disabled={!editingSectionName.trim()}>Save</Button>
                                 <Button variant="ghost" size="sm" onClick={() => setEditingSectionId(null)}>Cancel</Button>
                               </div>
                             ) : (
