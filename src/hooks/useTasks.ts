@@ -136,23 +136,23 @@ export const useTasks = () => {
       console.log('useTasks LOG 2: Daily recurring templates found:', dailyRecurringTemplates);
 
       const newRecurringInstances: Task[] = [];
-      const currentDayFormatted = format(dateToFetch, 'yyyy-MM-dd'); 
+      const startOfDateToFetch = fnsStartOfDay(dateToFetch); // Ensure dateToFetch is at midnight local time
 
       for (const template of dailyRecurringTemplates) {
-        // Check if *any* instance (regardless of status) exists for the current date
-        // An instance is identified by its original_task_id pointing to the template's ID
-        const instanceExistsForToday = fetchedTasksForCheck.some(task =>
+        // Check if an *active* instance (to-do or skipped) exists for the current date
+        const activeInstanceExistsForToday = fetchedTasksForCheck.some(task =>
           task.original_task_id === template.id && 
-          isSameDay(parseISO(task.created_at), dateToFetch)
+          isSameDay(parseISO(task.created_at), startOfDateToFetch) &&
+          (task.status === 'to-do' || task.status === 'skipped')
         );
-        console.log(`useTasks LOG 3: Template "${template.description}" (ID: ${template.id}): Instance exists for today (${currentDayFormatted})? ${instanceExistsForToday}`);
+        console.log(`useTasks LOG 3: Template "${template.description}" (ID: ${template.id}): Active instance exists for today (${format(startOfDateToFetch, 'yyyy-MM-dd')})? ${activeInstanceExistsForToday}`);
 
-        if (!instanceExistsForToday) {
-          // If no instance exists for today, create a new 'to-do' instance
+        if (!activeInstanceExistsForToday) {
+          // If no active instance exists for today, create a new 'to-do' instance
           const newInstance: Task = {
             ...template,
             id: uuidv4(),
-            created_at: fnsStartOfDay(dateToFetch).toISOString(), // Use dateToFetch
+            created_at: startOfDateToFetch.toISOString(), // Use the precise ISO string for midnight UTC of the target day
             status: 'to-do', // New instances are always 'to-do'
             recurring_type: 'none', // Instances are not recurring themselves
             original_task_id: template.id, // Link back to the template
@@ -409,8 +409,8 @@ export const useTasks = () => {
 
   const reorderTasksInSameSection = useCallback(async (sectionId: string | null, oldIndex: number, newIndex: number) => {
     setTasks(prevTasks => {
-      const tasksInSection = prevTasks.filter(t => t.section_id === sectionId);
-      const otherTasks = prevTasks.filter(t => t.section_id !== sectionId);
+      const tasksInSection = prevTasks.filter(t => t.parent_task_id === null && t.section_id === sectionId);
+      const otherTasks = prevTasks.filter(t => t.parent_task_id !== null || t.section_id !== sectionId);
       const reordered = [...tasksInSection];
       const [movedTask] = reordered.splice(oldIndex, 1);
       reordered.splice(newIndex, 0, movedTask);

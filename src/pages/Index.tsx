@@ -6,6 +6,7 @@ import { useTasks } from '@/hooks/useTasks';
 import TaskList from "@/components/TaskList";
 import DateNavigator from '@/components/DateNavigator';
 import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts'; // Import useKeyboardShortcuts and ShortcutMap
+import { addDays, startOfDay } from 'date-fns'; // Import addDays and startOfDay
 
 interface IndexProps {
   setIsAddTaskOpen: (open: boolean) => void;
@@ -34,23 +35,15 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen }) => {
   }, [setStatusFilter]);
 
   const handlePreviousDay = () => {
-    setCurrentDate(prevDate => {
-      const newDate = new Date(prevDate);
-      newDate.setDate(prevDate.getDate() - 1);
-      return newDate;
-    });
+    setCurrentDate(prevDate => startOfDay(addDays(prevDate, -1)));
   };
 
   const handleNextDay = () => {
-    setCurrentDate(prevDate => {
-      const newDate = new Date(prevDate);
-      newDate.setDate(prevDate.getDate() + 1);
-      return newDate;
-    });
+    setCurrentDate(prevDate => startOfDay(addDays(prevDate, 1)));
   };
 
   const handleGoToToday = () => {
-    setCurrentDate(new Date());
+    setCurrentDate(startOfDay(new Date()));
   };
 
   // Define keyboard shortcuts
