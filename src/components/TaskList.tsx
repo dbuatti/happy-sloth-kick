@@ -199,7 +199,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
     return (
       <div className="flex-1 flex flex-col">
         <main className="flex-grow p-4 flex justify-center">
-          <Card className="w-full max-w-4xl mx-auto shadow-lg">
+          <Card className="w-full shadow-lg">
             <CardHeader>
               <CardTitle className="text-3xl font-bold text-center">Loading Tasks...</CardTitle>
             </CardHeader>
@@ -218,7 +218,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
     <>
       <div className="flex-1 flex flex-col">
         <main className="flex-grow p-4">
-          <Card className="w-full max-w-4xl mx-auto shadow-lg">
+          <Card className="w-full shadow-lg"> {/* Removed max-w-4xl and mx-auto */}
             <CardHeader>
               <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
                 <CheckCircle2 className="h-7 w-7" /> Your Tasks
@@ -273,7 +273,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
                         {isExpanded && (
                           <div className="mt-2 space-y-2 pl-2">
                             <SortableContext items={sectionTasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
-                              <ul className="list-none space-y-2"> {/* Added list-none here */}
+                              <ul className="list-none space-y-2">
                                 {sectionTasks.length === 0 ? (
                                   <div className="text-center text-gray-500 py-4">
                                     No tasks in this section
@@ -315,7 +315,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
                     </div>
                     <div className="mt-2 space-y-2 pl-2">
                       <SortableContext items={tasksBySection['no-section'].map(t => t.id)} strategy={verticalListSortingStrategy}>
-                        <ul className="list-none space-y-2"> {/* Added list-none here */}
+                        <ul className="list-none space-y-2">
                           {tasksBySection['no-section'].map(task => (
                             <SortableTaskItem
                               key={task.id}
@@ -343,7 +343,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
 
       {/* Add Task Dialog */}
       <Dialog open={isAddTaskFormOpen} onOpenChange={setIsAddTaskForm}>
-        <DialogContent className="sm:max-w-md"> {/* Added max-w-md */}
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Add New Task</DialogTitle>
           </DialogHeader>
