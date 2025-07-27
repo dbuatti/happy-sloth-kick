@@ -78,7 +78,7 @@ export const useTasks = () => {
   const [sectionFilter, setSectionFilter] = useState(() => getInitialFilter('section', 'all'));
 
   const remindedTaskIdsRef = useRef<Set<string>>(new Set());
-  const isFetchingRef = useRef(false); // Use boolean to indicate if any fetch is in progress
+  const isFetchingRef = useRef<string | null>(null); // Stores the date being fetched
 
   useEffect(() => {
     localStorage.setItem('task_filter_search', searchFilter);
@@ -100,132 +100,126 @@ export const useTasks = () => {
     localStorage.setItem('task_filter_section', sectionFilter);
   }, [sectionFilter]);
 
-  const fetchSections = useCallback(async () => {
-    if (!userId) return;
-    try {
-      const { data, error } = await supabase
-        .from('task_sections')
-        .select('*')
-        .eq('user_id', userId)
-        .order('order', { ascending: true })
-        .order('name', { ascending: true });
-
-      if (error) throw error;
-      setSections(data || []);
-    } catch (error: any) {
-      console.error('Error fetching sections:', error);
-      showError('Failed to load sections.');
-    }
-  }, [userId]);
-
-  const fetchTasks = useCallback(async () => {
-    if (!userId || isFetchingRef.current) { // Prevent concurrent fetches
-      setLoading(false);
-      console.log('fetchTasks: Skipping fetch, already fetching or no user ID.');
-      return;
-    }
-    isFetchingRef.current = true; // Set flag to true
-    setLoading(true);
-    console.log('fetchTasks: Starting fetch for user:', userId, 'on date:', currentDate.toISOString());
-    
-    try {
-      const { data: allTasks, error: fetchError } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('user_id', userId);
-
-      if (fetchError) throw fetchError;
-      console.log('fetchTasks: All tasks fetched:', allTasks);
-
-      let processedTasks: Task[] = allTasks || [];
-
-      const dailyRecurringTemplates = processedTasks.filter(
-        task => task.recurring_type === 'daily' && task.original_task_id === null
-      );
-      console.log('fetchTasks: Daily recurring templates found:', dailyRecurringTemplates);
-
-      const newRecurringInstances: Task[] = [];
-
-      for (const template of dailyRecurringTemplates) {
-        // Use the consistent UTC currentDate for checking existing instances
-        const startOfCurrentUTC = currentDate.toISOString(); // currentDate is already UTC midnight
-        const endOfCurrentUTC = new Date(currentDate.getTime() + 24 * 60 * 60 * 1000 - 1).toISOString();
-        console.log(`fetchTasks: Checking for existing instance of template "${template.description}" (ID: ${template.id}) for today (UTC: ${startOfCurrentUTC} - ${endOfCurrentUTC})`);
-
-        const { data: existingInstances, error: checkError } = await supabase
-          .from('tasks')
-          .select('id')
-          .eq('original_task_id', template.id)
-          .eq('user_id', userId)
-          .gte('created_at', startOfCurrentUTC)
-          .lt('created_at', endOfCurrentUTC)
-          .in('status', ['to-do', 'skipped']);
-
-        if (checkError) throw checkError;
-        console.log(`fetchTasks: Found ${existingInstances?.length || 0} existing active instances for template "${template.description}" today.`);
-
-        if (!existingInstances || existingInstances.length === 0) {
-          const newInstance: Task = {
-            ...template,
-            id: uuidv4(),
-            created_at: currentDate.toISOString(), // Use the consistent UTC currentDate
-            status: 'to-do',
-            recurring_type: 'none',
-            original_task_id: template.id,
-            due_date: null,
-            remind_at: null,
-            parent_task_id: null,
-          };
-          newRecurringInstances.push(newInstance);
-          console.log('fetchTasks: Preparing to insert new instance:', newInstance.description);
-        }
-      }
-
-      if (newRecurringInstances.length > 0) {
-        console.log('fetchTasks: Inserting new recurring instances:', newRecurringInstances.map(t => t.description));
-        const { data: insertedData, error: insertError } = await supabase
-          .from('tasks')
-          .insert(newRecurringInstances)
-          .select();
-
-        if (insertError) throw insertError;
-        console.log('fetchTasks: Inserted data:', insertedData);
-        
-        // Instead of re-fetching all tasks, update the state with the newly inserted data
-        setTasks(prev => [...prev, ...(insertedData as Task[])]);
-        console.log('fetchTasks: Tasks state updated with new instances.');
-      } else {
-        setTasks(allTasks || []);
-        console.log('fetchTasks: No new instances to insert, setting tasks from initial fetch.');
-      }
-      
-    } catch (error: any) {
-      console.error('Error in fetchTasks:', error);
-      showError('An unexpected error occurred while loading tasks.');
-    } finally {
-      setLoading(false);
-      isFetchingRef.current = false; // Reset the flag after fetch completes
-      console.log('fetchTasks: Fetch process completed.');
-    }
-  }, [userId, currentDate]);
-
   useEffect(() => {
-    if (userId) {
-      fetchSections();
-      fetchTasks();
-    } else {
+    if (!userId) {
       setTasks([]);
       setSections([]);
       setLoading(false);
       console.log('useTasks useEffect: No user ID, clearing tasks and sections.');
+      return;
     }
-  }, [userId, fetchSections, fetchTasks]);
+
+    const currentFetchKey = `${userId}-${currentDate.toISOString()}`;
+    if (isFetchingRef.current === currentFetchKey) {
+      console.log(`useTasks useEffect: Already fetching for ${currentFetchKey}, skipping.`);
+      return;
+    }
+
+    isFetchingRef.current = currentFetchKey; // Mark as currently fetching for this key
+
+    const fetchDataAndSections = async () => {
+      setLoading(true);
+      try {
+        // Fetch sections
+        const { data: sectionsData, error: sectionsError } = await supabase
+          .from('task_sections')
+          .select('*')
+          .eq('user_id', userId)
+          .order('order', { ascending: true })
+          .order('name', { ascending: true });
+        if (sectionsError) throw sectionsError;
+        setSections(sectionsData || []);
+        console.log('useTasks useEffect: Sections fetched.');
+
+        // Fetch tasks logic
+        console.log('fetchTasks: Starting fetch for user:', userId, 'on date:', currentDate.toISOString());
+        const { data: allTasks, error: fetchError } = await supabase
+          .from('tasks')
+          .select('*')
+          .eq('user_id', userId);
+
+        if (fetchError) throw fetchError;
+        console.log('fetchTasks: All tasks fetched:', allTasks);
+
+        const dailyRecurringTemplates = allTasks.filter(
+          task => task.recurring_type === 'daily' && task.original_task_id === null
+        );
+        console.log('fetchTasks: Daily recurring templates found:', dailyRecurringTemplates);
+
+        const newRecurringInstances: Task[] = [];
+
+        for (const template of dailyRecurringTemplates) {
+          // Use the consistent UTC currentDate for checking existing instances
+          const startOfCurrentUTC = currentDate.toISOString(); // currentDate is already UTC midnight
+          const endOfCurrentUTC = new Date(currentDate.getTime() + 24 * 60 * 60 * 1000 - 1).toISOString();
+          console.log(`fetchTasks: Checking for existing instance of template "${template.description}" (ID: ${template.id}) for today (UTC: ${startOfCurrentUTC} - ${endOfCurrentUTC})`);
+
+          const { data: existingInstances, error: checkError } = await supabase
+            .from('tasks')
+            .select('id')
+            .eq('original_task_id', template.id)
+            .eq('user_id', userId)
+            .gte('created_at', startOfCurrentUTC)
+            .lt('created_at', endOfCurrentUTC)
+            .in('status', ['to-do', 'skipped']);
+
+          if (checkError) throw checkError;
+          console.log(`fetchTasks: Found ${existingInstances?.length || 0} existing active instances for template "${template.description}" today.`);
+
+          if (!existingInstances || existingInstances.length === 0) {
+            const newInstance: Task = {
+              ...template,
+              id: uuidv4(),
+              created_at: currentDate.toISOString(), // Use the consistent UTC currentDate
+              status: 'to-do',
+              recurring_type: 'none',
+              original_task_id: template.id,
+              due_date: null,
+              remind_at: null,
+              parent_task_id: null,
+            };
+            newRecurringInstances.push(newInstance);
+            console.log('fetchTasks: Preparing to insert new instance:', newInstance.description);
+          }
+        }
+
+        if (newRecurringInstances.length > 0) {
+          console.log('fetchTasks: Inserting new recurring instances:', newRecurringInstances.map(t => t.description));
+          const { data: insertedData, error: insertError } = await supabase
+            .from('tasks')
+            .insert(newRecurringInstances)
+            .select();
+
+          if (insertError) throw insertError;
+          console.log('fetchTasks: Inserted data:', insertedData);
+          
+          // Directly update the tasks state with the newly inserted data
+          // This is the key change: avoid another full fetch
+          setTasks(prev => [...prev, ...(insertedData as Task[])]);
+          console.log('fetchTasks: Tasks state updated with new instances directly.');
+        } else {
+          setTasks(allTasks || []);
+          console.log('fetchTasks: No new instances to insert, setting tasks from initial fetch.');
+        }
+      } catch (error: any) {
+        console.error('Error in fetchDataAndSections:', error);
+        showError('An unexpected error occurred while loading data.');
+      } finally {
+        setLoading(false);
+        isFetchingRef.current = null; // Reset the flag after fetch completes
+        console.log('fetchTasks: Fetch process completed.');
+      }
+    };
+
+    fetchDataAndSections();
+
+  }, [userId, currentDate]); // Dependencies for this combined effect
 
   useEffect(() => {
     if (!userId) return;
 
     const reminderInterval = setInterval(() => {
-      const now = new Date();
+      const now = new Date(); // Ensure 'now' is defined here
       tasks.forEach(task => {
         if (task.remind_at && task.status === 'to-do' && !remindedTaskIdsRef.current.has(task.id)) {
           const reminderTime = parseISO(task.remind_at);
@@ -393,7 +387,8 @@ export const useTasks = () => {
       if (error) throw error;
       setSections(prev => prev.map(s => (s.id === sectionId ? data : s)));
       showSuccess('Section updated successfully!');
-    } catch (error: any) {
+    }
+    catch (error: any) {
       console.error('Error updating section:', error);
       showError('Failed to update section.');
     }
