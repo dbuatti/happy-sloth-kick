@@ -739,7 +739,7 @@ export const useTasks = () => {
       // Add to destination section's list at the correct index and re-index
       const tempNewDestinationTasks = Array.from(destinationTasks);
       tempNewDestinationTasks.splice(destinationIndex, 0, { ...movedTask, section_id: destinationSectionId });
-      const newDestinationTasks = tempNewDbDestinationTasks.map((task, index) => ({ // Corrected variable name
+      const newDestinationTasks = tempNewDestinationTasks.map((task, index) => ({ // Corrected variable name here
         ...task, // Preserve all original properties
         order: index,
         section_id: destinationSectionId, // Ensure section_id is updated for the moved task
