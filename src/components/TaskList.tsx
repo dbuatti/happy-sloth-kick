@@ -55,7 +55,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
   const [isAddSectionOpen, setIsAddSectionOpen] = useState(false);
   const [newSectionName, setNewSectionName] = useState('');
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
-  const [editingSectionName, setEditingSectionName] = useState('');
+  const [editingSectionName, setNewEditingSectionName] = useState(''); // Renamed to avoid conflict
 
   // Group tasks by section
   const tasksBySection = useMemo(() => {
@@ -173,18 +173,18 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
     if (editingSectionId && editingSectionName.trim()) {
       await updateSection(editingSectionId, editingSectionName.trim());
       setEditingSectionId(null);
-      setEditingSectionName('');
+      setNewEditingSectionName(''); // Use the new setter
     }
   };
 
   const handleEditSectionClick = (section: TaskSection) => {
     setEditingSectionId(section.id);
-    setEditingSectionName(section.name);
+    setNewEditingSectionName(section.name); // Use the new setter
   };
 
   const handleCancelSectionEdit = () => {
     setEditingSectionId(null);
-    setEditingSectionName('');
+    setNewEditingSectionName(''); // Use the new setter
   };
 
   const handleAddSection = async () => {
@@ -265,7 +265,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
                           onToggleExpand={() => toggleSection(section.id)}
                           isEditing={editingSectionId === section.id}
                           editingName={editingSectionName}
-                          onNameChange={setEditingSectionName}
+                          onNameChange={setNewEditingSectionName} // Use the new setter
                           onSaveEdit={() => handleRenameSection()}
                           onCancelEdit={handleCancelSectionEdit}
                           onEditClick={() => handleEditSectionClick(section)}
