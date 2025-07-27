@@ -153,6 +153,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
                   value={newCategoryName}
                   onChange={(e) => setNewCategoryName(e.target.value)}
                   placeholder="e.g., Work, Personal, Shopping"
+                  autoFocus // Added autoFocus
                 />
               </div>
               <div>

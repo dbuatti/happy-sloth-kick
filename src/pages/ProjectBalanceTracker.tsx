@@ -229,6 +229,7 @@ const ProjectBalanceTracker: React.FC = () => {
                       value={newProjectName}
                       onChange={(e) => setNewProjectName(e.target.value)}
                       placeholder="e.g., Learn Rust, Garden Design"
+                      autoFocus // Added autoFocus
                     />
                   </div>
                   <div>

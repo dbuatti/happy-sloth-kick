@@ -500,6 +500,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
                         value={newSectionName}
                         onChange={(e) => setNewSectionName(e.target.value)}
                         placeholder="e.g., Work, Personal"
+                        autoFocus // Added autoFocus
                       />
                       <Button onClick={handleCreateSection}>
                         <Plus className="h-4 w-4 mr-2" /> Add

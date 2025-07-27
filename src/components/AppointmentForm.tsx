@@ -125,6 +125,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
               placeholder="Appointment Title"
               required
               disabled={isSaving}
+              autoFocus // Added autoFocus
             />
           </div>
 

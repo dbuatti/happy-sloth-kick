@@ -242,6 +242,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
             onChange={(e) => setNewTaskDescription(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={isAdding}
+            autoFocus // Added autoFocus
           />
         </div>
         
