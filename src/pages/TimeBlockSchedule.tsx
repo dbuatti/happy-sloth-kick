@@ -34,22 +34,27 @@ const TimeBlockSchedule: React.FC = () => {
 
     if (!workHours || !workHours.enabled) return [];
 
-    const blocks = [];
-    const startTime = parse(workHours.start_time, 'HH:mm', currentDate);
-    const endTime = parse(workHours.end_time, 'HH:mm', currentDate);
+    // Use 'HH:mm:ss' to correctly parse the time strings from Supabase
+    const startTime = parse(workHours.start_time, 'HH:mm:ss', currentDate);
+    const endTime = parse(workHours.end_time, 'HH:mm:ss', currentDate);
 
+    // Check if parsing resulted in invalid dates
+    if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+      console.error("Error parsing start or end time. Check format:", workHours.start_time, workHours.end_time);
+      return [];
+    }
+
+    const blocks = [];
     let currentTime = startTime;
-    while (isBefore(currentTime, endTime) || (isSameHour(currentTime, endTime) && isSameMinute(currentTime, endTime))) {
+    while (isBefore(currentTime, endTime)) { // Loop while current time is before end time
       const blockStart = currentTime;
       const blockEnd = addMinutes(currentTime, 30);
 
-      if (isBefore(blockStart, endTime)) { // Ensure block doesn't start after end time
-        blocks.push({
-          start: format(blockStart, 'HH:mm'),
-          end: format(blockEnd, 'HH:mm'),
-          label: format(blockStart, 'h:mm a'),
-        });
-      }
+      blocks.push({
+        start: format(blockStart, 'HH:mm'),
+        end: format(blockEnd, 'HH:mm'),
+        label: format(blockStart, 'h:mm a'),
+      });
       currentTime = blockEnd;
     }
     return blocks;
