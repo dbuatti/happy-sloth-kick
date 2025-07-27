@@ -119,7 +119,6 @@ export const useTasks = () => {
     setLoading(true);
     
     try {
-      // Step 1: Fetch ALL tasks in a single query
       const { data: allTasks, error: fetchError } = await supabase
         .from('tasks')
         .select('*')
@@ -127,7 +126,6 @@ export const useTasks = () => {
 
       if (fetchError) throw fetchError;
 
-      // Step 2: Process the data and create new instances in memory
       let processedTasks: Task[] = allTasks || [];
 
       const dailyRecurringTemplates = processedTasks.filter(
@@ -160,7 +158,6 @@ export const useTasks = () => {
         }
       }
 
-      // Step 3: Perform the database insert
       if (newRecurringInstances.length > 0) {
         const { data: insertedData, error: insertError } = await supabase
           .from('tasks')
@@ -168,11 +165,9 @@ export const useTasks = () => {
           .select();
 
         if (insertError) throw insertError;
-        // Step 4: Update the state with ALL tasks (fetched + inserted) in a single, atomic operation
         processedTasks = [...processedTasks, ...(insertedData || [])];
       }
       
-      // Step 5: Set the state
       setTasks(processedTasks);
     } catch (error: any) {
       console.error('Error in fetchTasks:', error);
@@ -467,10 +462,13 @@ export const useTasks = () => {
       workingTasks = workingTasks.filter(task => task.status !== 'archived');
     }
 
+    // Filter tasks for the current date
     workingTasks = workingTasks.filter(task => {
+      // If it's a recurring template, only show it on its creation day
       if (task.recurring_type !== 'none' && task.original_task_id === null) {
-        return false;
+        return isSameDay(parseISO(task.created_at), currentDate);
       }
+      // For instances, check if they belong to the current date
       return isSameDay(parseISO(task.created_at), currentDate);
     });
 
