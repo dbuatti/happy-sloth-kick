@@ -496,7 +496,7 @@ export const useTasks = () => {
   const filteredTasks = useMemo(() => {
     console.log('filteredTasks: Starting filter process for currentDate:', currentDate.toISOString(), 'statusFilter:', statusFilter);
     let workingTasks = [...tasks];
-    const effectiveCurrentDate = currentDate; // currentDate is now consistently UTC midnight
+    const effectiveCurrentDate = currentDate; // currentDate is already consistently UTC midnight
     console.log('filteredTasks: Initial tasks count:', workingTasks.length);
 
     // 1. Filter out subtasks (they are handled within parent tasks)
@@ -538,22 +538,22 @@ export const useTasks = () => {
           return false;
         }
 
-        // Rule C: If the task is active (to-do/skipped), show it if it's a recurring instance for today,
+        // Rule C: If the task is active (to-do/skipped), show it if it's a recurring instance for the current day,
         // or if it's a general task (not a recurring instance) regardless of its created_at date.
         if (isTaskActive) {
           if (isRecurringInstance) {
-            const shouldInclude = isTaskCreatedToday;
-            console.log(`    -> Included (Rule C: Active Recurring Instance for Today: ${shouldInclude})`);
+            const shouldInclude = isTaskCreatedToday; // Only show recurring instances if created for today
+            console.log(`    -> Rule C: Active Recurring Instance for Today: ${shouldInclude}`);
             return shouldInclude;
           }
-          console.log(`    -> Included (Rule C: Active General Task)`);
+          console.log(`    -> Rule C: Active General Task (always included if active)`);
           return true; // Show all other active tasks (admin/priorities, carry-overs)
         }
 
-        // Rule D: If the task is completed, only show it if it was created (and thus completed) on the effectiveCurrentDate
+        // Rule D: If the task is completed, only show it if it was completed on the current day.
         if (isTaskCompleted) {
-          const shouldInclude = isTaskCreatedToday;
-          console.log(`    -> Included (Rule D: Completed Today: ${shouldInclude})`);
+          const shouldInclude = isTaskCreatedToday; // Only show completed tasks if created/completed today
+          console.log(`    -> Rule D: Completed Today: ${shouldInclude}`);
           return shouldInclude;
         }
 

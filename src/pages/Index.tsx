@@ -30,8 +30,7 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen }) => {
       setSession(session);
     });
 
-    // Set initial currentDate to UTC start of today
-    setCurrentDate(getUTCStartOfDay(new Date())); 
+    // Removed: setCurrentDate(getUTCStartOfDay(new Date())); // This was causing duplicate fetches
     setStatusFilter('all');
 
     return () => {
@@ -39,7 +38,7 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen }) => {
         subscription.unsubscribe();
       }
     };
-  }, [setStatusFilter, setCurrentDate]); // Added setCurrentDate to dependencies
+  }, [setStatusFilter]); // Removed setCurrentDate from dependencies as it's no longer set here
 
   const handlePreviousDay = () => {
     setCurrentDate(prevDate => getUTCStartOfDay(addDays(prevDate, -1)));
