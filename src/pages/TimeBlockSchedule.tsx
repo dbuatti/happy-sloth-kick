@@ -51,9 +51,8 @@ const TimeBlockSchedule: React.FC = () => {
       const blockEnd = addMinutes(currentTime, 30);
 
       blocks.push({
-        start: format(blockStart, 'HH:mm'),
-        end: format(blockEnd, 'HH:mm'),
-        label: format(blockStart, 'h:mm a'),
+        start: blockStart, // Store as Date object
+        end: blockEnd,     // Store as Date object
       });
       currentTime = blockEnd;
     }
@@ -93,25 +92,15 @@ const TimeBlockSchedule: React.FC = () => {
                   <p>Please check your work hour settings for this day.</p>
                 </div>
               ) : (
-                <div className="grid gap-4">
+                <div className="grid gap-4 grid-cols-2"> {/* Apply grid-cols-2 here */}
                   {timeBlocks.map((block, index) => (
-                    <div key={index} className="grid grid-cols-2 gap-4">
-                      <div className="relative flex items-center justify-center h-24 bg-card dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
-                        <span className="absolute inset-0 flex items-center justify-center text-5xl font-extrabold text-foreground opacity-10 pointer-events-none select-none">
-                          {block.label.split(' ')[0]}
-                        </span>
-                        <span className="relative z-10 text-sm font-medium text-muted-foreground">
-                          {block.start} - {block.label.split(' ')[0]}:30
-                        </span>
-                      </div>
-                      <div className="relative flex items-center justify-center h-24 bg-card dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
-                        <span className="absolute inset-0 flex items-center justify-center text-5xl font-extrabold text-foreground opacity-10 pointer-events-none select-none">
-                          {block.label.split(' ')[0]}
-                        </span>
-                        <span className="relative z-10 text-sm font-medium text-muted-foreground">
-                          {block.label.split(' ')[0]}:30 - {block.end}
-                        </span>
-                      </div>
+                    <div key={index} className="relative flex items-center justify-center h-24 bg-card dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
+                      <span className="absolute inset-0 flex items-center justify-center text-5xl font-extrabold text-foreground opacity-10 pointer-events-none select-none">
+                        {format(block.start, 'h')} {/* Background: just the hour */}
+                      </span>
+                      <span className="relative z-10 text-sm font-medium text-muted-foreground">
+                        {format(block.start, 'h:mm a')} - {format(block.end, 'h:mm a')} {/* Foreground: full time range */}
+                      </span>
                     </div>
                   ))}
                 </div>
