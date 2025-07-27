@@ -293,33 +293,63 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
 
   const tasksGroupedBySection = useMemo(() => {
     const grouped: { [key: string]: { parentTasks: Task[]; subtasks: Task[] } } = {};
+    const allSectionIds = new Set<string>();
 
+    // Initialize groups for existing sections
     sections.forEach(section => {
       grouped[section.id] = { parentTasks: [], subtasks: [] };
+      allSectionIds.add(section.id);
     });
 
+    // Populate groups with filtered tasks
     filteredTasks.forEach(task => {
+      const targetSectionId = task.section_id || 'no-section';
+      if (!grouped[targetSectionId]) {
+        grouped[targetSectionId] = { parentTasks: [], subtasks: [] };
+        allSectionIds.add(targetSectionId); // Add 'no-section' if it exists
+      }
+
       if (task.parent_task_id) {
-        // This is a subtask
-        grouped[task.section_id || 'no-section']?.subtasks.push(task);
+        grouped[targetSectionId].subtasks.push(task);
       } else {
-        // This is a parent task
-        grouped[task.section_id || 'no-section']?.parentTasks.push(task);
+        grouped[targetSectionId].parentTasks.push(task);
       }
     });
 
-    // Sort parent tasks within each section
+    // Sort parent tasks within each group
     Object.keys(grouped).forEach(sectionId => {
       grouped[sectionId].parentTasks.sort((a, b) => (a.order || 0) - (b.order || 0));
-      // Subtasks will be sorted when rendered within their parent
     });
 
-    return sections.map(section => ({
-      ...section,
-      parentTasks: grouped[section.id]?.parentTasks || [],
-      subtasks: grouped[section.id]?.subtasks || [], // All subtasks for the section, to be filtered by parent
-    }));
-  }, [filteredTasks, sections]);
+    // Create the final list of sections to render, including 'no-section' if applicable
+    const sectionsToRender: (TaskSection & { parentTasks: Task[]; subtasks: Task[] })[] = [];
+
+    // Add actual sections first, maintaining their order
+    sections.forEach(section => {
+      // Only include actual sections if they have tasks or were explicitly created
+      if (grouped[section.id] && (grouped[section.id].parentTasks.length > 0 || grouped[section.id].subtasks.length > 0)) {
+        sectionsToRender.push({
+          ...section,
+          parentTasks: grouped[section.id].parentTasks,
+          subtasks: grouped[section.id].subtasks,
+        });
+      }
+    });
+
+    // Add "No Section" at the end if it contains tasks
+    if (grouped['no-section'] && (grouped['no-section'].parentTasks.length > 0 || grouped['no-section'].subtasks.length > 0)) {
+      sectionsToRender.push({
+        id: 'no-section',
+        name: 'No Section',
+        user_id: userId || '', // Placeholder, not persisted
+        order: Infinity, // Always at the end
+        parentTasks: grouped['no-section'].parentTasks,
+        subtasks: grouped['no-section'].subtasks,
+      });
+    }
+
+    return sectionsToRender;
+  }, [filteredTasks, sections, userId]);
 
   const handleDragStart = (event: any) => {
     setActiveId(event.active.id);
@@ -520,7 +550,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
                               <div className="flex-1 flex items-center gap-2">
                                 <Input
                                   value={editingSectionName}
-                                  onChange={(e) => setEditingSectionName(e.target.value)}
+                                  onChange={(e) => setNewSectionName(e.target.value)}
                                   onKeyDown={(e) => e.key === 'Enter' && handleRenameSection(sectionGroup.id)}
                                   autoFocus
                                 />

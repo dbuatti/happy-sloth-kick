@@ -45,6 +45,15 @@ interface NewTaskData {
   parent_task_id?: string | null; // New: for sub-tasks
 }
 
+// Helper function to get initial state from localStorage
+const getInitialFilter = (key: string, defaultValue: string) => {
+  if (typeof window !== 'undefined') {
+    const storedValue = localStorage.getItem(`task_filter_${key}`);
+    return storedValue !== null ? storedValue : defaultValue;
+  }
+  return defaultValue;
+};
+
 export const useTasks = () => {
   const { user } = useAuth();
   const userId = user?.id;
@@ -57,15 +66,37 @@ export const useTasks = () => {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [sections, setSections] = useState<TaskSection[]>([]);
 
-  // Filter states
-  const [searchFilter, setSearchFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [priorityFilter, setPriorityFilter] = useState('all');
-  const [sectionFilter, setSectionFilter] = useState('all');
+  // Filter states - now persistent
+  const [searchFilter, setSearchFilter] = useState(() => getInitialFilter('search', ''));
+  const [statusFilter, setStatusFilter] = useState(() => getInitialFilter('status', 'all'));
+  const [categoryFilter, setCategoryFilter] = useState(() => getInitialFilter('category', 'all'));
+  const [priorityFilter, setPriorityFilter] = useState(() => getInitialFilter('priority', 'all'));
+  const [sectionFilter, setSectionFilter] = useState(() => getInitialFilter('section', 'all'));
 
   // Ref to keep track of tasks for which a reminder has been shown in the current session
   const remindedTaskIdsRef = useRef<Set<string>>(new Set());
+
+  // Effects to save filter states to localStorage
+  useEffect(() => {
+    localStorage.setItem('task_filter_search', searchFilter);
+  }, [searchFilter]);
+
+  useEffect(() => {
+    localStorage.setItem('task_filter_status', statusFilter);
+  }, [statusFilter]);
+
+  useEffect(() => {
+    localStorage.setItem('task_filter_category', categoryFilter);
+  }, [categoryFilter]);
+
+  useEffect(() => {
+    localStorage.setItem('task_filter_priority', priorityFilter);
+  }, [priorityFilter]);
+
+  useEffect(() => {
+    localStorage.setItem('task_filter_section', sectionFilter);
+  }, [sectionFilter]);
+
 
   const fetchSections = useCallback(async () => {
     if (!userId) return;
