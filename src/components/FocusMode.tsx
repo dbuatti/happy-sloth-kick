@@ -8,7 +8,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { Task, useTasks } from '@/hooks/useTasks';
 import { cn } from '@/lib/utils';
-import { MadeWithDyad } from "@/components/made-with-dyad"; // Ensure MadeWithDyad is imported
+import { MadeWithDyad } from "@/components/made-with-dyad";
+import { useUI } from '@/context/UIContext'; // Import useUI
 
 const WORK_DURATION = 25 * 60; // 25 minutes in seconds
 const SHORT_BREAK_DURATION = 5 * 60; // 5 minutes in seconds
@@ -21,6 +22,7 @@ const FocusMode: React.FC = () => {
   const { user } = useAuth();
   const userId = user?.id;
   const { tasks, updateTask } = useTasks();
+  const { setIsFocusModeActive } = useUI(); // Use the UI context
 
   const [timeRemaining, setTimeRemaining] = useState(WORK_DURATION);
   const [isRunning, setIsRunning] = useState(false);
@@ -55,6 +57,17 @@ const FocusMode: React.FC = () => {
   useEffect(() => {
     fetchSuggestedTasks();
   }, [fetchSuggestedTasks, tasks]); // Re-fetch suggestions if tasks change
+
+  // Effect to activate/deactivate focus mode UI
+  useEffect(() => {
+    setIsFocusModeActive(true); // Activate distraction-free UI on mount
+    return () => {
+      setIsFocusModeActive(false); // Deactivate on unmount
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [setIsFocusModeActive]);
 
   const logSession = useCallback(async (type: SessionType, duration: number, start: Date, end: Date, taskId: string | null, completedDuringSession: boolean) => {
     if (!userId) return;
@@ -142,14 +155,6 @@ const FocusMode: React.FC = () => {
     fetchSuggestedTasks(); // Refresh suggestions on reset
   }, [pauseTimer, fetchSuggestedTasks]);
 
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
-  }, []);
-
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
@@ -186,7 +191,7 @@ const FocusMode: React.FC = () => {
   const currentTaskDetails = currentTaskId ? tasks.find(t => t.id === currentTaskId) : null;
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-4"> {/* Removed min-h-screen and bg classes */}
+    <div className="flex-1 flex flex-col items-center justify-center p-4">
       <Card className="w-full max-w-md shadow-lg text-center">
         <CardHeader>
           <CardTitle className="text-3xl font-bold">Focus Mode</CardTitle>
