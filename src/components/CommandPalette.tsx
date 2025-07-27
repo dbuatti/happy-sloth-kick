@@ -3,7 +3,7 @@ import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, C
 import { useTasks } from '@/hooks/useTasks';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Settings, BarChart3, Home, FolderOpen, ChevronLeft, ChevronRight, LogOut, LayoutGrid, CalendarClock } from 'lucide-react'; // Added CalendarClock
+import { Plus, Settings, BarChart3, Home, FolderOpen, ChevronLeft, ChevronRight, LogOut, LayoutGrid, CalendarClock, CalendarDays } from 'lucide-react'; // Added CalendarDays
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -82,6 +82,10 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
                     <Home className="mr-2 h-4 w-4" />
                     <span>Go to Daily Tasks</span>
                   </CommandItem>
+                  <CommandItem onSelect={() => handleSelect(() => setCurrentDate(new Date()))}>
+                    <CalendarDays className="mr-2 h-4 w-4" />
+                    <span>Go to Today</span>
+                  </CommandItem>
                   <CommandItem onSelect={() => handleSelect(() => navigate('/projects'))}>
                     <LayoutGrid className="mr-2 h-4 w-4" />
                     <span>Go to Project Balance</span>
@@ -148,6 +152,10 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
               <CommandItem onSelect={() => handleSelect(() => navigate('/'))}>
                 <Home className="mr-2 h-4 w-4" />
                 <span>Go to Daily Tasks</span>
+              </CommandItem>
+              <CommandItem onSelect={() => handleSelect(() => setCurrentDate(new Date()))}>
+                <CalendarDays className="mr-2 h-4 w-4" />
+                <span>Go to Today</span>
               </CommandItem>
               <CommandItem onSelect={() => handleSelect(() => navigate('/projects'))}>
                 <LayoutGrid className="mr-2 h-4 w-4" />

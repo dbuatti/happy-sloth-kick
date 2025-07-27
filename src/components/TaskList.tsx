@@ -442,6 +442,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
   const shortcuts: ShortcutMap = {
     'arrowleft': handlePreviousDay,
     'arrowright': handleNextDay,
+    't': handleGoToToday, // New shortcut for 'Go to Today'
     'f': (e) => {
       const searchInput = document.querySelector('input[placeholder="Search tasks..."]');
       if (searchInput) {
