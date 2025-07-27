@@ -62,8 +62,8 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
     const grouped: Record<string, Task[]> = { 'no-section': [] };
     
     // Initialize groups for all sections
-    sections.forEach((section: TaskSection) => { // Explicitly type 'section' here to fix TS2552
-      grouped[section.id] = [];
+    sections.forEach((currentSection: TaskSection) => { // Changed 'section' to 'currentSection'
+      grouped[currentSection.id] = [];
     });
 
     // Group tasks
@@ -177,9 +177,9 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
     }
   };
 
-  const handleEditSectionClick = (section: TaskSection) => {
-    setEditingSectionId(section.id);
-    setNewEditingSectionName(section.name); // Use the new setter
+  const handleEditSectionClick = (currentSection: TaskSection) => { // Changed 'section' to 'currentSection'
+    setEditingSectionId(currentSection.id);
+    setNewEditingSectionName(currentSection.name); // Use the new setter
   };
 
   const handleCancelSectionEdit = () => {
@@ -251,24 +251,24 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
 
               <DndContext onDragEnd={handleDragEnd}>
                 <SortableContext items={sections.map(s => s.id)} strategy={verticalListSortingStrategy}>
-                  {sections.map((section: TaskSection) => { // Explicitly type 'section' here
-                    const isExpanded = expandedSections[section.id] !== false;
-                    const sectionTasks = tasksBySection[section.id] || [];
+                  {sections.map((currentSection: TaskSection) => { // Changed 'section' to 'currentSection'
+                    const isExpanded = expandedSections[currentSection.id] !== false;
+                    const sectionTasks = tasksBySection[currentSection.id] || [];
                     
                     return (
-                      <div key={section.id} className="mb-4">
+                      <div key={currentSection.id} className="mb-4">
                         <SortableSectionHeader
-                          id={section.id}
-                          name={section.name}
+                          id={currentSection.id}
+                          name={currentSection.name}
                           taskCount={sectionTasks.length}
                           isExpanded={isExpanded}
-                          onToggleExpand={() => toggleSection(section.id)}
-                          isEditing={editingSectionId === section.id}
+                          onToggleExpand={() => toggleSection(currentSection.id)}
+                          isEditing={editingSectionId === currentSection.id}
                           editingName={editingSectionName}
                           onNameChange={setNewEditingSectionName} // Use the new setter
                           onSaveEdit={() => handleRenameSection()}
                           onCancelEdit={handleCancelSectionEdit}
-                          onEditClick={() => handleEditSectionClick(section)}
+                          onEditClick={() => handleEditSectionClick(currentSection)}
                         />
                         {isExpanded && (
                           <div className="mt-2 space-y-2 pl-2">
@@ -367,7 +367,6 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete {selectedTaskIds.length > 0 ? `${selectedTaskIds.length} selected tasks` : 'this section'}.
             </AlertDialogDescription>
-          </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
