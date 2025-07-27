@@ -17,7 +17,6 @@ import { useTasks } from '@/hooks/useTasks'; // Import useTasks to get sections
 interface AddTaskFormProps {
   onAddTask: (taskData: {
     description: string;
-    recurring_type: 'none' | 'daily' | 'weekly' | 'monthly';
     category: string;
     priority: string;
     due_date: string | null;
@@ -144,7 +143,6 @@ const parseNaturalLanguage = (text: string) => {
 const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdded }) => {
   const { sections } = useTasks(); // Get sections from useTasks
   const [newTaskDescription, setNewTaskDescription] = useState<string>('');
-  const [newTaskRecurringType, setNewTaskRecurringType] = useState<'none' | 'daily' | 'weekly' | 'monthly'>('none');
   const [newTaskCategory, setNewTaskCategory] = useState<string>('general');
   const [newTaskPriority, setNewTaskPriority] = useState<string>('medium');
   const [newTaskDueDate, setNewTaskDueDate] = useState<Date | undefined>(undefined);
@@ -200,7 +198,6 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
     setIsAdding(true);
     const success = await onAddTask({
       description: newTaskDescription,
-      recurring_type: newTaskRecurringType,
       category: newTaskCategory,
       priority: newTaskPriority,
       due_date: newTaskDueDate ? newTaskDueDate.toISOString() : null,
@@ -210,7 +207,6 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
     });
     if (success) {
       setNewTaskDescription('');
-      setNewTaskRecurringType('none');
       setNewTaskCategory('general');
       setNewTaskPriority('medium');
       setNewTaskDueDate(undefined);
@@ -283,24 +279,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
             </Popover>
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="recurring-type">Recurring</Label>
-            <Select 
-              value={newTaskRecurringType} 
-              onValueChange={(value) => setNewTaskRecurringType(value as 'none' | 'daily' | 'weekly' | 'monthly')} 
-              disabled={isAdding}
-            >
-              <SelectTrigger id="recurring-type">
-                <SelectValue placeholder="Select recurrence" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">None</SelectItem>
-                <SelectItem value="daily">Daily</SelectItem>
-                <SelectItem value="weekly">Weekly</SelectItem>
-                <SelectItem value="monthly">Monthly</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Removed Recurring Type Selector */}
         </div>
 
         <div>

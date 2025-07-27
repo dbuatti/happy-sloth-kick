@@ -9,7 +9,6 @@ export interface Task {
   id: string;
   description: string;
   status: 'to-do' | 'completed' | 'skipped' | 'archived';
-  recurring_type: 'none' | 'daily' | 'weekly' | 'monthly';
   created_at: string;
   user_id: string;
   category: string;
@@ -19,7 +18,6 @@ export interface Task {
   remind_at: string | null;
   section_id: string | null;
   order: number | null;
-  original_task_id: string | null;
   parent_task_id: string | null;
 }
 
@@ -35,7 +33,6 @@ type TaskUpdate = Partial<Omit<Task, 'id' | 'user_id' | 'created_at'>>;
 interface NewTaskData {
   description: string;
   status?: 'to-do' | 'completed' | 'skipped' | 'archiverd';
-  recurring_type?: 'none' | 'daily' | 'weekly' | 'monthly';
   category?: string;
   priority?: string;
   due_date?: string | null;
@@ -113,7 +110,7 @@ export const useTasks = () => {
     }
   }, [userId]);
 
-  const fetchTasks = useCallback(async () => { // Removed dateToFetch parameter, now uses currentDate from state
+  const fetchTasks = useCallback(async () => {
     if (!userId) {
       setLoading(false);
       return;
@@ -127,77 +124,20 @@ export const useTasks = () => {
         .eq('user_id', userId);
 
       if (fetchError) throw fetchError;
-
-      let allUserTasks: Task[] = fetchedTasks || [];
-      const fetchedTasksForCheck = [...allUserTasks]; // Create a copy for the check
-
-      const dailyRecurringTemplates = allUserTasks.filter(
-        task => task.recurring_type === 'daily' && task.original_task_id === null
-      );
-      console.log('useTasks LOG 2: Daily recurring templates found:', dailyRecurringTemplates);
-
-      const newRecurringInstances: Task[] = [];
-      // currentDate is already UTC midnight from Index.tsx
-      const currentDayUTC = currentDate; 
-
-      for (const template of dailyRecurringTemplates) {
-        // Check if an instance exists for the current day that is NOT completed or archived.
-        // This means if a task was completed yesterday, a new 'to-do' instance will be created for today.
-        const activeInstanceExistsForToday = fetchedTasksForCheck.some(task =>
-          task.original_task_id === template.id && 
-          isSameDay(parseISO(task.created_at), currentDayUTC) &&
-          (task.status === 'to-do' || task.status === 'skipped')
-        );
-        console.log(`useTasks LOG 3: Template "${template.description}" (ID: ${template.id}): Active instance exists for today (${format(currentDayUTC, 'yyyy-MM-dd')})? ${activeInstanceExistsForToday}`);
-
-        if (!activeInstanceExistsForToday) {
-          // If no active instance exists for today, create a new 'to-do' instance
-          const newInstance: Task = {
-            ...template,
-            id: uuidv4(),
-            created_at: currentDayUTC.toISOString(), // Use the precise UTC ISO string for midnight of the target day
-            status: 'to-do', // New instances are always 'to-do'
-            recurring_type: 'none', // Instances are not recurring themselves
-            original_task_id: template.id, // Link back to the template
-            due_date: null, // Due date and remind_at should be specific to the instance, not inherited from template
-            remind_at: null,
-            parent_task_id: null, // Instances are top-level tasks unless explicitly made subtasks
-          };
-          newRecurringInstances.push(newInstance);
-          console.log('useTasks LOG 4: Generated new recurring instance:', newInstance);
-        }
-      }
-
-      if (newRecurringInstances.length > 0) {
-        console.log('useTasks LOG 5: Attempting to insert new recurring instances:', newRecurringInstances);
-        const { data: insertedData, error: insertError } = await supabase
-          .from('tasks')
-          .insert(newRecurringInstances)
-          .select();
-
-        if (insertError) {
-          console.error('useTasks ERROR: Error inserting recurring instance:', insertError);
-          showError('Failed to generate a recurring task instance.');
-        } else if (insertedData) {
-          allUserTasks.push(...insertedData);
-          console.log('useTasks LOG 6: Successfully inserted new recurring instances:', insertedData);
-        }
-      }
       
-      setTasks(allUserTasks);
-      console.log('useTasks LOG 7: Final tasks state after fetch and generation:', allUserTasks);
+      setTasks(fetchedTasks || []);
     } catch (error: any) {
-      console.error('useTasks ERROR: Error fetching or generating tasks:', error);
+      console.error('useTasks ERROR: Error fetching tasks:', error);
       showError('An unexpected error occurred while loading tasks.');
     } finally {
       setLoading(false);
     }
-  }, [userId, currentDate]); // currentDate is now a dependency for fetchTasks
+  }, [userId]);
 
   useEffect(() => {
     fetchSections();
-    fetchTasks(); // Call fetchTasks without explicit dateToFetch, it uses currentDate from state
-  }, [fetchSections, fetchTasks]); // fetchTasks is now a dependency for useEffect
+    fetchTasks();
+  }, [fetchSections, fetchTasks]);
 
   useEffect(() => {
     if (!userId) return;
@@ -228,7 +168,7 @@ export const useTasks = () => {
     try {
       const { data, error } = await supabase
         .from('tasks')
-        .insert({ ...newTaskData, user_id: userId })
+        .insert({ ...newTaskData, user_id: userId, created_at: fnsStartOfDay(currentDate).toISOString() }) // Set created_at to current date's UTC midnight
         .select()
         .single();
 
@@ -241,7 +181,7 @@ export const useTasks = () => {
       showError('Failed to add task.');
       return false;
     }
-  }, [userId]);
+  }, [userId, currentDate]);
 
   const updateTask = useCallback(async (taskId: string, updates: TaskUpdate) => {
     if (!userId) {
@@ -484,13 +424,7 @@ export const useTasks = () => {
 
     // 2. Filter tasks to show only those relevant to the currentDate
     workingTasks = workingTasks.filter(task => {
-      // Exclude recurring templates from the daily view
-      if (task.recurring_type !== 'none' && task.original_task_id === null) {
-        return false; // Templates should never be displayed directly
-      }
-      
-      // For all other tasks (non-recurring or recurring instances),
-      // only show if their 'created_at' date matches the 'currentDate'.
+      // For all tasks, only show if their 'created_at' date matches the 'currentDate'.
       return isSameDay(parseISO(task.created_at), currentDate);
     });
 

@@ -37,7 +37,7 @@ const FocusMode: React.FC = () => {
   const fetchSuggestedTasks = useCallback(() => {
     if (!tasks) return [];
     const activeTasks = tasks.filter(
-      t => t.status === 'to-do' && t.recurring_type === 'none' && t.original_task_id === null
+      t => t.status === 'to-do'
     );
     // Prioritize high/urgent tasks, then due today/overdue
     const sortedTasks = activeTasks.sort((a, b) => {
