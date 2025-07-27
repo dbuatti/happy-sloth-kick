@@ -1,12 +1,23 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Archive, Clock, CheckCircle2, ListTodo, Plus } from 'lucide-react'; // Added Plus
+import { Archive, Clock, CheckCircle2, ListTodo, Plus } from 'lucide-react';
 import { useTasks } from '@/hooks/useTasks';
 import { isPast, isToday, format } from 'date-fns';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"; // Import AlertDialog components
 
 const SmartSuggestions: React.FC = () => {
   const { tasks, bulkUpdateTasks, clearSelectedTasks, currentDate } = useTasks();
+  const [showConfirmArchiveDialog, setShowConfirmArchiveDialog] = useState(false);
 
   const {
     completedTasksToday,
@@ -19,10 +30,10 @@ const SmartSuggestions: React.FC = () => {
     const completed = tasksForToday.filter(task => task.status === 'completed').length;
     const total = tasksForToday.length;
 
-    const overdue = tasks.filter(task => 
-      task.due_date && 
-      task.status !== 'completed' && 
-      isPast(new Date(task.due_date)) && 
+    const overdue = tasks.filter(task =>
+      task.due_date &&
+      task.status !== 'completed' &&
+      isPast(new Date(task.due_date)) &&
       !isToday(new Date(task.due_date))
     ).length;
 
@@ -38,14 +49,20 @@ const SmartSuggestions: React.FC = () => {
     };
   }, [tasks, currentDate]);
 
-  const handleArchiveCompleted = async () => {
+  const handleArchiveCompletedClick = () => {
     const completedTaskIds = tasks.filter(task => task.status === 'completed').map(task => task.id);
     if (completedTaskIds.length > 0) {
-      if (window.confirm(`Are you sure you want to archive ${completedTaskIds.length} completed tasks?`)) {
-        await bulkUpdateTasks({ status: 'archived' }, completedTaskIds); // Pass completedTaskIds directly
-        clearSelectedTasks(); // Clear any tasks that might have been manually selected
-      }
+      setShowConfirmArchiveDialog(true);
     }
+  };
+
+  const confirmArchiveCompleted = async () => {
+    const completedTaskIds = tasks.filter(task => task.status === 'completed').map(task => task.id);
+    if (completedTaskIds.length > 0) {
+      await bulkUpdateTasks({ status: 'archived' }, completedTaskIds);
+      clearSelectedTasks();
+    }
+    setShowConfirmArchiveDialog(false);
   };
 
   return (
@@ -60,7 +77,7 @@ const SmartSuggestions: React.FC = () => {
             </Button>
           )}
           {completedTasksCount > 0 && (
-            <Button variant="outline" className="justify-start gap-2" onClick={handleArchiveCompleted}>
+            <Button variant="outline" className="justify-start gap-2" onClick={handleArchiveCompletedClick}>
               <Archive className="h-4 w-4 text-blue-500" />
               Archive All Completed Tasks
             </Button>
@@ -74,6 +91,22 @@ const SmartSuggestions: React.FC = () => {
           {/* Add more suggestions here based on user behavior or task states */}
         </div>
       </CardContent>
+
+      {/* Archive Completed Tasks Confirmation Dialog */}
+      <AlertDialog open={showConfirmArchiveDialog} onOpenChange={setShowConfirmArchiveDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archive Completed Tasks?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will move all your completed tasks to the archive. You can view them later in the Archive page.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmArchiveCompleted}>Archive All</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };

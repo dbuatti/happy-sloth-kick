@@ -6,16 +6,26 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
-import { Calendar, BellRing, Trash2, Plus, CheckCircle2 } from 'lucide-react'; // Added Plus and CheckCircle2
+import { Calendar, BellRing, Trash2, Plus, CheckCircle2 } from 'lucide-react';
 import { format, parseISO, setHours, setMinutes } from 'date-fns';
 import { cn } from "@/lib/utils";
 import CategorySelector from "./CategorySelector";
 import PrioritySelector from "./PrioritySelector";
 import SectionSelector from "./SectionSelector";
-import { Task } from '@/hooks/useTasks'; // Import Task interface
-import { useTasks } from '@/hooks/useTasks'; // Import useTasks to get sections and handleAddTask
-import AddTaskForm from './AddTaskForm'; // Import AddTaskForm
-import { Checkbox } from "@/components/ui/checkbox"; // Added Checkbox import
+import { Task } from '@/hooks/useTasks';
+import { useTasks } from '@/hooks/useTasks';
+import AddTaskForm from './AddTaskForm';
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"; // Import AlertDialog components
 
 interface TaskDetailDialogProps {
   task: Task | null;
@@ -34,7 +44,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   onUpdate,
   onDelete,
 }) => {
-  const { sections, tasks: allTasks, handleAddTask, updateTask } = useTasks(); // Get allTasks and handleAddTask
+  const { sections, tasks: allTasks, handleAddTask, updateTask } = useTasks();
   const [editingDescription, setEditingDescription] = useState('');
   const [editingNotes, setEditingNotes] = useState('');
   const [editingDueDate, setEditingDueDate] = useState<Date | undefined>(undefined);
@@ -44,7 +54,11 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   const [reminderTime, setReminderTime] = useState('');
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [isAddSubtaskOpen, setIsAddSubtaskOpen] = useState(false); // State for sub-task dialog
+  const [isAddSubtaskOpen, setIsAddSubtaskOpen] = useState(false);
+
+  // AlertDialog state for task deletion
+  const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
+
 
   useEffect(() => {
     if (task) {
@@ -60,7 +74,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   }, [task]);
 
   const subtasks = allTasks.filter(t => t.parent_task_id === task?.id)
-    .sort((a, b) => (a.order || 0) - (b.order || 0)); // Sort subtasks by order
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
 
   const handleSave = async () => {
     if (!task) return;
@@ -87,9 +101,14 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
     onClose();
   };
 
-  const handleDelete = () => {
-    if (task && window.confirm('Are you sure you want to delete this task and all its sub-tasks?')) {
+  const handleDeleteClick = () => {
+    setShowConfirmDeleteDialog(true);
+  };
+
+  const confirmDeleteTask = () => {
+    if (task) {
       onDelete(task.id);
+      setShowConfirmDeleteDialog(false);
       onClose();
     }
   };
@@ -99,7 +118,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
     const success = await handleAddTask({
       ...subtaskData,
       parent_task_id: task.id,
-      section_id: task.section_id, // Inherit section from parent
+      section_id: task.section_id,
     });
     if (success) {
       setIsAddSubtaskOpen(false);
@@ -227,10 +246,10 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
                   <DialogHeader>
                     <DialogTitle>Add Sub-task for "{task.description}"</DialogTitle>
                   </DialogHeader>
-                  <AddTaskForm 
-                    onAddTask={handleAddSubtask} 
-                    userId={userId} 
-                    onTaskAdded={() => setIsAddSubtaskOpen(false)} 
+                  <AddTaskForm
+                    onAddTask={handleAddSubtask}
+                    userId={userId}
+                    onTaskAdded={() => setIsAddSubtaskOpen(false)}
                   />
                 </DialogContent>
               </Dialog>
@@ -269,7 +288,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
           </div>
         </div>
         <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2 pt-4">
-          <Button variant="destructive" onClick={handleDelete} disabled={isSaving} className="w-full sm:w-auto mt-2 sm:mt-0">
+          <Button variant="destructive" onClick={handleDeleteClick} disabled={isSaving} className="w-full sm:w-auto mt-2 sm:mt-0">
             <Trash2 className="mr-2 h-4 w-4" /> Delete Task
           </Button>
           <div className="flex space-x-2 w-full sm:w-auto">
@@ -282,6 +301,22 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
           </div>
         </DialogFooter>
       </DialogContent>
+
+      {/* Delete Task Confirmation Dialog */}
+      <AlertDialog open={showConfirmDeleteDialog} onOpenChange={setShowConfirmDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete this task and all its sub-tasks.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteTask}>Continue</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };

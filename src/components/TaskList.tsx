@@ -17,8 +17,18 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Checkbox } from "@/components/ui/checkbox"; // Added Checkbox import
-import { cn } from "@/lib/utils"; // Added cn import
+import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"; // Import AlertDialog components
 
 // dnd-kit imports
 import {
@@ -42,10 +52,10 @@ import {
 // Import the new SortableTaskItem component
 import SortableTaskItem from './SortableTaskItem';
 import SortableSectionHeader from './SortableSectionHeader';
-import DailyStreak from './DailyStreak'; // New import for DailyStreak
-import SmartSuggestions from './SmartSuggestions'; // Import SmartSuggestions
-import TaskDetailDialog from './TaskDetailDialog'; // Import the new TaskDetailDialog
-import { Task, TaskSection } from '@/hooks/useTasks'; // Import Task and TaskSection interfaces
+import DailyStreak from './DailyStreak';
+import SmartSuggestions from './SmartSuggestions';
+import TaskDetailDialog from './TaskDetailDialog';
+import { Task, TaskSection } from '@/hooks/useTasks';
 
 type TaskUpdate = Partial<Omit<Task, 'id' | 'user_id' | 'created_at'>>;
 
@@ -62,10 +72,10 @@ interface NewTaskData {
 }
 
 interface TaskListProps {
-  setIsAddTaskOpen: (open: boolean) => void; // New prop
+  setIsAddTaskOpen: (open: boolean) => void;
 }
 
-const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => { // Destructure new prop
+const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
   const {
     tasks,
     filteredTasks,
@@ -109,6 +119,10 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => { // Destruc
 
   // State for expanded/collapsed sections
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+
+  // AlertDialog state for bulk delete
+  const [showConfirmBulkDeleteDialog, setShowConfirmBulkDeleteDialog] = useState(false);
+
 
   // Load expanded sections from local storage on mount
   useEffect(() => {
@@ -225,9 +239,9 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => { // Destruc
       }
       setIsReassignTasksDialogOpen(true);
     } else {
-      if (window.confirm('Are you sure you want to delete this section?')) {
-        await deleteSection(sectionId, null);
-      }
+      // If no tasks, directly confirm deletion with AlertDialog
+      setSectionToDeleteId(sectionId); // Set for the AlertDialog
+      setShowConfirmBulkDeleteDialog(true); // Reuse this dialog for simple section delete
     }
   };
 
@@ -246,24 +260,35 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => { // Destruc
     let updates: TaskUpdate = {};
     if (action === 'complete') {
       updates = { status: 'completed' };
+      await bulkUpdateTasks(updates);
     } else if (action === 'archive') {
       updates = { status: 'archived' };
+      await bulkUpdateTasks(updates);
     } else if (action === 'skip') {
       updates = { status: 'skipped' };
+      await bulkUpdateTasks(updates);
     } else if (action === 'todo') {
       updates = { status: 'to-do' };
+      await bulkUpdateTasks(updates);
     } else if (action.startsWith('priority-')) {
       updates = { priority: action.split('-')[1] };
+      await bulkUpdateTasks(updates);
     } else if (action === 'delete') {
-      if (window.confirm(`Are you sure you want to delete ${selectedTaskIds.length} selected tasks?`)) {
-        for (const taskId of selectedTaskIds) {
-          await deleteTask(taskId);
-        }
-        clearSelectedTasks();
-        return;
-      }
+      setShowConfirmBulkDeleteDialog(true); // Open confirmation dialog
     }
-    await bulkUpdateTasks(updates);
+  };
+
+  const confirmBulkDelete = async () => {
+    if (selectedTaskIds.length > 0) {
+      for (const taskId of selectedTaskIds) {
+        await deleteTask(taskId);
+      }
+      clearSelectedTasks();
+    } else if (sectionToDeleteId) { // This path is for deleting an empty section
+      await deleteSection(sectionToDeleteId, null);
+      setSectionToDeleteId(null);
+    }
+    setShowConfirmBulkDeleteDialog(false);
   };
 
   const tasksGroupedBySection = useMemo(() => {
@@ -432,7 +457,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => { // Destruc
         <Button
           className="fixed bottom-6 right-6 rounded-full h-14 w-14 shadow-lg z-50 md:bottom-8 md:right-8"
           aria-label="Add new task"
-          onClick={() => setIsAddTaskOpen(true)} // Open the Add Task form
+          onClick={() => setIsAddTaskOpen(true)}
         >
           <Plus className="h-6 w-6" />
         </Button>
@@ -481,7 +506,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => { // Destruc
                       </Button>
                     </div>
                   </div>
-                  
+
                   <div className="mt-6">
                     <h3 className="text-lg font-semibold mb-2">Existing Sections</h3>
                     {sections.length === 0 ? (
@@ -507,7 +532,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => { // Destruc
                                 {sectionGroup.name}
                               </span>
                             )}
-                            
+
                             <div className="flex space-x-1">
                               {editingSectionId !== sectionGroup.id && (
                                 <>
@@ -580,7 +605,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => { // Destruc
             </Dialog>
           </div>
         </div>
-        
+
         {sections.length === 0 && filteredTasks.length === 0 ? (
           <div className="text-center text-gray-500 p-8 flex flex-col items-center justify-center">
             <PlusCircle className="h-16 w-16 text-muted-foreground mb-4" />
@@ -604,13 +629,13 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => { // Destruc
                     <SortableSectionHeader
                       id={sectionGroup.id}
                       name={sectionGroup.name}
-                      taskCount={sectionGroup.parentTasks.length + sectionGroup.subtasks.length} // Count all tasks
-                      isExpanded={expandedSections[sectionGroup.id] ?? true} // Default to true
+                      taskCount={sectionGroup.parentTasks.length + sectionGroup.subtasks.length}
+                      isExpanded={expandedSections[sectionGroup.id] ?? true}
                       onToggleExpand={() => handleToggleSectionExpand(sectionGroup.id)}
                     />
-                    {(expandedSections[sectionGroup.id] ?? true) && ( // Conditionally render tasks
+                    {(expandedSections[sectionGroup.id] ?? true) && (
                       <SortableContext
-                        items={sectionGroup.parentTasks.map(task => task.id)} // Only sort parent tasks
+                        items={sectionGroup.parentTasks.map(task => task.id)}
                         strategy={verticalListSortingStrategy}
                       >
                         <ul className="space-y-3">
@@ -630,7 +655,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => { // Destruc
                               {/* Render subtasks if they exist for this parent task */}
                               {sectionGroup.subtasks
                                 .filter(sub => sub.parent_task_id === task.id)
-                                .sort((a, b) => (a.order || 0) - (b.order || 0)) // Sort subtasks
+                                .sort((a, b) => (a.order || 0) - (b.order || 0))
                                 .map(subtask => (
                                   <li key={subtask.id} className="ml-8 border rounded-lg p-3 bg-card dark:bg-gray-800 shadow-sm flex items-center space-x-3">
                                     <Checkbox
@@ -686,16 +711,16 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => { // Destruc
                   id={activeSection.id}
                   name={activeSection.name}
                   taskCount={tasksGroupedBySection.find(s => s.id === activeSection.id)?.parentTasks.length || 0}
-                  isExpanded={expandedSections[activeSection.id] ?? true} // Default to true
-                  onToggleExpand={() => {}} // No-op for drag overlay
+                  isExpanded={expandedSections[activeSection.id] ?? true}
+                  onToggleExpand={() => {}}
                 />
               ) : null}
             </DragOverlay>
 
-            <BulkActions 
-              selectedTaskIds={selectedTaskIds} 
-              onAction={handleBulkAction} 
-              onClearSelection={clearSelectedTasks} 
+            <BulkActions
+              selectedTaskIds={selectedTaskIds}
+              onAction={handleBulkAction}
+              onClearSelection={clearSelectedTasks}
             />
           </DndContext>
         )}
@@ -710,6 +735,22 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => { // Destruc
           onDelete={deleteTask}
         />
       )}
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <AlertDialog open={showConfirmBulkDeleteDialog} onOpenChange={setShowConfirmBulkDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete {selectedTaskIds.length > 0 ? `${selectedTaskIds.length} selected tasks` : 'this section'}.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmBulkDelete}>Continue</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };

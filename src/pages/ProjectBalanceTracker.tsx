@@ -5,12 +5,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Edit, Trash2, Sparkles, RefreshCcw, Lightbulb, RotateCcw } from 'lucide-react'; // Added RotateCcw icon
+import { Plus, Edit, Trash2, Sparkles, RefreshCcw, Lightbulb, RotateCcw } from 'lucide-react';
 import Sidebar from "@/components/Sidebar";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useProjects, Project } from '@/hooks/useProjects';
 import { cn } from '@/lib/utils';
-import { Progress } from '@/components/Progress'; // Import the custom Progress component
+import { Progress } from '@/components/Progress';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"; // Import AlertDialog components
 
 const ProjectBalanceTracker: React.FC = () => {
   const {
@@ -38,6 +48,14 @@ const ProjectBalanceTracker: React.FC = () => {
   const [editingProjectDescription, setEditingProjectDescription] = useState('');
 
   const [showCelebration, setShowCelebration] = useState(false);
+
+  // AlertDialog states
+  const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
+  const [projectToDeleteId, setProjectToDeleteId] = useState<string | null>(null);
+  const [showConfirmResetIndividualDialog, setShowConfirmResetIndividualDialog] = useState(false);
+  const [projectToResetId, setProjectToResetId] = useState<string | null>(null);
+  const [showConfirmResetAllDialog, setShowConfirmResetAllDialog] = useState(false);
+
 
   // Memoize least worked on project
   const leastWorkedOnProject = useMemo(() => {
@@ -93,9 +111,16 @@ const ProjectBalanceTracker: React.FC = () => {
     }
   };
 
-  const handleDeleteProject = async (projectId: string) => {
-    if (window.confirm('Are you sure you want to delete this project?')) {
-      await deleteProject(projectId);
+  const handleDeleteProjectClick = (projectId: string) => {
+    setProjectToDeleteId(projectId);
+    setShowConfirmDeleteDialog(true);
+  };
+
+  const confirmDeleteProject = async () => {
+    if (projectToDeleteId) {
+      await deleteProject(projectToDeleteId);
+      setProjectToDeleteId(null);
+      setShowConfirmDeleteDialog(false);
     }
   };
 
@@ -103,19 +128,29 @@ const ProjectBalanceTracker: React.FC = () => {
     await incrementProjectCount(projectId);
   };
 
-  const handleResetIndividualProject = async (projectId: string) => {
-    if (window.confirm('Are you sure you want to reset this project\'s counter to 0?')) {
-      await updateProject(projectId, { current_count: 0 });
+  const handleResetIndividualProjectClick = (projectId: string) => {
+    setProjectToResetId(projectId);
+    setShowConfirmResetIndividualDialog(true);
+  };
+
+  const confirmResetIndividualProject = async () => {
+    if (projectToResetId) {
+      await updateProject(projectToResetId, { current_count: 0 });
+      setProjectToResetId(null);
+      setShowConfirmResetIndividualDialog(false);
     }
   };
 
-  const handleResetAll = async () => {
-    if (window.confirm('Are you sure you want to reset all project counters to 0?')) {
-      const success = await resetAllProjectCounts();
-      if (success) {
-        setShowCelebration(false);
-      }
+  const handleResetAllClick = () => {
+    setShowConfirmResetAllDialog(true);
+  };
+
+  const confirmResetAll = async () => {
+    const success = await resetAllProjectCounts();
+    if (success) {
+      setShowCelebration(false);
     }
+    setShowConfirmResetAllDialog(false);
   };
 
   const handleSaveTitle = async () => {
@@ -226,7 +261,7 @@ const ProjectBalanceTracker: React.FC = () => {
                   <Sparkles className="h-8 w-8 text-green-600 dark:text-green-400 animate-bounce" />
                   <p className="text-xl font-semibold">Congratulations! All projects are balanced!</p>
                   <p>Ready to start a new cycle?</p>
-                  <Button onClick={handleResetAll} className="mt-2">
+                  <Button onClick={handleResetAllClick} className="mt-2">
                     <RefreshCcw className="mr-2 h-4 w-4" /> Reset All Counters
                   </Button>
                 </div>
@@ -312,7 +347,7 @@ const ProjectBalanceTracker: React.FC = () => {
                                 variant="ghost"
                                 size="icon"
                                 className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                                onClick={(e) => { e.stopPropagation(); handleResetIndividualProject(project.id); }}
+                                onClick={(e) => { e.stopPropagation(); handleResetIndividualProjectClick(project.id); }}
                                 aria-label={`Reset ${project.name}`}
                               >
                                 <RotateCcw className="h-4 w-4" />
@@ -321,7 +356,7 @@ const ProjectBalanceTracker: React.FC = () => {
                                 variant="ghost"
                                 size="icon"
                                 className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-destructive"
-                                onClick={(e) => { e.stopPropagation(); handleDeleteProject(project.id); }}
+                                onClick={(e) => { e.stopPropagation(); handleDeleteProjectClick(project.id); }}
                                 aria-label={`Delete ${project.name}`}
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -341,6 +376,54 @@ const ProjectBalanceTracker: React.FC = () => {
           <MadeWithDyad />
         </footer>
       </div>
+
+      {/* Delete Project Confirmation Dialog */}
+      <AlertDialog open={showConfirmDeleteDialog} onOpenChange={setShowConfirmDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete your project.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteProject}>Continue</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reset Individual Project Confirmation Dialog */}
+      <AlertDialog open={showConfirmResetIndividualDialog} onOpenChange={setShowConfirmResetIndividualDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset Project Counter?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will reset the tally for this project to 0. Are you sure?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmResetIndividualProject}>Reset</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reset All Projects Confirmation Dialog */}
+      <AlertDialog open={showConfirmResetAllDialog} onOpenChange={setShowConfirmResetAllDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset All Project Counters?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will reset the tally for ALL your projects to 0. Are you sure you want to start a new cycle?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmResetAll}>Reset All</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
