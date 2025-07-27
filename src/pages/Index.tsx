@@ -55,8 +55,8 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen }) => {
 
   // Define keyboard shortcuts
   const shortcuts: ShortcutMap = {
-    'l': handlePreviousDay,
-    'r': handleNextDay,
+    'arrowleft': handlePreviousDay, // Changed to 'arrowleft'
+    'arrowright': handleNextDay,    // Changed to 'arrowright'
   };
 
   // Apply keyboard shortcuts
