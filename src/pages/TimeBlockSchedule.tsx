@@ -29,6 +29,9 @@ const TimeBlockSchedule: React.FC = () => {
   };
 
   const timeBlocks = useMemo(() => {
+    console.log('TimeBlockSchedule useMemo: workHours', workHours); // Debug log
+    console.log('TimeBlockSchedule useMemo: loading', loading); // Debug log
+
     if (!workHours || !workHours.enabled) return [];
 
     const blocks = [];
@@ -50,7 +53,7 @@ const TimeBlockSchedule: React.FC = () => {
       currentTime = blockEnd;
     }
     return blocks;
-  }, [workHours, currentDate]);
+  }, [workHours, currentDate, loading]); // Added loading to dependencies to ensure re-evaluation
 
   return (
     <div className="min-h-screen flex bg-gray-100 dark:bg-gray-900">
