@@ -53,7 +53,7 @@ const TimeBlockSchedule: React.FC = () => {
       blocks.push({
         start: format(blockStart, 'HH:mm'),
         end: format(blockEnd, 'HH:mm'),
-        label: format(blockStart, 'h:mm a'),
+        label: format(blockStart, 'h:mm a'), // e.g., "8:00 AM", "8:30 AM"
       });
       currentTime = blockEnd;
     }
@@ -93,25 +93,13 @@ const TimeBlockSchedule: React.FC = () => {
                   <p>Please check your work hour settings for this day.</p>
                 </div>
               ) : (
-                <div className="grid gap-4">
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                   {timeBlocks.map((block, index) => (
-                    <div key={index} className="grid grid-cols-2 gap-4">
-                      <div className="relative flex items-center justify-center h-24 bg-card dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
-                        <span className="absolute inset-0 flex items-center justify-center text-5xl font-extrabold text-foreground opacity-10 pointer-events-none select-none">
-                          {block.label.split(' ')[0]}
-                        </span>
-                        <span className="relative z-10 text-sm font-medium text-muted-foreground">
-                          {block.start} - {block.label.split(' ')[0]}:30
-                        </span>
-                      </div>
-                      <div className="relative flex items-center justify-center h-24 bg-card dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
-                        <span className="absolute inset-0 flex items-center justify-center text-5xl font-extrabold text-foreground opacity-10 pointer-events-none select-none">
-                          {block.label.split(' ')[0]}
-                        </span>
-                        <span className="relative z-10 text-sm font-medium text-muted-foreground">
-                          {block.label.split(' ')[0]}:30 - {block.end}
-                        </span>
-                      </div>
+                    <div key={index} className="relative flex items-center justify-center h-24 bg-card dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
+                      <span className="absolute inset-0 flex items-center justify-center text-5xl font-extrabold text-foreground opacity-10 pointer-events-none select-none">
+                        {block.label}
+                      </span>
+                      {/* Removed the foreground text as requested */}
                     </div>
                   ))}
                 </div>
