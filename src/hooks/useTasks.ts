@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess, showReminder } from '@/utils/toast';
 import { v4 as uuidv4 } from 'uuid';
-import { isSameDay, isPast, startOfDay as fnsStartOfDay, parseISO, format } from 'date-fns';
+import { isSameDay, isPast, startOfDay as fnsStartOfDay, parseISO, format, isAfter } from 'date-fns';
 
 export interface Task {
   id: string;
@@ -457,57 +457,47 @@ export const useTasks = () => {
     let workingTasks = [...tasks];
     const effectiveCurrentDate = fnsStartOfDay(currentDate);
 
-    console.log('--- Filtering Tasks ---');
-    console.log('Current Date:', format(effectiveCurrentDate, 'yyyy-MM-dd'));
-    console.log('Status Filter:', statusFilter);
-
     // 1. Filter out subtasks (they are handled within parent tasks)
     workingTasks = workingTasks.filter(task => task.parent_task_id === null);
-    console.log('After subtask filter:', workingTasks.length, 'tasks');
 
     // 2. Apply date and status filtering based on the current view
     if (statusFilter === 'archived') {
       // For the Archive page, show all archived tasks regardless of creation date
-      workingTasks = workingTasks.filter(task => {
-        const include = task.status === 'archived';
-        console.log(`  Task "${task.description}" (ID: ${task.id}, Status: ${task.status}, Created: ${format(parseISO(task.created_at), 'yyyy-MM-dd')}, Original: ${task.original_task_id}, Recurring: ${task.recurring_type}) - Archived view: ${include}`);
-        return include;
-      });
+      workingTasks = workingTasks.filter(task => task.status === 'archived');
     } else {
       // For the main Daily Tasks page (statusFilter is 'all', 'to-do', etc.)
       workingTasks = workingTasks.filter(task => {
-        const isCreatedOnCurrentDate = isSameDay(parseISO(task.created_at), effectiveCurrentDate);
-        const isActiveAndNotArchived = task.status === 'to-do' || task.status === 'skipped';
-        const isRecurringTemplate = task.recurring_type !== 'none' && task.original_task_id === null;
-        const isRecurringInstanceForToday = task.original_task_id !== null && isSameDay(parseISO(task.created_at), effectiveCurrentDate);
-        const isCompletedOnPreviousDay = task.status === 'completed' && isPast(parseISO(task.created_at)) && !isSameDay(parseISO(task.created_at), effectiveCurrentDate);
+        const taskCreatedAt = parseISO(task.created_at);
 
-        let shouldShow = false;
-
-        if (isRecurringTemplate) {
-          // Rule 1: Never show recurring templates in the daily view
-          shouldShow = false;
-        } else if (isCompletedOnPreviousDay) {
-          // Rule 2: Never show tasks completed on a previous day in the current daily view
-          shouldShow = false;
-        } else {
-          // Rule 3: Show tasks if they are created on the current date (this covers new tasks and new recurring instances for today)
-          // OR if they are active (to-do/skipped) and were created on a *previous* date (i.e., carried over from yesterday or earlier)
-          shouldShow = isCreatedOnCurrentDate || isActiveAndNotArchived;
+        // Rule 1: Exclude recurring templates from the daily view
+        if (task.recurring_type !== 'none' && task.original_task_id === null) {
+          return false;
         }
 
-        console.log(`  Task "${task.description}" (ID: ${task.id}, Status: ${task.status}, Created: ${format(parseISO(task.created_at), 'yyyy-MM-dd')}, Original: ${task.original_task_id}, Recurring: ${task.recurring_type})`);
-        console.log(`    isCreatedOnCurrentDate: ${isCreatedOnCurrentDate}`);
-        console.log(`    isActiveAndNotArchived: ${isActiveAndNotArchived}`);
-        console.log(`    isRecurringTemplate: ${isRecurringTemplate}`);
-        console.log(`    isRecurringInstanceForToday: ${isRecurringInstanceForToday}`);
-        console.log(`    isCompletedOnPreviousDay: ${isCompletedOnPreviousDay}`);
-        console.log(`    Final shouldShow (before other filters): ${shouldShow}`);
-        return shouldShow;
+        // Rule 2: Exclude tasks created for future dates
+        if (isAfter(taskCreatedAt, effectiveCurrentDate)) {
+          return false;
+        }
+
+        // Rule 3: Exclude tasks that were completed/archived on a previous day
+        if ((task.status === 'completed' || task.status === 'archived') && !isSameDay(taskCreatedAt, effectiveCurrentDate)) {
+            return false;
+        }
+
+        // Rule 4: Include tasks created on the current date (regardless of status, as they belong to today)
+        if (isSameDay(taskCreatedAt, effectiveCurrentDate)) {
+          return true;
+        }
+
+        // Rule 5: Include active (to-do/skipped) tasks that were created on a *previous* day
+        if ((task.status === 'to-do' || task.status === 'skipped') && isPast(taskCreatedAt)) {
+          return true;
+        }
+        
+        // If none of the above inclusion rules are met, exclude the task.
+        return false;
       });
     }
-
-    console.log('After date/status filter:', workingTasks.length, 'tasks');
 
     // 3. Apply other filters
     if (searchFilter) {
@@ -515,15 +505,12 @@ export const useTasks = () => {
         task.description.toLowerCase().includes(searchFilter.toLowerCase()) ||
         task.notes?.toLowerCase().includes(searchFilter.toLowerCase())
       );
-      console.log('After search filter:', workingTasks.length, 'tasks');
     }
     if (categoryFilter && categoryFilter !== 'all') {
       workingTasks = workingTasks.filter(task => task.category === categoryFilter);
-      console.log('After category filter:', workingTasks.length, 'tasks');
     }
     if (priorityFilter && priorityFilter !== 'all') {
       workingTasks = workingTasks.filter(task => task.priority === priorityFilter);
-      console.log('After priority filter:', workingTasks.length, 'tasks');
     }
     if (sectionFilter && sectionFilter !== 'all') {
       workingTasks = workingTasks.filter(task => {
@@ -532,15 +519,12 @@ export const useTasks = () => {
         }
         return task.section_id === sectionFilter;
       });
-      console.log('After section filter:', workingTasks.length, 'tasks');
     }
 
     // 4. Apply final status filter for non-archived views
     if (statusFilter !== 'all' && statusFilter !== 'archived') {
       workingTasks = workingTasks.filter(task => task.status === statusFilter);
-      console.log('After final status filter:', workingTasks.length, 'tasks');
     }
-    console.log('--- End Filtering Tasks ---');
 
     return workingTasks;
   }, [tasks, currentDate, searchFilter, statusFilter, categoryFilter, priorityFilter, sectionFilter]);
