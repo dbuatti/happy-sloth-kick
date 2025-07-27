@@ -761,7 +761,6 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
               />
             </DndContext>
           </CardContent>
-        {/* This was the misplaced closing tag */}
         </Card>
       {taskToEdit && (
         <TaskDetailDialog
