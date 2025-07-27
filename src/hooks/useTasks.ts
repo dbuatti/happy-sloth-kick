@@ -127,26 +127,19 @@ export const useTasks = () => {
       if (fetchError) throw fetchError;
 
       let processedTasks: Task[] = allTasks || [];
-      console.log('--- Daily Recurring Task Check ---');
-      console.log('Current Date for Daily Task Generation:', format(fnsStartOfDay(currentDate), 'yyyy-MM-dd'));
 
       const dailyRecurringTemplates = processedTasks.filter(
         task => task.recurring_type === 'daily' && task.original_task_id === null
       );
-      console.log('Identified Daily Recurring Templates:', dailyRecurringTemplates.map(t => ({ id: t.id, description: t.description })));
 
       const newRecurringInstances: Task[] = [];
 
       for (const template of dailyRecurringTemplates) {
-        const activeInstanceExistsForToday = processedTasks.some(task => {
-          const isInstance = task.original_task_id === template.id;
-          const isCreatedOnCurrentDate = isSameDay(parseISO(task.created_at), fnsStartOfDay(currentDate));
-          const isActiveStatus = (task.status === 'to-do' || task.status === 'skipped');
-          
-          const exists = isInstance && isCreatedOnCurrentDate && isActiveStatus;
-          console.log(`  Template "${template.description}" (ID: ${template.id}): Checking instance "${task.description}" (ID: ${task.id}, original: ${task.original_task_id}) created on ${format(parseISO(task.created_at), 'yyyy-MM-dd')}, status: ${task.status}. Exists for today: ${exists}`);
-          return exists;
-        });
+        const activeInstanceExistsForToday = processedTasks.some(task =>
+          task.original_task_id === template.id && 
+          isSameDay(parseISO(task.created_at), fnsStartOfDay(currentDate)) &&
+          (task.status === 'to-do' || task.status === 'skipped')
+        );
 
         if (!activeInstanceExistsForToday) {
           const newInstance: Task = {
@@ -161,14 +154,10 @@ export const useTasks = () => {
             parent_task_id: null, // Ensure it's a top-level task
           };
           newRecurringInstances.push(newInstance);
-          console.log(`  Creating new instance for "${template.description}". New ID: ${newInstance.id}`);
-        } else {
-          console.log(`  Active instance for "${template.description}" already exists for today. Skipping creation.`);
         }
       }
 
       if (newRecurringInstances.length > 0) {
-        console.log('New Recurring Instances to Insert:', newRecurringInstances.map(t => ({ id: t.id, description: t.description, original_task_id: t.original_task_id })));
         const { data: insertedData, error: insertError } = await supabase
           .from('tasks')
           .insert(newRecurringInstances)
@@ -176,11 +165,7 @@ export const useTasks = () => {
 
         if (insertError) throw insertError;
         processedTasks = [...processedTasks, ...(insertedData || [])];
-        console.log('Successfully inserted new recurring instances.');
-      } else {
-        console.log('No new recurring instances to insert.');
       }
-      console.log('--- End Daily Recurring Task Check ---');
       
       setTasks(processedTasks);
     } catch (error: any) {
@@ -482,23 +467,28 @@ export const useTasks = () => {
     } else {
       // For the main Daily Tasks page (statusFilter is 'all', 'to-do', etc.)
       workingTasks = workingTasks.filter(task => {
-        const isCreatedToday = isSameDay(parseISO(task.created_at), effectiveCurrentDate);
-        const isToDoOrSkipped = task.status === 'to-do' || task.status === 'skipped';
+        const isCreatedOnCurrentDate = isSameDay(parseISO(task.created_at), effectiveCurrentDate);
+        const isActiveAndNotArchived = task.status === 'to-do' || task.status === 'skipped';
         const isRecurringTemplate = task.recurring_type !== 'none' && task.original_task_id === null;
-        const isRecurringInstanceForToday = task.original_task_id !== null && isSameDay(parseISO(task.created_at), effectiveCurrentDate);
 
-        let shouldShow = false;
-
+        // Rule 1: Never show recurring templates in the daily view
         if (isRecurringTemplate) {
-          // Recurring templates are only shown if created on the current date
-          shouldShow = isCreatedToday;
-        } else {
-          // For all other tasks (non-recurring, or recurring instances):
-          // Show if created on the current date OR if it's an active task (to-do/skipped)
-          // OR if it's a recurring instance specifically generated for today.
-          shouldShow = isCreatedToday || isToDoOrSkipped || isRecurringInstanceForToday;
+          return false;
         }
-        return shouldShow;
+
+        // Rule 2: Show tasks if they are created on the current date (this covers new tasks and new recurring instances for today)
+        if (isCreatedOnCurrentDate) {
+          return true;
+        }
+
+        // Rule 3: Show tasks if they are active (to-do/skipped) and were created on a *previous* date (i.e., carried over from yesterday or earlier)
+        // This ensures tasks not completed on their creation day still appear.
+        if (isActiveAndNotArchived && isPast(parseISO(task.created_at)) && !isSameDay(parseISO(task.created_at), effectiveCurrentDate)) {
+          return true;
+        }
+        
+        // Otherwise, don't show
+        return false;
       });
     }
 
