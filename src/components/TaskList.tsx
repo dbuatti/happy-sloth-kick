@@ -10,7 +10,7 @@ import BulkActions from './BulkActions';
 import AddTaskForm from './AddTaskForm';
 import DailyStreak from './DailyStreak';
 import SmartSuggestions from './SmartSuggestions';
-import { DndContext, DragEndEvent, UniqueIdentifier } from '@dnd-kit/core';
+import { DndContext, DragEndEvent, UniqueIdentifier, PointerSensor, KeyboardSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import SortableSectionHeader from './SortableSectionHeader';
 import { Task, TaskSection } from '@/hooks/useTasks';
@@ -47,7 +47,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
   } = useTasks();
 
   const [isAddTaskFormOpen, setIsAddTaskForm] = useState(false);
-  const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
+  const [isTaskDetailOpen, setIsTaskDetail] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [showConfirmBulkDeleteDialog, setShowConfirmBulkDeleteDialog] = useState(false);
@@ -55,7 +55,29 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
   const [isAddSectionOpen, setIsAddSectionOpen] = useState(false);
   const [newSectionName, setNewSectionName] = useState('');
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
-  const [editingSectionName, setNewEditingSectionName] = useState(''); // Renamed to avoid conflict
+  const [editingSectionName, setNewEditingSectionName] = useState('');
+
+  // Configure Dnd-kit sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5, // Allow a small drag distance before activating
+      },
+      // Prevent drag from starting on elements with data-no-dnd="true"
+      shouldHandleEvent: ({ event: pointerEvent }) => {
+        const target = pointerEvent.target as HTMLElement;
+        if (target.closest('[data-no-dnd="true"]')) {
+          return false;
+        }
+        return true;
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: (event) => {
+        return null;
+      },
+    })
+  );
 
   // Group tasks by section
   const tasksBySection = useMemo(() => {
@@ -142,7 +164,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
 
   const handleEditTask = (task: Task) => {
     setTaskToEdit(task);
-    setIsTaskDetailOpen(true);
+    setIsTaskDetail(true);
   };
 
   const handleBulkAction = (action: string) => {
@@ -198,7 +220,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
   if (loading) {
     return (
       <div className="flex-1 flex flex-col">
-        <main className="flex-grow p-6 flex justify-center"> {/* Increased p-4 to p-6 */}
+        <main className="flex-grow p-6 flex justify-center">
           <Card className="w-full shadow-lg">
             <CardHeader>
               <CardTitle className="text-3xl font-bold text-center">Loading Tasks...</CardTitle>
@@ -217,15 +239,15 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
   return (
     <>
       <div className="flex-1 flex flex-col">
-        <main className="flex-grow"> {/* Removed p-4 as it's handled by parent Index.tsx */}
-          <Card className="w-full shadow-lg"> {/* Removed max-w-4xl and mx-auto */}
-            <CardHeader className="pb-4"> {/* Increased pb-2 to pb-4 */}
+        <main className="flex-grow">
+          <Card className="w-full shadow-lg">
+            <CardHeader className="pb-4">
               <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
                 <CheckCircle2 className="h-7 w-7" /> Your Tasks
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-0"> {/* Added pt-0 to remove top padding */}
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6"> {/* Increased gap-3 to gap-4, mb-4 to mb-6 */}
+            <CardContent className="pt-0">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
                   <Input
@@ -249,7 +271,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
                 onClearSelection={clearSelectedTasks}
               />
 
-              <DndContext onDragEnd={handleDragEnd}>
+              <DndContext onDragEnd={handleDragEnd} sensors={sensors}>
                 <SortableContext items={sections.map(s => s.id)} strategy={verticalListSortingStrategy}>
                   {sections.map((currentSection: TaskSection) => {
                     const isExpanded = expandedSections[currentSection.id] !== false;
@@ -364,7 +386,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
           task={taskToEdit}
           userId={userId}
           isOpen={isTaskDetailOpen}
-          onClose={() => setIsTaskDetailOpen(false)}
+          onClose={() => setIsTaskDetail(false)}
           onUpdate={updateTask}
           onDelete={deleteTask}
         />
