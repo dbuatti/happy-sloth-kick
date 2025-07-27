@@ -157,10 +157,10 @@ const Analytics = () => {
     : null;
 
   return (
-    <div className="flex-1 flex flex-col"> {/* Removed min-h-screen and bg classes */}
-      <main className="flex-grow p-4">
+    <div className="flex-1 flex flex-col">
+      <main className="flex-grow p-6"> {/* Increased p-4 to p-6 */}
         <Card className="w-full max-w-4xl mx-auto shadow-lg">
-          <CardHeader>
+          <CardHeader className="pb-4"> {/* Increased pb-2 to pb-4 */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
               <CardTitle className="text-3xl font-bold">Task Analytics</CardTitle>
               <div className="flex flex-col sm:flex-row gap-2">
@@ -203,7 +203,7 @@ const Analytics = () => {
               </div>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0"> {/* Added pt-0 */}
             {loading ? (
               <div className="flex justify-center items-center h-64">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -339,7 +339,7 @@ const Analytics = () => {
           </CardContent>
         </Card>
       </main>
-      <footer className="p-4">
+      <footer className="p-6"> {/* Increased p-4 to p-6 */}
         <div className="text-center text-sm text-gray-500 dark:text-gray-400">
           &copy; {new Date().getFullYear()} TaskMaster. Made with Dyad.
         </div>

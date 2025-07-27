@@ -7,13 +7,13 @@ import { themes } from '@/lib/themes';
 
 const Help = () => {
   return (
-    <div className="flex-1 flex flex-col"> {/* Removed min-h-screen and bg classes */}
-      <main className="flex-grow p-4 flex justify-center"> {/* Removed items-center */}
+    <div className="flex-1 flex flex-col">
+      <main className="flex-grow p-6 flex justify-center"> {/* Increased p-4 to p-6 */}
         <Card className="w-full max-w-4xl shadow-lg">
-          <CardHeader>
+          <CardHeader className="pb-4"> {/* Increased pb-2 to pb-4 */}
             <CardTitle className="text-3xl font-bold text-center">TaskMaster Help Center</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-8">
+          <CardContent className="pt-0 space-y-8"> {/* Added pt-0 */}
             <section>
               <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
                 <Lightbulb className="h-6 w-6 text-primary" /> Core Task Functionality
@@ -106,7 +106,7 @@ const Help = () => {
           </CardContent>
         </Card>
       </main>
-      <footer className="p-4">
+      <footer className="p-6"> {/* Increased p-4 to p-6 */}
         <MadeWithDyad />
       </footer>
     </div>

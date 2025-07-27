@@ -99,14 +99,14 @@ const Settings = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col"> {/* Removed min-h-screen and bg classes */}
-      <main className="flex-grow p-4 flex justify-center"> {/* Removed items-center */}
+    <div className="flex-1 flex flex-col">
+      <main className="flex-grow p-6 flex justify-center"> {/* Increased p-4 to p-6 */}
         <div className="w-full max-w-md mx-auto space-y-6">
           <Card className="w-full shadow-lg">
-            <CardHeader>
+            <CardHeader className="pb-4"> {/* Increased pb-2 to pb-4 */}
               <CardTitle className="text-2xl font-bold text-center">Profile Settings</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-0"> {/* Added pt-0 */}
               {loading ? (
                 <div className="text-center">Loading profile...</div>
               ) : (
@@ -149,7 +149,7 @@ const Settings = () => {
           <WorkHoursSettings />
         </div>
       </main>
-      <footer className="p-4">
+      <footer className="p-6"> {/* Increased p-4 to p-6 */}
         <MadeWithDyad />
       </footer>
     </div>

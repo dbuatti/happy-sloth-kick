@@ -42,7 +42,7 @@ const Archive = () => {
   if (loading) {
     return (
       <div className="flex-1 flex flex-col">
-        <main className="flex-grow p-4 flex justify-center"> {/* Removed items-center */}
+        <main className="flex-grow p-6 flex justify-center"> {/* Increased p-4 to p-6 */}
           <Card className="w-full max-w-4xl mx-auto shadow-lg">
             <CardHeader>
               <CardTitle className="text-3xl font-bold text-center">Archived Tasks</CardTitle>
@@ -54,7 +54,7 @@ const Archive = () => {
             </CardContent>
           </Card>
         </main>
-        <footer className="p-4">
+        <footer className="p-6"> {/* Increased p-4 to p-6 */}
           <MadeWithDyad />
         </footer>
       </div>
@@ -64,14 +64,14 @@ const Archive = () => {
   return (
     <>
       <div className="flex-1 flex flex-col">
-        <main className="flex-grow p-4">
+        <main className="flex-grow p-6"> {/* Increased p-4 to p-6 */}
           <Card className="w-full max-w-4xl mx-auto shadow-lg">
-            <CardHeader>
+            <CardHeader className="pb-4"> {/* Increased pb-2 to pb-4 */}
               <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
                 <ArchiveIcon className="h-7 w-7" /> Archived Tasks
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-0"> {/* Added pt-0 */}
               {filteredTasks.length === 0 ? (
                 <div className="text-center text-gray-500 p-8">
                   <p className="text-lg mb-2">No archived tasks found.</p>
@@ -98,7 +98,7 @@ const Archive = () => {
             </CardContent>
           </Card>
         </main>
-        <footer className="p-4">
+        <footer className="p-6"> {/* Increased p-4 to p-6 */}
           <MadeWithDyad />
         </footer>
       </div>

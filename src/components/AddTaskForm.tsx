@@ -230,9 +230,9 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
   };
 
   return (
-    <div className="p-4 bg-gray-50 dark:bg-card rounded-lg"> {/* Reduced p-6 to p-4 */}
-      <h2 className="text-2xl font-semibold mb-3">Add New Task</h2> {/* Reduced mb-4 to mb-3 */}
-      <div className="space-y-3"> {/* Reduced space-y-4 to space-y-3 */}
+    <div className="p-6 bg-gray-50 dark:bg-card rounded-lg"> {/* Increased p-4 to p-6 */}
+      <h2 className="text-2xl font-semibold mb-4">Add New Task</h2> {/* Increased mb-3 to mb-4 */}
+      <div className="space-y-4"> {/* Increased space-y-3 to space-y-4 */}
         <div>
           <Label htmlFor="new-task-description">Task Description</Label>
           <Input
@@ -246,7 +246,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
           />
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3"> {/* Reduced gap-4 to gap-3 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4"> {/* Increased gap-3 to gap-4 */}
           <CategorySelector value={newTaskCategory} onChange={setNewTaskCategory} userId={userId} />
           <PrioritySelector value={newTaskPriority} onChange={setNewTaskPriority} />
         </div>
@@ -255,7 +255,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
           <SectionSelector value={newTaskSectionId} onChange={setNewTaskSectionId} userId={userId} sections={sections} />
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3"> {/* Reduced gap-4 to gap-3 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4"> {/* Increased gap-3 to gap-4 */}
           <div>
             <Label>Due Date</Label>
             <Popover>
@@ -346,7 +346,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
             placeholder="Add notes about this task..."
             value={newTaskNotes}
             onChange={(e) => setNewTaskNotes(e.target.value)}
-            rows={2} /* Reduced rows from 3 to 2 */
+            rows={3} /* Increased rows from 2 to 3 */
             disabled={isAdding}
           />
         </div>

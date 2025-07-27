@@ -75,7 +75,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
       </div>
 
       {/* Main header content */}
-      <div className="flex items-center justify-between p-2 pl-6">
+      <div className="flex items-center justify-between p-3 pl-6"> {/* Increased p-2 to p-3 */}
         {isEditing ? (
           <div className="flex items-center w-full gap-2">
             <Input

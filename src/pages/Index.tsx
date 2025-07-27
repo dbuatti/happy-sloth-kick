@@ -55,8 +55,8 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen }) => {
 
   // Define keyboard shortcuts
   const shortcuts: ShortcutMap = {
-    'arrowleft': handlePreviousDay, // Changed to 'arrowleft'
-    'arrowright': handleNextDay,    // Changed to 'arrowright'
+    'arrowleft': handlePreviousDay,
+    'arrowright': handleNextDay,
   };
 
   // Apply keyboard shortcuts
@@ -66,7 +66,7 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen }) => {
     <div className="flex-1 flex flex-col">
       {session ? (
         <>
-          <main className="flex-grow p-4">
+          <main className="flex-grow p-6"> {/* Increased padding from p-4 to p-6 */}
             <DateNavigator
               currentDate={currentDate}
               onPreviousDay={handlePreviousDay}
@@ -75,12 +75,12 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen }) => {
             />
             <TaskList setIsAddTaskOpen={setIsAddTaskOpen} />
           </main>
-          <footer className="p-4">
+          <footer className="p-6"> {/* Increased padding from p-4 to p-6 */}
             <MadeWithDyad />
           </footer>
         </>
       ) : (
-        <div className="flex-1 flex items-center justify-center p-4">
+        <div className="flex-1 flex items-center justify-center p-6"> {/* Increased padding from p-4 to p-6 */}
           <AuthComponent />
         </div>
       )}

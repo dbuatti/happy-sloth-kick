@@ -60,7 +60,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   return (
     <div // Changed from li to div
       className={cn(
-        "relative flex items-center space-x-3 w-full", // Added w-full to ensure it takes full width
+        "relative flex items-center space-x-4 w-full", // Increased space-x-3 to space-x-4
         task.status === 'completed' ? "opacity-70 bg-green-50/20 dark:bg-green-900/20 animate-task-completed" : "", // Keep opacity for completed
         // isOverdue and isUpcoming border styling removed from here, now in SortableTaskItem
       )}
@@ -95,7 +95,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
         </label>
 
         {/* Compact details row */}
-        <div className="flex items-center text-xs text-muted-foreground mt-0.5 space-x-3"> {/* Reduced mt-1 to mt-0.5 */}
+        <div className="flex items-center text-xs text-muted-foreground mt-1 space-x-3"> {/* Increased mt-0.5 to mt-1 */}
           {/* Priority */}
           <span className={cn(
             "font-semibold",
@@ -132,12 +132,12 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
       {/* Actions (Edit, More) - visible on hover */}
       <div className="flex-shrink-0 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onEditTask(task); }}>
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); onEditTask(task); }}> {/* Increased h-7 w-7 to h-8 w-8 */}
           <Edit className="h-4 w-4" />
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-7 w-7 p-0" onClick={(e) => e.stopPropagation()}>
+            <Button variant="ghost" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}> {/* Increased h-7 w-7 to h-8 w-8 */}
               <span className="sr-only">Open menu</span>
               <MoreHorizontal className="h-4 w-4" />
             </Button>

@@ -198,7 +198,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
   if (loading) {
     return (
       <div className="flex-1 flex flex-col">
-        <main className="flex-grow p-4 flex justify-center">
+        <main className="flex-grow p-6 flex justify-center"> {/* Increased p-4 to p-6 */}
           <Card className="w-full shadow-lg">
             <CardHeader>
               <CardTitle className="text-3xl font-bold text-center">Loading Tasks...</CardTitle>
@@ -217,15 +217,15 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
   return (
     <>
       <div className="flex-1 flex flex-col">
-        <main className="flex-grow p-4">
+        <main className="flex-grow"> {/* Removed p-4 as it's handled by parent Index.tsx */}
           <Card className="w-full shadow-lg"> {/* Removed max-w-4xl and mx-auto */}
-            <CardHeader>
+            <CardHeader className="pb-4"> {/* Increased pb-2 to pb-4 */}
               <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
                 <CheckCircle2 className="h-7 w-7" /> Your Tasks
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+            <CardContent className="pt-0"> {/* Added pt-0 to remove top padding */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6"> {/* Increased gap-3 to gap-4, mb-4 to mb-6 */}
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
                   <Input

@@ -167,8 +167,8 @@ const ProjectBalanceTracker: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex-1 flex flex-col"> {/* Removed min-h-screen and bg classes */}
-        <main className="flex-grow p-4 flex justify-center"> {/* Removed items-center */}
+      <div className="flex-1 flex flex-col">
+        <main className="flex-grow p-6 flex justify-center"> {/* Increased p-4 to p-6 */}
           <Card className="w-full max-w-4xl mx-auto shadow-lg">
             <CardHeader>
               <CardTitle className="text-3xl font-bold text-center">Loading Projects...</CardTitle>
@@ -180,7 +180,7 @@ const ProjectBalanceTracker: React.FC = () => {
             </CardContent>
           </Card>
         </main>
-        <footer className="p-4">
+        <footer className="p-6"> {/* Increased p-4 to p-6 */}
           <MadeWithDyad />
         </footer>
       </div>
@@ -188,10 +188,10 @@ const ProjectBalanceTracker: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 flex flex-col"> {/* Removed min-h-screen and bg classes */}
-      <main className="flex-grow p-4">
+    <div className="flex-1 flex flex-col">
+      <main className="flex-grow p-6"> {/* Increased p-4 to p-6 */}
         <Card className="w-full max-w-4xl mx-auto shadow-lg">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="pb-4"> {/* Increased pb-2 to pb-4 */}
             {isEditingTitle ? (
               <div className="flex items-center w-full gap-2">
                 <Input
@@ -250,7 +250,7 @@ const ProjectBalanceTracker: React.FC = () => {
               </DialogContent>
             </Dialog>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0"> {/* Added pt-0 */}
             {showCelebration && (
               <div className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 p-4 rounded-lg mb-6 text-center flex flex-col items-center gap-2">
                 <Sparkles className="h-8 w-8 text-green-600 dark:text-green-400 animate-bounce" />
@@ -367,7 +367,7 @@ const ProjectBalanceTracker: React.FC = () => {
           </CardContent>
         </Card>
       </main>
-      <footer className="p-4">
+      <footer className="p-6"> {/* Increased p-4 to p-6 */}
         <MadeWithDyad />
       </footer>
 

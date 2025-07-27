@@ -14,7 +14,7 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({ currentDate, onPreviousDa
   const isToday = isSameDay(currentDate, new Date());
 
   return (
-    <div className="flex items-center justify-between mb-4"> {/* Reduced mb-6 to mb-4 */}
+    <div className="flex items-center justify-between mb-6"> {/* Increased mb-4 to mb-6 */}
       <Button variant="outline" size="icon" onClick={onPreviousDay}>
         <ChevronLeft className="h-4 w-4" />
       </Button>

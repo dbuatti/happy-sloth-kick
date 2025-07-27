@@ -22,7 +22,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   task,
   userId,
   onStatusChange,
-  onDelete,
+  onDelete, // Destructure onDelete prop
   onUpdate,
   isSelected,
   onToggleSelect,
@@ -53,7 +53,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "relative border rounded-lg p-2 transition-all duration-200 ease-in-out cursor-grab active:cursor-grabbing", // Reduced p-3 to p-2
+        "relative border rounded-lg p-3 transition-all duration-200 ease-in-out cursor-grab active:cursor-grabbing", // Increased p-2 to p-3
         "group",
         "hover:shadow-md",
         task.status === 'completed' ? "border-green-300 dark:border-green-700 bg-green-50/20 dark:bg-green-900/20" : "border-border bg-card dark:bg-gray-800", // Apply green background for completed
@@ -68,7 +68,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         task={task} 
         userId={userId}
         onStatusChange={onStatusChange}
-        onDelete={onDelete}
+        onDelete={onDelete} // Corrected: pass the onDelete prop
         onUpdate={onUpdate}
         isSelected={isSelected}
         onToggleSelect={onToggleSelect}

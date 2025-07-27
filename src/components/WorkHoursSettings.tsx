@@ -142,12 +142,12 @@ const WorkHoursSettings: React.FC = () => {
   if (loading) {
     return (
       <Card className="w-full shadow-lg">
-        <CardHeader className="pb-2"> {/* Reduced pb-4 to pb-2 */}
+        <CardHeader className="pb-4"> {/* Increased pb-2 to pb-4 */}
           <CardTitle className="text-2xl font-bold flex items-center gap-2">
             <Clock className="h-6 w-6 text-primary" /> Work Hours
           </CardTitle>
         </CardHeader>
-        <CardContent className="pt-2"> {/* Reduced pt-4 to pt-2 */}
+        <CardContent className="pt-0"> {/* Added pt-0 */}
           <div className="text-center">Loading work hours...</div>
         </CardContent>
       </Card>
@@ -156,14 +156,14 @@ const WorkHoursSettings: React.FC = () => {
 
   return (
     <Card className="w-full shadow-lg">
-      <CardHeader className="pb-2"> {/* Reduced pb-4 to pb-2 */}
+      <CardHeader className="pb-4"> {/* Increased pb-2 to pb-4 */}
         <CardTitle className="text-2xl font-bold flex items-center gap-2">
           <Clock className="h-6 w-6 text-primary" /> Work Hours
         </CardTitle>
         <p className="text-sm text-muted-foreground">Set your daily working hours to help manage your productivity.</p>
       </CardHeader>
-      <CardContent className="space-y-3 pt-2"> {/* Reduced space-y-4 to space-y-3, pt-4 to pt-2 */}
-        <div className="border rounded-md p-3 bg-gray-50 dark:bg-gray-700/50">
+      <CardContent className="space-y-4 pt-0"> {/* Increased space-y-3 to space-y-4, added pt-0 */}
+        <div className="border rounded-md p-4 bg-gray-50 dark:bg-gray-700/50"> {/* Increased p-3 to p-4 */}
           <h3 className="text-lg font-semibold mb-3">Apply to All Days</h3>
           <div className="flex flex-col sm:flex-row items-center gap-3">
             <div className="flex-1 w-full">
@@ -194,7 +194,7 @@ const WorkHoursSettings: React.FC = () => {
         </div>
 
         {workHours.map(dayHour => (
-          <div key={dayHour.day_of_week} className="flex items-center space-x-4 p-2 border rounded-md">
+          <div key={dayHour.day_of_week} className="flex items-center space-x-4 p-3 border rounded-md"> {/* Increased p-2 to p-3 */}
             <Checkbox
               id={`enable-${dayHour.day_of_week}`}
               checked={dayHour.enabled}
@@ -221,7 +221,7 @@ const WorkHoursSettings: React.FC = () => {
             />
           </div>
         ))}
-        <Button onClick={() => handleSaveWorkHours()} className="w-full mt-3" disabled={isSaving}> {/* Reduced mt-4 to mt-3 */}
+        <Button onClick={() => handleSaveWorkHours()} className="w-full mt-4" disabled={isSaving}> {/* Increased mt-3 to mt-4 */}
           {isSaving ? 'Saving...' : 'Save Work Hours'}
         </Button>
       </CardContent>
