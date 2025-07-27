@@ -250,16 +250,8 @@ export const useTasks = () => {
           return isTaskCompletedToday;
         }
 
-        // For 'to-do' or 'skipped' tasks:
-        // Exclude recurring templates themselves from the daily view, only their instances should show.
-        // Instances have original_task_id set.
-        const isTemplate = task.recurring_type !== 'none' && task.original_task_id === null;
-        console.log(`useTasks LOG 12: Task "${task.description}" (ID: ${task.id}, Recurring: ${task.recurring_type}, OriginalID: ${task.original_task_id}): isTemplate = ${isTemplate}`);
-        if (isTemplate) {
-          return false;
-        }
-        
-        // All other 'to-do' or 'skipped' tasks (including instances of recurring tasks, and regular tasks) are shown.
+        // Removed: isTemplate filter here. The uniqueTasksMap will handle de-duplication.
+        // All 'to-do' or 'skipped' tasks (including templates and instances) are passed to uniqueTasksMap.
         return true;
       });
 
@@ -291,7 +283,8 @@ export const useTasks = () => {
 
             if (currentIsActive && !existingIsActive) {
               uniqueTasksMap.set(key, task);
-            } else if (!currentIsActive && !existingIsActive) {
+            } else if (currentIsActive === existingIsActive) {
+              // If both are active or both are inactive, prefer:
               // 3. Tasks with a due date (sooner first)
               const existingHasDueDate = !!existingTask.due_date;
               const currentHasDueDate = !!task.due_date;
@@ -314,12 +307,6 @@ export const useTasks = () => {
                 if (currentCreatedAt > existingCreatedAt) {
                   uniqueTasksMap.set(key, task);
                 }
-              }
-            } else if (currentIsActive === existingIsActive) {
-              // If both are active or both are inactive, prefer the one created today (already handled)
-              // or the latest created_at if not created today
-              if (currentCreatedAt > existingCreatedAt) {
-                uniqueTasksMap.set(key, task);
               }
             }
           }
@@ -756,7 +743,6 @@ export const useTasks = () => {
         ...task, // Preserve all original properties
         order: index,
         section_id: destinationSectionId, // Ensure section_id is updated for the moved task
-        user_id: userId, // Ensure user_id is included for RLS
       }));
 
       // Merge back into the main tasks array
