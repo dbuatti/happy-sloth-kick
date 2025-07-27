@@ -53,7 +53,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "relative border rounded-lg p-3 transition-all duration-200 ease-in-out cursor-grab active:cursor-grabbing",
+        "relative border rounded-lg p-2 transition-all duration-200 ease-in-out cursor-grab active:cursor-grabbing", // Reduced p-3 to p-2
         "group",
         "hover:shadow-md",
         task.status === 'completed' ? "border-green-300 dark:border-green-700 bg-green-50/20 dark:bg-green-900/20" : "border-border bg-card dark:bg-gray-800", // Apply green background for completed

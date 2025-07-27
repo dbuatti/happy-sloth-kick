@@ -95,7 +95,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
         </label>
 
         {/* Compact details row */}
-        <div className="flex items-center text-xs text-muted-foreground mt-1 space-x-3">
+        <div className="flex items-center text-xs text-muted-foreground mt-0.5 space-x-3"> {/* Reduced mt-1 to mt-0.5 */}
           {/* Priority */}
           <span className={cn(
             "font-semibold",

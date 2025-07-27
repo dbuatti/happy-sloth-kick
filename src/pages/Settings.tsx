@@ -100,7 +100,7 @@ const Settings = () => {
 
   return (
     <div className="flex-1 flex flex-col"> {/* Removed min-h-screen and bg classes */}
-      <main className="flex-grow p-4 flex items-center justify-center">
+      <main className="flex-grow p-4 flex justify-center"> {/* Removed items-center */}
         <div className="w-full max-w-md mx-auto space-y-6">
           <Card className="w-full shadow-lg">
             <CardHeader>

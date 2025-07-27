@@ -8,7 +8,7 @@ import { themes } from '@/lib/themes';
 const Help = () => {
   return (
     <div className="flex-1 flex flex-col"> {/* Removed min-h-screen and bg classes */}
-      <main className="flex-grow p-4 flex items-center justify-center">
+      <main className="flex-grow p-4 flex justify-center"> {/* Removed items-center */}
         <Card className="w-full max-w-4xl shadow-lg">
           <CardHeader>
             <CardTitle className="text-3xl font-bold text-center">TaskMaster Help Center</CardTitle>

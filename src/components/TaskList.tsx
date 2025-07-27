@@ -68,7 +68,7 @@ interface NewTaskData {
   due_date?: string | null;
   notes?: string | null;
   remind_at?: string | null;
-  section_id?: string | null;
+  section_id?: string | null; // New: for task sections
 }
 
 interface TaskListProps {
@@ -458,7 +458,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
         <CardHeader>
           <CardTitle className="text-3xl font-bold text-center">Daily Tasks</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4"> {/* Reduced padding */}
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
           </div>
@@ -468,299 +468,301 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
   }
 
   return (
-    <Card className="w-full max-w-4xl mx-auto shadow-lg">
-      <CardHeader>
-        <CardTitle className="text-3xl font-bold text-center">Daily Tasks</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <DateNavigator
-          currentDate={currentDate}
-          onPreviousDay={handlePreviousDay}
-          onNextDay={handleNextDay}
-          onGoToToday={handleGoToToday} // Pass the new prop
-        />
+    <> {/* Added React.Fragment to wrap multiple top-level elements */}
+      <Card className="w-full max-w-4xl mx-auto shadow-lg">
+        <CardHeader>
+          <CardTitle className="text-3xl font-bold text-center">Daily Tasks</CardTitle>
+        </CardHeader>
+        <CardContent className="p-4"> {/* Reduced padding */}
+          <DateNavigator
+            currentDate={currentDate}
+            onPreviousDay={handlePreviousDay}
+            onNextDay={handleNextDay}
+            onGoToToday={handleGoToToday} // Pass the new prop
+          />
 
-        {/* Daily Streak Component */}
-        <div className="mb-6">
-          <DailyStreak tasks={tasks} currentDate={currentDate} />
-        </div>
-
-        {/* Smart Suggestions Component */}
-        <SmartSuggestions />
-
-        {/* Floating Action Button for Add Task - RE-INTRODUCED */}
-        <Button
-          className="fixed bottom-6 right-6 rounded-full h-14 w-14 shadow-lg z-50 md:bottom-8 md:right-8"
-          aria-label="Add new task"
-          onClick={() => setIsAddTaskOpen(true)}
-        >
-          <Plus className="h-6 w-6" />
-        </Button>
-
-        <TaskFilter />
-
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-semibold">Your Tasks</h2>
-          <div className="flex items-center space-x-2">
-            <Select value={`${sortKey}_${sortDirection}`} onValueChange={handleSortChange}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="order_asc">Custom Order</SelectItem>
-                <SelectItem value="priority_desc">Priority (High to Low)</SelectItem>
-                <SelectItem value="priority_asc">Priority (Low to High)</SelectItem>
-                <SelectItem value="due_date_asc">Due Date (Soonest)</SelectItem>
-                <SelectItem value="due_date_desc">Due Date (Latest)</SelectItem>
-                <SelectItem value="created_at_desc">Created At (Newest)</SelectItem>
-                <SelectItem value="created_at_asc">Created At (Oldest)</SelectItem>
-              </SelectContent>
-            </Select>
-            <Dialog open={isManageSectionsOpen} onOpenChange={setIsManageSectionsOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="icon" aria-label="Manage Sections">
-                  <Settings className="h-4 w-4" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Manage Task Sections</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div>
-                    <Label htmlFor="new-section-name">New Section Name</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="new-section-name"
-                        value={newSectionName}
-                        onChange={(e) => setNewSectionName(e.target.value)}
-                        placeholder="e.g., Work, Personal"
-                        autoFocus // Added autoFocus
-                      />
-                      <Button onClick={handleCreateSection} disabled={!newSectionName.trim()}>
-                        <Plus className="h-4 w-4 mr-2" /> Add
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="mt-6">
-                    <h3 className="text-lg font-semibold mb-2">Existing Sections</h3>
-                    {sections.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">No sections created yet.</p>
-                    ) : (
-                      <ul className="space-y-2">
-                        {sections.map(sectionGroup => (
-                          <li key={sectionGroup.id} className="flex items-center justify-between p-2 border rounded-md">
-                            {editingSectionId === sectionGroup.id ? (
-                              <div className="flex-1 flex items-center gap-2">
-                                <Input
-                                  value={editingSectionName}
-                                  onChange={(e) => setEditingSectionName(e.target.value)}
-                                  onKeyDown={(e) => e.key === 'Enter' && handleRenameSection(sectionGroup.id)}
-                                  autoFocus
-                                />
-                                <Button size="sm" onClick={() => handleRenameSection(sectionGroup.id)} disabled={!editingSectionName.trim()}>Save</Button>
-                                <Button variant="ghost" size="sm" onClick={() => setEditingSectionId(null)}>Cancel</Button>
-                              </div>
-                            ) : (
-                              <span className="flex items-center gap-2">
-                                <FolderOpen className="h-4 w-4 text-muted-foreground" />
-                                {sectionGroup.name}
-                              </span>
-                            )}
-
-                            <div className="flex space-x-1">
-                              {editingSectionId !== sectionGroup.id && (
-                                <>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6"
-                                    onClick={() => {
-                                      setEditingSectionId(sectionGroup.id);
-                                      setEditingSectionName(sectionGroup.name);
-                                    }}
-                                    aria-label={`Rename section ${sectionGroup.name}`}
-                                  >
-                                    <Edit className="h-3 w-3" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6"
-                                    onClick={() => confirmDeleteSection(sectionGroup.id)}
-                                    aria-label={`Delete section ${sectionGroup.name}`}
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
-                                </>
-                              )}
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
-            <Dialog open={isReassignTasksDialogOpen} onOpenChange={setIsReassignTasksDialogOpen}>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Reassign Tasks Before Deleting Section</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <p>This section contains tasks. To delete it, you must reassign these tasks to another section.</p>
-                  <div>
-                    <Label htmlFor="reassign-section">Move tasks to:</Label>
-                    <Select value={targetReassignSectionId || ''} onValueChange={setTargetReassignSectionId}>
-                      <SelectTrigger id="reassign-section">
-                        <SelectValue placeholder="Select a section" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {sections.filter(s => s.id !== sectionToDeleteId).length === 0 ? (
-                          <SelectItem value="" disabled>No other sections available</SelectItem>
-                        ) : (
-                          sections.filter(s => s.id !== sectionToDeleteId).map(section => (
-                            <SelectItem key={section.id} value={section.id}>
-                              {section.name}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsReassignTasksDialogOpen(false)}>Cancel</Button>
-                  <Button onClick={handleReassignAndDeleteSection} disabled={!targetReassignSectionId}>
-                    Move and Delete Section
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+          {/* Daily Streak Component */}
+          <div className="mb-4"> {/* Reduced margin */}
+            <DailyStreak tasks={tasks} currentDate={currentDate} />
           </div>
-        </div>
 
-        {sections.length === 0 && filteredTasks.length === 0 ? (
-          <div className="text-center text-gray-500 p-8 flex flex-col items-center justify-center">
-            <PlusCircle className="h-16 w-16 text-muted-foreground mb-4" />
-            <p className="text-lg mb-2">No sections or tasks found!</p>
-            <p>Start by creating your first section using the "Manage Sections" button above, then add your tasks.</p>
-          </div>
-        ) : (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
+          {/* Smart Suggestions Component */}
+          <SmartSuggestions />
+
+          {/* Floating Action Button for Add Task - RE-INTRODUCED */}
+          <Button
+            className="fixed bottom-6 right-6 rounded-full h-14 w-14 shadow-lg z-50 md:bottom-8 md:right-8"
+            aria-label="Add new task"
+            onClick={() => setIsAddTaskOpen(true)}
           >
-            <SortableContext
-              items={sections.map(s => s.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              <div className="space-y-6">
-                {tasksGroupedBySection.map(sectionGroup => (
-                  <div key={sectionGroup.id} className="space-y-3">
-                    <SortableSectionHeader
-                      id={sectionGroup.id}
-                      name={sectionGroup.name}
-                      taskCount={sectionGroup.parentTasks.length + sectionGroup.subtasks.length}
-                      isExpanded={expandedSections[sectionGroup.id] ?? true}
-                      onToggleExpand={() => handleToggleSectionExpand(sectionGroup.id)}
-                    />
-                    {(expandedSections[sectionGroup.id] ?? true) && (
-                      <SortableContext
-                        items={sectionGroup.parentTasks.map(task => task.id)}
-                        strategy={verticalListSortingStrategy}
-                      >
-                        <ul className="space-y-3">
-                          {sectionGroup.parentTasks.map((task) => (
-                            <React.Fragment key={task.id}>
-                              <SortableTaskItem
-                                task={task}
-                                userId={userId}
-                                onStatusChange={handleTaskStatusChange}
-                                onDelete={deleteTask}
-                                onUpdate={updateTask}
-                                isSelected={selectedTaskIds.includes(task.id)}
-                                onToggleSelect={toggleTaskSelection}
-                                sections={sections}
-                                onEditTask={handleEditTask}
-                              />
-                              {/* Render subtasks if they exist for this parent task */}
-                              {sectionGroup.subtasks
-                                .filter(sub => sub.parent_task_id === task.id)
-                                .sort((a, b) => (a.order || 0) - (b.order || 0))
-                                .map(subtask => (
-                                  <li key={subtask.id} className="ml-8 border rounded-lg p-3 bg-card dark:bg-gray-800 shadow-sm flex items-center space-x-3">
-                                    <Checkbox
-                                      checked={subtask.status === 'completed'}
-                                      onCheckedChange={(checked) => {
-                                        if (typeof checked === 'boolean') {
-                                          updateTask(subtask.id, { status: checked ? 'completed' : 'to-do' });
-                                        }
+            <Plus className="h-6 w-6" />
+          </Button>
+
+          <TaskFilter />
+
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-semibold">Your Tasks</h2>
+            <div className="flex items-center space-x-2">
+              <Select value={`${sortKey}_${sortDirection}`} onValueChange={handleSortChange}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="order_asc">Custom Order</SelectItem>
+                  <SelectItem value="priority_desc">Priority (High to Low)</SelectItem>
+                  <SelectItem value="priority_asc">Priority (Low to High)</SelectItem>
+                  <SelectItem value="due_date_asc">Due Date (Soonest)</SelectItem>
+                  <SelectItem value="due_date_desc">Due Date (Latest)</SelectItem>
+                  <SelectItem value="created_at_desc">Created At (Newest)</SelectItem>
+                  <SelectItem value="created_at_asc">Created At (Oldest)</SelectItem>
+                </SelectContent>
+              </Select>
+              <Dialog open={isManageSectionsOpen} onOpenChange={setIsManageSectionsOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="icon" aria-label="Manage Sections">
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Manage Task Sections</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div>
+                      <Label htmlFor="new-section-name">New Section Name</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="new-section-name"
+                          value={newSectionName}
+                          onChange={(e) => setNewSectionName(e.target.value)}
+                          placeholder="e.g., Work, Personal"
+                          autoFocus // Added autoFocus
+                        />
+                        <Button onClick={handleCreateSection} disabled={!newSectionName.trim()}>
+                          <Plus className="h-4 w-4 mr-2" /> Add
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="mt-6">
+                      <h3 className="text-lg font-semibold mb-2">Existing Sections</h3>
+                      {sections.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No sections created yet.</p>
+                      ) : (
+                        <ul className="space-y-2">
+                          {sections.map(sectionGroup => (
+                            <li key={sectionGroup.id} className="flex items-center justify-between p-2 border rounded-md">
+                              {editingSectionId === sectionGroup.id ? (
+                                <div className="flex-1 flex items-center gap-2">
+                                  <Input
+                                    value={editingSectionName}
+                                    onChange={(e) => setNewSectionName(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleRenameSection(sectionGroup.id)}
+                                    autoFocus
+                                  />
+                                  <Button size="sm" onClick={() => handleRenameSection(sectionGroup.id)} disabled={!editingSectionName.trim()}>Save</Button>
+                                  <Button variant="ghost" size="sm" onClick={() => setEditingSectionId(null)}>Cancel</Button>
+                                </div>
+                              ) : (
+                                <span className="flex items-center gap-2">
+                                  <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                                  {sectionGroup.name}
+                                </span>
+                              )}
+
+                              <div className="flex space-x-1">
+                                {editingSectionId !== sectionGroup.id && (
+                                  <>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6"
+                                      onClick={() => {
+                                        setEditingSectionId(sectionGroup.id);
+                                        setEditingSectionName(sectionGroup.name);
                                       }}
-                                      id={`subtask-${subtask.id}`}
-                                      className="flex-shrink-0"
-                                    />
-                                    <label
-                                      htmlFor={`subtask-${subtask.id}`}
-                                      className={cn(
-                                        "flex-1 text-sm font-medium leading-tight",
-                                        subtask.status === 'completed' ? 'line-through text-gray-500 dark:text-gray-400' : 'text-foreground',
-                                        "block truncate"
-                                      )}
+                                      aria-label={`Rename section ${sectionGroup.name}`}
                                     >
-                                      {subtask.description}
-                                    </label>
-                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditTask(subtask)}>
-                                      <Edit className="h-4 w-4" />
+                                      <Edit className="h-3 w-3" />
                                     </Button>
-                                  </li>
-                                ))}
-                            </React.Fragment>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6"
+                                      onClick={() => confirmDeleteSection(sectionGroup.id)}
+                                      aria-label={`Delete section ${sectionGroup.name}`}
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </>
+                                )}
+                              </div>
+                            </li>
                           ))}
                         </ul>
-                      </SortableContext>
-                    )}
+                      )}
+                    </div>
                   </div>
-                ))}
-              </div>
-            </SortableContext>
+                </DialogContent>
+              </Dialog>
+              <Dialog open={isReassignTasksDialogOpen} onOpenChange={setIsReassignTasksDialogOpen}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Reassign Tasks Before Deleting Section</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <p>This section contains tasks. To delete it, you must reassign these tasks to another section.</p>
+                    <div>
+                      <Label htmlFor="reassign-section">Move tasks to:</Label>
+                      <Select value={targetReassignSectionId || ''} onValueChange={setTargetReassignSectionId}>
+                        <SelectTrigger id="reassign-section">
+                          <SelectValue placeholder="Select a section" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {sections.filter(s => s.id !== sectionToDeleteId).length === 0 ? (
+                            <SelectItem value="" disabled>No other sections available</SelectItem>
+                          ) : (
+                            sections.filter(s => s.id !== sectionToDeleteId).map(section => (
+                              <SelectItem key={section.id} value={section.id}>
+                                {section.name}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsReassignTasksDialogOpen(false)}>Cancel</Button>
+                    <Button onClick={handleReassignAndDeleteSection} disabled={!targetReassignSectionId}>
+                      Move and Delete Section
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
 
-            <DragOverlay>
-              {activeTask ? (
-                <SortableTaskItem
-                  task={activeTask}
-                  userId={userId}
-                  onStatusChange={handleTaskStatusChange}
-                  onDelete={deleteTask}
-                  onUpdate={updateTask}
-                  isSelected={selectedTaskIds.includes(activeTask.id)}
-                  onToggleSelect={toggleTaskSelection}
-                  sections={sections}
-                  onEditTask={handleEditTask}
-                />
-              ) : activeSection ? (
-                <SortableSectionHeader
-                  id={activeSection.id}
-                  name={activeSection.name}
-                  taskCount={tasksGroupedBySection.find(s => s.id === activeSection.id)?.parentTasks.length || 0}
-                  isExpanded={expandedSections[activeSection.id] ?? true}
-                  onToggleExpand={() => {}}
-                />
-              ) : null}
-            </DragOverlay>
+          {sections.length === 0 && filteredTasks.length === 0 ? (
+            <div className="text-center text-gray-500 p-8 flex flex-col items-center justify-center">
+              <PlusCircle className="h-16 w-16 text-muted-foreground mb-4" />
+              <p className="text-lg mb-2">No sections or tasks found!</p>
+              <p>Start by creating your first section using the "Manage Sections" button above, then add your tasks.</p>
+            </div>
+          ) : (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={sections.map(s => s.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-4"> {/* Reduced space-y from 6 to 4 */}
+                  {tasksGroupedBySection.map(sectionGroup => (
+                    <div key={sectionGroup.id} className="space-y-3">
+                      <SortableSectionHeader
+                        id={sectionGroup.id}
+                        name={sectionGroup.name}
+                        taskCount={sectionGroup.parentTasks.length + sectionGroup.subtasks.length}
+                        isExpanded={expandedSections[sectionGroup.id] ?? true}
+                        onToggleExpand={() => handleToggleSectionExpand(sectionGroup.id)}
+                      />
+                      {(expandedSections[sectionGroup.id] ?? true) && (
+                        <SortableContext
+                          items={sectionGroup.parentTasks.map(task => task.id)}
+                          strategy={verticalListSortingStrategy}
+                        >
+                          <ul className="space-y-3">
+                            {sectionGroup.parentTasks.map((task) => (
+                              <React.Fragment key={task.id}>
+                                <SortableTaskItem
+                                  task={task}
+                                  userId={userId}
+                                  onStatusChange={handleTaskStatusChange}
+                                  onDelete={deleteTask}
+                                  onUpdate={updateTask}
+                                  isSelected={selectedTaskIds.includes(task.id)}
+                                  onToggleSelect={toggleTaskSelection}
+                                  sections={sections}
+                                  onEditTask={handleEditTask}
+                                />
+                                {/* Render subtasks if they exist for this parent task */}
+                                {sectionGroup.subtasks
+                                  .filter(sub => sub.parent_task_id === task.id)
+                                  .sort((a, b) => (a.order || 0) - (b.order || 0))
+                                  .map(subtask => (
+                                    <li key={subtask.id} className="ml-8 border rounded-lg p-3 bg-card dark:bg-gray-800 shadow-sm flex items-center space-x-3">
+                                      <Checkbox
+                                        checked={subtask.status === 'completed'}
+                                        onCheckedChange={(checked) => {
+                                          if (typeof checked === 'boolean') {
+                                            updateTask(subtask.id, { status: checked ? 'completed' : 'to-do' });
+                                          }
+                                        }}
+                                        id={`subtask-${subtask.id}`}
+                                        className="flex-shrink-0"
+                                      />
+                                      <label
+                                        htmlFor={`subtask-${subtask.id}`}
+                                        className={cn(
+                                          "flex-1 text-sm font-medium leading-tight",
+                                          subtask.status === 'completed' ? 'line-through text-gray-500 dark:text-gray-400' : 'text-foreground',
+                                          "block truncate"
+                                        )}
+                                      >
+                                        {subtask.description}
+                                      </label>
+                                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditTask(subtask)}>
+                                        <Edit className="h-4 w-4" />
+                                      </Button>
+                                    </li>
+                                  ))}
+                              </React.Fragment>
+                            ))}
+                          </ul>
+                        </SortableContext>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </SortableContext>
 
-            <BulkActions
-              selectedTaskIds={selectedTaskIds}
-              onAction={handleBulkAction}
-              onClearSelection={clearSelectedTasks}
-            />
-          </DndContext>
-        )}
-      </CardContent>
+              <DragOverlay>
+                {activeTask ? (
+                  <SortableTaskItem
+                    task={activeTask}
+                    userId={userId}
+                    onStatusChange={handleTaskStatusChange}
+                    onDelete={deleteTask}
+                    onUpdate={updateTask}
+                    isSelected={selectedTaskIds.includes(activeTask.id)}
+                    onToggleSelect={toggleTaskSelection}
+                    sections={sections}
+                    onEditTask={handleEditTask}
+                  />
+                ) : activeSection ? (
+                  <SortableSectionHeader
+                    id={activeSection.id}
+                    name={activeSection.name}
+                    taskCount={tasksGroupedBySection.find(s => s.id === activeSection.id)?.parentTasks.length || 0}
+                    isExpanded={expandedSections[activeSection.id] ?? true}
+                    onToggleExpand={() => {}}
+                  />
+                ) : null}
+              </DragOverlay>
+
+              <BulkActions
+                selectedTaskIds={selectedTaskIds}
+                onAction={handleBulkAction}
+                onClearSelection={clearSelectedTasks}
+              />
+            </DndContext>
+          </CardContent>
+        {/* This was the misplaced closing tag */}
+        </Card>
       {taskToEdit && (
         <TaskDetailDialog
           task={taskToEdit}
@@ -787,7 +789,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Card>
+    </>
   );
 };
 

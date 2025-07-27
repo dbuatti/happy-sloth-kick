@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import TaskList from "@/components/TaskList";
 import AuthComponent from "@/components/AuthComponent";
 import { supabase } from "@/integrations/supabase/client";
 import { useTasks } from '@/hooks/useTasks'; // Import useTasks
+import TaskList from "@/components/TaskList"; // Ensure TaskList is imported
 
 interface IndexProps {
   setIsAddTaskOpen: (open: boolean) => void;
@@ -34,7 +34,7 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen }) => {
     <div className="flex-1 flex flex-col"> {/* Removed min-h-screen and bg classes */}
       {session ? (
         <>
-          <main className="flex-grow flex items-center justify-center p-4">
+          <main className="flex-grow p-4"> {/* Removed items-center justify-center */}
             <TaskList setIsAddTaskOpen={setIsAddTaskOpen} />
           </main>
           <footer className="p-4">

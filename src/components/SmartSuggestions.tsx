@@ -66,24 +66,24 @@ const SmartSuggestions: React.FC = () => {
   };
 
   return (
-    <Card className="w-full shadow-sm mb-6">
-      <CardContent className="p-4">
-        <h3 className="text-lg font-semibold mb-3">Smart Suggestions</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+    <Card className="w-full shadow-sm mb-4"> {/* Reduced mb-6 to mb-4 */}
+      <CardContent className="p-3"> {/* Reduced p-4 to p-3 */}
+        <h3 className="text-lg font-semibold mb-2">Smart Suggestions</h3> {/* Reduced mb-3 to mb-2 */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2"> {/* Reduced gap-3 to gap-2 */}
           {overdueTasksCount > 0 && (
-            <Button variant="outline" className="justify-start gap-2">
+            <Button variant="outline" className="justify-start gap-2 h-9"> {/* Added h-9 */}
               <Clock className="h-4 w-4 text-red-500" />
               Review {overdueTasksCount} Overdue Task{overdueTasksCount > 1 ? 's' : ''}
             </Button>
           )}
           {completedTasksCount > 0 && (
-            <Button variant="outline" className="justify-start gap-2" onClick={handleArchiveCompletedClick}>
+            <Button variant="outline" className="justify-start gap-2 h-9" onClick={handleArchiveCompletedClick}> {/* Added h-9 */}
               <Archive className="h-4 w-4 text-blue-500" />
               Archive All Completed Tasks
             </Button>
           )}
           {totalTasksToday === 0 && (
-            <Button variant="outline" className="justify-start gap-2">
+            <Button variant="outline" className="justify-start gap-2 h-9"> {/* Added h-9 */}
               <Plus className="h-4 w-4 text-green-500" />
               Add Your First Task Today!
             </Button>

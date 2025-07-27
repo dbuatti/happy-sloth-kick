@@ -159,7 +159,7 @@ const Analytics = () => {
   return (
     <div className="flex-1 flex flex-col"> {/* Removed min-h-screen and bg classes */}
       <main className="flex-grow p-4">
-        <Card className="w-full shadow-lg">
+        <Card className="w-full max-w-4xl mx-auto shadow-lg">
           <CardHeader>
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
               <CardTitle className="text-3xl font-bold">Task Analytics</CardTitle>

@@ -42,7 +42,7 @@ const Archive = () => {
   if (loading) {
     return (
       <div className="flex-1 flex flex-col">
-        <main className="flex-grow p-4 flex items-center justify-center">
+        <main className="flex-grow p-4 flex justify-center"> {/* Removed items-center */}
           <Card className="w-full max-w-4xl mx-auto shadow-lg">
             <CardHeader>
               <CardTitle className="text-3xl font-bold text-center">Archived Tasks</CardTitle>

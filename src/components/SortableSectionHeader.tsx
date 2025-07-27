@@ -56,7 +56,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({ id, name,
       </div>
 
       {/* Main header content, now clickable */}
-      <div className="flex items-center justify-between p-3 pl-6"> {/* Added pl-6 for spacing */}
+      <div className="flex items-center justify-between p-2 pl-6"> {/* Reduced p-3 to p-2 */}
         <div className="flex items-center gap-2 flex-1">
           <h3 className="text-xl font-semibold flex items-center gap-2">
             <FolderOpen className="h-5 w-5 text-muted-foreground" />
