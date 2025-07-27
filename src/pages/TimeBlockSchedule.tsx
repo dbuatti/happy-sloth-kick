@@ -108,7 +108,7 @@ const TimeBlockSchedule: React.FC = () => {
   };
 
   const handleDeleteAppointment = async (id: string) => {
-    await deleteAppointment(id);
+    return await deleteAppointment(id); // Return the boolean result from deleteAppointment
   };
 
   const getAppointmentGridPosition = useCallback((app: Appointment) => {
@@ -310,8 +310,8 @@ const TimeBlockSchedule: React.FC = () => {
                           appointment={app}
                           onEdit={handleEditAppointment}
                           onDelete={handleDeleteAppointment}
-                          gridRowStart={app.gridRowStart} // Pass original 30-min block indices
-                          gridRowEnd={app.gridRowEnd}     // Pass original 30-min block indices
+                          gridRowStart={app.gridRowStart}
+                          gridRowEnd={app.gridRowEnd}
                           overlapOffset={app.overlapOffset}
                         />
                       ))}
@@ -347,6 +347,7 @@ const TimeBlockSchedule: React.FC = () => {
           setSelectedTimeSlotForNew(null); // Clear selected slot on close
         }}
         onSave={handleSaveAppointment}
+        onDelete={handleDeleteAppointment} // Pass the onDelete function
         initialData={editingAppointment}
         selectedDate={currentDate}
         selectedTimeSlot={selectedTimeSlotForNew}

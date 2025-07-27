@@ -6,15 +6,26 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Clock, Palette } from 'lucide-react';
+import { CalendarIcon, Clock, Palette, Trash2 } from 'lucide-react'; // Added Trash2 icon
 import { cn } from "@/lib/utils";
-import { format, parse, setHours, setMinutes, isValid, parseISO, addMinutes } from 'date-fns'; // Added addMinutes
+import { format, parse, setHours, setMinutes, isValid, parseISO, addMinutes } from 'date-fns';
 import { Appointment, NewAppointmentData } from '@/hooks/useAppointments';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"; // Import AlertDialog components
 
 interface AppointmentFormProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (data: NewAppointmentData) => Promise<any>;
+  onDelete: (id: string) => Promise<boolean>; // New prop for delete
   initialData?: Appointment | null;
   selectedDate: Date;
   selectedTimeSlot?: { start: Date; end: Date } | null;
@@ -35,6 +46,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   isOpen,
   onClose,
   onSave,
+  onDelete, // Destructure new prop
   initialData,
   selectedDate,
   selectedTimeSlot,
@@ -46,6 +58,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   const [endTime, setEndTime] = useState('');
   const [color, setColor] = useState(presetColors[0].value);
   const [isSaving, setIsSaving] = useState(false);
+  const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false); // State for delete confirmation
 
   useEffect(() => {
     console.log('AppointmentForm useEffect triggered. isOpen:', isOpen);
@@ -95,7 +108,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     }
 
     if (parsedStartTime >= parsedEndTime) {
-      console.log('AppointmentForm: End time before start time');
+      console.log('AppointmentForm: End time must be after start time');
       alert('End time must be after start time.');
       return;
     }
@@ -124,6 +137,20 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     }
   };
 
+  const handleDeleteClick = () => {
+    setShowConfirmDeleteDialog(true);
+  };
+
+  const confirmDeleteAppointment = async () => {
+    if (initialData) {
+      const success = await onDelete(initialData.id);
+      if (success) {
+        setShowConfirmDeleteDialog(false);
+        onClose();
+      }
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px] md:max-w-lg">
@@ -140,7 +167,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
               placeholder="Appointment Title"
               required
               disabled={isSaving}
-              autoFocus // Added autoFocus
+              autoFocus
             />
           </div>
 
@@ -229,15 +256,38 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
             </div>
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={isSaving}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={isSaving}>
-            {isSaving ? 'Saving...' : 'Save Appointment'}
-          </Button>
+        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2 pt-4">
+          {initialData && ( // Only show delete button if editing an existing appointment
+            <Button variant="destructive" onClick={handleDeleteClick} disabled={isSaving} className="w-full sm:w-auto mt-2 sm:mt-0">
+              <Trash2 className="mr-2 h-4 w-4" /> Delete Appointment
+            </Button>
+          )}
+          <div className="flex space-x-2 w-full sm:w-auto">
+            <Button variant="outline" onClick={onClose} disabled={isSaving} className="flex-1">
+              Cancel
+            </Button>
+            <Button onClick={handleSubmit} disabled={isSaving} className="flex-1">
+              {isSaving ? 'Saving...' : 'Save Appointment'}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
+
+      {/* Delete Appointment Confirmation Dialog */}
+      <AlertDialog open={showConfirmDeleteDialog} onOpenChange={setShowConfirmDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete this appointment.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteAppointment}>Continue</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };

@@ -10,17 +10,17 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 
 interface AppointmentCardProps {
   appointment: Appointment;
-  onEdit: (appointment: Appointment) => void;
-  onDelete: (id: string) => void;
-  gridRowStart: number; // These are now the 30-min block indices (e.g., 3 for 11:00)
-  gridRowEnd: number;   // These are now the 30-min block indices (e.g., 6 for 12:30 line)
+  onEdit: (appointment: Appointment) => void; // This will now be triggered by clicking the card
+  onDelete: (id: string) => void; // Still passed, but will be called from the form
+  gridRowStart: number;
+  gridRowEnd: number;
   overlapOffset: number;
 }
 
 const AppointmentCard: React.FC<AppointmentCardProps> = ({
   appointment,
   onEdit,
-  onDelete,
+  onDelete, // No longer directly used here for UI, but kept for prop consistency
   gridRowStart,
   gridRowEnd,
   overlapOffset,
@@ -64,13 +64,14 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "absolute rounded-lg p-2 text-white shadow-md cursor-grab active:cursor-grabbing",
+        "absolute rounded-lg p-2 text-white shadow-md cursor-pointer", // Changed cursor to pointer
         "flex flex-col justify-between transition-all duration-200 ease-in-out",
-        "group", // For hover effects
+        "group",
         isDragging ? "ring-2 ring-primary" : ""
       )}
       {...attributes}
       {...listeners}
+      onClick={() => onEdit(appointment)} // Make the entire card clickable for edit
     >
       <div className="flex flex-col">
         <h4 className="font-semibold text-sm truncate">{appointment.title}</h4>
@@ -82,7 +83,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
       {appointment.description && (
         <Tooltip>
           <TooltipTrigger asChild>
-            <Info className="h-4 w-4 text-white opacity-70 self-end mt-1 group-hover:opacity-100 transition-opacity" />
+            <Info className="h-4 w-4 text-white opacity-70 self-end mt-1" /> {/* Removed group-hover opacity */}
           </TooltipTrigger>
           <TooltipContent className="max-w-xs">
             <p className="font-semibold">{appointment.title}</p>
@@ -91,28 +92,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
         </Tooltip>
       )}
 
-      <div
-        className="absolute top-1 right-1 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
-      >
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6 text-white hover:bg-white/20"
-          onClick={(e) => { e.stopPropagation(); onEdit(appointment); }}
-          aria-label="Edit appointment"
-        >
-          <Edit className="h-3 w-3" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6 text-white hover:bg-white/20"
-          onClick={(e) => { e.stopPropagation(); onDelete(appointment.id); }}
-          aria-label="Delete appointment"
-        >
-          <Trash2 className="h-3 w-3" />
-        </Button>
-      </div>
+      {/* Removed edit/delete buttons from here, they will be in the form */}
     </div>
   );
 };
