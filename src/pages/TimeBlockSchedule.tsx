@@ -24,7 +24,7 @@ import {
 import {
   SortableContext,
   verticalListSortingStrategy,
-  sortableKeyboardCoordinates, // Corrected import
+  sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
 
 const TimeBlockSchedule: React.FC = () => {
@@ -39,7 +39,7 @@ const TimeBlockSchedule: React.FC = () => {
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates, // Corrected usage
+      coordinateGetter: sortableKeyboardCoordinates,
     })
   );
 
@@ -256,65 +256,85 @@ const TimeBlockSchedule: React.FC = () => {
                   <p>Please check your work hour settings for this day.</p>
                 </div>
               ) : (
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragStart={handleDragStart}
-                  onDragEnd={handleDragEnd}
-                >
-                  <div className="relative grid gap-1" style={{
-                    gridTemplateRows: `repeat(${timeBlocks.length * 2}, minmax(0, 1fr))`, // Each 30 min block is 2 rows (15 min per row)
+                <div className="grid grid-cols-[60px_1fr] gap-x-2"> {/* Main grid for time labels and schedule */}
+                  {/* Left column for time labels */}
+                  <div className="grid" style={{
+                    gridTemplateRows: `repeat(${timeBlocks.length * 2}, minmax(0, 1fr))`, // Same rows as main schedule
                     gridAutoRows: 'minmax(0, 1fr)',
-                    height: `${timeBlocks.length * 48}px`, // 48px per 30 min block
+                    height: `${timeBlocks.length * 48}px`, // Same height
                   }}>
                     {timeBlocks.map((block, index) => (
-                      <div
-                        key={format(block.start, 'HH:mm')}
-                        id={`time-block-${format(block.start, 'HH:mm')}`} // ID for drag target
-                        className="relative flex items-center justify-center h-12 bg-card dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-dashed border-border/50 hover:border-primary/50 transition-colors duration-150 cursor-pointer"
-                        style={{ gridRow: `${index * 2 + 1} / span 2` }} // Span 2 rows for 30 min block
-                        onClick={() => handleTimeBlockClick(block.start, block.end)}
-                      >
-                        <span className="absolute inset-0 flex items-center justify-center text-5xl font-extrabold text-foreground opacity-10 pointer-events-none select-none">
-                          {format(block.start, 'h:mm')}
-                        </span>
-                        <span className="relative z-10 text-sm font-medium text-muted-foreground">
-                          {format(block.start, 'h:mm a')}
-                        </span>
-                      </div>
+                      // Only show label for every hour
+                      getMinutes(block.start) === 0 && (
+                        <div
+                          key={`label-${format(block.start, 'HH:mm')}`}
+                          className="flex items-start justify-end pr-2 text-xs text-muted-foreground"
+                          style={{ gridRow: `${index * 2 + 1} / span 4` }} // Span 2 30-min blocks (1 hour)
+                        >
+                          <span>{format(block.start, 'h a')}</span>
+                        </div>
+                      )
                     ))}
-
-                    <SortableContext
-                      items={appointments.map(app => app.id)}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      {appointmentsWithPositions.map((app) => (
-                        <AppointmentCard
-                          key={app.id}
-                          appointment={app}
-                          onEdit={handleEditAppointment}
-                          onDelete={handleDeleteAppointment}
-                          gridRowStart={app.gridRowStart * 2 - 1} // Adjust to match 15-min rows
-                          gridRowEnd={app.gridRowEnd * 2 - 1}   // Adjust to match 15-min rows
-                          overlapOffset={app.overlapOffset}
-                        />
-                      ))}
-                    </SortableContext>
-
-                    <DragOverlay>
-                      {activeAppointment ? (
-                        <AppointmentCard
-                          appointment={activeAppointment}
-                          onEdit={handleEditAppointment}
-                          onDelete={handleDeleteAppointment}
-                          gridRowStart={1} // Dummy values for overlay
-                          gridRowEnd={2}   // Dummy values for overlay
-                          overlapOffset={0}
-                        />
-                      ) : null}
-                    </DragOverlay>
                   </div>
-                </DndContext>
+
+                  {/* Right column for time blocks and appointments */}
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <div className="relative grid gap-1" style={{
+                      gridTemplateRows: `repeat(${timeBlocks.length * 2}, minmax(0, 1fr))`, // Each 30 min block is 2 rows (15 min per row)
+                      gridAutoRows: 'minmax(0, 1fr)',
+                      height: `${timeBlocks.length * 48}px`, // 48px per 30 min block
+                    }}>
+                      {timeBlocks.map((block, index) => (
+                        <div
+                          key={format(block.start, 'HH:mm')}
+                          id={`time-block-${format(block.start, 'HH:mm')}`} // ID for drag target
+                          className="relative flex items-center justify-center h-12 bg-card dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-dashed border-border/50 hover:border-primary/50 transition-colors duration-150 cursor-pointer"
+                          style={{ gridRow: `${index * 2 + 1} / span 2` }} // Span 2 rows for 30 min block
+                          onClick={() => handleTimeBlockClick(block.start, block.end)}
+                        >
+                          <span className="absolute inset-0 flex items-center justify-center text-5xl font-extrabold text-foreground opacity-10 pointer-events-none select-none">
+                            {format(block.start, 'h:mm')}
+                          </span>
+                        </div>
+                      ))}
+
+                      <SortableContext
+                        items={appointments.map(app => app.id)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        {appointmentsWithPositions.map((app) => (
+                          <AppointmentCard
+                            key={app.id}
+                            appointment={app}
+                            onEdit={handleEditAppointment}
+                            onDelete={handleDeleteAppointment}
+                            gridRowStart={app.gridRowStart * 2 - 1} // Adjust to match 15-min rows
+                            gridRowEnd={app.gridRowEnd * 2 - 1}   // Adjust to match 15-min rows
+                            overlapOffset={app.overlapOffset}
+                          />
+                        ))}
+                      </SortableContext>
+
+                      <DragOverlay>
+                        {activeAppointment ? (
+                          <AppointmentCard
+                            appointment={activeAppointment}
+                            onEdit={handleEditAppointment}
+                            onDelete={handleDeleteAppointment}
+                            gridRowStart={1} // Dummy values for overlay
+                            gridRowEnd={2}   // Dummy values for overlay
+                            overlapOffset={0}
+                          />
+                        ) : null}
+                      </DragOverlay>
+                    </div>
+                  </DndContext>
+                </div>
               )}
             </CardContent>
           </Card>
