@@ -50,6 +50,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
 
   return (
     <li
+      key={task.id}
       ref={setNodeRef}
       style={style}
       className={cn(
@@ -62,7 +63,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         isDragging ? "shadow-lg ring-2 ring-primary" : ""
       )}
       {...attributes}
-      {...(listeners || {})} {/* Fixed: Ensure listeners is always an object for spreading */}
+      {...(listeners || {})}
     >
       <TaskItem 
         task={task} 
