@@ -82,7 +82,10 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
         </Tooltip>
       )}
 
-      <div className="absolute top-1 right-1 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+      <div
+        className="absolute top-1 right-1 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
+        data-dnd-kit-disabled-draggable="true"
+      >
         <Button
           variant="ghost"
           size="icon"
