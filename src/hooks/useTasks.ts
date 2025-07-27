@@ -72,6 +72,7 @@ export const useTasks = () => {
   const [sectionFilter, setSectionFilter] = useState(() => getInitialFilter('section', 'all'));
 
   const remindedTaskIdsRef = useRef<Set<string>>(new Set());
+  const isFetchingRef = useRef(false); // New ref to prevent concurrent fetches
 
   useEffect(() => {
     localStorage.setItem('task_filter_search', searchFilter);
@@ -112,10 +113,11 @@ export const useTasks = () => {
   }, [userId]);
 
   const fetchTasks = useCallback(async () => {
-    if (!userId) {
+    if (!userId || isFetchingRef.current) { // Prevent concurrent fetches
       setLoading(false);
       return;
     }
+    isFetchingRef.current = true; // Set flag to true
     setLoading(true);
     
     try {
@@ -179,7 +181,7 @@ export const useTasks = () => {
         setTasks(refreshedTasks || []);
       } else {
         // If no new instances were inserted, just set tasks from the initial fetch
-        setTasks(processedTasks);
+        setTasks(allTasks || []);
       }
       
     } catch (error: any) {
@@ -187,6 +189,7 @@ export const useTasks = () => {
       showError('An unexpected error occurred while loading tasks.');
     } finally {
       setLoading(false);
+      isFetchingRef.current = false; // Reset flag to false
     }
   }, [userId, currentDate]);
 
