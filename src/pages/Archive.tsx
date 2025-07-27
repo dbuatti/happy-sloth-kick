@@ -9,7 +9,8 @@ import TaskDetailDialog from '@/components/TaskDetailDialog';
 
 const Archive = () => {
   const {
-    tasks,
+    // Use filteredTasks directly, as setStatusFilter('archived') will populate it correctly
+    filteredTasks, 
     loading,
     userId,
     updateTask,
@@ -21,9 +22,6 @@ const Archive = () => {
   // State for TaskDetailDialog
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
-
-  // Filter tasks to show only archived ones
-  const archivedTasks = tasks.filter(task => task.status === 'archived');
 
   // Set the status filter to 'archived' when this page loads
   useEffect(() => {
@@ -46,7 +44,7 @@ const Archive = () => {
 
   if (loading) {
     return (
-      <div className="flex-1 flex flex-col"> {/* Removed min-h-screen and bg classes */}
+      <div className="flex-1 flex flex-col">
         <main className="flex-grow p-4 flex items-center justify-center">
           <Card className="w-full max-w-4xl mx-auto shadow-lg">
             <CardHeader>
@@ -67,44 +65,46 @@ const Archive = () => {
   }
 
   return (
-    <div className="flex-1 flex flex-col"> {/* Removed min-h-screen and bg classes */}
-      <main className="flex-grow p-4">
-        <Card className="w-full max-w-4xl mx-auto shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
-              <ArchiveIcon className="h-7 w-7" /> Archived Tasks
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {archivedTasks.length === 0 ? (
-              <div className="text-center text-gray-500 p-8">
-                <p className="text-lg mb-2">No archived tasks found.</p>
-                <p>Completed tasks will appear here once you archive them.</p>
-              </div>
-            ) : (
-              <ul className="space-y-3">
-                {archivedTasks.map((task) => (
-                  <SortableTaskItem
-                    key={task.id}
-                    task={task}
-                    userId={userId}
-                    onStatusChange={handleTaskStatusChange}
-                    onDelete={deleteTask}
-                    onUpdate={updateTask}
-                    isSelected={false}
-                    onToggleSelect={() => {}}
-                    sections={sections}
-                    onEditTask={handleEditTask}
-                  />
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-      </main>
-      <footer className="p-4">
-        <MadeWithDyad />
-      </footer>
+    <>
+      <div className="flex-1 flex flex-col">
+        <main className="flex-grow p-4">
+          <Card className="w-full max-w-4xl mx-auto shadow-lg">
+            <CardHeader>
+              <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
+                <ArchiveIcon className="h-7 w-7" /> Archived Tasks
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {filteredTasks.length === 0 ? (
+                <div className="text-center text-gray-500 p-8">
+                  <p className="text-lg mb-2">No archived tasks found.</p>
+                  <p>Completed tasks will appear here once you archive them.</p>
+                </div>
+              ) : (
+                <ul className="space-y-3">
+                  {filteredTasks.map((task) => (
+                    <SortableTaskItem
+                      key={task.id}
+                      task={task}
+                      userId={userId}
+                      onStatusChange={handleTaskStatusChange}
+                      onDelete={deleteTask}
+                      onUpdate={updateTask}
+                      isSelected={false} // Tasks in archive are not selectable for bulk actions
+                      onToggleSelect={() => {}} // No selection needed here
+                      sections={sections}
+                      onEditTask={handleEditTask}
+                    />
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        </main>
+        <footer className="p-4">
+          <MadeWithDyad />
+        </footer>
+      </div>
       {taskToEdit && (
         <TaskDetailDialog
           task={taskToEdit}
@@ -115,7 +115,7 @@ const Archive = () => {
           onDelete={deleteTask}
         />
       )}
-    </div>
+    </>
   );
 };
 
