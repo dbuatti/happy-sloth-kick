@@ -1,14 +1,14 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator, Command } from "@/components/ui/command"; // Import Command
+import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator, Command } from "@/components/ui/command";
 import { useTasks } from '@/hooks/useTasks';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Settings, BarChart3, Home, FolderOpen, ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
+import { Plus, Settings, BarChart3, Home, FolderOpen, ChevronLeft, ChevronRight, LogOut, LayoutGrid } from 'lucide-react'; // Added LayoutGrid
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'; // Import Dialog components
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import AddTaskForm from './AddTaskForm';
 
 interface CommandPaletteProps {
@@ -68,7 +68,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
             <SheetHeader>
               <SheetTitle>Command Palette</SheetTitle>
             </SheetHeader>
-            <Command> {/* Explicitly add Command for Sheet */}
+            <Command>
               <CommandInput placeholder="Type a command or search..." />
               <CommandList>
                 <CommandEmpty>No results found.</CommandEmpty>
@@ -81,6 +81,10 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
                   <CommandItem onSelect={() => handleSelect(() => navigate('/'))}>
                     <Home className="mr-2 h-4 w-4" />
                     <span>Go to Daily Tasks</span>
+                  </CommandItem>
+                  <CommandItem onSelect={() => handleSelect(() => navigate('/projects'))}>
+                    <LayoutGrid className="mr-2 h-4 w-4" />
+                    <span>Go to Project Balance</span>
                   </CommandItem>
                   <CommandItem onSelect={() => handleSelect(() => navigate('/analytics'))}>
                     <BarChart3 className="mr-2 h-4 w-4" />
@@ -140,6 +144,10 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
               <CommandItem onSelect={() => handleSelect(() => navigate('/'))}>
                 <Home className="mr-2 h-4 w-4" />
                 <span>Go to Daily Tasks</span>
+              </CommandItem>
+              <CommandItem onSelect={() => handleSelect(() => navigate('/projects'))}>
+                <LayoutGrid className="mr-2 h-4 w-4" />
+                <span>Go to Project Balance</span>
               </CommandItem>
               <CommandItem onSelect={() => handleSelect(() => navigate('/analytics'))}>
                 <BarChart3 className="mr-2 h-4 w-4" />

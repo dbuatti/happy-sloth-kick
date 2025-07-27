@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { Progress } from "@/components/Progress"; // Updated import path
 import { CheckCircle2, Target } from 'lucide-react';
 import { format, isSameDay } from 'date-fns';
 
