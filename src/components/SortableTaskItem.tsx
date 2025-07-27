@@ -22,7 +22,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   task,
   userId,
   onStatusChange,
-  onDelete, // Destructure onDelete prop
+  onDelete,
   onUpdate,
   isSelected,
   onToggleSelect,
@@ -36,7 +36,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: task.id, data: { type: 'task' } });
+  } = useSortable({ id: task.id, data: { type: 'task', sectionId: task.section_id } }); // Pass sectionId for drag logic
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -53,7 +53,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "relative border rounded-lg p-3 transition-all duration-200 ease-in-out cursor-grab active:cursor-grabbing", // Increased p-2 to p-3
+        "relative border rounded-lg p-3 transition-all duration-200 ease-in-out", // Removed cursor-grab/active:cursor-grabbing
         "group",
         "hover:shadow-md",
         task.status === 'completed' ? "border-green-300 dark:border-green-700 bg-green-50/20 dark:bg-green-900/20" : "border-border bg-card dark:bg-gray-800", // Apply green background for completed
@@ -68,7 +68,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         task={task} 
         userId={userId}
         onStatusChange={onStatusChange}
-        onDelete={onDelete} // Corrected: pass the onDelete prop
+        onDelete={onDelete}
         onUpdate={onUpdate}
         isSelected={isSelected}
         onToggleSelect={onToggleSelect}
