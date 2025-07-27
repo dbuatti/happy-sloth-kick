@@ -90,18 +90,6 @@ const WorkHoursSettings: React.FC = () => {
     );
   };
 
-  const handleSetAllHours = () => {
-    setWorkHours(prevHours => {
-      return prevHours.map(wh => ({
-        ...wh,
-        start_time: allStartTime,
-        end_time: allEndTime,
-        enabled: true, // Always enable when "Apply to All" is clicked
-      }));
-    });
-    showSuccess('Hours applied to all days!');
-  };
-
   const handleSaveWorkHours = async () => {
     if (!userId) {
       showError('User not authenticated.');
@@ -138,6 +126,19 @@ const WorkHoursSettings: React.FC = () => {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleSetAllHoursAndSave = async () => {
+    setWorkHours(prevHours => {
+      return prevHours.map(wh => ({
+        ...wh,
+        start_time: allStartTime,
+        end_time: allEndTime,
+        enabled: true, // Always enable when "Apply to All" is clicked
+      }));
+    });
+    // Now, trigger the save operation
+    await handleSaveWorkHours();
   };
 
   if (loading) {
@@ -188,7 +189,7 @@ const WorkHoursSettings: React.FC = () => {
                 className="w-full"
               />
             </div>
-            <Button onClick={handleSetAllHours} className="w-full sm:w-auto">
+            <Button onClick={handleSetAllHoursAndSave} className="w-full sm:w-auto" disabled={isSaving}>
               Apply to All
             </Button>
           </div>
