@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/AuthContext'; // Changed '=' to 'from'
 import { showError, showSuccess, showReminder } from '@/utils/toast';
 import { v4 as uuidv4 } from 'uuid';
 import { isSameDay, isPast, startOfDay as fnsStartOfDay, parseISO, format, isAfter } from 'date-fns';
@@ -115,10 +115,12 @@ export const useTasks = () => {
   const fetchTasks = useCallback(async () => {
     if (!userId || isFetchingRef.current) { // Prevent concurrent fetches
       setLoading(false);
+      console.log('fetchTasks: Skipping fetch, already fetching or no user ID.');
       return;
     }
     isFetchingRef.current = true; // Set flag to true
     setLoading(true);
+    console.log('fetchTasks: Starting fetch for user:', userId, 'on date:', currentDate.toISOString());
     
     try {
       const { data: allTasks, error: fetchError } = await supabase
@@ -127,19 +129,21 @@ export const useTasks = () => {
         .eq('user_id', userId);
 
       if (fetchError) throw fetchError;
+      console.log('fetchTasks: All tasks fetched:', allTasks);
 
       let processedTasks: Task[] = allTasks || [];
 
       const dailyRecurringTemplates = processedTasks.filter(
         task => task.recurring_type === 'daily' && task.original_task_id === null
       );
+      console.log('fetchTasks: Daily recurring templates found:', dailyRecurringTemplates);
 
       const newRecurringInstances: Task[] = [];
 
       for (const template of dailyRecurringTemplates) {
-        // Check the database directly for an active instance for today
         const startOfToday = fnsStartOfDay(currentDate).toISOString();
-        const endOfToday = new Date(fnsStartOfDay(currentDate).getTime() + 24 * 60 * 60 * 1000 - 1).toISOString(); // End of day
+        const endOfToday = new Date(fnsStartOfDay(currentDate).getTime() + 24 * 60 * 60 * 1000 - 1).toISOString();
+        console.log(`fetchTasks: Checking for existing instance of template "${template.description}" (ID: ${template.id}) for today (${startOfToday} - ${endOfToday})`);
 
         const { data: existingInstances, error: checkError } = await supabase
           .from('tasks')
@@ -148,43 +152,50 @@ export const useTasks = () => {
           .eq('user_id', userId)
           .gte('created_at', startOfToday)
           .lt('created_at', endOfToday)
-          .in('status', ['to-do', 'skipped']); // Only consider active instances
+          .in('status', ['to-do', 'skipped']);
 
         if (checkError) throw checkError;
+        console.log(`fetchTasks: Found ${existingInstances?.length || 0} existing active instances for template "${template.description}" today.`);
 
-        if (!existingInstances || existingInstances.length === 0) { // If no active instance exists for today, create one
+        if (!existingInstances || existingInstances.length === 0) {
           const newInstance: Task = {
             ...template,
             id: uuidv4(),
             created_at: fnsStartOfDay(currentDate).toISOString(),
             status: 'to-do',
-            recurring_type: 'none', // New instance is a regular task, not recurring itself
-            original_task_id: template.id, // Link back to the template
-            due_date: null, // Reset due date for new instance
-            remind_at: null, // Reset reminder for new instance
-            parent_task_id: null, // Ensure it's a top-level task
+            recurring_type: 'none',
+            original_task_id: template.id,
+            due_date: null,
+            remind_at: null,
+            parent_task_id: null,
           };
           newRecurringInstances.push(newInstance);
+          console.log('fetchTasks: Preparing to insert new instance:', newInstance.description);
         }
       }
 
       if (newRecurringInstances.length > 0) {
+        console.log('fetchTasks: Inserting new recurring instances:', newRecurringInstances.map(t => t.description));
         const { data: insertedData, error: insertError } = await supabase
           .from('tasks')
           .insert(newRecurringInstances)
           .select();
 
         if (insertError) throw insertError;
+        console.log('fetchTasks: Inserted data:', insertedData);
+        
         // After inserting, re-fetch all tasks to ensure the local state is fully synchronized
+        console.log('fetchTasks: Re-fetching all tasks after insertion.');
         const { data: refreshedTasks, error: refreshError } = await supabase
           .from('tasks')
           .select('*')
           .eq('user_id', userId);
         if (refreshError) throw refreshError;
         setTasks(refreshedTasks || []);
+        console.log('fetchTasks: Tasks refreshed after insertion.');
       } else {
-        // If no new instances were inserted, just set tasks from the initial fetch
         setTasks(allTasks || []);
+        console.log('fetchTasks: No new instances to insert, setting tasks from initial fetch.');
       }
       
     } catch (error: any) {
@@ -192,7 +203,8 @@ export const useTasks = () => {
       showError('An unexpected error occurred while loading tasks.');
     } finally {
       setLoading(false);
-      isFetchingRef.current = false; // Reset flag to false
+      isFetchingRef.current = false;
+      console.log('fetchTasks: Fetch process completed.');
     }
   }, [userId, currentDate]);
 
@@ -204,6 +216,7 @@ export const useTasks = () => {
       setTasks([]);
       setSections([]);
       setLoading(false);
+      console.log('useTasks useEffect: No user ID, clearing tasks and sections.');
     }
   }, [userId, fetchSections, fetchTasks]);
 
@@ -474,11 +487,14 @@ export const useTasks = () => {
   }, []);
 
   const filteredTasks = useMemo(() => {
+    console.log('filteredTasks: Starting filter process for currentDate:', currentDate.toISOString(), 'statusFilter:', statusFilter);
     let workingTasks = [...tasks];
     const effectiveCurrentDate = fnsStartOfDay(currentDate);
+    console.log('filteredTasks: Initial tasks count:', workingTasks.length);
 
     // 1. Filter out subtasks (they are handled within parent tasks)
     workingTasks = workingTasks.filter(task => task.parent_task_id === null);
+    console.log('filteredTasks: After subtask filter, count:', workingTasks.length);
 
     // 2. Apply main daily view logic (if not in 'archived' filter)
     if (statusFilter !== 'archived') {
@@ -490,13 +506,27 @@ export const useTasks = () => {
         const isRecurringTemplate = task.recurring_type !== 'none' && task.original_task_id === null;
         const isRecurringInstance = task.original_task_id !== null;
 
+        // Log each task's properties for debugging
+        console.log(`  Task "${task.description}" (ID: ${task.id}):
+            status: ${task.status},
+            recurring_type: ${task.recurring_type},
+            original_task_id: ${task.original_task_id},
+            created_at: ${task.created_at},
+            isTaskCreatedToday: ${isTaskCreatedToday},
+            isTaskActive: ${isTaskActive},
+            isTaskCompleted: ${isTaskCompleted},
+            isRecurringTemplate: ${isRecurringTemplate},
+            isRecurringInstance: ${isRecurringInstance}`);
+
         // Rule A: Never show recurring templates in the daily view
         if (isRecurringTemplate) {
+          console.log(`    -> Excluded (Rule A: Recurring Template)`);
           return false;
         }
 
         // Rule B: Archived tasks should never show in the daily view
         if (task.status === 'archived') {
+          console.log(`    -> Excluded (Rule B: Archived)`);
           return false;
         }
 
@@ -504,21 +534,29 @@ export const useTasks = () => {
         // or if it's a general task (not a recurring instance) regardless of its created_at date.
         if (isTaskActive) {
           if (isRecurringInstance) {
-            return isTaskCreatedToday; // Only show recurring instances if created for today
+            const shouldInclude = isTaskCreatedToday;
+            console.log(`    -> Included (Rule C: Active Recurring Instance for Today: ${shouldInclude})`);
+            return shouldInclude;
           }
+          console.log(`    -> Included (Rule C: Active General Task)`);
           return true; // Show all other active tasks (admin/priorities, carry-overs)
         }
 
         // Rule D: If the task is completed, only show it if it was created (and thus completed) on the effectiveCurrentDate
         if (isTaskCompleted) {
-          return isTaskCreatedToday;
+          const shouldInclude = isTaskCreatedToday;
+          console.log(`    -> Included (Rule D: Completed Today: ${shouldInclude})`);
+          return shouldInclude;
         }
 
+        console.log(`    -> Excluded (No rule matched)`);
         return false; // Default to false if no rule matches
       });
+      console.log('filteredTasks: After daily view logic, count:', workingTasks.length);
     } else {
       // For 'archived' status filter, only show archived tasks
       workingTasks = workingTasks.filter(task => task.status === 'archived');
+      console.log('filteredTasks: After archived filter, count:', workingTasks.length);
     }
 
     // 3. Apply other filters (search, category, priority, section)
@@ -527,12 +565,15 @@ export const useTasks = () => {
         task.description.toLowerCase().includes(searchFilter.toLowerCase()) ||
         task.notes?.toLowerCase().includes(searchFilter.toLowerCase())
       );
+      console.log('filteredTasks: After search filter, count:', workingTasks.length);
     }
     if (categoryFilter && categoryFilter !== 'all') {
       workingTasks = workingTasks.filter(task => task.category === categoryFilter);
+      console.log('filteredTasks: After category filter, count:', workingTasks.length);
     }
     if (priorityFilter && priorityFilter !== 'all') {
       workingTasks = workingTasks.filter(task => task.priority === priorityFilter);
+      console.log('filteredTasks: After priority filter, count:', workingTasks.length);
     }
     if (sectionFilter && sectionFilter !== 'all') {
       workingTasks = workingTasks.filter(task => {
@@ -541,13 +582,16 @@ export const useTasks = () => {
         }
         return task.section_id === sectionFilter;
       });
+      console.log('filteredTasks: After section filter, count:', workingTasks.length);
     }
 
     // 4. Apply final status filter for non-archived views (if statusFilter is not 'all')
     if (statusFilter !== 'all' && statusFilter !== 'archived') {
       workingTasks = workingTasks.filter(task => task.status === statusFilter);
+      console.log('filteredTasks: After final status filter, count:', workingTasks.length);
     }
 
+    console.log('filteredTasks: Final tasks count:', workingTasks.length);
     return workingTasks;
   }, [tasks, currentDate, searchFilter, statusFilter, categoryFilter, priorityFilter, sectionFilter]);
 
