@@ -114,7 +114,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
 
     // Handle task moving between sections
     if (activeId.startsWith('task-') && over.data.current?.type === 'section-header') {
-      const taskId = activeId;
+      const taskId = active.id;
       const sourceSectionId = active.data.current?.sectionId;
       const destinationSectionId = overId;
       const destinationTasks = tasksBySection[destinationSectionId] || [];
