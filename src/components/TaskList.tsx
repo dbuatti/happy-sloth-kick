@@ -46,7 +46,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
     reorderSections,
   } = useTasks();
 
-  const [isAddTaskFormOpen, setIsAddTaskFormOpen] = useState(false);
+  const [isAddTaskFormOpen, setIsAddTaskForm] = useState(false);
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
@@ -134,7 +134,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
   const handleAddTaskSubmit = async (taskData: any) => {
     const success = await handleAddTask(taskData);
     if (success) {
-      setIsAddTaskFormOpen(false);
+      setIsAddTaskForm(false);
       setIsAddTaskOpen(false);
     }
     return success;
@@ -235,7 +235,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
                     className="pl-10"
                   />
                 </div>
-                <Button onClick={() => setIsAddTaskFormOpen(true)}>
+                <Button onClick={() => setIsAddTaskForm(true)}>
                   <Plus className="mr-2 h-4 w-4" /> Add Task
                 </Button>
               </div>
@@ -342,7 +342,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
         onAddTask={handleAddTaskSubmit}
         userId={userId}
         onTaskAdded={() => {
-          setIsAddTaskFormOpen(false);
+          setIsAddTaskForm(false);
           setIsAddTaskOpen(false);
         }}
       />
