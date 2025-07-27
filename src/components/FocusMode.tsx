@@ -204,7 +204,10 @@ const FocusMode: React.FC = () => {
                 sessionType === 'long_break' && "data-[state=complete]:bg-blue-500"
               )}
             />
-            <div className="relative z-10 text-5xl font-bold">
+            <div className={cn(
+              "relative z-10 text-5xl font-bold",
+              sessionType === 'work' ? "text-primary-foreground" : "text-white"
+            )}>
               {formatTime(timeRemaining)}
             </div>
           </div>
