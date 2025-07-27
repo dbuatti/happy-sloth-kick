@@ -454,22 +454,16 @@ export const useTasks = () => {
   }, []);
 
   const filteredTasks = useMemo(() => {
-    console.log('--- Filtering Tasks ---');
-    console.log('📅 Current Date for Filtering:', currentDate.toISOString());
-    console.log('🔍 Initial Tasks (before any filtering):', tasks);
-
     let workingTasks = [...tasks];
     const effectiveCurrentDate = fnsStartOfDay(currentDate);
 
     // 1. Filter out subtasks (they are handled within parent tasks)
     workingTasks = workingTasks.filter(task => task.parent_task_id === null);
-    console.log('🧹 After subtask filter:', workingTasks);
 
     // 2. Apply date and status filtering based on the current view
     if (statusFilter === 'archived') {
       // For the Archive page, show all archived tasks regardless of creation date
       workingTasks = workingTasks.filter(task => task.status === 'archived');
-      console.log('🗑️ After archive filter (statusFilter is "archived"):', workingTasks);
     } else {
       // For the main Daily Tasks page (statusFilter is 'all', 'to-do', etc.)
       workingTasks = workingTasks.filter(task => {
@@ -483,17 +477,14 @@ export const useTasks = () => {
         if (isRecurringTemplate) {
           // Recurring templates are only shown if created on the current date
           shouldShow = isCreatedToday;
-          console.log(`📋 Template "${task.description}" (ID: ${task.id}, original: ${task.original_task_id}) created on ${format(parseISO(task.created_at), 'yyyy-MM-dd')}, showing for ${format(effectiveCurrentDate, 'yyyy-MM-dd')}: ${shouldShow}`);
         } else {
           // For all other tasks (non-recurring, or recurring instances):
           // Show if created on the current date OR if it's an active task (to-do/skipped)
           // OR if it's a recurring instance specifically generated for today.
           shouldShow = isCreatedToday || isToDoOrSkipped || isRecurringInstanceForToday;
-          console.log(`📝 Task "${task.description}" (ID: ${task.id}, original: ${task.original_task_id}) created on ${format(parseISO(task.created_at), 'yyyy-MM-dd')}, status: ${task.status}, showing for ${format(effectiveCurrentDate, 'yyyy-MM-dd')}: ${shouldShow}`);
         }
         return shouldShow;
       });
-      console.log('📅 After date/status filter (non-archived view):', workingTasks);
     }
 
     // 3. Apply other filters
@@ -502,15 +493,12 @@ export const useTasks = () => {
         task.description.toLowerCase().includes(searchFilter.toLowerCase()) ||
         task.notes?.toLowerCase().includes(searchFilter.toLowerCase())
       );
-      console.log('🔎 After search filter:', workingTasks);
     }
     if (categoryFilter && categoryFilter !== 'all') {
       workingTasks = workingTasks.filter(task => task.category === categoryFilter);
-      console.log('🏷️ After category filter:', workingTasks);
     }
     if (priorityFilter && priorityFilter !== 'all') {
       workingTasks = workingTasks.filter(task => task.priority === priorityFilter);
-      console.log('🚩 After priority filter:', workingTasks);
     }
     if (sectionFilter && sectionFilter !== 'all') {
       workingTasks = workingTasks.filter(task => {
@@ -519,16 +507,13 @@ export const useTasks = () => {
         }
         return task.section_id === sectionFilter;
       });
-      console.log('📁 After section filter:', workingTasks);
     }
 
     // 4. Apply final status filter for non-archived views
     if (statusFilter !== 'all' && statusFilter !== 'archived') {
       workingTasks = workingTasks.filter(task => task.status === statusFilter);
-      console.log('✅ After final status filter:', workingTasks);
     }
 
-    console.log('--- Filtering Complete ---');
     return workingTasks;
   }, [tasks, currentDate, searchFilter, statusFilter, categoryFilter, priorityFilter, sectionFilter]);
 
