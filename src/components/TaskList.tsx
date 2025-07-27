@@ -16,6 +16,7 @@ import SortableSectionHeader from './SortableSectionHeader';
 import { Task, TaskSection } from '@/hooks/useTasks';
 import TaskDetailDialog from './TaskDetailDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 
 interface TaskListProps {
   setIsAddTaskOpen: (open: boolean) => void;
@@ -30,7 +31,6 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
     handleAddTask,
     updateTask,
     deleteTask,
-    applyFilters,
     searchFilter,
     setSearchFilter,
     selectedTaskIds,
@@ -52,12 +52,17 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [showConfirmBulkDeleteDialog, setShowConfirmBulkDeleteDialog] = useState(false);
 
+  const [isAddSectionOpen, setIsAddSectionOpen] = useState(false);
+  const [newSectionName, setNewSectionName] = useState('');
+  const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
+  const [editingSectionName, setEditingSectionName] = useState('');
+
   // Group tasks by section
   const tasksBySection = useMemo(() => {
     const grouped: Record<string, Task[]> = { 'no-section': [] };
     
     // Initialize groups for all sections
-    sections.forEach(section => {
+    sections.forEach((section: TaskSection) => { // Explicitly type 'section' here
       grouped[section.id] = [];
     });
 
@@ -164,6 +169,32 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
     await updateTask(taskId, { status: newStatus });
   }, [updateTask]);
 
+  const handleRenameSection = async () => {
+    if (editingSectionId && editingSectionName.trim()) {
+      await updateSection(editingSectionId, editingSectionName.trim());
+      setEditingSectionId(null);
+      setEditingSectionName('');
+    }
+  };
+
+  const handleEditSectionClick = (section: TaskSection) => {
+    setEditingSectionId(section.id);
+    setEditingSectionName(section.name);
+  };
+
+  const handleCancelSectionEdit = () => {
+    setEditingSectionId(null);
+    setEditingSectionName('');
+  };
+
+  const handleAddSection = async () => {
+    if (newSectionName.trim()) {
+      await createSection(newSectionName.trim());
+      setNewSectionName('');
+      setIsAddSectionOpen(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex-1 flex flex-col">
@@ -232,6 +263,12 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
                           taskCount={sectionTasks.length}
                           isExpanded={isExpanded}
                           onToggleExpand={() => toggleSection(section.id)}
+                          isEditing={editingSectionId === section.id}
+                          editingName={editingSectionName}
+                          onNameChange={setEditingSectionName}
+                          onSaveEdit={() => handleRenameSection()} {/* Wrapped in arrow function */}
+                          onCancelEdit={handleCancelSectionEdit}
+                          onEditClick={() => handleEditSectionClick(section)}
                         />
                         {isExpanded && (
                           <div className="mt-2 space-y-2 pl-2">
