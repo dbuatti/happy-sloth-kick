@@ -295,7 +295,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
     setShowConfirmBulkDeleteDialog(false);
   };
 
-  const tasksGroupedBySection = useMemo(() => {
+  const tasksGroupedBySection = useMemo<(TaskSection & { parentTasks: Task[]; subtasks: Task[]; })[]>(() => {
     const grouped: { [key: string]: { parentTasks: Task[]; subtasks: Task[] } } = {};
     const allSectionIds = new Set<string>();
 
@@ -345,7 +345,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
       sectionsToRender.push({
         id: 'no-section',
         name: 'No Section',
-        user_id: userId || '', // Placeholder, not persisted
+        user_id: userId ? userId : '', // Changed from userId || ''
         order: Infinity, // Always at the end
         parentTasks: grouped['no-section'].parentTasks,
         subtasks: grouped['no-section'].subtasks,
