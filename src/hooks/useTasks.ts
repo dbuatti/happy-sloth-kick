@@ -118,6 +118,9 @@ export const useTasks = () => {
     }
     setLoading(true);
     
+    console.log('--- fetchTasks started ---');
+    console.log('Current Date for fetchTasks:', format(currentDate, 'yyyy-MM-dd'));
+
     try {
       const { data: allTasks, error: fetchError } = await supabase
         .from('tasks')
@@ -125,12 +128,14 @@ export const useTasks = () => {
         .eq('user_id', userId);
 
       if (fetchError) throw fetchError;
+      console.log('Fetched all tasks from DB:', allTasks.length, 'tasks');
 
       let processedTasks: Task[] = allTasks || [];
 
       const dailyRecurringTemplates = processedTasks.filter(
         task => task.recurring_type === 'daily' && task.original_task_id === null
       );
+      console.log('Identified Daily Recurring Templates:', dailyRecurringTemplates.length, 'templates');
 
       const newRecurringInstances: Task[] = [];
 
@@ -140,6 +145,7 @@ export const useTasks = () => {
           isSameDay(parseISO(task.created_at), fnsStartOfDay(currentDate)) &&
           (task.status === 'to-do' || task.status === 'skipped')
         );
+        console.log(`  Template "${template.description}" (ID: ${template.id}): Active instance exists for today: ${activeInstanceExistsForToday}`);
 
         if (!activeInstanceExistsForToday) {
           const newInstance: Task = {
@@ -154,25 +160,32 @@ export const useTasks = () => {
             parent_task_id: null, // Ensure it's a top-level task
           };
           newRecurringInstances.push(newInstance);
+          console.log(`  Adding new instance for "${template.description}" (New ID: ${newInstance.id})`);
         }
       }
 
       if (newRecurringInstances.length > 0) {
+        console.log('Attempting to insert new recurring instances:', newRecurringInstances.length);
         const { data: insertedData, error: insertError } = await supabase
           .from('tasks')
           .insert(newRecurringInstances)
           .select();
 
         if (insertError) throw insertError;
+        console.log('Successfully inserted new instances:', insertedData.length);
         processedTasks = [...processedTasks, ...(insertedData || [])];
+      } else {
+        console.log('No new recurring instances to insert.');
       }
       
+      console.log('Final processedTasks before setTasks:', processedTasks.length, 'tasks');
       setTasks(processedTasks);
     } catch (error: any) {
       console.error('Error in fetchTasks:', error);
       showError('An unexpected error occurred while loading tasks.');
     } finally {
       setLoading(false);
+      console.log('--- fetchTasks finished ---');
     }
   }, [userId, currentDate]);
 
