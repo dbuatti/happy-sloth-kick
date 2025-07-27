@@ -90,14 +90,14 @@ const WorkHoursSettings: React.FC = () => {
     );
   };
 
-  const handleSaveWorkHours = async () => {
+  const handleSaveWorkHours = async (hoursToSave: WorkHour[] = workHours) => { // Added hoursToSave parameter
     if (!userId) {
       showError('User not authenticated.');
       return;
     }
     setIsSaving(true);
     try {
-      const updates = workHours.map(wh => {
+      const updates = hoursToSave.map(wh => { // Use hoursToSave here
         const updateObject: any = {
           user_id: userId,
           day_of_week: wh.day_of_week,
@@ -129,16 +129,14 @@ const WorkHoursSettings: React.FC = () => {
   };
 
   const handleSetAllHoursAndSave = async () => {
-    setWorkHours(prevHours => {
-      return prevHours.map(wh => ({
-        ...wh,
-        start_time: allStartTime,
-        end_time: allEndTime,
-        enabled: true, // Always enable when "Apply to All" is clicked
-      }));
-    });
-    // Now, trigger the save operation
-    await handleSaveWorkHours();
+    const updatedHours = workHours.map(wh => ({
+      ...wh,
+      start_time: allStartTime,
+      end_time: allEndTime,
+      enabled: true, // Always enable when "Apply to All" is clicked
+    }));
+    setWorkHours(updatedHours); // Update local state first
+    await handleSaveWorkHours(updatedHours); // Then pass the updated state to save
   };
 
   if (loading) {
@@ -223,7 +221,7 @@ const WorkHoursSettings: React.FC = () => {
             />
           </div>
         ))}
-        <Button onClick={handleSaveWorkHours} className="w-full mt-4" disabled={isSaving}>
+        <Button onClick={() => handleSaveWorkHours()} className="w-full mt-4" disabled={isSaving}>
           {isSaving ? 'Saving...' : 'Save Work Hours'}
         </Button>
       </CardContent>
