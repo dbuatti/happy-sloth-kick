@@ -55,28 +55,15 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "absolute top-0 left-0 right-0 rounded-lg p-2 text-white shadow-md",
+        "absolute top-0 left-0 right-0 rounded-lg p-2 text-white shadow-md cursor-grab active:cursor-grabbing",
         "flex flex-col justify-between transition-all duration-200 ease-in-out",
         "group", // For hover effects
         isDragging ? "ring-2 ring-primary" : ""
       )}
+      {...attributes}
+      {...listeners}
     >
-      {/* Drag Handle */}
-      <div 
-        className={cn(
-          "absolute left-0 top-0 bottom-0 w-4 cursor-grab active:cursor-grabbing",
-          "flex items-center justify-center",
-          "opacity-0 group-hover:opacity-100 transition-opacity duration-200",
-          "rounded-l-lg" // Match parent border radius
-        )}
-        {...attributes}
-        {...listeners}
-      >
-        {/* Subtle visual cue for drag handle */}
-        <span className="w-1 h-6 bg-white/30 rounded-full"></span>
-      </div>
-
-      <div className="flex flex-col pl-4"> {/* Added pl-4 to make space for drag handle */}
+      <div className="flex flex-col">
         <h4 className="font-semibold text-sm truncate">{appointment.title}</h4>
         <p className="text-xs opacity-90">
           {format(startTime, 'h:mm a')} - {format(endTime, 'h:mm a')}
@@ -97,7 +84,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
 
       <div
         className="absolute top-1 right-1 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
-        // No need for data-dnd-kit-disabled-draggable="true" here anymore as listeners are on handle
+        // No need for data-dnd-kit-disabled-draggable="true" here anymore as activationConstraint handles it
       >
         <Button
           variant="ghost"
