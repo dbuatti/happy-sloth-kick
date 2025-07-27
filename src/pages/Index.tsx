@@ -4,7 +4,8 @@ import AuthComponent from "@/components/AuthComponent";
 import { supabase } from "@/integrations/supabase/client";
 import { useTasks } from '@/hooks/useTasks';
 import TaskList from "@/components/TaskList";
-import DateNavigator from '@/components/DateNavigator'; // Import DateNavigator
+import DateNavigator from '@/components/DateNavigator';
+import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts'; // Import useKeyboardShortcuts and ShortcutMap
 
 interface IndexProps {
   setIsAddTaskOpen: (open: boolean) => void;
@@ -12,7 +13,7 @@ interface IndexProps {
 
 const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen }) => {
   const [session, setSession] = useState<any>(null);
-  const { setStatusFilter, currentDate, setCurrentDate } = useTasks(); // Get currentDate and setCurrentDate
+  const { setStatusFilter, currentDate, setCurrentDate } = useTasks();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -51,6 +52,15 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen }) => {
   const handleGoToToday = () => {
     setCurrentDate(new Date());
   };
+
+  // Define keyboard shortcuts
+  const shortcuts: ShortcutMap = {
+    'l': handlePreviousDay,
+    'r': handleNextDay,
+  };
+
+  // Apply keyboard shortcuts
+  useKeyboardShortcuts(shortcuts);
 
   return (
     <div className="flex-1 flex flex-col">
