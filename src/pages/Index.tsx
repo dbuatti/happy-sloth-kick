@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import AuthComponent from "@/components/AuthComponent";
 import { supabase } from "@/integrations/supabase/client";
-import { useTasks } from '@/hooks/useTasks'; // Import useTasks
-import TaskList from "@/components/TaskList"; // Ensure TaskList is imported
+import { useTasks } from '@/hooks/useTasks';
+import TaskList from "@/components/TaskList"; // Changed back to default import
 
 interface IndexProps {
   setIsAddTaskOpen: (open: boolean) => void;
@@ -11,30 +11,27 @@ interface IndexProps {
 
 const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen }) => {
   const [session, setSession] = useState<any>(null);
-  const { setStatusFilter } = useTasks(); // Get setStatusFilter from useTasks
+  const { setStatusFilter } = useTasks();
 
   useEffect(() => {
-    // Get the current session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
     });
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
 
-    // Explicitly set status filter to 'all' when this page loads
     setStatusFilter('all');
 
     return () => subscription.unsubscribe();
-  }, [setStatusFilter]); // Add setStatusFilter to dependencies
+  }, [setStatusFilter]);
 
   return (
-    <div className="flex-1 flex flex-col"> {/* Removed min-h-screen and bg classes */}
+    <div className="flex-1 flex flex-col">
       {session ? (
         <>
-          <main className="flex-grow p-4"> {/* Removed items-center justify-center */}
+          <main className="flex-grow p-4">
             <TaskList setIsAddTaskOpen={setIsAddTaskOpen} />
           </main>
           <footer className="p-4">
