@@ -126,27 +126,35 @@ export const useTasks = () => {
 
       if (fetchError) throw fetchError;
 
+      console.group('🔍 Diagnosing Duplicates: fetchTasks');
+      console.log('📥 Raw data from DB:', allTasks);
+      console.log('📅 Current Date (UTC):', currentDate.toISOString());
+
       let processedTasks: Task[] = allTasks || [];
 
       const dailyRecurringTemplates = processedTasks.filter(
         task => task.recurring_type === 'daily' && task.original_task_id === null
       );
 
+      console.log('📋 Daily recurring templates found:', dailyRecurringTemplates);
+
       const newRecurringInstances: Task[] = [];
-      const currentDayUTC = currentDate; 
 
       for (const template of dailyRecurringTemplates) {
         const activeInstanceExistsForToday = processedTasks.some(task =>
           task.original_task_id === template.id && 
-          isSameDay(parseISO(task.created_at), currentDayUTC) &&
+          isSameDay(parseISO(task.created_at), currentDate) &&
           (task.status === 'to-do' || task.status === 'skipped')
         );
+
+        console.log(`📝 Template "${template.description}" (ID: ${template.id})`);
+        console.log(`   → Active instance for today exists: ${activeInstanceExistsForToday}`);
 
         if (!activeInstanceExistsForToday) {
           const newInstance: Task = {
             ...template,
             id: uuidv4(),
-            created_at: currentDayUTC.toISOString(),
+            created_at: currentDate.toISOString(),
             status: 'to-do',
             recurring_type: 'none',
             original_task_id: template.id,
@@ -155,8 +163,13 @@ export const useTasks = () => {
             parent_task_id: null,
           };
           newRecurringInstances.push(newInstance);
+          console.log(`   → ✅ New instance created: ${newInstance.id}`);
+        } else {
+          console.log(`   → ❌ No new instance needed.`);
         }
       }
+
+      console.log('🆕 New recurring instances to be created:', newRecurringInstances);
 
       if (newRecurringInstances.length > 0) {
         const { data: insertedData, error: insertError } = await supabase
@@ -166,8 +179,11 @@ export const useTasks = () => {
 
         if (insertError) throw insertError;
         processedTasks = [...processedTasks, ...(insertedData || [])];
+        console.log('💾 New instances inserted into DB:', insertedData);
       }
       
+      console.log('✅ Final processed tasks before setting state:', processedTasks);
+      console.groupEnd();
       setTasks(processedTasks);
     } catch (error: any) {
       console.error('Error in fetchTasks:', error);
@@ -458,24 +474,37 @@ export const useTasks = () => {
   const filteredTasks = useMemo(() => {
     let workingTasks = [...tasks];
 
+    console.group('🔍 Diagnosing Duplicates: filteredTasks');
+    console.log('📥 Raw tasks from state:', workingTasks);
+    console.log('📅 Filtering for date:', currentDate.toISOString());
+
     if (statusFilter !== 'archived') {
       workingTasks = workingTasks.filter(task => task.status !== 'archived');
+      console.log('🗑️  After archive filter:', workingTasks);
     }
 
     // Filter tasks for the current date
     workingTasks = workingTasks.filter(task => {
       // If it's a recurring template, only show it on its creation day
       if (task.recurring_type !== 'none' && task.original_task_id === null) {
-        return isSameDay(parseISO(task.created_at), currentDate);
+        const result = isSameDay(parseISO(task.created_at), currentDate);
+        console.log(`📋 Template "${task.description}" (ID: ${task.id}) created on ${format(parseISO(task.created_at), 'yyyy-MM-dd')}, showing for ${format(currentDate, 'yyyy-MM-dd')}: ${result}`);
+        return result;
       }
       // For instances, check if they belong to the current date
-      return isSameDay(parseISO(task.created_at), currentDate);
+      const result = isSameDay(parseISO(task.created_at), currentDate);
+      console.log(`📝 Instance "${task.description}" (ID: ${task.id}, original: ${task.original_task_id}) created on ${format(parseISO(task.created_at), 'yyyy-MM-dd')}, showing for ${format(currentDate, 'yyyy-MM-dd')}: ${result}`);
+      return result;
     });
 
+    console.log('📅 After date filter:', workingTasks);
+
     workingTasks = workingTasks.filter(task => task.parent_task_id === null);
+    console.log('🧩 After parent task filter:', workingTasks);
 
     if (statusFilter !== 'all') {
       workingTasks = workingTasks.filter(task => task.status === statusFilter);
+      console.log('✅ After status filter:', workingTasks);
     }
 
     if (searchFilter) {
@@ -483,12 +512,15 @@ export const useTasks = () => {
         task.description.toLowerCase().includes(searchFilter.toLowerCase()) ||
         task.notes?.toLowerCase().includes(searchFilter.toLowerCase())
       );
+      console.log('🔍 After search filter:', workingTasks);
     }
     if (categoryFilter && categoryFilter !== 'all') {
       workingTasks = workingTasks.filter(task => task.category === categoryFilter);
+      console.log('🎨 After category filter:', workingTasks);
     }
     if (priorityFilter && priorityFilter !== 'all') {
       workingTasks = workingTasks.filter(task => task.priority === priorityFilter);
+      console.log('⚡ After priority filter:', workingTasks);
     }
     if (sectionFilter && sectionFilter !== 'all') {
       workingTasks = workingTasks.filter(task => {
@@ -497,34 +529,11 @@ export const useTasks = () => {
         }
         return task.section_id === sectionFilter;
       });
+      console.log('📁 After section filter:', workingTasks);
     }
 
-    if (sortKey === 'order') {
-      workingTasks.sort((a, b) => {
-        const orderA = a.order === null ? Infinity : a.order;
-        const orderB = b.order === null ? Infinity : b.order;
-        return sortDirection === 'asc' ? orderA - orderB : orderB - orderA;
-      });
-    } else if (sortKey === 'priority') {
-      const priorityOrder: { [key: string]: number } = { 'urgent': 4, 'high': 3, 'medium': 2, 'low': 1, 'none': 0 };
-      workingTasks.sort((a, b) => {
-        const valA = priorityOrder[a.priority] || 0;
-        const valB = priorityOrder[b.priority] || 0;
-        return sortDirection === 'asc' ? valA - valB : valB - valA;
-      });
-    } else if (sortKey === 'due_date') {
-      workingTasks.sort((a, b) => {
-        const dateA = a.due_date ? new Date(a.due_date).getTime() : Infinity;
-        const dateB = b.due_date ? new Date(b.due_date).getTime() : Infinity;
-        return sortDirection === 'asc' ? dateA - dateB : dateB - dateA;
-      });
-    } else if (sortKey === 'created_at') {
-      workingTasks.sort((a, b) => {
-        const dateA = new Date(a.created_at).getTime();
-        const dateB = new Date(b.created_at).getTime();
-        return sortDirection === 'asc' ? dateA - dateB : dateB - dateA;
-      });
-    }
+    console.log('✅ Final filtered tasks for display:', workingTasks);
+    console.groupEnd();
     return workingTasks;
   }, [tasks, currentDate, searchFilter, statusFilter, categoryFilter, priorityFilter, sectionFilter, sortKey, sortDirection]);
 
