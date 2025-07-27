@@ -6,6 +6,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, X } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Import shadcn Select components
+import { cn } from '@/lib/utils'; // Import cn for conditional classNames
 
 interface Category {
   id: string;
@@ -116,24 +118,37 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
   };
 
   const selectedCategory = categories.find(cat => cat.id === value);
+  const selectedCategoryColorClass = selectedCategory ? selectedCategory.color : 'text-muted-foreground';
 
   return (
     <div className="space-y-2">
       <Label>Category</Label>
       <div className="flex space-x-2">
         <div className="flex-1">
-          <select
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            className="w-full p-2 border rounded-md bg-background"
-          >
-            <option value="general">General</option>
-            {categories.map(category => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
+          <Select value={value} onValueChange={onChange}>
+            <SelectTrigger className={cn("w-full", selectedCategoryColorClass)}>
+              <div className="flex items-center gap-2">
+                {selectedCategory && <div className={cn("w-3 h-3 rounded-full", selectedCategory.color)}></div>}
+                <SelectValue placeholder="Select category" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="general">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-gray-500"></div>
+                  General
+                </div>
+              </SelectItem>
+              {categories.map(category => (
+                <SelectItem key={category.id} value={category.id}>
+                  <div className="flex items-center gap-2">
+                    <div className={cn("w-3 h-3 rounded-full", category.color)}></div>
+                    {category.name}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
@@ -153,7 +168,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
                   value={newCategoryName}
                   onChange={(e) => setNewCategoryName(e.target.value)}
                   placeholder="e.g., Work, Personal, Shopping"
-                  autoFocus // Added autoFocus
+                  autoFocus
                 />
               </div>
               <div>
