@@ -54,28 +54,23 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   const isOverdue = task.due_date && task.status !== 'completed' && dateFns.isBefore(dateFns.parseISO(task.due_date) as Date, currentRefDate as Date) && !dateFns.isSameDay(dateFns.parseISO(task.due_date) as Date, currentRefDate as Date);
   const isUpcoming = task.due_date && task.status !== 'completed' && dateFns.isSameDay(dateFns.parseISO(task.due_date) as Date, currentRefDate as Date);
 
-  // Pre-compute the class names string
-  const liClassNames = cn(
-    "relative border rounded-lg p-3 transition-all duration-200 ease-in-out",
-    "group",
-    "hover:shadow-md",
-    task.status === 'completed' ? "border-green-300 dark:border-green-700 bg-green-50/20 dark:bg-green-900/20" : "border-border bg-card dark:bg-gray-800",
-    isOverdue && "border-l-4 border-red-500 dark:border-red-700 bg-red-100 dark:bg-red-900/30 pl-2",
-    isUpcoming && "border-l-4 border-orange-400 dark:border-orange-600 bg-orange-50/20 dark:bg-orange-900/20 pl-2",
-    isDragging && "shadow-lg ring-2 ring-primary"
-  );
-
   return (
     <li
-      key={task.id}
       ref={setNodeRef}
       style={style}
-      className={liClassNames} // Use the pre-computed class name
+      className={cn(
+        "relative border rounded-lg p-3 transition-all duration-200 ease-in-out",
+        "group",
+        "hover:shadow-md",
+        task.status === 'completed' ? "border-green-300 dark:border-green-700 bg-green-50/20 dark:bg-green-900/20" : "border-border bg-card dark:bg-gray-800",
+        isOverdue && "border-l-4 border-red-500 dark:border-red-700 bg-red-100 dark:bg-red-900/30 pl-2",
+        isUpcoming && "border-l-4 border-orange-400 dark:border-orange-600 bg-orange-50/20 dark:bg-orange-900/20 pl-2",
+        isDragging && "shadow-lg ring-2 ring-primary"
+      )}
       {...attributes}
       {...listeners} {/* Apply listeners to the whole li */}
     >
       <TaskItem 
-        key={task.id}
         task={task} 
         userId={userId}
         onStatusChange={onStatusChange}
