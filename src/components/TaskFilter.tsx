@@ -34,30 +34,13 @@ const TaskFilter: React.FC<TaskFilterProps> = ({ currentDate, setCurrentDate }) 
     sectionFilter,
     setSectionFilter,
     sections,
+    allCategories, // Use allCategories from useTasks
   } = useTasks({ currentDate, setCurrentDate });
 
+  // Removed localCategories state and useEffect for fetching categories,
+  // as allCategories is now provided by useTasks.
+
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [localCategories, setLocalCategories] = useState<Category[]>([]);
-
-  useEffect(() => {
-    const fetchCategories = async () => {
-      if (!userId) return;
-      try {
-        const { data, error } = await supabase
-          .from('task_categories')
-          .select('*')
-          .eq('user_id', userId)
-          .order('name');
-
-        if (error) throw error;
-        setLocalCategories(data || []);
-      } catch (error: any) {
-        showError('Failed to fetch categories for filter');
-        console.error('Error fetching categories for filter:', error);
-      }
-    };
-    fetchCategories();
-  }, [userId]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchFilter(e.target.value);
@@ -146,8 +129,8 @@ const TaskFilter: React.FC<TaskFilterProps> = ({ currentDate, setCurrentDate }) 
                 </SelectTrigger>
                 <SelectContent className="z-[9999]"> {/* Add z-index here */}
                   <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="general">General</SelectItem>
-                  {localCategories.map(cat => (
+                  {/* Removed hardcoded "general" as it's now included in allCategories */}
+                  {allCategories.map(cat => (
                     <SelectItem key={cat.id} value={cat.id}>
                       {cat.name}
                     </SelectItem>
