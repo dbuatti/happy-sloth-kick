@@ -7,13 +7,15 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { useUI } from '@/context/UIContext';
+import { useDailyTaskCount } from '@/hooks/useDailyTaskCount'; // Import the new hook
+import { Badge } from '@/components/ui/badge'; // Import Badge component
 
 interface SidebarProps {
   children: React.ReactNode;
 }
 
 const navItems = [
-  { name: 'Daily Tasks', path: '/', icon: Home },
+  { name: 'Daily Tasks', path: '/', icon: Home, showCount: true }, // Added showCount prop
   { name: 'Focus Mode', path: '/focus', icon: Timer },
   { name: 'Project Balance', path: '/projects', icon: LayoutGrid },
   { name: 'Time Blocks', path: '/schedule', icon: CalendarClock },
@@ -25,6 +27,8 @@ const navItems = [
 
 const NavigationLinks = ({ onLinkClick }: { onLinkClick?: () => void }) => {
   const location = useLocation();
+  const { dailyTaskCount, loading: countLoading } = useDailyTaskCount(); // Use the hook
+
   return (
     <nav className="flex-1 px-4 space-y-2">
       {navItems.map((item) => {
@@ -44,6 +48,11 @@ const NavigationLinks = ({ onLinkClick }: { onLinkClick?: () => void }) => {
           >
             <Icon className="h-5 w-5" />
             <span className="font-medium">{item.name}</span>
+            {item.showCount && !countLoading && dailyTaskCount > 0 && (
+              <Badge className="ml-auto px-2 py-0.5 text-xs rounded-full bg-primary-foreground text-primary">
+                {dailyTaskCount}
+              </Badge>
+            )}
           </Link>
         );
       })}

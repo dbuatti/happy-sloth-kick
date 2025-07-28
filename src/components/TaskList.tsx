@@ -41,6 +41,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
     toggleTaskSelection,
     clearSelectedTasks,
     bulkUpdateTasks,
+    markAllTasksInSectionCompleted, // Destructure new function
     sections,
     createSection,
     updateSection,
@@ -371,6 +372,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                             includeInFocusMode={currentSection.include_in_focus_mode} // Pass prop
                             onToggleIncludeInFocusMode={(checked) => updateSectionIncludeInFocusMode(currentSection.id, checked)} // Pass handler
                             onAddTaskToSection={handleAddTaskToSpecificSection} // Pass the new handler
+                            onMarkAllCompleted={markAllTasksInSectionCompleted} // Pass the new handler
                           />
                           {isExpanded && (
                             <div className="mt-1 space-y-1 pl-2"> {/* Reduced mt-2 space-y-2 to mt-1 space-y-1 */}
@@ -511,8 +513,10 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmBulkDelete}>Continue</AlertDialogAction>
+            <AlertDialogCancel disabled={isSavingProject}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmBulkDelete} disabled={isSavingProject}>
+              {isSavingProject ? 'Deleting...' : 'Continue'}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

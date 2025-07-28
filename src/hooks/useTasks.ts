@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/Auth/AuthContext';
 import { showError, showSuccess, showReminder } from '@/utils/toast';
 import { v4 as uuidv4 } from 'uuid';
 import { isSameDay, isPast, startOfDay as fnsStartOfDay, parseISO, format, isAfter, isBefore, addDays, addWeeks, addMonths } from 'date-fns';
@@ -579,6 +579,43 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     }
   }, [userId, selectedTaskIds, clearSelectedTasks, fetchDataAndSections, categoriesMap]);
 
+  const markAllTasksInSectionCompleted = useCallback(async (sectionId: string | null) => {
+    if (!userId) {
+      showError('User not authenticated.');
+      return;
+    }
+
+    const taskIdsToComplete = tasks
+      .filter(task => task.section_id === sectionId && task.status !== 'completed')
+      .map(task => task.id);
+
+    if (taskIdsToComplete.length === 0) {
+      showSuccess('No incomplete tasks found in this section.');
+      return;
+    }
+
+    try {
+      // Optimistically update the state
+      setTasks(prev => prev.map(task => 
+        taskIdsToComplete.includes(task.id) ? { ...task, status: 'completed' } : task
+      ));
+
+      const { error } = await supabase
+        .from('tasks')
+        .update({ status: 'completed' })
+        .in('id', taskIdsToComplete)
+        .eq('user_id', userId);
+
+      if (error) throw error;
+      showSuccess(`${taskIdsToComplete.length} tasks in section marked as completed!`);
+      await fetchDataAndSections(); // Re-fetch to ensure state consistency
+    } catch (error: any) {
+      console.error('Error marking all tasks in section as completed:', error);
+      showError('Failed to mark tasks as completed.');
+      fetchDataAndSections(); // Revert optimistic update by re-fetching on error
+    }
+  }, [userId, tasks, fetchDataAndSections]);
+
   const createSection = useCallback(async (name: string) => {
     if (!userId) {
       showError('User not authenticated.');
@@ -968,6 +1005,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     toggleTaskSelection,
     clearSelectedTasks,
     bulkUpdateTasks,
+    markAllTasksInSectionCompleted, // Expose new function
     sortKey,
     setSortKey,
     sortDirection,

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { FolderOpen, ChevronDown, Edit, MoreHorizontal, Trash2, Eye, EyeOff, Plus } from 'lucide-react';
+import { FolderOpen, ChevronDown, Edit, MoreHorizontal, Trash2, Eye, EyeOff, Plus, CheckCircle2 } from 'lucide-react'; // Added CheckCircle2
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,6 +25,7 @@ interface SortableSectionHeaderProps {
   includeInFocusMode: boolean;
   onToggleIncludeInFocusMode: (include: boolean) => void;
   onAddTaskToSection: (sectionId: string) => void;
+  onMarkAllCompleted: (sectionId: string) => void; // New prop
 }
 
 const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
@@ -43,6 +44,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
   includeInFocusMode,
   onToggleIncludeInFocusMode,
   onAddTaskToSection,
+  onMarkAllCompleted, // Destructure new prop
 }) => {
   const {
     attributes,
@@ -134,6 +136,9 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onAddTaskToSection(id); }}>
                 <Plus className="mr-2 h-4 w-4" /> Add Task to Section
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMarkAllCompleted(id); }}>
+                <CheckCircle2 className="mr-2 h-4 w-4" /> Mark All Completed
               </DropdownMenuItem>
               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(); }}>
                 <Edit className="mr-2 h-4 w-4" /> Rename Section
