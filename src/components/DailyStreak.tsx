@@ -3,29 +3,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/Progress";
 import { CheckCircle2, Target } from 'lucide-react';
 import { format, isSameDay } from 'date-fns';
-
-interface Task {
-  id: string;
-  description: string;
-  status: 'to-do' | 'completed' | 'skipped' | 'archived';
-  created_at: string;
-}
+import { Task } from '@/hooks/useTasks'; // Import Task type
 
 interface DailyStreakProps {
-  tasks: Task[];
+  tasks: Task[]; // Now receives filtered tasks
   currentDate: Date;
 }
 
 const DailyStreak: React.FC<DailyStreakProps> = ({ tasks, currentDate }) => {
   const { completedTasksToday, totalTasksToday, completionPercentage } = useMemo(() => {
-    // The 'tasks' prop already contains tasks relevant for the current day,
-    // including carry-overs and focus-mode filtering, as it comes from useTasks's filteredTasks.
-    // So, we should count directly from this array.
+    // The 'tasks' prop now contains tasks relevant for the current day,
+    // including carry-overs and focus-mode filtering, and excludes archived tasks.
     const completed = tasks.filter(task => task.status === 'completed').length;
     const total = tasks.length; // Count all tasks in the 'tasks' prop
     const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
     return { completedTasksToday: completed, totalTasksToday: total, completionPercentage: percentage };
-  }, [tasks]); // Removed currentDate from dependencies as 'tasks' is already date-filtered
+  }, [tasks]); // 'tasks' is already date-filtered and status-filtered
 
   return (
     <Card className="w-full shadow-sm mb-2">

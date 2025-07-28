@@ -50,8 +50,8 @@ interface TaskListProps {
 
 const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setCurrentDate }) => {
   const {
-    tasks, // Use raw tasks for DND operations
-    filteredTasks,
+    tasks, // Use raw tasks for DND operations (activeId lookup)
+    filteredTasks, // Use filteredTasks for display and calculations
     loading,
     userId,
     handleAddTask,
@@ -139,8 +139,8 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
       grouped[currentSection.id] = [];
     });
 
-    // Filter tasks for display based on current filters, but include all top-level tasks for DND
-    const tasksForGrouping = tasks.filter(task => task.parent_task_id === null);
+    // Use filteredTasks for grouping to ensure only relevant tasks are displayed
+    const tasksForGrouping = filteredTasks.filter(task => task.parent_task_id === null);
 
     tasksForGrouping.forEach(task => {
       const sectionId = task.section_id;
@@ -151,40 +151,13 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
       }
     });
 
-    // Apply filtering and sorting to the grouped tasks for display
-    const finalGrouped: Record<string, Task[]> = {};
+    // Sorting is already handled by useTasks's filteredTasks, but ensure order within sections
     Object.entries(grouped).forEach(([sectionKey, taskList]) => {
-      let sectionFilteredTasks = taskList;
-
-      if (searchFilter) {
-        sectionFilteredTasks = sectionFilteredTasks.filter(task =>
-          task.description.toLowerCase().includes(searchFilter.toLowerCase()) ||
-          task.notes?.toLowerCase().includes(searchFilter.toLowerCase())
-        );
-      }
-      if (categoryFilter && categoryFilter !== 'all') {
-        sectionFilteredTasks = sectionFilteredTasks.filter(task => task.category === categoryFilter);
-      }
-      if (priorityFilter && priorityFilter !== 'all') {
-        sectionFilteredTasks = sectionFilteredTasks.filter(task => task.priority === priorityFilter);
-      }
-      // Status filter is applied globally to filteredTasks from useTasks, so no need to re-apply here
-      // Section filter is handled by the grouping itself
-
-      finalGrouped[sectionKey] = sectionFilteredTasks.sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
+      grouped[sectionKey] = taskList.sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
     });
 
-    return finalGrouped;
-  }, [tasks, sections, searchFilter, categoryFilter, priorityFilter]); // Removed filteredTasks from dependencies
-
-  const focusModeTasksForDailyStreak = useMemo(() => {
-    const focusModeSectionIds = new Set(sections.filter(s => s.include_in_focus_mode).map(s => s.id));
-    return tasks.filter(task => // Use raw tasks here, then filter by focus mode sections
-      task.parent_task_id === null &&
-      task.status !== 'archived' && // Only consider non-archived tasks for streak
-      (task.section_id === null || focusModeSectionIds.has(task.section_id))
-    );
-  }, [tasks, sections]);
+    return grouped;
+  }, [filteredTasks, sections]); // Depend on filteredTasks
 
   const handleDragStart = (event: any) => {
     setActiveId(event.active.id);
@@ -394,8 +367,8 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-                <DailyStreak tasks={focusModeTasksForDailyStreak} currentDate={currentDate} />
-                <SmartSuggestions currentDate={currentDate} setCurrentDate={setCurrentDate} />
+                <DailyStreak tasks={filteredTasks} currentDate={currentDate} />
+                <SmartSuggestions tasks={filteredTasks} currentDate={currentDate} setCurrentDate={setCurrentDate} bulkUpdateTasks={bulkUpdateTasks} clearSelectedTasks={clearSelectedTasks} />
               </div>
 
               <BulkActions

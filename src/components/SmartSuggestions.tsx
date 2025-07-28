@@ -2,8 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Archive, Clock, CheckCircle2, ListTodo, Plus } from 'lucide-react';
-import { useTasks } from '@/hooks/useTasks';
-import { isPast, isToday, format } from 'date-fns';
+import { Task } from '@/hooks/useTasks'; // Import Task type
+import { isPast, isToday, format, isSameDay } from 'date-fns';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,41 +16,45 @@ import {
 } from "@/components/ui/alert-dialog";
 
 interface SmartSuggestionsProps {
+  tasks: Task[]; // Now receives filtered tasks
   currentDate: Date;
   setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
+  bulkUpdateTasks: (updates: Partial<Task>, ids?: string[]) => Promise<void>; // Add bulkUpdateTasks
+  clearSelectedTasks: () => void; // Add clearSelectedTasks
 }
 
-const SmartSuggestions: React.FC<SmartSuggestionsProps> = ({ currentDate, setCurrentDate }) => {
-  const { tasks, bulkUpdateTasks, clearSelectedTasks } = useTasks({ currentDate, setCurrentDate });
+const SmartSuggestions: React.FC<SmartSuggestionsProps> = ({ tasks, currentDate, setCurrentDate, bulkUpdateTasks, clearSelectedTasks }) => {
   const [showConfirmArchiveDialog, setShowConfirmArchiveDialog] = useState(false);
 
   const {
     completedTasksToday,
     totalTasksToday,
     overdueTasksCount,
-    archivedTasksCount,
-    completedTasksCount,
+    completedTasksCountForArchiveSuggestion,
   } = useMemo(() => {
-    const tasksForToday = tasks.filter(task => isToday(new Date(task.created_at)));
-    const completed = tasksForToday.filter(task => task.status === 'completed').length;
-    const total = tasksForToday.length;
+    // 'tasks' prop here is already 'filteredTasks' from useTasks, meaning it's relevant for currentDate
+    // and excludes archived tasks (unless statusFilter is 'archived', but SmartSuggestions is only on daily view)
 
+    const tasksCreatedOnCurrentDate = tasks.filter(task => isSameDay(new Date(task.created_at), currentDate));
+    const completedToday = tasksCreatedOnCurrentDate.filter(task => task.status === 'completed').length;
+    const totalCreatedToday = tasksCreatedOnCurrentDate.length;
+
+    // Overdue tasks are those with a due_date in the past, and not completed, and not created today
     const overdue = tasks.filter(task =>
       task.due_date &&
-      task.status !== 'completed' &&
+      task.status === 'to-do' && // Only count 'to-do' as overdue
       isPast(new Date(task.due_date)) &&
-      !isToday(new Date(task.due_date))
+      !isSameDay(new Date(task.due_date), currentDate) // Exclude tasks due today
     ).length;
 
-    const archived = tasks.filter(task => task.status === 'archived').length;
-    const allCompleted = tasks.filter(task => task.status === 'completed').length;
+    // Count of completed tasks currently visible (for archive suggestion)
+    const completedVisibleTasks = tasks.filter(task => task.status === 'completed').length;
 
     return {
-      completedTasksToday: completed,
-      totalTasksToday: total,
+      completedTasksToday: completedToday,
+      totalTasksToday: totalCreatedToday,
       overdueTasksCount: overdue,
-      archivedTasksCount: archived,
-      completedTasksCount: allCompleted,
+      completedTasksCountForArchiveSuggestion: completedVisibleTasks,
     };
   }, [tasks, currentDate]);
 
@@ -81,7 +85,7 @@ const SmartSuggestions: React.FC<SmartSuggestionsProps> = ({ currentDate, setCur
               Review {overdueTasksCount} Overdue Task{overdueTasksCount > 1 ? 's' : ''}
             </Button>
           )}
-          {completedTasksCount > 0 && (
+          {completedTasksCountForArchiveSuggestion > 0 && (
             <Button variant="outline" className="justify-start gap-2 h-10" onClick={handleArchiveCompletedClick}>
               <Archive className="h-4 w-4 text-blue-500" />
               Archive All Completed Tasks
