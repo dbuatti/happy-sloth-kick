@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { FolderOpen, ChevronDown, Edit, MoreHorizontal, Trash2, Eye, EyeOff, Plus } from 'lucide-react'; // Added Plus icon
+import { FolderOpen, ChevronDown, Edit, MoreHorizontal, Trash2, Eye, EyeOff, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,7 +24,7 @@ interface SortableSectionHeaderProps {
   onDeleteClick: (sectionId: string) => void;
   includeInFocusMode: boolean;
   onToggleIncludeInFocusMode: (include: boolean) => void;
-  onAddTaskToSection: (sectionId: string) => void; // New prop
+  onAddTaskToSection: (sectionId: string) => void;
 }
 
 const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
@@ -42,7 +42,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
   onDeleteClick,
   includeInFocusMode,
   onToggleIncludeInFocusMode,
-  onAddTaskToSection, // Destructure new prop
+  onAddTaskToSection,
 }) => {
   const {
     attributes,
@@ -58,6 +58,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
     transition,
     zIndex: isDragging ? 100 : 'auto',
     opacity: isDragging ? 0.8 : 1,
+    cursor: isDragging ? 'grabbing' : 'grab', // Apply grab cursor to the whole header
   };
 
   return (
@@ -70,26 +71,16 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
         "group",
         isDragging ? "ring-2 ring-primary shadow-lg" : ""
       )}
+      // Apply attributes and listeners to the main div for full-area dragging
+      {...attributes}
+      {...listeners}
+      // Prevent toggle when editing, otherwise allow it
+      onClick={!isEditing ? onToggleExpand : undefined}
     >
-      {/* Subtle drag handle on the left edge */}
-      <div 
-        className={cn(
-          "absolute left-0 top-0 bottom-0 w-4 cursor-grab active:cursor-grabbing",
-          "flex items-center justify-center",
-          "opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-        )}
-        {...attributes}
-        {...listeners}
-        onClick={(e) => e.stopPropagation()} // Prevent toggle when dragging
-      >
-        <span className="w-1 h-4 bg-gray-300 dark:bg-gray-600 rounded-full opacity-50"></span>
-      </div>
+      {/* Removed the explicit drag handle div */}
 
-      {/* Main header content - now clickable for toggle */}
-      <div 
-        className="flex items-center justify-between p-1 pl-3 cursor-pointer" // Reduced padding from p-2 pl-4 to p-1 pl-3
-        onClick={!isEditing ? onToggleExpand : undefined} // Only toggle if not editing
-      >
+      {/* Main header content */}
+      <div className="flex items-center justify-between p-1 pl-3"> {/* Reduced padding */}
         {isEditing ? (
           <div className="flex items-center w-full gap-2" data-no-dnd="true">
             <Input
@@ -109,12 +100,13 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               <FolderOpen className="h-5 w-5 text-muted-foreground" />
               {name} ({taskCount})
             </h3>
-            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onEditClick(); }} className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200" data-no-dnd="true"> {/* Reduced size from h-5 w-5 to h-4 w-4 */}
+            {/* Edit button is now part of the main header, but still needs data-no-dnd */}
+            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onEditClick(); }} className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200" data-no-dnd="true">
               <Edit className="h-4 w-4" />
             </Button>
           </div>
         )}
-        <div className="flex items-center space-x-1" data-no-dnd="true">
+        <div className="flex items-center space-x-1" data-no-dnd="true"> {/* Ensure these are not draggable */}
           <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
             <Label htmlFor={`focus-mode-toggle-${id}`} className="text-xs text-muted-foreground">
               {includeInFocusMode ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
@@ -131,8 +123,9 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="h-6 w-6 p-0" // Reduced size from h-7 w-7 to h-6 w-6
-                onClick={(e) => e.stopPropagation()} // Prevent toggle when opening dropdown
+                className="h-6 w-6 p-0"
+                onClick={(e) => e.stopPropagation()}
+                data-no-dnd="true" // Ensure dropdown trigger is not draggable
               >
                 <span className="sr-only">Open section menu</span>
                 <MoreHorizontal className="h-4 w-4" />
@@ -151,7 +144,6 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          {/* Chevron icon remains to indicate expanded state, but is no longer a separate clickable button for toggle */}
           <ChevronDown className={cn("h-5 w-5 transition-transform", isExpanded ? "rotate-0" : "-rotate-90")} />
         </div>
       </div>

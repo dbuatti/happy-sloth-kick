@@ -683,26 +683,25 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
   }, [userId]);
 
   const reorderTasksInSameSection = useCallback(async (sectionId: string | null, oldIndex: number, newIndex: number) => {
-    let tasksToUpdateInDb: Task[] = []; // Declare a variable to hold the tasks for DB update
+    if (!userId) { showError('User not authenticated.'); return; }
+
+    let tasksToUpdateInDb: Task[] = [];
+    let originalTasksState: Task[] = [];
 
     setTasks(prevTasks => {
-      // Filter out tasks that are not top-level tasks in the current section
+      originalTasksState = prevTasks; // Capture current state for potential revert
+
       const tasksInTargetSection = prevTasks.filter(t => t.parent_task_id === null && t.section_id === sectionId);
       const otherTasks = prevTasks.filter(t => t.parent_task_id !== null || t.section_id !== sectionId);
 
-      // Reorder the tasks within the target section
       const reorderedSectionTasks = arrayMove(tasksInTargetSection, oldIndex, newIndex);
-      
-      // Assign new order values
       const updatedSectionTasks = reorderedSectionTasks.map((task, index) => ({ ...task, order: index }));
 
-      tasksToUpdateInDb = updatedSectionTasks; // Assign the updated array here
+      tasksToUpdateInDb = updatedSectionTasks; // Capture the updated tasks for DB call
 
-      // Combine all tasks back into a single array
       return [...otherTasks, ...updatedSectionTasks];
     });
 
-    // Now, update the database using the captured array
     try {
       const dbPayload = tasksToUpdateInDb.map(task => ({ id: task.id, order: task.order }));
       const { error } = await supabase.from('tasks').upsert(dbPayload, { onConflict: 'id' });
@@ -711,45 +710,46 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     } catch (error: any) {
       console.error('Error reordering tasks in same section:', error);
       showError('Failed to reorder tasks.');
-      fetchDataAndSections(); // Revert optimistic update by re-fetching on error
+      setTasks(originalTasksState); // Revert optimistic update
     }
-  }, [fetchDataAndSections]); // Removed 'tasks' from dependency array as it's accessed via prevTasks
+  }, [userId]);
 
   const moveTaskToNewSection = useCallback(async (taskId: string, sourceSectionId: string | null, destinationSectionId: string | null, destinationIndex: number) => {
-    let tasksToUpdateInDb: Task[] = []; // Declare a variable to hold the tasks for DB update
+    if (!userId) { showError('User not authenticated.'); return; }
+
+    let tasksToUpdateInDb: Task[] = [];
+    let originalTasksState: Task[] = [];
 
     setTasks(prevTasks => {
+      originalTasksState = prevTasks;
+
       const taskToMove = prevTasks.find(t => t.id === taskId);
       if (!taskToMove) return prevTasks;
 
-      // Filter out the task being moved from its original section
-      const tasksWithoutMoved = prevTasks.filter(t => t.id !== taskId);
-
-      // Separate tasks into source, destination, and other
-      const sourceTasks = tasksWithoutMoved.filter(t => t.parent_task_id === null && t.section_id === sourceSectionId);
-      const destinationTasks = tasksWithoutMoved.filter(t => t.parent_task_id === null && t.section_id === destinationSectionId);
+      const tasksInSourceSection = prevTasks.filter(t => t.parent_task_id === null && t.section_id === sourceSectionId && t.id !== taskId);
+      const tasksInDestinationSection = prevTasks.filter(t => t.parent_task_id === null && t.section_id === destinationSectionId && t.id !== taskId);
       const otherTasks = prevTasks.filter(t => t.parent_task_id !== null || (t.section_id !== sourceSectionId && t.section_id !== destinationSectionId && t.id !== taskId));
 
-      // Update order in source section
-      const updatedSourceTasks = sourceTasks.map((task, index) => ({ ...task, order: index }));
+      const updatedMovedTask = { ...taskToMove, section_id: destinationSectionId, order: destinationIndex };
 
-      // Insert into destination section and update order
-      const newDestinationTasks = [...destinationTasks];
-      const updatedTaskToMove = { ...taskToMove, section_id: destinationSectionId, order: destinationIndex };
-      newDestinationTasks.splice(destinationIndex, 0, updatedTaskToMove);
-      const updatedDestinationTasks = newDestinationTasks.map((task, index) => ({ ...task, order: index }));
+      const reindexedSourceTasks = tasksInSourceSection.map((task, index) => ({ ...task, order: index }));
 
-      // Combine all tasks back into a single array
-      tasksToUpdateInDb = [...updatedSourceTasks, ...updatedDestinationTasks]; // Assign the updated array here
+      const newDestinationTasksArray = [...tasksInDestinationSection];
+      newDestinationTasksArray.splice(destinationIndex, 0, updatedMovedTask);
+      const reindexedDestinationTasks = newDestinationTasksArray.map((task, index) => ({ ...task, order: index }));
 
-      return [...otherTasks, ...updatedSourceTasks, ...updatedDestinationTasks];
+      tasksToUpdateInDb = [...reindexedSourceTasks, ...reindexedDestinationTasks, updatedMovedTask]; // Capture for DB update, include the moved task itself
+      
+      // Ensure the moved task is included in the final state, and its order is correct
+      const finalTasks = [...otherTasks, ...reindexedSourceTasks, ...reindexedDestinationTasks];
+      // Filter out the old version of the moved task if it somehow remained
+      return finalTasks.filter((t, i, a) => a.findIndex(item => item.id === t.id) === i);
     });
 
-    // Now, update the database using the captured array
     try {
       const dbPayload = tasksToUpdateInDb.map(task => ({
         id: task.id,
-        section_id: task.section_id, // Ensure section_id is updated for the moved task
+        section_id: task.section_id,
         order: task.order,
       }));
       const { error } = await supabase.from('tasks').upsert(dbPayload, { onConflict: 'id' });
@@ -758,14 +758,19 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     } catch (error: any) {
       console.error('Error moving task to new section:', error);
       showError('Failed to move task.');
-      fetchDataAndSections(); // Revert optimistic update by re-fetching on error
+      setTasks(originalTasksState); // Revert optimistic update
     }
-  }, [fetchDataAndSections]); // Removed 'tasks' from dependency array
+  }, [userId]);
 
   const reorderSections = useCallback(async (oldIndex: number, newIndex: number) => {
+    if (!userId) { showError('User not authenticated.'); return; }
+
     let sectionsToUpdateInDb: TaskSection[] = [];
+    let originalSectionsState: TaskSection[] = [];
 
     setSections(prevSections => {
+      originalSectionsState = prevSections;
+
       const reordered = arrayMove(prevSections, oldIndex, newIndex);
       const updatedReordered = reordered.map((section, index) => ({ ...section, order: index }));
       sectionsToUpdateInDb = updatedReordered; // Capture for DB update
@@ -780,9 +785,9 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     } catch (error: any) {
       console.error('Error reordering sections:', error);
       showError('Failed to reorder sections.');
-      fetchDataAndSections();
+      setSections(originalSectionsState); // Revert optimistic update
     }
-  }, [fetchDataAndSections]);
+  }, [userId]);
 
   const filteredTasks = useMemo(() => {
     console.log('filteredTasks: --- START FILTERING ---');
