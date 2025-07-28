@@ -8,26 +8,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from '@/lib/utils';
+import { categoryColorMap, CategoryColorKey, getCategoryColorProps } from '@/lib/categoryColors'; // Import new color utilities
 
 interface Category {
   id: string;
   name: string;
-  color: string;
+  color: string; // This will now store the CategoryColorKey (e.g., 'red')
 }
 
-const colors = [
-  { name: 'Red', value: 'bg-red-500' },
-  { name: 'Blue', value: 'bg-blue-500' },
-  { name: 'Green', value: 'bg-green-500' },
-  { name: 'Yellow', value: 'bg-yellow-500' },
-  { name: 'Purple', value: 'bg-purple-500' },
-  { name: 'Pink', value: 'bg-pink-500' },
-  { name: 'Indigo', value: 'bg-indigo-500' },
-  { name: 'Gray', value: 'bg-gray-500' },
-];
-
 interface CategorySelectorProps {
-  value: string;
+  value: string; // This is the category ID
   onChange: (categoryId: string) => void;
   userId: string | null;
 }
@@ -36,7 +26,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
   const [categories, setCategories] = useState<Category[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
-  const [selectedColor, setSelectedColor] = useState(colors[0].value);
+  const [selectedColorKey, setSelectedColorKey] = useState<CategoryColorKey>('gray'); // Store the key
 
   useEffect(() => {
     if (userId) {
@@ -75,7 +65,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
       const { data, error } = await supabase
         .from('task_categories')
         .insert([
-          { name: newCategoryName, color: selectedColor, user_id: userId }
+          { name: newCategoryName, color: selectedColorKey, user_id: userId } // Store the color key
         ])
         .select()
         .single();
@@ -84,7 +74,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
       
       setCategories([...categories, data]);
       setNewCategoryName('');
-      setSelectedColor(colors[0].value);
+      setSelectedColorKey('gray'); // Reset to default
       showSuccess('Category created successfully');
     } catch (error: any) {
       showError('Failed to create category');
@@ -118,6 +108,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
   };
 
   const selectedCategory = categories.find(cat => cat.id === value);
+  const selectedCategoryColorProps = selectedCategory ? getCategoryColorProps(selectedCategory.color) : getCategoryColorProps('gray');
 
   return (
     <div className="space-y-2">
@@ -126,29 +117,34 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
         <Select value={value} onValueChange={onChange}>
           <SelectTrigger className="w-full">
             <div className="flex items-center gap-2">
-              {selectedCategory ? (
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: selectedCategory.color.replace('bg-', '').replace('-', '') }}></div>
-              ) : (
-                <div className="w-3 h-3 rounded-full bg-gray-500"></div>
-              )}
+              <div className={cn("w-4 h-4 rounded-full flex items-center justify-center border", selectedCategoryColorProps.backgroundClass, selectedCategoryColorProps.dotBorder)}>
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: selectedCategoryColorProps.dotColor }}></div>
+              </div>
               <SelectValue placeholder="Select category" />
             </div>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="general">
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-gray-500"></div>
+                <div className={cn("w-4 h-4 rounded-full flex items-center justify-center border", getCategoryColorProps('gray').backgroundClass, getCategoryColorProps('gray').dotBorder)}>
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: getCategoryColorProps('gray').dotColor }}></div>
+                </div>
                 General
               </div>
             </SelectItem>
-            {categories.map(category => (
-              <SelectItem key={category.id} value={category.id}>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: category.color.replace('bg-', '').replace('-', '') }}></div>
-                  {category.name}
-                </div>
-              </SelectItem>
-            ))}
+            {categories.map(category => {
+              const colorProps = getCategoryColorProps(category.color);
+              return (
+                <SelectItem key={category.id} value={category.id}>
+                  <div className="flex items-center gap-2">
+                    <div className={cn("w-4 h-4 rounded-full flex items-center justify-center border", colorProps.backgroundClass, colorProps.dotBorder)}>
+                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: colorProps.dotColor }}></div>
+                    </div>
+                    {category.name}
+                  </div>
+                </SelectItem>
+              );
+            })}
           </SelectContent>
         </Select>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -167,23 +163,28 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
                 <div className="space-y-2">
                   <h4 className="text-md font-semibold">Existing Categories</h4>
                   <ul className="space-y-2">
-                    {categories.map(category => (
-                      <li key={category.id} className="flex items-center justify-between p-2 border rounded-md">
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: category.color.replace('bg-', '').replace('-', '') }}></div>
-                          <span>{category.name}</span>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6"
-                          onClick={() => deleteCategory(category.id)}
-                          aria-label={`Delete ${category.name}`}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </li>
-                    ))}
+                    {categories.map(category => {
+                      const colorProps = getCategoryColorProps(category.color);
+                      return (
+                        <li key={category.id} className="flex items-center justify-between p-2 border rounded-md">
+                          <div className="flex items-center gap-2">
+                            <div className={cn("w-4 h-4 rounded-full flex items-center justify-center border", colorProps.backgroundClass, colorProps.dotBorder)}>
+                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: colorProps.dotColor }}></div>
+                            </div>
+                            <span>{category.name}</span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => deleteCategory(category.id)}
+                            aria-label={`Delete ${category.name}`}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               )}
@@ -204,14 +205,24 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
                 <div className="mt-4">
                   <Label>Color</Label>
                   <div className="flex flex-wrap gap-2 mt-2">
-                    {colors.map(color => (
-                      <button
-                        key={color.value}
-                        className={`w-8 h-8 rounded-full ${color.value} ${selectedColor === color.value ? 'ring-2 ring-offset-2 ring-primary' : ''}`}
-                        onClick={() => setSelectedColor(color.value)}
-                        aria-label={color.name}
-                      />
-                    ))}
+                    {Object.keys(categoryColorMap).filter(key => key !== 'general').map((colorKey) => { // Exclude 'general' from selection
+                      const colorProps = getCategoryColorProps(colorKey);
+                      return (
+                        <button
+                          key={colorKey}
+                          className={cn(
+                            "w-8 h-8 rounded-full border-2 flex items-center justify-center",
+                            colorProps.backgroundClass,
+                            colorProps.dotBorder,
+                            selectedColorKey === colorKey ? 'ring-2 ring-offset-2 ring-primary' : ''
+                          )}
+                          onClick={() => setSelectedColorKey(colorKey as CategoryColorKey)}
+                          aria-label={colorProps.name}
+                        >
+                          <div className="w-4 h-4 rounded-full" style={{ backgroundColor: colorProps.dotColor }}></div>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
                 <DialogFooter className="mt-4">

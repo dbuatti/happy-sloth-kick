@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess, showReminder } from '@/utils/toast';
 import { v4 as uuidv4 } from 'uuid';
 import { isSameDay, isPast, startOfDay as fnsStartOfDay, parseISO, format, isAfter, isBefore, addDays, addWeeks, addMonths } from 'date-fns';
+import { getCategoryColorProps } from '@/lib/categoryColors'; // Import the new utility
 
 export interface Task {
   id: string;
@@ -12,7 +13,8 @@ export interface Task {
   recurring_type: 'none' | 'daily' | 'weekly' | 'monthly';
   created_at: string;
   user_id: string;
-  category: string;
+  category: string; // This will be the category ID
+  category_color: string; // New: This will store the color key like 'red', 'blue'
   priority: string;
   due_date: string | null;
   notes: string | null;
@@ -36,11 +38,11 @@ interface NewTaskData {
   description: string;
   status?: 'to-do' | 'completed' | 'skipped' | 'archived';
   recurring_type?: 'none' | 'daily' | 'weekly' | 'monthly';
-  category?: string;
+  category: string; // This will be the category ID
   priority?: string;
-  due_date?: Date | null; // Changed to Date | null
+  due_date?: Date | null;
   notes?: string | null;
-  remind_at?: Date | null; // Changed to Date | null
+  remind_at?: Date | null;
   section_id?: string | null;
   parent_task_id?: string | null;
 }
@@ -128,16 +130,27 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
       setSections(sectionsData || []);
       console.log('useTasks useEffect: Sections fetched.');
 
-      // Fetch all tasks from DB
+      // Fetch all tasks from DB and join with categories to get color
       const { data: initialTasksFromDB, error: fetchError } = await supabase
         .from('tasks')
-        .select('*')
+        .select(`
+          *,
+          task_categories (
+            color
+          )
+        `)
         .eq('user_id', userId);
 
       if (fetchError) throw fetchError;
       console.log('fetchTasks: Initial tasks fetched from DB:', initialTasksFromDB);
 
-      setTasks(initialTasksFromDB || []);
+      // Map fetched data to Task interface, extracting category_color
+      const mappedTasks: Task[] = initialTasksFromDB.map((task: any) => ({
+        ...task,
+        category_color: task.task_categories?.color || 'gray', // Default to 'gray' if category not found or no color
+      }));
+
+      setTasks(mappedTasks || []);
       console.log('fetchTasks: Tasks state updated with fetched data.');
       
     } catch (error: any) {
@@ -326,15 +339,30 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
     }
     let newTask: Task;
     try {
+      // Fetch the category color based on the category ID
+      let categoryColor = 'gray'; // Default color
+      if (newTaskData.category !== 'general') {
+        const { data: categoryData, error: categoryError } = await supabase
+          .from('task_categories')
+          .select('color')
+          .eq('id', newTaskData.category)
+          .single();
+        if (categoryError) console.error('Error fetching category color:', categoryError);
+        if (categoryData) categoryColor = categoryData.color;
+      } else {
+        categoryColor = 'gray'; // 'general' category always uses 'gray' color key
+      }
+
       newTask = {
         id: uuidv4(),
         user_id: userId,
         created_at: currentDate.toISOString(),
         status: newTaskData.status || 'to-do',
         recurring_type: newTaskData.recurring_type || 'none',
-        category: newTaskData.category || 'general',
+        category: newTaskData.category, // This is the category ID
+        category_color: categoryColor, // Store the color key
         priority: newTaskData.priority || 'medium',
-        due_date: newTaskData.due_date ? newTaskData.due_date.toISOString() : null, // Fixed: now newTaskData.due_date is Date | null
+        due_date: newTaskData.due_date ? newTaskData.due_date.toISOString() : null,
         notes: newTaskData.notes || null,
         remind_at: newTaskData.remind_at ? newTaskData.remind_at.toISOString() : null,
         section_id: newTaskData.section_id || null,
@@ -348,11 +376,36 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
 
       const { data, error } = await supabase
         .from('tasks')
-        .insert(newTask)
-        .select()
+        .insert({
+          id: newTask.id,
+          user_id: newTask.user_id,
+          created_at: newTask.created_at,
+          status: newTask.status,
+          recurring_type: newTask.recurring_type,
+          category: newTask.category, // Store category ID
+          priority: newTask.priority,
+          due_date: newTask.due_date,
+          notes: newTask.notes,
+          remind_at: newTask.remind_at,
+          section_id: newTask.section_id,
+          order: newTask.order,
+          original_task_id: newTask.original_task_id,
+          parent_task_id: newTask.parent_task_id,
+          description: newTask.description,
+        })
+        .select(`
+          *,
+          task_categories (
+            color
+          )
+        `)
         .single();
 
       if (error) throw error;
+      
+      // Update the optimistically added task with the actual fetched data (including category_color from join)
+      setTasks(prev => prev.map(t => t.id === data.id ? { ...data, category_color: data.task_categories?.color || 'gray' } : t));
+
       showSuccess('Task added successfully!');
       return true;
     } catch (error: any) {
@@ -369,9 +422,25 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
       showError('User not authenticated.');
       return;
     }
+
+    let updatedCategoryColor: string | undefined;
+    if (updates.category) {
+      if (updates.category === 'general') {
+        updatedCategoryColor = 'gray';
+      } else {
+        const { data: categoryData, error: categoryError } = await supabase
+          .from('task_categories')
+          .select('color')
+          .eq('id', updates.category)
+          .single();
+        if (categoryError) console.error('Error fetching category color for update:', categoryError);
+        updatedCategoryColor = categoryData?.color || 'gray';
+      }
+    }
+
     // Optimistically update the state
     setTasks(prevTasks => prevTasks.map(task =>
-      task.id === taskId ? { ...task, ...updates } : task
+      task.id === taskId ? { ...task, ...updates, ...(updatedCategoryColor && { category_color: updatedCategoryColor }) } : task
     ));
 
     try {
@@ -383,10 +452,6 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
 
       if (error) throw error;
       showSuccess('Task updated successfully!');
-
-      // IMPORTANT: Do NOT call syncRecurringTasks here.
-      // It will be triggered by the useEffect when currentDate changes or tasks state updates.
-      // This prevents potential race conditions or unnecessary re-syncs.
 
     } catch (error: any) {
       console.error('Error updating task:', error);
@@ -456,9 +521,24 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
     }
     if (ids.length === 0) return;
 
+    let updatedCategoryColor: string | undefined;
+    if (updates.category) {
+      if (updates.category === 'general') {
+        updatedCategoryColor = 'gray';
+      } else {
+        const { data: categoryData, error: categoryError } = await supabase
+          .from('task_categories')
+          .select('color')
+          .eq('id', updates.category)
+          .single();
+        if (categoryError) console.error('Error fetching category color for bulk update:', categoryError);
+        updatedCategoryColor = categoryData?.color || 'gray';
+      }
+    }
+
     // Optimistically update the state
     setTasks(prev => prev.map(task => 
-      ids.includes(task.id) ? { ...task, ...updates } : task
+      ids.includes(task.id) ? { ...task, ...updates, ...(updatedCategoryColor && { category_color: updatedCategoryColor }) } : task
     ));
 
     try {
@@ -628,7 +708,9 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
       created_at: t.created_at,
       original_task_id: t.original_task_id,
       recurring_type: t.recurring_type,
-      parent_task_id: t.parent_task_id
+      parent_task_id: t.parent_task_id,
+      category: t.category, // Include category for debugging
+      category_color: t.category_color // Include category_color for debugging
     })));
 
     let relevantTasks: Task[] = [];
@@ -763,7 +845,9 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
       created_at: t.created_at,
       original_task_id: t.original_task_id,
       recurring_type: t.recurring_type,
-      parent_task_id: t.parent_task_id
+      parent_task_id: t.parent_task_id,
+      category: t.category, // Include category for debugging
+      category_color: t.category_color // Include category_color for debugging
     })));
     console.log('filteredTasks: --- END FILTERING ---');
     return relevantTasks;
@@ -804,5 +888,6 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
     reorderTasksInSameSection,
     moveTaskToNewSection,
     reorderSections,
+    fetchDataAndSections, // Expose for manual refresh if needed
   };
 };

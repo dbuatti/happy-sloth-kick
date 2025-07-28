@@ -7,6 +7,7 @@ import * as dateFns from 'date-fns'; // Import all functions from date-fns as da
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
+import { getCategoryColorProps } from '@/lib/categoryColors'; // Import the new utility
 
 interface TaskItemProps {
   task: Task;
@@ -66,6 +67,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
   const { playSound } = useSound();
 
+  const categoryColorProps = getCategoryColorProps(task.category_color);
+
   return (
     <div
       className={cn(
@@ -107,6 +110,10 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
         {/* Compact details row */}
         <div className="flex items-center text-xs text-muted-foreground mt-1 space-x-3">
+          {/* Category */}
+          <div className={cn("w-4 h-4 rounded-full flex items-center justify-center border", categoryColorProps.backgroundClass, categoryColorProps.dotBorder)}>
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: categoryColorProps.dotColor }}></div>
+          </div>
           {/* Priority */}
           <span className={cn(
             "font-semibold",

@@ -52,7 +52,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   const [editingDescription, setEditingDescription] = useState('');
   const [editingNotes, setEditingNotes] = useState('');
   const [editingDueDate, setEditingDueDate] = useState<Date | undefined>(undefined);
-  const [editingCategory, setEditingCategory] = useState('');
+  const [editingCategory, setEditingCategory] = useState(''); // This is the category ID
   const [editingPriority, setEditingPriority] = useState('');
   const [editingRemindAt, setEditingRemindAt] = useState<Date | undefined>(undefined);
   const [reminderTime, setReminderTime] = useState('');
@@ -68,7 +68,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
       setEditingDescription(task.description);
       setEditingNotes(task.notes || '');
       setEditingDueDate(task.due_date ? parseISO(task.due_date) : undefined);
-      setEditingCategory(task.category);
+      setEditingCategory(task.category); // Set category ID
       setEditingPriority(task.priority);
       setEditingRemindAt(task.remind_at ? parseISO(task.remind_at) : undefined);
       setReminderTime(task.remind_at ? format(parseISO(task.remind_at), 'HH:mm') : '');
@@ -95,7 +95,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
       description: editingDescription,
       notes: editingNotes || null,
       due_date: editingDueDate ? editingDueDate.toISOString() : null,
-      category: editingCategory,
+      category: editingCategory, // Pass the category ID
       priority: editingPriority,
       remind_at: finalRemindAt ? finalRemindAt.toISOString() : null,
       section_id: editingSectionId,

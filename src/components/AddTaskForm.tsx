@@ -17,7 +17,7 @@ import { TaskSection } from '@/hooks/useTasks'; // Import TaskSection type
 interface AddTaskFormProps {
   onAddTask: (taskData: {
     description: string;
-    category: string;
+    category: string; // This is the category ID
     priority: string;
     due_date: string | null;
     notes: string | null;
@@ -35,7 +35,7 @@ const parseNaturalLanguage = (text: string) => {
   let dueDate: Date | undefined = undefined;
   let remindAt: Date | undefined = undefined;
   let priority: string | undefined = undefined;
-  let category: string | undefined = undefined;
+  let category: string | undefined = undefined; // This will be the category name for parsing, not ID
   let tempDescription = text;
 
   // Priority detection
@@ -143,7 +143,7 @@ const parseNaturalLanguage = (text: string) => {
 
 const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdded, sections }) => {
   const [newTaskDescription, setNewTaskDescription] = useState<string>('');
-  const [newTaskCategory, setNewTaskCategory] = useState<string>('general');
+  const [newTaskCategory, setNewTaskCategory] = useState<string>('general'); // This is the category ID
   const [newTaskPriority, setNewTaskPriority] = useState<string>('medium');
   const [newTaskDueDate, setNewTaskDueDate] = useState<Date | undefined>(undefined);
   const [newTaskNotes, setNewTaskNotes] = useState<string>('');
@@ -159,15 +159,20 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
       remindAt,
       reminderTimeStr,
       priority,
-      category,
+      category: parsedCategoryName, // Get the parsed category name
     } = parseNaturalLanguage(newTaskDescription);
 
     if (priority && (newTaskPriority === 'medium' || !newTaskPriority)) {
       setNewTaskPriority(priority);
     }
-    if (category && (newTaskCategory === 'general' || !newTaskCategory)) {
-      setNewTaskCategory(category);
+    // Find the category ID based on the parsed name
+    if (parsedCategoryName) {
+      const matchingCategory = sections.find(s => s.name.toLowerCase() === parsedCategoryName.toLowerCase());
+      if (matchingCategory && (newTaskCategory === 'general' || !newTaskCategory)) {
+        setNewTaskCategory(matchingCategory.id);
+      }
     }
+    
     if (dueDate && !newTaskDueDate) {
       setNewTaskDueDate(dueDate);
     }
@@ -177,7 +182,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
         setNewReminderTime(format(remindAt, 'HH:mm'));
       }
     }
-  }, [newTaskDescription, newTaskPriority, newTaskCategory, newTaskDueDate, newTaskRemindAt]);
+  }, [newTaskDescription, newTaskPriority, newTaskCategory, newTaskDueDate, newTaskRemindAt, sections]);
 
   const handleSubmit = async () => {
     if (!newTaskDescription.trim()) {
@@ -195,7 +200,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
     setIsAdding(true);
     const success = await onAddTask({
       description: newTaskDescription,
-      category: newTaskCategory,
+      category: newTaskCategory, // Pass the category ID
       priority: newTaskPriority,
       due_date: newTaskDueDate ? newTaskDueDate.toISOString() : null,
       notes: newTaskNotes || null,
