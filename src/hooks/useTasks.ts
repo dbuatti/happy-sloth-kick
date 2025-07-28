@@ -59,6 +59,9 @@ const getUTCStartOfDay = (date: Date) => {
 };
 
 export const useTasks = () => {
+  const HOOK_VERSION = "2024-07-29-02"; // Increment this for each significant change
+  console.log(`useTasks hook version: ${HOOK_VERSION}`);
+
   const { user } = useAuth();
   const userId = user?.id;
 
@@ -512,20 +515,20 @@ export const useTasks = () => {
         console.log(`  Task "${task.description}" (ID: ${task.id}):`);
         console.log(`    created_at: ${task.created_at} (UTC: ${taskCreatedAtUTC.toISOString()})`);
         console.log(`    currentDate (UTC): ${effectiveCurrentDateUTC.toISOString()}`);
-        console.log(`    isCreatedOnCurrentDate: ${isTaskCreatedOnCurrentDate}`);
+        console.log(`    isTaskCreatedOnCurrentDate: ${isTaskCreatedOnCurrentDate}`);
         console.log(`    status: ${task.status}, recurring_type: ${task.recurring_type}, original_task_id: ${task.original_task_id}`);
         console.log(`    isRecurringTemplate: ${isRecurringTemplate}, isRecurringInstance: ${isRecurringInstance}`);
         console.log(`    isActiveStatus: ${isActiveStatus}, isCompletedStatus: ${isCompletedStatus}, isArchivedStatus: ${isArchivedStatus}`);
 
         // Rule 1: Exclude recurring templates from daily view
         if (isRecurringTemplate) {
-          console.log(`    -> Excluded (Rule 1: Is a Recurring Template)`);
+          console.log(`    -> Rule 1: Recurring Template. Result: Excluded`);
           return false;
         }
 
         // Rule 2: Exclude archived tasks from daily view (unless statusFilter is 'archived')
         if (isArchivedStatus) {
-          console.log(`    -> Excluded (Rule 2: Is Archived)`);
+          console.log(`    -> Rule 2: Archived. Result: Excluded`);
           return false;
         }
 
@@ -533,14 +536,14 @@ export const useTasks = () => {
         // These should ONLY show if they were generated for the current day.
         if (isRecurringInstance) {
           const shouldInclude = isTaskCreatedOnCurrentDate;
-          console.log(`    -> Rule 3: Is Recurring Instance. Included if created on current date: ${shouldInclude}`);
+          console.log(`    -> Rule 3: Recurring Instance. Created on current date? ${isTaskCreatedOnCurrentDate}. Result: ${shouldInclude ? 'Included' : 'Excluded'}`);
           return shouldInclude;
         }
 
         // Rule 4: Handle general tasks (non-recurring, not instances)
         // These should always be visible if active (to-do/skipped), regardless of creation date.
         if (isActiveStatus) {
-          console.log(`    -> Rule 4: Is Active General Task. Included.`);
+          console.log(`    -> Rule 4: Active General Task. Result: Included`);
           return true;
         }
 
@@ -550,11 +553,11 @@ export const useTasks = () => {
         // we only want to show completed tasks on the day they were created/generated.
         if (isCompletedStatus) {
           const shouldInclude = isTaskCreatedOnCurrentDate;
-          console.log(`    -> Rule 5: Is Completed General Task. Included if created on current date: ${shouldInclude}`);
+          console.log(`    -> Rule 5: Completed General Task. Created on current date? ${isTaskCreatedOnCurrentDate}. Result: ${shouldInclude ? 'Included' : 'Excluded'}`);
           return shouldInclude;
         }
         
-        console.log(`    -> Excluded (No specific rule matched for daily view)`);
+        console.log(`    -> No specific rule matched for daily view. Result: Excluded`);
         return false;
       });
       console.log('filteredTasks: After daily view logic, count:', workingTasks.length);
