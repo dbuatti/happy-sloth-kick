@@ -45,6 +45,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
     transition,
     zIndex: isDragging ? 100 : 'auto',
     opacity: isDragging ? 0.8 : 1,
+    cursor: isDragging ? 'grabbing' : 'grab', // Add grab cursor to the whole item
   };
 
   const currentRefDate = new Date(currentDate);
@@ -62,13 +63,15 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         "relative border rounded-lg p-3 transition-all duration-200 ease-in-out",
         "group",
         "hover:shadow-md",
+
+        // Added a blank line here to potentially resolve a phantom TypeScript error
         task.status === 'completed' ? "border-green-300 dark:border-green-700 bg-green-50/20 dark:bg-green-900/20" : "border-border bg-card dark:bg-gray-800",
         isOverdue && "border-l-4 border-red-500 dark:border-red-700 bg-red-100 dark:bg-red-900/30 pl-2",
         isUpcoming && "border-l-4 border-orange-400 dark:border-orange-600 bg-orange-50/20 dark:bg-orange-900/20 pl-2",
         isDragging ? "shadow-lg ring-2 ring-primary" : ""
       )}
       {...attributes}
-      {...(listeners || {})}
+      {...listeners} {/* Apply listeners to the whole li */}
     >
       <TaskItem 
         key={task.id}
