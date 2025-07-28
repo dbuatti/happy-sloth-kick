@@ -1,7 +1,7 @@
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Monitor, Palette } from "lucide-react";
+import { Monitor, Palette, Sun, Moon } from "lucide-react";
 import { themes } from "@/lib/themes";
 import { useState, useEffect } from "react";
 
@@ -34,6 +34,16 @@ const ThemeSelector = () => {
           System
         </DropdownMenuItem>
         
+        <DropdownMenuItem onClick={() => setTheme('light')} className={theme === 'light' ? 'font-bold' : ''}>
+          <Sun className="h-4 w-4 mr-2" />
+          Light
+        </DropdownMenuItem>
+
+        <DropdownMenuItem onClick={() => setTheme('dark')} className={theme === 'dark' ? 'font-bold' : ''}>
+          <Moon className="h-4 w-4 mr-2" />
+          Dark
+        </DropdownMenuItem>
+
         <div className="my-1 h-px bg-muted" />
         
         {Object.entries(themes).map(([themeName, themeData]) => (

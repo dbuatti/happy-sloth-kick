@@ -2,12 +2,11 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, BarChart3, Settings as SettingsIcon, HelpCircle, Archive as ArchiveIcon, Timer, LayoutGrid, CalendarClock, Menu } from 'lucide-react';
 import ThemeSelector from './ThemeSelector';
-import DarkModeToggle from './DarkModeToggle';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { useUI } from '@/context/UIContext'; // Import useUI
+import { useUI } from '@/context/UIContext';
 
 interface SidebarProps {
   children: React.ReactNode;
@@ -55,16 +54,15 @@ const NavigationLinks = ({ onLinkClick }: { onLinkClick?: () => void }) => {
 const Sidebar: React.FC<SidebarProps> = ({ children }) => {
   const isMobile = useIsMobile();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const { isFocusModeActive } = useUI(); // Use the UI context
+  const { isFocusModeActive } = useUI();
 
   if (isFocusModeActive) {
-    return <div className="flex-1 flex flex-col">{children}</div>; // Render only children, no sidebar
+    return <div className="flex-1 flex flex-col">{children}</div>;
   }
 
   if (isMobile) {
     return (
       <div className="min-h-screen flex flex-col">
-        {/* Mobile Header */}
         <header className="flex items-center justify-between p-4 bg-card shadow-md">
           <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
             <SheetTrigger asChild>
@@ -83,7 +81,6 @@ const Sidebar: React.FC<SidebarProps> = ({ children }) => {
                 </p>
                 <div className="flex items-center space-x-2">
                   <ThemeSelector />
-                  <DarkModeToggle />
                 </div>
               </div>
             </SheetContent>
@@ -91,10 +88,8 @@ const Sidebar: React.FC<SidebarProps> = ({ children }) => {
           <h1 className="text-xl font-bold text-gray-800 dark:text-white">TaskMaster</h1>
           <div className="flex items-center space-x-2">
             <ThemeSelector />
-            <DarkModeToggle />
           </div>
         </header>
-        {/* Main Content for Mobile */}
         <div className="flex-1 overflow-auto">
           {children}
         </div>
@@ -102,7 +97,6 @@ const Sidebar: React.FC<SidebarProps> = ({ children }) => {
     );
   }
 
-  // Desktop View
   return (
     <div className="min-h-screen flex bg-background">
       <div className="w-64 bg-card shadow-lg h-screen flex flex-col">
@@ -116,11 +110,9 @@ const Sidebar: React.FC<SidebarProps> = ({ children }) => {
           </p>
           <div className="flex items-center space-x-2">
             <ThemeSelector />
-            <DarkModeToggle />
           </div>
         </div>
       </div>
-      {/* Main Content for Desktop */}
       <div className="flex-1 flex flex-col">
         {children}
       </div>
