@@ -59,7 +59,7 @@ const getUTCStartOfDay = (date: Date) => {
 };
 
 export const useTasks = () => {
-  const HOOK_VERSION = "2024-07-29-05"; // Increment this for each significant change
+  const HOOK_VERSION = "2024-07-29-06"; // Increment this for each significant change
   console.log(`useTasks hook version: ${HOOK_VERSION}`);
 
   const { user } = useAuth();
@@ -258,15 +258,17 @@ export const useTasks = () => {
         .single();
 
       if (error) throw error;
-      setTasks(prev => [...prev, data]);
+      // Instead of just adding to prev state, re-fetch to ensure consistency
+      // setTasks(prev => [...prev, data]); // REMOVED THIS LINE
       showSuccess('Task added successfully!');
+      await fetchDataAndSections(); // Explicitly re-fetch after successful add
       return true;
     } catch (error: any) {
       console.error('Error adding task:', error);
       showError('Failed to add task.');
       return false;
     }
-  }, [userId, currentDate]);
+  }, [userId, currentDate, fetchDataAndSections]); // Added fetchDataAndSections to dependencies
 
   const updateTask = useCallback(async (taskId: string, updates: TaskUpdate) => {
     if (!userId) {
@@ -284,14 +286,15 @@ export const useTasks = () => {
         .single();
 
       if (error) throw error;
-      setTasks(prev => prev.map(task => (task.id === taskId ? data : task)));
+      // Instead of just mapping prev state, re-fetch to ensure consistency
+      // setTasks(prev => prev.map(task => (task.id === taskId ? data : task))); // REMOVED THIS LINE
       showSuccess('Task updated successfully!');
-      console.log(`updateTask: Task ${taskId} updated successfully. New data:`, data); // Added log
+      await fetchDataAndSections(); // Explicitly re-fetch after successful update
     } catch (error: any) {
       console.error('Error updating task:', error);
       showError('Failed to update task.');
     }
-  }, [userId]);
+  }, [userId, fetchDataAndSections]); // Added fetchDataAndSections to dependencies
 
   const deleteTask = useCallback(async (taskId: string) => {
     if (!userId) {
@@ -504,50 +507,52 @@ export const useTasks = () => {
     workingTasks = workingTasks.filter(task => task.parent_task_id === null);
     console.log('filteredTasks: After subtask filter, count:', workingTasks.length);
 
-    // 2. Apply main daily view logic (if not in 'archived' filter)
+    // Apply main daily view logic (if not in 'archived' filter)
     if (statusFilter !== 'archived') {
       workingTasks = workingTasks.filter(task => {
         const taskCreatedAt = parseISO(task.created_at);
         const taskCreatedAtUTC = getUTCStartOfDay(taskCreatedAt); // Convert task's created_at to UTC midnight for comparison
 
         const isTaskCreatedOnCurrentDate = isSameDay(taskCreatedAtUTC, effectiveCurrentDateUTC);
-        const isTaskCreatedBeforeCurrentDate = isBefore(taskCreatedAtUTC, effectiveCurrentDateUTC); // New check
-        const isRecurringTemplate = task.recurring_type === 'daily' && task.original_task_id === null;
-        const isRecurringInstance = task.original_task_id !== null;
 
         console.log(`  Task "${task.description}" (ID: ${task.id}):`);
         console.log(`    created_at: ${task.created_at} (UTC: ${taskCreatedAtUTC.toISOString()})`);
         console.log(`    currentDate (UTC): ${effectiveCurrentDateUTC.toISOString()}`);
         console.log(`    isTaskCreatedOnCurrentDate: ${isTaskCreatedOnCurrentDate}`);
-        console.log(`    isTaskCreatedBeforeCurrentDate: ${isTaskCreatedBeforeCurrentDate}`);
         console.log(`    status: ${task.status}, recurring_type: ${task.recurring_type}, original_task_id: ${task.original_task_id}`);
-        console.log(`    isRecurringTemplate: ${isRecurringTemplate}, isRecurringInstance: ${isRecurringInstance}`);
 
-        // Rule A: Exclude recurring templates from daily view
-        if (isRecurringTemplate) {
-          console.log(`    -> Rule A: Recurring Template. Result: Excluded`);
+        // Rule 1: Exclude recurring templates from the daily view
+        if (task.recurring_type === 'daily' && task.original_task_id === null) {
+          console.log(`    -> Rule 1: Recurring Template. Result: Excluded`);
           return false;
         }
 
-        // Rule B: Exclude archived tasks from daily view
+        // Rule 2: Exclude archived tasks from the daily view
         if (task.status === 'archived') {
-          console.log(`    -> Rule B: Archived. Result: Excluded`);
+          console.log(`    -> Rule 2: Archived. Result: Excluded`);
           return false;
         }
 
-        // Rule C: Include tasks that are 'to-do' or 'skipped' and were created on or before the current date.
-        // This handles both regular tasks and recurring instances that are still active.
+        // Rule 3: Handle tasks that are 'to-do' or 'skipped'
         if (task.status === 'to-do' || task.status === 'skipped') {
-          const shouldInclude = isTaskCreatedOnCurrentDate || isTaskCreatedBeforeCurrentDate;
-          console.log(`    -> Rule C: Active Task (to-do/skipped). Created on/before current date? ${shouldInclude}. Result: ${shouldInclude ? 'Included' : 'Excluded'}`);
-          return shouldInclude;
+          // For recurring instances, only show if created for the current day
+          if (task.original_task_id !== null) {
+            const shouldInclude = isTaskCreatedOnCurrentDate;
+            console.log(`    -> Rule 3a: Active Recurring Instance. Created on current date? ${shouldInclude}. Result: ${shouldInclude ? 'Included' : 'Excluded'}`);
+            return shouldInclude;
+          }
+          // For non-recurring tasks, show if active (regardless of creation date)
+          else {
+            console.log(`    -> Rule 3b: Active Non-Recurring Task. Result: Included`);
+            return true;
+          }
         }
 
-        // Rule D: Include tasks that are 'completed' but ONLY if they were created on the current date.
-        // This ensures completed tasks from previous days don't show up.
+        // Rule 4: Handle tasks that are 'completed'
         if (task.status === 'completed') {
+          // Only show completed tasks if they were created (or generated as an instance) on the current day
           const shouldInclude = isTaskCreatedOnCurrentDate;
-          console.log(`    -> Rule D: Completed Task. Created on current date? ${shouldInclude}. Result: ${shouldInclude ? 'Included' : 'Excluded'}`);
+          console.log(`    -> Rule 4: Completed Task. Created on current date? ${shouldInclude}. Result: ${shouldInclude ? 'Included' : 'Excluded'}`);
           return shouldInclude;
         }
         
