@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Search, Plus, Settings, CheckCircle2, Archive, Trash2, ListRestart, ChevronDown, ChevronUp, ListTodo, FolderOpen } from 'lucide-react'; // Added ListTodo, FolderOpen
+import { Search, Plus, Settings, CheckCircle2, Archive, Trash2, ListRestart, ChevronDown, ChevronUp, ListTodo, FolderOpen } from 'lucide-react';
 import { useTasks } from '@/hooks/useTasks';
 import SortableTaskItem from './SortableTaskItem';
 import BulkActions from './BulkActions';
@@ -19,7 +19,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { CustomPointerSensor } from '@/lib/CustomPointerSensor';
 import TaskFilter from './TaskFilter';
-import { Skeleton } from '@/components/ui/skeleton'; // Import Skeleton
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface TaskListProps {
   setIsAddTaskOpen: (open: boolean) => void;
@@ -41,17 +41,17 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
     toggleTaskSelection,
     clearSelectedTasks,
     bulkUpdateTasks,
-    markAllTasksInSectionCompleted, // Destructure new function
+    markAllTasksInSectionCompleted,
     sections,
     createSection,
     updateSection,
     deleteSection,
-    updateSectionIncludeInFocusMode, // Destructure new function
+    updateSectionIncludeInFocusMode,
     reorderTasksInSameSection,
     moveTaskToNewSection,
     reorderSections,
-    allCategories, // Destructure allCategories
-    statusFilter, // Destructure filter states
+    allCategories,
+    statusFilter,
     setStatusFilter,
     categoryFilter,
     setCategoryFilter,
@@ -71,10 +71,9 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
   })));
 
   const [isAddTaskFormOpen, setIsAddTaskForm] = useState(false);
-  const [sectionToPreselect, setSectionToPreselect] = useState<string | null>(null); // New state for pre-selecting section
+  const [sectionToPreselect, setSectionToPreselect] = useState<string | null>(null);
   const [isTaskDetailOpen, setIsTaskDetail] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
-  // Load expanded state from localStorage, default to an empty object
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() => {
     try {
       const saved = localStorage.getItem('taskList_expandedSections');
@@ -86,6 +85,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
   });
 
   const [showConfirmBulkDeleteDialog, setShowConfirmBulkDeleteDialog] = useState(false);
+  const [isBulkActionInProgress, setIsBulkActionInProgress] = useState(false); // New state for bulk actions
 
   const [isAddSectionOpen, setIsAddSectionOpen] = useState(false);
   const [newSectionName, setNewSectionName] = useState('');
@@ -173,7 +173,6 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
         ...prev,
         [sectionId]: !prev[sectionId]
       };
-      // Save the new state to localStorage
       try {
         localStorage.setItem('taskList_expandedSections', JSON.stringify(newState));
       } catch (e) {
@@ -188,7 +187,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
     if (success) {
       setIsAddTaskForm(false);
       setIsAddTaskOpen(false);
-      setSectionToPreselect(null); // Clear pre-selected section after task added
+      setSectionToPreselect(null);
     }
     return success;
   };
@@ -211,10 +210,12 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
     }
   };
 
-  const confirmBulkDelete = () => {
-    bulkUpdateTasks({ status: 'archived' }, selectedTaskIds);
+  const confirmBulkDelete = async () => {
+    setIsBulkActionInProgress(true); // Set loading state
+    await bulkUpdateTasks({ status: 'archived' }, selectedTaskIds); // Assuming delete means archive for now
     clearSelectedTasks();
     setShowConfirmBulkDeleteDialog(false);
+    setIsBulkActionInProgress(false); // Clear loading state
   };
 
   const handleStatusChange = useCallback(async (taskId: string, newStatus: "to-do" | "completed" | "skipped" | "archived") => {
@@ -269,8 +270,8 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
     <>
       <div className="flex-1 flex flex-col">
         <main className="flex-grow">
-          <Card className="w-full shadow-lg p-3"> {/* Reduced p-4 to p-3 */}
-            <CardHeader className="pb-3"> {/* Reduced pb-4 to pb-3 */}
+          <Card className="w-full shadow-lg p-3">
+            <CardHeader className="pb-3">
               <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
                 <CheckCircle2 className="h-7 w-7" /> Your Tasks
               </CardTitle>
@@ -293,9 +294,8 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                 allCategories={allCategories}
               />
 
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4"> {/* Reduced mb-6 to mb-4 */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
                 <div className="relative flex-1">
-                  {/* Search input is now part of TaskFilter, but keeping this div for layout if needed */}
                 </div>
                 <div className="flex gap-2">
                   <Button onClick={() => handleAddTaskToSpecificSection(null)}>
@@ -355,7 +355,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                       const sectionTasks = tasksBySection[currentSection.id] || [];
                       
                       return (
-                        <div key={currentSection.id} className="mb-3"> {/* Reduced mb-4 to mb-3 */}
+                        <div key={currentSection.id} className="mb-3">
                           <SortableSectionHeader
                             id={currentSection.id}
                             name={currentSection.name}
@@ -369,14 +369,13 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                             onCancelEdit={handleCancelSectionEdit}
                             onEditClick={() => handleEditSectionClick(currentSection)}
                             onDeleteClick={handleDeleteSectionClick}
-                            includeInFocusMode={currentSection.include_in_focus_mode} // Pass prop
-                            onToggleIncludeInFocusMode={(checked) => updateSectionIncludeInFocusMode(currentSection.id, checked)} // Pass handler
-                            onAddTaskToSection={handleAddTaskToSpecificSection} // Pass the new handler
-                            onMarkAllCompleted={markAllTasksInSectionCompleted} // Pass the new handler
+                            includeInFocusMode={currentSection.include_in_focus_mode}
+                            onToggleIncludeInFocusMode={(checked) => updateSectionIncludeInFocusMode(currentSection.id, checked)}
+                            onAddTaskToSection={handleAddTaskToSpecificSection}
+                            onMarkAllCompleted={markAllTasksInSectionCompleted}
                           />
                           {isExpanded && (
-                            <div className="mt-1 space-y-1 pl-2"> {/* Reduced mt-2 space-y-2 to mt-1 space-y-1 */}
-                              {/* Removed the direct "Add Task to Section" button here */}
+                            <div className="mt-1 space-y-1 pl-2">
                               <SortableContext items={sectionTasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
                                 <ul className="list-none space-y-2">
                                   {sectionTasks.length === 0 ? (
@@ -411,9 +410,8 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                     })}
                   </SortableContext>
 
-                  {/* Tasks with no section */}
                   {tasksBySection['no-section'].length > 0 && (
-                    <div className="mb-3"> {/* Reduced mb-4 to mb-3 */}
+                    <div className="mb-3">
                       <div className="rounded-lg bg-muted dark:bg-gray-700 text-foreground shadow-sm">
                         <div className="flex items-center justify-between p-2">
                           <h3 className="text-xl font-semibold flex items-center gap-2">
@@ -469,7 +467,6 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
         </main>
       </div>
 
-      {/* Add Task Dialog */}
       <Dialog open={isAddTaskFormOpen} onOpenChange={setIsAddTaskForm}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -483,13 +480,12 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
               setIsAddTaskOpen(false);
             }}
             sections={sections}
-            allCategories={allCategories} // Pass allCategories
-            preselectedSectionId={sectionToPreselect} // Pass pre-selected section
+            allCategories={allCategories}
+            preselectedSectionId={sectionToPreselect}
           />
         </DialogContent>
       </Dialog>
 
-      {/* Task Detail Dialog */}
       {taskToEdit && (
         <TaskDetailDialog
           task={taskToEdit}
@@ -503,7 +499,6 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
         />
       )}
 
-      {/* Bulk Delete Confirmation Dialog */}
       <AlertDialog open={showConfirmBulkDeleteDialog} onOpenChange={setShowConfirmBulkDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -513,15 +508,14 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSavingProject}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmBulkDelete} disabled={isSavingProject}>
-              {isSavingProject ? 'Deleting...' : 'Continue'}
+            <AlertDialogCancel disabled={isBulkActionInProgress}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmBulkDelete} disabled={isBulkActionInProgress}>
+              {isBulkActionInProgress ? 'Deleting...' : 'Continue'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Section Delete Confirmation Dialog */}
       <AlertDialog open={showConfirmDeleteSectionDialog} onOpenChange={setShowConfirmDeleteSectionDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>

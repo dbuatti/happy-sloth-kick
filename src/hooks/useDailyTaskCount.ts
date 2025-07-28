@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/Auth/AuthContext'; // Assuming AuthContext is in Auth folder
+import { useAuth } from '@/context/AuthContext'; // Corrected import path
 import { startOfDay, endOfDay } from 'date-fns';
 
 export const useDailyTaskCount = () => {
