@@ -260,7 +260,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       );
       console.log(`syncRecurringTasks: For originalId ${originalTask.id} ("${originalTask.description}"), all instances:`, allInstancesOfThisRecurringTask.map(t => ({id: t.id, created_at: t.created_at, status: t.status})));
 
-      // Check if an instance for the *current effective date* already exists
+      // 1. Prioritize an instance for the current date (any status except archived)
       const instanceForCurrentDay = allInstancesOfThisRecurringTask.find(t =>
         isSameDay(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status !== 'archived'
       );
