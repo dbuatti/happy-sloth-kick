@@ -66,6 +66,8 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
   const [newSectionName, setNewSectionName] = useState('');
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [editingSectionName, setNewEditingSectionName] = useState('');
+  const [showConfirmDeleteSectionDialog, setShowConfirmDeleteSectionDialog] = useState(false); // New state for section delete confirmation
+  const [sectionToDeleteId, setSectionToDeleteId] = useState<string | null>(null); // New state for section to delete
 
   // Configure Dnd-kit sensors
   const sensors = useSensors(
@@ -211,6 +213,19 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
     setNewEditingSectionName('');
   };
 
+  const handleDeleteSectionClick = (sectionId: string) => {
+    setSectionToDeleteId(sectionId);
+    setShowConfirmDeleteSectionDialog(true);
+  };
+
+  const confirmDeleteSection = async () => {
+    if (sectionToDeleteId) {
+      await deleteSection(sectionToDeleteId);
+      setSectionToDeleteId(null);
+      setShowConfirmDeleteSectionDialog(false);
+    }
+  };
+
   const handleAddSection = async () => {
     if (newSectionName.trim()) {
       await createSection(newSectionName.trim());
@@ -293,6 +308,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
                           onSaveEdit={() => handleRenameSection()}
                           onCancelEdit={handleCancelSectionEdit}
                           onEditClick={() => handleEditSectionClick(currentSection)}
+                          onDeleteClick={handleDeleteSectionClick} // Pass delete handler
                         />
                         {isExpanded && (
                           <div className="mt-2 space-y-2 pl-2">
@@ -406,6 +422,22 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmBulkDelete}>Continue</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Section Delete Confirmation Dialog */}
+      <AlertDialog open={showConfirmDeleteSectionDialog} onOpenChange={setShowConfirmDeleteSectionDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete this section and move all its tasks to "No Section".
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteSection}>Continue</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

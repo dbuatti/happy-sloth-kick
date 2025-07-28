@@ -1,10 +1,11 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { FolderOpen, ChevronDown, Edit } from 'lucide-react';
+import { FolderOpen, ChevronDown, Edit, MoreHorizontal, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input'; // Import Input
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'; // Import DropdownMenu components
 
 interface SortableSectionHeaderProps {
   id: string;
@@ -19,6 +20,7 @@ interface SortableSectionHeaderProps {
   onSaveEdit: () => void;
   onCancelEdit: () => void;
   onEditClick: () => void; // To trigger editing from the header
+  onDeleteClick: (sectionId: string) => void; // New prop for delete
 }
 
 const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
@@ -33,6 +35,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
   onSaveEdit,
   onCancelEdit,
   onEditClick,
+  onDeleteClick, // Destructure new prop
 }) => {
   const {
     attributes,
@@ -99,15 +102,34 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
             </Button>
           </div>
         )}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onToggleExpand}
-          className="flex-shrink-0"
-          aria-label={isExpanded ? "Collapse section" : "Expand section"}
-        >
-          <ChevronDown className={cn("h-5 w-5 transition-transform", isExpanded ? "rotate-0" : "-rotate-90")} />
-        </Button>
+        <div className="flex items-center space-x-1">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
+                <span className="sr-only">Open section menu</span>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onEditClick()}>
+                <Edit className="mr-2 h-4 w-4" /> Rename Section
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => onDeleteClick(id)} className="text-destructive focus:text-destructive">
+                <Trash2 className="mr-2 h-4 w-4" /> Delete Section
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onToggleExpand}
+            className="flex-shrink-0"
+            aria-label={isExpanded ? "Collapse section" : "Expand section"}
+          >
+            <ChevronDown className={cn("h-5 w-5 transition-transform", isExpanded ? "rotate-0" : "-rotate-90")} />
+          </Button>
+        </div>
       </div>
     </div>
   );
