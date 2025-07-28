@@ -9,10 +9,16 @@ interface BulkActionsProps {
 }
 
 const BulkActions: React.FC<BulkActionsProps> = ({ selectedTaskIds, onAction, onClearSelection }) => {
-  if (selectedTaskIds.length === 0) return null;
+  const isActive = selectedTaskIds.length > 0;
 
   return (
-    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+    <div
+      className={`
+        flex items-center justify-between bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700
+        transition-all duration-300 ease-in-out
+        ${isActive ? 'max-h-screen py-4 opacity-100 pointer-events-auto' : 'max-h-0 py-0 opacity-0 pointer-events-none overflow-hidden'}
+      `}
+    >
       <div className="text-sm text-gray-600 dark:text-gray-300">
         {selectedTaskIds.length} task(s) selected
       </div>
