@@ -60,7 +60,7 @@ const getUTCStartOfDay = (date: Date) => {
 
 export const useTasks = () => {
   const HOOK_VERSION = "2024-07-29-15"; // Updated version
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth(); // Get authLoading here
   const userId = user?.id;
 
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -148,15 +148,21 @@ export const useTasks = () => {
   }, [userId]);
 
   useEffect(() => {
-    if (userId) {
+    // Only fetch data if user is authenticated AND authLoading is false
+    if (!authLoading && userId) {
       fetchDataAndSections();
-    } else {
+    } else if (!authLoading && !userId) { // If auth is done loading and no user
       setTasks([]);
       setSections([]);
       setLoading(false);
-      console.log('useTasks useEffect: No user ID, clearing tasks and sections.');
+      console.log('useTasks useEffect: Auth loaded, no user ID, clearing tasks and sections.');
+    } else if (authLoading) { // If auth is still loading
+      setTasks([]); // Clear tasks while loading to prevent stale data display
+      setSections([]);
+      setLoading(true); // Keep loading true
+      console.log('useTasks useEffect: Auth still loading, clearing tasks and setting loading true.');
     }
-  }, [userId, fetchDataAndSections]);
+  }, [userId, authLoading, fetchDataAndSections]);
 
   useEffect(() => {
     if (!userId) return;
@@ -698,15 +704,15 @@ export const useTasks = () => {
     updateTask,
     deleteTask,
     searchFilter,
-    setSearchFilter,
     statusFilter,
-    setStatusFilter,
     categoryFilter,
-    setCategoryFilter,
     priorityFilter,
+    setSearchFilter,
+    setStatusFilter,
+    setCategoryFilter,
     setPriorityFilter,
-    sectionFilter, // Added to return type
-    setSectionFilter, // Added to return type
+    sectionFilter,
+    setSectionFilter,
     selectedTaskIds,
     toggleTaskSelection,
     clearSelectedTasks,

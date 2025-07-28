@@ -3,7 +3,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from "@/components/ui/dropdown-menu";
 import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing, FolderOpen } from 'lucide-react';
-import { format, parseISO, isSameDay, isAfter, isPast } from 'date-fns'; // Changed isToday to isSameDay
+import { format, parseISO, isSameDay, isAfter, isPast } from 'date-fns';
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
@@ -18,7 +18,7 @@ interface TaskItemProps {
   onToggleSelect: (taskId: string, checked: boolean) => void;
   sections: { id: string; name: string }[];
   onEditTask: (task: Task) => void;
-  currentDate: Date; // Add currentDate prop
+  currentDate: Date;
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -31,7 +31,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   onToggleSelect,
   sections,
   onEditTask,
-  currentDate, // Destructure currentDate
+  currentDate,
 }) => {
   console.log(`TaskItem: Rendering task - ID: ${task.id}, Description: "${task.description}", Status: "${task.status}", Created At: "${task.created_at}"`);
 
@@ -45,23 +45,24 @@ const TaskItem: React.FC<TaskItemProps> = ({
     }
   };
 
+  // Create a new Date object from currentDate to ensure consistent type for date-fns
+  const currentRefDate = new Date(currentDate);
+
   const getDueDateDisplay = (dueDate: string | null) => {
     if (!dueDate) return null;
     
     const date = parseISO(dueDate);
-    // Use currentDate as the reference date for isSameDay, isAfter, isPast
-    if (isSameDay(date, currentDate)) { // Changed isToday to isSameDay
+    if (isSameDay(date, currentRefDate)) {
       return 'Today';
-    } else if (isAfter(date, currentDate)) {
+    } else if (isAfter(date, currentRefDate)) {
       return `Due ${format(date, 'MMM d')}`;
     } else {
       return `Overdue ${format(date, 'MMM d')}`;
     }
   };
 
-  // Use currentDate as the reference date for isPast and isSameDay
-  const isOverdue = task.due_date && task.status !== 'completed' && isPast(parseISO(task.due_date), { refDate: currentDate }) && !isSameDay(parseISO(task.due_date), currentDate); // Changed isToday to isSameDay
-  const isUpcoming = task.due_date && task.status !== 'completed' && isSameDay(parseISO(task.due_date), currentDate); // Changed isToday to isSameDay
+  const isOverdue = task.due_date && task.status !== 'completed' && isPast(parseISO(task.due_date), { refDate: currentRefDate }) && !isSameDay(parseISO(task.due_date), currentRefDate);
+  const isUpcoming = task.due_date && task.status !== 'completed' && isSameDay(parseISO(task.due_date), currentRefDate);
 
   const { playSound } = useSound();
 

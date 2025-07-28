@@ -4,7 +4,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
 import { Task, TaskSection } from '@/hooks/useTasks';
 import TaskItem from './TaskItem';
-import { isPast, isSameDay, parseISO } from 'date-fns'; // Changed isToday to isSameDay
+import { isPast, isSameDay, parseISO } from 'date-fns';
 
 interface SortableTaskItemProps {
   task: Task;
@@ -16,7 +16,7 @@ interface SortableTaskItemProps {
   onToggleSelect: (taskId: string, checked: boolean) => void;
   sections: TaskSection[];
   onEditTask: (task: Task) => void;
-  currentDate: Date; // Add currentDate prop
+  currentDate: Date;
 }
 
 const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
@@ -29,7 +29,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   onToggleSelect,
   sections,
   onEditTask,
-  currentDate, // Destructure currentDate
+  currentDate,
 }) => {
   const {
     attributes,
@@ -47,9 +47,11 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
     opacity: isDragging ? 0.8 : 1,
   };
 
-  // Use currentDate for comparisons
-  const isOverdue = task.due_date && task.status !== 'completed' && isPast(parseISO(task.due_date), { refDate: currentDate }) && !isSameDay(parseISO(task.due_date), currentDate); // Changed isToday to isSameDay
-  const isUpcoming = task.due_date && task.status !== 'completed' && isSameDay(parseISO(task.due_date), currentDate); // Changed isToday to isSameDay
+  // Create a new Date object from currentDate to ensure consistent type for date-fns
+  const currentRefDate = new Date(currentDate);
+
+  const isOverdue = task.due_date && task.status !== 'completed' && isPast(parseISO(task.due_date), { refDate: currentRefDate }) && !isSameDay(parseISO(task.due_date), currentRefDate);
+  const isUpcoming = task.due_date && task.status !== 'completed' && isSameDay(parseISO(task.due_date), currentRefDate);
 
   return (
     <li

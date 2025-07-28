@@ -5,38 +5,26 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTasks } from '@/hooks/useTasks';
 import TaskList from "@/components/TaskList";
 import DateNavigator from '@/components/DateNavigator';
-import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts'; // Import useKeyboardShortcuts and ShortcutMap
-import { addDays, startOfDay } from 'date-fns'; // Import addDays and startOfDay
-
-interface IndexProps {
-  setIsAddTaskOpen: (open: boolean) => void;
-}
+import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
+import { addDays, startOfDay } from 'date-fns';
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 // Helper to get UTC start of day
 const getUTCStartOfDay = (date: Date) => {
   return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
 };
 
+interface IndexProps {
+  setIsAddTaskOpen: (open: boolean) => void;
+}
+
 const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen }) => {
-  const [session, setSession] = useState<any>(null);
+  const { user, loading: authLoading } = useAuth(); // Use useAuth hook
   const { setStatusFilter, currentDate, setCurrentDate } = useTasks();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-    });
-
-    const { data: { subscription } = {} } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
+    // No longer need to manage session state here, useAuth handles it
     setStatusFilter('all');
-
-    return () => {
-      if (subscription) {
-        subscription.unsubscribe();
-      }
-    };
   }, [setStatusFilter]);
 
   const handlePreviousDay = () => {
@@ -70,9 +58,17 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen }) => {
   // Apply keyboard shortcuts
   useKeyboardShortcuts(shortcuts);
 
+  if (authLoading) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-6">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 flex flex-col">
-      {session ? (
+      {user ? ( // Use user from useAuth
         <>
           <main className="flex-grow p-6">
             <DateNavigator
