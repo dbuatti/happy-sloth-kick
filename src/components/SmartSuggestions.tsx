@@ -71,7 +71,7 @@ const SmartSuggestions: React.FC<SmartSuggestionsProps> = ({ currentDate, setCur
   };
 
   return (
-    <Card className="w-full shadow-sm mb-6">
+    <Card className="w-full shadow-sm mb-4">
       <CardContent className="p-4">
         <h3 className="text-lg font-semibold mb-3">Smart Suggestions</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">

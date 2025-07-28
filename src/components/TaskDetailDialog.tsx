@@ -141,7 +141,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
         <DialogHeader>
           <DialogTitle>Edit Task</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
+        <div className="grid gap-3 py-3">
           <div className="space-y-2">
             <Label htmlFor="description">Task Description</Label>
             <Input
@@ -152,7 +152,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <CategorySelector value={editingCategory} onChange={setEditingCategory} userId={userId} categories={allCategories} />
             <PrioritySelector value={editingPriority} onChange={setEditingPriority} />
           </div>
@@ -230,12 +230,12 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
               id="notes"
               value={editingNotes}
               onChange={(e) => setEditingNotes(e.target.value)}
-              rows={3}
+              rows={2}
               disabled={isSaving}
             />
           </div>
 
-          <div className="space-y-3 mt-4 border-t pt-4">
+          <div className="space-y-3 mt-4 border-t pt-3">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold">Sub-tasks ({subtasks.length})</h3>
               <Dialog open={isAddSubtaskOpen} onOpenChange={setIsAddSubtaskOpen}>
@@ -291,7 +291,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
             )}
           </div>
         </div>
-        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2 pt-4">
+        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2 pt-3">
           <Button variant="destructive" onClick={handleDeleteClick} disabled={isSaving} className="w-full sm:w-auto mt-2 sm:mt-0">
             <Trash2 className="mr-2 h-4 w-4" /> Delete Task
           </Button>

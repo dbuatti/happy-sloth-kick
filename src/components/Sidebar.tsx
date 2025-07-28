@@ -71,7 +71,7 @@ const Sidebar: React.FC<SidebarProps> = ({ children }) => {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-64 bg-card flex flex-col">
-              <div className="p-6 flex justify-between items-center">
+              <div className="p-4 flex justify-between items-center">
                 <h1 className="text-2xl font-bold text-gray-800 dark:text-white">TaskMaster</h1>
               </div>
               <NavigationLinks onLinkClick={() => setIsSheetOpen(false)} />
@@ -100,7 +100,7 @@ const Sidebar: React.FC<SidebarProps> = ({ children }) => {
   return (
     <div className="min-h-screen flex bg-background">
       <div className="w-64 bg-card shadow-lg h-screen flex flex-col">
-        <div className="p-6 flex justify-between items-center">
+        <div className="p-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white">TaskMaster</h1>
         </div>
         <NavigationLinks />

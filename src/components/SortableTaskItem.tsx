@@ -54,7 +54,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   const isUpcoming = task.due_date && task.status !== 'completed' && dateFns.isSameDay(dateFns.parseISO(task.due_date) as Date, currentRefDate as Date);
 
   // Construct className using template literals for maximum compatibility
-  let className = "relative border rounded-lg p-3 transition-all duration-200 ease-in-out group hover:shadow-md";
+  let className = "relative border rounded-lg p-2 transition-all duration-200 ease-in-out group hover:shadow-md"; // Reduced padding
   
   if (task.status === 'completed') {
     className += " border-green-300 dark:border-green-700 bg-green-50/20 dark:bg-green-900/20";

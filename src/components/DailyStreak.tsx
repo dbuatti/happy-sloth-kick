@@ -26,13 +26,13 @@ const DailyStreak: React.FC<DailyStreakProps> = ({ tasks, currentDate }) => {
   }, [tasks, currentDate]);
 
   return (
-    <Card className="w-full shadow-sm mb-4"> {/* Added mb-4 for spacing below */}
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"> {/* Increased pb-1 to pb-2 */}
+    <Card className="w-full shadow-sm mb-2">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
         <CardTitle className="text-sm font-medium">Today's Progress</CardTitle>
         <Target className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
-      <CardContent className="pt-2">
-        <div className="text-2xl font-bold mb-2"> {/* Increased mb-1 to mb-2 */}
+      <CardContent className="pt-0">
+        <div className="text-2xl font-bold mb-1">
           {completedTasksToday} / {totalTasksToday} tasks completed
         </div>
         <Progress value={completionPercentage} className="h-2" />

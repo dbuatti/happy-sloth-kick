@@ -60,7 +60,7 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen, currentDate, setCurrent
 
   if (authLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center p-6">
+      <div className="flex-1 flex items-center justify-center p-4">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
@@ -70,7 +70,7 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen, currentDate, setCurrent
     <div className="flex-1 flex flex-col">
       {user ? ( // Use user from useAuth
         <>
-          <main className="flex-grow p-6">
+          <main className="flex-grow p-4">
             <DateNavigator
               currentDate={currentDate}
               onPreviousDay={handlePreviousDay}
@@ -79,12 +79,12 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen, currentDate, setCurrent
             />
             <TaskList setIsAddTaskOpen={setIsAddTaskOpen} currentDate={currentDate} setCurrentDate={setCurrentDate} />
           </main>
-          <footer className="p-6">
+          <footer className="p-4">
             <MadeWithDyad />
           </footer>
         </>
       ) : (
-        <div className="flex-1 flex items-center justify-center p-6">
+        <div className="flex-1 flex items-center justify-center p-4">
           <AuthComponent />
         </div>
       )}

@@ -85,11 +85,11 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
 
       {/* Main header content - now clickable for toggle */}
       <div 
-        className="flex items-center justify-between p-3 pl-6 cursor-pointer" // Added cursor-pointer
+        className="flex items-center justify-between p-2 pl-4 cursor-pointer" // Adjusted padding
         onClick={!isEditing ? onToggleExpand : undefined} // Only toggle if not editing
       >
         {isEditing ? (
-          <div className="flex items-center w-full gap-2" data-no-dnd="true"> {/* Added data-no-dnd */}
+          <div className="flex items-center w-full gap-2" data-no-dnd="true">
             <Input
               value={editingName}
               onChange={(e) => onNameChange(e.target.value)}
@@ -107,13 +107,13 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               <FolderOpen className="h-5 w-5 text-muted-foreground" />
               {name} ({taskCount})
             </h3>
-            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onEditClick(); }} className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity duration-200" data-no-dnd="true">
+            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onEditClick(); }} className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity duration-200" data-no-dnd="true">
               <Edit className="h-4 w-4" />
             </Button>
           </div>
         )}
-        <div className="flex items-center space-x-1" data-no-dnd="true"> {/* Added data-no-dnd */}
-          <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}> {/* Prevent section collapse when clicking switch */}
+        <div className="flex items-center space-x-1" data-no-dnd="true">
+          <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
             <Label htmlFor={`focus-mode-toggle-${id}`} className="text-xs text-muted-foreground">
               {includeInFocusMode ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
             </Label>
@@ -129,7 +129,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="h-8 w-8 p-0" 
+                className="h-7 w-7 p-0" // Adjusted size
                 onClick={(e) => e.stopPropagation()} // Prevent toggle when opening dropdown
               >
                 <span className="sr-only">Open section menu</span>

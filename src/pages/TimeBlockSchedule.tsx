@@ -230,14 +230,14 @@ const TimeBlockSchedule: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col">
-      <main className="flex-grow p-6 flex justify-center"> {/* Increased p-4 to p-6 */}
+      <main className="flex-grow p-4 flex justify-center">
         <Card className="w-full max-w-4xl mx-auto shadow-lg">
-          <CardHeader className="pb-4"> {/* Increased pb-2 to pb-4 */}
+          <CardHeader className="pb-2">
             <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
               <CalendarDays className="h-7 w-7" /> Dynamic Schedule
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-0"> {/* Added pt-0 */}
+          <CardContent className="pt-0">
             <DateNavigator
               currentDate={currentDate}
               onPreviousDay={handlePreviousDay}
@@ -341,7 +341,7 @@ const TimeBlockSchedule: React.FC = () => {
           </CardContent>
         </Card>
       </main>
-      <footer className="p-6"> {/* Increased p-4 to p-6 */}
+      <footer className="p-4">
         <MadeWithDyad />
       </footer>
       <AppointmentForm

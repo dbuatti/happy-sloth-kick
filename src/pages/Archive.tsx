@@ -23,6 +23,7 @@ const Archive: React.FC<ArchiveProps> = ({ currentDate, setCurrentDate }) => {
     deleteTask,
     sections,
     setStatusFilter,
+    allCategories,
   } = useTasks({ currentDate: new Date(), setCurrentDate: () => {} }); // Dummy date props
 
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
@@ -44,7 +45,7 @@ const Archive: React.FC<ArchiveProps> = ({ currentDate, setCurrentDate }) => {
   if (loading) {
     return (
       <div className="flex-1 flex flex-col">
-        <main className="flex-grow p-6 flex justify-center">
+        <main className="flex-grow p-4 flex justify-center">
           <Card className="w-full max-w-4xl mx-auto shadow-lg">
             <CardHeader>
               <CardTitle className="text-3xl font-bold text-center">Archived Tasks</CardTitle>
@@ -56,7 +57,7 @@ const Archive: React.FC<ArchiveProps> = ({ currentDate, setCurrentDate }) => {
             </CardContent>
           </Card>
         </main>
-        <footer className="p-6">
+        <footer className="p-4">
           <MadeWithDyad />
         </footer>
       </div>
@@ -66,9 +67,9 @@ const Archive: React.FC<ArchiveProps> = ({ currentDate, setCurrentDate }) => {
   return (
     <>
       <div className="flex-1 flex flex-col">
-        <main className="flex-grow p-6">
+        <main className="flex-grow p-4">
           <Card className="w-full max-w-4xl mx-auto shadow-lg">
-            <CardHeader className="pb-4">
+            <CardHeader className="pb-2">
               <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
                 <ArchiveIcon className="h-7 w-7" /> Archived Tasks
               </CardTitle>
@@ -80,7 +81,7 @@ const Archive: React.FC<ArchiveProps> = ({ currentDate, setCurrentDate }) => {
                   <p>Completed tasks will appear here once you archive them.</p>
                 </div>
               ) : (
-                <ul className="space-y-3">
+                <ul className="space-y-2">
                   {filteredTasks.map((task) => (
                     <SortableTaskItem
                       key={task.id}
@@ -101,7 +102,7 @@ const Archive: React.FC<ArchiveProps> = ({ currentDate, setCurrentDate }) => {
             </CardContent>
           </Card>
         </main>
-        <footer className="p-6">
+        <footer className="p-4">
           <MadeWithDyad />
         </footer>
       </div>

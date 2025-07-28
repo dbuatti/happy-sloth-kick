@@ -237,9 +237,9 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
   };
 
   return (
-    <div className="p-6 bg-gray-50 dark:bg-card rounded-lg">
-      <h2 className="text-2xl font-semibold mb-4">Add New Task</h2>
-      <div className="space-y-4">
+    <div className="p-4 bg-gray-50 dark:bg-card rounded-lg">
+      <h2 className="text-xl font-semibold mb-3">Add New Task</h2>
+      <div className="space-y-3">
         <div>
           <Label htmlFor="new-task-description">Task Description</Label>
           <Input
@@ -253,7 +253,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
           />
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <CategorySelector value={newTaskCategory} onChange={setNewTaskCategory} userId={userId} categories={allCategories} />
           <PrioritySelector value={newTaskPriority} onChange={setNewTaskPriority} />
         </div>
@@ -262,7 +262,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
           <SectionSelector value={newTaskSectionId} onChange={setNewTaskSectionId} userId={userId} sections={sections} />
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <Label>Due Date</Label>
             <Popover>
@@ -349,7 +349,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
             placeholder="Add notes about this task..."
             value={newTaskNotes}
             onChange={(e) => setNewTaskNotes(e.target.value)}
-            rows={3}
+            rows={2}
             disabled={isAdding}
           />
         </div>

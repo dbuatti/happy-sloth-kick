@@ -171,9 +171,9 @@ const ProjectBalanceTracker: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col">
-      <main className="flex-grow p-6">
+      <main className="flex-grow p-4">
         <Card className="w-full max-w-4xl mx-auto shadow-lg">
-          <CardHeader className="pb-4">
+          <CardHeader className="pb-2">
             {isEditingTitle ? (
               <div className="flex items-center w-full gap-2">
                 <Input
@@ -204,7 +204,7 @@ const ProjectBalanceTracker: React.FC = () => {
                   <DialogHeader>
                     <DialogTitle>Add New Project</DialogTitle>
                   </DialogHeader>
-                  <div className="space-y-4 py-4">
+                  <div className="space-y-3 py-3">
                     <div>
                       <Label htmlFor="project-name">Project Name</Label>
                       <Input
@@ -222,7 +222,7 @@ const ProjectBalanceTracker: React.FC = () => {
                         value={newProjectDescription}
                         onChange={(e) => setNewProjectDescription(e.target.value)}
                         placeholder="Notes about this project..."
-                        rows={3}
+                        rows={2}
                       />
                     </div>
                   </div>
@@ -251,7 +251,7 @@ const ProjectBalanceTracker: React.FC = () => {
           </CardHeader>
           <CardContent className="pt-0">
             {showCelebration && (
-              <div className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 p-4 rounded-lg mb-6 text-center flex flex-col items-center gap-2">
+              <div className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 p-4 rounded-lg mb-4 text-center flex flex-col items-center gap-2">
                 <Sparkles className="h-8 w-8 text-green-600 dark:text-green-400 animate-bounce" />
                 <p className="text-xl font-semibold">Congratulations! All projects are balanced!</p>
                 <p>Ready to start a new cycle?</p>
@@ -262,9 +262,9 @@ const ProjectBalanceTracker: React.FC = () => {
             )}
 
             {loading ? (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {[...Array(3)].map((_, i) => (
-                  <div key={i} className="border rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-card dark:bg-gray-800 border-border">
+                  <div key={i} className="border rounded-lg p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-card dark:bg-gray-800 border-border">
                     <div className="flex-1 min-w-0 space-y-2">
                       <Skeleton className="h-6 w-3/4" />
                       <Skeleton className="h-4 w-1/2" />
@@ -284,7 +284,7 @@ const ProjectBalanceTracker: React.FC = () => {
                 <p>Click "Add Project" to start tracking your balance and ensure you're giving attention to all your important areas.</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {leastWorkedOnProject && (
                   <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 p-3 rounded-lg flex items-center gap-3">
                     <Lightbulb className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
@@ -294,12 +294,12 @@ const ProjectBalanceTracker: React.FC = () => {
                   </div>
                 )}
 
-                <ul className="space-y-3">
+                <ul className="space-y-2">
                   {projects.map(project => (
                     <li
                       key={project.id}
                       className={cn(
-                        "border rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3",
+                        "border rounded-lg p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3",
                         "transition-all duration-200 ease-in-out cursor-pointer group",
                         "hover:shadow-md",
                         editingProjectId === project.id ? "bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700" : "bg-card dark:bg-gray-800 border-border"
@@ -383,7 +383,7 @@ const ProjectBalanceTracker: React.FC = () => {
           </CardContent>
         </Card>
       </main>
-      <footer className="p-6">
+      <footer className="p-4">
         <MadeWithDyad />
       </footer>
 

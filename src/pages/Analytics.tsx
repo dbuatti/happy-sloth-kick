@@ -161,9 +161,9 @@ const Analytics: React.FC<AnalyticsProps> = ({ currentDate, setCurrentDate }) =>
 
   return (
     <div className="flex-1 flex flex-col">
-      <main className="flex-grow p-6">
+      <main className="flex-grow p-4">
         <Card className="w-full max-w-4xl mx-auto shadow-lg">
-          <CardHeader className="pb-4">
+          <CardHeader className="pb-2">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
               <CardTitle className="text-3xl font-bold">Task Analytics</CardTitle>
               <div className="flex flex-col sm:flex-row gap-2">
@@ -342,7 +342,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ currentDate, setCurrentDate }) =>
           </CardContent>
         </Card>
       </main>
-      <footer className="p-6">
+      <footer className="p-4">
         <div className="text-center text-sm text-gray-500 dark:text-gray-400">
           &copy; {new Date().getFullYear()} TaskMaster. Made with Dyad.
         </div>
