@@ -59,7 +59,7 @@ const getUTCStartOfDay = (date: Date) => {
 };
 
 export const useTasks = () => {
-  const HOOK_VERSION = "2024-07-29-02"; // Increment this for each significant change
+  const HOOK_VERSION = "2024-07-29-03"; // Increment this for each significant change
   console.log(`useTasks hook version: ${HOOK_VERSION}`);
 
   const { user } = useAuth();
@@ -104,6 +104,7 @@ export const useTasks = () => {
   }, [sectionFilter]);
 
   const fetchDataAndSections = useCallback(async () => {
+    console.trace('fetchDataAndSections called'); // Add trace here
     const currentFetchKey = `${userId}-${currentDate.toISOString()}`;
     if (isFetchingRef.current === currentFetchKey) { // Check if this specific fetch is already in progress
       console.log(`fetchDataAndSections: Already fetching for ${currentFetchKey}, skipping.`);
@@ -553,7 +554,7 @@ export const useTasks = () => {
         // we only want to show completed tasks on the day they were created/generated.
         if (isCompletedStatus) {
           const shouldInclude = isTaskCreatedOnCurrentDate;
-          console.log(`    -> Rule 5: Completed General Task. Created on current date? ${isTaskCreatedOnCurrentDate}. Result: ${shouldInclude ? 'Included' : 'Excluded'}`);
+          console.log(`    -> Rule 5: Completed General Task. Calculated shouldInclude: ${shouldInclude}. Result: ${shouldInclude ? 'Included' : 'Excluded'}`);
           return shouldInclude;
         }
         
