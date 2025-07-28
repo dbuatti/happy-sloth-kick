@@ -15,7 +15,7 @@ import { Task, TaskSection } from '@/hooks/useTasks';
 import TaskDetailDialog from './TaskDetailDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
-import { CustomPointerSensor } from '@/lib/CustomPointerSensor';
+import { DragHandlePointerSensor } from '@/lib/DragHandlePointerSensor'; // Import the new sensor
 import TaskFilter from './TaskFilter';
 import { Skeleton } from '@/components/ui/skeleton';
 import ManageSectionsDialog from './ManageSectionsDialog';
@@ -98,11 +98,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
 
   const sensors = useSensors(
-    useSensor(CustomPointerSensor, {
-      activationConstraint: {
-        distance: 5,
-      },
-    }),
+    useSensor(DragHandlePointerSensor), // Use the new sensor here
     useSensor(KeyboardSensor, {
       coordinateGetter: (event) => {
         return null;

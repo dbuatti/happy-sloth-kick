@@ -89,7 +89,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           className="flex-shrink-0 p-1 cursor-grab text-muted-foreground hover:text-foreground"
           {...attributes}
           {...listeners}
-          // Removed data-no-dnd="true" from here to enable dragging
+          data-dnd-handle="true" // Mark this as the drag handle
         >
           <GripVertical className="h-4 w-4" />
         </div>
@@ -103,7 +103,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           isSelected={isSelected}
           onToggleSelect={onToggleSelect}
           sections={sections}
-          onEditTask={onEditTask}
+          onEditTask={onEditTask} // Pass onEditTask to TaskItem
           currentDate={currentDate}
         />
       </div>

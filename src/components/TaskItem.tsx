@@ -19,7 +19,7 @@ interface TaskItemProps {
   isSelected: boolean;
   onToggleSelect: (taskId: string, checked: boolean) => void;
   sections: { id: string; name: string }[];
-  onEditTask: (task: Task) => void;
+  onEditTask: (task: Task) => void; // Keep this prop
   currentDate: Date;
 }
 
@@ -32,7 +32,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   isSelected,
   onToggleSelect,
   sections,
-  onEditTask,
+  onEditTask, // Keep this prop
   currentDate,
 }) => {
   console.log(`TaskItem: Rendering task - ID: ${task.id}, Description: "${task.description}", Status: "${task.status}", Created At: "${task.created_at}"`);
@@ -99,7 +99,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
         id={`task-${task.id}`}
         onClick={(e) => e.stopPropagation()}
         className="flex-shrink-0"
-        data-no-dnd="true"
+        data-no-dnd="true" // Prevent drag from checkbox
       />
 
       {/* Task Content */}
@@ -115,6 +115,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
                 isUpcoming && "text-orange-500 dark:text-orange-300",
                 "block" // Changed from truncate to block for line-clamp
               )}
+              data-no-dnd="true" // Prevent drag from label text
             >
               {task.description}
             </label>
@@ -190,7 +191,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
             size="sm" 
             className="h-7 px-2 text-xs" // Smaller button for "Mark as To-Do"
             onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'to-do'); playSound(); }}
-            data-no-dnd="true"
+            data-no-dnd="true" // Prevent drag from button
           >
             <ListTodo className="h-3 w-3 mr-1" /> To-Do
           </Button>
@@ -199,8 +200,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
           variant="ghost" 
           size="icon" 
           className="h-7 w-7" // Reduced size from h-8 w-8 to h-7 w-7
-          onClick={(e) => { e.stopPropagation(); onEditTask(task); }}
-          data-no-dnd="true"
+          onClick={(e) => { e.stopPropagation(); onEditTask(task); }} // Explicitly call onEditTask here
+          data-no-dnd="true" // Prevent drag from button
         >
           <Edit className="h-4 w-4" />
         </Button>
@@ -210,13 +211,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
               variant="ghost" 
               className="h-7 w-7 p-0" // Reduced size from h-8 w-8 to h-7 w-7
               onClick={(e) => e.stopPropagation()}
-              data-no-dnd="true"
+              data-no-dnd="true" // Prevent drag from dropdown trigger
             >
               <span className="sr-only">Open menu</span>
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" data-no-dnd="true"> {/* Prevent drag from dropdown content */}
             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'to-do'); playSound(); }}>
               Mark as To-Do
             </DropdownMenuItem>
@@ -231,10 +232,10 @@ const TaskItem: React.FC<TaskItemProps> = ({
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuSub>
-              <DropdownMenuSubTrigger>
+              <DropdownMenuSubTrigger data-no-dnd="true"> {/* Prevent drag from sub-trigger */}
                 <FolderOpen className="mr-2 h-4 w-4" /> Move to Section
               </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent>
+              <DropdownMenuSubContent data-no-dnd="true"> {/* Prevent drag from sub-content */}
                 {sections.length === 0 ? (
                   <DropdownMenuItem disabled>No sections available</DropdownMenuItem>
                 ) : (
