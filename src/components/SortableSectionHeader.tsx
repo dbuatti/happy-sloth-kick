@@ -1,13 +1,13 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { FolderOpen, ChevronDown, Edit, MoreHorizontal, Trash2, Eye, EyeOff } from 'lucide-react';
+import { FolderOpen, ChevronDown, Edit, MoreHorizontal, Trash2, Eye, EyeOff, Plus } from 'lucide-react'; // Added Plus icon
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label'; // Added Label import
+import { Label } from '@/components/ui/label';
 
 interface SortableSectionHeaderProps {
   id: string;
@@ -24,6 +24,7 @@ interface SortableSectionHeaderProps {
   onDeleteClick: (sectionId: string) => void;
   includeInFocusMode: boolean;
   onToggleIncludeInFocusMode: (include: boolean) => void;
+  onAddTaskToSection: (sectionId: string) => void; // New prop
 }
 
 const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
@@ -41,6 +42,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
   onDeleteClick,
   includeInFocusMode,
   onToggleIncludeInFocusMode,
+  onAddTaskToSection, // Destructure new prop
 }) => {
   const {
     attributes,
@@ -137,6 +139,9 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onAddTaskToSection(id); }}>
+                <Plus className="mr-2 h-4 w-4" /> Add Task to Section
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(); }}>
                 <Edit className="mr-2 h-4 w-4" /> Rename Section
               </DropdownMenuItem>

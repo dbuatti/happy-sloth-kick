@@ -370,23 +370,18 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                             onDeleteClick={handleDeleteSectionClick}
                             includeInFocusMode={currentSection.include_in_focus_mode} // Pass prop
                             onToggleIncludeInFocusMode={(checked) => updateSectionIncludeInFocusMode(currentSection.id, checked)} // Pass handler
+                            onAddTaskToSection={handleAddTaskToSpecificSection} // Pass the new handler
                           />
                           {isExpanded && (
                             <div className="mt-2 space-y-2 pl-2">
-                              <Button 
-                                variant="outline" 
-                                className="w-full justify-center gap-2 mb-2"
-                                onClick={() => handleAddTaskToSpecificSection(currentSection.id)}
-                              >
-                                <Plus className="h-4 w-4" /> Add Task to {currentSection.name}
-                              </Button>
+                              {/* Removed the direct "Add Task to Section" button here */}
                               <SortableContext items={sectionTasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
                                 <ul className="list-none space-y-2">
                                   {sectionTasks.length === 0 ? (
                                     <div className="text-center text-gray-500 py-4 flex flex-col items-center gap-2">
                                       <ListTodo className="h-8 w-8 text-muted-foreground" />
                                       <p className="text-lg font-medium">No tasks in this section.</p>
-                                      <p className="text-sm">Add one or drag a task here!</p>
+                                      <p className="text-sm">Add one using the menu above or drag a task here!</p>
                                     </div>
                                   ) : (
                                     sectionTasks.map(task => (
@@ -430,7 +425,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                           className="w-full justify-center gap-2 mb-2"
                           onClick={() => handleAddTaskToSpecificSection(null)}
                         >
-                          <Plus className="h-4 w-4" /> Add Task to No Section
+                          <Plus className="mr-2 h-4 w-4" /> Add Task to No Section
                         </Button>
                         <SortableContext items={tasksBySection['no-section'].map(t => t.id)} strategy={verticalListSortingStrategy}>
                           <ul className="list-none space-y-2">
