@@ -2,7 +2,7 @@ import React from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing, FolderOpen, Repeat } from 'lucide-react'; // Added Repeat icon
+import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing, FolderOpen, Repeat, ListTodo } from 'lucide-react'; // Added ListTodo icon
 import * as dateFns from 'date-fns'; // Import all functions from date-fns as dateFns
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
@@ -172,6 +172,17 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
       {/* Actions (Edit, More) - visible on hover */}
       <div className="flex-shrink-0 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        {task.status === 'completed' && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-7 px-2 text-xs" // Smaller button for "Mark as To-Do"
+            onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'to-do'); playSound(); }}
+            data-no-dnd="true"
+          >
+            <ListTodo className="h-3 w-3 mr-1" /> To-Do
+          </Button>
+        )}
         <Button 
           variant="ghost" 
           size="icon" 

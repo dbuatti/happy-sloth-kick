@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Search, Filter, X } from 'lucide-react';
+import { Search, Filter, X, ListRestart } from 'lucide-react'; // Added ListRestart icon
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
@@ -74,7 +74,10 @@ const TaskFilter: React.FC<TaskFilterProps> = ({
     setCategoryFilter('all');
     setPriorityFilter('all');
     setSectionFilter('all');
+    setShowAdvanced(false); // Close popover after clearing
   };
+
+  const isAnyFilterActive = searchFilter !== '' || statusFilter !== 'all' || categoryFilter !== 'all' || priorityFilter !== 'all' || sectionFilter !== 'all';
 
   return (
     <div className="flex flex-col sm:flex-row gap-4 mb-6">
@@ -98,91 +101,93 @@ const TaskFilter: React.FC<TaskFilterProps> = ({
         )}
       </div>
 
-      <Popover open={showAdvanced} onOpenChange={setShowAdvanced}>
-        <PopoverTrigger asChild>
-          <Button variant="outline" className="gap-2">
-            <Filter className="h-4 w-4" />
-            Filter
+      <div className="flex gap-2">
+        <Popover open={showAdvanced} onOpenChange={setShowAdvanced}>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="gap-2">
+              <Filter className="h-4 w-4" />
+              Filter
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-80">
+            <div className="grid gap-4">
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select value={statusFilter} onValueChange={handleStatusChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent className="z-[9999]"> {/* Add z-index here */}
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="to-do">To Do</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="skipped">Skipped</SelectItem>
+                    <SelectItem value="archived">Archived</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Category</Label>
+                <Select value={categoryFilter} onValueChange={handleCategoryChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent className="z-[9999]"> {/* Add z-index here */}
+                    <SelectItem value="all">All</SelectItem>
+                    {/* Removed hardcoded "general" as it's now included in allCategories */}
+                    {allCategories.map(cat => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Priority</Label>
+                <Select value={priorityFilter} onValueChange={handlePriorityChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                  <SelectContent className="z-[9999]"> {/* Add z-index here */}
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Section</Label>
+                <Select value={sectionFilter} onValueChange={handleSectionChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select section" />
+                  </SelectTrigger>
+                  <SelectContent className="z-[9999]"> {/* Add z-index here */}
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="no-section">No Section</SelectItem>
+                    {sections.map(section => (
+                      <SelectItem key={section.id} value={section.id}>
+                        {section.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+        {isAnyFilterActive && (
+          <Button variant="outline" onClick={clearAllFilters} className="gap-2">
+            <ListRestart className="h-4 w-4" />
+            Clear Filters
           </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-80">
-          <div className="grid gap-4">
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select value={statusFilter} onValueChange={handleStatusChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent className="z-[9999]"> {/* Add z-index here */}
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="to-do">To Do</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="skipped">Skipped</SelectItem>
-                  <SelectItem value="archived">Archived</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Category</Label>
-              <Select value={categoryFilter} onValueChange={handleCategoryChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent className="z-[9999]"> {/* Add z-index here */}
-                  <SelectItem value="all">All</SelectItem>
-                  {/* Removed hardcoded "general" as it's now included in allCategories */}
-                  {allCategories.map(cat => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Priority</Label>
-              <Select value={priorityFilter} onValueChange={handlePriorityChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select priority" />
-                </SelectTrigger>
-                <SelectContent className="z-[9999]"> {/* Add z-index here */}
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                  <SelectItem value="urgent">Urgent</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Section</Label>
-              <Select value={sectionFilter} onValueChange={handleSectionChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select section" />
-                </SelectTrigger>
-                <SelectContent className="z-[9999]"> {/* Add z-index here */}
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="no-section">No Section</SelectItem>
-                  {sections.map(section => (
-                    <SelectItem key={section.id} value={section.id}>
-                      {section.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={clearAllFilters} className="w-full">
-                Clear All Filters
-              </Button>
-            </div>
-          </div>
-        </PopoverContent>
-      </Popover>
+        )}
+      </div>
     </div>
   );
 };

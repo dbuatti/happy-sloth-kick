@@ -4,6 +4,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Task, TaskSection } from '@/hooks/useTasks';
 import TaskItem from './TaskItem';
 import * as dateFns from 'date-fns';
+import { GripVertical } from 'lucide-react'; // Import GripVertical icon
 
 interface SortableTaskItemProps {
   task: Task;
@@ -44,7 +45,6 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
     transition,
     zIndex: isDragging ? 100 : 'auto',
     opacity: isDragging ? 0.8 : 1,
-    cursor: isDragging ? 'grabbing' : 'grab', // Add grab cursor to the whole item
   };
 
   const currentRefDate = new Date(currentDate);
@@ -83,22 +83,30 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
       ref={setNodeRef}
       style={style}
       className={className}
-      {...attributes}
-      {...listeners}
     >
-      <TaskItem 
-        key={task.id}
-        task={task} 
-        userId={userId}
-        onStatusChange={onStatusChange}
-        onDelete={onDelete}
-        onUpdate={onUpdate}
-        isSelected={isSelected}
-        onToggleSelect={onToggleSelect}
-        sections={sections}
-        onEditTask={onEditTask}
-        currentDate={currentDate}
-      />
+      <div className="flex items-center">
+        <div 
+          className="flex-shrink-0 p-1 cursor-grab text-muted-foreground hover:text-foreground"
+          {...attributes}
+          {...listeners}
+          data-no-dnd="true" // Ensure the handle itself is not draggable by other elements
+        >
+          <GripVertical className="h-4 w-4" />
+        </div>
+        <TaskItem 
+          key={task.id}
+          task={task} 
+          userId={userId}
+          onStatusChange={onStatusChange}
+          onDelete={onDelete}
+          onUpdate={onUpdate}
+          isSelected={isSelected}
+          onToggleSelect={onToggleSelect}
+          sections={sections}
+          onEditTask={onEditTask}
+          currentDate={currentDate}
+        />
+      </div>
     </li>
   );
 };
