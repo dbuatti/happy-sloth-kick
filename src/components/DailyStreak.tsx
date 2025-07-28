@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/Progress"; // Updated import path
+import { Progress } from "@/components/Progress";
 import { CheckCircle2, Target } from 'lucide-react';
 import { format, isSameDay } from 'date-fns';
 
@@ -18,12 +18,14 @@ interface DailyStreakProps {
 
 const DailyStreak: React.FC<DailyStreakProps> = ({ tasks, currentDate }) => {
   const { completedTasksToday, totalTasksToday, completionPercentage } = useMemo(() => {
-    const tasksForToday = tasks.filter(task => isSameDay(new Date(task.created_at), currentDate));
-    const completed = tasksForToday.filter(task => task.status === 'completed').length;
-    const total = tasksForToday.length;
+    // The 'tasks' prop already contains tasks relevant for the current day,
+    // including carry-overs and focus-mode filtering, as it comes from useTasks's filteredTasks.
+    // So, we should count directly from this array.
+    const completed = tasks.filter(task => task.status === 'completed').length;
+    const total = tasks.length; // Count all tasks in the 'tasks' prop
     const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
     return { completedTasksToday: completed, totalTasksToday: total, completionPercentage: percentage };
-  }, [tasks, currentDate]);
+  }, [tasks]); // Removed currentDate from dependencies as 'tasks' is already date-filtered
 
   return (
     <Card className="w-full shadow-sm mb-2">
