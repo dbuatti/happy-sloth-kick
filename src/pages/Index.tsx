@@ -81,8 +81,8 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen }) => {
               onNextDay={handleNextDay}
               onGoToToday={handleGoToToday}
             />
-            {/* Removed key to prevent remounting of TaskList */}
-            <TaskList setIsAddTaskOpen={setIsAddTaskOpen} />
+            {/* Added key to force remounting of TaskList when currentDate changes */}
+            <TaskList key={currentDate.toISOString()} setIsAddTaskOpen={setIsAddTaskOpen} />
           </main>
           <footer className="p-6">
             <MadeWithDyad />
