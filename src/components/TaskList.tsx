@@ -18,7 +18,8 @@ import TaskDetailDialog from './TaskDetailDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { CustomPointerSensor } from '@/lib/CustomPointerSensor';
-import TaskFilter from './TaskFilter'; // Import TaskFilter
+import TaskFilter from './TaskFilter';
+import { Skeleton } from '@/components/ui/skeleton'; // Import Skeleton
 
 interface TaskListProps {
   setIsAddTaskOpen: (open: boolean) => void;
@@ -227,25 +228,6 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex-1 flex flex-col">
-        <main className="flex-grow p-6 flex justify-center">
-          <Card className="w-full shadow-lg">
-            <CardHeader>
-              <CardTitle className="text-3xl font-bold text-center">Loading Tasks...</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-              </div>
-            </CardContent>
-          </Card>
-        </main>
-      </div>
-    );
-  }
-
   return (
     <>
       <div className="flex-1 flex flex-col">
@@ -257,7 +239,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <TaskFilter currentDate={currentDate} setCurrentDate={setCurrentDate} /> {/* Pass date props */}
+              <TaskFilter currentDate={currentDate} setCurrentDate={setCurrentDate} />
 
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <div className="relative flex-1">
@@ -299,7 +281,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
               </div>
 
               <DailyStreak tasks={filteredTasks} currentDate={currentDate} />
-              <SmartSuggestions currentDate={currentDate} setCurrentDate={setCurrentDate} /> {/* Pass date props */}
+              <SmartSuggestions currentDate={currentDate} setCurrentDate={setCurrentDate} />
 
               <BulkActions
                 selectedTaskIds={selectedTaskIds}
@@ -307,101 +289,117 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                 onClearSelection={clearSelectedTasks}
               />
 
-              <DndContext onDragEnd={handleDragEnd} sensors={sensors}>
-                <SortableContext items={sections.map(s => s.id)} strategy={verticalListSortingStrategy}>
-                  {sections.map((currentSection: TaskSection) => {
-                    const isExpanded = expandedSections[currentSection.id] !== false;
-                    const sectionTasks = tasksBySection[currentSection.id] || [];
-                    
-                    return (
-                      <div key={currentSection.id} className="mb-4">
-                        <SortableSectionHeader
-                          id={currentSection.id}
-                          name={currentSection.name}
-                          taskCount={sectionTasks.length}
-                          isExpanded={isExpanded}
-                          onToggleExpand={() => toggleSection(currentSection.id)}
-                          isEditing={editingSectionId === currentSection.id}
-                          editingName={editingSectionName}
-                          onNameChange={setNewEditingSectionName}
-                          onSaveEdit={() => handleRenameSection()}
-                          onCancelEdit={handleCancelSectionEdit}
-                          onEditClick={() => handleEditSectionClick(currentSection)}
-                          onDeleteClick={handleDeleteSectionClick}
-                        />
-                        {isExpanded && (
-                          <div className="mt-2 space-y-2 pl-2">
-                            <SortableContext items={sectionTasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
-                              <ul className="list-none space-y-2">
-                                {sectionTasks.length === 0 ? (
-                                  <div className="text-center text-gray-500 py-4">
-                                    No tasks in this section
-                                  </div>
-                                ) : (
-                                  sectionTasks.map(task => (
-                                    <SortableTaskItem
-                                      key={task.id}
-                                      task={task}
-                                      userId={userId}
-                                      onStatusChange={handleStatusChange}
-                                      onDelete={deleteTask}
-                                      onUpdate={updateTask}
-                                      isSelected={selectedTaskIds.includes(task.id)}
-                                      onToggleSelect={toggleTaskSelection}
-                                      sections={sections}
-                                      onEditTask={handleEditTask}
-                                      currentDate={currentDate}
-                                    />
-                                  ))
-                                )}
-                              </ul>
-                            </SortableContext>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </SortableContext>
+              {loading ? (
+                <div className="space-y-3">
+                  {[...Array(5)].map((_, i) => (
+                    <Skeleton key={i} className="h-20 w-full rounded-lg" />
+                  ))}
+                </div>
+              ) : (
+                <DndContext onDragEnd={handleDragEnd} sensors={sensors}>
+                  <SortableContext items={sections.map(s => s.id)} strategy={verticalListSortingStrategy}>
+                    {sections.map((currentSection: TaskSection) => {
+                      const isExpanded = expandedSections[currentSection.id] !== false;
+                      const sectionTasks = tasksBySection[currentSection.id] || [];
+                      
+                      return (
+                        <div key={currentSection.id} className="mb-4">
+                          <SortableSectionHeader
+                            id={currentSection.id}
+                            name={currentSection.name}
+                            taskCount={sectionTasks.length}
+                            isExpanded={isExpanded}
+                            onToggleExpand={() => toggleSection(currentSection.id)}
+                            isEditing={editingSectionId === currentSection.id}
+                            editingName={editingSectionName}
+                            onNameChange={setNewEditingSectionName}
+                            onSaveEdit={() => handleRenameSection()}
+                            onCancelEdit={handleCancelSectionEdit}
+                            onEditClick={() => handleEditSectionClick(currentSection)}
+                            onDeleteClick={handleDeleteSectionClick}
+                          />
+                          {isExpanded && (
+                            <div className="mt-2 space-y-2 pl-2">
+                              <SortableContext items={sectionTasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
+                                <ul className="list-none space-y-2">
+                                  {sectionTasks.length === 0 ? (
+                                    <div className="text-center text-gray-500 py-4">
+                                      No tasks in this section. Add one or drag a task here!
+                                    </div>
+                                  ) : (
+                                    sectionTasks.map(task => (
+                                      <SortableTaskItem
+                                        key={task.id}
+                                        task={task}
+                                        userId={userId}
+                                        onStatusChange={handleStatusChange}
+                                        onDelete={deleteTask}
+                                        onUpdate={updateTask}
+                                        isSelected={selectedTaskIds.includes(task.id)}
+                                        onToggleSelect={toggleTaskSelection}
+                                        sections={sections}
+                                        onEditTask={handleEditTask}
+                                        currentDate={currentDate}
+                                      />
+                                    ))
+                                  )}
+                                </ul>
+                              </SortableContext>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </SortableContext>
 
-                {/* Tasks with no section */}
-                {tasksBySection['no-section'].length > 0 && (
-                  <div className="mb-4">
-                    <div className="rounded-lg bg-muted dark:bg-gray-700 text-foreground shadow-sm">
-                      <div className="flex items-center justify-between p-2">
-                        <h3 className="text-xl font-semibold flex items-center gap-2">
-                          <span>No Section</span> ({tasksBySection['no-section'].length})
-                        </h3>
+                  {/* Tasks with no section */}
+                  {tasksBySection['no-section'].length > 0 && (
+                    <div className="mb-4">
+                      <div className="rounded-lg bg-muted dark:bg-gray-700 text-foreground shadow-sm">
+                        <div className="flex items-center justify-between p-2">
+                          <h3 className="text-xl font-semibold flex items-center gap-2">
+                            <span>No Section</span> ({tasksBySection['no-section'].length})
+                          </h3>
+                        </div>
+                      </div>
+                      <div className="mt-2 space-y-2 pl-2">
+                        <SortableContext items={tasksBySection['no-section'].map(t => t.id)} strategy={verticalListSortingStrategy}>
+                          <ul className="list-none space-y-2">
+                            {tasksBySection['no-section'].map(task => (
+                              <SortableTaskItem
+                                key={task.id}
+                                task={task}
+                                userId={userId}
+                                onStatusChange={handleStatusChange}
+                                onDelete={deleteTask}
+                                onUpdate={updateTask}
+                                isSelected={selectedTaskIds.includes(task.id)}
+                                onToggleSelect={toggleTaskSelection}
+                                sections={sections}
+                                onEditTask={handleEditTask}
+                                currentDate={currentDate}
+                              />
+                            ))}
+                          </ul>
+                        </SortableContext>
                       </div>
                     </div>
-                    <div className="mt-2 space-y-2 pl-2">
-                      <SortableContext items={tasksBySection['no-section'].map(t => t.id)} strategy={verticalListSortingStrategy}>
-                        <ul className="list-none space-y-2">
-                          {tasksBySection['no-section'].map(task => (
-                            <SortableTaskItem
-                              key={task.id}
-                              task={task}
-                              userId={userId}
-                              onStatusChange={handleStatusChange}
-                              onDelete={deleteTask}
-                              onUpdate={updateTask}
-                              isSelected={selectedTaskIds.includes(task.id)}
-                              onToggleSelect={toggleTaskSelection}
-                              sections={sections}
-                              onEditTask={handleEditTask}
-                              currentDate={currentDate}
-                            />
-                          ))}
-                        </ul>
-                      </SortableContext>
+                  )}
+
+                  {filteredTasks.length === 0 && !loading && (
+                    <div className="text-center text-gray-500 p-8">
+                      <p className="text-lg mb-2">No tasks found for this day with the current filters.</p>
+                      <p>Try adjusting your filters or add a new task!</p>
                     </div>
-                  </div>
-                )}
-              </DndContext>
+                  )}
+                </DndContext>
+              )}
             </CardContent>
           </Card>
         </main>
       </div>
 
+      {/* Add Task Dialog */}
       <Dialog open={isAddTaskFormOpen} onOpenChange={setIsAddTaskForm}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -414,11 +412,12 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
               setIsAddTaskForm(false);
               setIsAddTaskOpen(false);
             }}
-            sections={sections} // Pass sections prop
+            sections={sections}
           />
         </DialogContent>
       </Dialog>
 
+      {/* Task Detail Dialog */}
       {taskToEdit && (
         <TaskDetailDialog
           task={taskToEdit}
@@ -427,11 +426,12 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
           onClose={() => setIsTaskDetail(false)}
           onUpdate={updateTask}
           onDelete={deleteTask}
-          currentDate={currentDate} // Pass currentDate
-          setCurrentDate={setCurrentDate} // Pass setCurrentDate
+          currentDate={currentDate}
+          setCurrentDate={setCurrentDate}
         />
       )}
 
+      {/* Bulk Delete Confirmation Dialog */}
       <AlertDialog open={showConfirmBulkDeleteDialog} onOpenChange={setShowConfirmBulkDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -447,6 +447,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Section Delete Confirmation Dialog */}
       <AlertDialog open={showConfirmDeleteSectionDialog} onOpenChange={setShowConfirmDeleteSectionDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>

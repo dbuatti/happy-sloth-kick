@@ -20,6 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Skeleton } from '@/components/ui/skeleton'; // Import Skeleton
 
 const ProjectBalanceTracker: React.FC = () => {
   const {
@@ -165,33 +166,11 @@ const ProjectBalanceTracker: React.FC = () => {
     return 'bg-red-500';
   };
 
-  if (loading) {
-    return (
-      <div className="flex-1 flex flex-col">
-        <main className="flex-grow p-6 flex justify-center"> {/* Increased p-4 to p-6 */}
-          <Card className="w-full max-w-4xl mx-auto shadow-lg">
-            <CardHeader>
-              <CardTitle className="text-3xl font-bold text-center">Loading Projects...</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-              </div>
-            </CardContent>
-          </Card>
-        </main>
-        <footer className="p-6"> {/* Increased p-4 to p-6 */}
-          <MadeWithDyad />
-        </footer>
-      </div>
-    );
-  }
-
   return (
     <div className="flex-1 flex flex-col">
-      <main className="flex-grow p-6"> {/* Increased p-4 to p-6 */}
+      <main className="flex-grow p-6">
         <Card className="w-full max-w-4xl mx-auto shadow-lg">
-          <CardHeader className="pb-4"> {/* Increased pb-2 to pb-4 */}
+          <CardHeader className="pb-4">
             {isEditingTitle ? (
               <div className="flex items-center w-full gap-2">
                 <Input
@@ -229,7 +208,7 @@ const ProjectBalanceTracker: React.FC = () => {
                       value={newProjectName}
                       onChange={(e) => setNewProjectName(e.target.value)}
                       placeholder="e.g., Learn Rust, Garden Design"
-                      autoFocus // Added autoFocus
+                      autoFocus
                     />
                   </div>
                   <div>
@@ -250,7 +229,7 @@ const ProjectBalanceTracker: React.FC = () => {
               </DialogContent>
             </Dialog>
           </CardHeader>
-          <CardContent className="pt-0"> {/* Added pt-0 */}
+          <CardContent className="pt-0">
             {showCelebration && (
               <div className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 p-4 rounded-lg mb-6 text-center flex flex-col items-center gap-2">
                 <Sparkles className="h-8 w-8 text-green-600 dark:text-green-400 animate-bounce" />
@@ -262,10 +241,27 @@ const ProjectBalanceTracker: React.FC = () => {
               </div>
             )}
 
-            {projects.length === 0 ? (
+            {loading ? (
+              <div className="space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="border rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-card dark:bg-gray-800 border-border">
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <Skeleton className="h-6 w-3/4" />
+                      <Skeleton className="h-4 w-1/2" />
+                    </div>
+                    <div className="flex items-center gap-3 flex-shrink-0 mt-3 sm:mt-0">
+                      <Skeleton className="h-4 w-24 rounded-full" />
+                      <Skeleton className="h-8 w-8 rounded-full" />
+                      <Skeleton className="h-8 w-8 rounded-full" />
+                      <Skeleton className="h-8 w-8 rounded-full" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : projects.length === 0 ? (
               <div className="text-center text-gray-500 p-8">
                 <p className="text-lg mb-2">No projects added yet!</p>
-                <p>Click "Add Project" to start tracking your balance.</p>
+                <p>Click "Add Project" to start tracking your balance and ensure you're giving attention to all your important areas.</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -367,7 +363,7 @@ const ProjectBalanceTracker: React.FC = () => {
           </CardContent>
         </Card>
       </main>
-      <footer className="p-6"> {/* Increased p-4 to p-6 */}
+      <footer className="p-6">
         <MadeWithDyad />
       </footer>
 
