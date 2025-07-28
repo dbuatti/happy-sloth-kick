@@ -24,7 +24,7 @@ const Archive: React.FC<ArchiveProps> = ({ currentDate, setCurrentDate }) => {
     sections,
     setStatusFilter,
     allCategories,
-  } = useTasks({ currentDate: new Date(), setCurrentDate: () => {} }); // Still use new Date() for its internal date logic, as Archive is not tied to the main app's date navigator.
+  } = useTasks({ currentDate: new Date(), setCurrentDate: () => {}, disableRecurringSync: true }); // Still use new Date() for its internal date logic, as Archive is not tied to the main app's date navigator.
 
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);

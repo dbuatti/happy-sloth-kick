@@ -171,7 +171,7 @@ export const useTasks = ({ currentDate, setCurrentDate, disableRecurringSync = f
       const newCategoriesMap = new Map<string, string>();
       fetchedCategories.forEach(cat => newCategoriesMap.set(cat.id, cat.color));
       setCategoriesMap(newCategoriesMap);
-      console.log('useTasks useEffect: Categories fetched and mapped.');
+      console.log('useTasks: categoriesMap after population:', Array.from(newCategoriesMap.entries()));
 
       // Fetch all tasks from DB (without join for now)
       const { data: initialTasksFromDB, error: fetchError } = await supabase
@@ -189,7 +189,7 @@ export const useTasks = ({ currentDate, setCurrentDate, disableRecurringSync = f
       }));
 
       setTasks(mappedTasks || []);
-      console.log('fetchTasks: Tasks state updated with fetched data.');
+      console.log('useTasks: Mapped tasks with category_color:', mappedTasks.map(t => ({ id: t.id, description: t.description, category: t.category, category_color: t.category_color })));
       
     } catch (error: any) {
       console.error('Error in fetchDataAndSections:', error);
@@ -274,7 +274,7 @@ export const useTasks = ({ currentDate, setCurrentDate, disableRecurringSync = f
       );
       
       if (instanceForCurrentDay) {
-        // Removed problematic console.log here
+        console.log(`syncRecurringTasks: For original ${originalTask.id}, found instance for current date (${format(effectiveCurrentDateUTC, 'yyyy-MM-dd')}) with status: ${instanceForCurrentDay.status}.`);
       } else {
         // 2. If no instance for current day, look for the latest 'to-do' instance from a previous day (carry-over)
         const carryOverTask = allInstancesOfThisRecurringTask
@@ -829,6 +829,7 @@ export const useTasks = ({ currentDate, setCurrentDate, disableRecurringSync = f
         
         if (instanceForCurrentDay) {
           taskToDisplay = instanceForCurrentDay;
+          console.log(`filteredTasks: For original ${originalId}, found instance for current date (${format(effectiveCurrentDateUTC, 'yyyy-MM-dd')}) with status: ${instanceForCurrentDay.status}. Pushing this.`);
         } else {
           // 2. If no instance for current day, look for the latest 'to-do' instance from a previous day (carry-over)
           const carryOverTask = allInstancesOfThisRecurringTask

@@ -35,6 +35,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   currentDate,
 }) => {
   console.log(`TaskItem: Rendering task - ID: ${task.id}, Description: "${task.description}", Status: "${task.status}", Created At: "${task.created_at}"`);
+  console.log(`TaskItem: Task ID: ${task.id}, Category ID: "${task.category}", Category Color Key: "${task.category_color}"`);
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
