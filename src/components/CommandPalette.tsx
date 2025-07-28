@@ -10,20 +10,22 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import AddTaskForm from './AddTaskForm';
-import { useSound } from '@/context/SoundContext'; // Import useSound
+import { useSound } from '@/context/SoundContext';
 
 interface CommandPaletteProps {
   isAddTaskOpen: boolean;
   setIsAddTaskOpen: (open: boolean) => void;
+  currentDate: Date; // New prop
+  setCurrentDate: React.Dispatch<React.SetStateAction<Date>>; // New prop
 }
 
-const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAddTaskOpen }) => {
+const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAddTaskOpen, currentDate, setCurrentDate }) => {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { setCurrentDate, handleAddTask, sections } = useTasks();
+  const { handleAddTask, sections } = useTasks({ currentDate, setCurrentDate }); // Pass currentDate and setCurrentDate
   const isMobile = useIsMobile();
-  const { playSound } = useSound(); // Get the playSound function
+  const { playSound } = useSound();
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -31,7 +33,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
         e.preventDefault();
         setOpen((prevOpen) => {
           const newOpen = !prevOpen;
-          if (newOpen) playSound(); // Play sound when opening
+          if (newOpen) playSound();
           return newOpen;
         });
       }
@@ -42,7 +44,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
 
   const handleSelect = useCallback((callback: () => void) => {
     setOpen(false);
-    playSound(); // Play sound when a command is selected
+    playSound();
     callback();
   }, [playSound]);
 
@@ -62,18 +64,17 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
     const success = await handleAddTask(taskData);
     if (success) {
       setIsAddTaskOpen(false);
-      playSound(); // Play sound when a new task is added
+      playSound();
     }
     return success;
   };
 
   return (
     <>
-      {/* Main Command Palette */}
       {isMobile ? (
         <Sheet open={open} onOpenChange={(newOpen) => {
           setOpen(newOpen);
-          if (newOpen) playSound(); // Play sound when opening on mobile
+          if (newOpen) playSound();
         }}>
           <SheetContent className="h-full">
             <SheetHeader>
@@ -152,7 +153,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
       ) : (
         <CommandDialog open={open} onOpenChange={(newOpen) => {
           setOpen(newOpen);
-          if (newOpen) playSound(); // Play sound when opening on desktop
+          if (newOpen) playSound();
         }}>
           <CommandInput placeholder="Type a command or search..." />
           <CommandList>
@@ -223,23 +224,22 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
         </CommandDialog>
       )}
 
-      {/* Add Task Dialog/Sheet, controlled by Command Palette */}
       {isMobile ? (
         <Sheet open={isAddTaskOpen} onOpenChange={setIsAddTaskOpen}>
-          <SheetContent className="h-full sm:max-w-md"> {/* Added sm:max-w-md */}
+          <SheetContent className="h-full sm:max-w-md">
             <SheetHeader>
               <SheetTitle>Add New Task</SheetTitle>
             </SheetHeader>
-            <AddTaskForm onAddTask={handleNewTaskSubmit} userId={user?.id || null} onTaskAdded={() => setIsAddTaskOpen(false)} />
+            <AddTaskForm onAddTask={handleNewTaskSubmit} userId={user?.id || null} onTaskAdded={() => setIsAddTaskOpen(false)} sections={sections} />
           </SheetContent>
         </Sheet>
       ) : (
         <Dialog open={isAddTaskOpen} onOpenChange={setIsAddTaskOpen}>
-          <DialogContent className="sm:max-w-md"> {/* Added sm:max-w-md */}
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Add New Task</DialogTitle>
             </DialogHeader>
-            <AddTaskForm onAddTask={handleNewTaskSubmit} userId={user?.id || null} onTaskAdded={() => setIsAddTaskOpen(false)} />
+            <AddTaskForm onAddTask={handleNewTaskSubmit} userId={user?.id || null} onTaskAdded={() => setIsAddTaskOpen(false)} sections={sections} />
           </DialogContent>
         </Dialog>
       )}

@@ -7,7 +7,7 @@ import TaskList from "@/components/TaskList";
 import DateNavigator from '@/components/DateNavigator';
 import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
 import { addDays, startOfDay } from 'date-fns';
-import { useAuth } from '@/context/AuthContext'; // Import useAuth
+import { useAuth } from '@/context/AuthContext';
 
 // Helper to get UTC start of day
 const getUTCStartOfDay = (date: Date) => {
@@ -16,16 +16,16 @@ const getUTCStartOfDay = (date: Date) => {
 
 interface IndexProps {
   setIsAddTaskOpen: (open: boolean) => void;
+  currentDate: Date; // New prop
+  setCurrentDate: React.Dispatch<React.SetStateAction<Date>>; // New prop
 }
 
-const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen }) => {
-  const { user, loading: authLoading } = useAuth(); // Use useAuth hook
-  const { setStatusFilter, currentDate, setCurrentDate } = useTasks();
+const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen, currentDate, setCurrentDate }) => {
+  const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
     // No longer need to manage session state here, useAuth handles it
-    setStatusFilter('all');
-  }, [setStatusFilter]);
+  }, []);
 
   const handlePreviousDay = () => {
     setCurrentDate(prevDate => {
@@ -77,8 +77,7 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen }) => {
               onNextDay={handleNextDay}
               onGoToToday={handleGoToToday}
             />
-            {/* Added key to force remounting of TaskList when currentDate changes */}
-            <TaskList key={currentDate.toISOString()} setIsAddTaskOpen={setIsAddTaskOpen} />
+            <TaskList setIsAddTaskOpen={setIsAddTaskOpen} currentDate={currentDate} setCurrentDate={setCurrentDate} />
           </main>
           <footer className="p-6">
             <MadeWithDyad />

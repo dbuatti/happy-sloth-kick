@@ -9,7 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { DateRange } from 'react-day-picker';
-import { MadeWithDyad } from "@/components/made-with-dyad"; // Ensure MadeWithDyad is imported
+import { MadeWithDyad } from "@/components/made-with-dyad";
 
 // Define the task type
 interface Task {
@@ -103,7 +103,12 @@ const getAnalyticsData = async (startDate: Date, endDate: Date, userId: string) 
   return { dailyData, categoryData, priorityData: priorityCounts };
 };
 
-const Analytics = () => {
+interface AnalyticsProps {
+  currentDate: Date;
+  setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
+}
+
+const Analytics: React.FC<AnalyticsProps> = ({ currentDate, setCurrentDate }) => {
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: startOfMonth(new Date()),
     to: new Date(),
@@ -146,21 +151,19 @@ const Analytics = () => {
     }
   }, [dateRange, userId]);
 
-  // Calculate summary statistics from the chart data
   const totalTasksCompleted = chartData.reduce((sum, day) => sum + day.tasksCompleted, 0);
   const totalTasksCreated = chartData.reduce((sum, day) => sum + day.totalTasks, 0);
   const averageCompletionRate = totalTasksCreated > 0 ? Math.round((totalTasksCompleted / totalTasksCreated) * 100) : 0;
 
-  // Calculate most productive day
   const mostProductiveDay = chartData.length > 0 
     ? chartData.reduce((max, day) => day.tasksCompleted > max.tasksCompleted ? day : max) 
     : null;
 
   return (
     <div className="flex-1 flex flex-col">
-      <main className="flex-grow p-6"> {/* Increased p-4 to p-6 */}
+      <main className="flex-grow p-6">
         <Card className="w-full max-w-4xl mx-auto shadow-lg">
-          <CardHeader className="pb-4"> {/* Increased pb-2 to pb-4 */}
+          <CardHeader className="pb-4">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
               <CardTitle className="text-3xl font-bold">Task Analytics</CardTitle>
               <div className="flex flex-col sm:flex-row gap-2">
@@ -203,7 +206,7 @@ const Analytics = () => {
               </div>
             </div>
           </CardHeader>
-          <CardContent className="pt-0"> {/* Added pt-0 */}
+          <CardContent className="pt-0">
             {loading ? (
               <div className="flex justify-center items-center h-64">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -339,7 +342,7 @@ const Analytics = () => {
           </CardContent>
         </Card>
       </main>
-      <footer className="p-6"> {/* Increased p-4 to p-6 */}
+      <footer className="p-6">
         <div className="text-center text-sm text-gray-500 dark:text-gray-400">
           &copy; {new Date().getFullYear()} TaskMaster. Made with Dyad.
         </div>

@@ -7,7 +7,14 @@ import { Archive as ArchiveIcon } from 'lucide-react';
 import { Task } from '@/hooks/useTasks';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 
-const Archive = () => {
+interface ArchiveProps {
+  currentDate: Date;
+  setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
+}
+
+const Archive: React.FC<ArchiveProps> = ({ currentDate, setCurrentDate }) => {
+  // Archive doesn't operate on a specific daily date, so we pass dummy values to useTasks
+  // The actual filtering for 'archived' status is handled by the statusFilter.
   const {
     filteredTasks, 
     loading,
@@ -16,8 +23,7 @@ const Archive = () => {
     deleteTask,
     sections,
     setStatusFilter,
-    currentDate, // Destructure currentDate
-  } = useTasks();
+  } = useTasks({ currentDate: new Date(), setCurrentDate: () => {} }); // Dummy date props
 
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
@@ -87,7 +93,7 @@ const Archive = () => {
                       onToggleSelect={() => {}}
                       sections={sections}
                       onEditTask={handleEditTask}
-                      currentDate={currentDate} // Pass currentDate here
+                      currentDate={currentDate}
                     />
                   ))}
                 </ul>
@@ -107,6 +113,8 @@ const Archive = () => {
           onClose={() => setIsTaskDetailOpen(false)}
           onUpdate={updateTask}
           onDelete={deleteTask}
+          currentDate={currentDate} // Pass currentDate
+          setCurrentDate={setCurrentDate} // Pass setCurrentDate
         />
       )}
     </>

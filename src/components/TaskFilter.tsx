@@ -7,7 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { showError } from "@/utils/toast";
-import { useTasks } from '@/hooks/useTasks'; // Import useTasks
+import { useTasks } from '@/hooks/useTasks';
 
 interface Category {
   id: string;
@@ -15,7 +15,12 @@ interface Category {
   color: string;
 }
 
-const TaskFilter: React.FC = () => { // No longer needs onFilterChange prop
+interface TaskFilterProps {
+  currentDate: Date;
+  setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
+}
+
+const TaskFilter: React.FC<TaskFilterProps> = ({ currentDate, setCurrentDate }) => {
   const {
     userId,
     searchFilter,
@@ -28,11 +33,11 @@ const TaskFilter: React.FC = () => { // No longer needs onFilterChange prop
     setPriorityFilter,
     sectionFilter,
     setSectionFilter,
-    sections, // Get sections from useTasks
-  } = useTasks();
+    sections,
+  } = useTasks({ currentDate, setCurrentDate });
 
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [localCategories, setLocalCategories] = useState<Category[]>([]); // Use local state for categories
+  const [localCategories, setLocalCategories] = useState<Category[]>([]);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -52,7 +57,7 @@ const TaskFilter: React.FC = () => { // No longer needs onFilterChange prop
       }
     };
     fetchCategories();
-  }, [userId]); // Depend on userId
+  }, [userId]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchFilter(e.target.value);

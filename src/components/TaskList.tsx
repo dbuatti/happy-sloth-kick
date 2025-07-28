@@ -16,18 +16,20 @@ import SortableSectionHeader from './SortableSectionHeader';
 import { Task, TaskSection } from '@/hooks/useTasks';
 import TaskDetailDialog from './TaskDetailDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'; // Added DialogTrigger and DialogFooter
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { CustomPointerSensor } from '@/lib/CustomPointerSensor';
+import TaskFilter from './TaskFilter'; // Import TaskFilter
 
 interface TaskListProps {
   setIsAddTaskOpen: (open: boolean) => void;
+  currentDate: Date;
+  setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
 }
 
-const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
+const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setCurrentDate }) => {
   const {
     filteredTasks,
     loading,
-    currentDate,
     userId,
     handleAddTask,
     updateTask,
@@ -45,7 +47,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
     reorderTasksInSameSection,
     moveTaskToNewSection,
     reorderSections,
-  } = useTasks();
+  } = useTasks({ currentDate, setCurrentDate });
 
   console.log('TaskList: Received filteredTasks:', filteredTasks.map(t => ({
     id: t.id,
@@ -255,15 +257,11 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
+              <TaskFilter currentDate={currentDate} setCurrentDate={setCurrentDate} /> {/* Pass date props */}
+
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
-                  <Input
-                    placeholder="Search tasks..."
-                    value={searchFilter}
-                    onChange={(e) => setSearchFilter(e.target.value)}
-                    className="pl-10"
-                  />
+                  {/* Search input is now part of TaskFilter, but keeping this div for layout if needed */}
                 </div>
                 <div className="flex gap-2">
                   <Button onClick={() => setIsAddTaskForm(true)}>
@@ -301,7 +299,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
               </div>
 
               <DailyStreak tasks={filteredTasks} currentDate={currentDate} />
-              <SmartSuggestions />
+              <SmartSuggestions currentDate={currentDate} setCurrentDate={setCurrentDate} /> {/* Pass date props */}
 
               <BulkActions
                 selectedTaskIds={selectedTaskIds}
@@ -404,7 +402,6 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
         </main>
       </div>
 
-      {/* Add Task Dialog */}
       <Dialog open={isAddTaskFormOpen} onOpenChange={setIsAddTaskForm}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -417,11 +414,11 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
               setIsAddTaskForm(false);
               setIsAddTaskOpen(false);
             }}
+            sections={sections} // Pass sections prop
           />
         </DialogContent>
       </Dialog>
 
-      {/* Task Detail Dialog */}
       {taskToEdit && (
         <TaskDetailDialog
           task={taskToEdit}
@@ -430,10 +427,11 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
           onClose={() => setIsTaskDetail(false)}
           onUpdate={updateTask}
           onDelete={deleteTask}
+          currentDate={currentDate} // Pass currentDate
+          setCurrentDate={setCurrentDate} // Pass setCurrentDate
         />
       )}
 
-      {/* Bulk Delete Confirmation Dialog */}
       <AlertDialog open={showConfirmBulkDeleteDialog} onOpenChange={setShowConfirmBulkDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -449,7 +447,6 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Section Delete Confirmation Dialog */}
       <AlertDialog open={showConfirmDeleteSectionDialog} onOpenChange={setShowConfirmDeleteSectionDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>

@@ -13,10 +13,15 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"; // Import AlertDialog components
+} from "@/components/ui/alert-dialog";
 
-const SmartSuggestions: React.FC = () => {
-  const { tasks, bulkUpdateTasks, clearSelectedTasks, currentDate } = useTasks();
+interface SmartSuggestionsProps {
+  currentDate: Date;
+  setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
+}
+
+const SmartSuggestions: React.FC<SmartSuggestionsProps> = ({ currentDate, setCurrentDate }) => {
+  const { tasks, bulkUpdateTasks, clearSelectedTasks } = useTasks({ currentDate, setCurrentDate });
   const [showConfirmArchiveDialog, setShowConfirmArchiveDialog] = useState(false);
 
   const {
@@ -66,33 +71,31 @@ const SmartSuggestions: React.FC = () => {
   };
 
   return (
-    <Card className="w-full shadow-sm mb-6"> {/* Increased mb-4 to mb-6 */}
-      <CardContent className="p-4"> {/* Increased p-3 to p-4 */}
-        <h3 className="text-lg font-semibold mb-3">Smart Suggestions</h3> {/* Increased mb-2 to mb-3 */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"> {/* Increased gap-2 to gap-3 */}
+    <Card className="w-full shadow-sm mb-6">
+      <CardContent className="p-4">
+        <h3 className="text-lg font-semibold mb-3">Smart Suggestions</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {overdueTasksCount > 0 && (
-            <Button variant="outline" className="justify-start gap-2 h-10"> {/* Increased h-9 to h-10 */}
+            <Button variant="outline" className="justify-start gap-2 h-10">
               <Clock className="h-4 w-4 text-red-500" />
               Review {overdueTasksCount} Overdue Task{overdueTasksCount > 1 ? 's' : ''}
             </Button>
           )}
           {completedTasksCount > 0 && (
-            <Button variant="outline" className="justify-start gap-2 h-10" onClick={handleArchiveCompletedClick}> {/* Increased h-9 to h-10 */}
+            <Button variant="outline" className="justify-start gap-2 h-10" onClick={handleArchiveCompletedClick}>
               <Archive className="h-4 w-4 text-blue-500" />
               Archive All Completed Tasks
             </Button>
           )}
           {totalTasksToday === 0 && (
-            <Button variant="outline" className="justify-start gap-2 h-10"> {/* Increased h-9 to h-10 */}
+            <Button variant="outline" className="justify-start gap-2 h-10">
               <Plus className="h-4 w-4 text-green-500" />
               Add Your First Task Today!
             </Button>
           )}
-          {/* Add more suggestions here based on user behavior or task states */}
         </div>
       </CardContent>
 
-      {/* Archive Completed Tasks Confirmation Dialog */}
       <AlertDialog open={showConfirmArchiveDialog} onOpenChange={setShowConfirmArchiveDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>

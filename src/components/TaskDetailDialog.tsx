@@ -25,7 +25,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"; // Import AlertDialog components
+} from "@/components/ui/alert-dialog";
 
 interface TaskDetailDialogProps {
   task: Task | null;
@@ -34,6 +34,8 @@ interface TaskDetailDialogProps {
   onClose: () => void;
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<void>;
   onDelete: (taskId: string) => void;
+  currentDate: Date; // New prop
+  setCurrentDate: React.Dispatch<React.SetStateAction<Date>>; // New prop
 }
 
 const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
@@ -43,8 +45,10 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   onClose,
   onUpdate,
   onDelete,
+  currentDate,
+  setCurrentDate,
 }) => {
-  const { sections, tasks: allTasks, handleAddTask, updateTask } = useTasks();
+  const { sections, tasks: allTasks, handleAddTask, updateTask } = useTasks({ currentDate, setCurrentDate });
   const [editingDescription, setEditingDescription] = useState('');
   const [editingNotes, setEditingNotes] = useState('');
   const [editingDueDate, setEditingDueDate] = useState<Date | undefined>(undefined);
@@ -56,7 +60,6 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [isAddSubtaskOpen, setIsAddSubtaskOpen] = useState(false);
 
-  // AlertDialog state for task deletion
   const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
 
 
@@ -138,7 +141,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
         <DialogHeader>
           <DialogTitle>Edit Task</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4 py-4"> {/* Increased gap-3 to gap-4, py-3 to py-4 */}
+        <div className="grid gap-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="description">Task Description</Label>
             <Input
@@ -149,7 +152,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4"> {/* Increased gap-3 to gap-4 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <CategorySelector value={editingCategory} onChange={setEditingCategory} userId={userId} />
             <PrioritySelector value={editingPriority} onChange={setEditingPriority} />
           </div>
@@ -227,13 +230,12 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
               id="notes"
               value={editingNotes}
               onChange={(e) => setEditingNotes(e.target.value)}
-              rows={3} /* Increased rows from 2 to 3 */
+              rows={3}
               disabled={isSaving}
             />
           </div>
 
-          {/* Sub-tasks Section */}
-          <div className="space-y-3 mt-4 border-t pt-4"> {/* Increased space-y-2 to space-y-3, mt-3 to mt-4, pt-3 to pt-4 */}
+          <div className="space-y-3 mt-4 border-t pt-4">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold">Sub-tasks ({subtasks.length})</h3>
               <Dialog open={isAddSubtaskOpen} onOpenChange={setIsAddSubtaskOpen}>
@@ -250,6 +252,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
                     onAddTask={handleAddSubtask}
                     userId={userId}
                     onTaskAdded={() => setIsAddSubtaskOpen(false)}
+                    sections={sections} // Pass sections prop
                   />
                 </DialogContent>
               </Dialog>
@@ -287,7 +290,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
             )}
           </div>
         </div>
-        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2 pt-4"> {/* Increased pt-3 to pt-4 */}
+        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2 pt-4">
           <Button variant="destructive" onClick={handleDeleteClick} disabled={isSaving} className="w-full sm:w-auto mt-2 sm:mt-0">
             <Trash2 className="mr-2 h-4 w-4" /> Delete Task
           </Button>
@@ -302,7 +305,6 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
         </DialogFooter>
       </DialogContent>
 
-      {/* Delete Task Confirmation Dialog */}
       <AlertDialog open={showConfirmDeleteDialog} onOpenChange={setShowConfirmDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>

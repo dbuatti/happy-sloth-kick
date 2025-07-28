@@ -9,10 +9,10 @@ import { Calendar, BellRing } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import CategorySelector from "./CategorySelector";
 import PrioritySelector from "./PrioritySelector";
-import SectionSelector from "./SectionSelector"; // Import SectionSelector
-import { format, setHours, setMinutes, parse, addDays, addWeeks, addMonths, startOfDay } from 'date-fns'; // Added parse, addDays, addWeeks, addMonths, startOfDay
+import SectionSelector from "./SectionSelector";
+import { format, setHours, setMinutes, parse, addDays, addWeeks, addMonths, startOfDay } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useTasks } from '@/hooks/useTasks'; // Import useTasks to get sections
+import { TaskSection } from '@/hooks/useTasks'; // Import TaskSection type
 
 interface AddTaskFormProps {
   onAddTask: (taskData: {
@@ -22,11 +22,12 @@ interface AddTaskFormProps {
     due_date: string | null;
     notes: string | null;
     remind_at: string | null;
-    section_id: string | null; // New: for task sections
-    recurring_type: 'none' | 'daily' | 'weekly' | 'monthly'; // New: for recurring tasks
+    section_id: string | null;
+    recurring_type: 'none' | 'daily' | 'weekly' | 'monthly';
   }) => Promise<any>;
   userId: string | null;
-  onTaskAdded?: () => void; // New prop to close dialog/sheet
+  onTaskAdded?: () => void;
+  sections: TaskSection[]; // New prop for sections
 }
 
 // Helper function for natural language parsing
@@ -35,7 +36,7 @@ const parseNaturalLanguage = (text: string) => {
   let remindAt: Date | undefined = undefined;
   let priority: string | undefined = undefined;
   let category: string | undefined = undefined;
-  let tempDescription = text; // Use a temporary variable for parsing
+  let tempDescription = text;
 
   // Priority detection
   const priorityKeywords = {
@@ -48,7 +49,7 @@ const parseNaturalLanguage = (text: string) => {
     const regex = new RegExp(`\\b${keyword}\\b`, 'i');
     if (regex.test(tempDescription)) {
       priority = pValue;
-      tempDescription = tempDescription.replace(regex, '').trim(); // Remove keyword from temp description
+      tempDescription = tempDescription.replace(regex, '').trim();
       break;
     }
   }
@@ -64,7 +65,7 @@ const parseNaturalLanguage = (text: string) => {
     const regex = new RegExp(`\\b${keyword}\\b`, 'i');
     if (regex.test(tempDescription)) {
       category = cValue;
-      tempDescription = tempDescription.replace(regex, '').trim(); // Remove keyword from temp description
+      tempDescription = tempDescription.replace(regex, '').trim();
       break;
     }
   }
@@ -89,10 +90,10 @@ const parseNaturalLanguage = (text: string) => {
     const match = tempDescription.match(dateRegex);
     if (match) {
       try {
-        const parsedDate = parse(match[0], 'MMM d, yyyy', new Date()); // Try with year
+        const parsedDate = parse(match[0], 'MMM d, yyyy', new Date());
         if (isNaN(parsedDate.getTime())) {
           const currentYear = new Date().getFullYear();
-          const parsedDateNoYear = parse(`${match[0]} ${currentYear}`, 'MMM d yyyy', new Date()); // Try without year, add current
+          const parsedDateNoYear = parse(`${match[0]} ${currentYear}`, 'MMM d yyyy', new Date());
           if (!isNaN(parsedDateNoYear.getTime())) {
             dueDate = parsedDateNoYear;
           }
@@ -117,7 +118,6 @@ const parseNaturalLanguage = (text: string) => {
 
   if (reminderTimeStr) {
     try {
-      // Attempt to parse time. If no date is set, use today.
       const baseDate = dueDate || new Date();
       let parsedTime = parse(reminderTimeStr, 'h:mm a', baseDate);
       if (isNaN(parsedTime.getTime())) {
@@ -132,7 +132,7 @@ const parseNaturalLanguage = (text: string) => {
   }
 
   return {
-    description: text, // Return original description, not the temporary one
+    description: text,
     dueDate,
     remindAt,
     reminderTimeStr,
@@ -141,8 +141,7 @@ const parseNaturalLanguage = (text: string) => {
   };
 };
 
-const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdded }) => {
-  const { sections } = useTasks(); // Get sections from useTasks
+const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdded, sections }) => {
   const [newTaskDescription, setNewTaskDescription] = useState<string>('');
   const [newTaskCategory, setNewTaskCategory] = useState<string>('general');
   const [newTaskPriority, setNewTaskPriority] = useState<string>('medium');
@@ -150,11 +149,10 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
   const [newTaskNotes, setNewTaskNotes] = useState<string>('');
   const [newTaskRemindAt, setNewTaskRemindAt] = useState<Date | undefined>(undefined);
   const [newReminderTime, setNewReminderTime] = useState<string>('');
-  const [newTaskSectionId, setNewTaskSectionId] = useState<string | null>(null); // New state for section_id
-  const [newTaskRecurringType, setNewTaskRecurringType] = useState<'none' | 'daily' | 'weekly' | 'monthly'>('none'); // New state for recurring type
+  const [newTaskSectionId, setNewTaskSectionId] = useState<string | null>(null);
+  const [newTaskRecurringType, setNewTaskRecurringType] = useState<'none' | 'daily' | 'weekly' | 'monthly'>('none');
   const [isAdding, setIsAdding] = useState(false);
 
-  // AI-powered suggestions based on description
   useEffect(() => {
     const {
       dueDate,
@@ -162,10 +160,8 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
       reminderTimeStr,
       priority,
       category,
-    } = parseNaturalLanguage(newTaskDescription); // Parse the current description
+    } = parseNaturalLanguage(newTaskDescription);
 
-    // Only update if the user hasn't manually changed it from the default
-    // This is a simple heuristic; more advanced logic could track user overrides
     if (priority && (newTaskPriority === 'medium' || !newTaskPriority)) {
       setNewTaskPriority(priority);
     }
@@ -181,8 +177,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
         setNewReminderTime(format(remindAt, 'HH:mm'));
       }
     }
-    // Removed: setNewTaskDescription(parsedDescription);
-  }, [newTaskDescription, newTaskPriority, newTaskCategory, newTaskDueDate, newTaskRemindAt]); // Add other dependencies to prevent infinite loops if they are also updated by parsing
+  }, [newTaskDescription, newTaskPriority, newTaskCategory, newTaskDueDate, newTaskRemindAt]);
 
   const handleSubmit = async () => {
     if (!newTaskDescription.trim()) {
@@ -205,8 +200,8 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
       due_date: newTaskDueDate ? newTaskDueDate.toISOString() : null,
       notes: newTaskNotes || null,
       remind_at: finalRemindAt ? finalRemindAt.toISOString() : null,
-      section_id: newTaskSectionId, // Save section_id
-      recurring_type: newTaskRecurringType, // Save recurring_type
+      section_id: newTaskSectionId,
+      recurring_type: newTaskRecurringType,
     });
     if (success) {
       setNewTaskDescription('');
@@ -216,9 +211,9 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
       setNewTaskNotes('');
       setNewTaskRemindAt(undefined);
       setNewReminderTime('');
-      setNewTaskSectionId(null); // Reset section_id
-      setNewTaskRecurringType('none'); // Reset recurring_type
-      onTaskAdded?.(); // Call callback to close dialog/sheet
+      setNewTaskSectionId(null);
+      setNewTaskRecurringType('none');
+      onTaskAdded?.();
     }
     setIsAdding(false);
   };
@@ -230,9 +225,9 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
   };
 
   return (
-    <div className="p-6 bg-gray-50 dark:bg-card rounded-lg"> {/* Increased p-4 to p-6 */}
-      <h2 className="text-2xl font-semibold mb-4">Add New Task</h2> {/* Increased mb-3 to mb-4 */}
-      <div className="space-y-4"> {/* Increased space-y-3 to space-y-4 */}
+    <div className="p-6 bg-gray-50 dark:bg-card rounded-lg">
+      <h2 className="text-2xl font-semibold mb-4">Add New Task</h2>
+      <div className="space-y-4">
         <div>
           <Label htmlFor="new-task-description">Task Description</Label>
           <Input
@@ -242,11 +237,11 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
             onChange={(e) => setNewTaskDescription(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={isAdding}
-            autoFocus // Added autoFocus
+            autoFocus
           />
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4"> {/* Increased gap-3 to gap-4 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <CategorySelector value={newTaskCategory} onChange={setNewTaskCategory} userId={userId} />
           <PrioritySelector value={newTaskPriority} onChange={setNewTaskPriority} />
         </div>
@@ -255,7 +250,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
           <SectionSelector value={newTaskSectionId} onChange={setNewTaskSectionId} userId={userId} sections={sections} />
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4"> {/* Increased gap-3 to gap-4 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label>Due Date</Label>
             <Popover>
@@ -342,7 +337,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
             placeholder="Add notes about this task..."
             value={newTaskNotes}
             onChange={(e) => setNewTaskNotes(e.target.value)}
-            rows={3} /* Increased rows from 2 to 3 */
+            rows={3}
             disabled={isAdding}
           />
         </div>

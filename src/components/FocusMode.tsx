@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/Progress"; // Corrected import to custom Progress
+import { Progress } from "@/components/Progress";
 import { Play, Pause, RotateCcw, CheckCircle2, Lightbulb, X } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,7 +9,7 @@ import { showError, showSuccess } from '@/utils/toast';
 import { Task, useTasks } from '@/hooks/useTasks';
 import { cn } from '@/lib/utils';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { useUI } from '@/context/UIContext'; // Import useUI
+import { useUI } from '@/context/UIContext';
 
 const WORK_DURATION = 25 * 60; // 25 minutes in seconds
 const SHORT_BREAK_DURATION = 5 * 60; // 5 minutes in seconds
@@ -18,11 +18,17 @@ const POMODORO_CYCLES = 4; // Number of work sessions before a long break
 
 type SessionType = 'work' | 'short_break' | 'long_break';
 
-const FocusMode: React.FC = () => {
+interface FocusModeProps {
+  currentDate: Date;
+  setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
+}
+
+const FocusMode: React.FC<FocusModeProps> = ({ currentDate, setCurrentDate }) => {
   const { user } = useAuth();
   const userId = user?.id;
-  const { tasks, updateTask } = useTasks();
-  const { setIsFocusModeActive } = useUI(); // Use the UI context
+  // FocusMode doesn't operate on a specific daily date, so we pass dummy values to useTasks
+  const { tasks, updateTask } = useTasks({ currentDate: new Date(), setCurrentDate: () => {} });
+  const { setIsFocusModeActive } = useUI();
 
   const [timeRemaining, setTimeRemaining] = useState(WORK_DURATION);
   const [isRunning, setIsRunning] = useState(false);
@@ -56,13 +62,12 @@ const FocusMode: React.FC = () => {
 
   useEffect(() => {
     fetchSuggestedTasks();
-  }, [fetchSuggestedTasks, tasks]); // Re-fetch suggestions if tasks change
+  }, [fetchSuggestedTasks, tasks]);
 
-  // Effect to activate/deactivate focus mode UI
   useEffect(() => {
-    setIsFocusModeActive(true); // Activate distraction-free UI on mount
+    setIsFocusModeActive(true);
     return () => {
-      setIsFocusModeActive(false); // Deactivate on unmount
+      setIsFocusModeActive(false);
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
@@ -94,7 +99,7 @@ const FocusMode: React.FC = () => {
     const endTime = new Date();
     if (sessionStartTime) {
       const actualDuration = (endTime.getTime() - sessionStartTime.getTime()) / 1000;
-      logSession(sessionType, actualDuration, sessionStartTime, endTime, currentTaskId, false); // Log session
+      logSession(sessionType, actualDuration, sessionStartTime, endTime, currentTaskId, false);
     }
 
     if (sessionType === 'work') {
@@ -116,8 +121,8 @@ const FocusMode: React.FC = () => {
     }
     setIsRunning(false);
     setSessionStartTime(null);
-    setCurrentTaskId(null); // Clear focused task after session
-    fetchSuggestedTasks(); // Refresh suggestions for next work session
+    setCurrentTaskId(null);
+    fetchSuggestedTasks();
   }, [sessionType, pomodoroCount, sessionStartTime, currentTaskId, logSession, fetchSuggestedTasks]);
 
   const startTimer = useCallback(() => {
@@ -152,7 +157,7 @@ const FocusMode: React.FC = () => {
     setPomodoroCount(0);
     setCurrentTaskId(null);
     setSessionStartTime(null);
-    fetchSuggestedTasks(); // Refresh suggestions on reset
+    fetchSuggestedTasks();
   }, [pauseTimer, fetchSuggestedTasks]);
 
   const formatTime = (seconds: number) => {
@@ -169,14 +174,13 @@ const FocusMode: React.FC = () => {
     try {
       await updateTask(task.id, { status: 'completed' });
       showSuccess(`Task "${task.description}" completed!`);
-      // Log this completion as part of the current session if one is active
       if (isRunning && sessionType === 'work' && sessionStartTime) {
         const endTime = new Date();
         const actualDuration = (endTime.getTime() - sessionStartTime.getTime()) / 1000;
         logSession(sessionType, actualDuration, sessionStartTime, endTime, task.id, true);
       }
-      setCurrentTaskId(null); // Clear focused task
-      fetchSuggestedTasks(); // Refresh suggestions
+      setCurrentTaskId(null);
+      fetchSuggestedTasks();
     } catch (error) {
       showError('Failed to mark task as complete.');
       console.error('Error marking task complete:', error);
@@ -203,8 +207,8 @@ const FocusMode: React.FC = () => {
           <div className="relative w-48 h-48 mx-auto flex items-center justify-center">
             <Progress
               value={(timeRemaining / (sessionType === 'work' ? WORK_DURATION : sessionType === 'short_break' ? SHORT_BREAK_DURATION : LONG_BREAK_DURATION)) * 100}
-              className="absolute w-full h-full rounded-full bg-muted" // Base class for the track
-              indicatorClassName={cn( // Use indicatorClassName for the dynamic color
+              className="absolute w-full h-full rounded-full bg-muted"
+              indicatorClassName={cn(
                 "transition-all duration-1000 ease-linear",
                 sessionType === 'work' && "bg-primary",
                 sessionType === 'short_break' && "bg-green-500",

@@ -58,16 +58,20 @@ const getUTCStartOfDay = (date: Date) => {
   return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
 };
 
-export const useTasks = () => {
-  const HOOK_VERSION = "2024-07-30-09"; // Updated version
+interface UseTasksProps {
+  currentDate: Date;
+  setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
+}
+
+export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
+  const HOOK_VERSION = "2024-07-30-10"; // Updated version
   const { user, loading: authLoading } = useAuth();
   const userId = user?.id;
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentDate, setCurrentDate] = useState(() => getUTCStartOfDay(new Date()));
   console.log(`useTasks hook version: ${HOOK_VERSION}`);
-  console.log('useTasks: Re-rendering. Current date in state (from hook start):', currentDate.toISOString());
+  console.log('useTasks: Re-rendering. Current date received (from hook start):', currentDate.toISOString());
 
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [sortKey, setSortKey] = useState<'priority' | 'due_date' | 'created_at' | 'order'>('order');
@@ -228,7 +232,7 @@ export const useTasks = () => {
       // This happens if the latest relevant instance from a previous day was completed/skipped,
       // or if this is the very first day the recurring task should appear.
       const latestRelevantInstanceBeforeCurrentDate = allInstancesOfThisRecurringTask
-        .filter(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), currentDate))
+        .filter(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), currentDate) && t.status !== 'archived')
         .sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime())[0];
 
       const shouldCreateNewToDoInstance =
