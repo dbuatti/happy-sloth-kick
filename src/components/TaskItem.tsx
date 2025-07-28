@@ -33,7 +33,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   onEditTask,
   currentDate,
 }) => {
-  console.log(`TaskItem: Rendering task - ID: ${task.id}, Description: "${task.description}", Status: "${task.status}", Created At: "${task.created_at}"`);
+  console.log(`TaskItem: Rendering task - ID: ${task.id}, Description: "${task.description}", Status: "${task.status}", Created At: "${task.created_at}", CurrentDate: ${currentDate.toISOString()}`);
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -70,7 +70,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
     <div
       className={cn(
         "relative flex items-center space-x-4 w-full",
-        task.status === 'completed' ? "opacity-70 bg-green-50/20 dark:bg-green-900/20" : "",
+        task.status === 'completed' ? "bg-green-50/20 dark:bg-green-900/20" : "", // Removed opacity-70
       )}
     >
       {/* Checkbox */}
@@ -96,7 +96,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           htmlFor={`task-${task.id}`}
           className={cn(
             "text-base font-medium leading-tight",
-            task.status === 'completed' ? 'line-through text-gray-500 dark:text-gray-400' : 'text-foreground',
+            task.status === 'completed' ? 'line-through text-gray-500 dark:text-gray-400' : 'text-foreground', // Simplified
             isOverdue && "text-red-600 dark:text-red-400",
             isUpcoming && "text-orange-500 dark:text-orange-300",
             "block truncate"

@@ -59,7 +59,7 @@ const getUTCStartOfDay = (date: Date) => {
 };
 
 export const useTasks = () => {
-  const HOOK_VERSION = "2024-07-30-07"; // Updated version
+  const HOOK_VERSION = "2024-07-30-08"; // Updated version
   const { user, loading: authLoading } = useAuth();
   const userId = user?.id;
 
@@ -131,8 +131,14 @@ export const useTasks = () => {
         .eq('user_id', userId);
 
       if (fetchError) throw fetchError;
-      console.log('fetchTasks: Initial tasks fetched from DB:', initialTasksFromDB);
-
+      console.log('fetchTasks: Data fetched from DB before setTasks:', initialTasksFromDB.map(t => ({
+        id: t.id,
+        description: t.description,
+        status: t.status,
+        created_at: t.created_at,
+        original_task_id: t.original_task_id,
+        recurring_type: t.recurring_type
+      })));
       setTasks(initialTasksFromDB || []);
       console.log('fetchTasks: Tasks state updated with fetched data.');
       
