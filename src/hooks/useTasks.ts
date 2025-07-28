@@ -14,7 +14,7 @@ export interface Task {
   user_id: string;
   category: string;
   priority: string;
-  due_date: string | null; // Changed from `string` to `string | null`
+  due_date: string | null;
   notes: string | null;
   remind_at: string | null;
   section_id: string | null;
@@ -239,9 +239,11 @@ export const useTasks = () => {
       showError('User not authenticated.');
       return false;
     }
+    // Declare newTask outside the try block
+    let newTask: Task;
     try {
       // Optimistically add the task to the state
-      const newTask: Task = {
+      newTask = {
         id: uuidv4(),
         user_id: userId,
         created_at: currentDate.toISOString(),
@@ -256,6 +258,7 @@ export const useTasks = () => {
         order: null,
         original_task_id: null,
         parent_task_id: newTaskData.parent_task_id || null,
+        description: newTaskData.description, // Added missing description
       };
       setTasks(prev => [...prev, newTask]);
 
@@ -313,9 +316,11 @@ export const useTasks = () => {
       showError('User not authenticated.');
       return;
     }
+    // Declare taskToDelete outside the try block
+    let taskToDelete: Task | undefined;
     try {
       // Optimistically remove the task from the state
-      const taskToDelete = tasks.find(t => t.id === taskId);
+      taskToDelete = tasks.find(t => t.id === taskId);
       setTasks(prev => prev.filter(task => task.id !== taskId && task.parent_task_id !== taskId));
 
       // Perform the database delete
