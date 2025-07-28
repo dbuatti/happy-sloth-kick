@@ -265,7 +265,6 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       );
       
       if (instanceForCurrentDay) {
-        taskToDisplay = instanceForCurrentDay;
         console.log(`syncRecurringTasks: For original ${originalTask.id}, found instance for current date (${format(effectiveCurrentDateUTC, 'yyyy-MM-dd')}) with status: ${instanceForCurrentDay.status}. No new instance needed.`);
         continue;
       }
@@ -997,7 +996,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
     let nextAvailableTask: Task | null = null;
     if (viewMode === 'daily') {
-      nextAvailableTask = finalFilteredTasks.find(task => 
+      nextAvailableTask = currentViewFilteredTasks.find(task => 
         task.status === 'to-do' && task.parent_task_id === null
       ) || null;
     }
