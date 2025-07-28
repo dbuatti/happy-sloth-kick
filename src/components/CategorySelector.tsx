@@ -107,8 +107,8 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
     }
   };
 
-  // The selectedCategory and selectedCategoryColorProps are no longer needed here
-  // because SelectValue will render the content from the selected SelectItem.
+  const selectedCategory = categories.find(cat => cat.id === value);
+  const selectedCategoryColorProps = selectedCategory ? getCategoryColorProps(selectedCategory.color) : getCategoryColorProps('gray');
 
   return (
     <div className="space-y-2">
@@ -116,8 +116,17 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
       <div className="flex space-x-2">
         <Select value={value} onValueChange={onChange}>
           <SelectTrigger className="flex-1 min-w-0">
-            {/* SelectValue will automatically render the content of the selected SelectItem */}
-            <SelectValue placeholder="Select category" />
+            <SelectValue placeholder="Select category">
+              {/* This is where the selected category's color dot and name will appear */}
+              <div className="flex items-center gap-2 w-full">
+                <div className={cn("w-4 h-4 rounded-full flex items-center justify-center border", selectedCategoryColorProps.backgroundClass, selectedCategoryColorProps.dotBorder)}>
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: selectedCategoryColorProps.dotColor }}></div>
+                </div>
+                <span className="flex-1 min-w-0 truncate">
+                  {selectedCategory ? selectedCategory.name : 'Select category'}
+                </span>
+              </div>
+            </SelectValue>
           </SelectTrigger>
           <SelectContent className="z-[9999]">
             <SelectItem value="general">
