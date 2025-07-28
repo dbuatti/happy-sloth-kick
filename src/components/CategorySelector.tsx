@@ -19,14 +19,9 @@ interface CategorySelectorProps {
 }
 
 const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, userId, categories }) => {
-  // No longer managing categories state internally, relying on prop
-  // const [categories, setCategories] = useState<Category[]>([]); 
   const [isOpen, setIsOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [selectedColorKey, setSelectedColorKey] = useState<CategoryColorKey>('gray'); // Store the key
-
-  // No longer fetching categories here, as they are passed as a prop.
-  // The logic to ensure 'General' category exists is now in useTasks.ts.
 
   const createCategory = async () => {
     if (!newCategoryName.trim()) {
@@ -49,9 +44,6 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
 
       if (error) throw error;
       
-      // Instead of updating local state, rely on parent to re-fetch/update categories
-      // For now, we'll just show success and expect parent to refresh data.
-      // A full re-fetch of all tasks and categories is handled by useTasks.
       showSuccess('Category created successfully');
       setNewCategoryName('');
       setSelectedColorKey('gray'); // Reset to default
@@ -91,8 +83,6 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
   const selectedCategory = categories.find(cat => cat.id === value);
   const selectedCategoryColorProps = selectedCategory ? getCategoryColorProps(selectedCategory.color) : getCategoryColorProps('gray');
 
-  const generalCategory = categories.find(cat => cat.name.toLowerCase() === 'general');
-
   return (
     <div className="space-y-2">
       <Label>Category</Label>
@@ -100,7 +90,6 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
         <Select value={value} onValueChange={onChange}>
           <SelectTrigger className="flex-1 min-w-0">
             <SelectValue placeholder="Select category">
-              {/* This is where the selected category's color dot and name will appear */}
               <div className="flex items-center gap-2 w-full">
                 <div className={cn("w-4 h-4 rounded-full flex items-center justify-center border", selectedCategoryColorProps.backgroundClass, selectedCategoryColorProps.dotBorder)}>
                   <div className="w-2 h-2 rounded-full" style={{ backgroundColor: selectedCategoryColorProps.dotColor }}></div>
@@ -112,17 +101,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
             </SelectValue>
           </SelectTrigger>
           <SelectContent className="z-[9999]">
-            {generalCategory && ( // Only render if generalCategory exists
-              <SelectItem value={generalCategory.id}>
-                <div className="flex items-center gap-2">
-                  <div className={cn("w-4 h-4 rounded-full flex items-center justify-center border", getCategoryColorProps('gray').backgroundClass, getCategoryColorProps('gray').dotBorder)}>
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: getCategoryColorProps('gray').dotColor }}></div>
-                  </div>
-                  General
-                </div>
-              </SelectItem>
-            )}
-            {categories.filter(cat => cat.name.toLowerCase() !== 'general').map(category => { // Filter out general here
+            {categories.map(category => { // Directly map over categories, useTasks ensures 'General' is present once
               const colorProps = getCategoryColorProps(category.color);
               return (
                 <SelectItem key={category.id} value={category.id}>
