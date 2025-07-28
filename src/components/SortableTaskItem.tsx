@@ -49,7 +49,8 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
 
   const currentRefDate = new Date(currentDate);
 
-  const isOverdue = task.due_date && task.status !== 'completed' && dateFns.isPast(dateFns.parseISO(task.due_date) as Date, { refDate: currentRefDate as Date }) && !dateFns.isSameDay(dateFns.parseISO(task.due_date) as Date, currentRefDate as Date);
+  // Changed isPast to isBefore
+  const isOverdue = task.due_date && task.status !== 'completed' && dateFns.isBefore(dateFns.parseISO(task.due_date) as Date, currentRefDate as Date) && !dateFns.isSameDay(dateFns.parseISO(task.due_date) as Date, currentRefDate as Date);
   const isUpcoming = task.due_date && task.status !== 'completed' && dateFns.isSameDay(dateFns.parseISO(task.due_date) as Date, currentRefDate as Date);
 
   return (

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+import { Progress } from "@/components/Progress"; // Corrected import to custom Progress
 import { Play, Pause, RotateCcw, CheckCircle2, Lightbulb, X } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -203,12 +203,12 @@ const FocusMode: React.FC = () => {
           <div className="relative w-48 h-48 mx-auto flex items-center justify-center">
             <Progress
               value={(timeRemaining / (sessionType === 'work' ? WORK_DURATION : sessionType === 'short_break' ? SHORT_BREAK_DURATION : LONG_BREAK_DURATION)) * 100}
-              className={cn(
-                "absolute w-full h-full rounded-full bg-muted", // Base class for the track
+              className="absolute w-full h-full rounded-full bg-muted" // Base class for the track
+              indicatorClassName={cn( // Use indicatorClassName for the dynamic color
                 "transition-all duration-1000 ease-linear",
-                sessionType === 'work' && "data-[state=complete]:bg-primary",
-                sessionType === 'short_break' && "data-[state=complete]:bg-green-500",
-                sessionType === 'long_break' && "data-[state=complete]:bg-blue-500"
+                sessionType === 'work' && "bg-primary",
+                sessionType === 'short_break' && "bg-green-500",
+                sessionType === 'long_break' && "bg-blue-500"
               )}
             />
             <div className={cn(
