@@ -673,10 +673,12 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
   }, [userId]);
 
   const reorderTasksInSameSection = useCallback(async (sectionId: string | null, oldIndex: number, newIndex: number) => {
+    console.log(`reorderTasksInSameSection: sectionId=${sectionId}, oldIndex=${oldIndex}, newIndex=${newIndex}`);
     if (!userId) { showError('User not authenticated.'); return; }
 
     const tasksInSection = tasks.filter(t => t.parent_task_id === null && t.section_id === sectionId);
     if (oldIndex === newIndex || oldIndex < 0 || newIndex < 0 || oldIndex >= tasksInSection.length || newIndex >= tasksInSection.length) {
+      console.log('reorderTasksInSameSection: Invalid indices or no change.');
       return;
     }
 
@@ -687,9 +689,11 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       const updatedTask = updatedTasks.find(t => t.id === task.id);
       return updatedTask ? updatedTask : task;
     }));
+    console.log('reorderTasksInSameSection: Local state updated.');
 
     try {
       const dbPayload = updatedTasks.map(task => ({ id: task.id, order: task.order }));
+      console.log('reorderTasksInSameSection: DB Payload:', dbPayload);
       const { error } = await supabase.from('tasks').upsert(dbPayload, { onConflict: 'id' });
       if (error) throw error;
       showSuccess('Tasks reordered successfully!');
@@ -701,10 +705,14 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
   }, [tasks, userId, fetchDataAndSections]);
 
   const moveTaskToNewSection = useCallback(async (taskId: string, sourceSectionId: string | null, destinationSectionId: string | null, destinationIndex: number) => {
+    console.log(`moveTaskToNewSection: taskId=${taskId}, sourceSectionId=${sourceSectionId}, destinationSectionId=${destinationSectionId}, destinationIndex=${destinationIndex}`);
     if (!userId) { showError('User not authenticated.'); return; }
 
     const taskToMove = tasks.find(t => t.id === taskId);
-    if (!taskToMove) return;
+    if (!taskToMove) {
+      console.log('moveTaskToNewSection: Task to move not found.');
+      return;
+    }
 
     const sourceTasks = tasks.filter(t => t.parent_task_id === null && t.section_id === sourceSectionId && t.id !== taskId);
     const destinationTasks = tasks.filter(t => t.parent_task_id === null && t.section_id === destinationSectionId);
@@ -722,6 +730,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       const updatedTask = tasksToUpdate.find(t => t.id === task.id);
       return updatedTask ? updatedTask : task;
     }));
+    console.log('moveTaskToNewSection: Local state updated.');
 
     try {
       const dbPayload = tasksToUpdate.map(task => ({
@@ -729,6 +738,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         section_id: task.section_id,
         order: task.order,
       }));
+      console.log('moveTaskToNewSection: DB Payload:', dbPayload);
       const { error } = await supabase.from('tasks').upsert(dbPayload, { onConflict: 'id' });
       if (error) throw error;
       showSuccess('Task moved successfully!');

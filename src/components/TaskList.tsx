@@ -22,6 +22,8 @@ import ManageSectionsDialog from './ManageSectionsDialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Label } from "@/components/ui/label"; // Import Label
 import { Input } from "@/components/ui/input"; // Import Input
+import EmptySectionDropArea from './EmptySectionDropArea'; // Import new component
+import EndOfListDropArea from './EndOfListDropArea'; // Import new component
 
 interface TaskListProps {
   setIsAddTaskOpen: (open: boolean) => void;
@@ -136,43 +138,95 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
     
-    if (!over) return;
+    if (!over) {
+      console.log('Drag End Event: No over element, drag cancelled.');
+      return;
+    }
 
     const activeId = String(active.id);
     const overId = String(over.id);
+    console.log(`Drag End Event: Active ID: ${activeId}, Over ID: ${overId}, Over Data:`, over.data.current);
 
+    // Handle section reordering
     if (active.data.current?.type === 'section-header' && over.data.current?.type === 'section-header') {
+      console.log('Attempting to reorder sections.');
       const oldIndex = sections.findIndex(s => s.id === activeId);
       const newIndex = sections.findIndex(s => s.id === overId);
       
       if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
         reorderSections(oldIndex, newIndex);
+        console.log(`Reordered sections: ${activeId} from ${oldIndex} to ${newIndex}`);
+      } else {
+        console.log('Section reorder indices invalid or no change.');
       }
       return;
     }
 
-    if (activeId.startsWith('task-') && overId.startsWith('task-') && active.data.current?.sectionId === over.data.current?.sectionId) {
-      const sectionId = active.data.current?.sectionId;
-      const tasksInSection = tasksBySection[sectionId || 'no-section'];
-      const oldIndex = tasksInSection.findIndex(t => t.id === activeId);
-      const newIndex = tasksInSection.findIndex(t => t.id === overId);
-      
-      if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-        reorderTasksInSameSection(sectionId, oldIndex, newIndex);
-      }
-      return;
-    }
-
-    if (activeId.startsWith('task-') && over.data.current?.type === 'section-header') {
+    // Handle task dragging
+    if (active.data.current?.type === 'task') {
       const taskId = activeId;
       const sourceSectionId = active.data.current?.sectionId;
-      const destinationSectionId = overId;
-      const destinationTasks = tasksBySection[destinationSectionId] || [];
-      const destinationIndex = 0;
-      
-      moveTaskToNewSection(taskId, sourceSectionId, destinationSectionId, destinationIndex);
+
+      let destinationSectionId: string | null = null;
+      let destinationIndex: number;
+
+      // Case 1: Dropping on another task (reorder within same section or move to new section at specific position)
+      if (over.data.current?.type === 'task') {
+        destinationSectionId = over.data.current?.sectionId;
+        const tasksInDestinationSection = tasksBySection[destinationSectionId || 'no-section'];
+        destinationIndex = tasksInDestinationSection.findIndex(t => t.id === overId);
+        if (destinationIndex === -1) { // Should not happen if over.data.current.type is 'task'
+          destinationIndex = tasksInDestinationSection.length; 
+        }
+        console.log(`Dropping on task ${overId}. Destination section: ${destinationSectionId}, index: ${destinationIndex}`);
+      }
+      // Case 2: Dropping on a section header (move to top of that section)
+      else if (over.data.current?.type === 'section-header') {
+        destinationSectionId = overId; // overId is the section ID
+        destinationIndex = 0; // Place at the beginning of the section
+        console.log(`Dropping on section header ${destinationSectionId}.`);
+      }
+      // Case 3: Dropping on an empty section drop area
+      else if (over.data.current?.type === 'empty-section-drop-area') {
+        destinationSectionId = over.data.current?.sectionId;
+        destinationIndex = 0; // Place at the beginning of the empty section
+        console.log(`Dropping on empty section drop area ${destinationSectionId}.`);
+      }
+      // Case 4: Dropping on an end-of-list drop area
+      else if (over.data.current?.type === 'end-of-list-drop-area') {
+        destinationSectionId = over.data.current?.sectionId;
+        destinationIndex = tasksBySection[destinationSectionId || 'no-section'].length; // Place at the end
+        console.log(`Dropping on end-of-list drop area ${destinationSectionId}.`);
+      } else {
+        console.log('Task drag ended on an unhandled target type or no target.');
+        return; // No valid drop target found
+      }
+
+      // Perform the move if a valid destination was determined and it's a different position/section
+      if (destinationSectionId !== undefined) { // Check for undefined, as null is a valid sectionId
+        const currentTask = filteredTasks.find(t => t.id === taskId);
+        const tasksInDest = tasksBySection[destinationSectionId || 'no-section'];
+        const isSameSection = sourceSectionId === destinationSectionId;
+        const isSamePosition = isSameSection && currentTask?.order === destinationIndex;
+
+        if (isSameSection && !isSamePosition) {
+          // Reorder within the same section
+          const oldIndex = tasksInDest.findIndex(t => t.id === taskId);
+          if (oldIndex !== -1 && destinationIndex !== -1 && oldIndex !== destinationIndex) {
+            reorderTasksInSameSection(destinationSectionId, oldIndex, destinationIndex);
+            console.log(`Reordered task ${taskId} from ${oldIndex} to ${destinationIndex} in section ${destinationSectionId}`);
+          }
+        } else if (!isSameSection) {
+          // Move to a new section
+          moveTaskToNewSection(taskId, sourceSectionId, destinationSectionId, destinationIndex);
+          console.log(`Moved task ${taskId} from section ${sourceSectionId} to ${destinationSectionId} at index ${destinationIndex}`);
+        } else {
+          console.log('Task drag ended with no effective change in position or section.');
+        }
+      }
+      return;
     }
-  }, [tasksBySection, sections, reorderSections, reorderTasksInSameSection, moveTaskToNewSection]);
+  }, [tasksBySection, sections, reorderSections, reorderTasksInSameSection, moveTaskToNewSection, filteredTasks]);
 
   const toggleSection = (sectionId: string) => {
     setExpandedSections(prev => {
@@ -403,27 +457,26 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                               <SortableContext items={sectionTasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
                                 <ul className="list-none space-y-2">
                                   {sectionTasks.length === 0 ? (
-                                    <div className="text-center text-gray-500 py-4 flex flex-col items-center gap-2">
-                                      <ListTodo className="h-8 w-8 text-muted-foreground" />
-                                      <p className="text-lg font-medium">No tasks in this section.</p>
-                                      <p className="text-sm">Add one using the menu above or drag a task here!</p>
-                                    </div>
+                                    <EmptySectionDropArea sectionId={currentSection.id} />
                                   ) : (
-                                    sectionTasks.map(task => (
-                                      <SortableTaskItem
-                                        key={task.id}
-                                        task={task}
-                                        userId={userId}
-                                        onStatusChange={handleStatusChange}
-                                        onDelete={deleteTask}
-                                        onUpdate={updateTask}
-                                        isSelected={selectedTaskIds.includes(task.id)}
-                                        onToggleSelect={toggleTaskSelection}
-                                        sections={sections}
-                                        onEditTask={handleEditTask}
-                                        currentDate={currentDate}
-                                      />
-                                    ))
+                                    <>
+                                      {sectionTasks.map(task => (
+                                        <SortableTaskItem
+                                          key={task.id}
+                                          task={task}
+                                          userId={userId}
+                                          onStatusChange={handleStatusChange}
+                                          onDelete={deleteTask}
+                                          onUpdate={updateTask}
+                                          isSelected={selectedTaskIds.includes(task.id)}
+                                          onToggleSelect={toggleTaskSelection}
+                                          sections={sections}
+                                          onEditTask={handleEditTask}
+                                          currentDate={currentDate}
+                                        />
+                                      ))}
+                                      <EndOfListDropArea sectionId={currentSection.id} />
+                                    </>
                                   )}
                                 </ul>
                               </SortableContext>
@@ -434,45 +487,51 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                     })}
                   </SortableContext>
 
-                  {tasksBySection['no-section'].length > 0 && (
-                    <div className="mb-3">
-                      <div className="rounded-lg bg-muted dark:bg-gray-700 text-foreground shadow-sm">
-                        <div className="flex items-center justify-between p-2">
-                          <h3 className="text-xl font-semibold flex items-center gap-2">
-                            <span>No Section</span> ({tasksBySection['no-section'].length})
-                          </h3>
-                        </div>
-                      </div>
-                      <div className="mt-2 space-y-2 pl-2">
-                        <Button 
-                          variant="outline" 
-                          className="w-full justify-center gap-2 mb-2"
-                          onClick={() => handleAddTaskToSpecificSection(null)}
-                        >
-                          <Plus className="mr-2 h-4 w-4" /> Add Task to No Section
-                        </Button>
-                        <SortableContext items={tasksBySection['no-section'].map(t => t.id)} strategy={verticalListSortingStrategy}>
-                          <ul className="list-none space-y-2">
-                            {tasksBySection['no-section'].map(task => (
-                              <SortableTaskItem
-                                key={task.id}
-                                task={task}
-                                userId={userId}
-                                onStatusChange={handleStatusChange}
-                                onDelete={deleteTask}
-                                onUpdate={updateTask}
-                                isSelected={selectedTaskIds.includes(task.id)}
-                                onToggleSelect={toggleTaskSelection}
-                                sections={sections}
-                                onEditTask={handleEditTask}
-                                currentDate={currentDate}
-                              />
-                            ))}
-                          </ul>
-                        </SortableContext>
+                  {/* "No Section" tasks */}
+                  <div className="mb-3">
+                    <div className="rounded-lg bg-muted dark:bg-gray-700 text-foreground shadow-sm">
+                      <div className="flex items-center justify-between p-2">
+                        <h3 className="text-xl font-semibold flex items-center gap-2">
+                          <span>No Section</span> ({tasksBySection['no-section'].length})
+                        </h3>
                       </div>
                     </div>
-                  )}
+                    <div className="mt-2 space-y-2 pl-2">
+                      <Button 
+                        variant="outline" 
+                        className="w-full justify-center gap-2 mb-2"
+                        onClick={() => handleAddTaskToSpecificSection(null)}
+                      >
+                        <Plus className="mr-2 h-4 w-4" /> Add Task to No Section
+                      </Button>
+                      <SortableContext items={tasksBySection['no-section'].map(t => t.id)} strategy={verticalListSortingStrategy}>
+                        <ul className="list-none space-y-2">
+                          {tasksBySection['no-section'].length === 0 ? (
+                            <EmptySectionDropArea sectionId={'no-section'} />
+                          ) : (
+                            <>
+                              {tasksBySection['no-section'].map(task => (
+                                <SortableTaskItem
+                                  key={task.id}
+                                  task={task}
+                                  userId={userId}
+                                  onStatusChange={handleStatusChange}
+                                  onDelete={deleteTask}
+                                  onUpdate={updateTask}
+                                  isSelected={selectedTaskIds.includes(task.id)}
+                                  onToggleSelect={toggleTaskSelection}
+                                  sections={sections}
+                                  onEditTask={handleEditTask}
+                                  currentDate={currentDate}
+                                />
+                              ))}
+                              <EndOfListDropArea sectionId={null} />
+                            </>
+                          )}
+                        </ul>
+                      </SortableContext>
+                    </div>
+                  </div>
 
                   {filteredTasks.length === 0 && !loading && (
                     <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
