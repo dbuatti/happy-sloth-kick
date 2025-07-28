@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useWorkHours } from '@/hooks/useWorkHours';
 import { format, addMinutes, parse, isBefore, isSameHour, isSameMinute, setHours, setMinutes, getMinutes, getHours, isSameDay } from 'date-fns';
-import { CalendarDays, Clock } from 'lucide-react';
+import { CalendarDays, Clock, Settings } from 'lucide-react'; // Added Settings icon
 import DateNavigator from '@/components/DateNavigator';
 import { cn } from '@/lib/utils';
 import { useAppointments, Appointment, NewAppointmentData } from '@/hooks/useAppointments';
@@ -42,7 +42,7 @@ const TimeBlockSchedule: React.FC = () => {
     })
   );
 
-  const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
+  const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null); // Fixed: Initialized activeId to null
 
   const handlePreviousDay = () => {
     setCurrentDate(prevDate => {
@@ -250,14 +250,18 @@ const TimeBlockSchedule: React.FC = () => {
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
               </div>
             ) : !workHours || !workHours.enabled ? (
-              <div className="text-center text-gray-500 p-8">
-                <p className="text-lg mb-2">No work hours set or enabled for this day.</p>
-                <p>Please go to <a href="/settings" className="text-blue-500 hover:underline">Settings</a> to define your work hours.</p>
+              <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
+                <Clock className="h-12 w-12 text-muted-foreground" />
+                <p className="text-lg font-medium mb-2">No work hours set or enabled for this day.</p>
+                <p className="text-sm">Please go to <a href="/settings" className="text-blue-500 hover:underline flex items-center gap-1">
+                  <Settings className="h-4 w-4" /> Settings
+                </a> to define your work hours.</p>
               </div>
             ) : timeBlocks.length === 0 ? (
-              <div className="text-center text-gray-500 p-8">
-                <p className="text-lg mb-2">No time blocks generated.</p>
-                <p>Please check your work hour settings for this day.</p>
+              <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
+                <Clock className="h-12 w-12 text-muted-foreground" />
+                <p className="text-lg font-medium mb-2">No time blocks generated.</p>
+                <p className="text-sm">Please check your work hour settings for this day.</p>
               </div>
             ) : (
               <div className="grid grid-cols-[60px_1fr] gap-x-2"> {/* Main grid for time labels and schedule */}

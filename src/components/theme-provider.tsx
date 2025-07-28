@@ -20,7 +20,8 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
         "cosmic-dusk",
         "focus-flow",
         "retro-wave",
-        "sepia-dusk" // Added the new theme
+        "sepia-dusk",
+        "vibrant-flow" // Added the new theme
       ]}
       {...props}
     >

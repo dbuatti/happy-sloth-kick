@@ -70,6 +70,8 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   }
   if (isDragging) {
     className += " shadow-lg ring-2 ring-primary";
+  } else {
+    className += " hover:scale-[1.005]"; // Subtle lift on hover
   }
 
   return (

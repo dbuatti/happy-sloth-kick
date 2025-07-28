@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Search, Plus, Settings, CheckCircle2, Archive, Trash2, ListRestart, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, Plus, Settings, CheckCircle2, Archive, Trash2, ListRestart, ChevronDown, ChevronUp, ListTodo, FolderOpen } from 'lucide-react'; // Added ListTodo, FolderOpen
 import { useTasks } from '@/hooks/useTasks';
 import SortableTaskItem from './SortableTaskItem';
 import BulkActions from './BulkActions';
@@ -346,8 +346,10 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                               <SortableContext items={sectionTasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
                                 <ul className="list-none space-y-2">
                                   {sectionTasks.length === 0 ? (
-                                    <div className="text-center text-gray-500 py-4">
-                                      No tasks in this section. Add one or drag a task here!
+                                    <div className="text-center text-gray-500 py-4 flex flex-col items-center gap-2">
+                                      <ListTodo className="h-8 w-8 text-muted-foreground" />
+                                      <p className="text-lg font-medium">No tasks in this section.</p>
+                                      <p className="text-sm">Add one or drag a task here!</p>
                                     </div>
                                   ) : (
                                     sectionTasks.map(task => (
@@ -410,9 +412,10 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                   )}
 
                   {filteredTasks.length === 0 && !loading && (
-                    <div className="text-center text-gray-500 p-8">
-                      <p className="text-lg mb-2">No tasks found for this day with the current filters.</p>
-                      <p>Try adjusting your filters or add a new task!</p>
+                    <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
+                      <ListTodo className="h-12 w-12 text-muted-foreground" />
+                      <p className="text-lg font-medium mb-2">No tasks found for this day with the current filters.</p>
+                      <p className="text-sm">Try adjusting your filters or add a new task!</p>
                     </div>
                   )}
                 </DndContext>

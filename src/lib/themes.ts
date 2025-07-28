@@ -319,7 +319,7 @@ export const themes = {
       '--secondary-foreground': '240 10% 95%',
       '--muted': '260 30% 18%',
       '--muted-foreground': '240 10% 70%',
-      '--accent': '40 95% 70%', /* Brighter Yellow/Orange */
+      '--accent': '40 95% 70%', /* Brighter Yellow-Orange */
       '--accent-foreground': '240 10% 95%',
       '--destructive': '0 90% 70%', /* Brighter Red */
       '--destructive-foreground': '0 0% 100%',
@@ -373,6 +373,53 @@ export const themes = {
       '--border': '29 29% 26%',    // gray05
       '--input': '29 29% 21%',     // gray04
       '--ring': '270 28% 54%',     // purple
+    }
+  },
+  'vibrant-flow': {
+    name: 'Vibrant Flow',
+    description: 'Energetic and modern with deep tones and neon accents',
+    light: {
+      '--background': '210 20% 98%',
+      '--foreground': '210 10% 20%',
+      '--card': '210 20% 98%',
+      '--card-foreground': '210 10% 20%',
+      '--popover': '210 20% 98%',
+      '--popover-foreground': '210 10% 20%',
+      '--primary': '260 80% 55%', /* Vibrant Purple */
+      '--primary-foreground': '0 0% 100%',
+      '--secondary': '180 70% 50%', /* Bright Teal */
+      '--secondary-foreground': '210 10% 20%',
+      '--muted': '210 10% 90%',
+      '--muted-foreground': '210 5% 45%',
+      '--accent': '40 90% 60%', /* Glowing Yellow-Orange */
+      '--accent-foreground': '210 10% 20%',
+      '--destructive': '0 80% 60%', /* Sharp Red */
+      '--destructive-foreground': '0 0% 100%',
+      '--border': '210 10% 85%',
+      '--input': '210 10% 85%',
+      '--ring': '210 10% 20%',
+      '--radius': '0.5rem',
+    },
+    dark: {
+      '--background': '240 40% 8%', /* Deep Blue-Purple */
+      '--foreground': '210 10% 95%',
+      '--card': '240 35% 12%',
+      '--card-foreground': '210 10% 95%',
+      '--popover': '240 35% 12%',
+      '--popover-foreground': '210 10% 95%',
+      '--primary': '260 90% 65%', /* Brighter Purple */
+      '--primary-foreground': '0 0% 100%',
+      '--secondary': '180 80% 60%', /* Brighter Teal */
+      '--secondary-foreground': '210 10% 95%',
+      '--muted': '240 30% 18%',
+      '--muted-foreground': '210 10% 70%',
+      '--accent': '40 95% 70%', /* Brighter Yellow-Orange */
+      '--accent-foreground': '210 10% 95%',
+      '--destructive': '0 90% 70%', /* Brighter Red */
+      '--destructive-foreground': '0 0% 100%',
+      '--border': '240 30% 25%',
+      '--input': '240 30% 25%',
+      '--ring': '210 10% 85%',
     }
   }
 };

@@ -67,7 +67,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
         "absolute rounded-lg p-2 text-white shadow-md cursor-pointer", // Changed cursor to pointer
         "flex flex-col justify-between transition-all duration-200 ease-in-out",
         "group",
-        isDragging ? "ring-2 ring-primary" : ""
+        isDragging ? "ring-2 ring-primary shadow-lg" : "hover:scale-[1.01] hover:shadow-lg" // Enhanced drag/hover
       )}
       {...attributes}
       {...listeners}

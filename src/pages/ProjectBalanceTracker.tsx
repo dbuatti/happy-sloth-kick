@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Edit, Trash2, Sparkles, RefreshCcw, Lightbulb, RotateCcw } from 'lucide-react';
+import { Plus, Edit, Trash2, Sparkles, RefreshCcw, Lightbulb, RotateCcw, LayoutGrid } from 'lucide-react'; // Added LayoutGrid
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useProjects, Project } from '@/hooks/useProjects';
 import { cn } from '@/lib/utils';
@@ -279,9 +279,10 @@ const ProjectBalanceTracker: React.FC = () => {
                 ))}
               </div>
             ) : projects.length === 0 ? (
-              <div className="text-center text-gray-500 p-8">
-                <p className="text-lg mb-2">No projects added yet!</p>
-                <p>Click "Add Project" to start tracking your balance and ensure you're giving attention to all your important areas.</p>
+              <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
+                <LayoutGrid className="h-12 w-12 text-muted-foreground" />
+                <p className="text-lg font-medium mb-2">No projects added yet!</p>
+                <p className="text-sm">Click "Add Project" to start tracking your balance and ensure you're giving attention to all your important areas.</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -318,7 +319,7 @@ const ProjectBalanceTracker: React.FC = () => {
                             />
                             <Textarea
                               value={editingProjectDescription}
-                              onChange={(e) => setEditingProjectDescription(e.target.value)}
+                              onChange={(e) => setNewProjectDescription(e.target.value)}
                               placeholder="Description..."
                               rows={2}
                             />

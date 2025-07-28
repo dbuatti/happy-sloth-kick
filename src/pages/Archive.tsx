@@ -76,9 +76,10 @@ const Archive: React.FC<ArchiveProps> = ({ currentDate, setCurrentDate }) => {
             </CardHeader>
             <CardContent className="pt-0">
               {filteredTasks.length === 0 ? (
-                <div className="text-center text-gray-500 p-8">
-                  <p className="text-lg mb-2">No archived tasks found.</p>
-                  <p>Completed tasks will appear here once you archive them.</p>
+                <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
+                  <ArchiveIcon className="h-12 w-12 text-muted-foreground" />
+                  <p className="text-lg font-medium mb-2">No archived tasks found.</p>
+                  <p className="text-sm">Completed tasks will appear here once you archive them.</p>
                 </div>
               ) : (
                 <ul className="space-y-2">
