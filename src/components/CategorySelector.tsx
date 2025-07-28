@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Plus, X } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Import shadcn Select components
-import { cn } from '@/lib/utils'; // Import cn for conditional classNames
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from '@/lib/utils';
 
 interface Category {
   id: string;
@@ -108,7 +108,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
       
       setCategories(categories.filter(cat => cat.id !== categoryId));
       if (value === categoryId) {
-        onChange('general');
+        onChange('general'); // Default to 'general' if the deleted category was selected
       }
       showSuccess('Category deleted successfully');
     } catch (error: any) {
@@ -118,38 +118,36 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
   };
 
   const selectedCategory = categories.find(cat => cat.id === value);
-  const selectedCategoryColorClass = selectedCategory ? selectedCategory.color : 'text-muted-foreground';
+  const selectedCategoryColorClass = selectedCategory ? selectedCategory.color : 'bg-gray-200 dark:bg-gray-700 text-muted-foreground'; // Default background for trigger
 
   return (
     <div className="space-y-2">
       <Label>Category</Label>
       <div className="flex space-x-2">
-        <div className="flex-1">
-          <Select value={value} onValueChange={onChange}>
-            <SelectTrigger className={cn("w-full", selectedCategoryColorClass)}>
+        <Select value={value} onValueChange={onChange}>
+          <SelectTrigger className={cn(selectedCategoryColorClass)}>
+            <div className="flex items-center gap-2">
+              {selectedCategory && <div className={cn("w-3 h-3 rounded-full", selectedCategory.color)}></div>}
+              <SelectValue placeholder="Select category" />
+            </div>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="general">
               <div className="flex items-center gap-2">
-                {selectedCategory && <div className={cn("w-3 h-3 rounded-full", selectedCategory.color)}></div>}
-                <SelectValue placeholder="Select category" />
+                <div className="w-3 h-3 rounded-full bg-gray-500"></div>
+                General
               </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="general">
+            </SelectItem>
+            {categories.map(category => (
+              <SelectItem key={category.id} value={category.id}>
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-gray-500"></div>
-                  General
+                  <div className={cn("w-3 h-3 rounded-full", category.color)}></div>
+                  {category.name}
                 </div>
               </SelectItem>
-              {categories.map(category => (
-                <SelectItem key={category.id} value={category.id}>
-                  <div className="flex items-center gap-2">
-                    <div className={cn("w-3 h-3 rounded-full", category.color)}></div>
-                    {category.name}
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+            ))}
+          </SelectContent>
+        </Select>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
             <Button type="button" size="icon" variant="outline">
@@ -158,53 +156,69 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Create New Category</DialogTitle>
+              <DialogTitle>Manage Categories</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              <div>
-                <Label htmlFor="category-name">Category Name</Label>
-                <Input
-                  id="category-name"
-                  value={newCategoryName}
-                  onChange={(e) => setNewCategoryName(e.target.value)}
-                  placeholder="e.g., Work, Personal, Shopping"
-                  autoFocus
-                />
-              </div>
-              <div>
-                <Label>Color</Label>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {colors.map(color => (
-                    <button
-                      key={color.value}
-                      className={`w-8 h-8 rounded-full ${color.value} ${selectedColor === color.value ? 'ring-2 ring-offset-2 ring-primary' : ''}`}
-                      onClick={() => setSelectedColor(color.value)}
-                      aria-label={color.name}
-                    />
-                  ))}
+              {/* Existing categories list */}
+              {categories.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-md font-semibold">Existing Categories</h4>
+                  <ul className="space-y-2">
+                    {categories.map(category => (
+                      <li key={category.id} className="flex items-center justify-between p-2 border rounded-md">
+                        <div className="flex items-center gap-2">
+                          <div className={cn("w-3 h-3 rounded-full", category.color)}></div>
+                          <span>{category.name}</span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => deleteCategory(category.id)}
+                          aria-label={`Delete ${category.name}`}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
+              )}
+              
+              {/* New Category Form */}
+              <div className="border-t pt-4 mt-4">
+                <h4 className="text-md font-semibold mb-3">Create New Category</h4>
+                <div>
+                  <Label htmlFor="category-name">Category Name</Label>
+                  <Input
+                    id="category-name"
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    placeholder="e.g., Work, Personal, Shopping"
+                    autoFocus
+                  />
+                </div>
+                <div className="mt-4">
+                  <Label>Color</Label>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {colors.map(color => (
+                      <button
+                        key={color.value}
+                        className={`w-8 h-8 rounded-full ${color.value} ${selectedColor === color.value ? 'ring-2 ring-offset-2 ring-primary' : ''}`}
+                        onClick={() => setSelectedColor(color.value)}
+                        aria-label={color.name}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <DialogFooter className="mt-4">
+                  <Button onClick={createCategory} className="w-full" disabled={!newCategoryName.trim()}>Create Category</Button>
+                </DialogFooter>
               </div>
-              <Button onClick={createCategory} className="w-full">Create Category</Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
-      
-      {selectedCategory && (
-        <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-          <div className={`w-3 h-3 rounded-full ${selectedCategory.color}`}></div>
-          <span>{selectedCategory.name}</span>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6"
-            onClick={() => deleteCategory(selectedCategory.id)}
-            aria-label="Delete category"
-          >
-            <X className="h-3 w-3" />
-          </Button>
-        </div>
-      )}
     </div>
   );
 };
