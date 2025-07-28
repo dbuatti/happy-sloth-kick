@@ -59,8 +59,8 @@ const getUTCStartOfDay = (date: Date) => {
 };
 
 export const useTasks = () => {
-  const HOOK_VERSION = "2024-07-29-15"; // Updated version
-  const { user, loading: authLoading } = useAuth(); // Get authLoading here
+  const HOOK_VERSION = "2024-07-30-02"; // Updated version
+  const { user, loading: authLoading } = useAuth();
   const userId = user?.id;
 
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -81,7 +81,9 @@ export const useTasks = () => {
   const [sectionFilter, setSectionFilter] = useState(() => getInitialFilter('section', 'all'));
 
   const remindedTaskIdsRef = useRef<Set<string>>(new Set());
-  const createdRecurringInstancesTodayRef = useRef<Set<string>>(new Set()); // New ref to prevent duplicate recurring instances
+  // This ref is no longer needed for preventing duplicate recurring instances,
+  // as the `syncRecurringTasks` logic will handle existence checks.
+  // const createdRecurringInstancesTodayRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     localStorage.setItem('task_filter_search', searchFilter);
@@ -103,11 +105,10 @@ export const useTasks = () => {
     localStorage.setItem('task_filter_section', sectionFilter);
   }, [sectionFilter]);
 
-  // useEffect to clear the ref when currentDate changes
+  // useEffect to clear selected tasks when currentDate changes
   useEffect(() => {
-    createdRecurringInstancesTodayRef.current.clear();
-    setSelectedTaskIds([]); // Clear selected tasks when date changes
-    console.log('Cleared createdRecurringInstancesTodayRef and selectedTaskIds due to currentDate change.');
+    setSelectedTaskIds([]);
+    console.log('Cleared selectedTaskIds due to currentDate change.');
   }, [currentDate]);
 
   const fetchDataAndSections = useCallback(async () => {
@@ -147,22 +148,112 @@ export const useTasks = () => {
     }
   }, [userId]);
 
+  // Function to create a new recurring task instance in DB
+  const createRecurringTaskInstance = useCallback(async (originalTask: Task, targetDate: Date) => {
+    console.log(`createRecurringTaskInstance: Attempting to create instance for original task "${originalTask.description}" on ${format(targetDate, 'yyyy-MM-dd')}`);
+    if (originalTask.recurring_type === 'none' || !userId) return;
+
+    const targetDateUTC = getUTCStartOfDay(targetDate);
+
+    // Check if an instance already exists for this targetDate in the current state
+    const existingInstance = tasks.find(t =>
+      (t.original_task_id === originalTask.id || t.id === originalTask.id) &&
+      isSameDay(getUTCStartOfDay(parseISO(t.created_at)), targetDateUTC)
+    );
+
+    if (existingInstance) {
+      console.log(`createRecurringTaskInstance: Instance for "${originalTask.description}" on ${format(targetDate, 'yyyy-MM-dd')} already exists (ID: ${existingInstance.id}, Status: ${existingInstance.status}). Skipping creation.`);
+      return;
+    }
+
+    const newInstance: Task = {
+      ...originalTask,
+      id: uuidv4(),
+      created_at: targetDateUTC.toISOString(),
+      status: 'to-do', // New instances are always 'to-do'
+      original_task_id: originalTask.id,
+      due_date: null, // Reset due_date for the new instance
+      remind_at: null, // Reset remind_at for the new instance
+    };
+    console.log('createRecurringTaskInstance: New instance created with status:', newInstance.status, 'and created_at:', newInstance.created_at);
+
+    const { error: insertError } = await supabase
+      .from('tasks')
+      .insert(newInstance);
+
+    if (insertError) {
+      console.error('createRecurringTaskInstance: Error creating recurring task instance:', insertError);
+      showError('Failed to create the next instance of the recurring task.');
+      return;
+    }
+    setTasks(prev => [...prev, newInstance]); // Optimistically add to state
+    showSuccess(`Recurring task "${originalTask.description}" created for ${format(targetDate, 'MMM d')}.`);
+  }, [userId, tasks]); // `tasks` is a dependency because we read from it to check `existingInstance`
+
+  // New function to sync recurring tasks for the current date
+  const syncRecurringTasks = useCallback(async () => {
+    if (!userId || tasks.length === 0) {
+      console.log('syncRecurringTasks: Skipping sync - no user or no tasks loaded.');
+      return;
+    }
+
+    console.log(`syncRecurringTasks: Running for date ${currentDate.toISOString()}`);
+
+    const originalRecurringTasks = tasks.filter(t => t.recurring_type !== 'none' && t.original_task_id === null);
+
+    for (const originalTask of originalRecurringTasks) {
+      const allInstances = tasks.filter(t => t.original_task_id === originalTask.id || t.id === originalTask.id);
+
+      // Find the latest instance created on or before the current date
+      const latestRelevantInstance = allInstances
+        .filter(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), currentDate) || isSameDay(getUTCStartOfDay(parseISO(t.created_at)), currentDate))
+        .sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime())[0];
+
+      // Check if an instance already exists for the current date
+      const instanceForCurrentDate = allInstances.find(t =>
+        isSameDay(getUTCStartOfDay(parseISO(t.created_at)), currentDate)
+      );
+
+      if (!instanceForCurrentDate) {
+        // No instance for the current date. Decide if we need to create one.
+        if (!latestRelevantInstance) {
+          // No past instances, and original task is recurring. Create if original was created on or before today.
+          if (isBefore(getUTCStartOfDay(parseISO(originalTask.created_at)), currentDate) || isSameDay(getUTCStartOfDay(parseISO(originalTask.created_at)), currentDate)) {
+            await createRecurringTaskInstance(originalTask, currentDate);
+          }
+        } else if (latestRelevantInstance.status === 'completed' || latestRelevantInstance.status === 'skipped') {
+          // Latest instance was completed/skipped. Create a new 'to-do' instance for today.
+          await createRecurringTaskInstance(originalTask, currentDate);
+        }
+        // If latestRelevantInstance is 'to-do', it means it's still pending from a previous day.
+        // We don't create a new instance; it should just carry over.
+      }
+    }
+  }, [userId, tasks, currentDate, createRecurringTaskInstance]); // Dependencies for syncRecurringTasks
+
+  // Effect to fetch initial data and sections
   useEffect(() => {
-    // Only fetch data if user is authenticated AND authLoading is false
     if (!authLoading && userId) {
       fetchDataAndSections();
-    } else if (!authLoading && !userId) { // If auth is done loading and no user
+    } else if (!authLoading && !userId) {
       setTasks([]);
       setSections([]);
       setLoading(false);
       console.log('useTasks useEffect: Auth loaded, no user ID, clearing tasks and sections.');
-    } else if (authLoading) { // If auth is still loading
-      setTasks([]); // Clear tasks while loading to prevent stale data display
+    } else if (authLoading) {
+      setTasks([]);
       setSections([]);
-      setLoading(true); // Keep loading true
+      setLoading(true);
       console.log('useTasks useEffect: Auth still loading, clearing tasks and setting loading true.');
     }
-  }, [userId, authLoading, fetchDataAndSections]);
+  }, [userId, authLoading, fetchDataAndSections]); // fetchDataAndSections is stable due to useCallback
+
+  // Effect to sync recurring tasks whenever tasks or currentDate changes
+  useEffect(() => {
+    if (!loading && userId) { // Ensure initial loading is complete
+      syncRecurringTasks();
+    }
+  }, [loading, userId, currentDate, syncRecurringTasks]); // syncRecurringTasks is stable due to useCallback
 
   useEffect(() => {
     if (!userId) return;
@@ -171,7 +262,7 @@ export const useTasks = () => {
       tasks.forEach(task => {
         if (task.remind_at && task.status === 'to-do' && !remindedTaskIdsRef.current.has(task.id)) {
           const reminderTime = parseISO(task.remind_at);
-          const fiveMinutesAgo = new Date(new Date().getTime() - 5 * 60 * 1000); // Corrected to 5 minutes
+          const fiveMinutesAgo = new Date(new Date().getTime() - 5 * 60 * 1000);
           
           if (reminderTime <= new Date() && reminderTime > fiveMinutesAgo) {
             showReminder(`Reminder: ${task.description}`, task.id);
@@ -200,7 +291,7 @@ export const useTasks = () => {
         category: newTaskData.category || 'general',
         priority: newTaskData.priority || 'medium',
         due_date: newTaskData.due_date || null,
-        notes: newTaskData.notes || null, // Added missing property
+        notes: newTaskData.notes || null,
         remind_at: newTaskData.remind_at || null,
         section_id: newTaskData.section_id || null,
         order: null,
@@ -227,111 +318,36 @@ export const useTasks = () => {
     }
   }, [userId, currentDate]);
 
-  const createRecurringTaskInstance = useCallback(async (originalRecurringTask: Task, currentTasks: Task[]) => { // Added currentTasks parameter
-    console.log('createRecurringTaskInstance: Called for original task:', { id: originalRecurringTask.id, description: originalRecurringTask.description, status: originalRecurringTask.status, recurring_type: originalRecurringTask.recurring_type });
-    if (originalRecurringTask.recurring_type === 'none' || !userId) return;
-
-    let nextRecurrenceDate = new Date();
-    if (originalRecurringTask.recurring_type === 'daily') {
-      nextRecurrenceDate = addDays(currentDate, 1); // Base on currentDate from hook state
-    } else if (originalRecurringTask.recurring_type === 'weekly') {
-      nextRecurrenceDate = addWeeks(currentDate, 1);
-    } else if (originalRecurringTask.recurring_type === 'monthly') {
-      nextRecurrenceDate = addMonths(currentDate, 1);
-    }
-    
-    const nextRecurrenceDateUTC = getUTCStartOfDay(nextRecurrenceDate);
-
-    // Unique key for this original task and target recurrence date
-    const uniqueKeyForTargetDate = `${originalRecurringTask.id}-${nextRecurrenceDateUTC.toISOString()}`;
-
-    // 1. Check local ref to prevent immediate duplicates from rapid calls
-    if (createdRecurringInstancesTodayRef.current.has(uniqueKeyForTargetDate)) {
-        console.log(`createRecurringTaskInstance: Skipping creation: Instance for "${originalRecurringTask.description}" on ${nextRecurrenceDateUTC.toISOString()} already processed in current session.`);
-        return;
-    }
-
-    // 2. Check existing tasks in state (including optimistically added ones)
-    const existingInstanceForNextDay = currentTasks.some(t => // Use currentTasks here
-      (t.original_task_id === originalRecurringTask.id || t.id === originalRecurringTask.id) && 
-      isSameDay(getUTCStartOfDay(parseISO(t.created_at)), nextRecurrenceDateUTC) &&
-      t.status === 'to-do' // Only consider active instances
-    );
-
-    if (existingInstanceForNextDay) {
-      console.log(`createRecurringTaskInstance: Skipping creation: Instance for "${originalRecurringTask.description}" on ${nextRecurrenceDateUTC.toISOString()} already exists in state.`);
-      createdRecurringInstancesTodayRef.current.add(uniqueKeyForTargetDate); // Mark as processed even if found in state
-      return;
-    }
-
-    const newInstance: Task = {
-      ...originalRecurringTask,
-      id: uuidv4(),
-      created_at: nextRecurrenceDateUTC.toISOString(),
-      status: 'to-do', // This is explicitly set to 'to-do'
-      original_task_id: originalRecurringTask.id,
-      due_date: null, // Reset due_date for the new instance
-      remind_at: null, // Reset remind_at for the new instance
-    };
-    console.log('createRecurringTaskInstance: New instance created with status:', newInstance.status, 'and created_at:', newInstance.created_at);
-
-    const { error: insertError } = await supabase
-      .from('tasks')
-      .insert(newInstance);
-
-    if (insertError) {
-      console.error('createRecurringTaskInstance: Error creating recurring task instance:', insertError);
-      showError('Failed to create the next instance of the recurring task.');
-      return;
-    }
-    setTasks(prev => [...prev, newInstance]);
-    createdRecurringInstancesTodayRef.current.add(uniqueKeyForTargetDate); // Mark as processed after successful insert
-    showSuccess(`Recurring task "${originalRecurringTask.description}" has been reset for ${format(nextRecurrenceDate, 'MMM d')}.`);
-  }, [userId, currentDate]); // Removed tasks from dependency array
-
   const updateTask = useCallback(async (taskId: string, updates: TaskUpdate) => {
     if (!userId) {
       showError('User not authenticated.');
       return;
     }
-    // Use a functional update to get the latest tasks state
-    setTasks(prevTasks => {
-        const originalTask = prevTasks.find(t => t.id === taskId);
-        const updatedTasks = prevTasks.map(task => 
-            task.id === taskId ? { ...task, ...updates } : task
-        );
-
-        // Call createRecurringTaskInstance with the *latest* state
-        if (originalTask && updates.status === 'completed' && originalTask.recurring_type !== 'none') {
-            const taskToConsiderForRecurrence = originalTask.original_task_id ? prevTasks.find(t => t.id === originalTask.original_task_id) : originalTask;
-            if (taskToConsiderForRecurrence) {
-                // Pass the updatedTasks array to ensure createRecurringTaskInstance sees the latest state
-                createRecurringTaskInstance(taskToConsiderForRecurrence, updatedTasks); 
-            }
-        }
-        return updatedTasks;
-    });
+    // Optimistically update the state
+    setTasks(prevTasks => prevTasks.map(task =>
+      task.id === taskId ? { ...task, ...updates } : task
+    ));
 
     try {
-      // Perform the database update
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('tasks')
         .update(updates)
         .eq('id', taskId)
-        .eq('user_id', userId)
-        .select()
-        .single();
+        .eq('user_id', userId);
 
       if (error) throw error;
       showSuccess('Task updated successfully!');
 
+      // After a task is updated (especially if completed), re-sync recurring tasks
+      // to potentially create the next instance for the *next* day.
+      syncRecurringTasks();
+
     } catch (error: any) {
       console.error('Error updating task:', error);
       showError('Failed to update task.');
-      // If the database operation fails, revert the optimistic update
-      fetchDataAndSections();
+      fetchDataAndSections(); // Revert optimistic update by re-fetching
     }
-  }, [userId, fetchDataAndSections, createRecurringTaskInstance]); // Added createRecurringTaskInstance to dependency array
+  }, [userId, fetchDataAndSections, syncRecurringTasks]);
 
   const deleteTask = useCallback(async (taskId: string) => {
     if (!userId) {
@@ -565,84 +581,71 @@ export const useTasks = () => {
     if (statusFilter === 'archived') {
       relevantTasks = topLevelTasks.filter(task => task.status === 'archived');
     } else {
-      // 3. For non-archived views, determine which tasks are relevant for the current date
-      const recurringTasksToProcess: Record<string, Task[]> = {}; // Map originalId to ALL its instances + original (regardless of status)
-      const nonRecurringTasksForCurrentDate: Task[] = [];
+      // For non-archived views, determine which tasks are relevant for the current date
+      const recurringTaskGroups = new Map<string, Task[]>(); // Map original_task_id to all its instances
 
       topLevelTasks.forEach(task => {
-        const taskCreatedAtUTC = getUTCStartOfDay(parseISO(task.created_at));
-        const isTaskCreatedOnCurrentDate = isSameDay(taskCreatedAtUTC, effectiveCurrentDateUTC);
-
         if (task.recurring_type !== 'none') {
           const originalId = task.original_task_id || task.id;
-          if (!recurringTasksToProcess[originalId]) {
-            recurringTasksToProcess[originalId] = [];
+          if (!recurringTaskGroups.has(originalId)) {
+            recurringTaskGroups.set(originalId, []);
           }
-          recurringTasksToProcess[originalId].push(task);
+          recurringTaskGroups.get(originalId)!.push(task);
         } else {
-          // Non-recurring tasks: only show if created on the current date and not archived
-          if (isTaskCreatedOnCurrentDate && task.status !== 'archived') {
-            nonRecurringTasksForCurrentDate.push(task);
+          // Non-recurring tasks:
+          // Include if created on current date OR if it's a 'to-do' task from a previous day (carry-over)
+          const taskCreatedAtUTC = getUTCStartOfDay(parseISO(task.created_at));
+          if (isSameDay(taskCreatedAtUTC, effectiveCurrentDateUTC) && task.status !== 'archived') {
+            relevantTasks.push(task);
+          } else if (isBefore(taskCreatedAtUTC, effectiveCurrentDateUTC) && task.status === 'to-do') {
+            relevantTasks.push(task); // Carry over incomplete non-recurring tasks
           }
         }
       });
 
-      // Now, for each original recurring task, select the single best instance to display
-      Object.values(recurringTasksToProcess).forEach(allInstancesForOriginal => {
-          const originalId = allInstancesForOriginal[0].original_task_id || allInstancesForOriginal[0].id;
-          console.log(`filteredTasks: --- Original Task Group: ${originalId} (${allInstancesForOriginal[0].description}) ---`);
-          console.log('filteredTasks: All instances in group (including archived):', allInstancesForOriginal.map(t => ({ id: t.id, status: t.status, created_at: t.created_at, original_task_id: t.original_task_id })));
+      // Process recurring task groups
+      recurringTaskGroups.forEach((instances, originalId) => {
+        const originalTask = instances.find(t => t.id === originalId); // The actual original task
+        if (!originalTask) return; // Should not happen
 
-          // Find the instance created specifically for the current date
-          const instanceForCurrentDate = allInstancesForOriginal.find(t => 
-              isSameDay(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC)
-          );
+        // Find the instance created specifically for the current date
+        const instanceForCurrentDate = instances.find(t =>
+          isSameDay(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC)
+        );
 
-          let taskToDisplay: Task | undefined;
-
-          if (instanceForCurrentDate) {
-              // If an instance exists for the current date, display it with its actual status
-              taskToDisplay = instanceForCurrentDate;
-              console.log('filteredTasks: Decided to display instance created on current date:', { id: taskToDisplay.id, status: taskToDisplay.status, created_at: taskToDisplay.created_at });
-          } else {
-              // If no instance was created specifically for the current date, consider the original template.
-              const originalTemplate = allInstancesForOriginal.find(t => t.original_task_id === null);
-              if (originalTemplate && (isBefore(getUTCStartOfDay(parseISO(originalTemplate.created_at)), effectiveCurrentDateUTC) || isSameDay(getUTCStartOfDay(parseISO(originalTemplate.created_at)), effectiveCurrentDateUTC))) {
-                  // Create a "virtual" instance for display, resetting its status to 'to-do'
-                  taskToDisplay = {
-                      ...originalTemplate,
-                      id: originalTemplate.id, // Keep original ID for consistency in display, but it's a virtual representation
-                      status: 'to-do', // Always reset to 'to-do' for a new day's view if no specific instance exists
-                      created_at: effectiveCurrentDateUTC.toISOString(), // Set created_at to current date for display purposes
-                      original_task_id: originalTemplate.id, // Ensure it points to itself as original
-                  };
-                  console.log('filteredTasks: Decided to display virtual instance (no instance for current date), status reset to to-do.');
-              }
+        if (instanceForCurrentDate) {
+          // If an instance exists for the current date, display it with its actual status
+          if (instanceForCurrentDate.status !== 'archived') {
+            relevantTasks.push(instanceForCurrentDate);
           }
+        } else {
+          // No instance for the current date. Check if a previous 'to-do' instance should carry over.
+          // Find the latest 'to-do' instance created *before* the current date
+          const latestToDoBeforeCurrent = instances
+            .filter(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status === 'to-do')
+            .sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime())[0];
 
-          if (taskToDisplay) {
-              // Final check: only add if not archived, as archived tasks are handled by the top-level if block
-              if (taskToDisplay.status !== 'archived') {
-                  relevantTasks.push(taskToDisplay);
-                  console.log('filteredTasks: Adding recurring task to relevantTasks (final):', { id: taskToDisplay.id, description: taskToDisplay.description, status: taskToDisplay.status, created_at: taskToDisplay.created_at, original_task_id: taskToDisplay.original_task_id });
-              } else {
-                  console.log('filteredTasks: NOT adding recurring task to relevantTasks (final - archived):', { id: taskToDisplay.id, description: taskToDisplay.description, status: taskToDisplay.status });
-              }
+          if (latestToDoBeforeCurrent) {
+            // If there's a pending 'to-do' instance from a previous day, display it.
+            relevantTasks.push(latestToDoBeforeCurrent);
           } else {
-              console.log('filteredTasks: No task to display for this recurring group on current date.');
+            // If no instance for today, and no pending 'to-do' from past,
+            // but the original task was created on or before today,
+            // and its latest instance was completed/skipped, then a new instance should have been created by syncRecurringTasks.
+            // If syncRecurringTasks hasn't run yet or failed, this might be missed.
+            // However, we rely on syncRecurringTasks to populate `tasks` with the correct instance.
+            // So, if we reach here, it means no relevant instance exists in `tasks` for display.
           }
-          console.log(`filteredTasks: --- End Original Task Group: ${originalId} ---`);
+        }
       });
-
-      relevantTasks.push(...nonRecurringTasksForCurrentDate); // Add non-recurring tasks after recurring ones are processed
     }
 
-    // 4. Apply status filter (if not 'all' and not 'archived' which was handled above)
+    // 3. Apply status filter (if not 'all' and not 'archived' which was handled above)
     if (statusFilter !== 'all' && statusFilter !== 'archived') {
       relevantTasks = relevantTasks.filter(task => task.status === statusFilter);
     }
 
-    // 5. Apply other filters (search, category, priority, section)
+    // 4. Apply other filters (search, category, priority, section)
     if (searchFilter) {
       relevantTasks = relevantTasks.filter(task =>
         task.description.toLowerCase().includes(searchFilter.toLowerCase()) ||
@@ -664,7 +667,7 @@ export const useTasks = () => {
       });
     }
 
-    // 6. Sort the final tasks
+    // 5. Sort the final tasks
     relevantTasks.sort((a, b) => {
       const statusOrder = { 'to-do': 1, 'skipped': 2, 'completed': 3, 'archived': 4 };
       const statusComparison = statusOrder[a.status] - statusOrder[b.status];
