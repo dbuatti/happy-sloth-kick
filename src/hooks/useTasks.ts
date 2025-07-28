@@ -14,7 +14,7 @@ export interface Task {
   user_id: string;
   category: string;
   priority: string;
-  due_date: string | null;
+  due_date: string | null; // Changed from `string` to `string | null`
   notes: string | null;
   remind_at: string | null;
   section_id: string | null;
@@ -59,7 +59,7 @@ const getUTCStartOfDay = (date: Date) => {
 };
 
 export const useTasks = () => {
-  const HOOK_VERSION = "2024-07-29-10"; // Incremented version
+  const HOOK_VERSION = "2024-07-29-11"; // Incremented version
   const { user } = useAuth();
   const userId = user?.id;
 
@@ -221,7 +221,7 @@ export const useTasks = () => {
       tasks.forEach(task => {
         if (task.remind_at && task.status === 'to-do' && !remindedTaskIdsRef.current.has(task.id)) {
           const reminderTime = parseISO(task.remind_at);
-          const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
+          const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 60 * 1000);
           
           if (reminderTime <= now && reminderTime > fiveMinutesAgo) {
             showReminder(`Reminder: ${task.description}`, task.id);
@@ -240,22 +240,43 @@ export const useTasks = () => {
       return false;
     }
     try {
+      // Optimistically add the task to the state
+      const newTask: Task = {
+        id: uuidv4(),
+        user_id: userId,
+        created_at: currentDate.toISOString(),
+        status: newTaskData.status || 'to-do',
+        recurring_type: newTaskData.recurring_type || 'none',
+        category: newTaskData.category || 'general',
+        priority: newTaskData.priority || 'medium',
+        due_date: newTaskData.due_date || null,
+        notes: newTaskData.notes || null,
+        remind_at: newTaskData.remind_at || null,
+        section_id: newTaskData.section_id || null,
+        order: null,
+        original_task_id: null,
+        parent_task_id: newTaskData.parent_task_id || null,
+      };
+      setTasks(prev => [...prev, newTask]);
+
+      // Perform the database insert
       const { data, error } = await supabase
         .from('tasks')
-        .insert({ ...newTaskData, user_id: userId, created_at: currentDate.toISOString() }) // Use consistent UTC currentDate
+        .insert(newTask)
         .select()
         .single();
 
       if (error) throw error;
       showSuccess('Task added successfully!');
-      await fetchDataAndSections(); // Explicitly re-fetch after successful add
       return true;
     } catch (error: any) {
       console.error('Error adding task:', error);
       showError('Failed to add task.');
+      // If the database operation fails, revert the optimistic update
+      setTasks(prev => prev.filter(task => task.id !== newTask.id));
       return false;
     }
-  }, [userId, currentDate, fetchDataAndSections]); // Added fetchDataAndSections to dependencies
+  }, [userId, currentDate]);
 
   const updateTask = useCallback(async (taskId: string, updates: TaskUpdate) => {
     if (!userId) {
@@ -263,7 +284,12 @@ export const useTasks = () => {
       return;
     }
     try {
-      console.log(`updateTask: Attempting to update task ${taskId} with updates:`, updates); // Added log
+      // Optimistically update the task in the state
+      setTasks(prev => prev.map(task => 
+        task.id === taskId ? { ...task, ...updates } : task
+      ));
+
+      // Perform the database update
       const { data, error } = await supabase
         .from('tasks')
         .update(updates)
@@ -274,12 +300,13 @@ export const useTasks = () => {
 
       if (error) throw error;
       showSuccess('Task updated successfully!');
-      await fetchDataAndSections(); // Explicitly re-fetch after successful update
     } catch (error: any) {
       console.error('Error updating task:', error);
       showError('Failed to update task.');
+      // If the database operation fails, revert the optimistic update
+      fetchDataAndSections();
     }
-  }, [userId, fetchDataAndSections]); // Added fetchDataAndSections to dependencies
+  }, [userId, fetchDataAndSections]);
 
   const deleteTask = useCallback(async (taskId: string) => {
     if (!userId) {
@@ -287,6 +314,11 @@ export const useTasks = () => {
       return;
     }
     try {
+      // Optimistically remove the task from the state
+      const taskToDelete = tasks.find(t => t.id === taskId);
+      setTasks(prev => prev.filter(task => task.id !== taskId && task.parent_task_id !== taskId));
+
+      // Perform the database delete
       const { error: subtaskError } = await supabase
         .from('tasks')
         .delete()
@@ -302,14 +334,17 @@ export const useTasks = () => {
         .eq('user_id', userId);
 
       if (error) throw error;
-      setTasks(prev => prev.filter(task => task.id !== taskId && task.parent_task_id !== taskId));
       showSuccess('Task deleted successfully!');
     }
     catch (error: any) {
       console.error('Error deleting task:', error);
       showError('Failed to delete task.');
+      // If the database operation fails, revert the optimistic update
+      if (taskToDelete) {
+        setTasks(prev => [...prev, taskToDelete]);
+      }
     }
-  }, [userId]);
+  }, [userId, tasks]);
 
   const toggleTaskSelection = useCallback((taskId: string, checked: boolean) => {
     setSelectedTaskIds(prev =>
@@ -329,6 +364,12 @@ export const useTasks = () => {
     if (ids.length === 0) return;
 
     try {
+      // Optimistically update the tasks in the state
+      setTasks(prev => prev.map(task => 
+        ids.includes(task.id) ? { ...task, ...updates } : task
+      ));
+
+      // Perform the database update
       const { data, error } = await supabase
         .from('tasks')
         .update(updates)
@@ -337,16 +378,15 @@ export const useTasks = () => {
         .select();
 
       if (error) throw error;
-      // Instead of trying to update the state optimistically, we re-fetch everything.
-      // This is the most reliable way to ensure the state is correct.
-      await fetchDataAndSections();
       showSuccess(`${ids.length} tasks updated successfully!`);
       clearSelectedTasks();
     } catch (error: any) {
       console.error('Error bulk updating tasks:', error);
       showError('Failed to update tasks in bulk.');
+      // If the database operation fails, revert the optimistic update
+      fetchDataAndSections();
     }
-  }, [userId, selectedTaskIds, clearSelectedTasks, fetchDataAndSections]); // Added fetchDataAndSections to dependencies
+  }, [userId, selectedTaskIds, clearSelectedTasks, fetchDataAndSections]);
 
   const createSection = useCallback(async (name: string) => {
     if (!userId) {
