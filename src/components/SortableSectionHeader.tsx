@@ -73,23 +73,28 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
         )}
         {...attributes}
         {...listeners}
+        onClick={(e) => e.stopPropagation()} // Prevent toggle when dragging
       >
         <span className="w-1 h-4 bg-gray-300 dark:bg-gray-600 rounded-full opacity-50"></span>
       </div>
 
-      {/* Main header content */}
-      <div className="flex items-center justify-between p-3 pl-6"> {/* Increased p-2 to p-3 */}
+      {/* Main header content - now clickable for toggle */}
+      <div 
+        className="flex items-center justify-between p-3 pl-6 cursor-pointer" // Added cursor-pointer
+        onClick={!isEditing ? onToggleExpand : undefined} // Only toggle if not editing
+      >
         {isEditing ? (
-          <div className="flex items-center w-full gap-2">
+          <div className="flex items-center w-full gap-2" data-no-dnd="true"> {/* Added data-no-dnd */}
             <Input
               value={editingName}
               onChange={(e) => onNameChange(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && onSaveEdit()}
               className="text-xl font-semibold"
               autoFocus
+              onClick={(e) => e.stopPropagation()} // Prevent toggle when clicking input
             />
-            <Button size="sm" onClick={onSaveEdit} disabled={!editingName.trim()}>Save</Button>
-            <Button variant="ghost" size="sm" onClick={onCancelEdit}>Cancel</Button>
+            <Button size="sm" onClick={(e) => { e.stopPropagation(); onSaveEdit(); }} disabled={!editingName.trim()}>Save</Button>
+            <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onCancelEdit(); }}>Cancel</Button>
           </div>
         ) : (
           <div className="flex items-center gap-2 flex-1">
@@ -97,38 +102,36 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               <FolderOpen className="h-5 w-5 text-muted-foreground" />
               {name} ({taskCount})
             </h3>
-            <Button variant="ghost" size="icon" onClick={onEditClick} className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onEditClick(); }} className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity duration-200" data-no-dnd="true">
               <Edit className="h-4 w-4" />
             </Button>
           </div>
         )}
-        <div className="flex items-center space-x-1">
+        <div className="flex items-center space-x-1" data-no-dnd="true"> {/* Added data-no-dnd */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 p-0" 
+                onClick={(e) => e.stopPropagation()} // Prevent toggle when opening dropdown
+              >
                 <span className="sr-only">Open section menu</span>
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onEditClick()}>
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(); }}>
                 <Edit className="mr-2 h-4 w-4" /> Rename Section
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => onDeleteClick(id)} className="text-destructive focus:text-destructive">
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDeleteClick(id); }} className="text-destructive focus:text-destructive">
                 <Trash2 className="mr-2 h-4 w-4" /> Delete Section
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onToggleExpand}
-            className="flex-shrink-0"
-            aria-label={isExpanded ? "Collapse section" : "Expand section"}
-          >
-            <ChevronDown className={cn("h-5 w-5 transition-transform", isExpanded ? "rotate-0" : "-rotate-90")} />
-          </Button>
+          {/* Chevron icon remains to indicate expanded state, but is no longer a separate clickable button for toggle */}
+          <ChevronDown className={cn("h-5 w-5 transition-transform", isExpanded ? "rotate-0" : "-rotate-90")} />
         </div>
       </div>
     </div>
