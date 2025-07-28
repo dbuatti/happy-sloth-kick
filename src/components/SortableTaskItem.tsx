@@ -55,7 +55,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
 
   return (
     <li
-      key={`${task.id}-${task.status}-${currentDate.toISOString()}`} {/* Added currentDate to key */}
+      key={task.id}
       ref={setNodeRef}
       style={style}
       className={cn(
