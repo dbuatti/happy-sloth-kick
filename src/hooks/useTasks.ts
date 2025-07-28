@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess, showReminder } from '@/utils/toast';
 import { v4 as uuidv4 } from 'uuid';
-import { isSameDay, isPast, startOfDay as fnsStartOfDay, parseISO, format, isAfter, isBefore } from 'date-fns'; // Added isBefore
+import { isSameDay, isPast, startOfDay as fnsStartOfDay, parseISO, format, isAfter, isBefore, addDays, addWeeks, addMonths } from 'date-fns';
 
 export interface Task {
   id: string;
@@ -19,7 +19,7 @@ export interface Task {
   remind_at: string | null;
   section_id: string | null;
   order: number | null;
-  original_task_id: string | null;
+  original_task_id: string | null; // This is the ID of the original recurring task if this is an instance
   parent_task_id: string | null;
 }
 
@@ -59,7 +59,7 @@ const getUTCStartOfDay = (date: Date) => {
 };
 
 export const useTasks = () => {
-  const HOOK_VERSION = "2024-07-29-13"; // Incremented version
+  const HOOK_VERSION = "2024-07-29-14"; // Incremented version
   const { user } = useAuth();
   const userId = user?.id;
 
@@ -127,7 +127,6 @@ export const useTasks = () => {
       if (fetchError) throw fetchError;
       console.log('fetchTasks: Initial tasks fetched from DB:', initialTasksFromDB);
 
-      // The new system doesn't need to generate instances. We just use the tasks as-is.
       setTasks(initialTasksFromDB || []);
       console.log('fetchTasks: Tasks state updated with fetched data.');
       
@@ -138,18 +137,18 @@ export const useTasks = () => {
       setLoading(false);
       console.log('fetchTasks: Fetch process completed.');
     }
-  }, [userId]); // Removed currentDate from dependencies
+  }, [userId]);
 
   useEffect(() => {
     if (userId) {
-      fetchDataAndSections(); // Call the memoized function
+      fetchDataAndSections();
     } else {
       setTasks([]);
       setSections([]);
       setLoading(false);
       console.log('useTasks useEffect: No user ID, clearing tasks and sections.');
     }
-  }, [userId, fetchDataAndSections]); // Add fetchDataAndSections to dependencies
+  }, [userId, fetchDataAndSections]);
 
   useEffect(() => {
     if (!userId) return;
@@ -177,10 +176,8 @@ export const useTasks = () => {
       showError('User not authenticated.');
       return false;
     }
-    // Declare newTask outside the try block
     let newTask: Task;
     try {
-      // Optimistically add the task to the state
       newTask = {
         id: uuidv4(),
         user_id: userId,
@@ -200,7 +197,6 @@ export const useTasks = () => {
       };
       setTasks(prev => [...prev, newTask]);
 
-      // Perform the database insert
       const { data, error } = await supabase
         .from('tasks')
         .insert(newTask)
@@ -213,17 +209,66 @@ export const useTasks = () => {
     } catch (error: any) {
       console.error('Error adding task:', error);
       showError('Failed to add task.');
-      // If the database operation fails, revert the optimistic update
       setTasks(prev => prev.filter(task => task.id !== newTask.id));
       return false;
     }
   }, [userId, currentDate]);
+
+  const createRecurringTaskInstance = useCallback(async (originalRecurringTask: Task) => {
+    if (originalRecurringTask.recurring_type === 'none' || !userId) return;
+
+    let nextRecurrenceDate = new Date();
+    if (originalRecurringTask.recurring_type === 'daily') {
+      nextRecurrenceDate = addDays(currentDate, 1); // Base on currentDate from hook state
+    } else if (originalRecurringTask.recurring_type === 'weekly') {
+      nextRecurrenceDate = addWeeks(currentDate, 1);
+    } else if (originalRecurringTask.recurring_type === 'monthly') {
+      nextRecurrenceDate = addMonths(currentDate, 1);
+    }
+    
+    const nextRecurrenceDateUTC = getUTCStartOfDay(nextRecurrenceDate);
+
+    // Check if an instance for this original task already exists for the next recurrence date
+    const existingInstanceForNextDay = tasks.some(t => 
+      (t.original_task_id === originalRecurringTask.id || t.id === originalRecurringTask.id) && 
+      isSameDay(getUTCStartOfDay(parseISO(t.created_at)), nextRecurrenceDateUTC) &&
+      t.status === 'to-do' // Only consider active instances
+    );
+
+    if (existingInstanceForNextDay) {
+      console.log(`Skipping creation of recurring task instance for "${originalRecurringTask.description}" on ${nextRecurrenceDateUTC.toISOString()} as one already exists.`);
+      return;
+    }
+
+    const newInstance: Task = {
+      ...originalRecurringTask,
+      id: uuidv4(),
+      created_at: nextRecurrenceDateUTC.toISOString(),
+      status: 'to-do',
+      original_task_id: originalRecurringTask.id,
+      due_date: null, // Reset due_date for the new instance
+      remind_at: null, // Reset remind_at for the new instance
+    };
+
+    const { error: insertError } = await supabase
+      .from('tasks')
+      .insert(newInstance);
+
+    if (insertError) {
+      console.error('Error creating recurring task instance:', insertError);
+      showError('Failed to create the next instance of the recurring task.');
+      return;
+    }
+    setTasks(prev => [...prev, newInstance]);
+    showSuccess(`Recurring task "${originalRecurringTask.description}" has been reset for ${format(nextRecurrenceDate, 'MMM d')}.`);
+}, [userId, tasks, currentDate]);
 
   const updateTask = useCallback(async (taskId: string, updates: TaskUpdate) => {
     if (!userId) {
       showError('User not authenticated.');
       return;
     }
+    const originalTask = tasks.find(t => t.id === taskId); // Get the task before optimistic update
     try {
       // Optimistically update the task in the state
       setTasks(prev => prev.map(task => 
@@ -241,61 +286,36 @@ export const useTasks = () => {
 
       if (error) throw error;
       showSuccess('Task updated successfully!');
+
+      // --- NEW LOGIC FOR RECURRING TASKS ---
+      if (originalTask && updates.status === 'completed' && originalTask.recurring_type !== 'none') {
+        // If an original recurring task is completed, create its next instance
+        // Only create if it's the original task (not an instance itself)
+        const taskToConsiderForRecurrence = originalTask.original_task_id ? tasks.find(t => t.id === originalTask.original_task_id) : originalTask;
+        if (taskToConsiderForRecurrence) {
+            await createRecurringTaskInstance(taskToConsiderForRecurrence);
+        }
+      }
+      // --- END NEW LOGIC ---
+
     } catch (error: any) {
       console.error('Error updating task:', error);
       showError('Failed to update task.');
       // If the database operation fails, revert the optimistic update
       fetchDataAndSections();
     }
-  }, [userId, fetchDataAndSections]);
-
-  // New effect to handle recurring task creation
-  useEffect(() => {
-    const createRecurringTask = async (completedTask: Task) => {
-      if (completedTask.recurring_type === 'none') return;
-
-      // Create a new task for the next recurrence
-      const nextTask: Task = {
-        ...completedTask,
-        id: uuidv4(),
-        created_at: new Date().toISOString(), // Use current time for the new task
-        status: 'to-do',
-        original_task_id: completedTask.id, // Link it to the original
-      };
-
-      // Insert the new task
-      const { error: insertError } = await supabase
-        .from('tasks')
-        .insert(nextTask);
-
-      if (insertError) {
-        console.error('Error creating recurring task:', insertError);
-        showError('Failed to create the next instance of the recurring task.');
-        return;
-      }
-      // Optimistically add the new task to the state
-      setTasks(prev => [...prev, nextTask]);
-      showSuccess(`Recurring task "${completedTask.description}" has been reset for the next period.`);
-    };
-
-    // Find tasks that were completed in this update cycle
-    const completedRecurringTasks = tasks.filter(t => t.status === 'completed' && t.recurring_type !== 'none' && t.original_task_id === null);
-    completedRecurringTasks.forEach(createRecurringTask);
-  }, [tasks, userId]); // Only depend on tasks and userId
+  }, [userId, fetchDataAndSections, tasks, createRecurringTaskInstance]); // Add tasks and createRecurringTaskInstance to dependencies
 
   const deleteTask = useCallback(async (taskId: string) => {
     if (!userId) {
       showError('User not authenticated.');
       return;
     }
-    // Declare taskToDelete outside the try block
     let taskToDelete: Task | undefined;
     try {
-      // Optimistically remove the task from the state
       taskToDelete = tasks.find(t => t.id === taskId);
       setTasks(prev => prev.filter(task => task.id !== taskId && task.parent_task_id !== taskId));
 
-      // Perform the database delete
       const { error: subtaskError } = await supabase
         .from('tasks')
         .delete()
@@ -316,7 +336,6 @@ export const useTasks = () => {
     catch (error: any) {
       console.error('Error deleting task:', error);
       showError('Failed to delete task.');
-      // If the database operation fails, revert the optimistic update
       if (taskToDelete) {
         setTasks(prev => [...prev, taskToDelete]);
       }
@@ -341,12 +360,10 @@ export const useTasks = () => {
     if (ids.length === 0) return;
 
     try {
-      // Optimistically update the tasks in the state
       setTasks(prev => prev.map(task => 
         ids.includes(task.id) ? { ...task, ...updates } : task
       ));
 
-      // Perform the database update
       const { data, error } = await supabase
         .from('tasks')
         .update(updates)
@@ -360,7 +377,6 @@ export const useTasks = () => {
     } catch (error: any) {
       console.error('Error bulk updating tasks:', error);
       showError('Failed to update tasks in bulk.');
-      // If the database operation fails, revert the optimistic update
       fetchDataAndSections();
     }
   }, [userId, selectedTaskIds, clearSelectedTasks, fetchDataAndSections]);
@@ -501,7 +517,7 @@ export const useTasks = () => {
 
   const filteredTasks = useMemo(() => {
     console.log('filteredTasks: --- START FILTERING ---');
-    const effectiveCurrentDateUTC = getUTCStartOfDay(currentDate); // Ensure this is UTC midnight
+    const effectiveCurrentDateUTC = getUTCStartOfDay(currentDate);
     console.log('filteredTasks: Current Date (UTC):', effectiveCurrentDateUTC.toISOString());
     console.log('filteredTasks: Raw tasks BEFORE filter:', tasks.map(t => ({
       id: t.id,
@@ -518,84 +534,109 @@ export const useTasks = () => {
     workingTasks = workingTasks.filter(task => task.parent_task_id === null);
     console.log('filteredTasks: After subtask filter, count:', workingTasks.length);
 
-    // Apply main daily view logic (if not in 'archived' filter)
-    if (statusFilter !== 'archived') {
-      workingTasks = workingTasks.filter(task => {
-        const taskCreatedAt = parseISO(task.created_at);
-        const taskCreatedAtUTC = getUTCStartOfDay(taskCreatedAt); // Convert task's created_at to UTC midnight for comparison
+    let finalTasks: Task[] = [];
 
-        const isTaskCreatedOnCurrentDate = isSameDay(taskCreatedAtUTC, effectiveCurrentDateUTC);
+    // Separate recurring and non-recurring tasks for specific daily view logic
+    const nonRecurringTasks = workingTasks.filter(task => task.recurring_type === 'none');
+    const recurringTasks = workingTasks.filter(task => task.recurring_type !== 'none');
 
-        console.log(`  Task "${task.description}" (ID: ${task.id}):`);
-        console.log(`    created_at: ${task.created_at} (UTC: ${taskCreatedAtUTC.toISOString()})`);
-        console.log(`    currentDate (UTC): ${effectiveCurrentDateUTC.toISOString()}`);
-        console.log(`    isSameDay(${taskCreatedAtUTC.toISOString()}, ${effectiveCurrentDateUTC.toISOString()}) = ${isTaskCreatedOnCurrentDate}`);
-        console.log(`    status: ${task.status}, recurring_type: ${task.recurring_type}, original_task_id: ${task.original_task_id}`);
-
-        // Rule 1: Exclude archived tasks from the daily view
-        if (task.status === 'archived') {
-          console.log(`    -> Rule 2: Archived. Result: Excluded`);
-          return false;
-        }
-
-        // Rule 2: Handle tasks that are 'to-do' or 'skipped'
-        if (task.status === 'to-do' || task.status === 'skipped') {
-          // For non-recurring tasks, show if active (regardless of creation date)
-          console.log(`    -> Rule 3b: Active Non-Recurring Task. Result: Included`);
-          return true;
-        }
-
-        // Rule 3: Handle tasks that are 'completed'
-        if (task.status === 'completed') {
-          // Only show completed tasks if they were created on the current day
-          const shouldInclude = isTaskCreatedOnCurrentDate;
-          console.log(`    -> Rule 4: Completed Task. Created on current date? ${shouldInclude}. Result: ${shouldInclude ? 'Included' : 'Excluded'}`);
-          return shouldInclude;
-        }
-        
-        console.log(`    -> No specific rule matched for daily view. Result: Excluded`);
-        return false;
-      });
-      console.log('filteredTasks: After daily view logic, count:', workingTasks.length);
+    // --- Process Non-Recurring Tasks ---
+    if (statusFilter === 'archived') {
+      finalTasks.push(...nonRecurringTasks.filter(task => task.status === 'archived'));
     } else {
-      // For 'archived' status filter, only show archived tasks
-      workingTasks = workingTasks.filter(task => task.status === 'archived');
-      console.log('filteredTasks: After archived filter, count:', workingTasks.length);
+      let nonArchivedNonRecurring = nonRecurringTasks.filter(task => task.status !== 'archived');
+      if (statusFilter !== 'all') {
+        nonArchivedNonRecurring = nonArchivedNonRecurring.filter(task => task.status === statusFilter);
+      }
+      finalTasks.push(...nonArchivedNonRecurring);
     }
+    console.log('filteredTasks: After non-recurring processing, count:', finalTasks.length);
 
-    // 3. Apply other filters (search, category, priority, section)
+
+    // --- Process Recurring Tasks ---
+    if (statusFilter === 'archived') {
+      finalTasks.push(...recurringTasks.filter(task => task.status === 'archived'));
+    } else {
+      const activeRecurringInstances: Record<string, Task> = {};
+
+      recurringTasks.forEach(task => {
+        const taskCreatedAt = parseISO(task.created_at);
+        const taskCreatedAtUTC = getUTCStartOfDay(taskCreatedAt);
+
+        const isCreatedOnCurrentDate = isSameDay(taskCreatedAtUTC, effectiveCurrentDateUTC);
+        const isOriginalTask = task.original_task_id === null;
+        const originalId = isOriginalTask ? task.id : task.original_task_id!;
+
+        if (isCreatedOnCurrentDate) {
+          if (!activeRecurringInstances[originalId] || isAfter(taskCreatedAt, parseISO(activeRecurringInstances[originalId].created_at))) {
+            activeRecurringInstances[originalId] = task;
+          }
+        } else if (isOriginalTask) {
+          const hasInstanceForToday = recurringTasks.some(t => 
+            (t.original_task_id === task.id || t.id === task.id) && 
+            isSameDay(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC)
+          );
+          if (!hasInstanceForToday && task.status !== 'archived') {
+             if (!activeRecurringInstances[originalId]) {
+                activeRecurringInstances[originalId] = task;
+             }
+          }
+        }
+      });
+
+      Object.values(activeRecurringInstances).forEach(task => {
+        if (statusFilter === 'all' || statusFilter === task.status) {
+          finalTasks.push(task);
+        }
+      });
+    }
+    console.log('filteredTasks: After recurring processing, combined count:', finalTasks.length);
+
+
+    // 3. Apply other filters (search, category, priority, section) to the combined list
     if (searchFilter) {
-      workingTasks = workingTasks.filter(task =>
+      finalTasks = finalTasks.filter(task =>
         task.description.toLowerCase().includes(searchFilter.toLowerCase()) ||
         task.notes?.toLowerCase().includes(searchFilter.toLowerCase())
       );
-      console.log('filteredTasks: After search filter, count:', workingTasks.length);
+      console.log('filteredTasks: After search filter, count:', finalTasks.length);
     }
     if (categoryFilter && categoryFilter !== 'all') {
-      workingTasks = workingTasks.filter(task => task.category === categoryFilter);
-      console.log('filteredTasks: After category filter, count:', workingTasks.length);
+      finalTasks = finalTasks.filter(task => task.category === categoryFilter);
+      console.log('filteredTasks: After category filter, count:', finalTasks.length);
     }
     if (priorityFilter && priorityFilter !== 'all') {
-      workingTasks = workingTasks.filter(task => task.priority === priorityFilter);
-      console.log('filteredTasks: After priority filter, count:', workingTasks.length);
+      finalTasks = finalTasks.filter(task => task.priority === priorityFilter);
+      console.log('filteredTasks: After priority filter, count:', finalTasks.length);
     }
     if (sectionFilter && sectionFilter !== 'all') {
-      workingTasks = workingTasks.filter(task => {
+      finalTasks = finalTasks.filter(task => {
         if (sectionFilter === 'no-section') {
           return task.section_id === null;
         }
         return task.section_id === sectionFilter;
       });
-      console.log('filteredTasks: After section filter, count:', workingTasks.length);
+      console.log('filteredTasks: After section filter, count:', finalTasks.length);
     }
 
-    // 4. Apply final status filter for non-archived views (if statusFilter is not 'all')
-    if (statusFilter !== 'all' && statusFilter !== 'archived') {
-      workingTasks = workingTasks.filter(task => task.status === statusFilter);
-      console.log('filteredTasks: After final status filter, count:', workingTasks.length);
-    }
+    // 4. Sort the final tasks
+    finalTasks.sort((a, b) => {
+      const statusOrder = { 'to-do': 1, 'skipped': 2, 'completed': 3, 'archived': 4 };
+      const statusComparison = statusOrder[a.status] - statusOrder[b.status];
+      if (statusComparison !== 0) return statusComparison;
 
-    console.log('filteredTasks: Final tasks AFTER filter:', workingTasks.map(t => ({
+      const aSectionOrder = sections.find(s => s.id === a.section_id)?.order ?? Infinity;
+      const bSectionOrder = sections.find(s => s.id === b.section_id)?.order ?? Infinity;
+      if (aSectionOrder !== bSectionOrder) return aSectionOrder - bSectionOrder;
+
+      const aOrder = a.order ?? Infinity;
+      const bOrder = b.order ?? Infinity;
+      if (aOrder !== bOrder) return aOrder - bOrder;
+
+      return parseISO(a.created_at).getTime() - parseISO(b.created_at).getTime();
+    });
+
+    console.log('filteredTasks: Final tasks AFTER all filters and sorting:', finalTasks.map(t => ({
       id: t.id,
       description: t.description,
       status: t.status,
@@ -604,8 +645,8 @@ export const useTasks = () => {
       recurring_type: t.recurring_type
     })));
     console.log('filteredTasks: --- END FILTERING ---');
-    return workingTasks;
-  }, [tasks, currentDate, searchFilter, statusFilter, categoryFilter, priorityFilter, sectionFilter]);
+    return finalTasks;
+  }, [tasks, currentDate, searchFilter, statusFilter, categoryFilter, priorityFilter, sectionFilter, sections]);
 
   return {
     tasks,
