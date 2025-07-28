@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Check, Trash2, Archive, Flag, ListRestart } from "lucide-react";
+import { cn } from "@/lib/utils"; // Import cn for conditional classes
 
 interface BulkActionsProps {
   selectedTaskIds: string[];
@@ -13,11 +14,12 @@ const BulkActions: React.FC<BulkActionsProps> = ({ selectedTaskIds, onAction, on
 
   return (
     <div
-      className={`
-        flex items-center justify-between bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700
-        transition-all duration-300 ease-in-out
-        ${isActive ? 'max-h-screen py-4 opacity-100 pointer-events-auto' : 'max-h-0 py-0 opacity-0 pointer-events-none overflow-hidden'}
-      `}
+      className={cn(
+        "flex items-center justify-between bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700",
+        "h-[70px] px-4", // Fixed height and horizontal padding
+        "transition-all duration-300 ease-in-out",
+        isActive ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+      )}
     >
       <div className="text-sm text-gray-600 dark:text-gray-300">
         {selectedTaskIds.length} task(s) selected
