@@ -3,7 +3,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from "@/components/ui/dropdown-menu";
 import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing, FolderOpen } from 'lucide-react';
-import { format, parseISO, isSameDay, isAfter, isPast } from 'date-fns';
+import { format, parseISO, isAfter, isPast, isSameDay as _isSameDay } from 'date-fns'; // Renamed isSameDay to _isSameDay
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
@@ -45,14 +45,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
     }
   };
 
-  // Create a new Date object from currentDate to ensure consistent type for date-fns
   const currentRefDate = new Date(currentDate);
 
   const getDueDateDisplay = (dueDate: string | null) => {
     if (!dueDate) return null;
     
     const date = parseISO(dueDate);
-    if (isSameDay(date, currentRefDate)) {
+    if (_isSameDay(date, currentRefDate)) { // Using renamed _isSameDay
       return 'Today';
     } else if (isAfter(date, currentRefDate)) {
       return `Due ${format(date, 'MMM d')}`;
@@ -61,8 +60,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
     }
   };
 
-  const isOverdue = task.due_date && task.status !== 'completed' && isPast(parseISO(task.due_date), { refDate: currentRefDate }) && !isSameDay(parseISO(task.due_date), currentRefDate);
-  const isUpcoming = task.due_date && task.status !== 'completed' && isSameDay(parseISO(task.due_date), currentRefDate);
+  const isOverdue = task.due_date && task.status !== 'completed' && isPast(parseISO(task.due_date), { refDate: currentRefDate }) && !_isSameDay(parseISO(task.due_date), currentRefDate); // Using renamed _isSameDay
+  const isUpcoming = task.due_date && task.status !== 'completed' && _isSameDay(parseISO(task.due_date), currentRefDate); // Using renamed _isSameDay
 
   const { playSound } = useSound();
 
