@@ -1,9 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Search, Plus, Settings, CheckCircle2, Archive, Trash2, ListRestart, ChevronDown, ChevronUp, ListTodo, FolderOpen } from 'lucide-react';
+import { Plus, Settings, CheckCircle2, ListTodo } from 'lucide-react';
 import { useTasks } from '@/hooks/useTasks';
 import SortableTaskItem from './SortableTaskItem';
 import BulkActions from './BulkActions';
@@ -20,6 +18,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { CustomPointerSensor } from '@/lib/CustomPointerSensor';
 import TaskFilter from './TaskFilter';
 import { Skeleton } from '@/components/ui/skeleton';
+import ManageSectionsDialog from './ManageSectionsDialog';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Label } from "@/components/ui/label"; // Import Label
+import { Input } from "@/components/ui/input"; // Import Input
 
 interface TaskListProps {
   setIsAddTaskOpen: (open: boolean) => void;
@@ -85,7 +87,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
   });
 
   const [showConfirmBulkDeleteDialog, setShowConfirmBulkDeleteDialog] = useState(false);
-  const [isBulkActionInProgress, setIsBulkActionInProgress] = useState(false); // New state for bulk actions
+  const [isBulkActionInProgress, setIsBulkActionInProgress] = useState(false);
 
   const [isAddSectionOpen, setIsAddSectionOpen] = useState(false);
   const [newSectionName, setNewSectionName] = useState('');
@@ -93,6 +95,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
   const [editingSectionName, setNewEditingSectionName] = useState('');
   const [showConfirmDeleteSectionDialog, setShowConfirmDeleteSectionDialog] = useState(false);
   const [sectionToDeleteId, setSectionToDeleteId] = useState<string | null>(null);
+  const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
 
   const sensors = useSensors(
     useSensor(CustomPointerSensor, {
@@ -211,11 +214,11 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
   };
 
   const confirmBulkDelete = async () => {
-    setIsBulkActionInProgress(true); // Set loading state
-    await bulkUpdateTasks({ status: 'archived' }, selectedTaskIds); // Assuming delete means archive for now
+    setIsBulkActionInProgress(true);
+    await bulkUpdateTasks({ status: 'archived' }, selectedTaskIds);
     clearSelectedTasks();
     setShowConfirmBulkDeleteDialog(false);
-    setIsBulkActionInProgress(false); // Clear loading state
+    setIsBulkActionInProgress(false);
   };
 
   const handleStatusChange = useCallback(async (taskId: string, newStatus: "to-do" | "completed" | "skipped" | "archived") => {
@@ -277,70 +280,87 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <TaskFilter
-                currentDate={currentDate}
-                setCurrentDate={setCurrentDate}
-                searchFilter={searchFilter}
-                setSearchFilter={setSearchFilter}
-                statusFilter={statusFilter}
-                setStatusFilter={setStatusFilter}
-                categoryFilter={categoryFilter}
-                setCategoryFilter={setCategoryFilter}
-                priorityFilter={priorityFilter}
-                setPriorityFilter={setPriorityFilter}
-                sectionFilter={sectionFilter}
-                setSectionFilter={setSectionFilter}
-                sections={sections}
-                allCategories={allCategories}
-              />
+              {/* Top Section: Filters and Action Buttons */}
+              <div className="space-y-4 mb-4">
+                <TaskFilter
+                  currentDate={currentDate}
+                  setCurrentDate={setCurrentDate}
+                  searchFilter={searchFilter}
+                  setSearchFilter={setSearchFilter}
+                  statusFilter={statusFilter}
+                  setStatusFilter={setStatusFilter}
+                  categoryFilter={categoryFilter}
+                  setCategoryFilter={setCategoryFilter}
+                  priorityFilter={priorityFilter}
+                  setPriorityFilter={setPriorityFilter}
+                  sectionFilter={sectionFilter}
+                  setSectionFilter={setSectionFilter}
+                  sections={sections}
+                  allCategories={allCategories}
+                />
 
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-                <div className="relative flex-1">
-                </div>
-                <div className="flex gap-2">
-                  <Button onClick={() => handleAddTaskToSpecificSection(null)}>
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
+                  <Button onClick={() => handleAddTaskToSpecificSection(null)} className="w-full sm:w-auto">
                     <Plus className="mr-2 h-4 w-4" /> Add Task
                   </Button>
-                  <Dialog open={isAddSectionOpen} onOpenChange={setIsAddSectionOpen}>
-                    <DialogTrigger asChild>
-                      <Button variant="outline">
-                        <Plus className="mr-2 h-4 w-4" /> Add Section
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Add New Section</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4 py-4">
-                        <div>
-                          <Label htmlFor="new-section-name">Section Name</Label>
-                          <Input
-                            id="new-section-name"
-                            value={newSectionName}
-                            onChange={(e) => setNewSectionName(e.target.value)}
-                            placeholder="e.g., Work, Personal, Groceries"
-                            autoFocus
-                          />
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <Dialog open={isAddSectionOpen} onOpenChange={setIsAddSectionOpen}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" className="flex-1">
+                          <Plus className="mr-2 h-4 w-4" /> Add Section
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Add New Section</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                          <div>
+                            <Label htmlFor="new-section-name">Section Name</Label>
+                            <Input
+                              id="new-section-name"
+                              value={newSectionName}
+                              onChange={(e) => setNewSectionName(e.target.value)}
+                              placeholder="e.g., Work, Personal, Groceries"
+                              autoFocus
+                            />
+                          </div>
                         </div>
-                      </div>
-                      <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsAddSectionOpen(false)}>Cancel</Button>
-                        <Button onClick={handleAddSection} disabled={!newSectionName.trim()}>Add Section</Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => setIsAddSectionOpen(false)}>Cancel</Button>
+                          <Button onClick={handleAddSection} disabled={!newSectionName.trim()}>Add Section</Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline" className="flex-1" onClick={() => setIsManageSectionsOpen(true)}>
+                          <Settings className="mr-2 h-4 w-4" /> Manage Sections
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Manage, rename, delete, and reorder your task sections.
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                 </div>
               </div>
 
-              <DailyStreak tasks={filteredTasks} currentDate={currentDate} />
-              <SmartSuggestions currentDate={currentDate} setCurrentDate={setCurrentDate} />
+              {/* Daily Streak and Smart Suggestions */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+                <DailyStreak tasks={filteredTasks} currentDate={currentDate} />
+                <SmartSuggestions currentDate={currentDate} setCurrentDate={setCurrentDate} />
+              </div>
 
+              {/* Bulk Actions Bar */}
               <BulkActions
                 selectedTaskIds={selectedTaskIds}
                 onAction={handleBulkAction}
                 onClearSelection={clearSelectedTasks}
               />
 
+              {/* Task Sections and List */}
               {loading ? (
                 <div className="space-y-3">
                   {[...Array(5)].map((_, i) => (
@@ -530,6 +550,16 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* New Manage Sections Dialog */}
+      <ManageSectionsDialog
+        isOpen={isManageSectionsOpen}
+        onClose={() => setIsManageSectionsOpen(false)}
+        sections={sections}
+        updateSection={updateSection}
+        deleteSection={deleteSection}
+        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+      />
     </>
   );
 };
