@@ -51,17 +51,17 @@ const TaskItem: React.FC<TaskItemProps> = ({
     if (!dueDate) return null;
     
     const date = dateFns.parseISO(dueDate);
-    if (dateFns.isSameDay(date, currentRefDate)) {
+    if (dateFns.isSameDay(date as Date, currentRefDate as Date)) {
       return 'Today';
-    } else if (dateFns.isAfter(date, currentRefDate)) {
+    } else if (dateFns.isAfter(date as Date, currentRefDate as Date)) {
       return `Due ${dateFns.format(date, 'MMM d')}`;
     } else {
       return `Overdue ${dateFns.format(date, 'MMM d')}`;
     }
   };
 
-  const isOverdue = task.due_date && task.status !== 'completed' && dateFns.isPast(dateFns.parseISO(task.due_date), { refDate: currentRefDate }) && !dateFns.isSameDay(dateFns.parseISO(task.due_date), currentRefDate);
-  const isUpcoming = task.due_date && task.status !== 'completed' && dateFns.isSameDay(dateFns.parseISO(task.due_date), currentRefDate);
+  const isOverdue = task.due_date && task.status !== 'completed' && dateFns.isPast(dateFns.parseISO(task.due_date) as Date, { refDate: currentRefDate as Date }) && !dateFns.isSameDay(dateFns.parseISO(task.due_date) as Date, currentRefDate as Date);
+  const isUpcoming = task.due_date && task.status !== 'completed' && dateFns.isSameDay(dateFns.parseISO(task.due_date) as Date, currentRefDate as Date);
 
   const { playSound } = useSound();
 
