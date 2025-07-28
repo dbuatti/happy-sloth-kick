@@ -115,7 +115,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
       <Label>Category</Label>
       <div className="flex space-x-2">
         <Select value={value} onValueChange={onChange}>
-          <SelectTrigger className="flex-1"> {/* Changed w-full to flex-1 */}
+          <SelectTrigger className="flex-1 min-w-0"> {/* Added min-w-0 here */}
             <div className="flex items-center gap-2 w-full">
               <div className={cn("w-4 h-4 rounded-full flex items-center justify-center border", selectedCategoryColorProps.backgroundClass, selectedCategoryColorProps.dotBorder)}>
                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: selectedCategoryColorProps.dotColor }}></div>
