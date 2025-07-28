@@ -76,7 +76,7 @@ interface UseTasksProps {
 }
 
 export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: UseTasksProps = {}) => {
-  const HOOK_VERSION = "2024-07-30-14"; // Updated version
+  const HOOK_VERSION = "2024-07-30-15"; // Updated version
   const { user, loading: authLoading } = useAuth();
   const userId = user?.id;
 
@@ -274,7 +274,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         console.log(`syncRecurringTasks: Original task "${originalTask.description}" created today. Creating first instance.`);
       } else {
         const latestPreviousInstance = allInstancesOfThisRecurringTask
-          .filter(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status !== 'archived')
+          .filter(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status === 'to-do')
           .sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime())[0];
 
         if (latestPreviousInstance) {
@@ -845,6 +845,13 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
           }
         }
       });
+
+      // NEW FILTER: Apply focus mode section filter for daily view
+      const focusModeSectionIds = new Set(sections.filter(s => s.include_in_focus_mode).map(s => s.id));
+      relevantTasks = relevantTasks.filter(task => 
+        task.section_id === null || focusModeSectionIds.has(task.section_id)
+      );
+      console.log('filteredTasks: After focus mode section filter:', relevantTasks.map(t => t.id));
     }
 
     let finalFilteredTasks = relevantTasks;
