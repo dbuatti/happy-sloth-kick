@@ -21,13 +21,16 @@ const Archive: React.FC<ArchiveProps> = ({ currentDate, setCurrentDate }) => {
     updateTask,
     deleteTask,
     sections,
+    setStatusFilter,
     allCategories,
-  } = useTasks({ viewMode: 'archive' }); // Removed currentDate, setCurrentDate, setStatusFilter
+  } = useTasks({ currentDate: new Date(), setCurrentDate: () => {}, viewMode: 'archive' }); // Still use new Date() for its internal date logic, as Archive is not tied to the main app's date navigator.
 
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
 
-  // Removed useEffect that setStatusFilter('archived')
+  useEffect(() => {
+    setStatusFilter('archived');
+  }, [setStatusFilter]);
 
   const handleTaskStatusChange = async (taskId: string, newStatus: Task['status']) => {
     await updateTask(taskId, { status: newStatus });
