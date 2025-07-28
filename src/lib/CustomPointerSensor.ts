@@ -6,7 +6,7 @@ export class CustomPointerSensor extends PointerSensor {
     {
       eventName: 'onPointerDown' as const,
       handler: ({ nativeEvent: event }) => {
-        // Ignore clicks on interactive elements
+        // Ignore clicks on interactive elements marked with data-no-dnd="true"
         if (event.target instanceof HTMLElement && event.target.closest('[data-no-dnd="true"]')) {
           return false;
         }

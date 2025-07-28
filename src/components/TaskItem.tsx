@@ -97,6 +97,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
         id={`task-${task.id}`}
         onClick={(e) => e.stopPropagation()}
         className="flex-shrink-0"
+        data-no-dnd="true" // Add this attribute
       />
 
       <div className="flex-1 min-w-0">
@@ -177,6 +178,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
             size="sm" 
             className="h-7 px-2 text-xs"
             onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'to-do'); playSound(); }}
+            data-no-dnd="true" // Add this attribute
           >
             <ListTodo className="h-3 w-3 mr-1" /> To-Do
           </Button>
@@ -186,6 +188,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           size="icon" 
           className="h-7 w-7"
           onClick={(e) => { e.stopPropagation(); onEditTask(task); }}
+          data-no-dnd="true" // Add this attribute
         >
           <Edit className="h-4 w-4" />
         </Button>
@@ -195,12 +198,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
               variant="ghost" 
               className="h-7 w-7 p-0"
               onClick={(e) => e.stopPropagation()}
+              data-no-dnd="true" // Add this attribute
             >
               <span className="sr-only">Open menu</span>
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" data-no-dnd="true"> {/* Add this attribute to content as well */}
             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'to-do'); playSound(); }}>
               Mark as To-Do
             </DropdownMenuItem>
@@ -215,10 +219,10 @@ const TaskItem: React.FC<TaskItemProps> = ({
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuSub>
-              <DropdownMenuSubTrigger>
+              <DropdownMenuSubTrigger data-no-dnd="true"> {/* Add this attribute */}
                 <FolderOpen className="mr-2 h-4 w-4" /> Move to Section
               </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent>
+              <DropdownMenuSubContent data-no-dnd="true"> {/* Add this attribute */}
                 {sections.length === 0 ? (
                   <DropdownMenuItem disabled>No sections available</DropdownMenuItem>
                 ) : (

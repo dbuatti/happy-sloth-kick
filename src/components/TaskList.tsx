@@ -20,7 +20,27 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from '@/components/ui/switch';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { cn } from '@/lib/utils'; // Added missing import for cn
+import { cn } from '@/lib/utils';
+
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragOverlay,
+  UniqueIdentifier,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable';
+import { createPortal } from 'react-dom';
+import { CustomPointerSensor } from '@/lib/CustomPointerSensor'; // Import custom sensor
+import SortableTaskItem from './SortableTaskItem'; // Import SortableTaskItem
+import SortableSectionHeader from './SortableSectionHeader'; // Import SortableSectionHeader
 
 interface TaskListProps {
   setIsAddTaskOpen: (open: boolean) => void;
@@ -30,6 +50,7 @@ interface TaskListProps {
 
 const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setCurrentDate }) => {
   const {
+    tasks, // Use raw tasks for DND operations
     filteredTasks,
     loading,
     userId,
@@ -48,6 +69,9 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode,
+    reorderTasksInSameSection, // Added
+    moveTaskToNewSection,       // Added
+    reorderSections,            // Added
     allCategories,
     statusFilter,
     setStatusFilter,
@@ -93,6 +117,13 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
   const [sectionToDeleteId, setSectionToDeleteId] = useState<string | null>(null);
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
 
+  const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
+
+  const sensors = useSensors(
+    useSensor(CustomPointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
   const tasksBySection = useMemo(() => {
     const grouped: Record<string, Task[]> = { 'no-section': [] };
     
@@ -100,7 +131,10 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
       grouped[currentSection.id] = [];
     });
 
-    filteredTasks.forEach(task => {
+    // Filter tasks for display based on current filters, but include all top-level tasks for DND
+    const tasksForGrouping = tasks.filter(task => task.parent_task_id === null);
+
+    tasksForGrouping.forEach(task => {
       const sectionId = task.section_id;
       if (sectionId && grouped[sectionId] !== undefined) {
         grouped[sectionId].push(task);
@@ -109,29 +143,82 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
       }
     });
 
-    return grouped;
-  }, [filteredTasks, sections]);
+    // Apply filtering and sorting to the grouped tasks for display
+    const finalGrouped: Record<string, Task[]> = {};
+    Object.entries(grouped).forEach(([sectionKey, taskList]) => {
+      let sectionFilteredTasks = taskList;
+
+      if (searchFilter) {
+        sectionFilteredTasks = sectionFilteredTasks.filter(task =>
+          task.description.toLowerCase().includes(searchFilter.toLowerCase()) ||
+          task.notes?.toLowerCase().includes(searchFilter.toLowerCase())
+        );
+      }
+      if (categoryFilter && categoryFilter !== 'all') {
+        sectionFilteredTasks = sectionFilteredTasks.filter(task => task.category === categoryFilter);
+      }
+      if (priorityFilter && priorityFilter !== 'all') {
+        sectionFilteredTasks = sectionFilteredTasks.filter(task => task.priority === priorityFilter);
+      }
+      // Status filter is applied globally to filteredTasks from useTasks, so no need to re-apply here
+      // Section filter is handled by the grouping itself
+
+      finalGrouped[sectionKey] = sectionFilteredTasks.sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
+    });
+
+    return finalGrouped;
+  }, [tasks, sections, searchFilter, categoryFilter, priorityFilter]); // Removed filteredTasks from dependencies
 
   const focusModeTasksForDailyStreak = useMemo(() => {
     const focusModeSectionIds = new Set(sections.filter(s => s.include_in_focus_mode).map(s => s.id));
-    return filteredTasks.filter(task => 
-      task.section_id === null || focusModeSectionIds.has(task.section_id)
+    return tasks.filter(task => // Use raw tasks here, then filter by focus mode sections
+      task.parent_task_id === null &&
+      task.status !== 'archived' && // Only consider non-archived tasks for streak
+      (task.section_id === null || focusModeSectionIds.has(task.section_id))
     );
-  }, [filteredTasks, sections]);
+  }, [tasks, sections]);
 
-  const toggleSection = (sectionId: string) => {
-    setExpandedSections(prev => {
-      const newState = {
-        ...prev,
-        [sectionId]: !prev[sectionId]
-      };
-      try {
-        localStorage.setItem('taskList_expandedSections', JSON.stringify(newState));
-      } catch (e) {
-        console.error('Error loading expanded sections from localStorage:', e);
+  const handleDragStart = (event: any) => {
+    setActiveId(event.active.id);
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      setActiveId(null);
+      return;
+    }
+
+    const activeType = active.data.current?.type;
+    const overType = over.data.current?.type;
+
+    if (activeType === 'task' && overType === 'task') {
+      const activeTask = active.data.current?.task as Task;
+      const overTask = over.data.current?.task as Task;
+
+      if (activeTask.section_id === overTask.section_id) {
+        // Reorder within the same section
+        await reorderTasksInSameSection(activeTask.section_id, active.id as string, over.id as string);
+      } else {
+        // Move to a different section
+        await moveTaskToNewSection(active.id as string, activeTask.section_id, overTask.section_id, over.id as string);
       }
-      return newState;
-    });
+    } else if (activeType === 'task' && overType === 'section') {
+      const activeTask = active.data.current?.task as Task;
+      const overSection = over.data.current?.section as TaskSection;
+      // Move task to a new section (dropped on section header)
+      await moveTaskToNewSection(active.id as string, activeTask.section_id, overSection.id, null); // No specific overId task
+    } else if (activeType === 'task' && over.id === 'no-section-drop-area') {
+      const activeTask = active.data.current?.task as Task;
+      // Move task to 'No Section'
+      await moveTaskToNewSection(active.id as string, activeTask.section_id, null, null);
+    } else if (activeType === 'section' && overType === 'section') {
+      // Reorder sections
+      await reorderSections(active.id as string, over.id as string);
+    }
+
+    setActiveId(null);
   };
 
   const handleAddTaskSubmit = async (taskData: any) => {
@@ -217,6 +304,9 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
     setSectionToPreselect(sectionId);
     setIsAddTaskForm(true);
   };
+
+  const activeTask = activeId ? tasks.find(t => t.id === activeId) : null;
+  const activeSection = activeId ? sections.find(s => s.id === activeId) : null;
 
   return (
     <>
@@ -313,117 +403,70 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                   ))}
                 </div>
               ) : (
-                <>
-                  {sections.map((currentSection: TaskSection) => {
-                    const isExpanded = expandedSections[currentSection.id] !== false;
-                    const sectionTasks = tasksBySection[currentSection.id] || [];
-                    
-                    return (
-                      <div key={currentSection.id} className="mb-3">
-                        <div className="relative rounded-lg bg-muted dark:bg-gray-700 text-foreground shadow-sm hover:shadow-md transition-shadow duration-200 group">
-                          <div className="flex items-center justify-between p-1 pl-3">
-                            {editingSectionId === currentSection.id ? (
-                              <div className="flex items-center w-full gap-2">
-                                <Input
-                                  value={editingSectionName}
-                                  onChange={(e) => setNewEditingSectionName(e.target.value)}
-                                  onKeyDown={(e) => e.key === 'Enter' && handleRenameSection()}
-                                  className="text-xl font-semibold"
-                                  autoFocus
-                                />
-                                <Button size="sm" onClick={handleRenameSection} disabled={!editingSectionName.trim()}>Save</Button>
-                                <Button variant="ghost" size="sm" onClick={handleCancelSectionEdit}>Cancel</Button>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-2 flex-1">
-                                <h3 className="text-xl font-semibold flex items-center gap-2">
-                                  <FolderOpen className="h-5 w-5 text-muted-foreground" />
-                                  {currentSection.name} ({sectionTasks.length})
-                                </h3>
-                                <Button variant="ghost" size="icon" onClick={() => handleEditSectionClick(currentSection)} className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            )}
-                            <div className="flex items-center space-x-1">
-                              <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
-                                <Label htmlFor={`focus-mode-toggle-${currentSection.id}`} className="text-xs text-muted-foreground">
-                                  {currentSection.include_in_focus_mode ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                                </Label>
-                                <Switch
-                                  id={`focus-mode-toggle-${currentSection.id}`}
-                                  checked={currentSection.include_in_focus_mode}
-                                  onCheckedChange={(checked) => updateSectionIncludeInFocusMode(currentSection.id, checked)}
-                                  aria-label={`Include ${currentSection.name} in Focus Mode`}
-                                />
-                              </div>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className="h-6 w-6 p-0"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <span className="sr-only">Open section menu</span>
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleAddTaskToSpecificSection(currentSection.id); }}>
-                                    <Plus className="mr-2 h-4 w-4" /> Add Task to Section
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); markAllTasksInSectionCompleted(currentSection.id); }}>
-                                    <CheckCircle2 className="mr-2 h-4 w-4" /> Mark All Completed
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditSectionClick(currentSection); }}>
-                                    <Edit className="mr-2 h-4 w-4" /> Rename Section
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDeleteSectionClick(currentSection.id); }} className="text-destructive focus:text-destructive">
-                                    <Trash2 className="mr-2 h-4 w-4" /> Delete Section
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                              <Button variant="ghost" size="icon" onClick={() => toggleSection(currentSection.id)} className="h-6 w-6 p-0">
-                                <ChevronDown className={cn("h-5 w-5 transition-transform", isExpanded ? "rotate-0" : "-rotate-90")} />
-                              </Button>
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragStart={handleDragStart}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext items={sections.map(s => s.id)} strategy={verticalListSortingStrategy}>
+                    {sections.map((currentSection: TaskSection) => {
+                      const isExpanded = expandedSections[currentSection.id] !== false;
+                      const sectionTasks = tasksBySection[currentSection.id] || [];
+                      
+                      return (
+                        <div key={currentSection.id} className="mb-3">
+                          <SortableSectionHeader
+                            section={currentSection}
+                            sectionTasksCount={sectionTasks.length}
+                            isExpanded={isExpanded}
+                            toggleSection={toggleSection}
+                            editingSectionId={editingSectionId}
+                            editingSectionName={editingSectionName}
+                            setNewEditingSectionName={setNewEditingSectionName}
+                            handleRenameSection={handleRenameSection}
+                            handleCancelSectionEdit={handleCancelSectionEdit}
+                            handleEditSectionClick={handleEditSectionClick}
+                            handleAddTaskToSpecificSection={handleAddTaskToSpecificSection}
+                            markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
+                            handleDeleteSectionClick={handleDeleteSectionClick}
+                            updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+                          />
+                          {isExpanded && (
+                            <div className="mt-1 space-y-1 pl-2">
+                              <SortableContext items={sectionTasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
+                                <ul className="list-none space-y-2">
+                                  {sectionTasks.length === 0 ? (
+                                    <div className="text-center text-gray-500 py-4 flex flex-col items-center gap-2" id={`empty-section-${currentSection.id}`} data-no-dnd="true">
+                                      <ListTodo className="h-8 w-8 text-muted-foreground" />
+                                      <p className="text-lg font-medium">No tasks in this section.</p>
+                                      <p className="text-sm">Drag a task here or add one using the menu above!</p>
+                                    </div>
+                                  ) : (
+                                    sectionTasks.map(task => (
+                                      <SortableTaskItem
+                                        key={task.id}
+                                        task={task}
+                                        userId={userId}
+                                        onStatusChange={handleStatusChange}
+                                        onDelete={deleteTask}
+                                        onUpdate={updateTask}
+                                        isSelected={selectedTaskIds.includes(task.id)}
+                                        onToggleSelect={toggleTaskSelection}
+                                        sections={sections}
+                                        onEditTask={handleEditTask}
+                                        currentDate={currentDate}
+                                      />
+                                    ))
+                                  )}
+                                </ul>
+                              </SortableContext>
                             </div>
-                          </div>
+                          )}
                         </div>
-                        {isExpanded && (
-                          <div className="mt-1 space-y-1 pl-2">
-                            <ul className="list-none space-y-2">
-                              {sectionTasks.length === 0 ? (
-                                <div className="text-center text-gray-500 py-4 flex flex-col items-center gap-2">
-                                  <ListTodo className="h-8 w-8 text-muted-foreground" />
-                                  <p className="text-lg font-medium">No tasks in this section.</p>
-                                  <p className="text-sm">Add one using the menu above!</p>
-                                </div>
-                              ) : (
-                                sectionTasks.map(task => (
-                                  <li key={task.id} className="relative border rounded-lg p-1.5 transition-all duration-200 ease-in-out group hover:shadow-md">
-                                    <TaskItem
-                                      task={task}
-                                      userId={userId}
-                                      onStatusChange={handleStatusChange}
-                                      onDelete={deleteTask}
-                                      onUpdate={updateTask}
-                                      isSelected={selectedTaskIds.includes(task.id)}
-                                      onToggleSelect={toggleTaskSelection}
-                                      sections={sections}
-                                      onEditTask={handleEditTask}
-                                      currentDate={currentDate}
-                                    />
-                                  </li>
-                                ))
-                              )}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </SortableContext>
 
                   {tasksBySection['no-section'].length > 0 && (
                     <div className="mb-3">
@@ -442,10 +485,11 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                         >
                           <Plus className="mr-2 h-4 w-4" /> Add Task to No Section
                         </Button>
-                        <ul className="list-none space-y-2">
-                          {tasksBySection['no-section'].map(task => (
-                            <li key={task.id} className="relative border rounded-lg p-1.5 transition-all duration-200 ease-in-out group hover:shadow-md">
-                              <TaskItem
+                        <SortableContext items={tasksBySection['no-section'].map(t => t.id)} strategy={verticalListSortingStrategy}>
+                          <ul className="list-none space-y-2">
+                            {tasksBySection['no-section'].map(task => (
+                              <SortableTaskItem
+                                key={task.id}
                                 task={task}
                                 userId={userId}
                                 onStatusChange={handleStatusChange}
@@ -457,9 +501,12 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                                 onEditTask={handleEditTask}
                                 currentDate={currentDate}
                               />
-                            </li>
-                          ))}
-                        </ul>
+                            ))}
+                          </ul>
+                        </SortableContext>
+                        <div id="no-section-drop-area" className="h-10 border border-dashed border-muted-foreground/50 rounded-md flex items-center justify-center text-sm text-muted-foreground" data-no-dnd="true">
+                          Drop tasks here for 'No Section'
+                        </div>
                       </div>
                     </div>
                   )}
@@ -474,7 +521,45 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                       </Button>
                     </div>
                   )}
-                </>
+
+                  {createPortal(
+                    <DragOverlay>
+                      {activeTask && (
+                        <SortableTaskItem
+                          task={activeTask}
+                          userId={userId}
+                          onStatusChange={handleStatusChange}
+                          onDelete={deleteTask}
+                          onUpdate={updateTask}
+                          isSelected={false}
+                          onToggleSelect={() => {}}
+                          sections={sections}
+                          onEditTask={handleEditTask}
+                          currentDate={currentDate}
+                        />
+                      )}
+                      {activeSection && (
+                        <SortableSectionHeader
+                          section={activeSection}
+                          sectionTasksCount={tasksBySection[activeSection.id]?.length || 0}
+                          isExpanded={expandedSections[activeSection.id] !== false}
+                          toggleSection={toggleSection}
+                          editingSectionId={editingSectionId}
+                          editingSectionName={editingSectionName}
+                          setNewEditingSectionName={setNewEditingSectionName}
+                          handleRenameSection={handleRenameSection}
+                          handleCancelSectionEdit={handleCancelSectionEdit}
+                          handleEditSectionClick={handleEditSectionClick}
+                          handleAddTaskToSpecificSection={handleAddTaskToSpecificSection}
+                          markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
+                          handleDeleteSectionClick={handleDeleteSectionClick}
+                          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+                        />
+                      )}
+                    </DragOverlay>,
+                    document.body
+                  )}
+                </DndContext>
               )}
             </CardContent>
           </Card>
