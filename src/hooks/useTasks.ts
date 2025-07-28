@@ -280,8 +280,10 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         console.log(`syncRecurringTasks: Original task "${originalTask.description}" created today. Creating first instance.`);
       } else {
         // For dates after the original creation date, check the status of the *latest previous instance*.
+        // IMPORTANT CHANGE: Filter by `t.status !== 'archived'` to find the latest non-archived instance,
+        // regardless of whether it was 'to-do', 'completed', or 'skipped'.
         const latestPreviousInstance = allInstancesOfThisRecurringTask
-          .filter(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status === 'to-do') // Only consider non-archived instances for carry-over logic
+          .filter(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status !== 'archived')
           .sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime())[0];
 
         if (latestPreviousInstance) {
