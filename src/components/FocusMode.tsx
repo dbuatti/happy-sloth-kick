@@ -27,7 +27,7 @@ const FocusMode: React.FC<FocusModeProps> = ({ currentDate, setCurrentDate }) =>
   const { user } = useAuth();
   const userId = user?.id;
   // FocusMode doesn't operate on a specific daily date, so we pass dummy values to useTasks
-  const { tasks, updateTask } = useTasks({ currentDate: new Date(), setCurrentDate: () => {} });
+  const { tasks, updateTask, sections } = useTasks({ currentDate: new Date(), setCurrentDate: () => {} });
   const { setIsFocusModeActive } = useUI();
 
   const [timeRemaining, setTimeRemaining] = useState(WORK_DURATION);
@@ -41,12 +41,22 @@ const FocusMode: React.FC<FocusModeProps> = ({ currentDate, setCurrentDate }) =>
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchSuggestedTasks = useCallback(() => {
-    if (!tasks) return [];
+    if (!tasks || !sections) return [];
     const activeTasks = tasks.filter(
       t => t.status === 'to-do'
     );
+
+    const focusModeSections = new Set(
+      sections.filter(s => s.include_in_focus_mode).map(s => s.id)
+    );
+
+    const filteredForFocus = activeTasks.filter(task => {
+      // Include tasks with no section, or tasks in sections included in focus mode
+      return task.section_id === null || focusModeSections.has(task.section_id);
+    });
+
     // Prioritize high/urgent tasks, then due today/overdue
-    const sortedTasks = activeTasks.sort((a, b) => {
+    const sortedTasks = filteredForFocus.sort((a, b) => {
       const priorityOrder: { [key: string]: number } = { 'urgent': 4, 'high': 3, 'medium': 2, 'low': 1, 'none': 0 };
       const aPrio = priorityOrder[a.priority] || 0;
       const bPrio = priorityOrder[b.priority] || 0;
@@ -58,11 +68,11 @@ const FocusMode: React.FC<FocusModeProps> = ({ currentDate, setCurrentDate }) =>
       return aDueDate - bDueDate; // Sooner due date first
     });
     setSuggestedTasks(sortedTasks.slice(0, 5)); // Get top 5 suggestions
-  }, [tasks]);
+  }, [tasks, sections]); // Add sections to dependency array
 
   useEffect(() => {
     fetchSuggestedTasks();
-  }, [fetchSuggestedTasks, tasks]);
+  }, [fetchSuggestedTasks, tasks, sections]); // Add sections to dependency array
 
   useEffect(() => {
     setIsFocusModeActive(true);

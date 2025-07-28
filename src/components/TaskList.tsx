@@ -45,6 +45,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
     createSection,
     updateSection,
     deleteSection,
+    updateSectionIncludeInFocusMode, // Destructure new function
     reorderTasksInSameSection,
     moveTaskToNewSection,
     reorderSections,
@@ -336,6 +337,8 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                             onCancelEdit={handleCancelSectionEdit}
                             onEditClick={() => handleEditSectionClick(currentSection)}
                             onDeleteClick={handleDeleteSectionClick}
+                            includeInFocusMode={currentSection.include_in_focus_mode} // Pass prop
+                            onToggleIncludeInFocusMode={(checked) => updateSectionIncludeInFocusMode(currentSection.id, checked)} // Pass handler
                           />
                           {isExpanded && (
                             <div className="mt-2 space-y-2 pl-2">

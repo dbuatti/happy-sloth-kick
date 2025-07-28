@@ -1,11 +1,13 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { FolderOpen, ChevronDown, Edit, MoreHorizontal, Trash2 } from 'lucide-react';
+import { FolderOpen, ChevronDown, Edit, MoreHorizontal, Trash2, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input'; // Import Input
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'; // Import DropdownMenu components
+import { Input } from '@/components/ui/input';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label'; // Added Label import
 
 interface SortableSectionHeaderProps {
   id: string;
@@ -13,14 +15,15 @@ interface SortableSectionHeaderProps {
   taskCount: number;
   isExpanded: boolean;
   onToggleExpand: () => void;
-  // New props for editing
   isEditing: boolean;
   editingName: string;
   onNameChange: (newName: string) => void;
   onSaveEdit: () => void;
   onCancelEdit: () => void;
-  onEditClick: () => void; // To trigger editing from the header
-  onDeleteClick: (sectionId: string) => void; // New prop for delete
+  onEditClick: () => void;
+  onDeleteClick: (sectionId: string) => void;
+  includeInFocusMode: boolean;
+  onToggleIncludeInFocusMode: (include: boolean) => void;
 }
 
 const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
@@ -35,7 +38,9 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
   onSaveEdit,
   onCancelEdit,
   onEditClick,
-  onDeleteClick, // Destructure new prop
+  onDeleteClick,
+  includeInFocusMode,
+  onToggleIncludeInFocusMode,
 }) => {
   const {
     attributes,
@@ -108,6 +113,17 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
           </div>
         )}
         <div className="flex items-center space-x-1" data-no-dnd="true"> {/* Added data-no-dnd */}
+          <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}> {/* Prevent section collapse when clicking switch */}
+            <Label htmlFor={`focus-mode-toggle-${id}`} className="text-xs text-muted-foreground">
+              {includeInFocusMode ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+            </Label>
+            <Switch
+              id={`focus-mode-toggle-${id}`}
+              checked={includeInFocusMode}
+              onCheckedChange={onToggleIncludeInFocusMode}
+              aria-label={`Include ${name} in Focus Mode`}
+            />
+          </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button 

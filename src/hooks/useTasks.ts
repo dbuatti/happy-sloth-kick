@@ -30,6 +30,7 @@ export interface TaskSection {
   name: string;
   user_id: string;
   order: number | null;
+  include_in_focus_mode: boolean; // New field
 }
 
 type TaskUpdate = Partial<Omit<Task, 'id' | 'user_id' | 'created_at'>>;
@@ -123,7 +124,7 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
       // Fetch sections
       const { data: sectionsData, error: sectionsError } = await supabase
         .from('task_sections')
-        .select('*')
+        .select('*, include_in_focus_mode') // Select new column
         .eq('user_id', userId)
         .order('order', { ascending: true })
         .order('name', { ascending: true });
@@ -258,7 +259,7 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
         // For dates after the original creation date, check the status of the *latest previous instance*.
         // IMPORTANT: Do NOT filter by status here. We need the actual latest instance.
         const latestPreviousInstance = allInstancesOfThisRecurringTask
-          .filter(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC))
+          .filter(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status !== 'archived') // Only consider non-archived instances for carry-over logic
           .sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime())[0];
 
         if (latestPreviousInstance) {
@@ -549,7 +550,7 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
 
       const { data, error } = await supabase
         .from('task_sections')
-        .insert({ name, user_id: userId, order: newOrder })
+        .insert({ name, user_id: userId, order: newOrder, include_in_focus_mode: true }) // Default to true
         .select()
         .single();
 
@@ -585,6 +586,26 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
       showError('Failed to update section.');
     }
   }, [userId]);
+
+  const updateSectionIncludeInFocusMode = useCallback(async (sectionId: string, include: boolean) => {
+    if (!userId) {
+      showError('User not authenticated.');
+      return;
+    }
+    try {
+      const { error } = await supabase
+        .from('task_sections')
+        .update({ include_in_focus_mode: include })
+        .eq('id', sectionId)
+        .eq('user_id', userId);
+      if (error) throw error;
+      setSections(prev => prev.map(s => (s.id === sectionId ? { ...s, include_in_focus_mode: include } : s)));
+      showSuccess(`Section "${sections.find(s => s.id === sectionId)?.name}" focus mode setting updated!`);
+    } catch (error: any) {
+      console.error('Error updating section focus mode setting:', error);
+      showError('Failed to update section focus mode setting.');
+    }
+  }, [userId, sections]);
 
   const deleteSection = useCallback(async (sectionId: string) => {
     if (!userId) {
@@ -903,6 +924,7 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
     createSection,
     updateSection,
     deleteSection,
+    updateSectionIncludeInFocusMode, // Expose new function
     reorderTasksInSameSection,
     moveTaskToNewSection,
     reorderSections,
