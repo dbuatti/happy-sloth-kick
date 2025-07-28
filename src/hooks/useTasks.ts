@@ -233,7 +233,7 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
       // This happens if the latest relevant instance from a previous day was completed/skipped,
       // or if this is the very first day the recurring task should appear.
       const latestRelevantInstanceBeforeCurrentDate = allInstancesOfThisRecurringTask
-        .filter(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status === 'to-do') // <-- Fixed: effectiveCurrentDateUTC is now defined
+        .filter(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status === 'to-do') // Only consider 'to-do' tasks for carry-over
         .sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime())[0];
 
       const shouldCreateNewToDoInstance =
@@ -624,19 +624,16 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
 
         if (task.recurring_type !== 'none') {
           if (processedOriginalIds.has(originalId)) {
+            console.log(`filteredTasks: Skipping already processed originalId: ${originalId}`);
             return;
           }
 
           const allInstancesOfThisRecurringTask = tasks.filter(t =>
             t.original_task_id === originalId || t.id === originalId
           );
+          console.log(`filteredTasks: For originalId ${originalId} ("${task.description}"), all instances:`, allInstancesOfThisRecurringTask.map(t => ({id: t.id, created_at: t.created_at, status: t.status})));
 
           let taskToDisplay: Task | null = null;
-
-          // Prioritize:
-          // 1. A 'to-do' instance for the current date
-          // 2. A 'completed' or 'skipped' instance for the current date
-          // 3. A 'to-do' instance carried over from a previous day
 
           const toDoForCurrentDay = allInstancesOfThisRecurringTask.find(t =>
             isSameDay(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status === 'to-do'
@@ -644,14 +641,14 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
           
           if (toDoForCurrentDay) {
             taskToDisplay = toDoForCurrentDay;
-            console.log(`filteredTasks: For original ${originalId}, found TO-DO instance for current date (${format(effectiveCurrentDateUTC, 'yyyy-MM-dd')}). Pushing this.`);
+            console.log(`filteredTasks: For original ${originalId}, found TO-DO instance for current date (${format(effectiveCurrentDateUTC, 'yyyy-MM-dd')}). Selected ID: ${taskToDisplay.id}`);
           } else {
             const completedOrSkippedForCurrentDay = allInstancesOfThisRecurringTask.find(t =>
               isSameDay(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && (t.status === 'completed' || t.status === 'skipped')
             );
             if (completedOrSkippedForCurrentDay) {
               taskToDisplay = completedOrSkippedForCurrentDay;
-              console.log(`filteredTasks: For original ${originalId}, found COMPLETED/SKIPPED instance for current date (${format(effectiveCurrentDateUTC, 'yyyy-MM-dd')}). Pushing this.`);
+              console.log(`filteredTasks: For original ${originalId}, found COMPLETED/SKIPPED instance for current date (${format(effectiveCurrentDateUTC, 'yyyy-MM-dd')}). Selected ID: ${taskToDisplay.id}`);
             } else {
               const carryOverTask = allInstancesOfThisRecurringTask
                 .filter(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status === 'to-do')
@@ -659,7 +656,7 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
 
               if (carryOverTask) {
                 taskToDisplay = carryOverTask;
-                console.log(`filteredTasks: For original ${originalId}, no instance for current date. Found carry-over from ${format(parseISO(carryOverTask.created_at), 'yyyy-MM-dd')} with status: ${carryOverTask.status}. Pushing this.`);
+                console.log(`filteredTasks: For original ${originalId}, no instance for current date. Found carry-over from ${format(parseISO(carryOverTask.created_at), 'yyyy-MM-dd')} with status: ${carryOverTask.status}. Selected ID: ${taskToDisplay.id}`);
               } else {
                 console.log(`filteredTasks: For original ${originalId}, no relevant instance found for current date or carry-over.`);
               }
@@ -669,15 +666,21 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
           if (taskToDisplay && taskToDisplay.status !== 'archived') {
             console.log(`filteredTasks: ACTUALLY PUSHING: ID: ${taskToDisplay.id}, Desc: "${taskToDisplay.description}", Status: "${taskToDisplay.status}", Created At: "${taskToDisplay.created_at}"`);
             relevantTasks.push(taskToDisplay);
+          } else if (taskToDisplay && taskToDisplay.status === 'archived') {
+            console.log(`filteredTasks: NOT PUSHING: ID: ${taskToDisplay.id}, Desc: "${taskToDisplay.description}", Status: "${taskToDisplay.status}" (archived)`);
           }
           processedOriginalIds.add(originalId);
         } else {
           // Non-recurring tasks
           const isTaskCreatedOnCurrentDate = isSameDay(taskCreatedAtUTC, effectiveCurrentDateUTC);
           if (isTaskCreatedOnCurrentDate && task.status !== 'archived') {
+            console.log(`filteredTasks: Pushing non-recurring task created on current date: ${task.id}, ${task.description}`);
             relevantTasks.push(task);
           } else if (isBefore(taskCreatedAtUTC, effectiveCurrentDateUTC) && task.status === 'to-do') {
+            console.log(`filteredTasks: Pushing non-recurring carry-over task: ${task.id}, ${task.description}`);
             relevantTasks.push(task); // Carry over incomplete non-recurring tasks
+          } else {
+            console.log(`filteredTasks: Skipping non-recurring task: ${task.id}, ${task.description} (not created today, not to-do carry-over, or archived)`);
           }
         }
       });
