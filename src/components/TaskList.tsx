@@ -50,6 +50,14 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
     moveTaskToNewSection,
     reorderSections,
     allCategories, // Destructure allCategories
+    statusFilter, // Destructure filter states
+    setStatusFilter,
+    categoryFilter,
+    setCategoryFilter,
+    priorityFilter,
+    setPriorityFilter,
+    sectionFilter,
+    setSectionFilter,
   } = useTasks({ currentDate, setCurrentDate });
 
   console.log('TaskList: Received filteredTasks:', filteredTasks.map(t => ({
@@ -260,7 +268,22 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <TaskFilter currentDate={currentDate} setCurrentDate={setCurrentDate} />
+              <TaskFilter
+                currentDate={currentDate}
+                setCurrentDate={setCurrentDate}
+                searchFilter={searchFilter}
+                setSearchFilter={setSearchFilter}
+                statusFilter={statusFilter}
+                setStatusFilter={setStatusFilter}
+                categoryFilter={categoryFilter}
+                setCategoryFilter={setCategoryFilter}
+                priorityFilter={priorityFilter}
+                setPriorityFilter={setPriorityFilter}
+                sectionFilter={sectionFilter}
+                setSectionFilter={setSectionFilter}
+                sections={sections}
+                allCategories={allCategories}
+              />
 
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <div className="relative flex-1">

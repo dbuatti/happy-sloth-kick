@@ -7,39 +7,41 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { showError } from "@/utils/toast";
-import { useTasks } from '@/hooks/useTasks';
-
-interface Category {
-  id: string;
-  name: string;
-  color: string;
-}
+import { TaskSection, Category } from '@/hooks/useTasks'; // Import types
 
 interface TaskFilterProps {
   currentDate: Date;
   setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
+  searchFilter: string;
+  setSearchFilter: (value: string) => void;
+  statusFilter: string;
+  setStatusFilter: (value: string) => void;
+  categoryFilter: string;
+  setCategoryFilter: (value: string) => void;
+  priorityFilter: string;
+  setPriorityFilter: (value: string) => void;
+  sectionFilter: string;
+  setSectionFilter: (value: string) => void;
+  sections: TaskSection[];
+  allCategories: Category[];
 }
 
-const TaskFilter: React.FC<TaskFilterProps> = ({ currentDate, setCurrentDate }) => {
-  const {
-    userId,
-    searchFilter,
-    setSearchFilter,
-    statusFilter,
-    setStatusFilter,
-    categoryFilter,
-    setCategoryFilter,
-    priorityFilter,
-    setPriorityFilter,
-    sectionFilter,
-    setSectionFilter,
-    sections,
-    allCategories, // Use allCategories from useTasks
-  } = useTasks({ currentDate, setCurrentDate });
-
-  // Removed localCategories state and useEffect for fetching categories,
-  // as allCategories is now provided by useTasks.
-
+const TaskFilter: React.FC<TaskFilterProps> = ({
+  currentDate,
+  setCurrentDate,
+  searchFilter,
+  setSearchFilter,
+  statusFilter,
+  setStatusFilter,
+  categoryFilter,
+  setCategoryFilter,
+  priorityFilter,
+  setPriorityFilter,
+  sectionFilter,
+  setSectionFilter,
+  sections,
+  allCategories,
+}) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
