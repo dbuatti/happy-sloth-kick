@@ -20,7 +20,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Skeleton } from '@/components/ui/skeleton'; // Import Skeleton
+import { Skeleton } from '@/components/ui/skeleton';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Import Select components
 
 const ProjectBalanceTracker: React.FC = () => {
   const {
@@ -34,6 +35,8 @@ const ProjectBalanceTracker: React.FC = () => {
     resetAllProjectCounts,
     updateProjectTrackerTitle,
     userId,
+    sortOption, // Destructure sortOption
+    setSortOption, // Destructure setSortOption
   } = useProjects();
 
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
@@ -190,44 +193,61 @@ const ProjectBalanceTracker: React.FC = () => {
                 </Button>
               </CardTitle>
             )}
-            <Dialog open={isAddProjectOpen} onOpenChange={setIsAddProjectOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" /> Add Project
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add New Project</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div>
-                    <Label htmlFor="project-name">Project Name</Label>
-                    <Input
-                      id="project-name"
-                      value={newProjectName}
-                      onChange={(e) => setNewProjectName(e.target.value)}
-                      placeholder="e.g., Learn Rust, Garden Design"
-                      autoFocus
-                    />
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <Dialog open={isAddProjectOpen} onOpenChange={setIsAddProjectOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="mr-2 h-4 w-4" /> Add Project
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add New Project</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div>
+                      <Label htmlFor="project-name">Project Name</Label>
+                      <Input
+                        id="project-name"
+                        value={newProjectName}
+                        onChange={(e) => setNewProjectName(e.target.value)}
+                        placeholder="e.g., Learn Rust, Garden Design"
+                        autoFocus
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="project-description">Description (Optional)</Label>
+                      <Textarea
+                        id="project-description"
+                        value={newProjectDescription}
+                        onChange={(e) => setNewProjectDescription(e.target.value)}
+                        placeholder="Notes about this project..."
+                        rows={3}
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="project-description">Description (Optional)</Label>
-                    <Textarea
-                      id="project-description"
-                      value={newProjectDescription}
-                      onChange={(e) => setNewProjectDescription(e.target.value)}
-                      placeholder="Notes about this project..."
-                      rows={3}
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsAddProjectOpen(false)}>Cancel</Button>
-                  <Button onClick={handleAddProject}>Add Project</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsAddProjectOpen(false)}>Cancel</Button>
+                    <Button onClick={handleAddProject}>Add Project</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="sort-by">Sort by:</Label>
+                <Select value={sortOption} onValueChange={(value: 'name_asc' | 'count_asc' | 'count_desc' | 'created_at_asc' | 'created_at_desc') => setSortOption(value)}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Sort projects" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="name_asc">Alphabetical (A-Z)</SelectItem>
+                    <SelectItem value="count_asc">Tally (Low to High)</SelectItem>
+                    <SelectItem value="count_desc">Tally (High to Low)</SelectItem>
+                    <SelectItem value="created_at_asc">Oldest First</SelectItem>
+                    <SelectItem value="created_at_desc">Newest First</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="pt-0">
             {showCelebration && (

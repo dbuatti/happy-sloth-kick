@@ -25,6 +25,7 @@ export const useProjects = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [sectionTitle, setSectionTitle] = useState('Project Balance Tracker');
+  const [sortOption, setSortOption] = useState<'name_asc' | 'count_asc' | 'count_desc' | 'created_at_asc' | 'created_at_desc'>('created_at_asc');
 
   const fetchProjectsAndSettings = useCallback(async () => {
     if (!userId) {
@@ -34,11 +35,33 @@ export const useProjects = () => {
     setLoading(true);
     try {
       // Fetch projects
-      const { data: projectsData, error: projectsError } = await supabase
+      let query = supabase
         .from('projects')
         .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: true }); // Order by creation for stable list
+        .eq('user_id', userId);
+
+      switch (sortOption) {
+        case 'name_asc':
+          query = query.order('name', { ascending: true });
+          break;
+        case 'count_asc':
+          query = query.order('current_count', { ascending: true });
+          break;
+        case 'count_desc':
+          query = query.order('current_count', { ascending: false });
+          break;
+        case 'created_at_asc':
+          query = query.order('created_at', { ascending: true });
+          break;
+        case 'created_at_desc':
+          query = query.order('created_at', { ascending: false });
+          break;
+        default:
+          query = query.order('created_at', { ascending: true }); // Default sort
+          break;
+      }
+
+      const { data: projectsData, error: projectsError } = await query;
 
       if (projectsError) throw projectsError;
       setProjects(projectsData || []);
@@ -71,7 +94,7 @@ export const useProjects = () => {
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, [userId, sortOption]);
 
   useEffect(() => {
     fetchProjectsAndSettings();
@@ -90,7 +113,8 @@ export const useProjects = () => {
         .single();
 
       if (error) throw error;
-      setProjects(prev => [...prev, data]);
+      // Re-fetch to ensure correct sorting after adding
+      await fetchProjectsAndSettings(); 
       showSuccess('Project added successfully!');
       return true;
     } catch (error: any) {
@@ -98,7 +122,7 @@ export const useProjects = () => {
       showError('Failed to add project.');
       return false;
     }
-  }, [userId]);
+  }, [userId, fetchProjectsAndSettings]);
 
   const updateProject = useCallback(async (projectId: string, updates: Partial<Project>) => {
     if (!userId) {
@@ -115,7 +139,8 @@ export const useProjects = () => {
         .single();
 
       if (error) throw error;
-      setProjects(prev => prev.map(p => (p.id === projectId ? data : p)));
+      // Re-fetch to ensure correct sorting after updating
+      await fetchProjectsAndSettings();
       showSuccess('Project updated successfully!');
       return true;
     } catch (error: any) {
@@ -123,7 +148,7 @@ export const useProjects = () => {
       showError('Failed to update project.');
       return false;
     }
-  }, [userId]);
+  }, [userId, fetchProjectsAndSettings]);
 
   const deleteProject = useCallback(async (projectId: string) => {
     if (!userId) {
@@ -138,7 +163,8 @@ export const useProjects = () => {
         .eq('user_id', userId);
 
       if (error) throw error;
-      setProjects(prev => prev.filter(p => p.id !== projectId));
+      // Re-fetch to ensure correct sorting after deleting
+      await fetchProjectsAndSettings();
       showSuccess('Project deleted successfully!');
       return true;
     } catch (error: any) {
@@ -146,7 +172,7 @@ export const useProjects = () => {
       showError('Failed to delete project.');
       return false;
     }
-  }, [userId]);
+  }, [userId, fetchProjectsAndSettings]);
 
   const incrementProjectCount = useCallback(async (projectId: string) => {
     if (!userId) {
@@ -172,7 +198,8 @@ export const useProjects = () => {
         .eq('user_id', userId); // Only reset for the current user
 
       if (error) throw error;
-      setProjects(prev => prev.map(p => ({ ...p, current_count: 0 })));
+      // Re-fetch to ensure correct sorting after resetting
+      await fetchProjectsAndSettings();
       showSuccess('All project counters reset!');
       return true;
     } catch (error: any) {
@@ -180,7 +207,7 @@ export const useProjects = () => {
       showError('Failed to reset project counts.');
       return false;
     }
-  }, [userId]);
+  }, [userId, fetchProjectsAndSettings]);
 
   const updateProjectTrackerTitle = useCallback(async (newTitle: string) => {
     if (!userId) {
@@ -214,5 +241,7 @@ export const useProjects = () => {
     resetAllProjectCounts,
     updateProjectTrackerTitle,
     userId,
+    sortOption,
+    setSortOption,
   };
 };
