@@ -129,6 +129,14 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
     return grouped;
   }, [filteredTasks, sections]);
 
+  // Filter tasks specifically for DailyStreak to only include focus-mode relevant tasks
+  const focusModeTasksForDailyStreak = useMemo(() => {
+    const focusModeSectionIds = new Set(sections.filter(s => s.include_in_focus_mode).map(s => s.id));
+    return filteredTasks.filter(task => 
+      task.section_id === null || focusModeSectionIds.has(task.section_id)
+    );
+  }, [filteredTasks, sections]);
+
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
     
@@ -179,7 +187,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
       try {
         localStorage.setItem('taskList_expandedSections', JSON.stringify(newState));
       } catch (e) {
-        console.error('Error saving expanded sections to localStorage:', e);
+        console.error('Error loading expanded sections from localStorage:', e);
       }
       return newState;
     });
@@ -349,7 +357,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
 
               {/* Daily Streak and Smart Suggestions */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-                <DailyStreak tasks={filteredTasks} currentDate={currentDate} />
+                <DailyStreak tasks={focusModeTasksForDailyStreak} currentDate={currentDate} />
                 <SmartSuggestions currentDate={currentDate} setCurrentDate={setCurrentDate} />
               </div>
 
