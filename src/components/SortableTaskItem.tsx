@@ -89,7 +89,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           className="flex-shrink-0 p-1 cursor-grab text-muted-foreground hover:text-foreground"
           {...attributes}
           {...listeners}
-          data-no-dnd="true" // Ensure the handle itself is not draggable by other elements
+          // Removed data-no-dnd="true" from here to enable dragging
         >
           <GripVertical className="h-4 w-4" />
         </div>
