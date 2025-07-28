@@ -46,12 +46,13 @@ const FocusMode: React.FC<FocusModeProps> = ({ currentDate, setCurrentDate }) =>
       t => t.status === 'to-do'
     );
 
+    // Filter sections based on include_in_focus_mode
     const focusModeSections = new Set(
       sections.filter(s => s.include_in_focus_mode).map(s => s.id)
     );
 
     const filteredForFocus = activeTasks.filter(task => {
-      // Include tasks with no section, or tasks in sections included in focus mode
+      // Include tasks with no section, or tasks in sections explicitly included in focus mode
       return task.section_id === null || focusModeSections.has(task.section_id);
     });
 
