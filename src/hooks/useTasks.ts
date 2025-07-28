@@ -258,6 +258,8 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       );
       console.log(`syncRecurringTasks: For originalId ${originalTask.id} ("${originalTask.description}"), all instances:`, allInstancesOfThisRecurringTask.map(t => ({id: t.id, created_at: t.created_at, status: t.status})));
 
+      let taskToDisplay: Task | null = null;
+
       const instanceForCurrentDay = allInstancesOfThisRecurringTask.find(t =>
         isSameDay(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status !== 'archived'
       );
@@ -946,9 +948,9 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     if (viewMode === 'daily') {
       if (statusFilter !== 'all') {
         finalFilteredTasks = finalFilteredTasks.filter(task => task.status === statusFilter);
-      } else {
-        finalFilteredTasks = finalFilteredTasks.filter(task => task.status !== 'archived');
       }
+      // If statusFilter is 'all', no further status filtering is needed here,
+      // as relevantTasks already contains only what should be shown for 'all' statuses on the current day.
     }
 
     if (searchFilter) {
