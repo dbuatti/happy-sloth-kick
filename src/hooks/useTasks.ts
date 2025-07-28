@@ -153,15 +153,15 @@ export const useTasks = () => {
 
     const targetDateUTC = getUTCStartOfDay(targetDate);
 
-    // Check if an instance already exists for this targetDate in the current state
-    // This check is crucial to prevent duplicate DB inserts if syncRecurringTasks is called multiple times
-    const existingInstance = tasks.find(t =>
+    // Check if a 'to-do' instance already exists for this targetDate
+    const existingToDoInstance = tasks.find(t =>
       (t.original_task_id === originalTask.id || t.id === originalTask.id) &&
-      isSameDay(getUTCStartOfDay(parseISO(t.created_at)), targetDateUTC)
+      isSameDay(getUTCStartOfDay(parseISO(t.created_at)), targetDateUTC) &&
+      t.status === 'to-do'
     );
 
-    if (existingInstance) {
-      console.log(`createRecurringTaskInstance: Skipping creation: Instance for "${originalTask.description}" on ${format(targetDate, 'yyyy-MM-dd')} already exists in state with status: ${existingInstance.status}.`);
+    if (existingToDoInstance) {
+      console.log(`createRecurringTaskInstance: Skipping creation: A 'to-do' instance for "${originalTask.description}" on ${format(targetDate, 'yyyy-MM-dd')} already exists (ID: ${existingToDoInstance.id}).`);
       return false; // Indicate that no new task was created
     }
 
@@ -695,42 +695,4 @@ export const useTasks = () => {
     })));
     console.log('filteredTasks: --- END FILTERING ---');
     return relevantTasks;
-  }, [tasks, currentDate, searchFilter, statusFilter, categoryFilter, priorityFilter, sectionFilter, sections]);
-
-  return {
-    tasks,
-    filteredTasks,
-    loading,
-    currentDate,
-    setCurrentDate,
-    userId,
-    handleAddTask,
-    updateTask,
-    deleteTask,
-    searchFilter,
-    statusFilter,
-    categoryFilter,
-    priorityFilter,
-    setSearchFilter,
-    setStatusFilter,
-    setCategoryFilter,
-    setPriorityFilter,
-    sectionFilter,
-    setSectionFilter,
-    selectedTaskIds,
-    toggleTaskSelection,
-    clearSelectedTasks,
-    bulkUpdateTasks,
-    sortKey,
-    setSortKey,
-    sortDirection,
-    setSortDirection,
-    sections,
-    createSection,
-    updateSection,
-    deleteSection,
-    reorderTasksInSameSection,
-    moveTaskToNewSection,
-    reorderSections,
   };
-};
