@@ -313,7 +313,7 @@ const TimeBlockSchedule: React.FC = () => {
                       <div
                         key={format(block.start, 'HH:mm')}
                         id={`time-block-${format(block.start, 'HH:mm')}`} // ID for drag target
-                        className="relative flex items-center justify-center h-12 bg-card dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-dashed border-border/50 hover:border-primary/50 transition-colors duration-150 cursor-pointer"
+                        className="relative flex items-center justify-center h-12 bg-card dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-dashed border-border/50 hover:border-primary/50 transition-all duration-150 cursor-pointer hover:scale-[1.01] hover:shadow-md"
                         style={{ gridRow: `${index + 1}` }} // Each block is now a single row
                         onClick={() => handleTimeBlockClick(block.start, block.end)}
                       >

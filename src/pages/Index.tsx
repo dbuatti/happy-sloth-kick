@@ -83,6 +83,11 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen, currentDate, setCurrent
           <footer className="p-4">
             <MadeWithDyad />
           </footer>
+          <div className="fixed bottom-4 right-4 z-50">
+            <span className="bg-background text-muted-foreground text-sm px-3 py-2 rounded-full shadow-lg opacity-80 hover:opacity-100 transition-opacity duration-200">
+              Press <kbd className="font-mono">Cmd/Ctrl + K</kbd> for commands
+            </span>
+          </div>
         </>
       ) : (
         <div className="flex-1 flex items-center justify-center p-4">

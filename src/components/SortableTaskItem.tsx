@@ -73,6 +73,9 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   } else {
     className += " hover:scale-[1.005]"; // Subtle lift on hover
   }
+  if (isSelected) {
+    className += " ring-2 ring-blue-400 dark:ring-blue-600 shadow-lg";
+  }
 
   return (
     <li
