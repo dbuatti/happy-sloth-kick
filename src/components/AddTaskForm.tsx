@@ -30,6 +30,7 @@ interface AddTaskFormProps {
   sections: TaskSection[]; // New prop for sections
   allCategories: Category[]; // New prop for all categories
   autoFocus?: boolean; // Added autoFocus prop
+  preselectedSectionId?: string | null; // New prop for pre-selecting section
 }
 
 // Helper function for natural language parsing
@@ -140,7 +141,7 @@ const parseNaturalLanguage = (text: string, categories: Category[]) => {
   };
 };
 
-const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdded, sections, allCategories, autoFocus }) => {
+const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdded, sections, allCategories, autoFocus, preselectedSectionId }) => {
   const [newTaskDescription, setNewTaskDescription] = useState<string>('');
   const [newTaskCategory, setNewTaskCategory] = useState<string>(''); // Initialize empty, will be set by default or natural language
   const [newTaskPriority, setNewTaskPriority] = useState<string>('medium');
@@ -161,6 +162,11 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
       }
     }
   }, [allCategories, newTaskCategory]);
+
+  // Set preselected section if provided
+  useEffect(() => {
+    setNewTaskSectionId(preselectedSectionId || null);
+  }, [preselectedSectionId]);
 
   useEffect(() => {
     const {
@@ -224,8 +230,8 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
       setNewTaskNotes('');
       setNewTaskRemindAt(undefined);
       setNewReminderTime('');
-      setNewTaskSectionId(null);
       setNewTaskRecurringType('none');
+      // Do NOT reset newTaskSectionId here, as it might be preselected for the next task
       onTaskAdded?.();
     }
     setIsAdding(false);

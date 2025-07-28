@@ -25,7 +25,6 @@ import {
   verticalListSortingStrategy,
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
-import { Skeleton } from '@/components/ui/skeleton'; // Import Skeleton
 
 const TimeBlockSchedule: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -256,40 +255,27 @@ const TimeBlockSchedule: React.FC = () => {
               currentDate={currentDate}
               onPreviousDay={handlePreviousDay}
               onNextDay={handleNextDay}
-              onGoToToday={handleGoToToday} // Pass the new prop
+              onGoToToday={handleGoToToday}
               setCurrentDate={setCurrentDate}
             />
 
             {totalLoading ? (
-              <div className="grid grid-cols-[60px_1fr] gap-x-2">
-                {/* Left column for time labels skeletons */}
-                <div className="grid gap-1" style={{ gridTemplateRows: `repeat(16, 48px)` }}>
-                  {[...Array(8)].map((_, i) => (
-                    <div key={`label-skeleton-${i}`} className="flex items-start justify-end pr-2" style={{ gridRow: `${i * 2 + 1} / span 2` }}>
-                      <Skeleton className="h-4 w-12" />
-                    </div>
-                  ))}
-                </div>
-                {/* Right column for time blocks skeletons */}
-                <div className="relative grid gap-1" style={{ gridTemplateRows: `repeat(16, 48px)` }}>
-                  {[...Array(16)].map((_, i) => (
-                    <Skeleton key={`block-skeleton-${i}`} className="h-12 w-full rounded-lg" />
-                  ))}
-                </div>
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
               </div>
             ) : (!singleDayWorkHours || !singleDayWorkHours.enabled) ? ( // Check singleDayWorkHours
               <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
-                <Clock className="h-12 w-12 text-muted-foreground" />
-                <p className="text-lg font-medium mb-2">No work hours set or enabled for this day.</p>
-                <p className="text-sm">Please go to <a href="/settings" className="text-blue-500 hover:underline flex items-center gap-1">
+                <Clock className="h-16 w-16 text-muted-foreground mb-4" />
+                <p className="text-xl font-medium mb-2">No work hours set or enabled for this day.</p>
+                <p className="text-md">Please go to <a href="/settings" className="text-blue-500 hover:underline flex items-center gap-1">
                   <Settings className="h-4 w-4" /> Settings
-                </a> to define your work hours.</p>
+                </a> to define your work hours to start scheduling!</p>
               </div>
             ) : timeBlocks.length === 0 ? (
               <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
-                <Clock className="h-12 w-12 text-muted-foreground" />
-                <p className="text-lg font-medium mb-2">No time blocks generated.</p>
-                <p className="text-sm">Please check your work hour settings for this day.</p>
+                <Clock className="h-16 w-16 text-muted-foreground mb-4" />
+                <p className="text-xl font-medium mb-2">No time blocks generated for this day.</p>
+                <p className="text-md">Please check your work hour settings. Ensure your start time is before your end time.</p>
               </div>
             ) : (
               <div className="grid grid-cols-[60px_1fr] gap-x-2"> {/* Main grid for time labels and schedule */}
@@ -327,7 +313,7 @@ const TimeBlockSchedule: React.FC = () => {
                       <div
                         key={format(block.start, 'HH:mm')}
                         id={`time-block-${format(block.start, 'HH:mm')}`} // ID for drag target
-                        className="relative flex items-center justify-center h-12 bg-card dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-dashed border-border/50 hover:border-primary/50 transition-colors duration-150 cursor-pointer"
+                        className="relative flex items-center justify-center h-12 bg-card dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-dashed border-border/50 hover:border-primary/50 transition-colors duration-150 cursor-pointer hover:scale-[1.01] hover:shadow-md"
                         style={{ gridRow: `${index + 1}` }} // Each block is now a single row
                         onClick={() => handleTimeBlockClick(block.start, block.end)}
                       >
@@ -363,7 +349,6 @@ const TimeBlockSchedule: React.FC = () => {
                           gridRowStart={1} // Dummy values for overlay
                           gridRowEnd={2}   // Dummy values for overlay
                           overlapOffset={0}
-                          isOverlay={true} // Indicate it's for overlay
                         />
                       ) : null}
                     </DragOverlay>

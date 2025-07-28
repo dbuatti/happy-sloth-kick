@@ -57,7 +57,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
     priorityFilter,
     setPriorityFilter,
     sectionFilter,
-    setSectionFilter // Removed trailing comma here
+    setSectionFilter,
   } = useTasks({ currentDate, setCurrentDate });
 
   console.log('TaskList: Received filteredTasks:', filteredTasks.map(t => ({
@@ -70,6 +70,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
   })));
 
   const [isAddTaskFormOpen, setIsAddTaskForm] = useState(false);
+  const [sectionToPreselect, setSectionToPreselect] = useState<string | null>(null); // New state for pre-selecting section
   const [isTaskDetailOpen, setIsTaskDetail] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
   // Load expanded state from localStorage, default to an empty object
@@ -186,6 +187,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
     if (success) {
       setIsAddTaskForm(false);
       setIsAddTaskOpen(false);
+      setSectionToPreselect(null); // Clear pre-selected section after task added
     }
     return success;
   };
@@ -257,6 +259,11 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
     }
   };
 
+  const handleAddTaskToSpecificSection = (sectionId: string | null) => {
+    setSectionToPreselect(sectionId);
+    setIsAddTaskForm(true);
+  };
+
   return (
     <>
       <div className="flex-1 flex flex-col">
@@ -290,7 +297,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                   {/* Search input is now part of TaskFilter, but keeping this div for layout if needed */}
                 </div>
                 <div className="flex gap-2">
-                  <Button onClick={() => setIsAddTaskForm(true)}>
+                  <Button onClick={() => handleAddTaskToSpecificSection(null)}>
                     <Plus className="mr-2 h-4 w-4" /> Add Task
                   </Button>
                   <Dialog open={isAddSectionOpen} onOpenChange={setIsAddSectionOpen}>
@@ -366,6 +373,13 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                           />
                           {isExpanded && (
                             <div className="mt-2 space-y-2 pl-2">
+                              <Button 
+                                variant="outline" 
+                                className="w-full justify-center gap-2 mb-2"
+                                onClick={() => handleAddTaskToSpecificSection(currentSection.id)}
+                              >
+                                <Plus className="h-4 w-4" /> Add Task to {currentSection.name}
+                              </Button>
                               <SortableContext items={sectionTasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
                                 <ul className="list-none space-y-2">
                                   {sectionTasks.length === 0 ? (
@@ -411,6 +425,13 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                         </div>
                       </div>
                       <div className="mt-2 space-y-2 pl-2">
+                        <Button 
+                          variant="outline" 
+                          className="w-full justify-center gap-2 mb-2"
+                          onClick={() => handleAddTaskToSpecificSection(null)}
+                        >
+                          <Plus className="h-4 w-4" /> Add Task to No Section
+                        </Button>
                         <SortableContext items={tasksBySection['no-section'].map(t => t.id)} strategy={verticalListSortingStrategy}>
                           <ul className="list-none space-y-2">
                             {tasksBySection['no-section'].map(task => (
@@ -436,9 +457,12 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
 
                   {filteredTasks.length === 0 && !loading && (
                     <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
-                      <ListTodo className="h-12 w-12 text-muted-foreground" />
-                      <p className="text-lg font-medium mb-2">No tasks found for this day with the current filters.</p>
-                      <p className="text-sm">Try adjusting your filters or add a new task!</p>
+                      <ListTodo className="h-16 w-16 text-muted-foreground mb-4" />
+                      <p className="text-xl font-medium mb-2">No tasks found for this day with the current filters.</p>
+                      <p className="text-md">Try adjusting your filters or add a new task!</p>
+                      <Button onClick={() => handleAddTaskToSpecificSection(null)} className="mt-4">
+                        <Plus className="mr-2 h-4 w-4" /> Add Your First Task
+                      </Button>
                     </div>
                   )}
                 </DndContext>
@@ -463,6 +487,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
             }}
             sections={sections}
             allCategories={allCategories} // Pass allCategories
+            preselectedSectionId={sectionToPreselect} // Pass pre-selected section
           />
         </DialogContent>
       </Dialog>
