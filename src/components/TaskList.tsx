@@ -10,14 +10,14 @@ import BulkActions from './BulkActions';
 import AddTaskForm from './AddTaskForm';
 import DailyStreak from './DailyStreak';
 import SmartSuggestions from './SmartSuggestions';
-import { DndContext, DragEndEvent, UniqueIdentifier, KeyboardSensor, useSensor, useSensors } from '@dnd-kit/core'; // Removed PointerSensor from here
+import { DndContext, DragEndEvent, UniqueIdentifier, KeyboardSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import SortableSectionHeader from './SortableSectionHeader';
 import { Task, TaskSection } from '@/hooks/useTasks';
 import TaskDetailDialog from './TaskDetailDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
-import { CustomPointerSensor } from '@/lib/CustomPointerSensor'; // Import the custom sensor
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'; // Added DialogTrigger and DialogFooter
+import { CustomPointerSensor } from '@/lib/CustomPointerSensor';
 
 interface TaskListProps {
   setIsAddTaskOpen: (open: boolean) => void;
@@ -66,14 +66,13 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
   const [newSectionName, setNewSectionName] = useState('');
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [editingSectionName, setNewEditingSectionName] = useState('');
-  const [showConfirmDeleteSectionDialog, setShowConfirmDeleteSectionDialog] = useState(false); // New state for section delete confirmation
-  const [sectionToDeleteId, setSectionToDeleteId] = useState<string | null>(null); // New state for section to delete
+  const [showConfirmDeleteSectionDialog, setShowConfirmDeleteSectionDialog] = useState(false);
+  const [sectionToDeleteId, setSectionToDeleteId] = useState<string | null>(null);
 
-  // Configure Dnd-kit sensors
   const sensors = useSensors(
-    useSensor(CustomPointerSensor, { // Use CustomPointerSensor here
+    useSensor(CustomPointerSensor, {
       activationConstraint: {
-        distance: 5, // Allow a small drag distance before activating
+        distance: 5,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -83,16 +82,13 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
     })
   );
 
-  // Group tasks by section
   const tasksBySection = useMemo(() => {
     const grouped: Record<string, Task[]> = { 'no-section': [] };
     
-    // Initialize groups for all sections
     sections.forEach((currentSection: TaskSection) => {
       grouped[currentSection.id] = [];
     });
 
-    // Group tasks
     filteredTasks.forEach(task => {
       const sectionId = task.section_id;
       if (sectionId && grouped[sectionId] !== undefined) {
@@ -105,7 +101,6 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
     return grouped;
   }, [filteredTasks, sections]);
 
-  // Handle drag end for tasks
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
     
@@ -114,7 +109,6 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
     const activeId = String(active.id);
     const overId = String(over.id);
 
-    // Handle section reordering
     if (active.data.current?.type === 'section-header' && over.data.current?.type === 'section-header') {
       const oldIndex = sections.findIndex(s => s.id === activeId);
       const newIndex = sections.findIndex(s => s.id === overId);
@@ -125,7 +119,6 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
       return;
     }
 
-    // Handle task reordering within the same section
     if (activeId.startsWith('task-') && overId.startsWith('task-') && active.data.current?.sectionId === over.data.current?.sectionId) {
       const sectionId = active.data.current?.sectionId;
       const tasksInSection = tasksBySection[sectionId || 'no-section'];
@@ -138,13 +131,12 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
       return;
     }
 
-    // Handle task moving between sections
     if (activeId.startsWith('task-') && over.data.current?.type === 'section-header') {
       const taskId = activeId;
       const sourceSectionId = active.data.current?.sectionId;
       const destinationSectionId = overId;
       const destinationTasks = tasksBySection[destinationSectionId] || [];
-      const destinationIndex = 0; // Place at the top of the destination section
+      const destinationIndex = 0;
       
       moveTaskToNewSection(taskId, sourceSectionId, destinationSectionId, destinationIndex);
     }
@@ -190,7 +182,6 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
     setShowConfirmBulkDeleteDialog(false);
   };
 
-  // Create a wrapper function that converts status string to update object
   const handleStatusChange = useCallback(async (taskId: string, newStatus: "to-do" | "completed" | "skipped" | "archived") => {
     await updateTask(taskId, { status: newStatus });
   }, [updateTask]);
@@ -338,7 +329,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
                           onSaveEdit={() => handleRenameSection()}
                           onCancelEdit={handleCancelSectionEdit}
                           onEditClick={() => handleEditSectionClick(currentSection)}
-                          onDeleteClick={handleDeleteSectionClick} // Pass delete handler
+                          onDeleteClick={handleDeleteSectionClick}
                         />
                         {isExpanded && (
                           <div className="mt-2 space-y-2 pl-2">
@@ -361,6 +352,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
                                       onToggleSelect={toggleTaskSelection}
                                       sections={sections}
                                       onEditTask={handleEditTask}
+                                      currentDate={currentDate}
                                     />
                                   ))
                                 )}
@@ -398,6 +390,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
                               onToggleSelect={toggleTaskSelection}
                               sections={sections}
                               onEditTask={handleEditTask}
+                              currentDate={currentDate}
                             />
                           ))}
                         </ul>

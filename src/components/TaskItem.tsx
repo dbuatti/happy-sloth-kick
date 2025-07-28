@@ -3,10 +3,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from "@/components/ui/dropdown-menu";
 import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing, FolderOpen } from 'lucide-react';
-import { format, parseISO, isToday, isAfter, isPast } from 'date-fns';
+import { format, parseISO, isSameDay, isAfter, isPast } from 'date-fns'; // Changed isToday to isSameDay
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
-import { useSound } from '@/context/SoundContext'; // Import useSound
+import { useSound } from '@/context/SoundContext';
 
 interface TaskItemProps {
   task: Task;
@@ -18,6 +18,7 @@ interface TaskItemProps {
   onToggleSelect: (taskId: string, checked: boolean) => void;
   sections: { id: string; name: string }[];
   onEditTask: (task: Task) => void;
+  currentDate: Date; // Add currentDate prop
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -30,8 +31,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
   onToggleSelect,
   sections,
   onEditTask,
+  currentDate, // Destructure currentDate
 }) => {
-  // Add this console log to inspect the task prop
   console.log(`TaskItem: Rendering task - ID: ${task.id}, Description: "${task.description}", Status: "${task.status}", Created At: "${task.created_at}"`);
 
   const getPriorityColor = (priority: string) => {
@@ -48,19 +49,21 @@ const TaskItem: React.FC<TaskItemProps> = ({
     if (!dueDate) return null;
     
     const date = parseISO(dueDate);
-    if (isToday(date)) {
+    // Use currentDate as the reference date for isSameDay, isAfter, isPast
+    if (isSameDay(date, currentDate)) { // Changed isToday to isSameDay
       return 'Today';
-    } else if (isAfter(date, new Date())) {
+    } else if (isAfter(date, currentDate)) {
       return `Due ${format(date, 'MMM d')}`;
     } else {
       return `Overdue ${format(date, 'MMM d')}`;
     }
   };
 
-  const isOverdue = task.due_date && task.status !== 'completed' && isPast(parseISO(task.due_date)) && !isToday(parseISO(task.due_date));
-  const isUpcoming = task.due_date && task.status !== 'completed' && isToday(parseISO(task.due_date));
+  // Use currentDate as the reference date for isPast and isSameDay
+  const isOverdue = task.due_date && task.status !== 'completed' && isPast(parseISO(task.due_date), { refDate: currentDate }) && !isSameDay(parseISO(task.due_date), currentDate); // Changed isToday to isSameDay
+  const isUpcoming = task.due_date && task.status !== 'completed' && isSameDay(parseISO(task.due_date), currentDate); // Changed isToday to isSameDay
 
-  const { playSound } = useSound(); // Get the playSound function
+  const { playSound } = useSound();
 
   return (
     <div
@@ -71,19 +74,19 @@ const TaskItem: React.FC<TaskItemProps> = ({
     >
       {/* Checkbox */}
       <Checkbox
-        key={`${task.id}-${task.status}`} // Added key to force re-render on status change
+        key={`${task.id}-${task.status}`}
         checked={task.status === 'completed'}
         onCheckedChange={(checked) => {
           if (typeof checked === 'boolean') {
             onToggleSelect(task.id, checked);
             onStatusChange(task.id, checked ? 'completed' : 'to-do');
-            playSound(); // Play sound on status change
+            playSound();
           }
         }}
         id={`task-${task.id}`}
         onClick={(e) => e.stopPropagation()}
         className="flex-shrink-0"
-        data-no-dnd="true" // Add this attribute to prevent drag on checkbox
+        data-no-dnd="true"
       />
 
       {/* Task Content */}
@@ -144,7 +147,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           size="icon" 
           className="h-8 w-8" 
           onClick={(e) => { e.stopPropagation(); onEditTask(task); }}
-          data-no-dnd="true" // Add this attribute
+          data-no-dnd="true"
         >
           <Edit className="h-4 w-4" />
         </Button>
@@ -154,7 +157,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
               variant="ghost" 
               className="h-8 w-8 p-0" 
               onClick={(e) => e.stopPropagation()}
-              data-no-dnd="true" // Add this attribute
+              data-no-dnd="true"
             >
               <span className="sr-only">Open menu</span>
               <MoreHorizontal className="h-4 w-4" />

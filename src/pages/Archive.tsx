@@ -9,7 +9,6 @@ import TaskDetailDialog from '@/components/TaskDetailDialog';
 
 const Archive = () => {
   const {
-    // Use filteredTasks directly, as setStatusFilter('archived') will populate it correctly
     filteredTasks, 
     loading,
     userId,
@@ -17,19 +16,16 @@ const Archive = () => {
     deleteTask,
     sections,
     setStatusFilter,
+    currentDate, // Destructure currentDate
   } = useTasks();
 
-  // State for TaskDetailDialog
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
 
-  // Set the status filter to 'archived' when this page loads
   useEffect(() => {
     setStatusFilter('archived');
-    // No need to return a cleanup function to reset, as Index.tsx will set it to 'all'
   }, [setStatusFilter]);
 
-  // Handler for status changes specifically for SortableTaskItem
   const handleTaskStatusChange = async (taskId: string, newStatus: Task['status']) => {
     await updateTask(taskId, { status: newStatus });
   };
@@ -42,7 +38,7 @@ const Archive = () => {
   if (loading) {
     return (
       <div className="flex-1 flex flex-col">
-        <main className="flex-grow p-6 flex justify-center"> {/* Increased p-4 to p-6 */}
+        <main className="flex-grow p-6 flex justify-center">
           <Card className="w-full max-w-4xl mx-auto shadow-lg">
             <CardHeader>
               <CardTitle className="text-3xl font-bold text-center">Archived Tasks</CardTitle>
@@ -54,7 +50,7 @@ const Archive = () => {
             </CardContent>
           </Card>
         </main>
-        <footer className="p-6"> {/* Increased p-4 to p-6 */}
+        <footer className="p-6">
           <MadeWithDyad />
         </footer>
       </div>
@@ -64,14 +60,14 @@ const Archive = () => {
   return (
     <>
       <div className="flex-1 flex flex-col">
-        <main className="flex-grow p-6"> {/* Increased p-4 to p-6 */}
+        <main className="flex-grow p-6">
           <Card className="w-full max-w-4xl mx-auto shadow-lg">
-            <CardHeader className="pb-4"> {/* Increased pb-2 to pb-4 */}
+            <CardHeader className="pb-4">
               <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
                 <ArchiveIcon className="h-7 w-7" /> Archived Tasks
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-0"> {/* Added pt-0 */}
+            <CardContent className="pt-0">
               {filteredTasks.length === 0 ? (
                 <div className="text-center text-gray-500 p-8">
                   <p className="text-lg mb-2">No archived tasks found.</p>
@@ -87,10 +83,11 @@ const Archive = () => {
                       onStatusChange={handleTaskStatusChange}
                       onDelete={deleteTask}
                       onUpdate={updateTask}
-                      isSelected={false} // Tasks in archive are not selectable for bulk actions
-                      onToggleSelect={() => {}} // No selection needed here
+                      isSelected={false}
+                      onToggleSelect={() => {}}
                       sections={sections}
                       onEditTask={handleEditTask}
+                      currentDate={currentDate} // Pass currentDate here
                     />
                   ))}
                 </ul>
@@ -98,7 +95,7 @@ const Archive = () => {
             </CardContent>
           </Card>
         </main>
-        <footer className="p-6"> {/* Increased p-4 to p-6 */}
+        <footer className="p-6">
           <MadeWithDyad />
         </footer>
       </div>
