@@ -695,6 +695,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     const updates = newOrderedTasksInSection.map((task, index) => ({
       id: task.id,
       order: index,
+      user_id: userId, // Include user_id for RLS
     }));
 
     // Optimistic update
@@ -747,6 +748,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     const updatesForOldSection = oldSectionTasksAfterRemoval.map((task, index) => ({
       id: task.id,
       order: index,
+      user_id: userId, // Include user_id for RLS
     }));
 
     // Add task to new section's list at the correct position for re-indexing
@@ -766,6 +768,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       id: task.id,
       section_id: newSectionId, // Ensure section_id is set for the moved task
       order: index,
+      user_id: userId, // Include user_id for RLS
     }));
 
     const allUpdatesForDb = [
@@ -820,6 +823,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     const updates = newOrderedSections.map((section, index) => ({
       id: section.id,
       order: index,
+      user_id: userId, // Include user_id for RLS
     }));
 
     // Optimistic update
@@ -948,9 +952,9 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     if (viewMode === 'daily') {
       if (statusFilter !== 'all') {
         finalFilteredTasks = finalFilteredTasks.filter(task => task.status === statusFilter);
+      } else {
+        finalFilteredTasks = finalFilteredTasks.filter(task => task.status !== 'archived');
       }
-      // If statusFilter is 'all', no further status filtering is needed here,
-      // as relevantTasks already contains only what should be shown for 'all' statuses on the current day.
     }
 
     if (searchFilter) {
