@@ -59,8 +59,7 @@ const getUTCStartOfDay = (date: Date) => {
 };
 
 export const useTasks = () => {
-  const HOOK_VERSION = "2024-07-29-06"; // Increment this for each significant change
-  console.log(`useTasks hook version: ${HOOK_VERSION}`);
+  const HOOK_VERSION = "2024-07-29-07"; // Increment this for each significant change
 
   const { user } = useAuth();
   const userId = user?.id;
@@ -69,6 +68,9 @@ export const useTasks = () => {
   const [loading, setLoading] = useState(true);
   // Initialize currentDate to UTC midnight using the helper
   const [currentDate, setCurrentDate] = useState(() => getUTCStartOfDay(new Date()));
+  console.log(`useTasks hook version: ${HOOK_VERSION}`);
+  console.log('useTasks: Re-rendering. Current date in state (from hook start):', currentDate.toISOString());
+
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [sortKey, setSortKey] = useState<'priority' | 'due_date' | 'created_at' | 'order'>('order');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -258,8 +260,6 @@ export const useTasks = () => {
         .single();
 
       if (error) throw error;
-      // Instead of just adding to prev state, re-fetch to ensure consistency
-      // setTasks(prev => [...prev, data]); // REMOVED THIS LINE
       showSuccess('Task added successfully!');
       await fetchDataAndSections(); // Explicitly re-fetch after successful add
       return true;
@@ -286,8 +286,6 @@ export const useTasks = () => {
         .single();
 
       if (error) throw error;
-      // Instead of just mapping prev state, re-fetch to ensure consistency
-      // setTasks(prev => prev.map(task => (task.id === taskId ? data : task))); // REMOVED THIS LINE
       showSuccess('Task updated successfully!');
       await fetchDataAndSections(); // Explicitly re-fetch after successful update
     } catch (error: any) {
@@ -319,7 +317,8 @@ export const useTasks = () => {
       if (error) throw error;
       setTasks(prev => prev.filter(task => task.id !== taskId && task.parent_task_id !== taskId));
       showSuccess('Task deleted successfully!');
-    } catch (error: any) {
+    }
+    catch (error: any) {
       console.error('Error deleting task:', error);
       showError('Failed to delete task.');
     }
@@ -498,10 +497,19 @@ export const useTasks = () => {
   }, []);
 
   const filteredTasks = useMemo(() => {
-    console.log('filteredTasks: Starting filter process for currentDate:', currentDate.toISOString(), 'statusFilter:', statusFilter);
-    let workingTasks = [...tasks];
+    console.log('filteredTasks: --- START FILTERING ---');
     const effectiveCurrentDateUTC = getUTCStartOfDay(currentDate); // Ensure this is UTC midnight
-    console.log('filteredTasks: Initial tasks count:', workingTasks.length);
+    console.log('filteredTasks: Current Date (UTC):', effectiveCurrentDateUTC.toISOString());
+    console.log('filteredTasks: Raw tasks BEFORE filter:', tasks.map(t => ({
+      id: t.id,
+      description: t.description,
+      status: t.status,
+      created_at: t.created_at,
+      original_task_id: t.original_task_id,
+      recurring_type: t.recurring_type
+    })));
+
+    let workingTasks = [...tasks];
 
     // 1. Filter out subtasks (they are handled within parent tasks)
     workingTasks = workingTasks.filter(task => task.parent_task_id === null);
@@ -518,7 +526,7 @@ export const useTasks = () => {
         console.log(`  Task "${task.description}" (ID: ${task.id}):`);
         console.log(`    created_at: ${task.created_at} (UTC: ${taskCreatedAtUTC.toISOString()})`);
         console.log(`    currentDate (UTC): ${effectiveCurrentDateUTC.toISOString()}`);
-        console.log(`    isTaskCreatedOnCurrentDate: ${isTaskCreatedOnCurrentDate}`);
+        console.log(`    isSameDay(${taskCreatedAtUTC.toISOString()}, ${effectiveCurrentDateUTC.toISOString()}) = ${isTaskCreatedOnCurrentDate}`);
         console.log(`    status: ${task.status}, recurring_type: ${task.recurring_type}, original_task_id: ${task.original_task_id}`);
 
         // Rule 1: Exclude recurring templates from the daily view
@@ -598,7 +606,15 @@ export const useTasks = () => {
       console.log('filteredTasks: After final status filter, count:', workingTasks.length);
     }
 
-    console.log('filteredTasks: Final tasks count:', workingTasks.length);
+    console.log('filteredTasks: Final tasks AFTER filter:', workingTasks.map(t => ({
+      id: t.id,
+      description: t.description,
+      status: t.status,
+      created_at: t.created_at,
+      original_task_id: t.original_task_id,
+      recurring_type: t.recurring_type
+    })));
+    console.log('filteredTasks: --- END FILTERING ---');
     return workingTasks;
   }, [tasks, currentDate, searchFilter, statusFilter, categoryFilter, priorityFilter, sectionFilter]);
 

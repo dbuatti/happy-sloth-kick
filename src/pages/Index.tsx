@@ -30,7 +30,6 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen }) => {
       setSession(session);
     });
 
-    // Removed: setCurrentDate(getUTCStartOfDay(new Date())); // This was causing duplicate fetches
     setStatusFilter('all');
 
     return () => {
@@ -38,18 +37,28 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen }) => {
         subscription.unsubscribe();
       }
     };
-  }, [setStatusFilter]); // Removed setCurrentDate from dependencies as it's no longer set here
+  }, [setStatusFilter]);
 
   const handlePreviousDay = () => {
-    setCurrentDate(prevDate => getUTCStartOfDay(addDays(prevDate, -1)));
+    setCurrentDate(prevDate => {
+      const newDate = getUTCStartOfDay(addDays(prevDate, -1));
+      console.log('Index.tsx: Navigating to previous day. New currentDate:', newDate.toISOString());
+      return newDate;
+    });
   };
 
   const handleNextDay = () => {
-    setCurrentDate(prevDate => getUTCStartOfDay(addDays(prevDate, 1)));
+    setCurrentDate(prevDate => {
+      const newDate = getUTCStartOfDay(addDays(prevDate, 1));
+      console.log('Index.tsx: Navigating to next day. New currentDate:', newDate.toISOString());
+      return newDate;
+    });
   };
 
   const handleGoToToday = () => {
-    setCurrentDate(getUTCStartOfDay(new Date()));
+    const today = getUTCStartOfDay(new Date());
+    console.log('Index.tsx: Navigating to today. New currentDate:', today.toISOString());
+    setCurrentDate(today);
   };
 
   // Define keyboard shortcuts
@@ -72,7 +81,8 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen }) => {
               onNextDay={handleNextDay}
               onGoToToday={handleGoToToday}
             />
-            <TaskList setIsAddTaskOpen={setIsAddTaskOpen} />
+            {/* Add key to force remount of TaskList when currentDate changes */}
+            <TaskList key={currentDate.toISOString()} setIsAddTaskOpen={setIsAddTaskOpen} />
           </main>
           <footer className="p-6">
             <MadeWithDyad />
