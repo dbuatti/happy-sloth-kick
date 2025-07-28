@@ -72,7 +72,7 @@ const getUTCStartOfDay = (date: Date) => {
 interface UseTasksProps {
   currentDate?: Date;
   setCurrentDate?: React.Dispatch<React.SetStateAction<Date>>;
-  viewMode?: 'daily' | 'archive';
+  viewMode?: 'daily' | 'archive' | 'focus'; // Added 'focus' viewMode
 }
 
 export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: UseTasksProps = {}) => {
@@ -846,12 +846,16 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         }
       });
 
-      // NEW FILTER: Apply focus mode section filter for daily view
-      const focusModeSectionIds = new Set(sections.filter(s => s.include_in_focus_mode).map(s => s.id));
-      relevantTasks = relevantTasks.filter(task => 
-        task.section_id === null || focusModeSectionIds.has(task.section_id)
-      );
-      console.log('filteredTasks: After focus mode section filter:', relevantTasks.map(t => t.id));
+      // Apply focus mode section filter ONLY if viewMode is 'focus'
+      if (viewMode === 'focus') {
+        const focusModeSectionIds = new Set(sections.filter(s => s.include_in_focus_mode).map(s => s.id));
+        relevantTasks = relevantTasks.filter(task => 
+          task.section_id === null || focusModeSectionIds.has(task.section_id)
+        );
+        console.log('filteredTasks: After focus mode section filter (because viewMode is focus):', relevantTasks.map(t => t.id));
+      } else {
+        console.log('filteredTasks: Skipping focus mode section filter (because viewMode is not focus).');
+      }
     }
 
     let finalFilteredTasks = relevantTasks;

@@ -27,7 +27,8 @@ const FocusMode: React.FC<FocusModeProps> = ({ currentDate, setCurrentDate }) =>
   const { user } = useAuth();
   const userId = user?.id;
   // Pass the actual current date to useTasks for recurring task logic
-  const { tasks, updateTask, sections } = useTasks({ currentDate: new Date(), setCurrentDate: () => {}, viewMode: 'daily' }); // Still use new Date() for its internal date logic, as FocusMode is not tied to the main app's date navigator.
+  // Set viewMode to 'focus' to ensure tasks are filtered by include_in_focus_mode
+  const { tasks, updateTask, sections } = useTasks({ currentDate: new Date(), setCurrentDate: () => {}, viewMode: 'focus' }); 
   const { setIsFocusModeActive } = useUI();
 
   const [timeRemaining, setTimeRemaining] = useState(WORK_DURATION);
@@ -46,18 +47,11 @@ const FocusMode: React.FC<FocusModeProps> = ({ currentDate, setCurrentDate }) =>
       t => t.status === 'to-do'
     );
 
-    // Filter sections based on include_in_focus_mode
-    const focusModeSections = new Set(
-      sections.filter(s => s.include_in_focus_mode).map(s => s.id)
-    );
-
-    const filteredForFocus = activeTasks.filter(task => {
-      // Include tasks with no section, or tasks in sections explicitly included in focus mode
-      return task.section_id === null || focusModeSections.has(task.section_id);
-    });
+    // The 'tasks' array from useTasks (with viewMode: 'focus') is already filtered for focus mode sections.
+    // So, no need to re-filter by sections here.
 
     // Prioritize high/urgent tasks, then due today/overdue
-    const sortedTasks = filteredForFocus.sort((a, b) => {
+    const sortedTasks = activeTasks.sort((a, b) => {
       const priorityOrder: { [key: string]: number } = { 'urgent': 4, 'high': 3, 'medium': 2, 'low': 1, 'none': 0 };
       const aPrio = priorityOrder[a.priority] || 0;
       const bPrio = priorityOrder[b.priority] || 0;
