@@ -59,7 +59,7 @@ const getUTCStartOfDay = (date: Date) => {
 };
 
 export const useTasks = () => {
-  const HOOK_VERSION = "2024-07-29-07"; // Increment this for each significant change
+  const HOOK_VERSION = "2024-07-29-08"; // Increment this for each significant change
 
   const { user } = useAuth();
   const userId = user?.id;

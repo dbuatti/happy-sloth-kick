@@ -47,6 +47,15 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
     reorderSections,
   } = useTasks();
 
+  console.log('TaskList: Received filteredTasks:', filteredTasks.map(t => ({
+    id: t.id,
+    description: t.description,
+    status: t.status,
+    created_at: t.created_at,
+    original_task_id: t.original_task_id,
+    recurring_type: t.recurring_type
+  })));
+
   const [isAddTaskFormOpen, setIsAddTaskForm] = useState(false);
   const [isTaskDetailOpen, setIsTaskDetail] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
