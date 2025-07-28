@@ -8,6 +8,8 @@ import DateNavigator from '@/components/DateNavigator';
 import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
 import { addDays, startOfDay } from 'date-fns';
 import { useAuth } from '@/context/AuthContext';
+import NextTaskCard from '@/components/NextTaskCard'; // Import NextTaskCard
+import TaskDetailDialog from '@/components/TaskDetailDialog'; // Import TaskDetailDialog
 
 // Helper to get UTC start of day
 const getUTCStartOfDay = (date: Date) => {
@@ -22,6 +24,10 @@ interface IndexProps {
 
 const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen, currentDate, setCurrentDate }) => {
   const { user, loading: authLoading } = useAuth();
+  const { nextAvailableTask, updateTask, deleteTask, userId } = useTasks({ currentDate, setCurrentDate }); // Get nextAvailableTask and other task actions
+
+  const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState<any>(null); // Use 'any' for now, or define a more specific type if needed
 
   useEffect(() => {
     // No longer need to manage session state here, useAuth handles it
@@ -47,6 +53,15 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen, currentDate, setCurrent
     const today = getUTCStartOfDay(new Date());
     console.log('Index.tsx: Navigating to today. New currentDate:', today.toISOString());
     setCurrentDate(today);
+  };
+
+  const handleMarkNextTaskComplete = async (taskId: string) => {
+    await updateTask(taskId, { status: 'completed' });
+  };
+
+  const handleEditNextTask = (task: any) => {
+    setTaskToEdit(task);
+    setIsTaskDetailOpen(true);
   };
 
   // Define keyboard shortcuts
@@ -78,6 +93,12 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen, currentDate, setCurrent
               onGoToToday={handleGoToToday}
               setCurrentDate={setCurrentDate}
             />
+            <NextTaskCard 
+              task={nextAvailableTask} 
+              onMarkComplete={handleMarkNextTaskComplete} 
+              onEditTask={handleEditNextTask} 
+              currentDate={currentDate}
+            />
             <TaskList setIsAddTaskOpen={setIsAddTaskOpen} currentDate={currentDate} setCurrentDate={setCurrentDate} />
           </main>
           <footer className="p-4">
@@ -88,6 +109,18 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen, currentDate, setCurrent
               Press <kbd className="font-mono">Cmd/Ctrl + K</kbd> for commands
             </span>
           </div>
+          {taskToEdit && (
+            <TaskDetailDialog
+              task={taskToEdit}
+              userId={userId}
+              isOpen={isTaskDetailOpen}
+              onClose={() => setIsTaskDetailOpen(false)}
+              onUpdate={updateTask}
+              onDelete={deleteTask}
+              currentDate={currentDate}
+              setCurrentDate={setCurrentDate}
+            />
+          )}
         </>
       ) : (
         <div className="flex-1 flex items-center justify-center p-4">

@@ -764,10 +764,10 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     }
   }, [sections, userId, fetchDataAndSections]);
 
-  const filteredTasks = useMemo(() => {
-    console.log('filteredTasks: --- START FILTERING ---');
-    console.log('filteredTasks: Current viewMode:', viewMode);
-    console.log('filteredTasks: Raw tasks state at start of memo:', tasks.map(t => ({
+  const { finalFilteredTasks, nextAvailableTask } = useMemo(() => {
+    console.log('filteredTasks/nextAvailableTask: --- START FILTERING ---');
+    console.log('filteredTasks/nextAvailableTask: Current viewMode:', viewMode);
+    console.log('filteredTasks/nextAvailableTask: Raw tasks state at start of memo:', tasks.map(t => ({
       id: t.id,
       description: t.description,
       status: t.status,
@@ -783,10 +783,10 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
     if (viewMode === 'archive') {
       relevantTasks = tasks.filter(task => task.status === 'archived');
-      console.log('filteredTasks: Archive mode - relevantTasks (archived only):', relevantTasks.map(t => t.id));
+      console.log('filteredTasks/nextAvailableTask: Archive mode - relevantTasks (archived only):', relevantTasks.map(t => t.id));
     } else {
       const effectiveCurrentDateUTC = currentDate ? getUTCStartOfDay(currentDate) : getUTCStartOfDay(new Date());
-      console.log('filteredTasks: Daily mode - Current Date (UTC):', effectiveCurrentDateUTC.toISOString());
+      console.log('filteredTasks/nextAvailableTask: Daily mode - Current Date (UTC):', effectiveCurrentDateUTC.toISOString());
       const processedOriginalIds = new Set<string>();
 
       const topLevelTasks = tasks.filter(task => task.parent_task_id === null);
@@ -797,14 +797,14 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
         if (task.recurring_type !== 'none') {
           if (processedOriginalIds.has(originalId)) {
-            console.log(`filteredTasks: Skipping already processed originalId: ${originalId}`);
+            console.log(`filteredTasks/nextAvailableTask: Skipping already processed originalId: ${originalId}`);
             return;
           }
 
           const allInstancesOfThisRecurringTask = tasks.filter(t =>
             t.original_task_id === originalId || t.id === originalId
           );
-          console.log(`filteredTasks: For originalId ${originalId} ("${task.description}"), all instances:`, allInstancesOfThisRecurringTask.map(t => ({id: t.id, created_at: t.created_at, status: t.status})));
+          console.log(`filteredTasks/nextAvailableTask: For originalId ${originalId} ("${task.description}"), all instances:`, allInstancesOfThisRecurringTask.map(t => ({id: t.id, created_at: t.created_at, status: t.status})));
 
           let taskToDisplay: Task | null = null;
 
@@ -814,7 +814,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
           
           if (instanceForCurrentDay) {
             taskToDisplay = instanceForCurrentDay;
-            console.log(`filteredTasks: For original ${originalId}, found instance for current date (${format(effectiveCurrentDateUTC, 'yyyy-MM-dd')}) with status: ${instanceForCurrentDay.status}. Pushing this.`);
+            console.log(`filteredTasks/nextAvailableTask: For original ${originalId}, found instance for current date (${format(effectiveCurrentDateUTC, 'yyyy-MM-dd')}) with status: ${instanceForCurrentDay.status}. Pushing this.`);
           } else {
             const carryOverTask = allInstancesOfThisRecurringTask
               .filter(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status === 'to-do')
@@ -822,9 +822,9 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
             if (carryOverTask) {
               taskToDisplay = carryOverTask;
-              console.log(`filteredTasks: For original ${originalId}, no instance for current date. Found carry-over from ${format(parseISO(carryOverTask.created_at), 'yyyy-MM-dd')} with status: ${carryOverTask.status}. Pushing this.`);
+              console.log(`filteredTasks/nextAvailableTask: For original ${originalId}, no instance for current date. Found carry-over from ${format(parseISO(carryOverTask.created_at), 'yyyy-MM-dd')} with status: ${carryOverTask.status}. Pushing this.`);
             } else {
-              console.log(`filteredTasks: For original ${originalId}, no relevant instance found for current date or carry-over.`);
+              console.log(`filteredTasks/nextAvailableTask: For original ${originalId}, no relevant instance found for current date or carry-over.`);
             }
           }
           
@@ -835,13 +835,13 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         } else {
           const isTaskCreatedOnCurrentDate = isSameDay(taskCreatedAtUTC, effectiveCurrentDateUTC);
           if (isTaskCreatedOnCurrentDate && task.status !== 'archived') {
-            console.log(`filteredTasks: Pushing non-recurring task created on current date: ${task.id}, ${task.description}`);
+            console.log(`filteredTasks/nextAvailableTask: Pushing non-recurring task created on current date: ${task.id}, ${task.description}`);
             relevantTasks.push(task);
           } else if (isBefore(taskCreatedAtUTC, effectiveCurrentDateUTC) && task.status === 'to-do') {
-            console.log(`filteredTasks: Pushing non-recurring carry-over task: ${task.id}, ${task.description}`);
+            console.log(`filteredTasks/nextAvailableTask: Pushing non-recurring carry-over task: ${task.id}, ${task.description}`);
             relevantTasks.push(task);
           } else {
-            console.log(`filteredTasks: Skipping non-recurring task: ${task.id}, ${task.description} (not created today, not to-do carry-over, or archived)`);
+            console.log(`filteredTasks/nextAvailableTask: Skipping non-recurring task: ${task.id}, ${task.description} (not created today, not to-do carry-over, or archived)`);
           }
         }
       });
@@ -852,9 +852,9 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         relevantTasks = relevantTasks.filter(task => 
           task.section_id === null || focusModeSectionIds.has(task.section_id)
         );
-        console.log('filteredTasks: After focus mode section filter (because viewMode is focus):', relevantTasks.map(t => t.id));
+        console.log('filteredTasks/nextAvailableTask: After focus mode section filter (because viewMode is focus):', relevantTasks.map(t => t.id));
       } else {
-        console.log('filteredTasks: Skipping focus mode section filter (because viewMode is not focus).');
+        console.log('filteredTasks/nextAvailableTask: Skipping focus mode section filter (because viewMode is not focus).');
       }
     }
 
@@ -905,7 +905,16 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       return parseISO(a.created_at).getTime() - parseISO(b.created_at).getTime();
     });
 
-    console.log('filteredTasks: Final tasks AFTER all filters and sorting:', finalFilteredTasks.map(t => ({
+    // Determine the next available task based on the sorted, filtered list
+    let nextAvailableTask: Task | null = null;
+    if (viewMode === 'daily') {
+      // Find the first 'to-do' top-level task in the sorted list
+      nextAvailableTask = finalFilteredTasks.find(task => 
+        task.status === 'to-do' && task.parent_task_id === null
+      ) || null;
+    }
+
+    console.log('filteredTasks/nextAvailableTask: Final tasks AFTER all filters and sorting:', finalFilteredTasks.map(t => ({
       id: t.id,
       description: t.description,
       status: t.status,
@@ -916,13 +925,15 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       category: t.category,
       category_color: t.category_color
     })));
-    console.log('filteredTasks: --- END FILTERING ---');
-    return finalFilteredTasks;
+    console.log('filteredTasks/nextAvailableTask: Next available task:', nextAvailableTask ? nextAvailableTask.description : 'None');
+    console.log('filteredTasks/nextAvailableTask: --- END FILTERING ---');
+    return { finalFilteredTasks, nextAvailableTask };
   }, [tasks, currentDate, searchFilter, statusFilter, categoryFilter, priorityFilter, sectionFilter, sections, viewMode]);
 
   return {
     tasks,
-    filteredTasks,
+    filteredTasks: finalFilteredTasks, // Renamed to finalFilteredTasks
+    nextAvailableTask, // Export the new value
     loading,
     currentDate,
     setCurrentDate,
