@@ -265,6 +265,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       );
       
       if (instanceForCurrentDay) {
+        taskToDisplay = instanceForCurrentDay;
         console.log(`syncRecurringTasks: For original ${originalTask.id}, found instance for current date (${format(effectiveCurrentDateUTC, 'yyyy-MM-dd')}) with status: ${instanceForCurrentDay.status}. No new instance needed.`);
         continue;
       }
@@ -853,7 +854,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     }
   }, [userId, sections]);
 
-  const { finalFilteredTasks, nextAvailableTask } = useMemo(() => {
+  const { finalFilteredTasks, nextAvailableTask, focusModeTasksForDailyStreak } = useMemo(() => {
     console.log('filteredTasks/nextAvailableTask: --- START FILTERING ---');
     console.log('filteredTasks/nextAvailableTask: Current viewMode:', viewMode);
     console.log('filteredTasks/nextAvailableTask: Raw tasks state at start of memo:', tasks.map(t => ({
@@ -934,43 +935,43 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
           }
         }
       });
-
-      // Apply focus mode section filter ONLY if viewMode is 'focus'
-      if (viewMode === 'focus') {
-        const focusModeSectionIds = new Set(sections.filter(s => s.include_in_focus_mode).map(s => s.id));
-        relevantTasks = relevantTasks.filter(task => 
-          task.section_id === null || focusModeSectionIds.has(task.section_id)
-        );
-        console.log('filteredTasks/nextAvailableTask: After focus mode section filter (because viewMode is focus):', relevantTasks.map(t => t.id));
-      } else {
-        console.log('filteredTasks/nextAvailableTask: Skipping focus mode section filter (because viewMode is not focus).');
-      }
     }
 
-    let finalFilteredTasks = relevantTasks;
+    // Calculate focusModeSectionIds once
+    const focusModeSectionIds = new Set(sections.filter(s => s.include_in_focus_mode).map(s => s.id));
+
+    // This is the set of tasks that would be shown in Focus Mode, regardless of current viewMode
+    let tasksForFocusModeDisplay = relevantTasks.filter(task => 
+      task.section_id === null || focusModeSectionIds.has(task.section_id)
+    );
+
+    // Now, apply the viewMode specific filtering for finalFilteredTasks
+    let currentViewFilteredTasks = relevantTasks; // Start with tasks relevant for the day/archive
 
     if (viewMode === 'daily') {
       if (statusFilter !== 'all') {
-        finalFilteredTasks = finalFilteredTasks.filter(task => task.status === statusFilter);
+        currentViewFilteredTasks = currentViewFilteredTasks.filter(task => task.status === statusFilter);
       } else {
-        finalFilteredTasks = finalFilteredTasks.filter(task => task.status !== 'archived');
+        currentViewFilteredTasks = currentViewFilteredTasks.filter(task => task.status !== 'archived');
       }
+    } else if (viewMode === 'focus') { // This block was already there, but now it's explicit
+      currentViewFilteredTasks = tasksForFocusModeDisplay; // If in focus mode, use the focus-filtered set
     }
-
+    // Apply search, category, priority, section filters to currentViewFilteredTasks
     if (searchFilter) {
-      finalFilteredTasks = finalFilteredTasks.filter(task =>
+      currentViewFilteredTasks = currentViewFilteredTasks.filter(task =>
         task.description.toLowerCase().includes(searchFilter.toLowerCase()) ||
         task.notes?.toLowerCase().includes(searchFilter.toLowerCase())
       );
     }
     if (categoryFilter && categoryFilter !== 'all') {
-      finalFilteredTasks = finalFilteredTasks.filter(task => task.category === categoryFilter);
+      currentViewFilteredTasks = currentViewFilteredTasks.filter(task => task.category === categoryFilter);
     }
     if (priorityFilter && priorityFilter !== 'all') {
-      finalFilteredTasks = finalFilteredTasks.filter(task => task.priority === priorityFilter);
+      currentViewFilteredTasks = currentViewFilteredTasks.filter(task => task.priority === priorityFilter);
     }
     if (sectionFilter && sectionFilter !== 'all') {
-      finalFilteredTasks = finalFilteredTasks.filter(task => {
+      currentViewFilteredTasks = currentViewFilteredTasks.filter(task => {
         if (sectionFilter === 'no-section') {
           return task.section_id === null;
         }
@@ -978,7 +979,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       });
     }
 
-    finalFilteredTasks.sort((a, b) => {
+    currentViewFilteredTasks.sort((a, b) => {
       const statusOrder = { 'to-do': 1, 'skipped': 2, 'completed': 3, 'archived': 4 };
       const statusComparison = statusOrder[a.status] - statusOrder[b.status];
       if (statusComparison !== 0) return statusComparison;
@@ -1001,7 +1002,13 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       ) || null;
     }
 
-    console.log('filteredTasks/nextAvailableTask: Final tasks AFTER all filters and sorting:', finalFilteredTasks.map(t => ({
+    // The `DailyStreak` needs `tasksForFocusModeDisplay` (or a subset of it)
+    // Let's ensure `focusModeTasksForDailyStreak` is also filtered by status 'to-do' or 'completed'
+    // and is not archived, as DailyStreak is about progress.
+    const dailyStreakRelevantFocusTasks = tasksForFocusModeDisplay.filter(task => task.status !== 'archived');
+
+
+    console.log('filteredTasks/nextAvailableTask: Final tasks AFTER all filters and sorting:', currentViewFilteredTasks.map(t => ({
       id: t.id,
       description: t.description,
       status: t.status,
@@ -1013,8 +1020,13 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       category_color: t.category_color
     })));
     console.log('filteredTasks/nextAvailableTask: Next available task:', nextAvailableTask ? nextAvailableTask.description : 'None');
+    console.log('filteredTasks/nextAvailableTask: Focus mode tasks for DailyStreak:', dailyStreakRelevantFocusTasks.map(t => ({id: t.id, description: t.description, section_id: t.section_id, status: t.status})));
     console.log('filteredTasks/nextAvailableTask: --- END FILTERING ---');
-    return { finalFilteredTasks, nextAvailableTask };
+    return { 
+      finalFilteredTasks: currentViewFilteredTasks, 
+      nextAvailableTask, 
+      focusModeTasksForDailyStreak: dailyStreakRelevantFocusTasks 
+    };
   }, [tasks, currentDate, searchFilter, statusFilter, categoryFilter, priorityFilter, sectionFilter, sections, viewMode]);
 
   return {
@@ -1057,5 +1069,6 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     reorderSections,
     fetchDataAndSections,
     allCategories,
+    focusModeTasksForDailyStreak, // New return value
   };
 };

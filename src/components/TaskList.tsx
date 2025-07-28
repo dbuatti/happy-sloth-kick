@@ -81,6 +81,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
     setPriorityFilter,
     sectionFilter,
     setSectionFilter,
+    focusModeTasksForDailyStreak, // New destructuring
   } = useTasks({ currentDate, setCurrentDate });
 
   console.log('TaskList: Received filteredTasks:', filteredTasks.map(t => ({
@@ -367,7 +368,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-                <DailyStreak tasks={filteredTasks} currentDate={currentDate} />
+                <DailyStreak tasks={focusModeTasksForDailyStreak} currentDate={currentDate} />
                 <SmartSuggestions tasks={filteredTasks} currentDate={currentDate} setCurrentDate={setCurrentDate} bulkUpdateTasks={bulkUpdateTasks} clearSelectedTasks={clearSelectedTasks} />
               </div>
 
