@@ -193,7 +193,7 @@ export const useTasks = () => {
         category: newTaskData.category || 'general',
         priority: newTaskData.priority || 'medium',
         due_date: newTaskData.due_date || null,
-        notes: newTaskData.notes || null,
+        notes: newTaskData.notes || null, // Added missing property
         remind_at: newTaskData.remind_at || null,
         section_id: newTaskData.section_id || null,
         order: null,
@@ -220,7 +220,7 @@ export const useTasks = () => {
     }
   }, [userId, currentDate]);
 
-  const createRecurringTaskInstance = useCallback(async (originalRecurringTask: Task) => {
+  const createRecurringTaskInstance = useCallback(async (originalRecurringTask: Task, currentTasks: Task[]) => { // Added currentTasks parameter
     console.log('createRecurringTaskInstance: Called for original task:', { id: originalRecurringTask.id, description: originalRecurringTask.description, status: originalRecurringTask.status, recurring_type: originalRecurringTask.recurring_type });
     if (originalRecurringTask.recurring_type === 'none' || !userId) return;
 
@@ -245,7 +245,7 @@ export const useTasks = () => {
     }
 
     // 2. Check existing tasks in state (including optimistically added ones)
-    const existingInstanceForNextDay = tasks.some(t => 
+    const existingInstanceForNextDay = currentTasks.some(t => // Use currentTasks here
       (t.original_task_id === originalRecurringTask.id || t.id === originalRecurringTask.id) && 
       isSameDay(getUTCStartOfDay(parseISO(t.created_at)), nextRecurrenceDateUTC) &&
       t.status === 'to-do' // Only consider active instances
@@ -280,20 +280,32 @@ export const useTasks = () => {
     setTasks(prev => [...prev, newInstance]);
     createdRecurringInstancesTodayRef.current.add(uniqueKeyForTargetDate); // Mark as processed after successful insert
     showSuccess(`Recurring task "${originalRecurringTask.description}" has been reset for ${format(nextRecurrenceDate, 'MMM d')}.`);
-  }, [userId, tasks, currentDate]);
+  }, [userId, currentDate]); // Removed tasks from dependency array
 
   const updateTask = useCallback(async (taskId: string, updates: TaskUpdate) => {
     if (!userId) {
       showError('User not authenticated.');
       return;
     }
-    const originalTask = tasks.find(t => t.id === taskId); // Get the task before optimistic update
-    try {
-      // Optimistically update the task in the state
-      setTasks(prev => prev.map(task => 
-        task.id === taskId ? { ...task, ...updates } : task
-      ));
+    // Use a functional update to get the latest tasks state
+    setTasks(prevTasks => {
+        const originalTask = prevTasks.find(t => t.id === taskId);
+        const updatedTasks = prevTasks.map(task => 
+            task.id === taskId ? { ...task, ...updates } : task
+        );
 
+        // Call createRecurringTaskInstance with the *latest* state
+        if (originalTask && updates.status === 'completed' && originalTask.recurring_type !== 'none') {
+            const taskToConsiderForRecurrence = originalTask.original_task_id ? prevTasks.find(t => t.id === originalTask.original_task_id) : originalTask;
+            if (taskToConsiderForRecurrence) {
+                // Pass the updatedTasks array to ensure createRecurringTaskInstance sees the latest state
+                createRecurringTaskInstance(taskToConsiderForRecurrence, updatedTasks); 
+            }
+        }
+        return updatedTasks;
+    });
+
+    try {
       // Perform the database update
       const { data, error } = await supabase
         .from('tasks')
@@ -306,24 +318,13 @@ export const useTasks = () => {
       if (error) throw error;
       showSuccess('Task updated successfully!');
 
-      // --- NEW LOGIC FOR RECURRING TASKS ---
-      if (originalTask && updates.status === 'completed' && originalTask.recurring_type !== 'none') {
-        // If an original recurring task is completed, create its next instance
-        // Only create if it's the original task (not an instance itself)
-        const taskToConsiderForRecurrence = originalTask.original_task_id ? tasks.find(t => t.id === originalTask.original_task_id) : originalTask;
-        if (taskToConsiderForRecurrence) {
-            await createRecurringTaskInstance(taskToConsiderForRecurrence);
-        }
-      }
-      // --- END NEW LOGIC ---
-
     } catch (error: any) {
       console.error('Error updating task:', error);
       showError('Failed to update task.');
       // If the database operation fails, revert the optimistic update
       fetchDataAndSections();
     }
-  }, [userId, fetchDataAndSections, tasks, createRecurringTaskInstance]);
+  }, [userId, fetchDataAndSections, createRecurringTaskInstance]); // Added createRecurringTaskInstance to dependency array
 
   const deleteTask = useCallback(async (taskId: string) => {
     if (!userId) {
@@ -538,7 +539,7 @@ export const useTasks = () => {
     console.log('filteredTasks: --- START FILTERING ---');
     const effectiveCurrentDateUTC = getUTCStartOfDay(currentDate);
     console.log('filteredTasks: Current Date (UTC):', effectiveCurrentDateUTC.toISOString());
-    console.log('filteredTasks: Raw tasks BEFORE filter:', tasks.map(t => ({
+    console.log('filteredTasks: Raw tasks state at start of memo:', tasks.map(t => ({
       id: t.id,
       description: t.description,
       status: t.status,
