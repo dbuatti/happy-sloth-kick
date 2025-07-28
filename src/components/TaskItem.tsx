@@ -2,12 +2,13 @@ import React from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing, FolderOpen } from 'lucide-react';
+import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing, FolderOpen, Repeat } from 'lucide-react'; // Added Repeat icon
 import * as dateFns from 'date-fns'; // Import all functions from date-fns as dateFns
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
 import { getCategoryColorProps } from '@/lib/categoryColors'; // Import the new utility
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"; // Import Tooltip components
 
 interface TaskItemProps {
   task: Task;
@@ -98,24 +99,31 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
       {/* Task Content */}
       <div className="flex-1 min-w-0">
-        <label
-          htmlFor={`task-${task.id}`}
-          className={cn(
-            "text-base font-medium leading-tight",
-            task.status === 'completed' ? 'line-through text-gray-500 dark:text-gray-400' : 'text-foreground',
-            isOverdue && "text-red-600 dark:text-red-400",
-            isUpcoming && "text-orange-500 dark:text-orange-300",
-            "block truncate"
-          )}
-        >
-          {task.description}
-        </label>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <label
+              htmlFor={`task-${task.id}`}
+              className={cn(
+                "text-base font-medium leading-tight line-clamp-2", // Added line-clamp-2
+                task.status === 'completed' ? 'line-through text-gray-500 dark:text-gray-400' : 'text-foreground',
+                isOverdue && "text-red-600 dark:text-red-400",
+                isUpcoming && "text-orange-500 dark:text-orange-300",
+                "block" // Changed from truncate to block for line-clamp
+              )}
+            >
+              {task.description}
+            </label>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-xs">
+            {task.description}
+          </TooltipContent>
+        </Tooltip>
 
         {/* Compact details row */}
-        <div className="flex items-center text-xs text-muted-foreground mt-1 space-x-3">
+        <div className="flex items-center text-xs text-muted-foreground mt-1 space-x-2"> {/* Adjusted space-x */}
           {/* Category */}
-          <div className={cn("w-4 h-4 rounded-full flex items-center justify-center border", categoryColorProps.backgroundClass, categoryColorProps.dotBorder)}>
-            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: categoryColorProps.dotColor }}></div>
+          <div className={cn("w-3 h-3 rounded-full flex items-center justify-center border", categoryColorProps.backgroundClass, categoryColorProps.dotBorder)}> {/* Reduced size */}
+            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: categoryColorProps.dotColor }}></div> {/* Reduced size */}
           </div>
           {/* Priority */}
           <span className={cn(
@@ -124,6 +132,17 @@ const TaskItem: React.FC<TaskItemProps> = ({
           )}>
             {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
           </span>
+          {/* Recurring Icon */}
+          {task.recurring_type !== 'none' && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Repeat className="h-3 w-3 text-blue-500 dark:text-blue-400" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Recurring: {task.recurring_type.charAt(0).toUpperCase() + task.recurring_type.slice(1)}</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
           {/* Due Date */}
           {task.due_date && (
             <span className={cn(

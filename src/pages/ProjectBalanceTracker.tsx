@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Edit, Trash2, Sparkles, RefreshCcw, Lightbulb, RotateCcw, LayoutGrid } from 'lucide-react';
+import { Plus, Edit, Trash2, Sparkles, RefreshCcw, Lightbulb, RotateCcw, LayoutGrid, CheckCircle2 } from 'lucide-react'; // Added CheckCircle2
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useProjects, Project } from '@/hooks/useProjects';
 import { cn } from '@/lib/utils';
@@ -351,7 +351,12 @@ const ProjectBalanceTracker: React.FC = () => {
                           </div>
                         ) : (
                           <>
-                            <h3 className="text-lg font-semibold truncate">{project.name}</h3>
+                            <h3 className="text-lg font-semibold truncate flex items-center gap-2">
+                              {project.name}
+                              {project.current_count === 10 && (
+                                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                              )}
+                            </h3>
                             {project.description && (
                               <p className="text-sm text-muted-foreground truncate">{project.description}</p>
                             )}

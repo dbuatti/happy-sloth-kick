@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar, BellRing } from 'lucide-react';
+import { Calendar, BellRing, Lightbulb } from 'lucide-react'; // Added Lightbulb icon
 import { cn } from "@/lib/utils";
 import CategorySelector from "./CategorySelector";
 import PrioritySelector from "./PrioritySelector";
@@ -30,7 +30,6 @@ interface AddTaskFormProps {
   sections: TaskSection[]; // New prop for sections
   allCategories: Category[]; // New prop for all categories
   autoFocus?: boolean; // Added autoFocus prop
-  preselectedSectionId?: string | null; // New prop for pre-selecting section
 }
 
 // Helper function for natural language parsing
@@ -141,7 +140,7 @@ const parseNaturalLanguage = (text: string, categories: Category[]) => {
   };
 };
 
-const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdded, sections, allCategories, autoFocus, preselectedSectionId }) => {
+const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdded, sections, allCategories, autoFocus }) => {
   const [newTaskDescription, setNewTaskDescription] = useState<string>('');
   const [newTaskCategory, setNewTaskCategory] = useState<string>(''); // Initialize empty, will be set by default or natural language
   const [newTaskPriority, setNewTaskPriority] = useState<string>('medium');
@@ -163,38 +162,31 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
     }
   }, [allCategories, newTaskCategory]);
 
-  // Set preselected section if provided
-  useEffect(() => {
-    setNewTaskSectionId(preselectedSectionId || null);
-  }, [preselectedSectionId]);
-
-  useEffect(() => {
+  const handleSuggest = () => {
     const {
       dueDate,
       remindAt,
       reminderTimeStr,
       priority,
-      categoryId: parsedCategoryId, // Get the parsed category ID
-    } = parseNaturalLanguage(newTaskDescription, allCategories); // Pass allCategories to parser
+      categoryId: parsedCategoryId,
+    } = parseNaturalLanguage(newTaskDescription, allCategories);
 
-    if (priority && (newTaskPriority === 'medium' || !newTaskPriority)) {
+    if (priority) {
       setNewTaskPriority(priority);
     }
-    // Set category ID based on natural language, but only if it's not already set or is the default
-    if (parsedCategoryId && (newTaskCategory === (allCategories.find(cat => cat.name.toLowerCase() === 'general')?.id || '') || !newTaskCategory)) {
+    if (parsedCategoryId) {
       setNewTaskCategory(parsedCategoryId);
     }
-    
-    if (dueDate && !newTaskDueDate) {
+    if (dueDate) {
       setNewTaskDueDate(dueDate);
     }
-    if (remindAt && !newTaskRemindAt) {
+    if (remindAt) {
       setNewTaskRemindAt(remindAt);
       if (reminderTimeStr) {
         setNewReminderTime(format(remindAt, 'HH:mm'));
       }
     }
-  }, [newTaskDescription, newTaskPriority, newTaskCategory, newTaskDueDate, newTaskRemindAt, allCategories]);
+  };
 
   const handleSubmit = async () => {
     if (!newTaskDescription.trim()) {
@@ -230,8 +222,8 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
       setNewTaskNotes('');
       setNewTaskRemindAt(undefined);
       setNewReminderTime('');
+      setNewTaskSectionId(null);
       setNewTaskRecurringType('none');
-      // Do NOT reset newTaskSectionId here, as it might be preselected for the next task
       onTaskAdded?.();
     }
     setIsAdding(false);
@@ -249,15 +241,27 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
       <div className="space-y-3">
         <div>
           <Label htmlFor="new-task-description">Task Description</Label>
-          <Input
-            id="new-task-description"
-            placeholder="Task description"
-            value={newTaskDescription}
-            onChange={(e) => setNewTaskDescription(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={isAdding}
-            autoFocus={autoFocus} // Apply autoFocus here
-          />
+          <div className="flex gap-2">
+            <Input
+              id="new-task-description"
+              placeholder="Task description (e.g., 'Buy groceries by tomorrow high priority')"
+              value={newTaskDescription}
+              onChange={(e) => setNewTaskDescription(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={isAdding}
+              autoFocus={autoFocus} // Apply autoFocus here
+            />
+            <Button 
+              type="button" 
+              variant="outline" 
+              size="icon" 
+              onClick={handleSuggest} 
+              disabled={isAdding || !newTaskDescription.trim()}
+              title="Suggest details from description"
+            >
+              <Lightbulb className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
