@@ -38,9 +38,9 @@ interface NewTaskData {
   recurring_type?: 'none' | 'daily' | 'weekly' | 'monthly';
   category?: string;
   priority?: string;
-  due_date?: string | null;
+  due_date?: Date | null; // Changed to Date | null
   notes?: string | null;
-  remind_at?: string | null;
+  remind_at?: Date | null; // Changed to Date | null
   section_id?: string | null;
   parent_task_id?: string | null;
 }
@@ -197,6 +197,7 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
     }
 
     console.log(`syncRecurringTasks: Running for date ${currentDate.toISOString()}`);
+    const effectiveCurrentDateUTC = getUTCStartOfDay(currentDate); // Define here
 
     const originalRecurringTasks = tasks.filter(t => t.recurring_type !== 'none' && t.original_task_id === null);
     let tasksWereModified = false;
@@ -204,7 +205,7 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
     for (const originalTask of originalRecurringTasks) {
       const originalTaskCreatedAtUTC = getUTCStartOfDay(parseISO(originalTask.created_at));
 
-      if (isAfter(originalTaskCreatedAtUTC, currentDate)) {
+      if (isAfter(originalTaskCreatedAtUTC, currentDate)) { // This `currentDate` is the prop passed to useTasks
         console.log(`syncRecurringTasks: Skipping "${originalTask.description}" - original creation date is after current date.`);
         continue;
       }
@@ -215,7 +216,7 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
 
       // Find any instance for the current date
       const instanceForCurrentDate = allInstancesOfThisRecurringTask.find(t =>
-        isSameDay(getUTCStartOfDay(parseISO(t.created_at)), currentDate)
+        isSameDay(getUTCStartOfDay(parseISO(t.created_at)), currentDate) // This `currentDate` is the prop passed to useTasks
       );
 
       if (instanceForCurrentDate) {
@@ -232,7 +233,7 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
       // This happens if the latest relevant instance from a previous day was completed/skipped,
       // or if this is the very first day the recurring task should appear.
       const latestRelevantInstanceBeforeCurrentDate = allInstancesOfThisRecurringTask
-        .filter(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), currentDate) && t.status !== 'archived')
+        .filter(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status === 'to-do') // <-- Fixed: effectiveCurrentDateUTC is now defined
         .sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime())[0];
 
       const shouldCreateNewToDoInstance =
@@ -317,9 +318,9 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
         recurring_type: newTaskData.recurring_type || 'none',
         category: newTaskData.category || 'general',
         priority: newTaskData.priority || 'medium',
-        due_date: newTaskData.due_date || null,
+        due_date: newTaskData.due_date ? newTaskData.due_date.toISOString() : null, // Fixed: now newTaskData.due_date is Date | null
         notes: newTaskData.notes || null,
-        remind_at: newTaskData.remind_at || null,
+        remind_at: newTaskData.remind_at ? newTaskData.remind_at.toISOString() : null,
         section_id: newTaskData.section_id || null,
         order: null,
         original_task_id: null,
@@ -386,33 +387,41 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
     let taskToDelete: Task | undefined;
     try {
       taskToDelete = tasks.find(t => t.id === taskId);
-      setTasks(prev => prev.filter(task => task.id !== taskId && task.parent_task_id !== taskId));
+      if (!taskToDelete) return;
 
-      const { error: subtaskError } = await supabase
-        .from('tasks')
-        .delete()
-        .eq('parent_task_id', taskId)
-        .eq('user_id', userId);
+      // Determine all task IDs to delete (including subtasks and recurring instances)
+      let idsToDelete = [taskId];
+      const subtaskIds = tasks.filter(t => t.parent_task_id === taskId).map(t => t.id);
+      idsToDelete = [...idsToDelete, ...subtaskIds];
 
-      if (subtaskError) throw subtaskError;
+      // If it's an original recurring task, delete all its instances
+      if (taskToDelete.recurring_type !== 'none' && taskToDelete.original_task_id === null) {
+        const recurringInstanceIds = tasks.filter(t => t.original_task_id === taskId).map(t => t.id);
+        idsToDelete = [...idsToDelete, ...recurringInstanceIds];
+      }
 
+      // Optimistically remove from state
+      setTasks(prev => prev.filter(task => !idsToDelete.includes(task.id)));
+
+      // Delete from database
       const { error } = await supabase
         .from('tasks')
         .delete()
-        .eq('id', taskId)
-        .eq('user_id', userId);
+        .in('id', idsToDelete)
+        .eq('user_id', userId); // Ensure user ownership
 
       if (error) throw error;
-      showSuccess('Task deleted successfully!');
+      showSuccess('Task(s) deleted successfully!');
     }
     catch (error: any) {
       console.error('Error deleting task:', error);
       showError('Failed to delete task.');
+      // Revert optimistic update if DB delete fails
       if (taskToDelete) {
-        setTasks(prev => [...prev, taskToDelete]);
+        fetchDataAndSections(); // Re-fetch all data to restore state
       }
     }
-  }, [userId, tasks]);
+  }, [userId, tasks, fetchDataAndSections]);
 
   const toggleTaskSelection = useCallback((taskId: string, checked: boolean) => {
     setSelectedTaskIds(prev =>
