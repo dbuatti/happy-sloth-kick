@@ -123,7 +123,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
               <SelectValue placeholder="Select category" />
             </div>
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="z-[9999]"> {/* Add z-index here */}
             <SelectItem value="general">
               <div className="flex items-center gap-2">
                 <div className={cn("w-4 h-4 rounded-full flex items-center justify-center border", getCategoryColorProps('gray').backgroundClass, getCategoryColorProps('gray').dotBorder)}>
@@ -141,7 +141,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
                       <div className="w-2 h-2 rounded-full" style={{ backgroundColor: colorProps.dotColor }}></div>
                     </div>
                     {category.name}
-                  </div>
+                  </div >
                 </SelectItem>
               );
             })}

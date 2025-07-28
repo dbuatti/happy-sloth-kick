@@ -128,7 +128,7 @@ const TaskFilter: React.FC<TaskFilterProps> = ({ currentDate, setCurrentDate }) 
                 <SelectTrigger>
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[9999]"> {/* Add z-index here */}
                   <SelectItem value="all">All</SelectItem>
                   <SelectItem value="to-do">To Do</SelectItem>
                   <SelectItem value="completed">Completed</SelectItem>
@@ -144,7 +144,7 @@ const TaskFilter: React.FC<TaskFilterProps> = ({ currentDate, setCurrentDate }) 
                 <SelectTrigger>
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[9999]"> {/* Add z-index here */}
                   <SelectItem value="all">All</SelectItem>
                   <SelectItem value="general">General</SelectItem>
                   {localCategories.map(cat => (
@@ -162,7 +162,7 @@ const TaskFilter: React.FC<TaskFilterProps> = ({ currentDate, setCurrentDate }) 
                 <SelectTrigger>
                   <SelectValue placeholder="Select priority" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[9999]"> {/* Add z-index here */}
                   <SelectItem value="all">All</SelectItem>
                   <SelectItem value="low">Low</SelectItem>
                   <SelectItem value="medium">Medium</SelectItem>
@@ -178,7 +178,7 @@ const TaskFilter: React.FC<TaskFilterProps> = ({ currentDate, setCurrentDate }) 
                 <SelectTrigger>
                   <SelectValue placeholder="Select section" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[9999]"> {/* Add z-index here */}
                   <SelectItem value="all">All</SelectItem>
                   <SelectItem value="no-section">No Section</SelectItem>
                   {sections.map(section => (
