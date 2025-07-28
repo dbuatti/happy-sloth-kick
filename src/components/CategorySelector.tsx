@@ -120,7 +120,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
               <div className={cn("w-4 h-4 rounded-full flex items-center justify-center border", selectedCategoryColorProps.backgroundClass, selectedCategoryColorProps.dotBorder)}>
                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: selectedCategoryColorProps.dotColor }}></div>
               </div>
-              <span className="flex-1 truncate">
+              <span className="flex-1 min-w-0 truncate"> {/* Added min-w-0 here */}
                 <SelectValue placeholder="Select category" />
               </span>
             </div>
