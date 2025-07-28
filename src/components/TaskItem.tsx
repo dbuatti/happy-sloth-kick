@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing, FolderOpen, Repeat, ListTodo, CheckCircle2 } from 'lucide-react'; // Added CheckCircle2 icon
-import * as dateFns from 'date-fns'; // Import all functions from date-fns as dateFns
+import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing, FolderOpen, Repeat, ListTodo, CheckCircle2 } from 'lucide-react';
+import * as dateFns from 'date-fns';
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
-import { getCategoryColorProps } from '@/lib/categoryColors'; // Import the new utility
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"; // Import Tooltip components
+import { getCategoryColorProps } from '@/lib/categoryColors';
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface TaskItemProps {
   task: Task;
@@ -19,7 +19,7 @@ interface TaskItemProps {
   isSelected: boolean;
   onToggleSelect: (taskId: string, checked: boolean) => void;
   sections: { id: string; name: string }[];
-  onEditTask: (task: Task) => void; // Keep this prop
+  onEditTask: (task: Task) => void;
   currentDate: Date;
 }
 
@@ -32,7 +32,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   isSelected,
   onToggleSelect,
   sections,
-  onEditTask, // Keep this prop
+  onEditTask,
   currentDate,
 }) => {
   console.log(`TaskItem: Rendering task - ID: ${task.id}, Description: "${task.description}", Status: "${task.status}", Created At: "${task.created_at}"`);
@@ -66,7 +66,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
     }
   };
 
-  // Changed isPast to isBefore
   const isOverdue = task.due_date && task.status !== 'completed' && dateFns.isBefore(dateFns.parseISO(task.due_date) as Date, currentRefDate as Date) && !dateFns.isSameDay(dateFns.parseISO(task.due_date) as Date, currentRefDate as Date);
   const isUpcoming = task.due_date && task.status !== 'completed' && dateFns.isSameDay(dateFns.parseISO(task.due_date) as Date, currentRefDate as Date);
 
@@ -75,23 +74,22 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const handleCheckboxChange = (checked: boolean) => {
     onToggleSelect(task.id, checked);
     onStatusChange(task.id, checked ? 'completed' : 'to-do');
-    if (checked) { // Play sound and show effect only when marking as completed
+    if (checked) {
       playSound();
       setShowCompletionEffect(true);
       setTimeout(() => {
         setShowCompletionEffect(false);
-      }, 600); // Match animation duration
+      }, 600);
     }
   };
 
   return (
     <div
       className={cn(
-        "relative flex items-center space-x-3 w-full", // Reduced space-x from 4 to 3
+        "relative flex items-center space-x-3 w-full",
         task.status === 'completed' ? "opacity-70 bg-green-50/20 dark:bg-green-900/20" : "",
       )}
     >
-      {/* Checkbox */}
       <Checkbox
         key={`${task.id}-${task.status}`}
         checked={task.status === 'completed'}
@@ -99,23 +97,20 @@ const TaskItem: React.FC<TaskItemProps> = ({
         id={`task-${task.id}`}
         onClick={(e) => e.stopPropagation()}
         className="flex-shrink-0"
-        data-no-dnd="true" // Prevent drag from checkbox
       />
 
-      {/* Task Content */}
       <div className="flex-1 min-w-0">
         <Tooltip>
           <TooltipTrigger asChild>
             <label
               htmlFor={`task-${task.id}`}
               className={cn(
-                "text-base font-medium leading-tight line-clamp-2", // Added line-clamp-2
+                "text-base font-medium leading-tight line-clamp-2",
                 task.status === 'completed' ? 'line-through text-gray-500 dark:text-gray-400' : 'text-foreground',
                 isOverdue && "text-red-600 dark:text-red-400",
                 isUpcoming && "text-orange-500 dark:text-orange-300",
-                "block" // Changed from truncate to block for line-clamp
+                "block"
               )}
-              data-no-dnd="true" // Prevent drag from label text
             >
               {task.description}
             </label>
@@ -125,20 +120,16 @@ const TaskItem: React.FC<TaskItemProps> = ({
           </TooltipContent>
         </Tooltip>
 
-        {/* Compact details row */}
-        <div className="flex items-center text-xs text-muted-foreground mt-1 space-x-1"> {/* Reduced space-x from 2 to 1 */}
-          {/* Category */}
-          <div className={cn("w-3 h-3 rounded-full flex items-center justify-center border", categoryColorProps.backgroundClass, categoryColorProps.dotBorder)}> {/* Reduced size */}
-            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: categoryColorProps.dotColor }}></div> {/* Reduced size */}
+        <div className="flex items-center text-xs text-muted-foreground mt-1 space-x-1">
+          <div className={cn("w-3 h-3 rounded-full flex items-center justify-center border", categoryColorProps.backgroundClass, categoryColorProps.dotBorder)}>
+            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: categoryColorProps.dotColor }}></div>
           </div>
-          {/* Priority */}
           <span className={cn(
             "font-semibold",
             getPriorityColor(task.priority)
           )}>
             {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
           </span>
-          {/* Recurring Icon */}
           {task.recurring_type !== 'none' && (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -149,7 +140,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
               </TooltipContent>
             </Tooltip>
           )}
-          {/* Due Date */}
           {task.due_date && (
             <span className={cn(
               "flex items-center gap-1",
@@ -160,14 +150,12 @@ const TaskItem: React.FC<TaskItemProps> = ({
               {getDueDateDisplay(task.due_date)}
             </span>
           )}
-          {/* Reminder */}
           {task.remind_at && (
             <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
               <BellRing className="h-3 w-3" />
               {dateFns.format(dateFns.parseISO(task.remind_at), 'MMM d, HH:mm')}
             </span>
           )}
-          {/* Notes (only show icon if notes exist) */}
           {task.notes && (
             <span className="flex items-center gap-1">
               <StickyNote className="h-3 w-3" />
@@ -176,22 +164,19 @@ const TaskItem: React.FC<TaskItemProps> = ({
         </div>
       </div>
 
-      {/* Completion Effect Overlay */}
       {showCompletionEffect && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
           <CheckCircle2 className="h-12 w-12 text-green-500 animate-fade-in-out-check" />
         </div>
       )}
 
-      {/* Actions (Edit, More) - visible on hover */}
       <div className="flex-shrink-0 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
         {task.status === 'completed' && (
           <Button 
             variant="outline" 
             size="sm" 
-            className="h-7 px-2 text-xs" // Smaller button for "Mark as To-Do"
+            className="h-7 px-2 text-xs"
             onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'to-do'); playSound(); }}
-            data-no-dnd="true" // Prevent drag from button
           >
             <ListTodo className="h-3 w-3 mr-1" /> To-Do
           </Button>
@@ -199,9 +184,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
         <Button 
           variant="ghost" 
           size="icon" 
-          className="h-7 w-7" // Reduced size from h-8 w-8 to h-7 w-7
-          onClick={(e) => { e.stopPropagation(); onEditTask(task); }} // Explicitly call onEditTask here
-          data-no-dnd="true" // Prevent drag from button
+          className="h-7 w-7"
+          onClick={(e) => { e.stopPropagation(); onEditTask(task); }}
         >
           <Edit className="h-4 w-4" />
         </Button>
@@ -209,15 +193,14 @@ const TaskItem: React.FC<TaskItemProps> = ({
           <DropdownMenuTrigger asChild>
             <Button 
               variant="ghost" 
-              className="h-7 w-7 p-0" // Reduced size from h-8 w-8 to h-7 w-7
+              className="h-7 w-7 p-0"
               onClick={(e) => e.stopPropagation()}
-              data-no-dnd="true" // Prevent drag from dropdown trigger
             >
               <span className="sr-only">Open menu</span>
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" data-no-dnd="true"> {/* Prevent drag from dropdown content */}
+          <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'to-do'); playSound(); }}>
               Mark as To-Do
             </DropdownMenuItem>
@@ -232,10 +215,10 @@ const TaskItem: React.FC<TaskItemProps> = ({
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuSub>
-              <DropdownMenuSubTrigger data-no-dnd="true"> {/* Prevent drag from sub-trigger */}
+              <DropdownMenuSubTrigger>
                 <FolderOpen className="mr-2 h-4 w-4" /> Move to Section
               </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent data-no-dnd="true"> {/* Prevent drag from sub-content */}
+              <DropdownMenuSubContent>
                 {sections.length === 0 ? (
                   <DropdownMenuItem disabled>No sections available</DropdownMenuItem>
                 ) : (
