@@ -59,14 +59,12 @@ const getUTCStartOfDay = (date: Date) => {
 };
 
 export const useTasks = () => {
-  const HOOK_VERSION = "2024-07-29-09"; // Increment this for each significant change
-
+  const HOOK_VERSION = "2024-07-29-10"; // Incremented version
   const { user } = useAuth();
   const userId = user?.id;
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  // Initialize currentDate to UTC midnight using the helper
   const [currentDate, setCurrentDate] = useState(() => getUTCStartOfDay(new Date()));
   console.log(`useTasks hook version: ${HOOK_VERSION}`);
   console.log('useTasks: Re-rendering. Current date in state (from hook start):', currentDate.toISOString());
@@ -83,7 +81,6 @@ export const useTasks = () => {
   const [sectionFilter, setSectionFilter] = useState(() => getInitialFilter('section', 'all'));
 
   const remindedTaskIdsRef = useRef<Set<string>>(new Set());
-  // Removed isFetchingRef
 
   useEffect(() => {
     localStorage.setItem('task_filter_search', searchFilter);
@@ -201,7 +198,6 @@ export const useTasks = () => {
       showError('An unexpected error occurred while loading data.');
     } finally {
       setLoading(false);
-      // Removed isFetchingRef.current = null;
       console.log('fetchTasks: Fetch process completed.');
     }
   }, [userId, currentDate]); // Dependencies for fetchDataAndSections
@@ -213,7 +209,6 @@ export const useTasks = () => {
       setTasks([]);
       setSections([]);
       setLoading(false);
-      // Removed isFetchingRef.current = null;
       console.log('useTasks useEffect: No user ID, clearing tasks and sections.');
     }
   }, [userId, currentDate, fetchDataAndSections]); // Add fetchDataAndSections to dependencies
@@ -342,17 +337,16 @@ export const useTasks = () => {
         .select();
 
       if (error) throw error;
-      setTasks(prev => prev.map(task => {
-        const updated = data.find(d => d.id === task.id);
-        return updated ? updated : task;
-      }));
+      // Instead of trying to update the state optimistically, we re-fetch everything.
+      // This is the most reliable way to ensure the state is correct.
+      await fetchDataAndSections();
       showSuccess(`${ids.length} tasks updated successfully!`);
       clearSelectedTasks();
     } catch (error: any) {
       console.error('Error bulk updating tasks:', error);
       showError('Failed to update tasks in bulk.');
     }
-  }, [userId, selectedTaskIds, clearSelectedTasks]);
+  }, [userId, selectedTaskIds, clearSelectedTasks, fetchDataAndSections]); // Added fetchDataAndSections to dependencies
 
   const createSection = useCallback(async (name: string) => {
     if (!userId) {
