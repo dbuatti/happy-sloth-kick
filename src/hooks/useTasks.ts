@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess, showReminder } from '@/utils/toast';
 import { v4 as uuidv4 } from 'uuid';
-import { isSameDay, isPast, startOfDay as fnsStartOfDay, parseISO, format, isAfter } from 'date-fns';
+import { isSameDay, isPast, startOfDay as fnsStartOfDay, parseISO, format, isAfter, isBefore } from 'date-fns'; // Added isBefore
 
 export interface Task {
   id: string;
@@ -59,7 +59,7 @@ const getUTCStartOfDay = (date: Date) => {
 };
 
 export const useTasks = () => {
-  const HOOK_VERSION = "2024-07-29-04"; // Increment this for each significant change
+  const HOOK_VERSION = "2024-07-29-05"; // Increment this for each significant change
   console.log(`useTasks hook version: ${HOOK_VERSION}`);
 
   const { user } = useAuth();
@@ -147,17 +147,19 @@ export const useTasks = () => {
         const startOfCurrentUTC = currentDate.toISOString();
         const endOfCurrentUTC = new Date(currentDate.getTime() + 24 * 60 * 60 * 1000 - 1).toISOString();
 
-        // Check if an instance for this template already exists IN THE CURRENTLY FETCHED DATA for today
-        const existingInstanceInFetchedData = tasksToProcess.find(
-          task => task.original_task_id === template.id &&
-                  isSameDay(getUTCStartOfDay(parseISO(task.created_at)), getUTCStartOfDay(currentDate)) &&
-                  (task.status === 'to-do' || task.status === 'skipped')
-        );
+        // Check if ANY instance (to-do, completed, skipped) for this template already exists for today
+        const { data: existingInstances, error: checkError } = await supabase
+          .from('tasks')
+          .select('id')
+          .eq('original_task_id', template.id)
+          .eq('user_id', userId)
+          .gte('created_at', startOfCurrentUTC)
+          .lt('created_at', endOfCurrentUTC);
 
-        console.log(`fetchTasks: Checking for existing instance of template "${template.description}" (ID: ${template.id}) for today (UTC: ${startOfCurrentUTC} - ${endOfCurrentUTC})`);
-        console.log(`fetchTasks: Found existing instance in fetched data: ${!!existingInstanceInFetchedData}`);
+        if (checkError) throw checkError;
+        console.log(`fetchTasks: Found ${existingInstances?.length || 0} existing instances (any status) for template "${template.description}" today.`);
 
-        if (!existingInstanceInFetchedData) {
+        if (!existingInstances || existingInstances.length === 0) {
           const newInstance: Task = {
             ...template,
             id: uuidv4(),
@@ -272,6 +274,7 @@ export const useTasks = () => {
       return;
     }
     try {
+      console.log(`updateTask: Attempting to update task ${taskId} with updates:`, updates); // Added log
       const { data, error } = await supabase
         .from('tasks')
         .update(updates)
@@ -283,6 +286,7 @@ export const useTasks = () => {
       if (error) throw error;
       setTasks(prev => prev.map(task => (task.id === taskId ? data : task)));
       showSuccess('Task updated successfully!');
+      console.log(`updateTask: Task ${taskId} updated successfully. New data:`, data); // Added log
     } catch (error: any) {
       console.error('Error updating task:', error);
       showError('Failed to update task.');
@@ -507,19 +511,17 @@ export const useTasks = () => {
         const taskCreatedAtUTC = getUTCStartOfDay(taskCreatedAt); // Convert task's created_at to UTC midnight for comparison
 
         const isTaskCreatedOnCurrentDate = isSameDay(taskCreatedAtUTC, effectiveCurrentDateUTC);
+        const isTaskCreatedBeforeCurrentDate = isBefore(taskCreatedAtUTC, effectiveCurrentDateUTC); // New check
         const isRecurringTemplate = task.recurring_type === 'daily' && task.original_task_id === null;
         const isRecurringInstance = task.original_task_id !== null;
-        const isActiveStatus = task.status === 'to-do' || task.status === 'skipped';
-        const isCompletedStatus = task.status === 'completed';
-        const isArchivedStatus = task.status === 'archived';
 
         console.log(`  Task "${task.description}" (ID: ${task.id}):`);
         console.log(`    created_at: ${task.created_at} (UTC: ${taskCreatedAtUTC.toISOString()})`);
         console.log(`    currentDate (UTC): ${effectiveCurrentDateUTC.toISOString()}`);
         console.log(`    isTaskCreatedOnCurrentDate: ${isTaskCreatedOnCurrentDate}`);
+        console.log(`    isTaskCreatedBeforeCurrentDate: ${isTaskCreatedBeforeCurrentDate}`);
         console.log(`    status: ${task.status}, recurring_type: ${task.recurring_type}, original_task_id: ${task.original_task_id}`);
         console.log(`    isRecurringTemplate: ${isRecurringTemplate}, isRecurringInstance: ${isRecurringInstance}`);
-        console.log(`    isActiveStatus: ${isActiveStatus}, isCompletedStatus: ${isCompletedStatus}, isArchivedStatus: ${isArchivedStatus}`);
 
         // Rule A: Exclude recurring templates from daily view
         if (isRecurringTemplate) {
@@ -527,34 +529,25 @@ export const useTasks = () => {
           return false;
         }
 
-        // Rule B: Exclude archived tasks from daily view (unless statusFilter is 'archived')
-        if (isArchivedStatus) {
+        // Rule B: Exclude archived tasks from daily view
+        if (task.status === 'archived') {
           console.log(`    -> Rule B: Archived. Result: Excluded`);
           return false;
         }
 
-        // Rule C: Handle recurring instances (tasks generated from a template)
-        // These should ONLY show if they were generated for the current day.
-        if (isRecurringInstance) {
-          const shouldInclude = isTaskCreatedOnCurrentDate;
-          console.log(`    -> Rule C: Recurring Instance. Created on current date? ${isTaskCreatedOnCurrentDate}. Result: ${shouldInclude ? 'Included' : 'Excluded'}`);
+        // Rule C: Include tasks that are 'to-do' or 'skipped' and were created on or before the current date.
+        // This handles both regular tasks and recurring instances that are still active.
+        if (task.status === 'to-do' || task.status === 'skipped') {
+          const shouldInclude = isTaskCreatedOnCurrentDate || isTaskCreatedBeforeCurrentDate;
+          console.log(`    -> Rule C: Active Task (to-do/skipped). Created on/before current date? ${shouldInclude}. Result: ${shouldInclude ? 'Included' : 'Excluded'}`);
           return shouldInclude;
         }
 
-        // Rule D: Handle general tasks (non-recurring, not instances)
-        // These should always be visible if active (to-do/skipped), regardless of creation date.
-        if (isActiveStatus) {
-          console.log(`    -> Rule D: Active General Task. Result: Included`);
-          return true;
-        }
-
-        // Rule E: Handle completed general tasks (non-recurring, not instances)
-        // These should ONLY show if they were completed on the current day.
-        // We rely on 'created_at' for this, assuming completion happens on the same day or
-        // we only want to show completed tasks on the day they were created/generated.
-        if (isCompletedStatus) {
+        // Rule D: Include tasks that are 'completed' but ONLY if they were created on the current date.
+        // This ensures completed tasks from previous days don't show up.
+        if (task.status === 'completed') {
           const shouldInclude = isTaskCreatedOnCurrentDate;
-          console.log(`    -> Rule E: Completed General Task. Created on current date? ${isTaskCreatedOnCurrentDate}. Result: ${shouldInclude ? 'Included' : 'Excluded'}`);
+          console.log(`    -> Rule D: Completed Task. Created on current date? ${shouldInclude}. Result: ${shouldInclude ? 'Included' : 'Excluded'}`);
           return shouldInclude;
         }
         
