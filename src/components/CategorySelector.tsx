@@ -118,16 +118,19 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
   };
 
   const selectedCategory = categories.find(cat => cat.id === value);
-  const selectedCategoryColorClass = selectedCategory ? selectedCategory.color : 'bg-gray-200 dark:bg-gray-700 text-muted-foreground'; // Default background for trigger
 
   return (
     <div className="space-y-2">
       <Label>Category</Label>
       <div className="flex space-x-2">
         <Select value={value} onValueChange={onChange}>
-          <SelectTrigger className={cn(selectedCategoryColorClass)}>
+          <SelectTrigger className="w-full">
             <div className="flex items-center gap-2">
-              {selectedCategory && <div className={cn("w-3 h-3 rounded-full", selectedCategory.color)}></div>}
+              {selectedCategory ? (
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: selectedCategory.color.replace('bg-', '').replace('-', '') }}></div>
+              ) : (
+                <div className="w-3 h-3 rounded-full bg-gray-500"></div>
+              )}
               <SelectValue placeholder="Select category" />
             </div>
           </SelectTrigger>
@@ -141,7 +144,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
             {categories.map(category => (
               <SelectItem key={category.id} value={category.id}>
                 <div className="flex items-center gap-2">
-                  <div className={cn("w-3 h-3 rounded-full", category.color)}></div>
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: category.color.replace('bg-', '').replace('-', '') }}></div>
                   {category.name}
                 </div>
               </SelectItem>
@@ -167,7 +170,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
                     {categories.map(category => (
                       <li key={category.id} className="flex items-center justify-between p-2 border rounded-md">
                         <div className="flex items-center gap-2">
-                          <div className={cn("w-3 h-3 rounded-full", category.color)}></div>
+                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: category.color.replace('bg-', '').replace('-', '') }}></div>
                           <span>{category.name}</span>
                         </div>
                         <Button
