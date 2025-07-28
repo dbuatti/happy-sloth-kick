@@ -274,9 +274,39 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen }) => {
                     className="pl-10"
                   />
                 </div>
-                <Button onClick={() => setIsAddTaskForm(true)}>
-                  <Plus className="mr-2 h-4 w-4" /> Add Task
-                </Button>
+                <div className="flex gap-2">
+                  <Button onClick={() => setIsAddTaskForm(true)}>
+                    <Plus className="mr-2 h-4 w-4" /> Add Task
+                  </Button>
+                  <Dialog open={isAddSectionOpen} onOpenChange={setIsAddSectionOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline">
+                        <Plus className="mr-2 h-4 w-4" /> Add Section
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Add New Section</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div>
+                          <Label htmlFor="new-section-name">Section Name</Label>
+                          <Input
+                            id="new-section-name"
+                            value={newSectionName}
+                            onChange={(e) => setNewSectionName(e.target.value)}
+                            placeholder="e.g., Work, Personal, Groceries"
+                            autoFocus
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsAddSectionOpen(false)}>Cancel</Button>
+                        <Button onClick={handleAddSection} disabled={!newSectionName.trim()}>Add Section</Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
               </div>
 
               <DailyStreak tasks={filteredTasks} currentDate={currentDate} />
