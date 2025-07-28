@@ -161,13 +161,12 @@ export const useTasks = () => {
     if (!userId) return;
 
     const reminderInterval = setInterval(() => {
-      const now = new Date();
       tasks.forEach(task => {
         if (task.remind_at && task.status === 'to-do' && !remindedTaskIdsRef.current.has(task.id)) {
           const reminderTime = parseISO(task.remind_at);
-          const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 60 * 1000);
+          const fiveMinutesAgo = new Date(new Date().getTime() - 5 * 60 * 1000); // Corrected to 5 minutes
           
-          if (reminderTime <= now && reminderTime > fiveMinutesAgo) {
+          if (reminderTime <= new Date() && reminderTime > fiveMinutesAgo) {
             showReminder(`Reminder: ${task.description}`, task.id);
             remindedTaskIdsRef.current.add(task.id);
           }
@@ -547,111 +546,92 @@ export const useTasks = () => {
       parent_task_id: t.parent_task_id
     })));
 
-    let workingTasks = [...tasks];
+    let relevantTasks: Task[] = [];
 
-    // 1. Filter out subtasks (they are handled within parent tasks)
-    workingTasks = workingTasks.filter(task => task.parent_task_id === null);
-    console.log('filteredTasks: After subtask filter, count:', workingTasks.length);
+    // 1. Filter out subtasks first
+    const topLevelTasks = tasks.filter(task => task.parent_task_id === null);
 
-    let finalTasks: Task[] = [];
-
-    // Separate recurring and non-recurring tasks for specific daily view logic
-    const nonRecurringTasks = workingTasks.filter(task => task.recurring_type === 'none');
-    const recurringTasks = workingTasks.filter(task => task.recurring_type !== 'none');
-
-    // --- Process Non-Recurring Tasks ---
-    // For non-recurring tasks, we only show them if their created_at date matches the current date,
-    // unless the status filter is 'archived', in which case we show all archived non-recurring tasks.
+    // 2. Handle archived tasks (they are date-agnostic for the archive view)
     if (statusFilter === 'archived') {
-      finalTasks.push(...nonRecurringTasks.filter(task => task.status === 'archived'));
+      relevantTasks = topLevelTasks.filter(task => task.status === 'archived');
     } else {
-      // For 'all', 'to-do', 'completed', 'skipped' statuses, filter by created_at matching currentDate
-      let nonArchivedNonRecurring = nonRecurringTasks.filter(task => 
-        task.status !== 'archived' && isSameDay(getUTCStartOfDay(parseISO(task.created_at)), effectiveCurrentDateUTC)
-      );
-      if (statusFilter !== 'all') {
-        nonArchivedNonRecurring = nonArchivedNonRecurring.filter(task => task.status === statusFilter);
-      }
-      finalTasks.push(...nonArchivedNonRecurring);
-    }
-    console.log('filteredTasks: After non-recurring processing, count:', finalTasks.length);
+      // 3. For non-archived views, determine which tasks are relevant for the current date
+      const recurringTasksToDisplay: Record<string, Task> = {}; // Stores the single recurring task to display for each original_task_id
+      const nonRecurringTasksForCurrentDate: Task[] = [];
 
-
-    // --- Process Recurring Tasks ---
-    if (statusFilter === 'archived') {
-      // If viewing archived, show all archived recurring tasks
-      finalTasks.push(...recurringTasks.filter(task => task.status === 'archived'));
-    } else {
-      const recurringTasksToDisplay: Record<string, Task> = {}; // Map original_task_id to the single task to display
-
-      // First, find the most recent active instance for the current date for each original recurring task
-      recurringTasks.forEach(task => {
-        const originalId = task.original_task_id || task.id;
+      topLevelTasks.forEach(task => {
         const taskCreatedAtUTC = getUTCStartOfDay(parseISO(task.created_at));
+        const isTaskCreatedOnCurrentDate = isSameDay(taskCreatedAtUTC, effectiveCurrentDateUTC);
 
-        // If this task is an instance created specifically for the current date, and it's not archived
-        if (isSameDay(taskCreatedAtUTC, effectiveCurrentDateUTC) && task.status !== 'archived') {
-          // If we already have an instance for this originalId, keep the one created later
-          if (!recurringTasksToDisplay[originalId] || isAfter(taskCreatedAtUTC, getUTCStartOfDay(parseISO(recurringTasksToDisplay[originalId].created_at)))) {
-            recurringTasksToDisplay[originalId] = task;
-          }
-        }
-      });
+        if (task.recurring_type !== 'none') {
+          const originalId = task.original_task_id || task.id;
 
-      // Second, for any original recurring task that *doesn't* have an instance for currentDate,
-      // add the original task itself (if it's not archived and no instance exists for today).
-      recurringTasks.filter(task => task.original_task_id === null && task.status !== 'archived')
-        .forEach(originalTask => {
-          if (!recurringTasksToDisplay[originalTask.id]) {
-            // Check if there's ANY instance for this original task on the current date (even if completed/skipped)
-            const hasAnyInstanceForCurrentDate = recurringTasks.some(t => 
-              (t.original_task_id === originalTask.id || t.id === originalTask.id) && 
-              isSameDay(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC)
-            );
-            if (!hasAnyInstanceForCurrentDate) {
-              recurringTasksToDisplay[originalTask.id] = originalTask;
+          // If this task is an instance created specifically for the current date
+          if (isTaskCreatedOnCurrentDate) {
+            // Prioritize instances created for the current date, especially if they are 'to-do'
+            if (!recurringTasksToDisplay[originalId] || (task.status === 'to-do' && recurringTasksToDisplay[originalId].status !== 'to-do')) {
+                recurringTasksToDisplay[originalId] = task;
+            }
+          } else if (task.original_task_id === null) {
+            // If it's an original recurring task (template) and no instance for the current date has been found yet
+            // and its created_at is before or on the current date
+            if (!recurringTasksToDisplay[originalId] && (isBefore(taskCreatedAtUTC, effectiveCurrentDateUTC) || isSameDay(taskCreatedAtUTC, effectiveCurrentDateUTC))) {
+                // Check if there's ANY instance for this original task on the current date (even if completed/skipped)
+                const hasAnyInstanceForCurrentDate = topLevelTasks.some(t => 
+                    (t.original_task_id === originalId || t.id === originalId) && 
+                    isSameDay(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC)
+                );
+                if (!hasAnyInstanceForCurrentDate) {
+                    recurringTasksToDisplay[originalId] = task;
+                }
             }
           }
-        });
+        } else {
+          // Non-recurring tasks: only show if created on the current date
+          if (isTaskCreatedOnCurrentDate) {
+            nonRecurringTasksForCurrentDate.push(task);
+          }
+        }
+      });
 
-      // Finally, add the selected recurring tasks to the final list, applying status filter
+      relevantTasks.push(...nonRecurringTasksForCurrentDate);
       Object.values(recurringTasksToDisplay).forEach(task => {
-        if (statusFilter === 'all' || statusFilter === task.status) {
-          finalTasks.push(task);
+        // Only add if not archived, as archived tasks are handled by the top-level if block
+        if (task.status !== 'archived') {
+          relevantTasks.push(task);
         }
       });
     }
-    console.log('filteredTasks: After recurring processing, combined count:', finalTasks.length);
 
+    // 4. Apply status filter (if not 'all' and not 'archived' which was handled above)
+    if (statusFilter !== 'all' && statusFilter !== 'archived') {
+      relevantTasks = relevantTasks.filter(task => task.status === statusFilter);
+    }
 
-    // 3. Apply other filters (search, category, priority, section) to the combined list
+    // 5. Apply other filters (search, category, priority, section)
     if (searchFilter) {
-      finalTasks = finalTasks.filter(task =>
+      relevantTasks = relevantTasks.filter(task =>
         task.description.toLowerCase().includes(searchFilter.toLowerCase()) ||
         task.notes?.toLowerCase().includes(searchFilter.toLowerCase())
       );
-      console.log('filteredTasks: After search filter, count:', finalTasks.length);
     }
     if (categoryFilter && categoryFilter !== 'all') {
-      finalTasks = finalTasks.filter(task => task.category === categoryFilter);
-      console.log('filteredTasks: After category filter, count:', finalTasks.length);
+      relevantTasks = relevantTasks.filter(task => task.category === categoryFilter);
     }
     if (priorityFilter && priorityFilter !== 'all') {
-      finalTasks = finalTasks.filter(task => task.priority === priorityFilter);
-      console.log('filteredTasks: After priority filter, count:', finalTasks.length);
+      relevantTasks = relevantTasks.filter(task => task.priority === priorityFilter);
     }
     if (sectionFilter && sectionFilter !== 'all') {
-      finalTasks = finalTasks.filter(task => {
+      relevantTasks = relevantTasks.filter(task => {
         if (sectionFilter === 'no-section') {
           return task.section_id === null;
         }
         return task.section_id === sectionFilter;
       });
-      console.log('filteredTasks: After section filter, count:', finalTasks.length);
     }
 
-    // 4. Sort the final tasks
-    finalTasks.sort((a, b) => {
+    // 6. Sort the final tasks
+    relevantTasks.sort((a, b) => {
       const statusOrder = { 'to-do': 1, 'skipped': 2, 'completed': 3, 'archived': 4 };
       const statusComparison = statusOrder[a.status] - statusOrder[b.status];
       if (statusComparison !== 0) return statusComparison;
@@ -667,7 +647,7 @@ export const useTasks = () => {
       return parseISO(a.created_at).getTime() - parseISO(b.created_at).getTime();
     });
 
-    console.log('filteredTasks: Final tasks AFTER all filters and sorting:', finalTasks.map(t => ({
+    console.log('filteredTasks: Final tasks AFTER all filters and sorting:', relevantTasks.map(t => ({
       id: t.id,
       description: t.description,
       status: t.status,
@@ -677,7 +657,7 @@ export const useTasks = () => {
       parent_task_id: t.parent_task_id
     })));
     console.log('filteredTasks: --- END FILTERING ---');
-    return finalTasks;
+    return relevantTasks;
   }, [tasks, currentDate, searchFilter, statusFilter, categoryFilter, priorityFilter, sectionFilter, sections]);
 
   return {
