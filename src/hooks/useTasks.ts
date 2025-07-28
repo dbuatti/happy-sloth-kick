@@ -209,20 +209,30 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       return false;
     }
 
-    const newInstance: Task = {
-      ...originalTask,
+    // Construct the new instance with only the properties relevant to the database
+    const newInstanceDataForDb = {
       id: uuidv4(),
-      created_at: targetDateUTC.toISOString(), // This is the key: new instance gets current date
+      user_id: originalTask.user_id,
+      description: originalTask.description,
       status: 'to-do', // New instances are always 'to-do'
-      original_task_id: originalTask.id,
+      recurring_type: originalTask.recurring_type,
+      created_at: targetDateUTC.toISOString(), // This is the key: new instance gets current date
+      category: originalTask.category, // Category ID
+      priority: originalTask.priority,
       due_date: null, // Reset due_date for the new instance
+      notes: originalTask.notes,
       remind_at: null, // Reset remind_at for the new instance
+      section_id: originalTask.section_id,
+      order: originalTask.order, // Keep original order for now, reordering will adjust
+      original_task_id: originalTask.id, // Link to the original recurring task
+      parent_task_id: originalTask.parent_task_id, // If original was a subtask, new instance is too
     };
-    console.log('createRecurringTaskInstance: New instance created with status:', newInstance.status, 'and created_at:', newInstance.created_at);
+
+    console.log('createRecurringTaskInstance: New instance data prepared for DB:', newInstanceDataForDb);
 
     const { error: insertError } = await supabase
       .from('tasks')
-      .insert(newInstance);
+      .insert(newInstanceDataForDb); // Use the explicitly constructed object
 
     if (insertError) {
       console.error('createRecurringTaskInstance: Error creating recurring task instance:', insertError);
@@ -231,7 +241,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     }
     showSuccess(`Recurring task "${originalTask.description}" created for ${format(targetDate, 'MMM d')}.`);
     return true;
-  }, [userId, tasks]);
+  }, [userId, tasks]); // `tasks` is a dependency because `existingInstance` check uses it.
 
   const syncRecurringTasks = useCallback(async () => {
     // Only run if viewMode is 'daily' and user is authenticated and not loading
@@ -401,25 +411,28 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       // Optimistically add to state immediately for responsiveness
       setTasks(prev => [...prev, newTask]);
 
+      // Explicitly construct the object for DB insert
+      const dbInsertPayload = {
+        id: newTask.id,
+        user_id: newTask.user_id,
+        created_at: newTask.created_at,
+        status: newTask.status,
+        recurring_type: newTask.recurring_type,
+        category: newTask.category, // Store category ID
+        priority: newTask.priority,
+        due_date: newTask.due_date,
+        notes: newTask.notes,
+        remind_at: newTask.remind_at,
+        section_id: newTask.section_id,
+        order: newTask.order,
+        original_task_id: newTask.original_task_id,
+        parent_task_id: newTask.parent_task_id,
+        description: newTask.description,
+      };
+
       const { data, error } = await supabase
         .from('tasks')
-        .insert({
-          id: newTask.id,
-          user_id: newTask.user_id,
-          created_at: newTask.created_at,
-          status: newTask.status,
-          recurring_type: newTask.recurring_type,
-          category: newTask.category, // Store category ID
-          priority: newTask.priority,
-          due_date: newTask.due_date,
-          notes: newTask.notes,
-          remind_at: newTask.remind_at,
-          section_id: newTask.section_id,
-          order: newTask.order, // Ensure order is sent to DB
-          original_task_id: newTask.original_task_id,
-          parent_task_id: newTask.parent_task_id,
-          description: newTask.description,
-        })
+        .insert(dbInsertPayload) // Use the explicitly constructed object
         .select() // Select all columns to get the full task back
         .single();
 
