@@ -122,6 +122,9 @@ const TimeBlockSchedule: React.FC = () => {
     return await deleteAppointment(id); // Return the boolean result from deleteAppointment
   };
 
+  const rowHeight = 40; // Reduced from 48px to 40px
+  const gapHeight = 4;
+
   const getAppointmentGridPosition = useCallback((app: Appointment) => {
     const appStartTime = parse(app.start_time, 'HH:mm:ss', currentDate);
     const appEndTime = parse(app.end_time, 'HH:mm:ss', currentDate);
@@ -243,9 +246,9 @@ const TimeBlockSchedule: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col">
-      <main className="flex-grow p-4 flex justify-center">
-        <Card className="w-full max-w-4xl mx-auto shadow-lg">
-          <CardHeader className="pb-2">
+      <main className="flex-grow p-4">
+        <Card className="w-full max-w-4xl mx-auto shadow-lg p-3"> {/* Reduced p-4 to p-3 */}
+          <CardHeader className="pb-1"> {/* Reduced pb-2 to pb-1 */}
             <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
               <CalendarDays className="h-7 w-7" /> Dynamic Schedule
             </CardTitle>
@@ -281,8 +284,8 @@ const TimeBlockSchedule: React.FC = () => {
               <div className="grid grid-cols-[60px_1fr] gap-x-2"> {/* Main grid for time labels and schedule */}
                 {/* Left column for time labels */}
                 <div className="grid" style={{
-                  gridTemplateRows: `repeat(${timeBlocks.length}, 48px)`, // Each 30 min block is 48px
-                  height: `${timeBlocks.length * 48 + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * 4 : 0)}px`, // Account for gaps
+                  gridTemplateRows: `repeat(${timeBlocks.length}, ${rowHeight}px)`, // Each 30 min block is 40px
+                  height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`, // Account for gaps
                 }}>
                   {timeBlocks.map((block, index) => (
                     // Only show label for every hour
@@ -306,14 +309,14 @@ const TimeBlockSchedule: React.FC = () => {
                   onDragEnd={handleDragEnd}
                 >
                   <div className="relative grid gap-1" style={{
-                    gridTemplateRows: `repeat(${timeBlocks.length}, 48px)`, // Each 30 min block is 48px
-                    height: `${timeBlocks.length * 48 + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * 4 : 0)}px`, // Account for gaps
+                    gridTemplateRows: `repeat(${timeBlocks.length}, ${rowHeight}px)`, // Each 30 min block is 40px
+                    height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`, // Account for gaps
                   }}>
                     {timeBlocks.map((block, index) => (
                       <div
                         key={format(block.start, 'HH:mm')}
                         id={`time-block-${format(block.start, 'HH:mm')}`} // ID for drag target
-                        className="relative flex items-center justify-center h-12 bg-card dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-dashed border-border/50 hover:border-primary/50 transition-colors duration-150 cursor-pointer hover:scale-[1.01] hover:shadow-md"
+                        className="relative flex items-center justify-center h-10 bg-card dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-dashed border-border/50 hover:border-primary/50 transition-colors duration-150 cursor-pointer hover:scale-[1.01] hover:shadow-md" // Reduced h-12 to h-10
                         style={{ gridRow: `${index + 1}` }} // Each block is now a single row
                         onClick={() => handleTimeBlockClick(block.start, block.end)}
                       >
@@ -336,6 +339,8 @@ const TimeBlockSchedule: React.FC = () => {
                           gridRowStart={app.gridRowStart}
                           gridRowEnd={app.gridRowEnd}
                           overlapOffset={app.overlapOffset}
+                          rowHeight={rowHeight} // Pass rowHeight
+                          gapHeight={gapHeight} // Pass gapHeight
                         />
                       ))}
                     </SortableContext>
@@ -349,6 +354,9 @@ const TimeBlockSchedule: React.FC = () => {
                           gridRowStart={1} // Dummy values for overlay
                           gridRowEnd={2}   // Dummy values for overlay
                           overlapOffset={0}
+                          rowHeight={rowHeight} // Pass rowHeight
+                          gapHeight={gapHeight} // Pass gapHeight
+                          isOverlay={true}
                         />
                       ) : null}
                     </DragOverlay>

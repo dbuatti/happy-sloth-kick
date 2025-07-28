@@ -101,16 +101,16 @@ const Settings = () => {
   return (
     <div className="flex-1 flex flex-col">
       <main className="flex-grow p-4 flex justify-center">
-        <div className="w-full max-w-md mx-auto space-y-4">
-          <Card className="w-full shadow-lg">
-            <CardHeader className="pb-2">
+        <div className="w-full max-w-md mx-auto space-y-3"> {/* Reduced space-y-4 to space-y-3 */}
+          <Card className="w-full shadow-lg p-3"> {/* Reduced p-4 to p-3 */}
+            <CardHeader className="pb-1"> {/* Reduced pb-2 to pb-1 */}
               <CardTitle className="text-2xl font-bold text-center">Profile Settings</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
               {loading ? (
                 <div className="text-center">Loading profile...</div>
               ) : (
-                <form onSubmit={updateProfile} className="space-y-4">
+                <form onSubmit={updateProfile} className="space-y-3"> {/* Reduced space-y-4 to space-y-3 */}
                   <div>
                     <Label htmlFor="firstName">First Name</Label>
                     <Input
@@ -135,7 +135,7 @@ const Settings = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    className="w-full mt-4"
+                    className="w-full mt-3" /* Reduced mt-4 to mt-3 */
                     onClick={handleSignOut}
                     disabled={loading}
                   >

@@ -268,8 +268,8 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
     <>
       <div className="flex-1 flex flex-col">
         <main className="flex-grow">
-          <Card className="w-full shadow-lg">
-            <CardHeader className="pb-4">
+          <Card className="w-full shadow-lg p-3"> {/* Reduced p-4 to p-3 */}
+            <CardHeader className="pb-3"> {/* Reduced pb-4 to pb-3 */}
               <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
                 <CheckCircle2 className="h-7 w-7" /> Your Tasks
               </CardTitle>
@@ -292,7 +292,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                 allCategories={allCategories}
               />
 
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4"> {/* Reduced mb-6 to mb-4 */}
                 <div className="relative flex-1">
                   {/* Search input is now part of TaskFilter, but keeping this div for layout if needed */}
                 </div>
@@ -354,7 +354,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                       const sectionTasks = tasksBySection[currentSection.id] || [];
                       
                       return (
-                        <div key={currentSection.id} className="mb-4">
+                        <div key={currentSection.id} className="mb-3"> {/* Reduced mb-4 to mb-3 */}
                           <SortableSectionHeader
                             id={currentSection.id}
                             name={currentSection.name}
@@ -373,7 +373,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                             onAddTaskToSection={handleAddTaskToSpecificSection} // Pass the new handler
                           />
                           {isExpanded && (
-                            <div className="mt-2 space-y-2 pl-2">
+                            <div className="mt-1 space-y-1 pl-2"> {/* Reduced mt-2 space-y-2 to mt-1 space-y-1 */}
                               {/* Removed the direct "Add Task to Section" button here */}
                               <SortableContext items={sectionTasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
                                 <ul className="list-none space-y-2">
@@ -411,7 +411,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
 
                   {/* Tasks with no section */}
                   {tasksBySection['no-section'].length > 0 && (
-                    <div className="mb-4">
+                    <div className="mb-3"> {/* Reduced mb-4 to mb-3 */}
                       <div className="rounded-lg bg-muted dark:bg-gray-700 text-foreground shadow-sm">
                         <div className="flex items-center justify-between p-2">
                           <h3 className="text-xl font-semibold flex items-center gap-2">

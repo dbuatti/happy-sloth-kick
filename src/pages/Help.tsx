@@ -9,13 +9,13 @@ const Help = () => {
   return (
     <div className="flex-1 flex flex-col">
       <main className="flex-grow p-4 flex justify-center">
-        <Card className="w-full max-w-4xl shadow-lg">
-          <CardHeader className="pb-2">
+        <Card className="w-full max-w-4xl shadow-lg p-3"> {/* Reduced p-4 to p-3 */}
+          <CardHeader className="pb-1"> {/* Reduced pb-2 to pb-1 */}
             <CardTitle className="text-3xl font-bold text-center">TaskMaster Help Center</CardTitle>
           </CardHeader>
-          <CardContent className="pt-0 space-y-6">
+          <CardContent className="pt-0 space-y-4"> {/* Reduced space-y-6 to space-y-4 */}
             <section>
-              <h2 className="text-2xl font-semibold mb-3 flex items-center gap-2">
+              <h2 className="text-2xl font-semibold mb-2 flex items-center gap-2"> {/* Reduced mb-3 to mb-2 */}
                 <Lightbulb className="h-6 w-6 text-primary" /> Core Task Functionality
               </h2>
               <ul className="list-disc list-inside space-y-1 text-muted-foreground">
@@ -36,7 +36,7 @@ const Help = () => {
             <Separator />
 
             <section>
-              <h2 className="text-2xl font-semibold mb-3 flex items-center gap-2">
+              <h2 className="text-2xl font-semibold mb-2 flex items-center gap-2"> {/* Reduced mb-3 to mb-2 */}
                 <Keyboard className="h-6 w-6 text-primary" /> Keyboard Shortcuts
               </h2>
               <ul className="list-disc list-inside space-y-1 text-muted-foreground">
@@ -52,7 +52,7 @@ const Help = () => {
             <Separator />
 
             <section>
-              <h2 className="text-2xl font-semibold mb-3 flex items-center gap-2">
+              <h2 className="text-2xl font-semibold mb-2 flex items-center gap-2"> {/* Reduced mb-3 to mb-2 */}
                 <Palette className="h-6 w-6 text-primary" /> Customization & Themes
               </h2>
               <ul className="list-disc list-inside space-y-1 text-muted-foreground">
@@ -65,7 +65,7 @@ const Help = () => {
             <Separator />
 
             <section>
-              <h2 className="text-2xl font-semibold mb-3 flex items-center gap-2">
+              <h2 className="text-2xl font-semibold mb-2 flex items-center gap-2"> {/* Reduced mb-3 to mb-2 */}
                 <Lightbulb className="h-6 w-6 text-primary" /> Advanced Features
               </h2>
               <ul className="list-disc list-inside space-y-1 text-muted-foreground">
@@ -81,7 +81,7 @@ const Help = () => {
             <Separator />
 
             <section>
-              <h2 className="text-2xl font-semibold mb-3 flex items-center gap-2">
+              <h2 className="text-2xl font-semibold mb-2 flex items-center gap-2"> {/* Reduced mb-3 to mb-2 */}
                 <User className="h-6 w-6 text-primary" /> Account & Settings
               </h2>
               <ul className="list-disc list-inside space-y-1 text-muted-foreground">
@@ -94,7 +94,7 @@ const Help = () => {
             <Separator />
 
             <section>
-              <h2 className="text-2xl font-semibold mb-3 flex items-center gap-2">
+              <h2 className="text-2xl font-semibold mb-2 flex items-center gap-2"> {/* Reduced mb-3 to mb-2 */}
                 <Lightbulb className="h-6 w-6 text-primary" /> Navigation
               </h2>
               <ul className="list-disc list-inside space-y-1 text-muted-foreground">

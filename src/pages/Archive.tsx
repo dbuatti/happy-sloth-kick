@@ -45,11 +45,11 @@ const Archive: React.FC<ArchiveProps> = ({ currentDate, setCurrentDate }) => {
     return (
       <div className="flex-1 flex flex-col">
         <main className="flex-grow p-4 flex justify-center">
-          <Card className="w-full max-w-4xl mx-auto shadow-lg">
-            <CardHeader>
+          <Card className="w-full max-w-4xl mx-auto shadow-lg p-3"> {/* Reduced p-4 to p-3 */}
+            <CardHeader className="pb-1"> {/* Reduced pb-2 to pb-1 */}
               <CardTitle className="text-3xl font-bold text-center">Archived Tasks</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-0">
               <div className="flex justify-center items-center h-64">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
               </div>
@@ -67,8 +67,8 @@ const Archive: React.FC<ArchiveProps> = ({ currentDate, setCurrentDate }) => {
     <>
       <div className="flex-1 flex flex-col">
         <main className="flex-grow p-4">
-          <Card className="w-full max-w-4xl mx-auto shadow-lg">
-            <CardHeader className="pb-2">
+          <Card className="w-full max-w-4xl mx-auto shadow-lg p-3"> {/* Reduced p-4 to p-3 */}
+            <CardHeader className="pb-1"> {/* Reduced pb-2 to pb-1 */}
               <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
                 <ArchiveIcon className="h-7 w-7" /> Archived Tasks
               </CardTitle>
@@ -81,7 +81,7 @@ const Archive: React.FC<ArchiveProps> = ({ currentDate, setCurrentDate }) => {
                   <p className="text-sm">Completed tasks will appear here once you archive them.</p>
                 </div>
               ) : (
-                <ul className="space-y-2">
+                <ul className="space-y-1"> {/* Reduced space-y-2 to space-y-1 */}
                   {filteredTasks.map((task) => (
                     <SortableTaskItem
                       key={task.id}

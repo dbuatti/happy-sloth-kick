@@ -87,7 +87,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
 
       {/* Main header content - now clickable for toggle */}
       <div 
-        className="flex items-center justify-between p-2 pl-4 cursor-pointer" // Adjusted padding
+        className="flex items-center justify-between p-1 pl-3 cursor-pointer" // Reduced padding from p-2 pl-4 to p-1 pl-3
         onClick={!isEditing ? onToggleExpand : undefined} // Only toggle if not editing
       >
         {isEditing ? (
@@ -109,7 +109,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               <FolderOpen className="h-5 w-5 text-muted-foreground" />
               {name} ({taskCount})
             </h3>
-            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onEditClick(); }} className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity duration-200" data-no-dnd="true">
+            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onEditClick(); }} className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200" data-no-dnd="true"> {/* Reduced size from h-5 w-5 to h-4 w-4 */}
               <Edit className="h-4 w-4" />
             </Button>
           </div>
@@ -131,7 +131,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="h-7 w-7 p-0" // Adjusted size
+                className="h-6 w-6 p-0" // Reduced size from h-7 w-7 to h-6 w-6
                 onClick={(e) => e.stopPropagation()} // Prevent toggle when opening dropdown
               >
                 <span className="sr-only">Open section menu</span>

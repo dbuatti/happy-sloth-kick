@@ -74,7 +74,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   return (
     <div
       className={cn(
-        "relative flex items-center space-x-4 w-full",
+        "relative flex items-center space-x-3 w-full", // Reduced space-x from 4 to 3
         task.status === 'completed' ? "opacity-70 bg-green-50/20 dark:bg-green-900/20" : "",
       )}
     >
@@ -120,7 +120,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
         </Tooltip>
 
         {/* Compact details row */}
-        <div className="flex items-center text-xs text-muted-foreground mt-1 space-x-2"> {/* Adjusted space-x */}
+        <div className="flex items-center text-xs text-muted-foreground mt-1 space-x-1"> {/* Reduced space-x from 2 to 1 */}
           {/* Category */}
           <div className={cn("w-3 h-3 rounded-full flex items-center justify-center border", categoryColorProps.backgroundClass, categoryColorProps.dotBorder)}> {/* Reduced size */}
             <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: categoryColorProps.dotColor }}></div> {/* Reduced size */}
@@ -175,7 +175,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
         <Button 
           variant="ghost" 
           size="icon" 
-          className="h-8 w-8" 
+          className="h-7 w-7" // Reduced size from h-8 w-8 to h-7 w-7
           onClick={(e) => { e.stopPropagation(); onEditTask(task); }}
           data-no-dnd="true"
         >
@@ -185,7 +185,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           <DropdownMenuTrigger asChild>
             <Button 
               variant="ghost" 
-              className="h-8 w-8 p-0" 
+              className="h-7 w-7 p-0" // Reduced size from h-8 w-8 to h-7 w-7
               onClick={(e) => e.stopPropagation()}
               data-no-dnd="true"
             >

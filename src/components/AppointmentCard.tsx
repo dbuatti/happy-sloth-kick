@@ -16,6 +16,8 @@ interface AppointmentCardProps {
   gridRowEnd: number;
   overlapOffset: number;
   isOverlay?: boolean; // New prop
+  rowHeight: number; // New prop
+  gapHeight: number; // New prop
 }
 
 const AppointmentCard: React.FC<AppointmentCardProps> = ({
@@ -26,6 +28,8 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
   gridRowEnd,
   overlapOffset,
   isOverlay = false, // Default to false
+  rowHeight, // Destructure new prop
+  gapHeight, // Destructure new prop
 }) => {
   // Conditionally use useSortable
   const sortable = !isOverlay ? useSortable({ id: appointment.id, data: { type: 'appointment', appointment } }) : null;
@@ -36,9 +40,6 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
   const transform = sortable?.transform;
   const transition = sortable?.transition;
   const isDragging = sortable?.isDragging || false; // Default to false if not sortable
-
-  const rowHeight = 48;
-  const gapHeight = 4;
 
   const calculatedTop = (gridRowStart - 1) * (rowHeight + gapHeight);
   const numberOfBlocksSpanned = gridRowEnd - gridRowStart;
@@ -64,7 +65,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "absolute rounded-lg p-2 text-white shadow-md cursor-pointer",
+        "absolute rounded-lg p-1 text-white shadow-md cursor-pointer", // Reduced p-2 to p-1
         "flex flex-col justify-between transition-all duration-200 ease-in-out",
         "group",
         isDragging ? "ring-2 ring-primary shadow-lg" : "hover:scale-[1.01] hover:shadow-lg"

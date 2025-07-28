@@ -187,8 +187,8 @@ const ProjectBalanceTracker: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col">
       <main className="flex-grow p-4">
-        <Card className="w-full max-w-4xl mx-auto shadow-lg">
-          <CardHeader className="pb-2">
+        <Card className="w-full max-w-4xl mx-auto shadow-lg p-3"> {/* Reduced p-4 to p-3 */}
+          <CardHeader className="pb-1"> {/* Reduced pb-2 to pb-1 */}
             {isEditingTitle ? (
               <div className="flex items-center w-full gap-2">
                 <Input
@@ -285,18 +285,18 @@ const ProjectBalanceTracker: React.FC = () => {
             )}
 
             {loading ? (
-              <div className="space-y-3">
+              <div className="space-y-2"> {/* Reduced space-y-3 to space-y-2 */}
                 {[...Array(3)].map((_, i) => (
-                  <div key={i} className="border rounded-lg p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-card dark:bg-gray-800 border-border">
+                  <div key={i} className="border rounded-lg p-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-card dark:bg-gray-800 border-border"> {/* Reduced p-3 to p-2 */}
                     <div className="flex-1 min-w-0 space-y-2">
                       <Skeleton className="h-6 w-3/4" />
                       <Skeleton className="h-4 w-1/2" />
                     </div>
                     <div className="flex items-center gap-3 flex-shrink-0 mt-3 sm:mt-0">
                       <Skeleton className="h-4 w-24 rounded-full" />
-                      <Skeleton className="h-8 w-8 rounded-full" />
-                      <Skeleton className="h-8 w-8 rounded-full" />
-                      <Skeleton className="h-8 w-8 rounded-full" />
+                      <Skeleton className="h-7 w-7 rounded-full" /> {/* Reduced size */}
+                      <Skeleton className="h-7 w-7 rounded-full" /> {/* Reduced size */}
+                      <Skeleton className="h-7 w-7 rounded-full" /> {/* Reduced size */}
                     </div>
                   </div>
                 ))}
@@ -308,7 +308,7 @@ const ProjectBalanceTracker: React.FC = () => {
                 <p className="text-sm">Click "Add Project" to start tracking your balance and ensure you're giving attention to all your important areas.</p>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2"> {/* Reduced space-y-3 to space-y-2 */}
                 {leastWorkedOnProject && (
                   <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 p-3 rounded-lg flex items-center gap-3">
                     <Lightbulb className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
@@ -323,7 +323,7 @@ const ProjectBalanceTracker: React.FC = () => {
                     <li
                       key={project.id}
                       className={cn(
-                        "border rounded-lg p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3",
+                        "border rounded-lg p-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3", // Reduced p-3 to p-2
                         "transition-all duration-200 ease-in-out cursor-pointer group",
                         "hover:shadow-md",
                         editingProjectId === project.id ? "bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700" : "bg-card dark:bg-gray-800 border-border"
@@ -381,7 +381,7 @@ const ProjectBalanceTracker: React.FC = () => {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                              className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity duration-200" // Reduced size from h-8 w-8 to h-7 w-7
                               onClick={(e) => { e.stopPropagation(); handleEditProject(project); }}
                               aria-label={`Edit ${project.name}`}
                               disabled={isSavingProject}
@@ -391,7 +391,7 @@ const ProjectBalanceTracker: React.FC = () => {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                              className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity duration-200" // Reduced size from h-8 w-8 to h-7 w-7
                               onClick={(e) => { e.stopPropagation(); handleResetIndividualProjectClick(project.id); }}
                               aria-label={`Reset ${project.name}`}
                               disabled={isSavingProject}
@@ -401,7 +401,7 @@ const ProjectBalanceTracker: React.FC = () => {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-destructive"
+                              className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-destructive" // Reduced size from h-8 w-8 to h-7 w-7
                               onClick={(e) => { e.stopPropagation(); handleDeleteProjectClick(project.id); }}
                               aria-label={`Delete ${project.name}`}
                               disabled={isSavingProject}
