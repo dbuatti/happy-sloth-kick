@@ -62,7 +62,17 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
   const [isAddTaskFormOpen, setIsAddTaskForm] = useState(false);
   const [isTaskDetailOpen, setIsTaskDetail] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+  // Load expanded state from localStorage, default to an empty object
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem('taskList_expandedSections');
+      return saved ? JSON.parse(saved) : {};
+    } catch (e) {
+      console.error('Error loading expanded sections from localStorage:', e);
+      return {};
+    }
+  });
+
   const [showConfirmBulkDeleteDialog, setShowConfirmBulkDeleteDialog] = useState(false);
 
   const [isAddSectionOpen, setIsAddSectionOpen] = useState(false);
@@ -146,10 +156,19 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
   }, [tasksBySection, sections, reorderSections, reorderTasksInSameSection, moveTaskToNewSection]);
 
   const toggleSection = (sectionId: string) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [sectionId]: !prev[sectionId]
-    }));
+    setExpandedSections(prev => {
+      const newState = {
+        ...prev,
+        [sectionId]: !prev[sectionId]
+      };
+      // Save the new state to localStorage
+      try {
+        localStorage.setItem('taskList_expandedSections', JSON.stringify(newState));
+      } catch (e) {
+        console.error('Error saving expanded sections to localStorage:', e);
+      }
+      return newState;
+    });
   };
 
   const handleAddTaskSubmit = async (taskData: any) => {
