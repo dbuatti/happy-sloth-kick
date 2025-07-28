@@ -199,70 +199,44 @@ export const useTasks = () => {
     console.log(`syncRecurringTasks: Running for date ${currentDate.toISOString()}`);
 
     const originalRecurringTasks = tasks.filter(t => t.recurring_type !== 'none' && t.original_task_id === null);
-    let tasksWereModified = false; // Use this flag for re-fetching
+    let tasksWereModified = false;
 
     for (const originalTask of originalRecurringTasks) {
-      const allInstances = tasks.filter(t => t.original_task_id === originalTask.id || t.id === originalTask.id);
+      const originalTaskCreatedAtUTC = getUTCStartOfDay(parseISO(originalTask.created_at));
 
-      // Find the latest instance created on or before the current date (any status)
-      const latestRelevantInstance = allInstances
-        .filter(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), currentDate) || isSameDay(getUTCStartOfDay(parseISO(t.created_at)), currentDate))
-        .sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime())[0];
+      // Only consider tasks whose original creation date is on or before the current date
+      if (isAfter(originalTaskCreatedAtUTC, currentDate)) {
+        console.log(`syncRecurringTasks: Skipping "${originalTask.description}" - original creation date is after current date.`);
+        continue;
+      }
 
       // Find if there's an instance for the current date (any status)
-      const instanceForCurrentDate = allInstances.find(t =>
+      const instanceForCurrentDate = tasks.find(t =>
+        (t.original_task_id === originalTask.id || t.id === originalTask.id) &&
         isSameDay(getUTCStartOfDay(parseISO(t.created_at)), currentDate)
       );
 
-      // Case 1: A 'to-do' instance for today already exists. Nothing to do for this task.
-      if (instanceForCurrentDate && instanceForCurrentDate.status === 'to-do') {
-        console.log(`syncRecurringTasks: To-do instance for "${originalTask.description}" on current date already exists. Skipping creation/update.`);
-        continue; // Move to next original task
-      }
-
-      // Condition to create a new 'to-do' instance for the current date:
-      // 1. No existing 'to-do' instance for today (checked above).
-      // 2. The original task was created on or before today.
-      // 3. AND (no previous instances OR the latest previous instance was completed/skipped).
-      const shouldEnsureToDoInstance = 
-        (isBefore(getUTCStartOfDay(parseISO(originalTask.created_at)), currentDate) || isSameDay(getUTCStartOfDay(parseISO(originalTask.created_at)), currentDate)) &&
-        (!latestRelevantInstance || latestRelevantInstance.status === 'completed' || latestRelevantInstance.status === 'skipped');
-
-      if (shouldEnsureToDoInstance) {
-        if (instanceForCurrentDate) {
-          // An instance for today exists, but it's NOT 'to-do' (i.e., it's 'completed' or 'skipped').
-          // We need to update it to 'to-do'.
-          console.log(`syncRecurringTasks: Updating existing instance for "${originalTask.description}" on current date to 'to-do'.`);
-          const { error } = await supabase
-            .from('tasks')
-            .update({ status: 'to-do' })
-            .eq('id', instanceForCurrentDate.id);
-          if (error) {
-            console.error('Error updating recurring task instance:', error);
-            showError('Failed to update recurring task status.');
-          } else {
-            tasksWereModified = true;
-            showSuccess(`Recurring task "${originalTask.description}" reset to 'to-do' for ${format(currentDate, 'MMM d')}.`);
-          }
-        } else {
-          // No instance for today at all. Create a new 'to-do' instance.
-          console.log(`syncRecurringTasks: Creating new 'to-do' instance for "${originalTask.description}" for current date.`);
-          const created = await createRecurringTaskInstance(originalTask, currentDate);
-          if (created) tasksWereModified = true;
-        }
+      if (instanceForCurrentDate) {
+        // An instance for today exists.
+        // If it's already 'to-do', or if it's 'completed'/'skipped' (meaning user acted on it), do nothing.
+        console.log(`syncRecurringTasks: Instance for "${originalTask.description}" on current date exists with status "${instanceForCurrentDate.status}". No action needed.`);
+        continue;
       } else {
-        console.log(`syncRecurringTasks: Condition NOT met for "${originalTask.description}". No new instance created or updated.`);
+        // No instance for the current date exists. Create a new 'to-do' instance.
+        console.log(`syncRecurringTasks: Creating new 'to-do' instance for "${originalTask.description}" for current date.`);
+        const created = await createRecurringTaskInstance(originalTask, currentDate);
+        if (created) tasksWereModified = true;
       }
     }
 
     if (tasksWereModified) {
       console.log('syncRecurringTasks: Tasks were modified. Re-fetching all data to update state.');
-      await fetchDataAndSections(); // Re-fetch all data to get the latest state from DB
+      await fetchDataAndSections();
       console.log('syncRecurringTasks: fetchDataAndSections completed after modifying tasks.');
     } else {
       console.log('syncRecurringTasks: No recurring tasks created or updated for this date.');
     }
-  }, [userId, tasks, currentDate, createRecurringTaskInstance, fetchDataAndSections]); // Dependencies for syncRecurringTasks
+  }, [userId, tasks, currentDate, createRecurringTaskInstance, fetchDataAndSections]);
 
   // Effect to fetch initial data and sections
   useEffect(() => {
