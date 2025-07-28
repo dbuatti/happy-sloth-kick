@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing, FolderOpen, Repeat, ListTodo } from 'lucide-react'; // Added ListTodo icon
+import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing, FolderOpen, Repeat, ListTodo, CheckCircle2 } from 'lucide-react'; // Added CheckCircle2 icon
 import * as dateFns from 'date-fns'; // Import all functions from date-fns as dateFns
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
@@ -38,6 +38,9 @@ const TaskItem: React.FC<TaskItemProps> = ({
   console.log(`TaskItem: Rendering task - ID: ${task.id}, Description: "${task.description}", Status: "${task.status}", Created At: "${task.created_at}"`);
   console.log(`TaskItem: Task ID: ${task.id}, Category ID: "${task.category}", Category Color Key: "${task.category_color}"`);
 
+  const { playSound } = useSound();
+  const [showCompletionEffect, setShowCompletionEffect] = useState(false);
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'urgent': return 'text-red-700 dark:text-red-400';
@@ -67,9 +70,19 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const isOverdue = task.due_date && task.status !== 'completed' && dateFns.isBefore(dateFns.parseISO(task.due_date) as Date, currentRefDate as Date) && !dateFns.isSameDay(dateFns.parseISO(task.due_date) as Date, currentRefDate as Date);
   const isUpcoming = task.due_date && task.status !== 'completed' && dateFns.isSameDay(dateFns.parseISO(task.due_date) as Date, currentRefDate as Date);
 
-  const { playSound } = useSound();
-
   const categoryColorProps = getCategoryColorProps(task.category_color);
+
+  const handleCheckboxChange = (checked: boolean) => {
+    onToggleSelect(task.id, checked);
+    onStatusChange(task.id, checked ? 'completed' : 'to-do');
+    if (checked) { // Play sound and show effect only when marking as completed
+      playSound();
+      setShowCompletionEffect(true);
+      setTimeout(() => {
+        setShowCompletionEffect(false);
+      }, 600); // Match animation duration
+    }
+  };
 
   return (
     <div
@@ -82,15 +95,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
       <Checkbox
         key={`${task.id}-${task.status}`}
         checked={task.status === 'completed'}
-        onCheckedChange={(checked) => {
-          if (typeof checked === 'boolean') {
-            onToggleSelect(task.id, checked);
-            onStatusChange(task.id, checked ? 'completed' : 'to-do');
-            if (checked) { // Play sound only when marking as completed
-              playSound();
-            }
-          }
-        }}
+        onCheckedChange={handleCheckboxChange}
         id={`task-${task.id}`}
         onClick={(e) => e.stopPropagation()}
         className="flex-shrink-0"
@@ -169,6 +174,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
           )}
         </div>
       </div>
+
+      {/* Completion Effect Overlay */}
+      {showCompletionEffect && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+          <CheckCircle2 className="h-12 w-12 text-green-500 animate-fade-in-out-check" />
+        </div>
+      )}
 
       {/* Actions (Edit, More) - visible on hover */}
       <div className="flex-shrink-0 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
