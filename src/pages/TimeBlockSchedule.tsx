@@ -255,8 +255,8 @@ const TimeBlockSchedule: React.FC = () => {
               currentDate={currentDate}
               onPreviousDay={handlePreviousDay}
               onNextDay={handleNextDay}
-              onGoToToday={handleGoToToday}
-              setCurrentDate={setCurrentDate} {/* Added this prop */}
+              onGoToToday={handleGoToToday} // Pass the new prop
+              setCurrentDate={setCurrentDate}
             />
 
             {totalLoading ? (

@@ -76,7 +76,7 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen, currentDate, setCurrent
               onPreviousDay={handlePreviousDay}
               onNextDay={handleNextDay}
               onGoToToday={handleGoToToday}
-              setCurrentDate={setCurrentDate} {/* Added this prop */}
+              setCurrentDate={setCurrentDate}
             />
             <TaskList setIsAddTaskOpen={setIsAddTaskOpen} currentDate={currentDate} setCurrentDate={setCurrentDate} />
           </main>
