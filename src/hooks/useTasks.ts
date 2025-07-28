@@ -103,7 +103,7 @@ export const useTasks = () => {
     localStorage.setItem('task_filter_section', sectionFilter);
   }, [sectionFilter]);
 
-  // New useEffect to clear the ref when currentDate changes
+  // useEffect to clear the ref when currentDate changes
   useEffect(() => {
     createdRecurringInstancesTodayRef.current.clear();
     console.log('Cleared createdRecurringInstancesTodayRef due to currentDate change.');
@@ -558,7 +558,7 @@ export const useTasks = () => {
       relevantTasks = topLevelTasks.filter(task => task.status === 'archived');
     } else {
       // 3. For non-archived views, determine which tasks are relevant for the current date
-      const recurringTasksMap: Record<string, Task[]> = {}; // Map originalId to an array of its instances for currentDate
+      const recurringTasksToProcess: Record<string, Task[]> = {}; // Map originalId to ALL its instances + original (regardless of status)
       const nonRecurringTasksForCurrentDate: Task[] = [];
 
       topLevelTasks.forEach(task => {
@@ -567,14 +567,10 @@ export const useTasks = () => {
 
         if (task.recurring_type !== 'none') {
           const originalId = task.original_task_id || task.id;
-          
-          // Collect all instances (and the original template if relevant) that are not archived
-          if (task.status !== 'archived') {
-              if (!recurringTasksMap[originalId]) {
-                  recurringTasksMap[originalId] = [];
-              }
-              recurringTasksMap[originalId].push(task);
+          if (!recurringTasksToProcess[originalId]) {
+            recurringTasksToProcess[originalId] = [];
           }
+          recurringTasksToProcess[originalId].push(task);
         } else {
           // Non-recurring tasks: only show if created on the current date and not archived
           if (isTaskCreatedOnCurrentDate && task.status !== 'archived') {
@@ -584,32 +580,49 @@ export const useTasks = () => {
       });
 
       // Now, for each original recurring task, select the single best instance to display
-      Object.values(recurringTasksMap).forEach(instances => {
-          // Filter instances to only those relevant for the current date or the original template
-          const instancesForCurrentDate = instances.filter(t => isSameDay(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC));
-          const originalTemplate = instances.find(t => t.original_task_id === null);
+      Object.values(recurringTasksToProcess).forEach(allInstancesForOriginal => {
+          const originalId = allInstancesForOriginal[0].original_task_id || allInstancesForOriginal[0].id;
+          console.log(`filteredTasks: --- Original Task Group: ${originalId} (${allInstancesForOriginal[0].description}) ---`);
+          console.log('filteredTasks: All instances in group (including archived):', allInstancesForOriginal.map(t => ({ id: t.id, status: t.status, created_at: t.created_at, original_task_id: t.original_task_id })));
 
-          let bestInstanceToDisplay: Task | undefined;
+          // Find instances created specifically for the current date
+          const instancesCreatedOnCurrentDate = allInstancesForOriginal.filter(t => isSameDay(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC));
+          const originalTemplate = allInstancesForOriginal.find(t => t.original_task_id === null);
 
-          if (instancesForCurrentDate.length > 0) {
-              // If there are instances specifically for the current date, pick the best one among them
-              instancesForCurrentDate.sort((a, b) => {
-                  // Prioritize 'to-do'
+          let taskToDisplay: Task | undefined;
+
+          if (instancesCreatedOnCurrentDate.length > 0) {
+              // If there are instances created for the current date, prioritize 'to-do' ones.
+              // If multiple 'to-do' or no 'to-do', pick the most recently created one.
+              instancesCreatedOnCurrentDate.sort((a, b) => {
                   if (a.status === 'to-do' && b.status !== 'to-do') return -1;
                   if (a.status !== 'to-do' && b.status === 'to-do') return 1;
-                  // Then by most recent created_at (if status is same)
                   return getUTCStartOfDay(parseISO(b.created_at)).getTime() - getUTCStartOfDay(parseISO(a.created_at)).getTime();
               });
-              bestInstanceToDisplay = instancesForCurrentDate[0];
-          } else if (originalTemplate && (isBefore(getUTCStartOfDay(parseISO(originalTemplate.created_at)), effectiveCurrentDateUTC) || isSameDay(getUTCStartOfDay(parseISO(originalTemplate.created_at)), effectiveCurrentDateUTC))) {
-              // If no instance for current date, but there's an original template that was created before or on current date
-              bestInstanceToDisplay = originalTemplate;
+              taskToDisplay = instancesCreatedOnCurrentDate[0];
+              console.log('filteredTasks: Decided to display instance created on current date:', { id: taskToDisplay.id, status: taskToDisplay.status, created_at: taskToDisplay.created_at });
+          } else if (originalTemplate) {
+              // If no instance was created specifically for the current date, consider the original template.
+              // Only display the original template if it was created on or before the current date.
+              const originalTaskCreatedAtUTC = getUTCStartOfDay(parseISO(originalTemplate.created_at));
+              if (isBefore(originalTaskCreatedAtUTC, effectiveCurrentDateUTC) || isSameDay(originalTaskCreatedAtUTC, effectiveCurrentDateUTC)) {
+                  taskToDisplay = originalTemplate;
+                  console.log('filteredTasks: Decided to display original template (no instance for current date).');
+              }
           }
 
-          if (bestInstanceToDisplay) {
-              relevantTasks.push(bestInstanceToDisplay);
-              console.log('filteredTasks: Adding recurring task to relevantTasks:', { id: bestInstanceToDisplay.id, description: bestInstanceToDisplay.description, status: bestInstanceToDisplay.status, created_at: bestInstanceToDisplay.created_at, original_task_id: bestInstanceToDisplay.original_task_id });
+          if (taskToDisplay) {
+              // Final check: only add if not archived, as archived tasks are handled by the top-level if block
+              if (taskToDisplay.status !== 'archived') {
+                  relevantTasks.push(taskToDisplay);
+                  console.log('filteredTasks: Adding recurring task to relevantTasks (final):', { id: taskToDisplay.id, description: taskToDisplay.description, status: taskToDisplay.status, created_at: taskToDisplay.created_at, original_task_id: taskToDisplay.original_task_id });
+              } else {
+                  console.log('filteredTasks: NOT adding recurring task to relevantTasks (final - archived):', { id: taskToDisplay.id, description: taskToDisplay.description, status: taskToDisplay.status });
+              }
+          } else {
+              console.log('filteredTasks: No task to display for this recurring group on current date.');
           }
+          console.log(`filteredTasks: --- End Original Task Group: ${originalId} ---`);
       });
 
       relevantTasks.push(...nonRecurringTasksForCurrentDate); // Add non-recurring tasks after recurring ones are processed
