@@ -214,6 +214,7 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
       const allInstancesOfThisRecurringTask = tasks.filter(t =>
         t.original_task_id === originalTask.id || t.id === originalTask.id
       );
+      console.log(`filteredTasks: For originalId ${originalTask.id} ("${originalTask.description}"), all instances:`, allInstancesOfThisRecurringTask.map(t => ({id: t.id, created_at: t.created_at, status: t.status})));
 
       // Check if an instance for the *current effective date* already exists
       const instanceForEffectiveCurrentDate = allInstancesOfThisRecurringTask.find(t =>
@@ -455,11 +456,12 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
     }
     if (ids.length === 0) return;
 
-    try {
-      setTasks(prev => prev.map(task => 
-        ids.includes(task.id) ? { ...task, ...updates } : task
-      ));
+    // Optimistically update the state
+    setTasks(prev => prev.map(task => 
+      ids.includes(task.id) ? { ...task, ...updates } : task
+    ));
 
+    try {
       const { data, error } = await supabase
         .from('tasks')
         .update(updates)
@@ -470,10 +472,14 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
       if (error) throw error;
       showSuccess(`${ids.length} tasks updated successfully!`);
       clearSelectedTasks();
+      
+      // After successful update, re-fetch all data to ensure UI consistency,
+      // especially for status changes like archiving.
+      await fetchDataAndSections(); 
     } catch (error: any) {
       console.error('Error bulk updating tasks:', error);
       showError('Failed to update tasks in bulk.');
-      fetchDataAndSections();
+      fetchDataAndSections(); // Revert optimistic update by re-fetching on error
     }
   }, [userId, selectedTaskIds, clearSelectedTasks, fetchDataAndSections]);
 
