@@ -10,6 +10,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import AddTaskForm from './AddTaskForm';
+import { useSound } from '@/context/SoundContext'; // Import useSound
 
 interface CommandPaletteProps {
   isAddTaskOpen: boolean;
@@ -22,22 +23,28 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
   const { user } = useAuth();
   const { setCurrentDate, handleAddTask, sections } = useTasks();
   const isMobile = useIsMobile();
+  const { playSound } = useSound(); // Get the playSound function
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        setOpen((prevOpen) => !prevOpen);
+        setOpen((prevOpen) => {
+          const newOpen = !prevOpen;
+          if (newOpen) playSound(); // Play sound when opening
+          return newOpen;
+        });
       }
     };
     document.addEventListener("keydown", down);
     return () => document.removeEventListener("keydown", down);
-  }, []);
+  }, [playSound]);
 
   const handleSelect = useCallback((callback: () => void) => {
     setOpen(false);
+    playSound(); // Play sound when a command is selected
     callback();
-  }, []);
+  }, [playSound]);
 
   const handleSignOut = async () => {
     try {
@@ -55,6 +62,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
     const success = await handleAddTask(taskData);
     if (success) {
       setIsAddTaskOpen(false);
+      playSound(); // Play sound when a new task is added
     }
     return success;
   };
@@ -63,7 +71,10 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
     <>
       {/* Main Command Palette */}
       {isMobile ? (
-        <Sheet open={open} onOpenChange={setOpen}>
+        <Sheet open={open} onOpenChange={(newOpen) => {
+          setOpen(newOpen);
+          if (newOpen) playSound(); // Play sound when opening on mobile
+        }}>
           <SheetContent className="h-full">
             <SheetHeader>
               <SheetTitle>Command Palette</SheetTitle>
@@ -139,7 +150,10 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
           </SheetContent>
         </Sheet>
       ) : (
-        <CommandDialog open={open} onOpenChange={setOpen}>
+        <CommandDialog open={open} onOpenChange={(newOpen) => {
+          setOpen(newOpen);
+          if (newOpen) playSound(); // Play sound when opening on desktop
+        }}>
           <CommandInput placeholder="Type a command or search..." />
           <CommandList>
             <CommandEmpty>No results found.</CommandEmpty>

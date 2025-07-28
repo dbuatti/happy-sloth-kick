@@ -6,6 +6,7 @@ import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, Bel
 import { format, parseISO, isToday, isAfter, isPast } from 'date-fns';
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
+import { useSound } from '@/context/SoundContext'; // Import useSound
 
 interface TaskItemProps {
   task: Task;
@@ -56,6 +57,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const isOverdue = task.due_date && task.status !== 'completed' && isPast(parseISO(task.due_date)) && !isToday(parseISO(task.due_date));
   const isUpcoming = task.due_date && task.status !== 'completed' && isToday(parseISO(task.due_date));
 
+  const { playSound } = useSound(); // Get the playSound function
+
   return (
     <div
       className={cn(
@@ -70,6 +73,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           if (typeof checked === 'boolean') {
             onToggleSelect(task.id, checked);
             onStatusChange(task.id, checked ? 'completed' : 'to-do');
+            playSound(); // Play sound on status change
           }
         }}
         id={`task-${task.id}`}
@@ -153,16 +157,16 @@ const TaskItem: React.FC<TaskItemProps> = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'to-do'); }}>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'to-do'); playSound(); }}>
               Mark as To-Do
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'completed'); }}>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'completed'); playSound(); }}>
               Mark as Completed
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'skipped'); }}>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'skipped'); playSound(); }}>
               Mark as Skipped
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'archived'); }}>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'archived'); playSound(); }}>
               <Archive className="mr-2 h-4 w-4" /> Archive
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -180,6 +184,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
                       onClick={(e) => { 
                         e.stopPropagation(); 
                         onUpdate(task.id, { section_id: section.id }); 
+                        playSound();
                       }}
                       disabled={task.section_id === section.id}
                     >
@@ -190,7 +195,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
               </DropdownMenuSubContent>
             </DropdownMenuSub>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete(task.id); }} className="text-destructive focus:text-destructive">
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete(task.id); playSound(); }} className="text-destructive focus:text-destructive">
               <Trash2 className="mr-2 h-4 w-4" /> Delete
             </DropdownMenuItem>
           </DropdownMenuContent>
