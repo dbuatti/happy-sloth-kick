@@ -28,7 +28,11 @@ import {
 
 const TimeBlockSchedule: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const { workHours, loading: workHoursLoading } = useWorkHours(currentDate);
+  // Pass currentDate to useWorkHours to get hours for the specific day
+  const { workHours: singleDayWorkHoursRaw, loading: workHoursLoading } = useWorkHours({ date: currentDate });
+  // Explicitly narrow the type for singleDayWorkHours
+  const singleDayWorkHours = Array.isArray(singleDayWorkHoursRaw) ? null : singleDayWorkHoursRaw;
+
   const { appointments, loading: appointmentsLoading, addAppointment, updateAppointment, deleteAppointment } = useAppointments(currentDate);
 
   const [isAppointmentFormOpen, setIsAppointmentFormOpen] = useState(false);
@@ -65,6 +69,9 @@ const TimeBlockSchedule: React.FC = () => {
   };
 
   const timeBlocks = useMemo(() => {
+    // Ensure singleDayWorkHours is treated as a single WorkHour object
+    const workHours = singleDayWorkHours; // Already narrowed by the type guard above
+
     if (!workHours || !workHours.enabled) return [];
 
     const startTime = parse(workHours.start_time, 'HH:mm:ss', currentDate);
@@ -87,7 +94,7 @@ const TimeBlockSchedule: React.FC = () => {
       currentTime = blockEnd;
     }
     return blocks;
-  }, [workHours, currentDate]);
+  }, [singleDayWorkHours, currentDate]); // Depend on singleDayWorkHours
 
   const handleTimeBlockClick = (blockStart: Date, blockEnd: Date) => {
     console.log('Time block clicked:', format(blockStart, 'HH:mm'), format(blockEnd, 'HH:mm'));
@@ -119,6 +126,9 @@ const TimeBlockSchedule: React.FC = () => {
     const appStartTime = parse(app.start_time, 'HH:mm:ss', currentDate);
     const appEndTime = parse(app.end_time, 'HH:mm:ss', currentDate);
 
+    // Ensure singleDayWorkHours is treated as a single WorkHour object
+    const workHours = singleDayWorkHours; // Already narrowed by the type guard above
+
     if (!workHours || !workHours.enabled || isNaN(appStartTime.getTime()) || isNaN(appEndTime.getTime())) {
       return { gridRowStart: 1, gridRowEnd: 1, overlapOffset: 0 };
     }
@@ -134,7 +144,7 @@ const TimeBlockSchedule: React.FC = () => {
     const gridRowEnd = Math.ceil((endMinutes - workStartMinutes) / 30) + 1;
 
     return { gridRowStart, gridRowEnd };
-  }, [workHours, currentDate]);
+  }, [singleDayWorkHours, currentDate]); // Depend on singleDayWorkHours
 
   const appointmentsWithPositions = useMemo(() => {
     const positionedApps = appointments.map(app => ({
@@ -201,6 +211,9 @@ const TimeBlockSchedule: React.FC = () => {
       }
     }
 
+    // Ensure singleDayWorkHours is treated as a single WorkHour object
+    const workHours = singleDayWorkHours; // Already narrowed by the type guard above
+
     if (newStartTime && workHours && workHours.enabled) {
       const originalDurationMinutes = (parse(draggedAppointment.end_time, 'HH:mm:ss', currentDate).getTime() - parse(draggedAppointment.start_time, 'HH:mm:ss', currentDate).getTime()) / (1000 * 60);
       const newEndTime = addMinutes(newStartTime, originalDurationMinutes);
@@ -249,7 +262,7 @@ const TimeBlockSchedule: React.FC = () => {
               <div className="flex justify-center items-center h-64">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
               </div>
-            ) : !workHours || !workHours.enabled ? (
+            ) : (!singleDayWorkHours || !singleDayWorkHours.enabled) ? ( // Check singleDayWorkHours
               <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
                 <Clock className="h-12 w-12 text-muted-foreground" />
                 <p className="text-lg font-medium mb-2">No work hours set or enabled for this day.</p>

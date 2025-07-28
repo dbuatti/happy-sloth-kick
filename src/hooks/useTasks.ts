@@ -72,10 +72,13 @@ const getUTCStartOfDay = (date: Date) => {
 interface UseTasksProps {
   currentDate: Date;
   setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
+  // Add a flag to indicate if recurring task sync should run for this instance
+  // This is useful for components like Archive that use useTasks but don't need recurring task generation.
+  disableRecurringSync?: boolean; 
 }
 
-export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
-  const HOOK_VERSION = "2024-07-30-11"; // Updated version
+export const useTasks = ({ currentDate, setCurrentDate, disableRecurringSync = false }: UseTasksProps) => {
+  const HOOK_VERSION = "2024-07-30-12"; // Updated version
   const { user, loading: authLoading } = useAuth();
   const userId = user?.id;
 
@@ -239,8 +242,9 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
   }, [userId, tasks]);
 
   const syncRecurringTasks = useCallback(async () => {
-    if (!userId || loading) {
-      console.log('syncRecurringTasks: Skipping sync - no user, or still loading initial data.');
+    // Only run if recurring sync is not disabled for this hook instance
+    if (disableRecurringSync || !userId || loading) {
+      console.log('syncRecurringTasks: Skipping sync - recurring sync disabled, no user, or still loading initial data.');
       return;
     }
 
@@ -265,12 +269,27 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
       console.log(`filteredTasks: For originalId ${originalTask.id} ("${originalTask.description}"), all instances:`, allInstancesOfThisRecurringTask.map(t => ({id: t.id, created_at: t.created_at, status: t.status})));
 
       // Check if an instance for the *current effective date* already exists
-      const instanceForEffectiveCurrentDate = allInstancesOfThisRecurringTask.find(t =>
+      const instanceForCurrentDay = allInstancesOfThisRecurringTask.find(t =>
         isSameDay(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status !== 'archived'
       );
+      
+      if (instanceForCurrentDay) {
+        // Removed problematic console.log here
+      } else {
+        // 2. If no instance for current day, look for the latest 'to-do' instance from a previous day (carry-over)
+        const carryOverTask = allInstancesOfThisRecurringTask
+          .filter(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status === 'to-do')
+          .sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime())[0];
 
-      if (instanceForEffectiveCurrentDate) {
-        console.log(`syncRecurringTasks: Instance for "${originalTask.description}" on ${format(effectiveCurrentDateUTC, 'yyyy-MM-dd')} already exists (ID: ${instanceForEffectiveCurrentDate.id}, Status: ${instanceForEffectiveCurrentDate.status}). No new instance needed.`);
+        if (carryOverTask) {
+          console.log(`syncRecurringTasks: For original ${originalTask.id}, no instance for current date. Found carry-over from ${format(parseISO(carryOverTask.created_at), 'yyyy-MM-dd')} with status: ${carryOverTask.status}. Pushing this.`);
+        } else {
+          console.log(`syncRecurringTasks: For original ${originalTask.id}, no relevant instance found for current date or carry-over.`);
+        }
+      }
+
+      if (instanceForCurrentDay) {
+        console.log(`syncRecurringTasks: Instance for "${originalTask.description}" on ${format(effectiveCurrentDateUTC, 'yyyy-MM-dd')} already exists (ID: ${instanceForCurrentDay.id}, Status: ${instanceForCurrentDay.status}). No new instance needed.`);
         continue; // An instance for today already exists, no need to create a new one
       }
 
@@ -321,7 +340,7 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
     } else {
       console.log('syncRecurringTasks: No recurring tasks created or updated for this date.');
     }
-  }, [userId, tasks, currentDate, createRecurringTaskInstance, fetchDataAndSections, loading]);
+  }, [userId, tasks, currentDate, createRecurringTaskInstance, fetchDataAndSections, loading, disableRecurringSync]);
 
   // Effect to fetch initial data and sections
   useEffect(() => {
@@ -810,7 +829,6 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
         
         if (instanceForCurrentDay) {
           taskToDisplay = instanceForCurrentDay;
-          console.log(`filteredTasks: For original ${originalId}, found instance for current date (${format(effectiveCurrentDateUTC, 'yyyy-MM-dd')}) with status: ${taskToDisplay.status}. Pushing this.`);
         } else {
           // 2. If no instance for current day, look for the latest 'to-do' instance from a previous day (carry-over)
           const carryOverTask = allInstancesOfThisRecurringTask

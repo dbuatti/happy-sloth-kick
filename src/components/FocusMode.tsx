@@ -26,8 +26,8 @@ interface FocusModeProps {
 const FocusMode: React.FC<FocusModeProps> = ({ currentDate, setCurrentDate }) => {
   const { user } = useAuth();
   const userId = user?.id;
-  // FocusMode doesn't operate on a specific daily date, so we pass dummy values to useTasks
-  const { tasks, updateTask, sections } = useTasks({ currentDate: new Date(), setCurrentDate: () => {} });
+  // Pass the actual current date to useTasks for recurring task logic
+  const { tasks, updateTask, sections } = useTasks({ currentDate: new Date(), setCurrentDate: () => {} }); // Still use new Date() for its internal date logic, as FocusMode is not tied to the main app's date navigator.
   const { setIsFocusModeActive } = useUI();
 
   const [timeRemaining, setTimeRemaining] = useState(WORK_DURATION);

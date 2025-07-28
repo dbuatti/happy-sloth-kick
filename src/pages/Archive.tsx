@@ -13,8 +13,8 @@ interface ArchiveProps {
 }
 
 const Archive: React.FC<ArchiveProps> = ({ currentDate, setCurrentDate }) => {
-  // Archive doesn't operate on a specific daily date, so we pass dummy values to useTasks
-  // The actual filtering for 'archived' status is handled by the statusFilter.
+  // Pass the actual current date to useTasks for recurring task logic,
+  // even though the archive view itself is not date-filtered.
   const {
     filteredTasks, 
     loading,
@@ -24,7 +24,7 @@ const Archive: React.FC<ArchiveProps> = ({ currentDate, setCurrentDate }) => {
     sections,
     setStatusFilter,
     allCategories,
-  } = useTasks({ currentDate: new Date(), setCurrentDate: () => {} }); // Dummy date props
+  } = useTasks({ currentDate: new Date(), setCurrentDate: () => {} }); // Still use new Date() for its internal date logic, as Archive is not tied to the main app's date navigator.
 
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);

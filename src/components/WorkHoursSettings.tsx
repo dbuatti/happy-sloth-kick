@@ -4,78 +4,42 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from '@/context/AuthContext';
-import { showSuccess, showError } from "@/utils/toast";
 import { Clock } from 'lucide-react';
+import { useWorkHours } from '@/hooks/useWorkHours'; // Import the refactored hook
 
-interface WorkHour {
+interface WorkHourState {
   day_of_week: string;
   start_time: string;
   end_time: string;
   enabled: boolean;
-  id?: string; // Optional for existing records
+  id?: string;
 }
-
-const daysOfWeek = [
-  { id: 'monday', name: 'Monday' },
-  { id: 'tuesday', name: 'Tuesday' },
-  { id: 'wednesday', name: 'Wednesday' },
-  { id: 'thursday', name: 'Thursday' },
-  { id: 'friday', name: 'Friday' },
-  { id: 'saturday', name: 'Saturday' },
-  { id: 'sunday', name: 'Sunday' },
-];
 
 const WorkHoursSettings: React.FC = () => {
   const { user } = useAuth();
   const userId = user?.id;
-  const [workHours, setWorkHours] = useState<WorkHour[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Call useWorkHours without a date to get all work hours
+  const { workHours: fetchedWorkHours, loading, saveWorkHours, allDaysOfWeek, defaultTime } = useWorkHours();
+  
+  const [localWorkHours, setLocalWorkHours] = useState<WorkHourState[]>([]);
   const [isSaving, setIsSaving] = useState(false);
-  const [allStartTime, setAllStartTime] = useState('09:00');
-  const [allEndTime, setAllEndTime] = useState('17:00');
-
-  const defaultTime = {
-    start: '09:00',
-    end: '17:00',
-  };
-
-  const fetchWorkHours = useCallback(async () => {
-    if (!userId) return;
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('user_work_hours')
-        .select('*')
-        .eq('user_id', userId);
-
-      if (error) throw error;
-
-      const fetchedHoursMap = new Map(data.map(wh => [wh.day_of_week, wh]));
-      const initialWorkHours = daysOfWeek.map(day => ({
-        day_of_week: day.id,
-        start_time: fetchedHoursMap.get(day.id)?.start_time || defaultTime.start,
-        end_time: fetchedHoursMap.get(day.id)?.end_time || defaultTime.end,
-        enabled: fetchedHoursMap.has(day.id) ? fetchedHoursMap.get(day.id)?.enabled || false : false, // Default to disabled if no record
-        id: fetchedHoursMap.get(day.id)?.id,
-      }));
-      setWorkHours(initialWorkHours);
-      console.log('Fetched work hours:', initialWorkHours); // Debug log
-    } catch (error: any) {
-      showError('Failed to load work hours.');
-      console.error('Error fetching work hours:', error.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [userId]);
+  const [allStartTime, setAllStartTime] = useState(defaultTime.start);
+  const [allEndTime, setAllEndTime] = useState(defaultTime.end);
 
   useEffect(() => {
-    fetchWorkHours();
-  }, [fetchWorkHours]);
+    if (!loading && Array.isArray(fetchedWorkHours)) {
+      setLocalWorkHours(fetchedWorkHours);
+      // Set initial values for "Apply to All" based on a common default or first day
+      if (fetchedWorkHours.length > 0) {
+        setAllStartTime(fetchedWorkHours[0].start_time);
+        setAllEndTime(fetchedWorkHours[0].end_time);
+      }
+    }
+  }, [fetchedWorkHours, loading]);
 
   const handleTimeChange = (day: string, field: 'start_time' | 'end_time', value: string) => {
-    setWorkHours(prevHours =>
+    setLocalWorkHours(prevHours =>
       prevHours.map(wh =>
         wh.day_of_week === day ? { ...wh, [field]: value } : wh
       )
@@ -83,60 +47,30 @@ const WorkHoursSettings: React.FC = () => {
   };
 
   const handleEnabledChange = (day: string, checked: boolean) => {
-    setWorkHours(prevHours =>
+    setLocalWorkHours(prevHours =>
       prevHours.map(wh =>
         wh.day_of_week === day ? { ...wh, enabled: checked } : wh
       )
     );
   };
 
-  const handleSaveWorkHours = async (hoursToSave: WorkHour[] = workHours) => { // Added hoursToSave parameter
-    if (!userId) {
-      showError('User not authenticated.');
-      return;
-    }
+  const handleSaveAllWorkHours = async () => {
     setIsSaving(true);
-    try {
-      const updates = hoursToSave.map(wh => { // Use hoursToSave here
-        const updateObject: any = {
-          user_id: userId,
-          day_of_week: wh.day_of_week,
-          start_time: wh.start_time,
-          end_time: wh.end_time,
-          enabled: wh.enabled,
-        };
-        if (wh.id) { // Only include id if it exists (for existing records)
-          updateObject.id = wh.id;
-        }
-        return updateObject;
-      });
-
-      console.log('Saving work hours updates:', updates); // Debug log
-
-      const { error } = await supabase
-        .from('user_work_hours')
-        .upsert(updates, { onConflict: 'user_id, day_of_week' }); // Conflict on user_id and day_of_week
-
-      if (error) throw error;
-      showSuccess('Work hours saved successfully!');
-      fetchWorkHours(); // Re-fetch to ensure IDs are updated for new inserts
-    } catch (error: any) {
-      showError('Failed to save work hours.');
-      console.error('Error saving work hours:', error.message);
-    } finally {
-      setIsSaving(false);
-    }
+    const success = await saveWorkHours(localWorkHours);
+    setIsSaving(false);
   };
 
   const handleSetAllHoursAndSave = async () => {
-    const updatedHours = workHours.map(wh => ({
+    const updatedHours = localWorkHours.map(wh => ({
       ...wh,
       start_time: allStartTime,
       end_time: allEndTime,
       enabled: true, // Always enable when "Apply to All" is clicked
     }));
-    setWorkHours(updatedHours); // Update local state first
-    await handleSaveWorkHours(updatedHours); // Then pass the updated state to save
+    setLocalWorkHours(updatedHours); // Update local state first
+    setIsSaving(true);
+    const success = await saveWorkHours(updatedHours); // Then pass the updated state to save
+    setIsSaving(false);
   };
 
   if (loading) {
@@ -193,7 +127,7 @@ const WorkHoursSettings: React.FC = () => {
           </div>
         </div>
 
-        {workHours.map(dayHour => (
+        {localWorkHours.map(dayHour => (
           <div key={dayHour.day_of_week} className="flex items-center space-x-4 p-2 border rounded-md">
             <Checkbox
               id={`enable-${dayHour.day_of_week}`}
@@ -202,7 +136,7 @@ const WorkHoursSettings: React.FC = () => {
               disabled={isSaving}
             />
             <Label htmlFor={`enable-${dayHour.day_of_week}`} className="flex-1 font-medium capitalize">
-              {daysOfWeek.find(d => d.id === dayHour.day_of_week)?.name}
+              {allDaysOfWeek.find(d => d.id === dayHour.day_of_week)?.name}
             </Label>
             <Input
               type="time"
@@ -221,7 +155,7 @@ const WorkHoursSettings: React.FC = () => {
             />
           </div>
         ))}
-        <Button onClick={() => handleSaveWorkHours()} className="w-full mt-3" disabled={isSaving}>
+        <Button onClick={handleSaveAllWorkHours} className="w-full mt-3" disabled={isSaving}>
           {isSaving ? 'Saving...' : 'Save Work Hours'}
         </Button>
       </CardContent>
