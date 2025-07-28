@@ -33,6 +33,14 @@ export interface TaskSection {
   include_in_focus_mode: boolean; // New field
 }
 
+export interface Category { // Export Category interface
+  id: string;
+  name: string;
+  color: string;
+  user_id: string;
+  created_at: string;
+}
+
 type TaskUpdate = Partial<Omit<Task, 'id' | 'user_id' | 'created_at'>>;
 
 interface NewTaskData {
@@ -80,6 +88,7 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
   const [sortKey, setSortKey] = useState<'priority' | 'due_date' | 'created_at' | 'order'>('order');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [sections, setSections] = useState<TaskSection[]>([]);
+  const [allCategories, setAllCategories] = useState<Category[]>([]); // New state for all categories
   const [categoriesMap, setCategoriesMap] = useState<Map<string, string>>(new Map()); // Map category ID to color key
 
   const [searchFilter, setSearchFilter] = useState(() => getInitialFilter('search', ''));
@@ -135,11 +144,29 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
       // Fetch categories to build a color map
       const { data: categoriesData, error: categoriesError } = await supabase
         .from('task_categories')
-        .select('id, color')
+        .select('id, name, color, user_id, created_at') // Select all columns for Category interface
         .eq('user_id', userId);
       if (categoriesError) throw categoriesError;
+      
+      let fetchedCategories: Category[] = categoriesData || [];
+      let generalCategory: Category | undefined = fetchedCategories.find(cat => cat.name.toLowerCase() === 'general');
+
+      // If 'General' category doesn't exist, create it
+      if (!generalCategory) {
+        const { data: newGeneralCat, error: insertCatError } = await supabase
+          .from('task_categories')
+          .insert({ name: 'General', color: 'gray', user_id: userId })
+          .select('id, name, color, user_id, created_at') // Select all columns to get the full object back
+          .single();
+        if (insertCatError) throw insertCatError;
+        fetchedCategories = [...fetchedCategories, newGeneralCat];
+        generalCategory = newGeneralCat;
+        console.log('Created default "General" category:', newGeneralCat);
+      }
+      
+      setAllCategories(fetchedCategories); // Set all categories including the new 'General' one
       const newCategoriesMap = new Map<string, string>();
-      categoriesData?.forEach(cat => newCategoriesMap.set(cat.id, cat.color));
+      fetchedCategories.forEach(cat => newCategoriesMap.set(cat.id, cat.color));
       setCategoriesMap(newCategoriesMap);
       console.log('useTasks useEffect: Categories fetched and mapped.');
 
@@ -239,7 +266,7 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
 
       // Check if an instance for the *current effective date* already exists
       const instanceForEffectiveCurrentDate = allInstancesOfThisRecurringTask.find(t =>
-        isSameDay(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC)
+        isSameDay(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status !== 'archived'
       );
 
       if (instanceForEffectiveCurrentDate) {
@@ -259,7 +286,7 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
         // For dates after the original creation date, check the status of the *latest previous instance*.
         // IMPORTANT: Do NOT filter by status here. We need the actual latest instance.
         const latestPreviousInstance = allInstancesOfThisRecurringTask
-          .filter(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status !== 'archived') // Only consider non-archived instances for carry-over logic
+          .filter(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status === 'to-do') // Only consider non-archived instances for carry-over logic
           .sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime())[0];
 
         if (latestPreviousInstance) {
@@ -303,11 +330,13 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
     } else if (!authLoading && !userId) {
       setTasks([]);
       setSections([]);
+      setAllCategories([]); // Clear categories too
       setLoading(false);
       console.log('useTasks useEffect: Auth loaded, no user ID, clearing tasks and sections.');
     } else if (authLoading) {
       setTasks([]);
       setSections([]);
+      setAllCategories([]); // Clear categories too
       setLoading(true);
       console.log('useTasks useEffect: Auth still loading, clearing tasks and setting loading true.');
     }
@@ -916,5 +945,6 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
     moveTaskToNewSection,
     reorderSections,
     fetchDataAndSections, // Expose for manual refresh if needed
+    allCategories, // Expose allCategories
   };
 };

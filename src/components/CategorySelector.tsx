@@ -9,47 +9,24 @@ import { showSuccess, showError } from "@/utils/toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from '@/lib/utils';
 import { categoryColorMap, CategoryColorKey, getCategoryColorProps } from '@/lib/categoryColors'; // Import new color utilities
-
-interface Category {
-  id: string;
-  name: string;
-  color: string; // This will now store the CategoryColorKey (e.g., 'red')
-}
+import { Category } from '@/hooks/useTasks'; // Import Category interface
 
 interface CategorySelectorProps {
   value: string; // This is the category ID
   onChange: (categoryId: string) => void;
   userId: string | null;
+  categories: Category[]; // Now receives categories as a prop
 }
 
-const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, userId }) => {
-  const [categories, setCategories] = useState<Category[]>([]);
+const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, userId, categories }) => {
+  // No longer managing categories state internally, relying on prop
+  // const [categories, setCategories] = useState<Category[]>([]); 
   const [isOpen, setIsOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [selectedColorKey, setSelectedColorKey] = useState<CategoryColorKey>('gray'); // Store the key
 
-  useEffect(() => {
-    if (userId) {
-      fetchCategories();
-    }
-  }, [userId]);
-
-  const fetchCategories = async () => {
-    if (!userId) return;
-    try {
-      const { data, error } = await supabase
-        .from('task_categories')
-        .select('*')
-        .eq('user_id', userId)
-        .order('name');
-
-      if (error) throw error;
-      setCategories(data || []);
-    } catch (error: any) {
-      showError('Failed to fetch categories');
-      console.error('Error fetching categories:', error);
-    }
-  };
+  // No longer fetching categories here, as they are passed as a prop.
+  // The logic to ensure 'General' category exists is now in useTasks.ts.
 
   const createCategory = async () => {
     if (!newCategoryName.trim()) {
@@ -72,10 +49,13 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
 
       if (error) throw error;
       
-      setCategories([...categories, data]);
+      // Instead of updating local state, rely on parent to re-fetch/update categories
+      // For now, we'll just show success and expect parent to refresh data.
+      // A full re-fetch of all tasks and categories is handled by useTasks.
+      showSuccess('Category created successfully');
       setNewCategoryName('');
       setSelectedColorKey('gray'); // Reset to default
-      showSuccess('Category created successfully');
+      setIsOpen(false); // Close dialog after creation
     } catch (error: any) {
       showError('Failed to create category');
       console.error('Error creating category:', error);
@@ -96,9 +76,10 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
 
       if (error) throw error;
       
-      setCategories(categories.filter(cat => cat.id !== categoryId));
-      if (value === categoryId) {
-        onChange('general'); // Default to 'general' if the deleted category was selected
+      // If the deleted category was selected, change to 'general'
+      const generalCategory = categories.find(cat => cat.name.toLowerCase() === 'general');
+      if (value === categoryId && generalCategory) {
+        onChange(generalCategory.id); 
       }
       showSuccess('Category deleted successfully');
     } catch (error: any) {
@@ -109,6 +90,8 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
 
   const selectedCategory = categories.find(cat => cat.id === value);
   const selectedCategoryColorProps = selectedCategory ? getCategoryColorProps(selectedCategory.color) : getCategoryColorProps('gray');
+
+  const generalCategory = categories.find(cat => cat.name.toLowerCase() === 'general');
 
   return (
     <div className="space-y-2">
@@ -129,15 +112,17 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
             </SelectValue>
           </SelectTrigger>
           <SelectContent className="z-[9999]">
-            <SelectItem value="general">
-              <div className="flex items-center gap-2">
-                <div className={cn("w-4 h-4 rounded-full flex items-center justify-center border", getCategoryColorProps('gray').backgroundClass, getCategoryColorProps('gray').dotBorder)}>
-                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: getCategoryColorProps('gray').dotColor }}></div>
+            {generalCategory && ( // Only render if generalCategory exists
+              <SelectItem value={generalCategory.id}>
+                <div className="flex items-center gap-2">
+                  <div className={cn("w-4 h-4 rounded-full flex items-center justify-center border", getCategoryColorProps('gray').backgroundClass, getCategoryColorProps('gray').dotBorder)}>
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: getCategoryColorProps('gray').dotColor }}></div>
+                  </div>
+                  General
                 </div>
-                General
-              </div>
-            </SelectItem>
-            {categories.map(category => {
+              </SelectItem>
+            )}
+            {categories.filter(cat => cat.name.toLowerCase() !== 'general').map(category => { // Filter out general here
               const colorProps = getCategoryColorProps(category.color);
               return (
                 <SelectItem key={category.id} value={category.id}>
@@ -184,6 +169,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
                             className="h-6 w-6"
                             onClick={() => deleteCategory(category.id)}
                             aria-label={`Delete ${category.name}`}
+                            disabled={category.name.toLowerCase() === 'general'} // Disable delete for 'General'
                           >
                             <X className="h-3 w-3" />
                           </Button>

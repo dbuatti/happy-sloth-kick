@@ -12,7 +12,7 @@ import PrioritySelector from "./PrioritySelector";
 import SectionSelector from "./SectionSelector";
 import { format, setHours, setMinutes, parse, addDays, addWeeks, addMonths, startOfDay } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { TaskSection } from '@/hooks/useTasks'; // Import TaskSection type
+import { TaskSection, Category } from '@/hooks/useTasks'; // Import TaskSection and Category types
 
 interface AddTaskFormProps {
   onAddTask: (taskData: {
@@ -28,14 +28,15 @@ interface AddTaskFormProps {
   userId: string | null;
   onTaskAdded?: () => void;
   sections: TaskSection[]; // New prop for sections
+  allCategories: Category[]; // New prop for all categories
 }
 
 // Helper function for natural language parsing
-const parseNaturalLanguage = (text: string) => {
+const parseNaturalLanguage = (text: string, categories: Category[]) => {
   let dueDate: Date | undefined = undefined;
   let remindAt: Date | undefined = undefined;
   let priority: string | undefined = undefined;
-  let category: string | undefined = undefined; // This will be the category name for parsing, not ID
+  let categoryId: string | undefined = undefined; // This will be the category ID
   let tempDescription = text;
 
   // Priority detection
@@ -55,16 +56,13 @@ const parseNaturalLanguage = (text: string) => {
   }
 
   // Category detection (example keywords, can be expanded)
-  const categoryKeywords = {
-    'work': 'work', 'project': 'work', 'meeting': 'work',
-    'personal': 'personal', 'home': 'personal', 'family': 'personal',
-    'shopping': 'shopping', 'buy': 'shopping', 'groceries': 'shopping',
-    'study': 'study', 'learn': 'study', 'read': 'study',
-  };
-  for (const [keyword, cValue] of Object.entries(categoryKeywords)) {
-    const regex = new RegExp(`\\b${keyword}\\b`, 'i');
+  // Map category names to their IDs
+  const categoryNameToIdMap = new Map(categories.map(cat => [cat.name.toLowerCase(), cat.id]));
+
+  for (const category of categories) {
+    const regex = new RegExp(`\\b${category.name.toLowerCase()}\\b`, 'i');
     if (regex.test(tempDescription)) {
-      category = cValue;
+      categoryId = category.id;
       tempDescription = tempDescription.replace(regex, '').trim();
       break;
     }
@@ -137,13 +135,13 @@ const parseNaturalLanguage = (text: string) => {
     remindAt,
     reminderTimeStr,
     priority,
-    category,
+    categoryId, // Return category ID
   };
 };
 
-const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdded, sections }) => {
+const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdded, sections, allCategories }) => {
   const [newTaskDescription, setNewTaskDescription] = useState<string>('');
-  const [newTaskCategory, setNewTaskCategory] = useState<string>('general'); // This is the category ID
+  const [newTaskCategory, setNewTaskCategory] = useState<string>(''); // Initialize empty, will be set by default or natural language
   const [newTaskPriority, setNewTaskPriority] = useState<string>('medium');
   const [newTaskDueDate, setNewTaskDueDate] = useState<Date | undefined>(undefined);
   const [newTaskNotes, setNewTaskNotes] = useState<string>('');
@@ -153,24 +151,31 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
   const [newTaskRecurringType, setNewTaskRecurringType] = useState<'none' | 'daily' | 'weekly' | 'monthly'>('none');
   const [isAdding, setIsAdding] = useState(false);
 
+  // Set default category on initial load or when allCategories become available
+  useEffect(() => {
+    if (allCategories.length > 0 && !newTaskCategory) {
+      const generalCategory = allCategories.find(cat => cat.name.toLowerCase() === 'general');
+      if (generalCategory) {
+        setNewTaskCategory(generalCategory.id);
+      }
+    }
+  }, [allCategories, newTaskCategory]);
+
   useEffect(() => {
     const {
       dueDate,
       remindAt,
       reminderTimeStr,
       priority,
-      category: parsedCategoryName, // Get the parsed category name
-    } = parseNaturalLanguage(newTaskDescription);
+      categoryId: parsedCategoryId, // Get the parsed category ID
+    } = parseNaturalLanguage(newTaskDescription, allCategories); // Pass allCategories to parser
 
     if (priority && (newTaskPriority === 'medium' || !newTaskPriority)) {
       setNewTaskPriority(priority);
     }
-    // Find the category ID based on the parsed name
-    if (parsedCategoryName) {
-      const matchingCategory = sections.find(s => s.name.toLowerCase() === parsedCategoryName.toLowerCase());
-      if (matchingCategory && (newTaskCategory === 'general' || !newTaskCategory)) {
-        setNewTaskCategory(matchingCategory.id);
-      }
+    // Set category ID based on natural language, but only if it's not already set or is the default
+    if (parsedCategoryId && (newTaskCategory === (allCategories.find(cat => cat.name.toLowerCase() === 'general')?.id || '') || !newTaskCategory)) {
+      setNewTaskCategory(parsedCategoryId);
     }
     
     if (dueDate && !newTaskDueDate) {
@@ -182,7 +187,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
         setNewReminderTime(format(remindAt, 'HH:mm'));
       }
     }
-  }, [newTaskDescription, newTaskPriority, newTaskCategory, newTaskDueDate, newTaskRemindAt, sections]);
+  }, [newTaskDescription, newTaskPriority, newTaskCategory, newTaskDueDate, newTaskRemindAt, allCategories]);
 
   const handleSubmit = async () => {
     if (!newTaskDescription.trim()) {
@@ -210,7 +215,9 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
     });
     if (success) {
       setNewTaskDescription('');
-      setNewTaskCategory('general');
+      // Reset to default category ID after adding task
+      const generalCategory = allCategories.find(cat => cat.name.toLowerCase() === 'general');
+      setNewTaskCategory(generalCategory?.id || ''); 
       setNewTaskPriority('medium');
       setNewTaskDueDate(undefined);
       setNewTaskNotes('');
@@ -247,7 +254,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <CategorySelector value={newTaskCategory} onChange={setNewTaskCategory} userId={userId} />
+          <CategorySelector value={newTaskCategory} onChange={setNewTaskCategory} userId={userId} categories={allCategories} />
           <PrioritySelector value={newTaskPriority} onChange={setNewTaskPriority} />
         </div>
 

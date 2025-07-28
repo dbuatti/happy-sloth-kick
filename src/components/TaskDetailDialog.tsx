@@ -48,7 +48,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   currentDate,
   setCurrentDate,
 }) => {
-  const { sections, tasks: allTasks, handleAddTask, updateTask } = useTasks({ currentDate, setCurrentDate });
+  const { sections, tasks: allTasks, handleAddTask, updateTask, allCategories } = useTasks({ currentDate, setCurrentDate });
   const [editingDescription, setEditingDescription] = useState('');
   const [editingNotes, setEditingNotes] = useState('');
   const [editingDueDate, setEditingDueDate] = useState<Date | undefined>(undefined);
@@ -153,7 +153,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <CategorySelector value={editingCategory} onChange={setEditingCategory} userId={userId} />
+            <CategorySelector value={editingCategory} onChange={setEditingCategory} userId={userId} categories={allCategories} />
             <PrioritySelector value={editingPriority} onChange={setEditingPriority} />
           </div>
 
@@ -253,6 +253,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
                     userId={userId}
                     onTaskAdded={() => setIsAddSubtaskOpen(false)}
                     sections={sections} // Pass sections prop
+                    allCategories={allCategories} // Pass allCategories prop
                   />
                 </DialogContent>
               </Dialog>

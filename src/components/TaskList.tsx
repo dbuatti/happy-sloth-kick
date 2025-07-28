@@ -49,6 +49,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
     reorderTasksInSameSection,
     moveTaskToNewSection,
     reorderSections,
+    allCategories, // Destructure allCategories
   } = useTasks({ currentDate, setCurrentDate });
 
   console.log('TaskList: Received filteredTasks:', filteredTasks.map(t => ({
@@ -435,6 +436,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
               setIsAddTaskOpen(false);
             }}
             sections={sections}
+            allCategories={allCategories} // Pass allCategories
           />
         </DialogContent>
       </Dialog>
