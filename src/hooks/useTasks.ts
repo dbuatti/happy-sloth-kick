@@ -70,22 +70,20 @@ const getUTCStartOfDay = (date: Date) => {
 };
 
 interface UseTasksProps {
-  currentDate: Date;
-  setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
-  // Add a flag to indicate if recurring task sync should run for this instance
-  // This is useful for components like Archive that use useTasks but don't need recurring task generation.
-  disableRecurringSync?: boolean; 
+  currentDate?: Date; // Make currentDate optional, as it's not always relevant
+  setCurrentDate?: React.Dispatch<React.SetStateAction<Date>>; // Make optional
+  viewMode?: 'daily' | 'archive'; // New prop to control fetching/filtering logic
 }
 
-export const useTasks = ({ currentDate, setCurrentDate, disableRecurringSync = false }: UseTasksProps) => {
-  const HOOK_VERSION = "2024-07-30-12"; // Updated version
+export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: UseTasksProps = {}) => {
+  const HOOK_VERSION = "2024-07-30-13"; // Updated version
   const { user, loading: authLoading } = useAuth();
   const userId = user?.id;
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   console.log(`useTasks hook version: ${HOOK_VERSION}`);
-  console.log('useTasks: Re-rendering. Current date received (from hook start):', currentDate.toISOString());
+  console.log('useTasks: Re-rendering. Current viewMode:', viewMode, 'Current date received:', currentDate?.toISOString());
 
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [sortKey, setSortKey] = useState<'priority' | 'due_date' | 'created_at' | 'order'>('order');
@@ -94,6 +92,7 @@ export const useTasks = ({ currentDate, setCurrentDate, disableRecurringSync = f
   const [allCategories, setAllCategories] = useState<Category[]>([]); // New state for all categories
   const [categoriesMap, setCategoriesMap] = useState<Map<string, string>>(new Map()); // Map category ID to color key
 
+  // Filters are only relevant for 'daily' viewMode
   const [searchFilter, setSearchFilter] = useState(() => getInitialFilter('search', ''));
   const [statusFilter, setStatusFilter] = useState(() => getInitialFilter('status', 'all'));
   const [categoryFilter, setCategoryFilter] = useState(() => getInitialFilter('category', 'all'));
@@ -103,30 +102,22 @@ export const useTasks = ({ currentDate, setCurrentDate, disableRecurringSync = f
   const remindedTaskIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    localStorage.setItem('task_filter_search', searchFilter);
-  }, [searchFilter]);
+    if (viewMode === 'daily') { // Only persist filters for daily view
+      localStorage.setItem('task_filter_search', searchFilter);
+      localStorage.setItem('task_filter_status', statusFilter);
+      localStorage.setItem('task_filter_category', categoryFilter);
+      localStorage.setItem('task_filter_priority', priorityFilter);
+      localStorage.setItem('task_filter_section', sectionFilter);
+    }
+  }, [searchFilter, statusFilter, categoryFilter, priorityFilter, sectionFilter, viewMode]);
 
+  // useEffect to clear selected tasks when currentDate changes (only relevant for daily view)
   useEffect(() => {
-    localStorage.setItem('task_filter_status', statusFilter);
-  }, [statusFilter]);
-
-  useEffect(() => {
-    localStorage.setItem('task_filter_category', categoryFilter);
-  }, [categoryFilter]);
-
-  useEffect(() => {
-    localStorage.setItem('task_filter_priority', priorityFilter);
-  }, [priorityFilter]);
-
-  useEffect(() => {
-    localStorage.setItem('task_filter_section', sectionFilter);
-  }, [sectionFilter]);
-
-  // useEffect to clear selected tasks when currentDate changes
-  useEffect(() => {
-    setSelectedTaskIds([]);
-    console.log('Cleared selectedTaskIds due to currentDate change.');
-  }, [currentDate]);
+    if (viewMode === 'daily') {
+      setSelectedTaskIds([]);
+      console.log('Cleared selectedTaskIds due to currentDate change.');
+    }
+  }, [currentDate, viewMode]);
 
   const fetchDataAndSections = useCallback(async () => {
     console.trace('fetchDataAndSections called');
@@ -174,6 +165,7 @@ export const useTasks = ({ currentDate, setCurrentDate, disableRecurringSync = f
       console.log('useTasks: categoriesMap after population:', Array.from(newCategoriesMap.entries()));
 
       // Fetch all tasks from DB (without join for now)
+      // For archive mode, we need all tasks, not just date-filtered ones
       const { data: initialTasksFromDB, error: fetchError } = await supabase
         .from('tasks')
         .select('*') // Select all columns, no join
@@ -198,7 +190,7 @@ export const useTasks = ({ currentDate, setCurrentDate, disableRecurringSync = f
       setLoading(false);
       console.log('fetchTasks: Fetch process completed.');
     }
-  }, [userId]);
+  }, [userId, viewMode]); // Add viewMode to dependencies to re-fetch if mode changes
 
   const createRecurringTaskInstance = useCallback(async (originalTask: Task, targetDate: Date): Promise<boolean> => {
     console.log(`createRecurringTaskInstance: Attempting to create instance for original task "${originalTask.description}" on ${format(targetDate, 'yyyy-MM-dd')}`);
@@ -242,9 +234,9 @@ export const useTasks = ({ currentDate, setCurrentDate, disableRecurringSync = f
   }, [userId, tasks]);
 
   const syncRecurringTasks = useCallback(async () => {
-    // Only run if recurring sync is not disabled for this hook instance
-    if (disableRecurringSync || !userId || loading) {
-      console.log('syncRecurringTasks: Skipping sync - recurring sync disabled, no user, or still loading initial data.');
+    // Only run if viewMode is 'daily' and user is authenticated and not loading
+    if (viewMode !== 'daily' || !userId || loading || !currentDate) {
+      console.log('syncRecurringTasks: Skipping sync - not daily view, no user, or still loading initial data.');
       return;
     }
 
@@ -266,7 +258,7 @@ export const useTasks = ({ currentDate, setCurrentDate, disableRecurringSync = f
       const allInstancesOfThisRecurringTask = tasks.filter(t =>
         t.original_task_id === originalTask.id || t.id === originalTask.id
       );
-      console.log(`filteredTasks: For originalId ${originalTask.id} ("${originalTask.description}"), all instances:`, allInstancesOfThisRecurringTask.map(t => ({id: t.id, created_at: t.created_at, status: t.status})));
+      console.log(`syncRecurringTasks: For originalId ${originalTask.id} ("${originalTask.description}"), all instances:`, allInstancesOfThisRecurringTask.map(t => ({id: t.id, created_at: t.created_at, status: t.status})));
 
       // Check if an instance for the *current effective date* already exists
       const instanceForCurrentDay = allInstancesOfThisRecurringTask.find(t =>
@@ -274,22 +266,7 @@ export const useTasks = ({ currentDate, setCurrentDate, disableRecurringSync = f
       );
       
       if (instanceForCurrentDay) {
-        console.log(`syncRecurringTasks: For original ${originalTask.id}, found instance for current date (${format(effectiveCurrentDateUTC, 'yyyy-MM-dd')}) with status: ${instanceForCurrentDay.status}.`);
-      } else {
-        // 2. If no instance for current day, look for the latest 'to-do' instance from a previous day (carry-over)
-        const carryOverTask = allInstancesOfThisRecurringTask
-          .filter(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status === 'to-do')
-          .sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime())[0];
-
-        if (carryOverTask) {
-          console.log(`syncRecurringTasks: For original ${originalTask.id}, no instance for current date. Found carry-over from ${format(parseISO(carryOverTask.created_at), 'yyyy-MM-dd')} with status: ${carryOverTask.status}. Pushing this.`);
-        } else {
-          console.log(`syncRecurringTasks: For original ${originalTask.id}, no relevant instance found for current date or carry-over.`);
-        }
-      }
-
-      if (instanceForCurrentDay) {
-        console.log(`syncRecurringTasks: Instance for "${originalTask.description}" on ${format(effectiveCurrentDateUTC, 'yyyy-MM-dd')} already exists (ID: ${instanceForCurrentDay.id}, Status: ${instanceForCurrentDay.status}). No new instance needed.`);
+        console.log(`syncRecurringTasks: For original ${originalTask.id}, found instance for current date (${format(effectiveCurrentDateUTC, 'yyyy-MM-dd')}) with status: ${instanceForCurrentDay.status}. No new instance needed.`);
         continue; // An instance for today already exists, no need to create a new one
       }
 
@@ -303,7 +280,6 @@ export const useTasks = ({ currentDate, setCurrentDate, disableRecurringSync = f
         console.log(`syncRecurringTasks: Original task "${originalTask.description}" created today. Creating first instance.`);
       } else {
         // For dates after the original creation date, check the status of the *latest previous instance*.
-        // IMPORTANT: Do NOT filter by status here. We need the actual latest instance.
         const latestPreviousInstance = allInstancesOfThisRecurringTask
           .filter(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status === 'to-do') // Only consider non-archived instances for carry-over logic
           .sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime())[0];
@@ -340,7 +316,7 @@ export const useTasks = ({ currentDate, setCurrentDate, disableRecurringSync = f
     } else {
       console.log('syncRecurringTasks: No recurring tasks created or updated for this date.');
     }
-  }, [userId, tasks, currentDate, createRecurringTaskInstance, fetchDataAndSections, loading, disableRecurringSync]);
+  }, [userId, tasks, currentDate, createRecurringTaskInstance, fetchDataAndSections, loading, viewMode]);
 
   // Effect to fetch initial data and sections
   useEffect(() => {
@@ -363,10 +339,10 @@ export const useTasks = ({ currentDate, setCurrentDate, disableRecurringSync = f
 
   // Effect to sync recurring tasks whenever tasks or currentDate changes
   useEffect(() => {
-    if (!loading && userId) {
+    if (!loading && userId && viewMode === 'daily') { // Only sync recurring tasks in daily view
       syncRecurringTasks();
     }
-  }, [loading, userId, currentDate, syncRecurringTasks]);
+  }, [loading, userId, currentDate, syncRecurringTasks, viewMode]);
 
   useEffect(() => {
     if (!userId) return;
@@ -405,7 +381,7 @@ export const useTasks = ({ currentDate, setCurrentDate, disableRecurringSync = f
       newTask = {
         id: uuidv4(),
         user_id: userId,
-        created_at: currentDate.toISOString(),
+        created_at: (currentDate || new Date()).toISOString(), // Use currentDate if available, else new Date()
         status: newTaskData.status || 'to-do',
         recurring_type: newTaskData.recurring_type || 'none',
         category: newTaskData.category, // This is the category ID
@@ -786,8 +762,7 @@ export const useTasks = ({ currentDate, setCurrentDate, disableRecurringSync = f
 
   const filteredTasks = useMemo(() => {
     console.log('filteredTasks: --- START FILTERING ---');
-    const effectiveCurrentDateUTC = getUTCStartOfDay(currentDate);
-    console.log('filteredTasks: Current Date (UTC):', effectiveCurrentDateUTC.toISOString());
+    console.log('filteredTasks: Current viewMode:', viewMode);
     console.log('filteredTasks: Raw tasks state at start of memo:', tasks.map(t => ({
       id: t.id,
       description: t.description,
@@ -801,76 +776,87 @@ export const useTasks = ({ currentDate, setCurrentDate, disableRecurringSync = f
     })));
 
     let relevantTasks: Task[] = [];
-    const processedOriginalIds = new Set<string>();
 
-    const topLevelTasks = tasks.filter(task => task.parent_task_id === null);
+    if (viewMode === 'archive') {
+      // For archive mode, show all archived tasks
+      relevantTasks = tasks.filter(task => task.status === 'archived');
+      console.log('filteredTasks: Archive mode - relevantTasks (archived only):', relevantTasks.map(t => t.id));
+    } else { // viewMode === 'daily'
+      const effectiveCurrentDateUTC = currentDate ? getUTCStartOfDay(currentDate) : getUTCStartOfDay(new Date());
+      console.log('filteredTasks: Daily mode - Current Date (UTC):', effectiveCurrentDateUTC.toISOString());
+      const processedOriginalIds = new Set<string>();
 
-    topLevelTasks.forEach(task => {
-      const taskCreatedAtUTC = getUTCStartOfDay(parseISO(task.created_at));
-      const originalId = task.original_task_id || task.id;
+      const topLevelTasks = tasks.filter(task => task.parent_task_id === null);
 
-      if (task.recurring_type !== 'none') {
-        if (processedOriginalIds.has(originalId)) {
-          console.log(`filteredTasks: Skipping already processed originalId: ${originalId}`);
-          return;
-        }
+      topLevelTasks.forEach(task => {
+        const taskCreatedAtUTC = getUTCStartOfDay(parseISO(task.created_at));
+        const originalId = task.original_task_id || task.id;
 
-        const allInstancesOfThisRecurringTask = tasks.filter(t =>
-          t.original_task_id === originalId || t.id === originalId
-        );
-        console.log(`filteredTasks: For originalId ${originalId} ("${task.description}"), all instances:`, allInstancesOfThisRecurringTask.map(t => ({id: t.id, created_at: t.created_at, status: t.status})));
+        if (task.recurring_type !== 'none') {
+          if (processedOriginalIds.has(originalId)) {
+            console.log(`filteredTasks: Skipping already processed originalId: ${originalId}`);
+            return;
+          }
 
-        let taskToDisplay: Task | null = null;
+          const allInstancesOfThisRecurringTask = tasks.filter(t =>
+            t.original_task_id === originalId || t.id === originalId
+          );
+          console.log(`filteredTasks: For originalId ${originalId} ("${task.description}"), all instances:`, allInstancesOfThisRecurringTask.map(t => ({id: t.id, created_at: t.created_at, status: t.status})));
 
-        // 1. Prioritize an instance for the current date (any status except archived)
-        const instanceForCurrentDay = allInstancesOfThisRecurringTask.find(t =>
-          isSameDay(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status !== 'archived'
-        );
-        
-        if (instanceForCurrentDay) {
-          taskToDisplay = instanceForCurrentDay;
-          console.log(`filteredTasks: For original ${originalId}, found instance for current date (${format(effectiveCurrentDateUTC, 'yyyy-MM-dd')}) with status: ${instanceForCurrentDay.status}. Pushing this.`);
-        } else {
-          // 2. If no instance for current day, look for the latest 'to-do' instance from a previous day (carry-over)
-          const carryOverTask = allInstancesOfThisRecurringTask
-            .filter(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status === 'to-do')
-            .sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime())[0];
+          let taskToDisplay: Task | null = null;
 
-          if (carryOverTask) {
-            taskToDisplay = carryOverTask;
-            console.log(`filteredTasks: For original ${originalId}, no instance for current date. Found carry-over from ${format(parseISO(carryOverTask.created_at), 'yyyy-MM-dd')} with status: ${carryOverTask.status}. Pushing this.`);
+          // 1. Prioritize an instance for the current date (any status except archived)
+          const instanceForCurrentDay = allInstancesOfThisRecurringTask.find(t =>
+            isSameDay(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status !== 'archived'
+          );
+          
+          if (instanceForCurrentDay) {
+            taskToDisplay = instanceForCurrentDay;
+            console.log(`filteredTasks: For original ${originalId}, found instance for current date (${format(effectiveCurrentDateUTC, 'yyyy-MM-dd')}) with status: ${instanceForCurrentDay.status}. Pushing this.`);
           } else {
-            console.log(`filteredTasks: For original ${originalId}, no relevant instance found for current date or carry-over.`);
+            // 2. If no instance for current day, look for the latest 'to-do' instance from a previous day (carry-over)
+            const carryOverTask = allInstancesOfThisRecurringTask
+              .filter(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status === 'to-do')
+              .sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime())[0];
+
+            if (carryOverTask) {
+              taskToDisplay = carryOverTask;
+              console.log(`filteredTasks: For original ${originalId}, no instance for current date. Found carry-over from ${format(parseISO(carryOverTask.created_at), 'yyyy-MM-dd')} with status: ${carryOverTask.status}. Pushing this.`);
+            } else {
+              console.log(`filteredTasks: For original ${originalId}, no relevant instance found for current date or carry-over.`);
+            }
+          }
+          
+          if (taskToDisplay) {
+            relevantTasks.push(taskToDisplay);
+          }
+          processedOriginalIds.add(originalId);
+        } else {
+          // Non-recurring tasks
+          const isTaskCreatedOnCurrentDate = isSameDay(taskCreatedAtUTC, effectiveCurrentDateUTC);
+          if (isTaskCreatedOnCurrentDate && task.status !== 'archived') {
+            console.log(`filteredTasks: Pushing non-recurring task created on current date: ${task.id}, ${task.description}`);
+            relevantTasks.push(task);
+          } else if (isBefore(taskCreatedAtUTC, effectiveCurrentDateUTC) && task.status === 'to-do') {
+            console.log(`filteredTasks: Pushing non-recurring carry-over task: ${task.id}, ${task.description}`);
+            relevantTasks.push(task); // Carry over incomplete non-recurring tasks
+          } else {
+            console.log(`filteredTasks: Skipping non-recurring task: ${task.id}, ${task.description} (not created today, not to-do carry-over, or archived)`);
           }
         }
-        
-        if (taskToDisplay) {
-          relevantTasks.push(taskToDisplay);
-        }
-        processedOriginalIds.add(originalId);
-      } else {
-        // Non-recurring tasks
-        const isTaskCreatedOnCurrentDate = isSameDay(taskCreatedAtUTC, effectiveCurrentDateUTC);
-        if (isTaskCreatedOnCurrentDate && task.status !== 'archived') {
-          console.log(`filteredTasks: Pushing non-recurring task created on current date: ${task.id}, ${task.description}`);
-          relevantTasks.push(task);
-        } else if (isBefore(taskCreatedAtUTC, effectiveCurrentDateUTC) && task.status === 'to-do') {
-          console.log(`filteredTasks: Pushing non-recurring carry-over task: ${task.id}, ${task.description}`);
-          relevantTasks.push(task); // Carry over incomplete non-recurring tasks
-        } else {
-          console.log(`filteredTasks: Skipping non-recurring task: ${task.id}, ${task.description} (not created today, not to-do carry-over, or archived)`);
-        }
-      }
-    });
+      });
+    }
 
-    // Now, apply the status filter to the relevant tasks
+    // Now, apply the status filter to the relevant tasks (only for daily view)
     let finalFilteredTasks = relevantTasks;
 
-    if (statusFilter !== 'all') {
-      finalFilteredTasks = finalFilteredTasks.filter(task => task.status === statusFilter);
-    } else {
-      // If statusFilter is 'all', explicitly exclude 'archived' tasks from the main view
-      finalFilteredTasks = finalFilteredTasks.filter(task => task.status !== 'archived');
+    if (viewMode === 'daily') {
+      if (statusFilter !== 'all') {
+        finalFilteredTasks = finalFilteredTasks.filter(task => task.status === statusFilter);
+      } else {
+        // If statusFilter is 'all', explicitly exclude 'archived' tasks from the main view
+        finalFilteredTasks = finalFilteredTasks.filter(task => task.status !== 'archived');
+      }
     }
 
     // Apply other filters (search, category, priority, section)
@@ -925,7 +911,7 @@ export const useTasks = ({ currentDate, setCurrentDate, disableRecurringSync = f
     })));
     console.log('filteredTasks: --- END FILTERING ---');
     return finalFilteredTasks;
-  }, [tasks, currentDate, searchFilter, statusFilter, categoryFilter, priorityFilter, sectionFilter, sections]);
+  }, [tasks, currentDate, searchFilter, statusFilter, categoryFilter, priorityFilter, sectionFilter, sections, viewMode]);
 
   return {
     tasks,

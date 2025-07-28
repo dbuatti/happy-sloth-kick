@@ -13,8 +13,7 @@ interface ArchiveProps {
 }
 
 const Archive: React.FC<ArchiveProps> = ({ currentDate, setCurrentDate }) => {
-  // Pass the actual current date to useTasks for recurring task logic,
-  // even though the archive view itself is not date-filtered.
+  // Use viewMode: 'archive' to fetch and filter only archived tasks
   const {
     filteredTasks, 
     loading,
@@ -22,16 +21,13 @@ const Archive: React.FC<ArchiveProps> = ({ currentDate, setCurrentDate }) => {
     updateTask,
     deleteTask,
     sections,
-    setStatusFilter,
     allCategories,
-  } = useTasks({ currentDate: new Date(), setCurrentDate: () => {}, disableRecurringSync: true }); // Still use new Date() for its internal date logic, as Archive is not tied to the main app's date navigator.
+  } = useTasks({ viewMode: 'archive' }); // Removed currentDate, setCurrentDate, setStatusFilter
 
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
 
-  useEffect(() => {
-    setStatusFilter('archived');
-  }, [setStatusFilter]);
+  // Removed useEffect that setStatusFilter('archived')
 
   const handleTaskStatusChange = async (taskId: string, newStatus: Task['status']) => {
     await updateTask(taskId, { status: newStatus });
