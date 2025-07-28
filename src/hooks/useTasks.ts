@@ -593,29 +593,30 @@ export const useTasks = () => {
           console.log(`filteredTasks: --- Original Task Group: ${originalId} (${allInstancesForOriginal[0].description}) ---`);
           console.log('filteredTasks: All instances in group (including archived):', allInstancesForOriginal.map(t => ({ id: t.id, status: t.status, created_at: t.created_at, original_task_id: t.original_task_id })));
 
-          // Find instances created specifically for the current date
-          const instancesCreatedOnCurrentDate = allInstancesForOriginal.filter(t => isSameDay(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC));
-          const originalTemplate = allInstancesForOriginal.find(t => t.original_task_id === null);
+          // Find the instance created specifically for the current date
+          const instanceForCurrentDate = allInstancesForOriginal.find(t => 
+              isSameDay(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC)
+          );
 
           let taskToDisplay: Task | undefined;
 
-          if (instancesCreatedOnCurrentDate.length > 0) {
-              // If there are instances created for the current date, prioritize 'to-do' ones.
-              // If multiple 'to-do' or no 'to-do', pick the most recently created one.
-              instancesCreatedOnCurrentDate.sort((a, b) => {
-                  if (a.status === 'to-do' && b.status !== 'to-do') return -1;
-                  if (a.status !== 'to-do' && b.status === 'to-do') return 1;
-                  return getUTCStartOfDay(parseISO(b.created_at)).getTime() - getUTCStartOfDay(parseISO(a.created_at)).getTime();
-              });
-              taskToDisplay = instancesCreatedOnCurrentDate[0];
+          if (instanceForCurrentDate) {
+              // If an instance exists for the current date, display it with its actual status
+              taskToDisplay = instanceForCurrentDate;
               console.log('filteredTasks: Decided to display instance created on current date:', { id: taskToDisplay.id, status: taskToDisplay.status, created_at: taskToDisplay.created_at });
-          } else if (originalTemplate) {
+          } else {
               // If no instance was created specifically for the current date, consider the original template.
-              // Only display the original template if it was created on or before the current date.
-              const originalTaskCreatedAtUTC = getUTCStartOfDay(parseISO(originalTemplate.created_at));
-              if (isBefore(originalTaskCreatedAtUTC, effectiveCurrentDateUTC) || isSameDay(originalTaskCreatedAtUTC, effectiveCurrentDateUTC)) {
-                  taskToDisplay = originalTemplate;
-                  console.log('filteredTasks: Decided to display original template (no instance for current date).');
+              const originalTemplate = allInstancesForOriginal.find(t => t.original_task_id === null);
+              if (originalTemplate && (isBefore(getUTCStartOfDay(parseISO(originalTemplate.created_at)), effectiveCurrentDateUTC) || isSameDay(getUTCStartOfDay(parseISO(originalTemplate.created_at)), effectiveCurrentDateUTC))) {
+                  // Create a "virtual" instance for display, resetting its status to 'to-do'
+                  taskToDisplay = {
+                      ...originalTemplate,
+                      id: originalTemplate.id, // Keep original ID for consistency in display, but it's a virtual representation
+                      status: 'to-do', // Always reset to 'to-do' for a new day's view if no specific instance exists
+                      created_at: effectiveCurrentDateUTC.toISOString(), // Set created_at to current date for display purposes
+                      original_task_id: originalTemplate.id, // Ensure it points to itself as original
+                  };
+                  console.log('filteredTasks: Decided to display virtual instance (no instance for current date), status reset to to-do.');
               }
           }
 
