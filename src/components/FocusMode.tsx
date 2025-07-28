@@ -28,7 +28,7 @@ const FocusMode: React.FC<FocusModeProps> = ({ currentDate, setCurrentDate }) =>
   const userId = user?.id;
   // Pass the actual current date to useTasks for recurring task logic
   // Set viewMode to 'focus' to ensure tasks are filtered by include_in_focus_mode
-  const { tasks, updateTask, sections } = useTasks({ currentDate: new Date(), setCurrentDate: () => {}, viewMode: 'focus' }); 
+  const { filteredTasks, updateTask, sections } = useTasks({ currentDate: new Date(), setCurrentDate: () => {}, viewMode: 'focus' }); 
   const { setIsFocusModeActive } = useUI();
 
   const [timeRemaining, setTimeRemaining] = useState(WORK_DURATION);
@@ -42,12 +42,12 @@ const FocusMode: React.FC<FocusModeProps> = ({ currentDate, setCurrentDate }) =>
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchSuggestedTasks = useCallback(() => {
-    if (!tasks || !sections) return [];
-    const activeTasks = tasks.filter(
+    if (!filteredTasks || !sections) return []; // Use filteredTasks here
+    const activeTasks = filteredTasks.filter( // Use filteredTasks here
       t => t.status === 'to-do'
     );
 
-    // The 'tasks' array from useTasks (with viewMode: 'focus') is already filtered for focus mode sections.
+    // The 'filteredTasks' array from useTasks (with viewMode: 'focus') is already filtered for focus mode sections.
     // So, no need to re-filter by sections here.
 
     // Prioritize high/urgent tasks, then due today/overdue
@@ -63,11 +63,11 @@ const FocusMode: React.FC<FocusModeProps> = ({ currentDate, setCurrentDate }) =>
       return aDueDate - bDueDate; // Sooner due date first
     });
     setSuggestedTasks(sortedTasks.slice(0, 5)); // Get top 5 suggestions
-  }, [tasks, sections]); // Add sections to dependency array
+  }, [filteredTasks, sections]); // Add filteredTasks to dependency array
 
   useEffect(() => {
     fetchSuggestedTasks();
-  }, [fetchSuggestedTasks, tasks, sections]); // Add sections to dependency array
+  }, [fetchSuggestedTasks, filteredTasks, sections]); // Add filteredTasks to dependency array
 
   useEffect(() => {
     setIsFocusModeActive(true);
@@ -197,7 +197,7 @@ const FocusMode: React.FC<FocusModeProps> = ({ currentDate, setCurrentDate }) =>
     showSuccess(`Focusing on: "${task.description}"`);
   };
 
-  const currentTaskDetails = currentTaskId ? tasks.find(t => t.id === currentTaskId) : null;
+  const currentTaskDetails = currentTaskId ? filteredTasks.find(t => t.id === currentTaskId) : null; // Use filteredTasks here
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-4">
