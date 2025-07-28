@@ -59,7 +59,7 @@ const getUTCStartOfDay = (date: Date) => {
 };
 
 export const useTasks = () => {
-  const HOOK_VERSION = "2024-07-29-08"; // Increment this for each significant change
+  const HOOK_VERSION = "2024-07-29-09"; // Increment this for each significant change
 
   const { user } = useAuth();
   const userId = user?.id;
@@ -83,7 +83,7 @@ export const useTasks = () => {
   const [sectionFilter, setSectionFilter] = useState(() => getInitialFilter('section', 'all'));
 
   const remindedTaskIdsRef = useRef<Set<string>>(new Set());
-  const isFetchingRef = useRef<string | null>(null); // Stores the key of the fetch in progress
+  // Removed isFetchingRef
 
   useEffect(() => {
     localStorage.setItem('task_filter_search', searchFilter);
@@ -107,12 +107,6 @@ export const useTasks = () => {
 
   const fetchDataAndSections = useCallback(async () => {
     console.trace('fetchDataAndSections called');
-    const currentFetchKey = `${userId}-${currentDate.toISOString()}`;
-    if (isFetchingRef.current === currentFetchKey) { // Check if this specific fetch is already in progress
-      console.log(`fetchDataAndSections: Already fetching for ${currentFetchKey}, skipping.`);
-      return;
-    }
-    isFetchingRef.current = currentFetchKey; // Mark this specific fetch as in progress
     setLoading(true);
 
     try {
@@ -207,9 +201,7 @@ export const useTasks = () => {
       showError('An unexpected error occurred while loading data.');
     } finally {
       setLoading(false);
-      if (isFetchingRef.current === currentFetchKey) {
-        isFetchingRef.current = null;
-      }
+      // Removed isFetchingRef.current = null;
       console.log('fetchTasks: Fetch process completed.');
     }
   }, [userId, currentDate]); // Dependencies for fetchDataAndSections
@@ -221,7 +213,7 @@ export const useTasks = () => {
       setTasks([]);
       setSections([]);
       setLoading(false);
-      isFetchingRef.current = null; // Ensure reset if user logs out
+      // Removed isFetchingRef.current = null;
       console.log('useTasks useEffect: No user ID, clearing tasks and sections.');
     }
   }, [userId, currentDate, fetchDataAndSections]); // Add fetchDataAndSections to dependencies
