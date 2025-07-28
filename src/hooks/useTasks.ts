@@ -59,7 +59,7 @@ const getUTCStartOfDay = (date: Date) => {
 };
 
 export const useTasks = () => {
-  const HOOK_VERSION = "2024-07-30-06"; // Updated version
+  const HOOK_VERSION = "2024-07-30-07"; // Updated version
   const { user, loading: authLoading } = useAuth();
   const userId = user?.id;
 
@@ -216,46 +216,46 @@ export const useTasks = () => {
         isSameDay(getUTCStartOfDay(parseISO(t.created_at)), currentDate)
       );
 
-      // If a 'to-do' instance for the current date already exists, we are good.
-      if (instanceForCurrentDate && instanceForCurrentDate.status === 'to-do') {
-        console.log(`syncRecurringTasks: To-do instance for "${originalTask.description}" on current date already exists. No action needed.`);
-        continue;
-      }
-
-      // If a 'completed' or 'skipped' instance for the current date exists, we are also good.
-      // This means the user acted on it today, and we don't want to reset it.
-      if (instanceForCurrentDate && (instanceForCurrentDate.status === 'completed' || instanceForCurrentDate.status === 'skipped')) {
-        console.log(`syncRecurringTasks: Completed/skipped instance for "${originalTask.description}" on current date exists. No action needed.`);
-        continue;
-      }
-
-      // At this point, no instance for the current date exists, OR an archived one exists (which we ignore for daily view).
-      // We need to decide if a new 'to-do' instance should be created.
-      // This should happen if the *latest relevant instance* (from any previous day) was completed or skipped.
-      // Or if this is the very first day the recurring task should appear.
-
-      const allInstancesOfThisRecurringTask = tasks.filter(t =>
-        t.original_task_id === originalTask.id || t.id === originalTask.id
-      );
-
-      const latestRelevantInstanceBeforeCurrentDate = allInstancesOfThisRecurringTask
-        .filter(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), currentDate))
-        .sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime())[0];
-
-      const shouldCreateNewToDoInstance =
-        // Case 1: This is the first day the recurring task should appear, and no instance exists for today.
-        (isSameDay(originalTaskCreatedAtUTC, currentDate) && !instanceForCurrentDate) ||
-        // Case 2: A previous instance exists and was completed/skipped, and no instance for today exists.
-        (latestRelevantInstanceBeforeCurrentDate &&
-         (latestRelevantInstanceBeforeCurrentDate.status === 'completed' || latestRelevantInstanceBeforeCurrentDate.status === 'skipped') &&
-         !instanceForCurrentDate);
-
-      if (shouldCreateNewToDoInstance) {
-        console.log(`syncRecurringTasks: Creating new 'to-do' instance for "${originalTask.description}" for current date.`);
-        const created = await createRecurringTaskInstance(originalTask, currentDate);
-        if (created) tasksWereModified = true;
+      if (instanceForCurrentDate) {
+        console.log(`syncRecurringTasks: Found instance for "${originalTask.description}" on ${format(currentDate, 'yyyy-MM-dd')}. Status: ${instanceForCurrentDate.status}.`);
+        if (instanceForCurrentDate.status === 'to-do') {
+          console.log(`syncRecurringTasks: Instance is 'to-do'. No action needed.`);
+          continue;
+        }
+        if (instanceForCurrentDate.status === 'completed' || instanceForCurrentDate.status === 'skipped') {
+          console.log(`syncRecurringTasks: Instance is 'completed' or 'skipped'. No action needed for today.`);
+          continue;
+        }
       } else {
-        console.log(`syncRecurringTasks: No new instance needed for "${originalTask.description}" for current date.`);
+        console.log(`syncRecurringTasks: No instance found for "${originalTask.description}" on ${format(currentDate, 'yyyy-MM-dd')}. Checking if new instance needed.`);
+        // At this point, no instance for the current date exists, OR an archived one exists (which we ignore for daily view).
+        // We need to decide if a new 'to-do' instance should be created.
+        // This should happen if the *latest relevant instance* (from any previous day) was completed or skipped.
+        // Or if this is the very first day the recurring task should appear.
+
+        const allInstancesOfThisRecurringTask = tasks.filter(t =>
+          t.original_task_id === originalTask.id || t.id === originalTask.id
+        );
+
+        const latestRelevantInstanceBeforeCurrentDate = allInstancesOfThisRecurringTask
+          .filter(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), currentDate))
+          .sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime())[0];
+
+        const shouldCreateNewToDoInstance =
+          // Case 1: This is the first day the recurring task should appear, and no instance exists for today.
+          (isSameDay(originalTaskCreatedAtUTC, currentDate) && !instanceForCurrentDate) ||
+          // Case 2: A previous instance exists and was completed/skipped, and no instance for today exists.
+          (latestRelevantInstanceBeforeCurrentDate &&
+           (latestRelevantInstanceBeforeCurrentDate.status === 'completed' || latestRelevantInstanceBeforeCurrentDate.status === 'skipped') &&
+           !instanceForCurrentDate);
+
+        if (shouldCreateNewToDoInstance) {
+          console.log(`syncRecurringTasks: Creating new 'to-do' instance for "${originalTask.description}" for current date.`);
+          const created = await createRecurringTaskInstance(originalTask, currentDate);
+          if (created) tasksWereModified = true;
+        } else {
+          console.log(`syncRecurringTasks: No new instance needed for "${originalTask.description}" for current date.`);
+        }
       }
     }
 
@@ -623,7 +623,6 @@ export const useTasks = () => {
     } else {
       topLevelTasks.forEach(task => {
         const taskCreatedAtUTC = getUTCStartOfDay(parseISO(task.created_at));
-        const isTaskCreatedOnCurrentDate = isSameDay(taskCreatedAtUTC, effectiveCurrentDateUTC);
         const originalId = task.original_task_id || task.id;
 
         if (task.recurring_type !== 'none') {
@@ -631,28 +630,51 @@ export const useTasks = () => {
             return; // Already processed this recurring group
           }
 
-          // Find the instance for the current date
-          const instanceForCurrentDate = tasks.find(t =>
-            (t.original_task_id === originalId || t.id === originalId) &&
-            isSameDay(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC)
+          const allInstancesOfThisRecurringTask = tasks.filter(t =>
+            t.original_task_id === originalId || t.id === originalId
           );
 
-          if (instanceForCurrentDate && instanceForCurrentDate.status !== 'archived') {
-            relevantTasks.push(instanceForCurrentDate);
+          let taskToDisplay: Task | null = null;
+
+          // Priority 1: Find a 'to-do' instance for the current date
+          const toDoInstanceForCurrentDate = allInstancesOfThisRecurringTask.find(t =>
+            isSameDay(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status === 'to-do'
+          );
+
+          if (toDoInstanceForCurrentDate) {
+            taskToDisplay = toDoInstanceForCurrentDate;
+            console.log(`filteredTasks: For original ${originalId}, found TO-DO instance for current date (${format(effectiveCurrentDateUTC, 'yyyy-MM-dd')}). Pushing this.`);
           } else {
-            // If no instance for current date, or it's archived, look for a carry-over 'to-do' from previous days
-            const carryOverTask = tasks.find(t =>
-              (t.original_task_id === originalId || t.id === originalId) &&
-              isBefore(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) &&
-              t.status === 'to-do'
+            // Priority 2: If no 'to-do' instance for current date, check for completed/skipped instance for current date
+            const completedOrSkippedInstanceForCurrentDate = allInstancesOfThisRecurringTask.find(t =>
+              isSameDay(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && (t.status === 'completed' || t.status === 'skipped')
             );
-            if (carryOverTask) {
-              relevantTasks.push(carryOverTask);
+
+            if (completedOrSkippedInstanceForCurrentDate) {
+              taskToDisplay = completedOrSkippedInstanceForCurrentDate;
+              console.log(`filteredTasks: For original ${originalId}, found COMPLETED/SKIPPED instance for current date (${format(effectiveCurrentDateUTC, 'yyyy-MM-dd')}). Pushing this.`);
+            } else {
+              // Priority 3: If no instance for current date (any status), look for a carry-over 'to-do' from previous days
+              const carryOverTask = allInstancesOfThisRecurringTask
+                .filter(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status === 'to-do')
+                .sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime())[0]; // Get latest incomplete carry-over
+
+              if (carryOverTask) {
+                taskToDisplay = carryOverTask;
+                console.log(`filteredTasks: For original ${originalId}, no instance for current date. Found carry-over from ${format(parseISO(carryOverTask.created_at), 'yyyy-MM-dd')} with status: ${carryOverTask.status}. Pushing this.`);
+              } else {
+                console.log(`filteredTasks: For original ${originalId}, no relevant instance found for current date or carry-over.`);
+              }
             }
+          }
+          
+          if (taskToDisplay && taskToDisplay.status !== 'archived') { // Ensure it's not archived before pushing
+            relevantTasks.push(taskToDisplay);
           }
           processedOriginalIds.add(originalId); // Mark this group as processed
         } else {
           // Non-recurring tasks
+          const isTaskCreatedOnCurrentDate = isSameDay(taskCreatedAtUTC, effectiveCurrentDateUTC);
           if (isTaskCreatedOnCurrentDate && task.status !== 'archived') {
             relevantTasks.push(task);
           } else if (isBefore(taskCreatedAtUTC, effectiveCurrentDateUTC) && task.status === 'to-do') {
