@@ -63,7 +63,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
     <div
       className={cn(
         "relative flex items-center space-x-4 w-full",
-        task.status === 'completed' ? "opacity-70 bg-green-50/20 dark:bg-green-900/20 animate-task-completed" : "",
+        task.status === 'completed' ? "opacity-70 bg-green-50/20 dark:bg-green-900/20" : "", // Removed animate-task-completed
       )}
     >
       {/* Checkbox */}
