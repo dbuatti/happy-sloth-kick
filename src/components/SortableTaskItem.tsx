@@ -4,7 +4,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
 import { Task, TaskSection } from '@/hooks/useTasks';
 import TaskItem from './TaskItem';
-import { isPast, isSameDay as _isSameDay, parseISO } from 'date-fns'; // Renamed isSameDay to _isSameDay
+import * as dateFns from 'date-fns'; // Import all functions from date-fns as dateFns
 
 interface SortableTaskItemProps {
   task: Task;
@@ -49,8 +49,8 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
 
   const currentRefDate = new Date(currentDate);
 
-  const isOverdue = task.due_date && task.status !== 'completed' && isPast(parseISO(task.due_date), { refDate: currentRefDate }) && !_isSameDay(parseISO(task.due_date), currentRefDate); // Using renamed _isSameDay
-  const isUpcoming = task.due_date && task.status !== 'completed' && _isSameDay(parseISO(task.due_date), currentRefDate); // Using renamed _isSameDay
+  const isOverdue = task.due_date && task.status !== 'completed' && dateFns.isPast(dateFns.parseISO(task.due_date), { refDate: currentRefDate }) && !dateFns.isSameDay(dateFns.parseISO(task.due_date), currentRefDate);
+  const isUpcoming = task.due_date && task.status !== 'completed' && dateFns.isSameDay(dateFns.parseISO(task.due_date), currentRefDate);
 
   return (
     <li

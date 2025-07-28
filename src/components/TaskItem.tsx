@@ -3,7 +3,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from "@/components/ui/dropdown-menu";
 import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing, FolderOpen } from 'lucide-react';
-import { format, parseISO, isAfter, isPast, isSameDay as _isSameDay } from 'date-fns'; // Renamed isSameDay to _isSameDay
+import * as dateFns from 'date-fns'; // Import all functions from date-fns as dateFns
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
@@ -50,18 +50,18 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const getDueDateDisplay = (dueDate: string | null) => {
     if (!dueDate) return null;
     
-    const date = parseISO(dueDate);
-    if (_isSameDay(date, currentRefDate)) { // Using renamed _isSameDay
+    const date = dateFns.parseISO(dueDate);
+    if (dateFns.isSameDay(date, currentRefDate)) {
       return 'Today';
-    } else if (isAfter(date, currentRefDate)) {
-      return `Due ${format(date, 'MMM d')}`;
+    } else if (dateFns.isAfter(date, currentRefDate)) {
+      return `Due ${dateFns.format(date, 'MMM d')}`;
     } else {
-      return `Overdue ${format(date, 'MMM d')}`;
+      return `Overdue ${dateFns.format(date, 'MMM d')}`;
     }
   };
 
-  const isOverdue = task.due_date && task.status !== 'completed' && isPast(parseISO(task.due_date), { refDate: currentRefDate }) && !_isSameDay(parseISO(task.due_date), currentRefDate); // Using renamed _isSameDay
-  const isUpcoming = task.due_date && task.status !== 'completed' && _isSameDay(parseISO(task.due_date), currentRefDate); // Using renamed _isSameDay
+  const isOverdue = task.due_date && task.status !== 'completed' && dateFns.isPast(dateFns.parseISO(task.due_date), { refDate: currentRefDate }) && !dateFns.isSameDay(dateFns.parseISO(task.due_date), currentRefDate);
+  const isUpcoming = task.due_date && task.status !== 'completed' && dateFns.isSameDay(dateFns.parseISO(task.due_date), currentRefDate);
 
   const { playSound } = useSound();
 
@@ -128,7 +128,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           {task.remind_at && (
             <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
               <BellRing className="h-3 w-3" />
-              {format(parseISO(task.remind_at), 'MMM d, HH:mm')}
+              {dateFns.format(dateFns.parseISO(task.remind_at), 'MMM d, HH:mm')}
             </span>
           )}
           {/* Notes (only show icon if notes exist) */}
