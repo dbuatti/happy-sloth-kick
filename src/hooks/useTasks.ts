@@ -38,7 +38,7 @@ interface NewTaskData {
   description: string;
   status?: 'to-do' | 'completed' | 'skipped' | 'archived';
   recurring_type?: 'none' | 'daily' | 'weekly' | 'monthly';
-  category: string; // This will be the category ID
+  category: string; // This is the category ID
   priority?: string;
   due_date?: Date | null;
   notes?: string | null;
@@ -79,6 +79,7 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
   const [sortKey, setSortKey] = useState<'priority' | 'due_date' | 'created_at' | 'order'>('order');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [sections, setSections] = useState<TaskSection[]>([]);
+  const [categoriesMap, setCategoriesMap] = useState<Map<string, string>>(new Map()); // Map category ID to color key
 
   const [searchFilter, setSearchFilter] = useState(() => getInitialFilter('search', ''));
   const [statusFilter, setStatusFilter] = useState(() => getInitialFilter('status', 'all'));
@@ -130,24 +131,30 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
       setSections(sectionsData || []);
       console.log('useTasks useEffect: Sections fetched.');
 
-      // Fetch all tasks from DB and join with categories to get color
+      // Fetch categories to build a color map
+      const { data: categoriesData, error: categoriesError } = await supabase
+        .from('task_categories')
+        .select('id, color')
+        .eq('user_id', userId);
+      if (categoriesError) throw categoriesError;
+      const newCategoriesMap = new Map<string, string>();
+      categoriesData?.forEach(cat => newCategoriesMap.set(cat.id, cat.color));
+      setCategoriesMap(newCategoriesMap);
+      console.log('useTasks useEffect: Categories fetched and mapped.');
+
+      // Fetch all tasks from DB (without join for now)
       const { data: initialTasksFromDB, error: fetchError } = await supabase
         .from('tasks')
-        .select(`
-          *,
-          task_categories (
-            color
-          )
-        `)
+        .select('*') // Select all columns, no join
         .eq('user_id', userId);
 
       if (fetchError) throw fetchError;
       console.log('fetchTasks: Initial tasks fetched from DB:', initialTasksFromDB);
 
-      // Map fetched data to Task interface, extracting category_color
+      // Map fetched data to Task interface, enriching with category_color from the map
       const mappedTasks: Task[] = initialTasksFromDB.map((task: any) => ({
         ...task,
-        category_color: task.task_categories?.color || 'gray', // Default to 'gray' if category not found or no color
+        category_color: newCategoriesMap.get(task.category) || 'gray', // Use map for color
       }));
 
       setTasks(mappedTasks || []);
@@ -339,19 +346,8 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
     }
     let newTask: Task;
     try {
-      // Fetch the category color based on the category ID
-      let categoryColor = 'gray'; // Default color
-      if (newTaskData.category !== 'general') {
-        const { data: categoryData, error: categoryError } = await supabase
-          .from('task_categories')
-          .select('color')
-          .eq('id', newTaskData.category)
-          .single();
-        if (categoryError) console.error('Error fetching category color:', categoryError);
-        if (categoryData) categoryColor = categoryData.color;
-      } else {
-        categoryColor = 'gray'; // 'general' category always uses 'gray' color key
-      }
+      // Get the category color based on the category ID from the local map
+      const categoryColor = categoriesMap.get(newTaskData.category) || 'gray'; // Default to 'gray' if not found
 
       newTask = {
         id: uuidv4(),
@@ -393,18 +389,13 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
           parent_task_id: newTask.parent_task_id,
           description: newTask.description,
         })
-        .select(`
-          *,
-          task_categories (
-            color
-          )
-        `)
+        .select() // Select all columns to get the full task back
         .single();
 
       if (error) throw error;
       
-      // Update the optimistically added task with the actual fetched data (including category_color from join)
-      setTasks(prev => prev.map(t => t.id === data.id ? { ...data, category_color: data.task_categories?.color || 'gray' } : t));
+      // Update the optimistically added task with the actual fetched data (including category_color from map)
+      setTasks(prev => prev.map(t => t.id === data.id ? { ...data, category_color: categoriesMap.get(data.category) || 'gray' } : t));
 
       showSuccess('Task added successfully!');
       return true;
@@ -415,7 +406,7 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
       setTasks(prev => prev.filter(task => task.id !== newTask.id));
       return false;
     }
-  }, [userId, currentDate]);
+  }, [userId, currentDate, categoriesMap]);
 
   const updateTask = useCallback(async (taskId: string, updates: TaskUpdate) => {
     if (!userId) {
@@ -425,17 +416,7 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
 
     let updatedCategoryColor: string | undefined;
     if (updates.category) {
-      if (updates.category === 'general') {
-        updatedCategoryColor = 'gray';
-      } else {
-        const { data: categoryData, error: categoryError } = await supabase
-          .from('task_categories')
-          .select('color')
-          .eq('id', updates.category)
-          .single();
-        if (categoryError) console.error('Error fetching category color for update:', categoryError);
-        updatedCategoryColor = categoryData?.color || 'gray';
-      }
+      updatedCategoryColor = categoriesMap.get(updates.category) || 'gray';
     }
 
     // Optimistically update the state
@@ -458,7 +439,7 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
       showError('Failed to update task.');
       fetchDataAndSections(); // Revert optimistic update by re-fetching
     }
-  }, [userId, fetchDataAndSections]);
+  }, [userId, fetchDataAndSections, categoriesMap]);
 
   const deleteTask = useCallback(async (taskId: string) => {
     if (!userId) {
@@ -523,17 +504,7 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
 
     let updatedCategoryColor: string | undefined;
     if (updates.category) {
-      if (updates.category === 'general') {
-        updatedCategoryColor = 'gray';
-      } else {
-        const { data: categoryData, error: categoryError } = await supabase
-          .from('task_categories')
-          .select('color')
-          .eq('id', updates.category)
-          .single();
-        if (categoryError) console.error('Error fetching category color for bulk update:', categoryError);
-        updatedCategoryColor = categoryData?.color || 'gray';
-      }
+      updatedCategoryColor = categoriesMap.get(updates.category) || 'gray';
     }
 
     // Optimistically update the state
@@ -561,7 +532,7 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
       showError('Failed to update tasks in bulk.');
       fetchDataAndSections(); // Revert optimistic update by re-fetching on error
     }
-  }, [userId, selectedTaskIds, clearSelectedTasks, fetchDataAndSections]);
+  }, [userId, selectedTaskIds, clearSelectedTasks, fetchDataAndSections, categoriesMap]);
 
   const createSection = useCallback(async (name: string) => {
     if (!userId) {
