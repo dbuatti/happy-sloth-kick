@@ -71,6 +71,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
     >
       {/* Checkbox */}
       <Checkbox
+        key={`${task.id}-${task.status}`} // Added key to force re-render on status change
         checked={task.status === 'completed'}
         onCheckedChange={(checked) => {
           if (typeof checked === 'boolean') {

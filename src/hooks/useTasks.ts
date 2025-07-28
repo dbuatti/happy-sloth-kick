@@ -106,7 +106,8 @@ export const useTasks = () => {
   // useEffect to clear the ref when currentDate changes
   useEffect(() => {
     createdRecurringInstancesTodayRef.current.clear();
-    console.log('Cleared createdRecurringInstancesTodayRef due to currentDate change.');
+    setSelectedTaskIds([]); // Clear selected tasks when date changes
+    console.log('Cleared createdRecurringInstancesTodayRef and selectedTaskIds due to currentDate change.');
   }, [currentDate]);
 
   const fetchDataAndSections = useCallback(async () => {
@@ -697,15 +698,15 @@ export const useTasks = () => {
     updateTask,
     deleteTask,
     searchFilter,
-    statusFilter,
-    categoryFilter,
-    priorityFilter,
-    sectionFilter,
     setSearchFilter,
+    statusFilter,
     setStatusFilter,
+    categoryFilter,
     setCategoryFilter,
+    priorityFilter,
     setPriorityFilter,
-    setSectionFilter,
+    sectionFilter, // Added to return type
+    setSectionFilter, // Added to return type
     selectedTaskIds,
     toggleTaskSelection,
     clearSelectedTasks,

@@ -66,6 +66,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
       {...(listeners || {})}
     >
       <TaskItem 
+        key={task.id} // Explicitly add key to TaskItem
         task={task} 
         userId={userId}
         onStatusChange={onStatusChange}
