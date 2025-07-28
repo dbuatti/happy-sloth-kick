@@ -68,7 +68,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         isDragging ? "shadow-lg ring-2 ring-primary" : ""
       )}
       {...attributes}
-      {...listeners}
+      {...(listeners || {})}
     >
       <TaskItem 
         key={task.id}
