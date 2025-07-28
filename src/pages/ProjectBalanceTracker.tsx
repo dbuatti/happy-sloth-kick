@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Edit, Trash2, Sparkles, RefreshCcw, Lightbulb, RotateCcw, LayoutGrid } from 'lucide-react'; // Added LayoutGrid
+import { Plus, Edit, Trash2, Sparkles, RefreshCcw, Lightbulb, RotateCcw, LayoutGrid } from 'lucide-react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useProjects, Project } from '@/hooks/useProjects';
 import { cn } from '@/lib/utils';
@@ -42,9 +42,11 @@ const ProjectBalanceTracker: React.FC = () => {
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectDescription, setNewProjectDescription] = useState('');
+  const [isSavingProject, setIsSavingProject] = useState(false); // New state for project add/edit
 
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [tempSectionTitle, setTempSectionTitle] = useState(sectionTitle);
+  const [isSavingTitle, setIsSavingTitle] = useState(false); // New state for title saving
 
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [editingProjectName, setEditingProjectName] = useState('');
@@ -58,7 +60,7 @@ const ProjectBalanceTracker: React.FC = () => {
   const [showConfirmResetIndividualDialog, setShowConfirmResetIndividualDialog] = useState(false);
   const [projectToResetId, setProjectToResetId] = useState<string | null>(null);
   const [showConfirmResetAllDialog, setShowConfirmResetAllDialog] = useState(false);
-
+  const [isResettingAll, setIsResettingAll] = useState(false); // New state for resetting all
 
   // Memoize least worked on project
   const leastWorkedOnProject = useMemo(() => {
@@ -85,12 +87,14 @@ const ProjectBalanceTracker: React.FC = () => {
 
   const handleAddProject = async () => {
     if (newProjectName.trim()) {
+      setIsSavingProject(true);
       const success = await addProject(newProjectName.trim(), newProjectDescription.trim() || null);
       if (success) {
         setNewProjectName('');
         setNewProjectDescription('');
         setIsAddProjectOpen(false);
       }
+      setIsSavingProject(false);
     }
   };
 
@@ -102,6 +106,7 @@ const ProjectBalanceTracker: React.FC = () => {
 
   const handleSaveProjectEdit = async () => {
     if (editingProjectId && editingProjectName.trim()) {
+      setIsSavingProject(true);
       const success = await updateProject(editingProjectId, {
         name: editingProjectName.trim(),
         description: editingProjectDescription.trim() || null,
@@ -111,6 +116,7 @@ const ProjectBalanceTracker: React.FC = () => {
         setEditingProjectName('');
         setEditingProjectDescription('');
       }
+      setIsSavingProject(false);
     }
   };
 
@@ -121,13 +127,16 @@ const ProjectBalanceTracker: React.FC = () => {
 
   const confirmDeleteProject = async () => {
     if (projectToDeleteId) {
+      setIsSavingProject(true); // Use saving state for delete too
       await deleteProject(projectToDeleteId);
       setProjectToDeleteId(null);
       setShowConfirmDeleteDialog(false);
+      setIsSavingProject(false);
     }
   };
 
   const handleIncrement = async (projectId: string) => {
+    // No need for isSavingProject here, as it's a quick update
     await incrementProjectCount(projectId);
   };
 
@@ -138,9 +147,11 @@ const ProjectBalanceTracker: React.FC = () => {
 
   const confirmResetIndividualProject = async () => {
     if (projectToResetId) {
+      setIsSavingProject(true); // Use saving state for reset
       await updateProject(projectToResetId, { current_count: 0 });
       setProjectToResetId(null);
       setShowConfirmResetIndividualDialog(false);
+      setIsSavingProject(false);
     }
   };
 
@@ -149,17 +160,21 @@ const ProjectBalanceTracker: React.FC = () => {
   };
 
   const confirmResetAll = async () => {
+    setIsResettingAll(true);
     const success = await resetAllProjectCounts();
     if (success) {
       setShowCelebration(false);
     }
+    setIsResettingAll(false);
     setShowConfirmResetAllDialog(false);
   };
 
   const handleSaveTitle = async () => {
     if (tempSectionTitle.trim()) {
+      setIsSavingTitle(true);
       await updateProjectTrackerTitle(tempSectionTitle.trim());
       setIsEditingTitle(false);
+      setIsSavingTitle(false);
     }
   };
 
@@ -181,9 +196,13 @@ const ProjectBalanceTracker: React.FC = () => {
                   onChange={(e) => setTempSectionTitle(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSaveTitle()}
                   className="text-3xl font-bold"
+                  autoFocus
+                  disabled={isSavingTitle}
                 />
-                <Button size="sm" onClick={handleSaveTitle}>Save</Button>
-                <Button variant="ghost" size="sm" onClick={() => setIsEditingTitle(false)}>Cancel</Button>
+                <Button size="sm" onClick={handleSaveTitle} disabled={isSavingTitle || !tempSectionTitle.trim()}>
+                  {isSavingTitle ? 'Saving...' : 'Save'}
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setIsEditingTitle(false)} disabled={isSavingTitle}>Cancel</Button>
               </div>
             ) : (
               <CardTitle className="text-3xl font-bold flex items-center gap-2">
@@ -196,7 +215,7 @@ const ProjectBalanceTracker: React.FC = () => {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <Dialog open={isAddProjectOpen} onOpenChange={setIsAddProjectOpen}>
                 <DialogTrigger asChild>
-                  <Button>
+                  <Button disabled={isSavingProject}>
                     <Plus className="mr-2 h-4 w-4" /> Add Project
                   </Button>
                 </DialogTrigger>
@@ -213,6 +232,7 @@ const ProjectBalanceTracker: React.FC = () => {
                         onChange={(e) => setNewProjectName(e.target.value)}
                         placeholder="e.g., Learn Rust, Garden Design"
                         autoFocus
+                        disabled={isSavingProject}
                       />
                     </div>
                     <div>
@@ -223,12 +243,15 @@ const ProjectBalanceTracker: React.FC = () => {
                         onChange={(e) => setNewProjectDescription(e.target.value)}
                         placeholder="Notes about this project..."
                         rows={2}
+                        disabled={isSavingProject}
                       />
                     </div>
                   </div>
                   <DialogFooter>
-                    <Button variant="outline" onClick={() => setIsAddProjectOpen(false)}>Cancel</Button>
-                    <Button onClick={handleAddProject}>Add Project</Button>
+                    <Button variant="outline" onClick={() => setIsAddProjectOpen(false)} disabled={isSavingProject}>Cancel</Button>
+                    <Button onClick={handleAddProject} disabled={isSavingProject || !newProjectName.trim()}>
+                      {isSavingProject ? 'Adding...' : 'Add Project'}
+                    </Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
@@ -255,8 +278,8 @@ const ProjectBalanceTracker: React.FC = () => {
                 <Sparkles className="h-8 w-8 text-green-600 dark:text-green-400 animate-bounce" />
                 <p className="text-xl font-semibold">Congratulations! All projects are balanced!</p>
                 <p>Ready to start a new cycle?</p>
-                <Button onClick={handleResetAllClick} className="mt-2">
-                  <RefreshCcw className="mr-2 h-4 w-4" /> Reset All Counters
+                <Button onClick={handleResetAllClick} className="mt-2" disabled={isResettingAll}>
+                  {isResettingAll ? 'Resetting...' : <><RefreshCcw className="mr-2 h-4 w-4" /> Reset All Counters</>}
                 </Button>
               </div>
             )}
@@ -316,12 +339,14 @@ const ProjectBalanceTracker: React.FC = () => {
                               onKeyDown={(e) => e.key === 'Enter' && handleSaveProjectEdit()}
                               className="text-lg font-semibold"
                               autoFocus
+                              disabled={isSavingProject}
                             />
                             <Textarea
                               value={editingProjectDescription}
-                              onChange={(e) => setNewProjectDescription(e.target.value)}
+                              onChange={(e) => setEditingProjectDescription(e.target.value)}
                               placeholder="Description..."
                               rows={2}
+                              disabled={isSavingProject}
                             />
                           </div>
                         ) : (
@@ -337,8 +362,10 @@ const ProjectBalanceTracker: React.FC = () => {
                       <div className="flex items-center gap-3 flex-shrink-0 mt-3 sm:mt-0">
                         {editingProjectId === project.id ? (
                           <div className="flex gap-2">
-                            <Button size="sm" onClick={(e) => { e.stopPropagation(); handleSaveProjectEdit(); }}>Save</Button>
-                            <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setEditingProjectId(null); }}>Cancel</Button>
+                            <Button size="sm" onClick={(e) => { e.stopPropagation(); handleSaveProjectEdit(); }} disabled={isSavingProject || !editingProjectName.trim()}>
+                              {isSavingProject ? 'Saving...' : 'Save'}
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setEditingProjectId(null); }} disabled={isSavingProject}>Cancel</Button>
                           </div>
                         ) : (
                           <>
@@ -352,6 +379,7 @@ const ProjectBalanceTracker: React.FC = () => {
                               className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                               onClick={(e) => { e.stopPropagation(); handleEditProject(project); }}
                               aria-label={`Edit ${project.name}`}
+                              disabled={isSavingProject}
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -361,6 +389,7 @@ const ProjectBalanceTracker: React.FC = () => {
                               className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                               onClick={(e) => { e.stopPropagation(); handleResetIndividualProjectClick(project.id); }}
                               aria-label={`Reset ${project.name}`}
+                              disabled={isSavingProject}
                             >
                               <RotateCcw className="h-4 w-4" />
                             </Button>
@@ -370,6 +399,7 @@ const ProjectBalanceTracker: React.FC = () => {
                               className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-destructive"
                               onClick={(e) => { e.stopPropagation(); handleDeleteProjectClick(project.id); }}
                               aria-label={`Delete ${project.name}`}
+                              disabled={isSavingProject}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -398,8 +428,10 @@ const ProjectBalanceTracker: React.FC = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteProject}>Continue</AlertDialogAction>
+            <AlertDialogCancel disabled={isSavingProject}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteProject} disabled={isSavingProject}>
+              {isSavingProject ? 'Deleting...' : 'Continue'}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -414,8 +446,10 @@ const ProjectBalanceTracker: React.FC = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmResetIndividualProject}>Reset</AlertDialogAction>
+            <AlertDialogCancel disabled={isSavingProject}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmResetIndividualProject} disabled={isSavingProject}>
+              {isSavingProject ? 'Resetting...' : 'Reset'}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -430,8 +464,10 @@ const ProjectBalanceTracker: React.FC = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmResetAll}>Reset All</AlertDialogAction>
+            <AlertDialogCancel disabled={isResettingAll}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmResetAll} disabled={isResettingAll}>
+              {isResettingAll ? 'Resetting...' : 'Reset All'}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

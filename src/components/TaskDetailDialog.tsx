@@ -254,6 +254,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
                     onTaskAdded={() => setIsAddSubtaskOpen(false)}
                     sections={sections} // Pass sections prop
                     allCategories={allCategories} // Pass allCategories prop
+                    autoFocus={true} // Auto-focus for subtask form
                   />
                 </DialogContent>
               </Dialog>
@@ -315,8 +316,10 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteTask}>Continue</AlertDialogAction>
+            <AlertDialogCancel disabled={isSaving}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteTask} disabled={isSaving}>
+              {isSaving ? 'Deleting...' : 'Continue'}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

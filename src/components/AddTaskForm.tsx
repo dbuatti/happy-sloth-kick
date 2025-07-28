@@ -29,6 +29,7 @@ interface AddTaskFormProps {
   onTaskAdded?: () => void;
   sections: TaskSection[]; // New prop for sections
   allCategories: Category[]; // New prop for all categories
+  autoFocus?: boolean; // Added autoFocus prop
 }
 
 // Helper function for natural language parsing
@@ -139,7 +140,7 @@ const parseNaturalLanguage = (text: string, categories: Category[]) => {
   };
 };
 
-const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdded, sections, allCategories }) => {
+const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdded, sections, allCategories, autoFocus }) => {
   const [newTaskDescription, setNewTaskDescription] = useState<string>('');
   const [newTaskCategory, setNewTaskCategory] = useState<string>(''); // Initialize empty, will be set by default or natural language
   const [newTaskPriority, setNewTaskPriority] = useState<string>('medium');
@@ -249,7 +250,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
             onChange={(e) => setNewTaskDescription(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={isAdding}
-            autoFocus
+            autoFocus={autoFocus} // Apply autoFocus here
           />
         </div>
         
