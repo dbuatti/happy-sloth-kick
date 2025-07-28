@@ -84,7 +84,9 @@ const TaskItem: React.FC<TaskItemProps> = ({
           if (typeof checked === 'boolean') {
             onToggleSelect(task.id, checked);
             onStatusChange(task.id, checked ? 'completed' : 'to-do');
-            playSound();
+            if (checked) { // Play sound only when marking as completed
+              playSound();
+            }
           }
         }}
         id={`task-${task.id}`}
