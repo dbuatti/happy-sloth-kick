@@ -59,7 +59,7 @@ const getUTCStartOfDay = (date: Date) => {
 };
 
 export const useTasks = () => {
-  const HOOK_VERSION = "2024-07-29-12"; // Incremented version
+  const HOOK_VERSION = "2024-07-29-13"; // Incremented version
   const { user } = useAuth();
   const userId = user?.id;
 
@@ -241,28 +241,6 @@ export const useTasks = () => {
 
       if (error) throw error;
       showSuccess('Task updated successfully!');
-
-      // Check if the task was marked as 'completed' and is recurring
-      if (updates.status === 'completed' && data.recurring_type !== 'none') {
-        // Create a new task for the next recurrence
-        const nextTask: Task = {
-          ...data,
-          id: uuidv4(),
-          created_at: new Date().toISOString(), // Use current time for the new task
-          status: 'to-do',
-          original_task_id: data.id, // Link it to the original
-        };
-
-        // Insert the new task
-        const { error: insertError } = await supabase
-          .from('tasks')
-          .insert(nextTask);
-
-        if (insertError) throw insertError;
-        // Optimistically add the new task to the state
-        setTasks(prev => [...prev, nextTask]);
-        showSuccess(`Recurring task "${data.description}" has been reset for the next period.`);
-      }
     } catch (error: any) {
       console.error('Error updating task:', error);
       showError('Failed to update task.');
@@ -270,6 +248,40 @@ export const useTasks = () => {
       fetchDataAndSections();
     }
   }, [userId, fetchDataAndSections]);
+
+  // New effect to handle recurring task creation
+  useEffect(() => {
+    const createRecurringTask = async (completedTask: Task) => {
+      if (completedTask.recurring_type === 'none') return;
+
+      // Create a new task for the next recurrence
+      const nextTask: Task = {
+        ...completedTask,
+        id: uuidv4(),
+        created_at: new Date().toISOString(), // Use current time for the new task
+        status: 'to-do',
+        original_task_id: completedTask.id, // Link it to the original
+      };
+
+      // Insert the new task
+      const { error: insertError } = await supabase
+        .from('tasks')
+        .insert(nextTask);
+
+      if (insertError) {
+        console.error('Error creating recurring task:', insertError);
+        showError('Failed to create the next instance of the recurring task.');
+        return;
+      }
+      // Optimistically add the new task to the state
+      setTasks(prev => [...prev, nextTask]);
+      showSuccess(`Recurring task "${completedTask.description}" has been reset for the next period.`);
+    };
+
+    // Find tasks that were completed in this update cycle
+    const completedRecurringTasks = tasks.filter(t => t.status === 'completed' && t.recurring_type !== 'none' && t.original_task_id === null);
+    completedRecurringTasks.forEach(createRecurringTask);
+  }, [tasks, userId]); // Only depend on tasks and userId
 
   const deleteTask = useCallback(async (taskId: string) => {
     if (!userId) {
@@ -345,31 +357,6 @@ export const useTasks = () => {
       if (error) throw error;
       showSuccess(`${ids.length} tasks updated successfully!`);
       clearSelectedTasks();
-
-      // Check if any of the updated tasks were marked as 'completed' and are recurring
-      const completedRecurringTasks = data.filter(t => t.status === 'completed' && t.recurring_type !== 'none');
-      for (const task of completedRecurringTasks) {
-        // Create a new task for the next recurrence
-        const nextTask: Task = {
-          ...task,
-          id: uuidv4(),
-          created_at: new Date().toISOString(),
-          status: 'to-do',
-          original_task_id: task.id,
-        };
-
-        // Insert the new task
-        const { error: insertError } = await supabase
-          .from('tasks')
-          .insert(nextTask);
-
-        if (insertError) throw insertError;
-        // Optimistically add the new task to the state
-        setTasks(prev => [...prev, nextTask]);
-      }
-      if (completedRecurringTasks.length > 0) {
-        showSuccess(`${completedRecurringTasks.length} recurring task(s) have been reset for the next period.`);
-      }
     } catch (error: any) {
       console.error('Error bulk updating tasks:', error);
       showError('Failed to update tasks in bulk.');
