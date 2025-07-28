@@ -124,6 +124,14 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
+  const toggleSection = useCallback((sectionId: string) => {
+    setExpandedSections(prev => {
+      const newState = { ...prev, [sectionId]: !(prev[sectionId] ?? true) };
+      localStorage.setItem('taskList_expandedSections', JSON.stringify(newState));
+      return newState;
+    });
+  }, []);
+
   const tasksBySection = useMemo(() => {
     const grouped: Record<string, Task[]> = { 'no-section': [] };
     
