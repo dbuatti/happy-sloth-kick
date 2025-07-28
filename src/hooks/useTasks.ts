@@ -209,41 +209,22 @@ export const useTasks = () => {
         t.original_task_id === originalTask.id || t.id === originalTask.id
       );
 
-      // Check if a 'to-do' instance for the current date already exists
-      const toDoInstanceForCurrentDate = allInstancesOfThisRecurringTask.find(t =>
-        isSameDay(getUTCStartOfDay(parseISO(t.created_at)), currentDate) && t.status === 'to-do'
+      // Find any instance for the current date
+      const instanceForCurrentDate = allInstancesOfThisRecurringTask.find(t =>
+        isSameDay(getUTCStartOfDay(parseISO(t.created_at)), currentDate)
       );
 
-      if (toDoInstanceForCurrentDate) {
-        console.log(`syncRecurringTasks: To-do instance for "${originalTask.description}" on current date already exists. No action needed.`);
+      if (instanceForCurrentDate) {
+        // If an instance for the current date already exists, we generally leave its status alone.
+        // The user explicitly changed it (e.g., completed it), or it was already 'to-do'.
+        // We only need to ensure it's not 'archived' if it's a recurring task.
+        // However, the filtering logic in filteredTasks already handles what to display.
+        // So, if an instance for the current date exists, we don't need to create a new one or change its status here.
+        console.log(`syncRecurringTasks: Instance for "${originalTask.description}" on current date (${format(currentDate, 'yyyy-MM-dd')}) already exists with status: ${instanceForCurrentDate.status}. No action needed by sync.`);
         continue;
       }
 
-      // Check if a 'completed' or 'skipped' instance for the current date exists
-      const completedOrSkippedInstanceForCurrentDate = allInstancesOfThisRecurringTask.find(t =>
-        isSameDay(getUTCStartOfDay(parseISO(t.created_at)), currentDate) && (t.status === 'completed' || t.status === 'skipped')
-      );
-
-      if (completedOrSkippedInstanceForCurrentDate) {
-        // FOUND THE BUG: This block previously had `continue;`
-        // It should UPDATE the existing completed/skipped instance to 'to-do'
-        console.log(`syncRecurringTasks: Updating existing completed/skipped instance for "${originalTask.description}" on current date to 'to-do'.`);
-        const { error } = await supabase
-          .from('tasks')
-          .update({ status: 'to-do' })
-          .eq('id', completedOrSkippedInstanceForCurrentDate.id);
-        if (error) {
-          console.error('Error updating recurring task instance:', error);
-          showError('Failed to update recurring task status.');
-        } else {
-          tasksWereModified = true;
-          showSuccess(`Recurring task "${originalTask.description}" reset to 'to-do' for ${format(currentDate, 'MMM d')}.`);
-        }
-        continue; // After updating, move to the next original task
-      }
-
-      // If no instance for the current date (to-do, completed, or skipped) exists,
-      // determine if a new 'to-do' instance should be created.
+      // If no instance for the current date exists, we need to decide if a new 'to-do' instance should be created.
       // This happens if the latest relevant instance from a previous day was completed/skipped,
       // or if this is the very first day the recurring task should appear.
       const latestRelevantInstanceBeforeCurrentDate = allInstancesOfThisRecurringTask
@@ -251,7 +232,7 @@ export const useTasks = () => {
         .sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime())[0];
 
       const shouldCreateNewToDoInstance =
-        (isSameDay(originalTaskCreatedAtUTC, currentDate) && !completedOrSkippedInstanceForCurrentDate) || // First day for original task, and no existing completed/skipped instance for today
+        (isSameDay(originalTaskCreatedAtUTC, currentDate)) || // This is the original task's creation day
         (latestRelevantInstanceBeforeCurrentDate &&
          (latestRelevantInstanceBeforeCurrentDate.status === 'completed' || latestRelevantInstanceBeforeCurrentDate.status === 'skipped')); // Previous instance was completed/skipped
 
