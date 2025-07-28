@@ -25,6 +25,7 @@ import {
   verticalListSortingStrategy,
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
+import { Skeleton } from '@/components/ui/skeleton'; // Import Skeleton
 
 const TimeBlockSchedule: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -255,13 +256,26 @@ const TimeBlockSchedule: React.FC = () => {
               currentDate={currentDate}
               onPreviousDay={handlePreviousDay}
               onNextDay={handleNextDay}
-              onGoToToday={handleGoToToday}
+              onGoToToday={handleGoToToday} // Pass the new prop
               setCurrentDate={setCurrentDate}
             />
 
             {totalLoading ? (
-              <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+              <div className="grid grid-cols-[60px_1fr] gap-x-2">
+                {/* Left column for time labels skeletons */}
+                <div className="grid gap-1" style={{ gridTemplateRows: `repeat(16, 48px)` }}>
+                  {[...Array(8)].map((_, i) => (
+                    <div key={`label-skeleton-${i}`} className="flex items-start justify-end pr-2" style={{ gridRow: `${i * 2 + 1} / span 2` }}>
+                      <Skeleton className="h-4 w-12" />
+                    </div>
+                  ))}
+                </div>
+                {/* Right column for time blocks skeletons */}
+                <div className="relative grid gap-1" style={{ gridTemplateRows: `repeat(16, 48px)` }}>
+                  {[...Array(16)].map((_, i) => (
+                    <Skeleton key={`block-skeleton-${i}`} className="h-12 w-full rounded-lg" />
+                  ))}
+                </div>
               </div>
             ) : (!singleDayWorkHours || !singleDayWorkHours.enabled) ? ( // Check singleDayWorkHours
               <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
@@ -313,7 +327,7 @@ const TimeBlockSchedule: React.FC = () => {
                       <div
                         key={format(block.start, 'HH:mm')}
                         id={`time-block-${format(block.start, 'HH:mm')}`} // ID for drag target
-                        className="relative flex items-center justify-center h-12 bg-card dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-dashed border-border/50 hover:border-primary/50 transition-all duration-150 cursor-pointer hover:scale-[1.01] hover:shadow-md"
+                        className="relative flex items-center justify-center h-12 bg-card dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-dashed border-border/50 hover:border-primary/50 transition-colors duration-150 cursor-pointer"
                         style={{ gridRow: `${index + 1}` }} // Each block is now a single row
                         onClick={() => handleTimeBlockClick(block.start, block.end)}
                       >
@@ -349,6 +363,7 @@ const TimeBlockSchedule: React.FC = () => {
                           gridRowStart={1} // Dummy values for overlay
                           gridRowEnd={2}   // Dummy values for overlay
                           overlapOffset={0}
+                          isOverlay={true} // Indicate it's for overlay
                         />
                       ) : null}
                     </DragOverlay>

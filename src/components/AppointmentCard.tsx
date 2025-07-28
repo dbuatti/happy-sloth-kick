@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react'; // Import useRef
 import { Appointment } from '@/hooks/useAppointments';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
@@ -10,37 +10,37 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 
 interface AppointmentCardProps {
   appointment: Appointment;
-  onEdit: (appointment: Appointment) => void; // This will now be triggered by clicking the card
-  onDelete: (id: string) => void; // Still passed, but will be called from the form
+  onEdit: (appointment: Appointment) => void;
+  onDelete: (id: string) => void;
   gridRowStart: number;
   gridRowEnd: number;
   overlapOffset: number;
+  isOverlay?: boolean; // New prop
 }
 
 const AppointmentCard: React.FC<AppointmentCardProps> = ({
   appointment,
   onEdit,
-  onDelete, // No longer directly used here for UI, but kept for prop consistency
+  onDelete,
   gridRowStart,
   gridRowEnd,
   overlapOffset,
+  isOverlay = false, // Default to false
 }) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: appointment.id, data: { type: 'appointment', appointment } });
+  // Conditionally use useSortable
+  const sortable = !isOverlay ? useSortable({ id: appointment.id, data: { type: 'appointment', appointment } }) : null;
 
-  const rowHeight = 48; // Height of a 30-minute block in px (from h-12)
-  const gapHeight = 4;  // Gap between blocks in px (from gap-1)
+  const attributes = sortable?.attributes;
+  const listeners = sortable?.listeners;
+  const setNodeRef = sortable?.setNodeRef || useRef(null).current; // Provide a dummy ref if not sortable
+  const transform = sortable?.transform;
+  const transition = sortable?.transition;
+  const isDragging = sortable?.isDragging || false; // Default to false if not sortable
 
-  // Calculate top position: (start_block_index - 1) * (row_height + gap_height)
+  const rowHeight = 48;
+  const gapHeight = 4;
+
   const calculatedTop = (gridRowStart - 1) * (rowHeight + gapHeight);
-  
-  // Calculate height: (number_of_blocks_spanned) * row_height + (number_of_gaps_within_span) * gap_height
   const numberOfBlocksSpanned = gridRowEnd - gridRowStart;
   const calculatedHeight = numberOfBlocksSpanned * rowHeight + (numberOfBlocksSpanned > 0 ? (numberOfBlocksSpanned - 1) * gapHeight : 0);
 
@@ -64,14 +64,14 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "absolute rounded-lg p-2 text-white shadow-md cursor-pointer", // Changed cursor to pointer
+        "absolute rounded-lg p-2 text-white shadow-md cursor-pointer",
         "flex flex-col justify-between transition-all duration-200 ease-in-out",
         "group",
-        isDragging ? "ring-2 ring-primary shadow-lg" : "hover:scale-[1.01] hover:shadow-lg" // Enhanced drag/hover
+        isDragging ? "ring-2 ring-primary shadow-lg" : "hover:scale-[1.01] hover:shadow-lg"
       )}
-      {...attributes}
-      {...listeners}
-      onClick={() => onEdit(appointment)} // Make the entire card clickable for edit
+      {...(attributes || {})} // Conditionally spread attributes
+      {...(listeners || {})} // Conditionally spread listeners
+      onClick={() => onEdit(appointment)}
     >
       <div className="flex flex-col">
         <h4 className="font-semibold text-sm truncate">{appointment.title}</h4>
@@ -83,7 +83,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
       {appointment.description && (
         <Tooltip>
           <TooltipTrigger asChild>
-            <Info className="h-4 w-4 text-white opacity-70 self-end mt-1" /> {/* Removed group-hover opacity */}
+            <Info className="h-4 w-4 text-white opacity-70 self-end mt-1" />
           </TooltipTrigger>
           <TooltipContent className="max-w-xs">
             <p className="font-semibold">{appointment.title}</p>
@@ -91,8 +91,6 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
           </TooltipContent>
         </Tooltip>
       )}
-
-      {/* Removed edit/delete buttons from here, they will be in the form */}
     </div>
   );
 };

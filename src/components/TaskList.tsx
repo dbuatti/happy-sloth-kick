@@ -57,7 +57,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
     priorityFilter,
     setPriorityFilter,
     sectionFilter,
-    setSectionFilter,
+    setSectionFilter // Removed trailing comma here
   } = useTasks({ currentDate, setCurrentDate });
 
   console.log('TaskList: Received filteredTasks:', filteredTasks.map(t => ({
