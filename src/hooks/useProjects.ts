@@ -18,6 +18,20 @@ export interface UserSettings {
   project_tracker_title: string;
 }
 
+// Define the type for sort options
+type ProjectSortOption = 'name_asc' | 'count_asc' | 'count_desc' | 'created_at_asc' | 'created_at_desc';
+
+// Helper to get initial sort option from localStorage
+const getInitialSortOption = (): ProjectSortOption => {
+  if (typeof window !== 'undefined') {
+    const storedSortOption = localStorage.getItem('project_sort_option');
+    if (storedSortOption && ['name_asc', 'count_asc', 'count_desc', 'created_at_asc', 'created_at_desc'].includes(storedSortOption)) {
+      return storedSortOption as ProjectSortOption;
+    }
+  }
+  return 'created_at_asc'; // Default value
+};
+
 export const useProjects = () => {
   const { user } = useAuth();
   const userId = user?.id;
@@ -25,7 +39,14 @@ export const useProjects = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [sectionTitle, setSectionTitle] = useState('Project Balance Tracker');
-  const [sortOption, setSortOption] = useState<'name_asc' | 'count_asc' | 'count_desc' | 'created_at_asc' | 'created_at_desc'>('created_at_asc');
+  const [sortOption, setSortOption] = useState<ProjectSortOption>(getInitialSortOption);
+
+  // Effect to save sortOption to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('project_sort_option', sortOption);
+    }
+  }, [sortOption]);
 
   const fetchProjectsAndSettings = useCallback(async () => {
     if (!userId) {
