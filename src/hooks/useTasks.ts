@@ -67,7 +67,7 @@ interface UseTasksProps {
 }
 
 export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
-  const HOOK_VERSION = "2024-07-30-10"; // Updated version
+  const HOOK_VERSION = "2024-07-30-11"; // Updated version
   const { user, loading: authLoading } = useAuth();
   const userId = user?.id;
 
@@ -757,102 +757,89 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
 
     const topLevelTasks = tasks.filter(task => task.parent_task_id === null);
 
-    if (statusFilter === 'archived') {
-      relevantTasks = topLevelTasks.filter(task => task.status === 'archived');
-    } else {
-      topLevelTasks.forEach(task => {
-        const taskCreatedAtUTC = getUTCStartOfDay(parseISO(task.created_at));
-        const originalId = task.original_task_id || task.id;
+    topLevelTasks.forEach(task => {
+      const taskCreatedAtUTC = getUTCStartOfDay(parseISO(task.created_at));
+      const originalId = task.original_task_id || task.id;
 
-        if (task.recurring_type !== 'none') {
-          if (processedOriginalIds.has(originalId)) {
-            console.log(`filteredTasks: Skipping already processed originalId: ${originalId}`);
-            return;
-          }
+      if (task.recurring_type !== 'none') {
+        if (processedOriginalIds.has(originalId)) {
+          console.log(`filteredTasks: Skipping already processed originalId: ${originalId}`);
+          return;
+        }
 
-          const allInstancesOfThisRecurringTask = tasks.filter(t =>
-            t.original_task_id === originalId || t.id === originalId
-          );
-          console.log(`filteredTasks: For originalId ${originalId} ("${task.description}"), all instances:`, allInstancesOfThisRecurringTask.map(t => ({id: t.id, created_at: t.created_at, status: t.status})));
+        const allInstancesOfThisRecurringTask = tasks.filter(t =>
+          t.original_task_id === originalId || t.id === originalId
+        );
+        console.log(`filteredTasks: For originalId ${originalId} ("${task.description}"), all instances:`, allInstancesOfThisRecurringTask.map(t => ({id: t.id, created_at: t.created_at, status: t.status})));
 
-          let taskToDisplay: Task | null = null;
+        let taskToDisplay: Task | null = null;
 
-          // Prioritize:
-          // 1. A 'to-do' instance for the current date
-          // 2. A 'completed' or 'skipped' instance for the current date
-          // 3. A 'to-do' instance carried over from a previous day
-
-          const toDoForCurrentDay = allInstancesOfThisRecurringTask.find(t =>
-            isSameDay(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status === 'to-do'
-          );
-          
-          if (toDoForCurrentDay) {
-            taskToDisplay = toDoForCurrentDay;
-            console.log(`filteredTasks: For original ${originalId}, found TO-DO instance for current date (${format(effectiveCurrentDateUTC, 'yyyy-MM-dd')}). Pushing this.`);
-          } else {
-            const completedOrSkippedForCurrentDay = allInstancesOfThisRecurringTask.find(t =>
-              isSameDay(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && (t.status === 'completed' || t.status === 'skipped')
-            );
-            if (completedOrSkippedForCurrentDay) {
-              taskToDisplay = completedOrSkippedForCurrentDay;
-              console.log(`filteredTasks: For original ${originalId}, found COMPLETED/SKIPPED instance for current date (${format(effectiveCurrentDateUTC, 'yyyy-MM-dd')}). Pushing this.`);
-            } else {
-              const carryOverTask = allInstancesOfThisRecurringTask
-                .filter(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status === 'to-do')
-                .sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime())[0];
-
-              if (carryOverTask) {
-                taskToDisplay = carryOverTask;
-                console.log(`filteredTasks: For original ${originalId}, no instance for current date. Found carry-over from ${format(parseISO(carryOverTask.created_at), 'yyyy-MM-dd')} with status: ${carryOverTask.status}. Pushing this.`);
-              } else {
-                console.log(`filteredTasks: For original ${originalId}, no relevant instance found for current date or carry-over.`);
-              }
-            }
-          }
-          
-          if (taskToDisplay && taskToDisplay.status !== 'archived') {
-            console.log(`filteredTasks: ACTUALLY PUSHING: ID: ${taskToDisplay.id}, Desc: "${taskToDisplay.description}", Status: "${taskToDisplay.status}", Created At: "${taskToDisplay.created_at}"`);
-            relevantTasks.push(taskToDisplay);
-          } else if (taskToDisplay && taskToDisplay.status === 'archived') {
-            console.log(`filteredTasks: NOT PUSHING: ID: ${taskToDisplay.id}, Desc: "${taskToDisplay.description}", Status: "${taskToDisplay.status}" (archived)`);
-          }
-          processedOriginalIds.add(originalId);
+        // 1. Prioritize an instance for the current date (any status except archived)
+        const instanceForCurrentDay = allInstancesOfThisRecurringTask.find(t =>
+          isSameDay(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status !== 'archived'
+        );
+        
+        if (instanceForCurrentDay) {
+          taskToDisplay = instanceForCurrentDay;
+          console.log(`filteredTasks: For original ${originalId}, found instance for current date (${format(effectiveCurrentDateUTC, 'yyyy-MM-dd')}) with status: ${taskToDisplay.status}. Pushing this.`);
         } else {
-          // Non-recurring tasks
-          const isTaskCreatedOnCurrentDate = isSameDay(taskCreatedAtUTC, effectiveCurrentDateUTC);
-          if (isTaskCreatedOnCurrentDate && task.status !== 'archived') {
-            console.log(`filteredTasks: Pushing non-recurring task created on current date: ${task.id}, ${task.description}`);
-            relevantTasks.push(task);
-          } else if (isBefore(taskCreatedAtUTC, effectiveCurrentDateUTC) && task.status === 'to-do') {
-            console.log(`filteredTasks: Pushing non-recurring carry-over task: ${task.id}, ${task.description}`);
-            relevantTasks.push(task); // Carry over incomplete non-recurring tasks
+          // 2. If no instance for current day, look for the latest 'to-do' instance from a previous day (carry-over)
+          const carryOverTask = allInstancesOfThisRecurringTask
+            .filter(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status === 'to-do')
+            .sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime())[0];
+
+          if (carryOverTask) {
+            taskToDisplay = carryOverTask;
+            console.log(`filteredTasks: For original ${originalId}, no instance for current date. Found carry-over from ${format(parseISO(carryOverTask.created_at), 'yyyy-MM-dd')} with status: ${carryOverTask.status}. Pushing this.`);
           } else {
-            console.log(`filteredTasks: Skipping non-recurring task: ${task.id}, ${task.description} (not created today, not to-do carry-over, or archived)`);
+            console.log(`filteredTasks: For original ${originalId}, no relevant instance found for current date or carry-over.`);
           }
         }
-      });
+        
+        if (taskToDisplay) {
+          relevantTasks.push(taskToDisplay);
+        }
+        processedOriginalIds.add(originalId);
+      } else {
+        // Non-recurring tasks
+        const isTaskCreatedOnCurrentDate = isSameDay(taskCreatedAtUTC, effectiveCurrentDateUTC);
+        if (isTaskCreatedOnCurrentDate && task.status !== 'archived') {
+          console.log(`filteredTasks: Pushing non-recurring task created on current date: ${task.id}, ${task.description}`);
+          relevantTasks.push(task);
+        } else if (isBefore(taskCreatedAtUTC, effectiveCurrentDateUTC) && task.status === 'to-do') {
+          console.log(`filteredTasks: Pushing non-recurring carry-over task: ${task.id}, ${task.description}`);
+          relevantTasks.push(task); // Carry over incomplete non-recurring tasks
+        } else {
+          console.log(`filteredTasks: Skipping non-recurring task: ${task.id}, ${task.description} (not created today, not to-do carry-over, or archived)`);
+        }
+      }
+    });
+
+    // Now, apply the status filter to the relevant tasks
+    let finalFilteredTasks = relevantTasks;
+
+    if (statusFilter !== 'all') {
+      finalFilteredTasks = finalFilteredTasks.filter(task => task.status === statusFilter);
+    } else {
+      // If statusFilter is 'all', explicitly exclude 'archived' tasks from the main view
+      finalFilteredTasks = finalFilteredTasks.filter(task => task.status !== 'archived');
     }
 
-    // 3. Apply status filter (if not 'all' and not 'archived' which was handled above)
-    if (statusFilter !== 'all' && statusFilter !== 'archived') {
-      relevantTasks = relevantTasks.filter(task => task.status === statusFilter);
-    }
-
-    // 4. Apply other filters (search, category, priority, section)
+    // Apply other filters (search, category, priority, section)
     if (searchFilter) {
-      relevantTasks = relevantTasks.filter(task =>
+      finalFilteredTasks = finalFilteredTasks.filter(task =>
         task.description.toLowerCase().includes(searchFilter.toLowerCase()) ||
         task.notes?.toLowerCase().includes(searchFilter.toLowerCase())
       );
     }
     if (categoryFilter && categoryFilter !== 'all') {
-      relevantTasks = relevantTasks.filter(task => task.category === categoryFilter);
+      finalFilteredTasks = finalFilteredTasks.filter(task => task.category === categoryFilter);
     }
     if (priorityFilter && priorityFilter !== 'all') {
-      relevantTasks = relevantTasks.filter(task => task.priority === priorityFilter);
+      finalFilteredTasks = finalFilteredTasks.filter(task => task.priority === priorityFilter);
     }
     if (sectionFilter && sectionFilter !== 'all') {
-      relevantTasks = relevantTasks.filter(task => {
+      finalFilteredTasks = finalFilteredTasks.filter(task => {
         if (sectionFilter === 'no-section') {
           return task.section_id === null;
         }
@@ -860,8 +847,8 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
       });
     }
 
-    // 5. Sort the final tasks
-    relevantTasks.sort((a, b) => {
+    // Sort the final tasks
+    finalFilteredTasks.sort((a, b) => {
       const statusOrder = { 'to-do': 1, 'skipped': 2, 'completed': 3, 'archived': 4 };
       const statusComparison = statusOrder[a.status] - statusOrder[b.status];
       if (statusComparison !== 0) return statusComparison;
@@ -877,7 +864,7 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
       return parseISO(a.created_at).getTime() - parseISO(b.created_at).getTime();
     });
 
-    console.log('filteredTasks: Final tasks AFTER all filters and sorting:', relevantTasks.map(t => ({
+    console.log('filteredTasks: Final tasks AFTER all filters and sorting:', finalFilteredTasks.map(t => ({
       id: t.id,
       description: t.description,
       status: t.status,
@@ -889,7 +876,7 @@ export const useTasks = ({ currentDate, setCurrentDate }: UseTasksProps) => {
       category_color: t.category_color // Include category_color for debugging
     })));
     console.log('filteredTasks: --- END FILTERING ---');
-    return relevantTasks;
+    return finalFilteredTasks;
   }, [tasks, currentDate, searchFilter, statusFilter, categoryFilter, priorityFilter, sectionFilter, sections]);
 
   return {
