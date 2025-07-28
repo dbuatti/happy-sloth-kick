@@ -116,14 +116,16 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
       <div className="flex space-x-2">
         <Select value={value} onValueChange={onChange}>
           <SelectTrigger className="w-full">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full">
               <div className={cn("w-4 h-4 rounded-full flex items-center justify-center border", selectedCategoryColorProps.backgroundClass, selectedCategoryColorProps.dotBorder)}>
                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: selectedCategoryColorProps.dotColor }}></div>
               </div>
-              <SelectValue placeholder="Select category" />
+              <span className="flex-1 truncate">
+                <SelectValue placeholder="Select category" />
+              </span>
             </div>
           </SelectTrigger>
-          <SelectContent className="z-[9999]"> {/* Add z-index here */}
+          <SelectContent className="z-[9999]">
             <SelectItem value="general">
               <div className="flex items-center gap-2">
                 <div className={cn("w-4 h-4 rounded-full flex items-center justify-center border", getCategoryColorProps('gray').backgroundClass, getCategoryColorProps('gray').dotBorder)}>
@@ -141,7 +143,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
                       <div className="w-2 h-2 rounded-full" style={{ backgroundColor: colorProps.dotColor }}></div>
                     </div>
                     {category.name}
-                  </div >
+                  </div>
                 </SelectItem>
               );
             })}
