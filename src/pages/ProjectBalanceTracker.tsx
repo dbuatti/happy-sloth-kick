@@ -202,7 +202,7 @@ const ProjectBalanceTracker: React.FC = () => {
                   onChange={(e) => setTempSectionTitle(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSaveTitle()}
                   className="text-3xl font-bold"
-                  autoFocus
+                  autoFocus // Auto-focus here
                   disabled={isSavingTitle}
                 />
                 <Button size="sm" onClick={handleSaveTitle} disabled={isSavingTitle || !tempSectionTitle.trim()}>
@@ -354,7 +354,7 @@ const ProjectBalanceTracker: React.FC = () => {
                               onChange={(e) => setEditingProjectName(e.target.value)}
                               onKeyDown={(e) => e.key === 'Enter' && handleSaveProjectEdit()}
                               className="text-lg font-semibold"
-                              autoFocus
+                              autoFocus // Auto-focus here
                               disabled={isSavingProject}
                             />
                             <Textarea

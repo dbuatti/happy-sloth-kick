@@ -7,15 +7,37 @@ import { cn } from '@/lib/utils';
 import { getCategoryColorProps } from '@/lib/categoryColors';
 import { format, parseISO } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Skeleton } from '@/components/ui/skeleton'; // Import Skeleton
 
 interface NextTaskCardProps {
   task: Task | null;
   onMarkComplete: (taskId: string) => Promise<void>;
   onEditTask: (task: Task) => void;
   currentDate: Date;
+  loading: boolean; // New prop for loading state
 }
 
-const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEditTask, currentDate }) => {
+const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEditTask, currentDate, loading }) => {
+  if (loading) {
+    return (
+      <Card className="w-full shadow-sm mb-4 border-l-4 border-blue-500 dark:border-blue-700">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg font-semibold flex items-center gap-2">
+            <Lightbulb className="h-5 w-5 text-blue-500" /> Your Next Task
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0 space-y-3">
+          <Skeleton className="h-6 w-3/4" />
+          <Skeleton className="h-4 w-1/2" />
+          <div className="flex gap-2">
+            <Skeleton className="h-10 flex-1" />
+            <Skeleton className="h-10 flex-1" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (!task) {
     return (
       <Card className="w-full shadow-sm mb-4 border-l-4 border-blue-500 dark:border-blue-700">

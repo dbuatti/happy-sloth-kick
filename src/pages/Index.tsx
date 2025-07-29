@@ -24,7 +24,7 @@ interface IndexProps {
 
 const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen, currentDate, setCurrentDate }) => {
   const { user, loading: authLoading } = useAuth();
-  const { nextAvailableTask, updateTask, deleteTask, userId } = useTasks({ currentDate, setCurrentDate }); // Get nextAvailableTask and other task actions
+  const { nextAvailableTask, updateTask, deleteTask, userId, loading: tasksLoading } = useTasks({ currentDate, setCurrentDate }); // Get nextAvailableTask and other task actions
 
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<any>(null); // Use 'any' for now, or define a more specific type if needed
@@ -98,6 +98,7 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen, currentDate, setCurrent
               onMarkComplete={handleMarkNextTaskComplete} 
               onEditTask={handleEditNextTask} 
               currentDate={currentDate}
+              loading={tasksLoading} // Pass loading state
             />
             <TaskList setIsAddTaskOpen={setIsAddTaskOpen} currentDate={currentDate} setCurrentDate={setCurrentDate} />
           </main>

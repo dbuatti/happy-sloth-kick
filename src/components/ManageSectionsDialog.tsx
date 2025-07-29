@@ -77,7 +77,7 @@ const ManageSectionsDialog: React.FC<ManageSectionsDialogProps> = ({
                         value={editingSectionName}
                         onChange={(e) => setEditingSectionName(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleSaveEdit()}
-                        autoFocus
+                        autoFocus // Auto-focus here
                       />
                       <Button size="sm" onClick={handleSaveEdit} disabled={!editingSectionName.trim()}>Save</Button>
                       <Button variant="ghost" size="sm" onClick={() => setEditingSectionId(null)}>Cancel</Button>
