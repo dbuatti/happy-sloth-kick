@@ -11,6 +11,7 @@ import Archive from "./pages/Archive";
 import FocusMode from "./components/FocusMode";
 import ProjectBalanceTracker from "./pages/ProjectBalanceTracker";
 import TimeBlockSchedule from "./pages/TimeBlockSchedule";
+import Meditation from "./pages/Meditation"; // Import the new Meditation component
 import { AuthProvider } from "@/context/AuthContext";
 import CommandPalette from "./components/CommandPalette";
 import { useState } from 'react';
@@ -48,6 +49,7 @@ const App = () => {
                     <Route path="/focus" element={<FocusMode currentDate={currentDate} setCurrentDate={setCurrentDate} />} />
                     <Route path="/projects" element={<ProjectBalanceTracker />} />
                     <Route path="/schedule" element={<TimeBlockSchedule />} />
+                    <Route path="/meditation" element={<Meditation />} /> {/* New Meditation Route */}
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                     <Route path="*" element={<NotFound />} />
                   </Routes>
