@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useTasks } from '@/hooks/useTasks';
-import TaskItem from '@/components/TaskItem'; // Changed import from SortableTaskItem to TaskItem
+import TaskItem from '@/components/TaskItem';
 import { Archive as ArchiveIcon } from 'lucide-react';
 import { Task } from '@/hooks/useTasks';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
-import { Skeleton } from '@/components/ui/skeleton'; // Import Skeleton
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface ArchiveProps {
   currentDate: Date;
@@ -14,7 +14,6 @@ interface ArchiveProps {
 }
 
 const Archive: React.FC<ArchiveProps> = ({ currentDate, setCurrentDate }) => {
-  // Use viewMode: 'archive' to fetch and filter only archived tasks
   const {
     filteredTasks, 
     loading,
@@ -24,7 +23,7 @@ const Archive: React.FC<ArchiveProps> = ({ currentDate, setCurrentDate }) => {
     sections,
     setStatusFilter,
     allCategories,
-  } = useTasks({ currentDate: new Date(), setCurrentDate: () => {}, viewMode: 'archive' }); // Still use new Date() for its internal date logic, as Archive is not tied to the main app's date navigator.
+  } = useTasks({ currentDate: new Date(), setCurrentDate: () => {}, viewMode: 'archive' });
 
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
@@ -81,13 +80,13 @@ const Archive: React.FC<ArchiveProps> = ({ currentDate, setCurrentDate }) => {
                 <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
                   <ArchiveIcon className="h-12 w-12 text-muted-foreground" />
                   <p className="text-lg font-medium mb-2">No archived tasks found.</p>
-                  <p className="text-sm">Completed tasks will appear here once you archive them.</p>
+                  <p className="text-sm">Completed tasks will appear here once you archive them from your daily view.</p>
                 </div>
               ) : (
                 <ul className="space-y-1">
                   {filteredTasks.map((task) => (
                     <li key={task.id} className="relative border rounded-lg p-1.5 transition-all duration-200 ease-in-out group hover:shadow-md">
-                      <TaskItem // Changed to TaskItem
+                      <TaskItem
                         task={task}
                         userId={userId}
                         onStatusChange={handleTaskStatusChange}
@@ -98,8 +97,8 @@ const Archive: React.FC<ArchiveProps> = ({ currentDate, setCurrentDate }) => {
                         sections={sections}
                         onEditTask={handleEditTask}
                         currentDate={currentDate}
-                        onMoveUp={async () => {}} // No-op for archive
-                        onMoveDown={async () => {}} // No-op for archive
+                        onMoveUp={async () => {}}
+                        onMoveDown={async () => {}}
                       />
                     </li>
                   ))}

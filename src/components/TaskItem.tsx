@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing, FolderOpen, Repeat, ListTodo, CheckCircle2, ArrowUp, ArrowDown } from 'lucide-react'; // Added ArrowUp, ArrowDown
+import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing, FolderOpen, Repeat, ListTodo, CheckCircle2, ArrowUp, ArrowDown } from 'lucide-react';
 import * as dateFns from 'date-fns';
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
@@ -21,8 +21,8 @@ interface TaskItemProps {
   sections: { id: string; name: string }[];
   onEditTask: (task: Task) => void;
   currentDate: Date;
-  onMoveUp: (taskId: string) => Promise<void>; // New prop
-  onMoveDown: (taskId: string) => Promise<void>; // New prop
+  onMoveUp: (taskId: string) => Promise<void>;
+  onMoveDown: (taskId: string) => Promise<void>; // Corrected type definition
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -36,12 +36,9 @@ const TaskItem: React.FC<TaskItemProps> = ({
   sections,
   onEditTask,
   currentDate,
-  onMoveUp, // Destructure new prop
-  onMoveDown, // Destructure new prop
+  onMoveUp,
+  onMoveDown,
 }) => {
-  console.log(`TaskItem: Rendering task - ID: ${task.id}, Description: "${task.description}", Status: "${task.status}", Created At: "${task.created_at}"`);
-  console.log(`TaskItem: Task ID: ${task.id}, Category ID: "${task.category}", Category Color Key: "${task.category_color}", Section ID: ${task.section_id}, Parent Task ID: ${task.parent_task_id}, Order: ${task.order}`); // Added more logs
-
   const { playSound } = useSound();
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
 
@@ -89,14 +86,12 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
   const handleMoveUpClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    console.log(`TaskItem: Attempting to move UP task ${task.id} (Order: ${task.order}, Section: ${task.section_id})`); // Added log
     onMoveUp(task.id);
     playSound();
   };
 
   const handleMoveDownClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    console.log(`TaskItem: Attempting to move DOWN task ${task.id} (Order: ${task.order}, Section: ${task.section_id})`); // Added log
     onMoveDown(task.id);
     playSound();
   };
@@ -104,7 +99,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   return (
     <div
       className={cn(
-        "relative flex items-center space-x-3 w-full",
+        "relative flex items-start space-x-3 w-full", // Changed items-center to items-start
         task.status === 'completed' ? "opacity-70 bg-green-50/20 dark:bg-green-900/20" : "",
       )}
     >
@@ -114,8 +109,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
         onCheckedChange={handleCheckboxChange}
         id={`task-${task.id}`}
         onClick={(e) => e.stopPropagation()}
-        className="flex-shrink-0 h-3.5 w-3.5" // Reduced size from h-4 w-4 to h-3.5 w-3.5
-        data-no-dnd="true" // Add this attribute
+        className="flex-shrink-0 h-4 w-4 mt-1" // Reverted size to h-4 w-4, added mt-1 for alignment
+        data-no-dnd="true"
       />
 
       <div className="flex-1 min-w-0">
@@ -139,7 +134,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           </TooltipContent>
         </Tooltip>
 
-        <div className="flex items-center text-xs text-muted-foreground mt-1 space-x-1">
+        <div className="flex flex-wrap items-center text-xs text-muted-foreground mt-1 gap-x-2"> {/* Added flex-wrap and gap-x-2 */}
           <div className={cn("w-3 h-3 rounded-full flex items-center justify-center border", categoryColorProps.backgroundClass, categoryColorProps.dotBorder)}>
             <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: categoryColorProps.dotColor }}></div>
           </div>
@@ -196,7 +191,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
             size="sm" 
             className="h-7 px-2 text-xs"
             onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'to-do'); playSound(); }}
-            data-no-dnd="true" // Add this attribute
+            data-no-dnd="true"
           >
             <ListTodo className="h-3 w-3 mr-1" /> To-Do
           </Button>
@@ -206,7 +201,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           size="icon" 
           className="h-7 w-7"
           onClick={(e) => { e.stopPropagation(); onEditTask(task); }}
-          data-no-dnd="true" // Add this attribute
+          data-no-dnd="true"
         >
           <Edit className="h-4 w-4" />
         </Button>
@@ -216,13 +211,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
               variant="ghost" 
               className="h-7 w-7 p-0"
               onClick={(e) => e.stopPropagation()}
-              data-no-dnd="true" // Add this attribute
+              data-no-dnd="true"
             >
               <span className="sr-only">Open menu</span>
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" data-no-dnd="true"> {/* Add this attribute to content as well */}
+          <DropdownMenuContent align="end" data-no-dnd="true">
             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'to-do'); playSound(); }}>
               Mark as To-Do
             </DropdownMenuItem>
@@ -237,10 +232,10 @@ const TaskItem: React.FC<TaskItemProps> = ({
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuSub>
-              <DropdownMenuSubTrigger data-no-dnd="true"> {/* Add this attribute */}
+              <DropdownMenuSubTrigger data-no-dnd="true">
                 <FolderOpen className="mr-2 h-4 w-4" /> Move to Section
               </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent data-no-dnd="true"> {/* Add this attribute */}
+              <DropdownMenuSubContent data-no-dnd="true">
                 {sections.length === 0 ? (
                   <DropdownMenuItem disabled>No sections available</DropdownMenuItem>
                 ) : (

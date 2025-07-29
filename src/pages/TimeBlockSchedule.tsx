@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useWorkHours } from '@/hooks/useWorkHours';
 import { format, addMinutes, parse, isBefore, isSameHour, isSameMinute, setHours, setMinutes, getMinutes, getHours, isSameDay } from 'date-fns';
-import { CalendarDays, Clock, Settings } from 'lucide-react'; // Added Settings icon
+import { CalendarDays, Clock, Settings } from 'lucide-react';
 import DateNavigator from '@/components/DateNavigator';
 import { cn } from '@/lib/utils';
 import { useAppointments, Appointment, NewAppointmentData } from '@/hooks/useAppointments';
@@ -28,9 +28,7 @@ import {
 
 const TimeBlockSchedule: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
-  // Pass currentDate to useWorkHours to get hours for the specific day
   const { workHours: singleDayWorkHoursRaw, loading: workHoursLoading } = useWorkHours({ date: currentDate });
-  // Explicitly narrow the type for singleDayWorkHours
   const singleDayWorkHours = Array.isArray(singleDayWorkHoursRaw) ? null : singleDayWorkHoursRaw;
 
   const { appointments, loading: appointmentsLoading, addAppointment, updateAppointment, deleteAppointment } = useAppointments(currentDate);
@@ -46,7 +44,7 @@ const TimeBlockSchedule: React.FC = () => {
     })
   );
 
-  const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null); // Fixed: Initialized activeId to null
+  const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
 
   const handlePreviousDay = () => {
     setCurrentDate(prevDate => {
@@ -69,8 +67,7 @@ const TimeBlockSchedule: React.FC = () => {
   };
 
   const timeBlocks = useMemo(() => {
-    // Ensure singleDayWorkHours is treated as a single WorkHour object
-    const workHours = singleDayWorkHours; // Already narrowed by the type guard above
+    const workHours = singleDayWorkHours;
 
     if (!workHours || !workHours.enabled) return [];
 
@@ -94,14 +91,12 @@ const TimeBlockSchedule: React.FC = () => {
       currentTime = blockEnd;
     }
     return blocks;
-  }, [singleDayWorkHours, currentDate]); // Depend on singleDayWorkHours
+  }, [singleDayWorkHours, currentDate]);
 
   const handleTimeBlockClick = (blockStart: Date, blockEnd: Date) => {
-    console.log('Time block clicked:', format(blockStart, 'HH:mm'), format(blockEnd, 'HH:mm'));
-    setEditingAppointment(null); // Ensure we're adding, not editing
+    setEditingAppointment(null);
     setSelectedTimeSlotForNew({ start: blockStart, end: blockEnd });
     setIsAppointmentFormOpen(true);
-    console.log('isAppointmentFormOpen set to true');
   };
 
   const handleSaveAppointment = async (data: NewAppointmentData) => {
@@ -114,23 +109,22 @@ const TimeBlockSchedule: React.FC = () => {
 
   const handleEditAppointment = (appointment: Appointment) => {
     setEditingAppointment(appointment);
-    setSelectedTimeSlotForNew(null); // Clear any pre-selected time slot
+    setSelectedTimeSlotForNew(null);
     setIsAppointmentFormOpen(true);
   };
 
   const handleDeleteAppointment = async (id: string) => {
-    return await deleteAppointment(id); // Return the boolean result from deleteAppointment
+    return await deleteAppointment(id);
   };
 
-  const rowHeight = 40; // Reduced from 48px to 40px
+  const rowHeight = 40;
   const gapHeight = 4;
 
   const getAppointmentGridPosition = useCallback((app: Appointment) => {
     const appStartTime = parse(app.start_time, 'HH:mm:ss', currentDate);
     const appEndTime = parse(app.end_time, 'HH:mm:ss', currentDate);
 
-    // Ensure singleDayWorkHours is treated as a single WorkHour object
-    const workHours = singleDayWorkHours; // Already narrowed by the type guard above
+    const workHours = singleDayWorkHours;
 
     if (!workHours || !workHours.enabled || isNaN(appStartTime.getTime()) || isNaN(appEndTime.getTime())) {
       return { gridRowStart: 1, gridRowEnd: 1, overlapOffset: 0 };
@@ -142,12 +136,11 @@ const TimeBlockSchedule: React.FC = () => {
     const endMinutes = (getHours(appEndTime) * 60) + getMinutes(appEndTime);
     const workStartMinutes = (getHours(workStartTime) * 60) + getMinutes(workStartTime);
 
-    // Calculate row start based on minutes from work start time, divided by 30-min intervals
     const gridRowStart = Math.floor((startMinutes - workStartMinutes) / 30) + 1;
     const gridRowEnd = Math.ceil((endMinutes - workStartMinutes) / 30) + 1;
 
     return { gridRowStart, gridRowEnd };
-  }, [singleDayWorkHours, currentDate]); // Depend on singleDayWorkHours
+  }, [singleDayWorkHours, currentDate]);
 
   const appointmentsWithPositions = useMemo(() => {
     const positionedApps = appointments.map(app => ({
@@ -155,8 +148,6 @@ const TimeBlockSchedule: React.FC = () => {
       ...getAppointmentGridPosition(app),
     }));
 
-    // Simple overlap detection and offset calculation
-    // This is a basic approach; for complex layouts, a dedicated library might be needed.
     const sortedApps = [...positionedApps].sort((a, b) => {
       if (a.gridRowStart !== b.gridRowStart) return a.gridRowStart - b.gridRowStart;
       return a.gridRowEnd - b.gridRowEnd;
@@ -169,11 +160,9 @@ const TimeBlockSchedule: React.FC = () => {
         const appA = finalApps[i];
         const appB = finalApps[j];
 
-        // Check for overlap
         const overlaps = (appA.gridRowStart < appB.gridRowEnd && appB.gridRowStart < appA.gridRowEnd);
 
         if (overlaps) {
-          // If they overlap, give the second appointment an offset
           appB.overlapOffset = appA.overlapOffset + 1;
         }
       }
@@ -199,29 +188,23 @@ const TimeBlockSchedule: React.FC = () => {
       return;
     }
 
-    // Determine the new start time based on where it was dropped
-    // The 'over' ID will be the ID of the time block (e.g., 'time-block-8:00')
-    // or another appointment.
     let newStartTime: Date | null = null;
     if (typeof over.id === 'string' && over.id.startsWith('time-block-')) {
-      const timeString = over.id.replace('time-block-', ''); // e.g., "09:00"
+      const timeString = over.id.replace('time-block-', '');
       newStartTime = parse(timeString, 'HH:mm', currentDate);
     } else if (over.data.current?.type === 'appointment') {
-      // If dropped on another appointment, use its start time
       const overAppointment = appointments.find(app => app.id === over.id);
       if (overAppointment) {
         newStartTime = parse(overAppointment.start_time, 'HH:mm:ss', currentDate);
       }
     }
 
-    // Ensure singleDayWorkHours is treated as a single WorkHour object
-    const workHours = singleDayWorkHours; // Already narrowed by the type guard above
+    const workHours = singleDayWorkHours;
 
     if (newStartTime && workHours && workHours.enabled) {
       const originalDurationMinutes = (parse(draggedAppointment.end_time, 'HH:mm:ss', currentDate).getTime() - parse(draggedAppointment.start_time, 'HH:mm:ss', currentDate).getTime()) / (1000 * 60);
       const newEndTime = addMinutes(newStartTime, originalDurationMinutes);
 
-      // Ensure new times are within work hours
       const workStart = parse(workHours.start_time, 'HH:mm:ss', currentDate);
       const workEnd = parse(workHours.end_time, 'HH:mm:ss', currentDate);
 
@@ -234,7 +217,7 @@ const TimeBlockSchedule: React.FC = () => {
       await updateAppointment(draggedAppointment.id, {
         start_time: format(newStartTime, 'HH:mm:ss'),
         end_time: format(newEndTime, 'HH:mm:ss'),
-        date: format(currentDate, 'yyyy-MM-dd'), // Ensure date is current date
+        date: format(currentDate, 'yyyy-MM-dd'),
       });
     }
     setActiveId(null);
@@ -247,8 +230,8 @@ const TimeBlockSchedule: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col">
       <main className="flex-grow p-4">
-        <Card className="w-full max-w-4xl mx-auto shadow-lg p-3"> {/* Reduced p-4 to p-3 */}
-          <CardHeader className="pb-1"> {/* Reduced pb-2 to pb-1 */}
+        <Card className="w-full max-w-4xl mx-auto shadow-lg p-3">
+          <CardHeader className="pb-1">
             <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
               <CalendarDays className="h-7 w-7" /> Dynamic Schedule
             </CardTitle>
@@ -266,7 +249,7 @@ const TimeBlockSchedule: React.FC = () => {
               <div className="flex justify-center items-center h-64">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
               </div>
-            ) : (!singleDayWorkHours || !singleDayWorkHours.enabled) ? ( // Check singleDayWorkHours
+            ) : (!singleDayWorkHours || !singleDayWorkHours.enabled) ? (
               <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
                 <Clock className="h-16 w-16 text-muted-foreground mb-4" />
                 <p className="text-xl font-medium mb-2">No work hours set or enabled for this day.</p>
@@ -278,22 +261,20 @@ const TimeBlockSchedule: React.FC = () => {
               <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
                 <Clock className="h-16 w-16 text-muted-foreground mb-4" />
                 <p className="text-xl font-medium mb-2">No time blocks generated for this day.</p>
-                <p className="text-md">Please check your work hour settings. Ensure your start time is before your end time.</p>
+                <p className="text-sm">Please check your work hour settings. Ensure your start time is before your end time.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-[60px_1fr] gap-x-2"> {/* Main grid for time labels and schedule */}
-                {/* Left column for time labels */}
+              <div className="grid grid-cols-[60px_1fr] gap-x-2">
                 <div className="grid" style={{
-                  gridTemplateRows: `repeat(${timeBlocks.length}, ${rowHeight}px)`, // Each 30 min block is 40px
-                  height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`, // Account for gaps
+                  gridTemplateRows: `repeat(${timeBlocks.length}, ${rowHeight}px)`,
+                  height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`,
                 }}>
                   {timeBlocks.map((block, index) => (
-                    // Only show label for every hour
                     getMinutes(block.start) === 0 && (
                       <div
                         key={`label-${format(block.start, 'HH:mm')}`}
                         className="flex items-start justify-end pr-2 text-xs text-muted-foreground"
-                        style={{ gridRow: `${index + 1} / span 2` }} // Span 2 30-min blocks (1 hour)
+                        style={{ gridRow: `${index + 1} / span 2` }}
                       >
                         <span>{format(block.start, 'h a')}</span>
                       </div>
@@ -301,7 +282,6 @@ const TimeBlockSchedule: React.FC = () => {
                   ))}
                 </div>
 
-                {/* Right column for time blocks and appointments */}
                 <DndContext
                   sensors={sensors}
                   collisionDetection={closestCenter}
@@ -309,15 +289,15 @@ const TimeBlockSchedule: React.FC = () => {
                   onDragEnd={handleDragEnd}
                 >
                   <div className="relative grid gap-1" style={{
-                    gridTemplateRows: `repeat(${timeBlocks.length}, ${rowHeight}px)`, // Each 30 min block is 40px
-                    height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`, // Account for gaps
+                    gridTemplateRows: `repeat(${timeBlocks.length}, ${rowHeight}px)`,
+                    height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`,
                   }}>
                     {timeBlocks.map((block, index) => (
                       <div
                         key={format(block.start, 'HH:mm')}
-                        id={`time-block-${format(block.start, 'HH:mm')}`} // ID for drag target
-                        className="relative flex items-center justify-center h-10 bg-card dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-dashed border-border/50 hover:border-primary/50 transition-colors duration-150 cursor-pointer hover:scale-[1.01] hover:shadow-md" // Reduced h-12 to h-10
-                        style={{ gridRow: `${index + 1}` }} // Each block is now a single row
+                        id={`time-block-${format(block.start, 'HH:mm')}`}
+                        className="relative flex items-center justify-center h-10 bg-card dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-dashed border-border/50 hover:border-primary/50 transition-colors duration-150 cursor-pointer hover:scale-[1.01] hover:shadow-md"
+                        style={{ gridRow: `${index + 1}` }}
                         onClick={() => handleTimeBlockClick(block.start, block.end)}
                       >
                         <span className="absolute inset-0 flex items-center justify-center text-5xl font-extrabold text-foreground opacity-10 pointer-events-none select-none">
@@ -339,8 +319,8 @@ const TimeBlockSchedule: React.FC = () => {
                           gridRowStart={app.gridRowStart}
                           gridRowEnd={app.gridRowEnd}
                           overlapOffset={app.overlapOffset}
-                          rowHeight={rowHeight} // Pass rowHeight
-                          gapHeight={gapHeight} // Pass gapHeight
+                          rowHeight={rowHeight}
+                          gapHeight={gapHeight}
                         />
                       ))}
                     </SortableContext>
@@ -351,11 +331,11 @@ const TimeBlockSchedule: React.FC = () => {
                           appointment={activeAppointment}
                           onEdit={handleEditAppointment}
                           onDelete={handleDeleteAppointment}
-                          gridRowStart={1} // Dummy values for overlay
-                          gridRowEnd={2}   // Dummy values for overlay
+                          gridRowStart={1}
+                          gridRowEnd={2}
                           overlapOffset={0}
-                          rowHeight={rowHeight} // Pass rowHeight
-                          gapHeight={gapHeight} // Pass gapHeight
+                          rowHeight={rowHeight}
+                          gapHeight={gapHeight}
                           isOverlay={true}
                         />
                       ) : null}
@@ -374,11 +354,11 @@ const TimeBlockSchedule: React.FC = () => {
         isOpen={isAppointmentFormOpen}
         onClose={() => {
           setIsAppointmentFormOpen(false);
-          setEditingAppointment(null); // Clear editing state on close
-          setSelectedTimeSlotForNew(null); // Clear selected slot on close
+          setEditingAppointment(null);
+          setSelectedTimeSlotForNew(null);
         }}
         onSave={handleSaveAppointment}
-        onDelete={handleDeleteAppointment} // Pass the onDelete function
+        onDelete={handleDeleteAppointment}
         initialData={editingAppointment}
         selectedDate={currentDate}
         selectedTimeSlot={selectedTimeSlotForNew}

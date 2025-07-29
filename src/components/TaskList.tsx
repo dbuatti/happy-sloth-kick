@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Settings, CheckCircle2, ListTodo, FolderOpen, ChevronDown, Edit, MoreHorizontal, Trash2, Eye, EyeOff } from 'lucide-react';
 import { useTasks } from '@/hooks/useTasks';
-import TaskItem from './TaskItem'; // Use TaskItem directly
+import TaskItem from './TaskItem';
 import BulkActions from './BulkActions';
 import AddTaskForm from './AddTaskForm';
 import DailyStreak from './DailyStreak';
@@ -38,9 +38,9 @@ import {
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
 import { createPortal } from 'react-dom';
-import { CustomPointerSensor } from '@/lib/CustomPointerSensor'; // Import custom sensor
-import SortableTaskItem from './SortableTaskItem'; // Import SortableTaskItem
-import SortableSectionHeader from './SortableSectionHeader'; // Import SortableSectionHeader
+import { CustomPointerSensor } from '@/lib/CustomPointerSensor';
+import SortableTaskItem from './SortableTaskItem';
+import SortableSectionHeader from './SortableSectionHeader';
 
 interface TaskListProps {
   setIsAddTaskOpen: (open: boolean) => void;
@@ -50,8 +50,8 @@ interface TaskListProps {
 
 const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setCurrentDate }) => {
   const {
-    tasks, // Use raw tasks for DND operations (activeId lookup)
-    filteredTasks, // Use filteredTasks for display and calculations
+    tasks,
+    filteredTasks,
     loading,
     userId,
     handleAddTask,
@@ -69,10 +69,10 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode,
-    reorderTasksInSameSection, // Added
-    moveTaskToNewSection,       // Added
-    reorderSections,            // Added
-    moveTask, // Destructure the new moveTask function
+    reorderTasksInSameSection,
+    moveTaskToNewSection,
+    reorderSections,
+    moveTask,
     allCategories,
     statusFilter,
     setStatusFilter,
@@ -82,17 +82,8 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
     setPriorityFilter,
     sectionFilter,
     setSectionFilter,
-    focusModeTasksForDailyStreak, // New destructuring
+    focusModeTasksForDailyStreak,
   } = useTasks({ currentDate, setCurrentDate });
-
-  console.log('TaskList: Received filteredTasks:', filteredTasks.map(t => ({
-    id: t.id,
-    description: t.description,
-    status: t.status,
-    created_at: t.created_at,
-    original_task_id: t.original_task_id,
-    recurring_type: t.recurring_type
-  })));
 
   const [isAddTaskFormOpen, setIsAddTaskForm] = useState(false);
   const [sectionToPreselect, setSectionToPreselect] = useState<string | null>(null);
@@ -141,8 +132,6 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
       grouped[currentSection.id] = [];
     });
 
-    // Use filteredTasks for grouping to ensure only relevant tasks are displayed
-    // filteredTasks is already sorted by order (among other criteria)
     const tasksForGrouping = filteredTasks.filter(task => task.parent_task_id === null);
 
     tasksForGrouping.forEach(task => {
@@ -154,13 +143,8 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
       }
     });
 
-    // No longer sorting here, relying on filteredTasks being pre-sorted
-    // Object.entries(grouped).forEach(([sectionKey, taskList]) => {
-    //   grouped[sectionKey] = taskList.sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
-    // });
-
     return grouped;
-  }, [filteredTasks, sections]); // Depend on filteredTasks
+  }, [filteredTasks, sections]);
 
   const handleDragStart = (event: any) => {
     setActiveId(event.active.id);
@@ -182,23 +166,18 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
       const overTask = over.data.current?.task as Task;
 
       if (activeTask.section_id === overTask.section_id) {
-        // Reorder within the same section
         await reorderTasksInSameSection(activeTask.section_id, active.id as string, over.id as string);
       } else {
-        // Move to a different section
         await moveTaskToNewSection(active.id as string, activeTask.section_id, overTask.section_id, over.id as string);
       }
     } else if (activeType === 'task' && overType === 'section') {
       const activeTask = active.data.current?.task as Task;
       const overSection = over.data.current?.section as TaskSection;
-      // Move task to a new section (dropped on section header)
-      await moveTaskToNewSection(active.id as string, activeTask.section_id, overSection.id, null); // No specific overId task
+      await moveTaskToNewSection(active.id as string, activeTask.section_id, overSection.id, null);
     } else if (activeType === 'task' && over.id === 'no-section-drop-area') {
       const activeTask = active.data.current?.task as Task;
-      // Move task to 'No Section'
       await moveTaskToNewSection(active.id as string, activeTask.section_id, null, null);
     } else if (activeType === 'section' && overType === 'section') {
-      // Reorder sections
       await reorderSections(active.id as string, over.id as string);
     }
 
