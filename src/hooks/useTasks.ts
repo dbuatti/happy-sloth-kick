@@ -1050,6 +1050,10 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     console.log(`[${debugId}] moveTask: Tasks in current section (after filter and sort):`, tasksInCurrentSection.map(t => ({ id: t.id, order: t.order, description: t.description })));
 
     const currentIndex = tasksInCurrentSection.findIndex(t => t.id === taskId);
+    console.log(`[${debugId}] moveTask: Result of findIndex for ${taskId}: ${currentIndex}`);
+    if (tasksInCurrentSection.length > 0) {
+        console.log(`[${debugId}] moveTask: Task at index 0: ID=${tasksInCurrentSection[0].id}, Order=${tasksInCurrentSection[0].order}`);
+    }
 
     console.log(`[${debugId}] moveTask: Before 'already at bottom/top' check. Current index: ${currentIndex}, Length: ${tasksInCurrentSection.length}`);
     console.log(`[${debugId}] moveTask: Current tasksInCurrentSection before check`, tasksInCurrentSection.map(t => ({ id: t.id, order:  t.order, description: t.description })));
@@ -1142,7 +1146,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       showError('[ERROR SOURCE] Failed to reorder task.');
       // No manual refetch here, rely on real-time subscription
     }
-  }, [userId, sections]); // Removed tasks from deps, using tasksRef.current
+  }, [userId, sections, tasksRef]); // Added tasksRef to dependencies
 
   const { finalFilteredTasks, nextAvailableTask, focusModeTasksForDailyStreak } = useMemo(() => {
     console.log('filteredTasks/nextAvailableTask: --- START FILTERING ---');
