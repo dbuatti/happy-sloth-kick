@@ -370,8 +370,8 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         } else if (isBefore(originalTaskCreatedAtUTC, effectiveCurrentDateUTC)) {
             // If the original task was created before today, check the latest previous instance
             const latestPreviousInstance = allInstancesOfThisRecurringTask
-                .filter(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status === 'to-do') // Only consider non-archived for carry-over logic
-                .sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime())[0]; // Latest one
+                .filter(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status === 'to-do')
+                .sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime())[0];
 
             if (latestPreviousInstance) {
                 if (latestPreviousInstance.status === 'completed' || latestPreviousInstance.status === 'skipped') {
@@ -389,7 +389,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         }
 
         if (shouldCreateNewInstance) {
-            const createdTask = await createRecurringTaskInstance(latestRelevantInstance, effectiveCurrentDateUTC, originalTask.id); // Pass originalTask.id as the root
+            const createdTask = await createRecurringTaskInstance(latestRelevantInstance, effectiveCurrentDateUTC, originalTask.id);
             if (createdTask) {
                 newTasksAdded.push(createdTask);
             }
@@ -1016,13 +1016,15 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       return;
     }
 
+    console.log(`moveTask: Attempting to move task ${taskId} in direction: ${direction}`); // Added direction log
+
     const taskToMove = tasks.find(t => t.id === taskId);
     if (!taskToMove) {
       showError('Task not found.');
       console.error(`moveTask: Task with ID ${taskId} not found.`);
       return;
     }
-    console.log(`moveTask: Task to move:`, taskToMove); // Added log
+    console.log(`moveTask: Task to move details:`, taskToMove);
     if (taskToMove.parent_task_id !== null) {
       showError('Cannot reorder sub-tasks directly.');
       console.error(`moveTask: Attempted to reorder sub-task ${taskId}.`);
@@ -1040,7 +1042,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
     const currentIndex = tasksInCurrentSection.findIndex(t => t.id === taskId);
 
-    console.log(`moveTask: tasksInCurrentSection length: ${tasksInCurrentSection.length}, currentIndex: ${currentIndex}`); // Added log
+    console.log(`moveTask: tasksInCurrentSection length: ${tasksInCurrentSection.length}, currentIndex: ${currentIndex}`);
 
     if (currentIndex === -1) {
       console.error(`moveTask: Task ${taskId} not found in its filtered section list.`);
@@ -1050,7 +1052,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     let newIndex = currentIndex;
     if (direction === 'up') {
       if (currentIndex === 0) {
-        console.log(`moveTask: Attempted to move up from top. Current index: ${currentIndex}, Length: ${tasksInCurrentSection.length}`); // NEW LOG
+        console.log(`moveTask: Logic check - Attempted to move UP from top. Current index: ${currentIndex}, Length: ${tasksInCurrentSection.length}`); // NEW LOG
         showError('Task is already at the top.');
         console.log('moveTask: Task already at top.');
         return;
@@ -1058,7 +1060,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       newIndex = currentIndex - 1;
     } else { // direction === 'down'
       if (currentIndex === tasksInCurrentSection.length - 1) {
-        console.log(`moveTask: Attempted to move down from bottom. Current index: ${currentIndex}, Length: ${tasksInCurrentSection.length}`); // NEW LOG
+        console.log(`moveTask: Logic check - Attempted to move DOWN from bottom. Current index: ${currentIndex}, Length: ${tasksInCurrentSection.length}`); // NEW LOG
         showError('Task is already at the bottom.');
         console.log('moveTask: Task already at bottom.');
         return;
@@ -1093,10 +1095,10 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
     // Optimistic update
     setTasks(prevTasks => {
-      const updatedTasksMap = new Map(updates.map(u => [u.id, u])); // Map full updated task objects
+      const updatedTasksMap = new Map(updates.map(u => [u.id, u]));
       const newTasksState = prevTasks.map(task => {
         if (updatedTasksMap.has(task.id)) {
-          return { ...task, ...updatedTasksMap.get(task.id) }; // Apply full updated object
+          return { ...task, ...updatedTasksMap.get(task.id) };
         }
         return task;
       });
@@ -1126,7 +1128,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       showError('Failed to reorder task.');
       fetchDataAndSections(); // Revert by refetching
     }
-  }, [userId, tasks, sections, fetchDataAndSections]); // Added sections and fetchDataAndSections to dependencies
+  }, [userId, tasks, sections, fetchDataAndSections]);
 
   const { finalFilteredTasks, nextAvailableTask, focusModeTasksForDailyStreak } = useMemo(() => {
     console.log('filteredTasks/nextAvailableTask: --- START FILTERING ---');
