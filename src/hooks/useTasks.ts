@@ -845,7 +845,8 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         throw error; // Trigger catch block
       }
       showSuccess('Task reordered successfully!');
-    } catch (error: any) {
+    }
+    catch (error: any) {
       console.error('Error reordering tasks:', error);
       showError('Failed to reorder task.');
       setTasks(originalTasks); // Revert to original state on error
@@ -950,7 +951,8 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         throw error;
       }
       showSuccess('Task moved successfully!');
-    } catch (error: any) {
+    }
+    catch (error: any) {
       console.error('Error moving task:', error);
       showError('Failed to move task.');
       setTasks(originalTasks); // Revert to original state on error
@@ -1000,7 +1002,8 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         throw error;
       }
       showSuccess('Sections reordered successfully!');
-    } catch (error: any) {
+    }
+    catch (error: any) {
       console.error('Error reordering sections:', error);
       showError('Failed to reorder sections.');
       setSections(originalSections); // Revert to original state on error
@@ -1014,14 +1017,13 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       return;
     }
 
-    console.log(`moveTask: Attempting to move task ${taskId} ${direction}`);
-
     const taskToMove = tasks.find(t => t.id === taskId);
     if (!taskToMove) {
       showError('Task not found.');
       console.error(`moveTask: Task with ID ${taskId} not found.`);
       return;
     }
+    console.log(`moveTask: Task to move:`, taskToMove); // Added log
     if (taskToMove.parent_task_id !== null) {
       showError('Cannot reorder sub-tasks directly.');
       console.error(`moveTask: Attempted to reorder sub-task ${taskId}.`);
@@ -1038,6 +1040,8 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     console.log('moveTask: Tasks in current section (after filter and sort):', tasksInCurrentSection.map(t => ({ id: t.id, order: t.order, description: t.description })));
 
     const currentIndex = tasksInCurrentSection.findIndex(t => t.id === taskId);
+
+    console.log(`moveTask: tasksInCurrentSection length: ${tasksInCurrentSection.length}, currentIndex: ${currentIndex}`); // Added log
 
     if (currentIndex === -1) {
       console.error(`moveTask: Task ${taskId} not found in its filtered section list.`);

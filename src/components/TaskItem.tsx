@@ -40,7 +40,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   onMoveDown, // Destructure new prop
 }) => {
   console.log(`TaskItem: Rendering task - ID: ${task.id}, Description: "${task.description}", Status: "${task.status}", Created At: "${task.created_at}"`);
-  console.log(`TaskItem: Task ID: ${task.id}, Category ID: "${task.category}", Category Color Key: "${task.category_color}"`);
+  console.log(`TaskItem: Task ID: ${task.id}, Category ID: "${task.category}", Category Color Key: "${task.category_color}", Section ID: ${task.section_id}, Parent Task ID: ${task.parent_task_id}, Order: ${task.order}`); // Added more logs
 
   const { playSound } = useSound();
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
