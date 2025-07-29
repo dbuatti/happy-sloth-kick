@@ -33,7 +33,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
         e.preventDefault();
         setOpen((prevOpen) => {
           const newOpen = !prevOpen;
-          if (newOpen) playSound();
+          if (newOpen) playSound('success'); // Play sound on open
           return newOpen;
         });
       }
@@ -44,7 +44,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
 
   const handleSelect = useCallback((callback: () => void) => {
     setOpen(false);
-    playSound();
+    playSound('success'); // Play sound on select
     callback();
   }, [playSound]);
 
@@ -64,7 +64,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
     const success = await handleAddTask(taskData);
     if (success) {
       setIsAddTaskOpen(false);
-      playSound();
+      playSound('success'); // Play sound on task added
     }
     return success;
   };
@@ -74,7 +74,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
       {isMobile ? (
         <Sheet open={open} onOpenChange={(newOpen) => {
           setOpen(newOpen);
-          if (newOpen) playSound();
+          if (newOpen) playSound('success'); // Play sound on open
         }}>
           <SheetContent className="h-full">
             <SheetHeader>
@@ -153,7 +153,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
       ) : (
         <CommandDialog open={open} onOpenChange={(newOpen) => {
           setOpen(newOpen);
-          if (newOpen) playSound();
+          if (newOpen) playSound('success'); // Play sound on open
         }}>
           <CommandInput placeholder="Type a command or search..." />
           <CommandList>

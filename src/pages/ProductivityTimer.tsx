@@ -92,7 +92,7 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
       const actualDuration = (endTime.getTime() - pomodoroSessionStartTime.getTime()) / 1000;
       logSession(pomodoroSessionType, actualDuration, pomodoroSessionStartTime, endTime, pomodoroCurrentTaskId, false);
     }
-    playSound();
+    playSound('alert'); // Play alert sound when session ends
 
     if (pomodoroSessionType === 'work') {
       const newPomodoroCount = pomodoroCount + 1;
@@ -118,7 +118,7 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
 
   const handleCustomTimerEnd = useCallback(() => {
     setCustomIsRunning(false);
-    playSound();
+    playSound('alert'); // Play alert sound when custom timer finishes
     showSuccess('Custom timer finished!');
   }, [playSound]);
 
@@ -184,7 +184,7 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
     if (!pomodoroIsRunning) {
       setPomodoroIsRunning(true);
       setPomodoroSessionStartTime(new Date());
-      playSound();
+      playSound('success'); // Play success sound on start
     }
   }, [pomodoroIsRunning, playSound]);
 
@@ -193,7 +193,7 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
     if (pomodoroTimerRef.current) {
       clearInterval(pomodoroTimerRef.current);
       pomodoroTimerRef.current = null;
-      playSound();
+      playSound('pause'); // Play pause sound on pause
     }
   }, [playSound]);
 
@@ -204,7 +204,7 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
     setPomodoroCount(0);
     setPomodoroCurrentTaskId(null);
     setPomodoroSessionStartTime(null);
-    playSound();
+    playSound('reset'); // Play reset sound on reset
   }, [pausePomodoroTimer, playSound]);
 
   const handleMarkTaskComplete = async (task: Task) => {
@@ -238,7 +238,7 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
   const startCustomTimer = useCallback(() => {
     if (!customIsRunning && customTimeRemaining > 0) {
       setCustomIsRunning(true);
-      playSound();
+      playSound('success'); // Play success sound on start
     }
   }, [customIsRunning, customTimeRemaining, playSound]);
 
@@ -247,14 +247,14 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
     if (customTimerRef.current) {
       clearInterval(customTimerRef.current);
       customTimerRef.current = null;
-      playSound();
+      playSound('pause'); // Play pause sound on pause
     }
   }, [playSound]);
 
   const resetCustomTimer = useCallback(() => {
     pauseCustomTimer();
     setCustomTimeRemaining(customDuration);
-    playSound();
+    playSound('reset'); // Play reset sound on reset
   }, [pauseCustomTimer, customDuration, playSound]);
 
   const handleCustomDurationChange = (value: string) => {

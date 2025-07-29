@@ -76,7 +76,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
     onToggleSelect(task.id, checked);
     onStatusChange(task.id, checked ? 'completed' : 'to-do');
     if (checked) {
-      playSound();
+      playSound('success'); // Play success sound on completion
       setShowCompletionEffect(true);
       setTimeout(() => {
         setShowCompletionEffect(false);
@@ -87,13 +87,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const handleMoveUpClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onMoveUp(task.id);
-    playSound();
+    playSound('success'); // Play success sound on move
   };
 
   const handleMoveDownClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onMoveDown(task.id);
-    playSound();
+    playSound('success'); // Play success sound on move
   };
 
   return (
@@ -190,7 +190,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
             variant="outline" 
             size="sm" 
             className="h-7 px-2 text-xs"
-            onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'to-do'); playSound(); }}
+            onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'to-do'); playSound('success'); }} // Play success sound
             data-no-dnd="true"
           >
             <ListTodo className="h-3 w-3 mr-1" /> To-Do
@@ -218,16 +218,16 @@ const TaskItem: React.FC<TaskItemProps> = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" data-no-dnd="true">
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'to-do'); playSound(); }}>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'to-do'); playSound('success'); }}>
               Mark as To-Do
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'completed'); playSound(); }}>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'completed'); playSound('success'); }}>
               Mark as Completed
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'skipped'); playSound(); }}>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'skipped'); playSound('success'); }}>
               Mark as Skipped
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'archived'); playSound(); }}>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'archived'); playSound('success'); }}>
               <Archive className="mr-2 h-4 w-4" /> Archive
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -245,7 +245,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
                       onClick={(e) => { 
                         e.stopPropagation(); 
                         onUpdate(task.id, { section_id: section.id }); 
-                        playSound();
+                        playSound('success'); // Play success sound
                       }}
                       disabled={task.section_id === section.id}
                     >
@@ -263,7 +263,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
               <ArrowDown className="mr-2 h-4 w-4" /> Move Down
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete(task.id); playSound(); }} className="text-destructive focus:text-destructive">
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete(task.id); playSound('alert'); }} className="text-destructive focus:text-destructive">
               <Trash2 className="mr-2 h-4 w-4" /> Delete
             </DropdownMenuItem>
           </DropdownMenuContent>

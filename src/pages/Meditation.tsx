@@ -28,7 +28,7 @@ const Meditation: React.FC = () => {
             clearInterval(timerRef.current!);
             setIsRunning(false);
             setIsSessionActive(false);
-            playSound(); // Play sound when timer finishes
+            playSound('alert'); // Play alert sound when timer finishes
             return 0;
           }
           return prevTime - 1;
@@ -51,18 +51,21 @@ const Meditation: React.FC = () => {
     if (timeRemaining > 0) {
       setIsRunning(true);
       setIsSessionActive(true);
+      playSound('success'); // Play success sound on start
     }
-  }, [timeRemaining]);
+  }, [timeRemaining, playSound]);
 
   const pauseTimer = useCallback(() => {
     setIsRunning(false);
-  }, []);
+    playSound('pause'); // Play pause sound on pause
+  }, [playSound]);
 
   const resetTimer = useCallback(() => {
     pauseTimer();
     setTimeRemaining(duration);
     setIsSessionActive(false);
-  }, [pauseTimer, duration]);
+    playSound('reset'); // Play reset sound on reset
+  }, [pauseTimer, duration, playSound]);
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);

@@ -3,32 +3,36 @@ import React, { createContext, useContext, useState, useCallback } from 'react';
 interface SoundContextType {
   isSoundEnabled: boolean;
   toggleSound: () => void;
-  playSound: () => void;
+  playSound: (soundName: keyof typeof soundMap) => void;
 }
 
 const SoundContext = createContext<SoundContextType | undefined>(undefined);
 
-// A simple function to generate a pleasant 'ding' sound using the Web Audio API
-const playDingSound = () => {
+// Define a map of sound names to their URLs
+// IMPORTANT: Replace these placeholder URLs with actual links to your hosted sound files.
+// You can find free sound effects on sites like freesound.org or zapsplat.com.
+const soundMap = {
+  success: '/sounds/success.mp3', // Placeholder for a positive/completion sound
+  pause: '/sounds/pause.mp3',     // Placeholder for a pause sound
+  reset: '/sounds/reset.mp3',     // Placeholder for a reset sound
+  alert: '/sounds/alert.mp3',     // Placeholder for an alert/notification sound (e.g., timer end)
+};
+
+// Function to play an audio file from a URL
+const playAudioFile = (url: string) => {
+  if (!url) {
+    console.warn('Attempted to play sound with empty URL.');
+    return;
+  }
   try {
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-
-    oscillator.type = 'sine';
-    oscillator.frequency.setValueAtTime(800, audioContext.currentTime); // High pitch
-    oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.3); // Glide down
-
-    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime); // Start at 30% volume
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3); // Fade out
-
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + 0.3);
+    const audio = new Audio(url);
+    audio.volume = 0.5; // Adjust volume as needed
+    audio.play().catch(error => {
+      console.warn('Error playing audio:', error);
+      // This catch is important for handling user gesture requirements in browsers
+    });
   } catch (error) {
-    console.warn('Audio context could not be created:', error);
+    console.warn('Audio playback failed:', error);
   }
 };
 
@@ -39,9 +43,14 @@ export const SoundProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsSoundEnabled(prev => !prev);
   }, []);
 
-  const playSound = useCallback(() => {
+  const playSound = useCallback((soundName: keyof typeof soundMap) => {
     if (isSoundEnabled) {
-      playDingSound();
+      const soundUrl = soundMap[soundName];
+      if (soundUrl) {
+        playAudioFile(soundUrl);
+      } else {
+        console.warn(`Sound "${soundName}" not found in soundMap.`);
+      }
     }
   }, [isSoundEnabled]);
 
