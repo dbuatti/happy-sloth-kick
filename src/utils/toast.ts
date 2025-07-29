@@ -5,7 +5,7 @@ export const showSuccess = (message: string) => {
 };
 
 export const showError = (message: string) => {
-  toast.error(message);
+  toast.error(`[ERROR SOURCE] ${message}`);
 };
 
 export const showLoading = (message: string) => {

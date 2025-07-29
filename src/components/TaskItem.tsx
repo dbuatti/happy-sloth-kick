@@ -87,6 +87,20 @@ const TaskItem: React.FC<TaskItemProps> = ({
     }
   };
 
+  const handleMoveUpClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    console.log(`TaskItem: Moving UP task ${task.id} (Order: ${task.order}, Section: ${task.section_id})`);
+    onMoveUp(task.id);
+    playSound();
+  };
+
+  const handleMoveDownClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    console.log(`TaskItem: Moving DOWN task ${task.id} (Order: ${task.order}, Section: ${task.section_id})`);
+    onMoveDown(task.id);
+    playSound();
+  };
+
   return (
     <div
       className={cn(
@@ -247,10 +261,10 @@ const TaskItem: React.FC<TaskItemProps> = ({
               </DropdownMenuSubContent>
             </DropdownMenuSub>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMoveUp(task.id); playSound(); }}>
+            <DropdownMenuItem onClick={handleMoveUpClick}>
               <ArrowUp className="mr-2 h-4 w-4" /> Move Up
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMoveDown(task.id); playSound(); }}>
+            <DropdownMenuItem onClick={handleMoveDownClick}>
               <ArrowDown className="mr-2 h-4 w-4" /> Move Down
             </DropdownMenuItem>
             <DropdownMenuSeparator />
