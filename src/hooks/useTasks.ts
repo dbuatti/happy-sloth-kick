@@ -825,12 +825,14 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         return task;
       });
       // Re-sort the entire tasks array to maintain consistency
-      return newTasksState.sort((a, b) => {
+      const finalSortedState = newTasksState.sort((a, b) => {
         const aSectionOrder = sections.find(s => s.id === a.section_id)?.order ?? Infinity;
         const bSectionOrder = sections.find(s => s.id === b.section_id)?.order ?? Infinity;
         if (aSectionOrder !== bSectionOrder) return aSectionOrder - bSectionOrder;
         return (a.order || Infinity) - (b.order || Infinity);
       });
+      console.log('reorderTasksInSameSection: Tasks state after optimistic update and sort:', finalSortedState.map(t => ({ id: t.id, description: t.description, order: t.order, section_id: t.section_id })));
+      return finalSortedState;
     });
 
     try {
@@ -932,12 +934,14 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         return task;
       });
       // Re-sort the entire tasks array to maintain consistency
-      return newTasksState.sort((a, b) => {
+      const finalSortedState = newTasksState.sort((a, b) => {
         const aSectionOrder = sections.find(s => s.id === a.section_id)?.order ?? Infinity;
         const bSectionOrder = sections.find(s => s.id === b.section_id)?.order ?? Infinity;
         if (aSectionOrder !== bSectionOrder) return aSectionOrder - bSectionOrder;
         return (a.order || Infinity) - (b.order || Infinity);
       });
+      console.log('moveTaskToNewSection: Tasks state after optimistic update and sort:', finalSortedState.map(t => ({ id: t.id, description: t.description, order: t.order, section_id: t.section_id })));
+      return finalSortedState;
     });
 
     try {
@@ -983,12 +987,14 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     // Optimistic update
     setSections(prevSections => {
       const updatedSectionsMap = new Map(updates.map(u => [u.id, u.order]));
-      return prevSections.map(section => {
+      const finalSortedState = prevSections.map(section => {
         if (updatedSectionsMap.has(section.id)) {
           return { ...section, order: updatedSectionsMap.get(section.id) };
         }
         return section;
-      });
+      }).sort((a, b) => (a.order || Infinity) - (b.order || Infinity)); // Ensure sections are sorted by their new order
+      console.log('reorderSections: Sections state after optimistic update and sort:', finalSortedState.map(s => ({ id: s.id, name: s.name, order: s.order })));
+      return finalSortedState;
     });
 
     try {
@@ -1010,7 +1016,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
   const moveTask = useCallback(async (taskId: string, direction: 'up' | 'down') => {
     if (!userId) {
-      showError('User not authenticated.');
+      showError('[ERROR SOURCE] User not authenticated.');
       console.error('moveTask: User not authenticated.');
       return;
     }
@@ -1019,13 +1025,13 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
     const taskToMove = tasks.find(t => t.id === taskId);
     if (!taskToMove) {
-      showError('Task not found.');
+      showError('[ERROR SOURCE] Task not found.');
       console.error(`moveTask: Task with ID ${taskId} not found.`);
       return;
     }
     console.log(`moveTask: Task to move details:`, taskToMove);
     if (taskToMove.parent_task_id !== null) {
-      showError('Cannot reorder sub-tasks directly.');
+      showError('[ERROR SOURCE] Cannot reorder sub-tasks directly.');
       console.error(`moveTask: Attempted to reorder sub-task ${taskId}.`);
       return;
     }
@@ -1050,18 +1056,18 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
     let newIndex = currentIndex;
     if (direction === 'up') {
+      console.log(`moveTask: Checking move UP. Current index: ${currentIndex}, Length: ${tasksInCurrentSection.length}`); // NEW LOG
       if (currentIndex === 0) {
-        console.log(`moveTask: Logic check - Attempted to move UP from top. Current index: ${currentIndex}, Length: ${tasksInCurrentSection.length}`);
-        showError('Task is already at the top.');
-        console.log('moveTask: Task already at top.');
+        console.log(`moveTask: Attempted to move UP from top. Current index: ${currentIndex}, Length: ${tasksInCurrentSection.length}`);
+        showError('[ERROR SOURCE] Task is already at the top.');
         return;
       }
       newIndex = currentIndex - 1;
     } else { // direction === 'down'
+      console.log(`moveTask: Checking move DOWN. Current index: ${currentIndex}, Length: ${tasksInCurrentSection.length}`); // NEW LOG
       if (currentIndex === tasksInCurrentSection.length - 1) {
-        console.log(`moveTask: Logic check - Attempted to move DOWN from bottom. Current index: ${currentIndex}, Length: ${tasksInCurrentSection.length}`);
-        showError('Task is already at the bottom.');
-        console.log('moveTask: Task already at bottom.');
+        console.log(`moveTask: Attempted to move DOWN from bottom. Current index: ${currentIndex}, Length: ${tasksInCurrentSection.length}`);
+        showError('[ERROR SOURCE] Task is already at the bottom.');
         return;
       }
       newIndex = currentIndex + 1;
@@ -1102,12 +1108,14 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         return task;
       });
       // Re-sort the entire tasks array to maintain consistency
-      return newTasksState.sort((a, b) => {
+      const finalSortedState = newTasksState.sort((a, b) => {
         const aSectionOrder = sections.find(s => s.id === a.section_id)?.order ?? Infinity;
         const bSectionOrder = sections.find(s => s.id === b.section_id)?.order ?? Infinity;
         if (aSectionOrder !== bSectionOrder) return aSectionOrder - bSectionOrder;
         return (a.order || Infinity) - (b.order || Infinity);
       });
+      console.log('moveTask: Tasks state after optimistic update and sort:', finalSortedState.map(t => ({ id: t.id, description: t.description, order: t.order, section_id: t.section_id })));
+      return finalSortedState;
     });
     console.log('moveTask: Optimistic update applied and tasks state re-sorted.');
 
@@ -1124,7 +1132,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       console.log('moveTask: Supabase upsert successful.');
     } catch (error: any) {
       console.error('moveTask: Caught error during reordering:', error);
-      showError('Failed to reorder task.');
+      showError('[ERROR SOURCE] Failed to reorder task.');
       // No manual refetch here, rely on real-time subscription
     }
   }, [userId, tasks, sections]);
