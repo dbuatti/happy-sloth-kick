@@ -212,7 +212,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
             // Create the payload for the database upsert
             const dbUpdatePayload = {
               id: task.id,
-              description: task.description,
+              description: task.description, // Include all non-nullable fields
               status: task.status,
               recurring_type: task.recurring_type,
               created_at: task.created_at,
@@ -553,9 +553,9 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     } catch (error: any) {
       console.error('Error updating task:', error);
       showError('Failed to update task.');
-      fetchDataAndSections();
+      // No manual refetch here, rely on real-time subscription
     }
-  }, [userId, fetchDataAndSections, categoriesMap]);
+  }, [userId, categoriesMap]);
 
   const deleteTask = useCallback(async (taskId: string) => {
     if (!userId) {
@@ -590,11 +590,9 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     catch (error: any) {
       console.error('Error deleting task:', error);
       showError('Failed to delete task.');
-      if (taskToDelete) {
-        fetchDataAndSections();
-      }
+      // No manual refetch here, rely on real-time subscription
     }
-  }, [userId, tasks, fetchDataAndSections]);
+  }, [userId, tasks]);
 
   const toggleTaskSelection = useCallback((taskId: string, checked: boolean) => {
     setSelectedTaskIds(prev =>
@@ -640,13 +638,13 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       showSuccess(`${ids.length} tasks updated successfully!`);
       clearSelectedTasks();
       
-      await fetchDataAndSections(); 
+      // No manual refetch here, rely on real-time subscription
     } catch (error: any) {
       console.error('Error bulk updating tasks:', error);
       showError('Failed to update tasks in bulk.');
-      fetchDataAndSections();
+      // No manual refetch here, rely on real-time subscription
     }
-  }, [userId, selectedTaskIds, clearSelectedTasks, fetchDataAndSections, categoriesMap]);
+  }, [userId, selectedTaskIds, clearSelectedTasks, categoriesMap]);
 
   const markAllTasksInSectionCompleted = useCallback(async (sectionId: string | null) => {
     if (!userId) {
@@ -676,13 +674,13 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
       if (error) throw error;
       showSuccess(`${taskIdsToComplete.length} tasks in section marked as completed!`);
-      await fetchDataAndSections();
+      // No manual refetch here, rely on real-time subscription
     } catch (error: any) {
       console.error('Error marking all tasks in section as completed:', error);
       showError('Failed to mark tasks as completed.');
-      fetchDataAndSections();
+      // No manual refetch here, rely on real-time subscription
     }
-  }, [userId, tasks, fetchDataAndSections]);
+  }, [userId, tasks]);
 
   const createSection = useCallback(async (name: string) => {
     if (!userId) {
@@ -951,7 +949,8 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         throw error;
       }
       showSuccess('Task moved successfully!');
-    } catch (error: any) {
+    }
+    catch (error: any) {
       console.error('Error moving task:', error);
       showError('Failed to move task.');
       setTasks(originalTasks); // Revert to original state on error
@@ -1052,7 +1051,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     let newIndex = currentIndex;
     if (direction === 'up') {
       if (currentIndex === 0) {
-        console.log(`moveTask: Logic check - Attempted to move UP from top. Current index: ${currentIndex}, Length: ${tasksInCurrentSection.length}`); // NEW LOG
+        console.log(`moveTask: Logic check - Attempted to move UP from top. Current index: ${currentIndex}, Length: ${tasksInCurrentSection.length}`);
         showError('Task is already at the top.');
         console.log('moveTask: Task already at top.');
         return;
@@ -1060,7 +1059,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       newIndex = currentIndex - 1;
     } else { // direction === 'down'
       if (currentIndex === tasksInCurrentSection.length - 1) {
-        console.log(`moveTask: Logic check - Attempted to move DOWN from bottom. Current index: ${currentIndex}, Length: ${tasksInCurrentSection.length}`); // NEW LOG
+        console.log(`moveTask: Logic check - Attempted to move DOWN from bottom. Current index: ${currentIndex}, Length: ${tasksInCurrentSection.length}`);
         showError('Task is already at the bottom.');
         console.log('moveTask: Task already at bottom.');
         return;
@@ -1126,9 +1125,9 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     } catch (error: any) {
       console.error('moveTask: Caught error during reordering:', error);
       showError('Failed to reorder task.');
-      fetchDataAndSections(); // Revert by refetching
+      // No manual refetch here, rely on real-time subscription
     }
-  }, [userId, tasks, sections, fetchDataAndSections]);
+  }, [userId, tasks, sections]);
 
   const { finalFilteredTasks, nextAvailableTask, focusModeTasksForDailyStreak } = useMemo(() => {
     console.log('filteredTasks/nextAvailableTask: --- START FILTERING ---');
