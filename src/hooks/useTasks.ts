@@ -172,8 +172,84 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         category_color: newCategoriesMap.get(task.category) || 'gray',
       }));
 
-      setTasks(mappedTasks || []);
-      console.log('useTasks: Mapped tasks with category_color:', mappedTasks.map(t => ({ id: t.id, description: t.description, category: t.category, category_color: t.category_color })));
+      // --- NEW LOGIC: Normalize task orders on fetch ---
+      const tasksToNormalize: Task[] = [];
+      const tasksById = new Map<string, Task>();
+      mappedTasks.forEach(task => {
+        tasksById.set(task.id, task);
+        if (task.parent_task_id === null) { // Only normalize top-level tasks
+          tasksToNormalize.push(task);
+        }
+      });
+
+      const groupedBySection: { [key: string]: Task[] } = { 'no-section': [] };
+      sectionsData.forEach(sec => groupedBySection[sec.id] = []);
+
+      tasksToNormalize.forEach(task => {
+        const sectionKey = task.section_id || 'no-section';
+        if (groupedBySection[sectionKey]) {
+          groupedBySection[sectionKey].push(task);
+        } else {
+          // Should not happen if sectionsData is comprehensive, but as a fallback
+          groupedBySection['no-section'].push(task);
+        }
+      });
+
+      const updatesForDb: any[] = [];
+      
+      for (const sectionKey in groupedBySection) {
+        const sectionTasks = groupedBySection[sectionKey];
+        // Sort by existing order, then by created_at as a tie-breaker for initial consistency
+        sectionTasks.sort((a, b) => {
+          const orderA = a.order ?? Infinity;
+          const orderB = b.order ?? Infinity;
+          if (orderA !== orderB) return orderA - orderB;
+          return parseISO(a.created_at).getTime() - parseISO(b.created_at).getTime();
+        });
+
+        sectionTasks.forEach((task, index) => {
+          if (task.order !== index) { // Only update if order needs correction
+            const updatedTask = {
+              id: task.id,
+              description: task.description, // Include all non-nullable fields
+              status: task.status,
+              recurring_type: task.recurring_type,
+              created_at: task.created_at,
+              category: task.category,
+              priority: task.priority,
+              due_date: task.due_date,
+              notes: task.notes,
+              remind_at: task.remind_at,
+              section_id: task.section_id,
+              parent_task_id: task.parent_task_id,
+              order: index, // The field we are actually updating
+              user_id: userId, // Include user_id for RLS
+            };
+            updatesForDb.push(updatedTask);
+            tasksById.set(task.id, updatedTask); // Update the task in the map with new order
+          }
+        });
+      }
+
+      // Reconstruct the full tasks array with updated orders
+      const finalTasksState = mappedTasks.map(task => tasksById.get(task.id) || task);
+      setTasks(finalTasksState);
+      console.log('useTasks: Mapped tasks with normalized orders:', finalTasksState.map(t => ({ id: t.id, description: t.description, order: t.order })));
+
+      // Send updates to DB if any orders were changed
+      if (updatesForDb.length > 0) {
+        console.log('useTasks: Sending order normalization updates to DB:', updatesForDb.map(u => ({ id: u.id, order: u.order })));
+        const { error: upsertError } = await supabase
+          .from('tasks')
+          .upsert(updatesForDb, { onConflict: 'id' });
+        if (upsertError) {
+          console.error('useTasks: Error normalizing task orders in DB:', upsertError);
+          showError('Failed to synchronize task orders.');
+        } else {
+          console.log('useTasks: Task orders normalized in DB.');
+        }
+      }
+      // --- END NEW LOGIC ---
       
     } catch (error: any) {
       console.error('Error in fetchDataAndSections:', error);
@@ -234,7 +310,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       showError('Failed to create the next instance of the recurring task.');
       return null;
     }
-    showSuccess(`Recurring task "${templateTask.description}" created for ${format(targetDate, 'MMM d')}.`);
+    // Ensure category_color is added back for local state consistency after DB insert
     return { ...data, category_color: categoriesMap.get(data.category) || 'gray' };
   }, [userId, tasks, categoriesMap]); // Added tasks and categoriesMap to deps
 
@@ -374,6 +450,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       const targetSectionTasks = tasks.filter(t => t.parent_task_id === null && t.section_id === (newTaskData.section_id || null));
       const newOrder = targetSectionTasks.length;
 
+      // Construct the task object for local state update (includes category_color)
       newTask = {
         id: uuidv4(),
         user_id: userId,
@@ -381,7 +458,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         status: newTaskData.status || 'to-do',
         recurring_type: newTaskData.recurring_type || 'none',
         category: newTaskData.category,
-        category_color: categoryColor,
+        category_color: categoryColor, // Include for local state
         priority: newTaskData.priority || 'medium',
         due_date: newTaskData.due_date ? newTaskData.due_date.toISOString() : null,
         notes: newTaskData.notes || null,
@@ -394,6 +471,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       };
       setTasks(prev => [...prev, newTask]);
 
+      // Construct the payload for database insert (EXCLUDE category_color)
       const dbInsertPayload = {
         id: newTask.id,
         user_id: newTask.user_id,
@@ -420,6 +498,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
       if (error) throw error;
       
+      // Update local state with data returned from DB (which won't have category_color, so re-add it)
       setTasks(prev => prev.map(t => t.id === data.id ? { ...data, category_color: categoriesMap.get(data.category) || 'gray' } : t));
 
       showSuccess('Task added successfully!');
@@ -448,9 +527,15 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     ));
 
     try {
+      // Exclude category_color from the updates sent to DB
+      const dbUpdates = { ...updates };
+      if ('category_color' in dbUpdates) {
+        delete dbUpdates.category_color;
+      }
+
       const { error } = await supabase
         .from('tasks')
-        .update(updates)
+        .update(dbUpdates)
         .eq('id', taskId)
         .eq('user_id', userId);
 
@@ -530,9 +615,15 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     ));
 
     try {
+      // Exclude category_color from the updates sent to DB
+      const dbUpdates = { ...updates };
+      if ('category_color' in dbUpdates) {
+        delete dbUpdates.category_color;
+      }
+
       const { data, error } = await supabase
         .from('tasks')
-        .update(updates)
+        .update(dbUpdates)
         .in('id', ids)
         .eq('user_id', userId)
         .select();
@@ -690,8 +781,10 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       return;
     }
 
-    const originalTasks = [...tasks]; // Capture current state for potential rollback
+    // Capture current state for potential rollback
+    const originalTasks = [...tasks];
 
+    // Calculate new order based on current state before optimistic update
     const tasksInCurrentSection = tasks.filter(t => t.parent_task_id === null && t.section_id === sectionId)
                                       .sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
     const activeIndex = tasksInCurrentSection.findIndex(t => t.id === activeId);
@@ -730,12 +823,13 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     });
 
     try {
+      // Persist to DB
       const { error } = await supabase
         .from('tasks')
         .upsert(updates, { onConflict: 'id' });
 
       if (error) {
-        throw error;
+        throw error; // Trigger catch block
       }
       showSuccess('Task reordered successfully!');
     } catch (error: any) {
