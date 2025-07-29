@@ -81,6 +81,9 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
   const userId = user?.id;
 
   const [tasks, setTasks] = useState<Task[]>([]);
+  const tasksRef = useRef<Task[]>([]); // Create a ref for tasks
+  tasksRef.current = tasks; // Keep the ref updated with the latest tasks state
+
   const [loading, setLoading] = useState(true);
   console.log(`useTasks hook version: ${HOOK_VERSION}`);
   console.log('useTasks: Re-rendering. Current viewMode:', viewMode, 'Current date received:', currentDate?.toISOString());
@@ -276,7 +279,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
     // Check if an instance for this original task (root) already exists for the target date
     // This check is crucial to prevent duplicates based on the root original_task_id and created_at date
-    const existingInstance = tasks.find(t =>
+    const existingInstance = tasksRef.current.find(t => // Use tasksRef.current
       (t.original_task_id === rootOriginalTaskId || t.id === rootOriginalTaskId) && // Check against the root original_task_id
       isSameDay(getUTCStartOfDay(parseISO(t.created_at)), targetDateUTC) &&
       t.status !== 'archived'
@@ -320,7 +323,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     }
     // Ensure category_color is added back for local state consistency after DB insert
     return { ...data, category_color: categoriesMap.get(data.category) || 'gray' };
-  }, [userId, tasks, categoriesMap]); // Added tasks and categoriesMap to deps
+  }, [userId, categoriesMap]); // Removed tasks from deps, using tasksRef.current
 
   const syncRecurringTasks = useCallback(async () => {
     if (viewMode !== 'daily' || !userId || loading || !currentDate) {
@@ -332,13 +335,13 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     const effectiveCurrentDateUTC = getUTCStartOfDay(currentDate);
     let newTasksAdded: Task[] = [];
 
-    const originalRecurringTasks = tasks.filter(t => t.recurring_type !== 'none' && t.original_task_id === null);
+    const originalRecurringTasks = tasksRef.current.filter(t => t.recurring_type !== 'none' && t.original_task_id === null); // Use tasksRef.current
 
     for (const originalTask of originalRecurringTasks) { // originalTask here is the root task (original_task_id is null)
         const originalTaskCreatedAtUTC = getUTCStartOfDay(parseISO(originalTask.created_at));
 
         // Find all instances of this recurring task, including the original itself
-        const allInstancesOfThisRecurringTask = tasks.filter(t =>
+        const allInstancesOfThisRecurringTask = tasksRef.current.filter(t => // Use tasksRef.current
             t.original_task_id === originalTask.id || t.id === originalTask.id
         );
 
@@ -400,7 +403,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       setTasks(prevTasks => [...prevTasks, ...newTasksAdded]);
       console.log('syncRecurringTasks: Added new recurring task instances to state:', newTasksAdded.map(t => t.id));
     }
-  }, [userId, tasks, currentDate, createRecurringTaskInstance, loading, viewMode]);
+  }, [userId, currentDate, createRecurringTaskInstance, loading, viewMode]); // Removed tasks from deps, using tasksRef.current
 
   useEffect(() => {
     if (!authLoading && userId) {
@@ -430,7 +433,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     if (!userId) return;
 
     const reminderInterval = setInterval(() => {
-      tasks.forEach(task => {
+      tasksRef.current.forEach(task => { // Use tasksRef.current
         if (task.remind_at && task.status === 'to-do' && !remindedTaskIdsRef.current.has(task.id)) {
           const reminderTime = parseISO(task.remind_at);
           const fiveMinutesAgo = new Date(new Date().getTime() - 5 * 60 * 1000);
@@ -444,7 +447,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     }, 30 * 1000);
 
     return () => clearInterval(reminderInterval);
-  }, [tasks, userId]);
+  }, [userId]); // Removed tasks from deps, using tasksRef.current
 
   const handleAddTask = useCallback(async (newTaskData: NewTaskData) => {
     if (!userId) {
@@ -455,7 +458,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     try {
       const categoryColor = categoriesMap.get(newTaskData.category) || 'gray';
 
-      const targetSectionTasks = tasks.filter(t => t.parent_task_id === null && t.section_id === (newTaskData.section_id || null));
+      const targetSectionTasks = tasksRef.current.filter(t => t.parent_task_id === null && t.section_id === (newTaskData.section_id || null)); // Use tasksRef.current
       const newOrder = targetSectionTasks.length;
 
       // Construct the task object for local state update (includes category_color)
@@ -517,7 +520,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       setTasks(prev => prev.filter(task => task.id !== newTask.id));
       return false;
     }
-  }, [userId, currentDate, categoriesMap, tasks]);
+  }, [userId, currentDate, categoriesMap]); // Removed tasks from deps, using tasksRef.current
 
   const updateTask = useCallback(async (taskId: string, updates: TaskUpdate) => {
     if (!userId) {
@@ -564,15 +567,15 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     }
     let taskToDelete: Task | undefined;
     try {
-      taskToDelete = tasks.find(t => t.id === taskId);
+      taskToDelete = tasksRef.current.find(t => t.id === taskId); // Use tasksRef.current
       if (!taskToDelete) return;
 
       let idsToDelete = [taskId];
-      const subtaskIds = tasks.filter(t => t.parent_task_id === taskId).map(t => t.id);
+      const subtaskIds = tasksRef.current.filter(t => t.parent_task_id === taskId).map(t => t.id); // Use tasksRef.current
       idsToDelete = [...idsToDelete, ...subtaskIds];
 
       if (taskToDelete.recurring_type !== 'none' && taskToDelete.original_task_id === null) {
-        const recurringInstanceIds = tasks.filter(t => t.original_task_id === taskId).map(t => t.id);
+        const recurringInstanceIds = tasksRef.current.filter(t => t.original_task_id === taskId).map(t => t.id); // Use tasksRef.current
         idsToDelete = [...idsToDelete, ...recurringInstanceIds];
       }
 
@@ -592,7 +595,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       showError('Failed to delete task.');
       // No manual refetch here, rely on real-time subscription
     }
-  }, [userId, tasks]);
+  }, [userId]); // Removed tasks from deps, using tasksRef.current
 
   const toggleTaskSelection = useCallback((taskId: string, checked: boolean) => {
     setSelectedTaskIds(prev =>
@@ -652,7 +655,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       return;
     }
 
-    const taskIdsToComplete = tasks
+    const taskIdsToComplete = tasksRef.current // Use tasksRef.current
       .filter(task => task.section_id === sectionId && task.status !== 'completed')
       .map(task => task.id);
 
@@ -680,7 +683,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       showError('Failed to mark tasks as completed.');
       // No manual refetch here, rely on real-time subscription
     }
-  }, [userId, tasks]);
+  }, [userId]); // Removed tasks from deps, using tasksRef.current
 
   const createSection = useCallback(async (name: string) => {
     if (!userId) {
@@ -787,9 +790,9 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       return;
     }
 
-    const originalTasks = [...tasks]; // Capture current state for potential rollback
+    const originalTasks = [...tasksRef.current]; // Capture current state for potential rollback
 
-    const tasksInCurrentSection = tasks.filter(t => t.parent_task_id === null && t.section_id === sectionId)
+    const tasksInCurrentSection = tasksRef.current.filter(t => t.parent_task_id === null && t.section_id === sectionId) // Use tasksRef.current
                                       .sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
     const activeIndex = tasksInCurrentSection.findIndex(t => t.id === activeId);
     const overIndex = tasksInCurrentSection.findIndex(t => t.id === overId);
@@ -851,7 +854,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       showError('Failed to reorder task.');
       setTasks(originalTasks); // Revert to original state on error
     }
-  }, [userId, tasks, sections]); // Added sections to dependencies
+  }, [userId, sections]); // Removed tasks from deps, using tasksRef.current
 
   const moveTaskToNewSection = useCallback(async (activeId: string, oldSectionId: string | null, newSectionId: string | null, overId: string | null) => {
     if (!userId) {
@@ -859,15 +862,15 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       return;
     }
 
-    const originalTasks = [...tasks]; // Capture current state for potential rollback
+    const originalTasks = [...tasksRef.current]; // Capture current state for potential rollback
 
     let taskToMove: Task | undefined;
-    const tasksInOldSection = tasks.filter(t => t.section_id === oldSectionId && t.parent_task_id === null)
+    const tasksInOldSection = tasksRef.current.filter(t => t.section_id === oldSectionId && t.parent_task_id === null) // Use tasksRef.current
                                    .sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
-    const tasksInNewSection = tasks.filter(t => t.section_id === newSectionId && t.parent_task_id === null)
+    const tasksInNewSection = tasksRef.current.filter(t => t.section_id === newSectionId && t.parent_task_id === null) // Use tasksRef.current
                                    .sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
 
-    taskToMove = tasks.find(t => t.id === activeId);
+    taskToMove = tasksRef.current.find(t => t.id === activeId); // Use tasksRef.current
     if (!taskToMove) return;
 
     // Remove task from old section's list for re-indexing
@@ -959,7 +962,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       showError('Failed to move task.');
       setTasks(originalTasks); // Revert to original state on error
     }
-  }, [userId, tasks, sections]); // Added sections to dependencies
+  }, [userId, sections]); // Removed tasks from deps, using tasksRef.current
 
   const reorderSections = useCallback(async (activeId: string, overId: string) => {
     if (!userId) {
@@ -1023,7 +1026,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
     console.log(`moveTask: Attempting to move task ${taskId} in direction: ${direction}`); // Added direction log
 
-    const taskToMove = tasks.find(t => t.id === taskId);
+    const taskToMove = tasksRef.current.find(t => t.id === taskId); // Use tasksRef.current
     if (!taskToMove) {
       showError('[ERROR SOURCE] Task not found.');
       console.error(`moveTask: Task with ID ${taskId} not found.`);
@@ -1039,7 +1042,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     const currentSectionId = taskToMove.section_id;
     console.log(`moveTask: Task ${taskId} is in section ${currentSectionId || 'No Section'}`);
 
-    const tasksInCurrentSection = tasks
+    const tasksInCurrentSection = tasksRef.current // Use tasksRef.current
       .filter(t => t.section_id === currentSectionId && t.parent_task_id === null)
       .sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
 
@@ -1048,6 +1051,8 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     const currentIndex = tasksInCurrentSection.findIndex(t => t.id === taskId);
 
     console.log(`moveTask: tasksInCurrentSection length: ${tasksInCurrentSection.length}, currentIndex: ${currentIndex}`);
+    console.log('moveTask: Current tasksInCurrentSection before check', tasksInCurrentSection.map(t => ({ id: t.id, order:  t.order, description: t.description })));
+
 
     if (currentIndex === -1) {
       console.error(`moveTask: Task ${taskId} not found in its filtered section list.`);
@@ -1135,7 +1140,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       showError('[ERROR SOURCE] Failed to reorder task.');
       // No manual refetch here, rely on real-time subscription
     }
-  }, [userId, tasks, sections]);
+  }, [userId, sections]); // Removed tasks from deps, using tasksRef.current
 
   const { finalFilteredTasks, nextAvailableTask, focusModeTasksForDailyStreak } = useMemo(() => {
     console.log('filteredTasks/nextAvailableTask: --- START FILTERING ---');
