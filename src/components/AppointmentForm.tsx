@@ -245,7 +245,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
             </div>
             <div className="space-y-2">
               <Label htmlFor="end-time">End Time</Label>
-              <Input
+            <Input
                 id="end-time"
                 type="time"
                 value={endTime}
