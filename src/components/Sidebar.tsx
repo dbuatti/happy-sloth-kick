@@ -1,23 +1,23 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, BarChart3, Settings as SettingsIcon, HelpCircle, Archive as ArchiveIcon, Timer, LayoutGrid, CalendarClock, Menu, Leaf } from 'lucide-react'; // Import Leaf icon
+import { Home, BarChart3, Settings as SettingsIcon, HelpCircle, Archive as ArchiveIcon, Timer, LayoutGrid, CalendarClock, Menu, Leaf } from 'lucide-react';
 import ThemeSelector from './ThemeSelector';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { useUI } from '@/context/UIContext';
-import { useDailyTaskCount } from '@/hooks/useDailyTaskCount'; // Import the new hook
-import { Badge } from '@/components/ui/badge'; // Import Badge component
+import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
+import { Badge } from '@/components/ui/badge';
 
 interface SidebarProps {
   children: React.ReactNode;
 }
 
 const navItems = [
-  { name: 'Daily Tasks', path: '/', icon: Home, showCount: true }, // Added showCount prop
-  { name: 'Focus Mode', path: '/focus', icon: Timer },
-  { name: 'Meditation', path: '/meditation', icon: Leaf }, // New Meditation Link
+  { name: 'Daily Tasks', path: '/', icon: Home, showCount: true },
+  { name: 'Focus Mode', path: '/focus', icon: Timer }, // Updated path
+  { name: 'Meditation', path: '/meditation', icon: Leaf },
   { name: 'Project Balance', path: '/projects', icon: LayoutGrid },
   { name: 'Time Blocks', path: '/schedule', icon: CalendarClock },
   { name: 'Analytics', path: '/analytics', icon: BarChart3 },
@@ -28,7 +28,7 @@ const navItems = [
 
 const NavigationLinks = ({ onLinkClick }: { onLinkClick?: () => void }) => {
   const location = useLocation();
-  const { dailyTaskCount, loading: countLoading } = useDailyTaskCount(); // Use the hook
+  const { dailyTaskCount, loading: countLoading } = useDailyTaskCount();
 
   return (
     <nav className="flex-1 px-4 space-y-2">
