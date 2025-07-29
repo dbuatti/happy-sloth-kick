@@ -10,6 +10,7 @@ import { Task, useTasks } from '@/hooks/useTasks';
 import { cn } from '@/lib/utils';
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useUI } from '@/context/UIContext';
+import { useSound } from '@/context/SoundContext'; // Import useSound
 
 const WORK_DURATION = 25 * 60; // 25 minutes in seconds
 const SHORT_BREAK_DURATION = 5 * 60; // 5 minutes in seconds
@@ -26,10 +27,9 @@ interface FocusModeProps {
 const FocusMode: React.FC<FocusModeProps> = ({ currentDate, setCurrentDate }) => {
   const { user } = useAuth();
   const userId = user?.id;
-  // Pass the actual current date to useTasks for recurring task logic
-  // Set viewMode to 'focus' to ensure tasks are filtered by include_in_focus_mode
   const { filteredTasks, updateTask, sections } = useTasks({ currentDate: new Date(), setCurrentDate: () => {}, viewMode: 'focus' }); 
   const { setIsFocusModeActive } = useUI();
+  const { playSound } = useSound(); // Destructure playSound
 
   const [timeRemaining, setTimeRemaining] = useState(WORK_DURATION);
   const [isRunning, setIsRunning] = useState(false);
@@ -42,32 +42,28 @@ const FocusMode: React.FC<FocusModeProps> = ({ currentDate, setCurrentDate }) =>
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchSuggestedTasks = useCallback(() => {
-    if (!filteredTasks || !sections) return []; // Use filteredTasks here
-    const activeTasks = filteredTasks.filter( // Use filteredTasks here
+    if (!filteredTasks || !sections) return [];
+    const activeTasks = filteredTasks.filter(
       t => t.status === 'to-do'
     );
 
-    // The 'filteredTasks' array from useTasks (with viewMode: 'focus') is already filtered for focus mode sections.
-    // So, no need to re-filter by sections here.
-
-    // Prioritize high/urgent tasks, then due today/overdue
     const sortedTasks = activeTasks.sort((a, b) => {
       const priorityOrder: { [key: string]: number } = { 'urgent': 4, 'high': 3, 'medium': 2, 'low': 1, 'none': 0 };
       const aPrio = priorityOrder[a.priority] || 0;
       const bPrio = priorityOrder[b.priority] || 0;
 
-      if (aPrio !== bPrio) return bPrio - aPrio; // Higher priority first
+      if (aPrio !== bPrio) return bPrio - aPrio;
 
       const aDueDate = a.due_date ? new Date(a.due_date).getTime() : Infinity;
       const bDueDate = b.due_date ? new Date(b.due_date).getTime() : Infinity;
-      return aDueDate - bDueDate; // Sooner due date first
+      return aDueDate - bDueDate;
     });
-    setSuggestedTasks(sortedTasks.slice(0, 5)); // Get top 5 suggestions
-  }, [filteredTasks, sections]); // Add filteredTasks to dependency array
+    setSuggestedTasks(sortedTasks.slice(0, 5));
+  }, [filteredTasks, sections]);
 
   useEffect(() => {
     fetchSuggestedTasks();
-  }, [fetchSuggestedTasks, filteredTasks, sections]); // Add filteredTasks to dependency array
+  }, [fetchSuggestedTasks, filteredTasks, sections]);
 
   useEffect(() => {
     setIsFocusModeActive(true);
@@ -107,6 +103,8 @@ const FocusMode: React.FC<FocusModeProps> = ({ currentDate, setCurrentDate }) =>
       logSession(sessionType, actualDuration, sessionStartTime, endTime, currentTaskId, false);
     }
 
+    playSound(); // Play sound when session ends
+
     if (sessionType === 'work') {
       const newPomodoroCount = pomodoroCount + 1;
       setPomodoroCount(newPomodoroCount);
@@ -128,12 +126,13 @@ const FocusMode: React.FC<FocusModeProps> = ({ currentDate, setCurrentDate }) =>
     setSessionStartTime(null);
     setCurrentTaskId(null);
     fetchSuggestedTasks();
-  }, [sessionType, pomodoroCount, sessionStartTime, currentTaskId, logSession, fetchSuggestedTasks]);
+  }, [sessionType, pomodoroCount, sessionStartTime, currentTaskId, logSession, fetchSuggestedTasks, playSound]);
 
   const startTimer = useCallback(() => {
     if (!isRunning) {
       setIsRunning(true);
       setSessionStartTime(new Date());
+      playSound(); // Play sound when timer starts
       timerRef.current = setInterval(() => {
         setTimeRemaining(prevTime => {
           if (prevTime <= 1) {
@@ -145,15 +144,16 @@ const FocusMode: React.FC<FocusModeProps> = ({ currentDate, setCurrentDate }) =>
         });
       }, 1000);
     }
-  }, [isRunning, handleSessionEnd]);
+  }, [isRunning, handleSessionEnd, playSound]);
 
   const pauseTimer = useCallback(() => {
     setIsRunning(false);
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
+      playSound(); // Play sound when timer pauses
     }
-  }, []);
+  }, [playSound]);
 
   const resetTimer = useCallback(() => {
     pauseTimer();
@@ -163,7 +163,8 @@ const FocusMode: React.FC<FocusModeProps> = ({ currentDate, setCurrentDate }) =>
     setCurrentTaskId(null);
     setSessionStartTime(null);
     fetchSuggestedTasks();
-  }, [pauseTimer, fetchSuggestedTasks]);
+    playSound(); // Play sound when timer resets
+  }, [pauseTimer, fetchSuggestedTasks, playSound]);
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -197,7 +198,7 @@ const FocusMode: React.FC<FocusModeProps> = ({ currentDate, setCurrentDate }) =>
     showSuccess(`Focusing on: "${task.description}"`);
   };
 
-  const currentTaskDetails = currentTaskId ? filteredTasks.find(t => t.id === currentTaskId) : null; // Use filteredTasks here
+  const currentTaskDetails = currentTaskId ? filteredTasks.find(t => t.id === currentTaskId) : null;
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-4">
