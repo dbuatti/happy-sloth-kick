@@ -16,6 +16,8 @@ interface SortableTaskItemProps {
   sections: { id: string; name: string }[];
   onEditTask: (task: Task) => void;
   currentDate: Date;
+  onMoveUp: (taskId: string) => Promise<void>; // Added
+  onMoveDown: (taskId: string) => Promise<void>; // Added
 }
 
 const SortableTaskItem: React.FC<SortableTaskItemProps> = ({

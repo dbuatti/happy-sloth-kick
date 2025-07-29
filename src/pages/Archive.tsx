@@ -95,6 +95,8 @@ const Archive: React.FC<ArchiveProps> = ({ currentDate, setCurrentDate }) => {
                         sections={sections}
                         onEditTask={handleEditTask}
                         currentDate={currentDate}
+                        onMoveUp={async () => {}} // No-op for archive
+                        onMoveDown={async () => {}} // No-op for archive
                       />
                     </li>
                   ))}

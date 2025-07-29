@@ -694,7 +694,8 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     const originalTasks = [...tasks];
 
     // Calculate new order based on current state before optimistic update
-    const tasksInCurrentSection = tasks.filter(t => t.section_id === sectionId && t.parent_task_id === null);
+    const tasksInCurrentSection = tasks.filter(t => t.parent_task_id === null && t.section_id === sectionId)
+                                      .sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
     const activeIndex = tasksInCurrentSection.findIndex(t => t.id === activeId);
     const overIndex = tasksInCurrentSection.findIndex(t => t.id === overId);
 
@@ -747,8 +748,10 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
     // Calculate new state and DB payload *before* optimistic update
     let taskToMove: Task | undefined;
-    const tasksInOldSection = tasks.filter(t => t.section_id === oldSectionId && t.parent_task_id === null);
-    const tasksInNewSection = tasks.filter(t => t.section_id === newSectionId && t.parent_task_id === null);
+    const tasksInOldSection = tasks.filter(t => t.section_id === oldSectionId && t.parent_task_id === null)
+                                   .sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
+    const tasksInNewSection = tasks.filter(t => t.section_id === newSectionId && t.parent_task_id === null)
+                                   .sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
 
     taskToMove = tasks.find(t => t.id === activeId);
     if (!taskToMove) return;
@@ -862,6 +865,77 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       setSections(originalSections); // Revert to original state on error
     }
   }, [userId, sections]);
+
+  const moveTask = useCallback(async (taskId: string, direction: 'up' | 'down') => {
+    if (!userId) {
+      showError('User not authenticated.');
+      return;
+    }
+
+    const taskToMove = tasks.find(t => t.id === taskId);
+    if (!taskToMove || taskToMove.parent_task_id !== null) { // Only allow reordering top-level tasks
+      showError('Cannot reorder sub-tasks or task not found.');
+      return;
+    }
+
+    const currentSectionId = taskToMove.section_id;
+    const tasksInCurrentSection = tasks
+      .filter(t => t.section_id === currentSectionId && t.parent_task_id === null)
+      .sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
+
+    const currentIndex = tasksInCurrentSection.findIndex(t => t.id === taskId);
+
+    if (currentIndex === -1) return; // Should not happen if taskToMove was found
+
+    let newIndex = currentIndex;
+    if (direction === 'up') {
+      if (currentIndex === 0) {
+        showError('Task is already at the top.');
+        return;
+      }
+      newIndex = currentIndex - 1;
+    } else { // direction === 'down'
+      if (currentIndex === tasksInCurrentSection.length - 1) {
+        showError('Task is already at the bottom.');
+        return;
+      }
+      newIndex = currentIndex + 1;
+    }
+
+    const newOrderedTasksInSection = arrayMove(tasksInCurrentSection, currentIndex, newIndex);
+
+    const updates = newOrderedTasksInSection.map((task, index) => ({
+      id: task.id,
+      order: index,
+      user_id: userId,
+    }));
+
+    // Optimistic update
+    setTasks(prevTasks => {
+      const updatedTasksMap = new Map(updates.map(u => [u.id, u.order]));
+      return prevTasks.map(task => {
+        if (updatedTasksMap.has(task.id)) {
+          return { ...task, order: updatedTasksMap.get(task.id) };
+        }
+        return task;
+      });
+    });
+
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .upsert(updates, { onConflict: 'id' });
+
+      if (error) {
+        throw error;
+      }
+      showSuccess('Task reordered successfully!');
+    } catch (error: any) {
+      console.error('Error reordering task:', error);
+      showError('Failed to reorder task.');
+      fetchDataAndSections(); // Revert by refetching
+    }
+  }, [userId, tasks, fetchDataAndSections]);
 
   const { finalFilteredTasks, nextAvailableTask, focusModeTasksForDailyStreak } = useMemo(() => {
     console.log('filteredTasks/nextAvailableTask: --- START FILTERING ---');
@@ -1074,6 +1148,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     reorderTasksInSameSection,
     moveTaskToNewSection,
     reorderSections,
+    moveTask, // Expose the new moveTask function
     fetchDataAndSections,
     allCategories,
     focusModeTasksForDailyStreak, // New return value

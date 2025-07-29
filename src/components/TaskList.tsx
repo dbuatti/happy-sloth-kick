@@ -72,6 +72,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
     reorderTasksInSameSection, // Added
     moveTaskToNewSection,       // Added
     reorderSections,            // Added
+    moveTask, // Destructure the new moveTask function
     allCategories,
     statusFilter,
     setStatusFilter,
@@ -438,6 +439,8 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                                         sections={sections}
                                         onEditTask={handleEditTask}
                                         currentDate={currentDate}
+                                        onMoveUp={(taskId) => moveTask(taskId, 'up')} // Pass moveTask with 'up' direction
+                                        onMoveDown={(taskId) => moveTask(taskId, 'down')} // Pass moveTask with 'down' direction
                                       />
                                     ))
                                   )}
@@ -482,6 +485,8 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                                 sections={sections}
                                 onEditTask={handleEditTask}
                                 currentDate={currentDate}
+                                onMoveUp={(taskId) => moveTask(taskId, 'up')} // Pass moveTask with 'up' direction
+                                onMoveDown={(taskId) => moveTask(taskId, 'down')} // Pass moveTask with 'down' direction
                               />
                             ))}
                           </ul>
@@ -518,6 +523,8 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                           sections={sections}
                           onEditTask={handleEditTask}
                           currentDate={currentDate}
+                          onMoveUp={(taskId) => moveTask(taskId, 'up')} // Pass moveTask with 'up' direction
+                          onMoveDown={(taskId) => moveTask(taskId, 'down')} // Pass moveTask with 'down' direction
                         />
                       )}
                       {activeSection && (
