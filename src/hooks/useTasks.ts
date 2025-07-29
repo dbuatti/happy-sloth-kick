@@ -951,8 +951,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         throw error;
       }
       showSuccess('Task moved successfully!');
-    }
-    catch (error: any) {
+    } catch (error: any) {
       console.error('Error moving task:', error);
       showError('Failed to move task.');
       setTasks(originalTasks); // Revert to original state on error
@@ -1051,6 +1050,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     let newIndex = currentIndex;
     if (direction === 'up') {
       if (currentIndex === 0) {
+        console.log(`moveTask: Attempted to move up from top. Current index: ${currentIndex}, Length: ${tasksInCurrentSection.length}`); // NEW LOG
         showError('Task is already at the top.');
         console.log('moveTask: Task already at top.');
         return;
@@ -1058,6 +1058,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       newIndex = currentIndex - 1;
     } else { // direction === 'down'
       if (currentIndex === tasksInCurrentSection.length - 1) {
+        console.log(`moveTask: Attempted to move down from bottom. Current index: ${currentIndex}, Length: ${tasksInCurrentSection.length}`); // NEW LOG
         showError('Task is already at the bottom.');
         console.log('moveTask: Task already at bottom.');
         return;
