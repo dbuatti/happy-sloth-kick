@@ -286,7 +286,7 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
             Choose your focus method.
           </p>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 min-h-[500px]"> {/* Added min-h to prevent layout shift */}
           <Tabs value={activeTab} onValueChange={(value) => {
             setActiveTab(value as 'pomodoro' | 'custom');
             // Pause any running timer when switching tabs
