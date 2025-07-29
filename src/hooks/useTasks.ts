@@ -705,7 +705,18 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
     const updates = newOrderedTasksInSection.map((task, index) => ({
       id: task.id,
-      order: index,
+      description: task.description, // Include all non-nullable fields
+      status: task.status,
+      recurring_type: task.recurring_type,
+      created_at: task.created_at,
+      category: task.category,
+      priority: task.priority,
+      due_date: task.due_date,
+      notes: task.notes,
+      remind_at: task.remind_at,
+      section_id: task.section_id,
+      parent_task_id: task.parent_task_id,
+      order: index, // The field we are actually updating
       user_id: userId, // Include user_id for RLS
     }));
 
@@ -760,8 +771,19 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     const oldSectionTasksAfterRemoval = tasksInOldSection.filter(t => t.id !== activeId);
     const updatesForOldSection = oldSectionTasksAfterRemoval.map((task, index) => ({
       id: task.id,
+      description: task.description, // Include all non-nullable fields
+      status: task.status,
+      recurring_type: task.recurring_type,
+      created_at: task.created_at,
+      category: task.category,
+      priority: task.priority,
+      due_date: task.due_date,
+      notes: task.notes,
+      remind_at: task.remind_at,
+      section_id: task.section_id,
+      parent_task_id: task.parent_task_id,
       order: index,
-      user_id: userId, // Include user_id for RLS
+      user_id: userId,
     }));
 
     // Add task to new section's list at the correct position for re-indexing
@@ -779,9 +801,19 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
     const updatesForNewSection = newSectionTasksWithMoved.map((task, index) => ({
       id: task.id,
+      description: task.description, // Include all non-nullable fields
+      status: task.status,
+      recurring_type: task.recurring_type,
+      created_at: task.created_at,
+      category: task.category,
+      priority: task.priority,
+      due_date: task.due_date,
+      notes: task.notes,
+      remind_at: task.remind_at,
       section_id: newSectionId, // Ensure section_id is set for the moved task
+      parent_task_id: task.parent_task_id,
       order: index,
-      user_id: userId, // Include user_id for RLS
+      user_id: userId,
     }));
 
     const allUpdatesForDb = [
@@ -835,8 +867,10 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
     const updates = newOrderedSections.map((section, index) => ({
       id: section.id,
-      order: index,
-      user_id: userId, // Include user_id for RLS
+      name: section.name, // Include non-nullable fields
+      user_id: userId, // Include non-nullable fields
+      include_in_focus_mode: section.include_in_focus_mode, // Include non-nullable fields
+      order: index, // The field we are actually updating
     }));
 
     // Optimistic update
@@ -928,7 +962,18 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
     const updates = newOrderedTasksInSection.map((task, index) => ({
       id: task.id,
-      order: index,
+      description: task.description, // Include all non-nullable fields
+      status: task.status,
+      recurring_type: task.recurring_type,
+      created_at: task.created_at,
+      category: task.category,
+      priority: task.priority,
+      due_date: task.due_date,
+      notes: task.notes,
+      remind_at: task.remind_at,
+      section_id: task.section_id,
+      parent_task_id: task.parent_task_id,
+      order: index, // The field we are actually updating
       user_id: userId, // Include user_id for RLS
     }));
 
@@ -1111,7 +1156,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     }
 
     // The `DailyStreak` needs `tasksForFocusModeDisplay` (or a subset of it)
-    // Let's ensure `focusModeTasksForDailyMode` is also filtered by status 'to-do' or 'completed'
+    // Let's ensure `focusModeTasksForDailyStreak` is also filtered by status 'to-do' or 'completed'
     // and is not archived, as DailyStreak is about progress.
     const dailyStreakRelevantFocusTasks = tasksForFocusModeDisplay.filter(task => task.status !== 'archived');
 
