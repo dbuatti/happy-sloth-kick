@@ -286,7 +286,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         } else if (isBefore(originalTaskCreatedAtUTC, effectiveCurrentDateUTC)) {
             // If the original task was created before today, check the latest previous instance
             const latestPreviousInstance = allInstancesOfThisRecurringTask
-                .filter(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status !== 'archived') // Only consider non-archived for carry-over logic
+                .filter(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status === 'to-do') // Only consider non-archived for carry-over logic
                 .sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime())[0]; // Latest one
 
             if (latestPreviousInstance) {
@@ -690,10 +690,8 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       return;
     }
 
-    // Capture current state for potential rollback
-    const originalTasks = [...tasks];
+    const originalTasks = [...tasks]; // Capture current state for potential rollback
 
-    // Calculate new order based on current state before optimistic update
     const tasksInCurrentSection = tasks.filter(t => t.parent_task_id === null && t.section_id === sectionId)
                                       .sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
     const activeIndex = tasksInCurrentSection.findIndex(t => t.id === activeId);
@@ -732,13 +730,12 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     });
 
     try {
-      // Persist to DB
       const { error } = await supabase
         .from('tasks')
         .upsert(updates, { onConflict: 'id' });
 
       if (error) {
-        throw error; // Trigger catch block
+        throw error;
       }
       showSuccess('Task reordered successfully!');
     } catch (error: any) {
@@ -754,10 +751,8 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       return;
     }
 
-    // Capture current state for potential rollback
-    const originalTasks = [...tasks];
+    const originalTasks = [...tasks]; // Capture current state for potential rollback
 
-    // Calculate new state and DB payload *before* optimistic update
     let taskToMove: Task | undefined;
     const tasksInOldSection = tasks.filter(t => t.section_id === oldSectionId && t.parent_task_id === null)
                                    .sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
@@ -838,7 +833,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         .upsert(allUpdatesForDb, { onConflict: 'id' });
 
       if (error) {
-        throw error; // Trigger catch block
+        throw error;
       }
       showSuccess('Task moved successfully!');
     } catch (error: any) {
@@ -854,10 +849,8 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       return;
     }
 
-    // Capture current state for potential rollback
-    const originalSections = [...sections];
+    const originalSections = [...sections]; // Capture current state for potential rollback
 
-    // Calculate new state and DB payload *before* optimistic update
     const activeIndex = sections.findIndex(s => s.id === activeId);
     const overIndex = sections.findIndex(s => s.id === overId);
 
@@ -890,7 +883,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         .upsert(updates, { onConflict: 'id' });
 
       if (error) {
-        throw error; // Trigger catch block
+        throw error;
       }
       showSuccess('Sections reordered successfully!');
     } catch (error: any) {
