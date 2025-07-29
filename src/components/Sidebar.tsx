@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, BarChart3, Settings as SettingsIcon, HelpCircle, Archive as ArchiveIcon, Timer, LayoutGrid, CalendarClock, Menu, Leaf } from 'lucide-react';
+import { Home, BarChart3, Settings as SettingsIcon, HelpCircle, Archive as ArchiveIcon, Timer, LayoutGrid, CalendarClock, Menu, Leaf, Moon } from 'lucide-react';
 import ThemeSelector from './ThemeSelector';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -18,6 +18,7 @@ const navItems = [
   { name: 'Daily Tasks', path: '/', icon: Home, showCount: true },
   { name: 'Focus Mode', path: '/focus', icon: Timer }, // Updated path
   { name: 'Meditation', path: '/meditation', icon: Leaf },
+  { name: 'Sleep Tracker', path: '/sleep', icon: Moon }, // New nav item
   { name: 'Project Balance', path: '/projects', icon: LayoutGrid },
   { name: 'Time Blocks', path: '/schedule', icon: CalendarClock },
   { name: 'Analytics', path: '/analytics', icon: BarChart3 },

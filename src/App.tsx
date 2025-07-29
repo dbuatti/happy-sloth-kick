@@ -12,6 +12,7 @@ import ProductivityTimer from "./pages/ProductivityTimer"; // Updated import
 import ProjectBalanceTracker from "./pages/ProjectBalanceTracker";
 import TimeBlockSchedule from "./pages/TimeBlockSchedule";
 import Meditation from "./pages/Meditation";
+import SleepTracker from "./pages/SleepTracker"; // New import
 import { AuthProvider } from "@/context/AuthContext";
 import CommandPalette from "./components/CommandPalette";
 import { useState } from 'react';
@@ -50,6 +51,7 @@ const App = () => {
                     <Route path="/projects" element={<ProjectBalanceTracker />} />
                     <Route path="/schedule" element={<TimeBlockSchedule />} />
                     <Route path="/meditation" element={<Meditation />} />
+                    <Route path="/sleep" element={<SleepTracker />} /> {/* New route */}
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                     <Route path="*" element={<NotFound />} />
                   </Routes>
