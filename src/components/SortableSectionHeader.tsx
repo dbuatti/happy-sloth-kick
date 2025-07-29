@@ -85,12 +85,15 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
             <Button variant="ghost" size="sm" onClick={handleCancelSectionEdit}>Cancel</Button>
           </div>
         ) : (
-          <div className="flex items-center gap-2 flex-1">
+          <div 
+            className="flex items-center gap-2 flex-1 cursor-pointer" 
+            onClick={() => toggleSection(section.id)} // Added onClick to toggle section
+          >
             <h3 className="text-xl font-semibold flex items-center gap-2">
               <FolderOpen className="h-5 w-5 text-muted-foreground" />
               {section.name} ({sectionTasksCount})
             </h3>
-            <Button variant="ghost" size="icon" onClick={() => handleEditSectionClick(section)} className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200" data-no-dnd="true">
+            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleEditSectionClick(section); }} className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200" data-no-dnd="true">
               <Edit className="h-4 w-4" />
             </Button>
           </div>
