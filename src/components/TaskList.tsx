@@ -428,7 +428,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                                   ) : (
                                     sectionTasks.map(task => (
                                       <SortableTaskItem
-                                        key={task.id}
+                                        key={`${task.id}-${task.order}`}
                                         task={task}
                                         userId={userId}
                                         onStatusChange={handleStatusChange}
@@ -439,8 +439,8 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                                         sections={sections}
                                         onEditTask={handleEditTask}
                                         currentDate={currentDate}
-                                        onMoveUp={(taskId) => moveTask(taskId, 'up')} // Pass moveTask with 'up' direction
-                                        onMoveDown={(taskId) => moveTask(taskId, 'down')} // Pass moveTask with 'down' direction
+                                        onMoveUp={(taskId) => moveTask(taskId, 'up')}
+                                        onMoveDown={(taskId) => moveTask(taskId, 'down')}
                                       />
                                     ))
                                   )}
@@ -474,7 +474,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                           <ul className="list-none space-y-2">
                             {tasksBySection['no-section'].map(task => (
                               <SortableTaskItem
-                                key={task.id}
+                                key={`${task.id}-${task.order}`}
                                 task={task}
                                 userId={userId}
                                 onStatusChange={handleStatusChange}
@@ -485,8 +485,8 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                                 sections={sections}
                                 onEditTask={handleEditTask}
                                 currentDate={currentDate}
-                                onMoveUp={(taskId) => moveTask(taskId, 'up')} // Pass moveTask with 'up' direction
-                                onMoveDown={(taskId) => moveTask(taskId, 'down')} // Pass moveTask with 'down' direction
+                                onMoveUp={(taskId) => moveTask(taskId, 'up')}
+                                onMoveDown={(taskId) => moveTask(taskId, 'down')}
                               />
                             ))}
                           </ul>
@@ -502,7 +502,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                     <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
                       <ListTodo className="h-16 w-16 text-muted-foreground mb-4" />
                       <p className="text-xl font-medium mb-2">No tasks found for this day with the current filters.</p>
-                      <p className="text-md">Try adjusting your filters or add a new task!</p>
+                      <p className="text-sm">Try adjusting your filters or add a new task!</p>
                       <Button onClick={() => handleAddTaskToSpecificSection(null)} className="mt-4">
                         <Plus className="mr-2 h-4 w-4" /> Add Your First Task
                       </Button>
@@ -513,6 +513,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                     <DragOverlay>
                       {activeTask && (
                         <SortableTaskItem
+                          key={`${activeTask.id}-${activeTask.order}`}
                           task={activeTask}
                           userId={userId}
                           onStatusChange={handleStatusChange}
@@ -523,8 +524,8 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                           sections={sections}
                           onEditTask={handleEditTask}
                           currentDate={currentDate}
-                          onMoveUp={(taskId) => moveTask(taskId, 'up')} // Pass moveTask with 'up' direction
-                          onMoveDown={(taskId) => moveTask(taskId, 'down')} // Pass moveTask with 'down' direction
+                          onMoveUp={(taskId) => moveTask(taskId, 'up')}
+                          onMoveDown={(taskId) => moveTask(taskId, 'down')}
                         />
                       )}
                       {activeSection && (
@@ -596,7 +597,9 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isBulkActionInProgress}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isBulkActionInProgress}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction onClick={confirmBulkDelete} disabled={isBulkActionInProgress}>
               {isBulkActionInProgress ? 'Deleting...' : 'Continue'}
             </AlertDialogAction>
