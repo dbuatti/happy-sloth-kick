@@ -96,7 +96,7 @@ const WorkHoursSettings: React.FC = () => {
         </CardTitle>
         <p className="text-sm text-muted-foreground">Set your daily working hours to help manage your productivity.</p>
       </CardHeader>
-      <CardContent className="space-y-3 pt-0">
+      <CardContent className="space-y-4 pt-0">
         <div className="border rounded-md p-3 bg-gray-50 dark:bg-gray-700/50">
           <h3 className="text-lg font-semibold mb-3">Apply to All Days</h3>
           <div className="flex flex-col sm:flex-row items-center gap-3">
@@ -155,7 +155,7 @@ const WorkHoursSettings: React.FC = () => {
             />
           </div>
         ))}
-        <Button onClick={handleSaveAllWorkHours} className="w-full mt-3" disabled={isSaving}>
+        <Button onClick={handleSaveAllWorkHours} className="w-full mt-4" disabled={isSaving}>
           {isSaving ? 'Saving...' : 'Save Work Hours'}
         </Button>
       </CardContent>

@@ -193,8 +193,8 @@ const ProjectBalanceTracker: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col">
       <main className="flex-grow p-4">
-        <Card className="w-full max-w-4xl mx-auto shadow-lg p-3">
-          <CardHeader className="pb-1">
+        <Card className="w-full max-w-4xl mx-auto shadow-lg p-4">
+          <CardHeader className="pb-2">
             {isEditingTitle ? (
               <div className="flex items-center w-full gap-2">
                 <Input
@@ -302,7 +302,7 @@ const ProjectBalanceTracker: React.FC = () => {
             )}
 
             {loading ? (
-              <div className="space-y-2">
+              <div className="space-y-4">
                 {[...Array(3)].map((_, i) => (
                   <div key={i} className="border rounded-lg p-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-card dark:bg-gray-800 border-border">
                     <div className="flex-1 min-w-0 space-y-2">
@@ -325,7 +325,7 @@ const ProjectBalanceTracker: React.FC = () => {
                 <p className="text-sm">Click "Add Project" to start tracking your balance and ensure you're giving attention to all your important areas.</p>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-4">
                 {leastWorkedOnProject && (
                   <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 p-3 rounded-lg flex items-center gap-3">
                     <Lightbulb className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />

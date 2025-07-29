@@ -47,7 +47,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
       {...attributes}
       {...listeners}
       className={cn(
-        "relative border rounded-lg p-1.5 transition-all duration-200 ease-in-out group",
+        "relative border rounded-lg p-2 transition-all duration-200 ease-in-out group",
         isDragging ? "ring-2 ring-primary shadow-lg" : "hover:shadow-md"
       )}
     >

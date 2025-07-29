@@ -157,7 +157,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
         <DialogHeader>
           <DialogTitle>{initialData ? 'Edit Appointment' : 'Add New Appointment'}</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-3 py-3">
+        <div className="grid gap-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="title">Title</Label>
             <Input
@@ -183,7 +183,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Date</Label>
               <Popover>
@@ -231,7 +231,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="start-time">Start Time</Label>
               <Input
@@ -256,7 +256,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
             </div>
           </div>
         </div>
-        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2 pt-3">
+        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2 pt-4">
           {initialData && ( // Only show delete button if editing an existing appointment
             <Button variant="destructive" onClick={handleDeleteClick} disabled={isSaving} className="w-full sm:w-auto mt-2 sm:mt-0">
               <Trash2 className="mr-2 h-4 w-4" /> Delete Appointment

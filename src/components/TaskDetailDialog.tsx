@@ -141,8 +141,8 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
         <DialogHeader>
           <DialogTitle>Edit Task</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-2 py-2"> {/* Reduced gap-3 py-3 to gap-2 py-2 */}
-          <div className="space-y-1"> {/* Reduced space-y-2 to space-y-1 */}
+        <div className="grid gap-3 py-3">
+          <div className="space-y-2">
             <Label htmlFor="description">Task Description</Label>
             <Input
               id="description"
@@ -157,11 +157,11 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
             <PrioritySelector value={editingPriority} onChange={setEditingPriority} />
           </div>
 
-          <div className="space-y-1"> {/* Reduced space-y-2 to space-y-1 */}
+          <div className="space-y-2">
             <SectionSelector value={editingSectionId} onChange={setEditingSectionId} userId={userId} sections={sections} />
           </div>
 
-          <div className="space-y-1"> {/* Reduced space-y-2 to space-y-1 */}
+          <div className="space-y-2">
             <Label>Due Date</Label>
             <Popover>
               <PopoverTrigger asChild>
@@ -188,7 +188,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
             </Popover>
           </div>
 
-          <div className="space-y-1"> {/* Reduced space-y-2 to space-y-1 */}
+          <div className="space-y-2">
             <Label>Reminder</Label>
             <div className="flex gap-2">
               <Popover>
@@ -224,7 +224,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
           </div>
         </div>
 
-        <div className="space-y-1"> {/* Reduced space-y-2 to space-y-1 */}
+        <div className="space-y-2">
             <Label htmlFor="notes">Notes</Label>
             <Textarea
               id="notes"
@@ -235,7 +235,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
             />
           </div>
 
-          <div className="space-y-2 mt-3 border-t pt-2"> {/* Reduced mt-4 pt-3 to mt-3 pt-2 */}
+          <div className="space-y-2 mt-4 border-t pt-3">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold">Sub-tasks ({subtasks.length})</h3>
               <Dialog open={isAddSubtaskOpen} onOpenChange={setIsAddSubtaskOpen}>
@@ -262,9 +262,9 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
             {subtasks.length === 0 ? (
               <p className="text-sm text-muted-foreground">No sub-tasks yet. Break down this task into smaller steps!</p>
             ) : (
-              <ul className="space-y-1"> {/* Reduced space-y-2 to space-y-1 */}
+              <ul className="space-y-2">
                 {subtasks.map(subtask => (
-                  <li key={subtask.id} className="flex items-center space-x-2 p-1 border rounded-md bg-background"> {/* Reduced p-2 to p-1 */}
+                  <li key={subtask.id} className="flex items-center space-x-2 p-2 border rounded-md bg-background">
                     <Checkbox
                       checked={subtask.status === 'completed'}
                       onCheckedChange={(checked) => {
@@ -273,7 +273,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
                         }
                       }}
                       id={`subtask-${subtask.id}`}
-                      className="flex-shrink-0 h-3.5 w-3.5" // Reduced size from h-4 w-4 to h-3.5 w-3.5
+                      className="flex-shrink-0 h-3.5 w-3.5"
                     />
                     <label
                       htmlFor={`subtask-${subtask.id}`}

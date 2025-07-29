@@ -99,7 +99,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   return (
     <div
       className={cn(
-        "relative flex items-start space-x-3 w-full", // Changed items-center to items-start
+        "relative flex items-start space-x-3 w-full",
         task.status === 'completed' ? "opacity-70 bg-green-50/20 dark:bg-green-900/20" : "",
       )}
     >
@@ -109,7 +109,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
         onCheckedChange={handleCheckboxChange}
         id={`task-${task.id}`}
         onClick={(e) => e.stopPropagation()}
-        className="flex-shrink-0 h-4 w-4 mt-1" // Reverted size to h-4 w-4, added mt-1 for alignment
+        className="flex-shrink-0 h-4 w-4 mt-1"
         data-no-dnd="true"
       />
 
@@ -134,7 +134,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           </TooltipContent>
         </Tooltip>
 
-        <div className="flex flex-wrap items-center text-xs text-muted-foreground mt-1 gap-x-2"> {/* Added flex-wrap and gap-x-2 */}
+        <div className="flex flex-wrap items-center text-xs text-muted-foreground mt-1 gap-x-2">
           <div className={cn("w-3 h-3 rounded-full flex items-center justify-center border", categoryColorProps.backgroundClass, categoryColorProps.dotBorder)}>
             <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: categoryColorProps.dotColor }}></div>
           </div>
@@ -155,11 +155,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
             </Tooltip>
           )}
           {task.due_date && (
-            <span className={cn(
-              "flex items-center gap-1",
-              isOverdue && "text-red-600 dark:text-red-400",
-              isUpcoming && "text-orange-500 dark:text-orange-300"
-            )}>
+            <span className="flex items-center gap-1">
               <Calendar className="h-3 w-3" />
               {getDueDateDisplay(task.due_date)}
             </span>
@@ -190,7 +186,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
             variant="outline" 
             size="sm" 
             className="h-7 px-2 text-xs"
-            onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'to-do'); playSound('success'); }} // Play success sound
+            onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'to-do'); playSound('success'); }}
             data-no-dnd="true"
           >
             <ListTodo className="h-3 w-3 mr-1" /> To-Do
@@ -245,7 +241,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
                       onClick={(e) => { 
                         e.stopPropagation(); 
                         onUpdate(task.id, { section_id: section.id }); 
-                        playSound('success'); // Play success sound
+                        playSound('success');
                       }}
                       disabled={task.section_id === section.id}
                     >

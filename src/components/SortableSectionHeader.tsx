@@ -71,7 +71,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
         isDragging ? "ring-2 ring-primary shadow-lg" : ""
       )}
     >
-      <div className="flex items-center justify-between p-1 pl-3">
+      <div className="flex items-center justify-between p-2 pl-3">
         {editingSectionId === section.id ? (
           <div className="flex items-center w-full gap-2" data-no-dnd="true"> {/* Prevent drag when editing */}
             <Input
@@ -102,14 +102,14 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
           <div className="flex items-center space-x-2">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Label htmlFor={`focus-mode-toggle-${section.id}`} className="text-xs text-muted-foreground cursor-pointer">
-                  {section.include_in_focus_mode ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                </Label>
-              </TooltipTrigger>
-              <TooltipContent>
-                {section.include_in_focus_mode ? 'Included in Focus Mode' : 'Excluded from Focus Mode'}
-              </TooltipContent>
-            </Tooltip>
+                        <Label htmlFor={`focus-mode-toggle-${section.id}`} className="text-xs text-muted-foreground cursor-pointer">
+                          {section.include_in_focus_mode ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                        </Label>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {section.include_in_focus_mode ? 'Included in Focus Mode' : 'Excluded from Focus Mode'}
+                      </TooltipContent>
+                    </Tooltip>
             <Switch
               id={`focus-mode-toggle-${section.id}`}
               checked={section.include_in_focus_mode}

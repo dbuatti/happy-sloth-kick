@@ -162,8 +162,8 @@ const Analytics: React.FC<AnalyticsProps> = ({ currentDate, setCurrentDate }) =>
   return (
     <div className="flex-1 flex flex-col">
       <main className="flex-grow p-4">
-        <Card className="w-full max-w-4xl mx-auto shadow-lg p-3"> {/* Reduced p-4 to p-3 */}
-          <CardHeader className="pb-1"> {/* Reduced pb-2 to pb-1 */}
+        <Card className="w-full max-w-4xl mx-auto shadow-lg p-4">
+          <CardHeader className="pb-2">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
               <CardTitle className="text-3xl font-bold">Task Analytics</CardTitle>
               <div className="flex flex-col sm:flex-row gap-2">
@@ -222,10 +222,10 @@ const Analytics: React.FC<AnalyticsProps> = ({ currentDate, setCurrentDate }) =>
                 </div>
               </div>
             ) : (
-              <div className="space-y-6"> {/* Reduced space-y-8 to space-y-6 */}
-                <div className="grid gap-4 md:grid-cols-4"> {/* Reduced gap-6 to gap-4 */}
+              <div className="space-y-6">
+                <div className="grid gap-4 md:grid-cols-4">
                   <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1"> {/* Reduced pb-2 to pb-1 */}
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium">Total Tasks Completed</CardTitle>
                       <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
@@ -235,7 +235,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ currentDate, setCurrentDate }) =>
                     </CardContent>
                   </Card>
                   <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1"> {/* Reduced pb-2 to pb-1 */}
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium">Average Completion Rate</CardTitle>
                       <Target className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
@@ -245,7 +245,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ currentDate, setCurrentDate }) =>
                     </CardContent>
                   </Card>
                   <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1"> {/* Reduced pb-2 to pb-1 */}
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium">Most Productive Day</CardTitle>
                       <Clock className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
@@ -257,7 +257,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ currentDate, setCurrentDate }) =>
                     </CardContent>
                   </Card>
                   <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1"> {/* Reduced pb-2 to pb-1 */}
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium">Total Tasks Created</CardTitle>
                       <ListTodo className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
@@ -268,9 +268,9 @@ const Analytics: React.FC<AnalyticsProps> = ({ currentDate, setCurrentDate }) =>
                   </Card>
                 </div>
 
-                <div className="space-y-6"> {/* Reduced space-y-8 to space-y-6 */}
+                <div className="space-y-6">
                   <div>
-                    <h3 className="text-lg font-semibold mb-3">Tasks Completed Per Day</h3> {/* Reduced mb-4 to mb-3 */}
+                    <h3 className="text-lg font-semibold mb-3">Tasks Completed Per Day</h3>
                     <div className="h-80">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={chartData}>
@@ -286,7 +286,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ currentDate, setCurrentDate }) =>
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-semibold mb-3">Daily Completion Rate</h3> {/* Reduced mb-4 to mb-3 */}
+                    <h3 className="text-lg font-semibold mb-3">Daily Completion Rate</h3>
                     <div className="h-80">
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={chartData}>
@@ -300,9 +300,9 @@ const Analytics: React.FC<AnalyticsProps> = ({ currentDate, setCurrentDate }) =>
                     </div>
                   </div>
 
-                  <div className="grid md:grid-cols-2 gap-6"> {/* Reduced gap-8 to gap-6 */}
+                  <div className="grid md:grid-cols-2 gap-6">
                     <div>
-                      <h3 className="text-lg font-semibold mb-3">Tasks by Category</h3> {/* Reduced mb-4 to mb-3 */}
+                      <h3 className="text-lg font-semibold mb-3">Tasks by Category</h3>
                       <div className="h-80">
                         <ResponsiveContainer width="100%" height="100%">
                           <PieChart>
@@ -327,7 +327,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ currentDate, setCurrentDate }) =>
                     </div>
 
                     <div>
-                      <h3 className="text-lg font-semibold mb-3">Tasks by Priority</h3> {/* Reduced mb-4 to mb-3 */}
+                      <h3 className="text-lg font-semibold mb-3">Tasks by Priority</h3>
                       <div className="h-80">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart data={Object.entries(priorityData).map(([priority, data]: [string, any]) => ({

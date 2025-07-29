@@ -65,7 +65,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "absolute rounded-lg p-1 text-white shadow-md cursor-pointer", // Reduced p-2 to p-1
+        "absolute rounded-lg p-2 text-white shadow-md cursor-pointer",
         "flex flex-col justify-between transition-all duration-200 ease-in-out",
         "group",
         isDragging ? "ring-2 ring-primary shadow-lg" : "hover:scale-[1.01] hover:shadow-lg"

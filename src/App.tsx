@@ -17,9 +17,10 @@ import { AuthProvider } from "@/context/AuthContext";
 import CommandPalette from "./components/CommandPalette";
 import { useState } from 'react';
 import Sidebar from "./components/Sidebar";
-import { UIProvider } from "@/context/UIContext";
+import { UIProvider, useUI } from "@/context/UIContext"; // Import useUI
 import { SoundProvider } from "@/context/SoundContext";
 import { addDays, startOfDay } from 'date-fns';
+import { cn } from '@/lib/utils'; // Import cn
 
 // Helper to get UTC start of day
 const getUTCStartOfDay = (date: Date) => {
@@ -28,10 +29,40 @@ const getUTCStartOfDay = (date: Date) => {
 
 const queryClient = new QueryClient();
 
-const App = () => {
+const AppContent = () => {
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(() => getUTCStartOfDay(new Date()));
+  const { isFocusModeActive } = useUI(); // Use the UI context
 
+  return (
+    <BrowserRouter>
+      <Sidebar>
+        <div className={cn(
+          "flex-1 flex flex-col",
+          isFocusModeActive && "border-l-4 border-primary-foreground" // Visual cue for focus mode
+        )}>
+          <Routes>
+            <Route path="/" element={<Index setIsAddTaskOpen={setIsAddTaskOpen} currentDate={currentDate} setCurrentDate={setCurrentDate} />} />
+            <Route path="/analytics" element={<Analytics currentDate={currentDate} setCurrentDate={setCurrentDate} />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/help" element={<Help />} />
+            <Route path="/archive" element={<Archive currentDate={currentDate} setCurrentDate={setCurrentDate} />} />
+            <Route path="/focus" element={<ProductivityTimer currentDate={currentDate} setCurrentDate={setCurrentDate} />} />
+            <Route path="/projects" element={<ProjectBalanceTracker />} />
+            <Route path="/schedule" element={<TimeBlockSchedule />} />
+            <Route path="/meditation" element={<Meditation />} />
+            <Route path="/sleep" element={<SleepTracker />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </div>
+      </Sidebar>
+      <CommandPalette isAddTaskOpen={isAddTaskOpen} setIsAddTaskOpen={setIsAddTaskOpen} currentDate={currentDate} setCurrentDate={setCurrentDate} />
+    </BrowserRouter>
+  );
+};
+
+const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -39,25 +70,7 @@ const App = () => {
         <AuthProvider>
           <UIProvider>
             <SoundProvider>
-              <BrowserRouter>
-                <Sidebar>
-                  <Routes>
-                    <Route path="/" element={<Index setIsAddTaskOpen={setIsAddTaskOpen} currentDate={currentDate} setCurrentDate={setCurrentDate} />} />
-                    <Route path="/analytics" element={<Analytics currentDate={currentDate} setCurrentDate={setCurrentDate} />} />
-                    <Route path="/settings" element={<Settings />} />
-                    <Route path="/help" element={<Help />} />
-                    <Route path="/archive" element={<Archive currentDate={currentDate} setCurrentDate={setCurrentDate} />} />
-                    <Route path="/focus" element={<ProductivityTimer currentDate={currentDate} setCurrentDate={setCurrentDate} />} /> {/* Updated route */}
-                    <Route path="/projects" element={<ProjectBalanceTracker />} />
-                    <Route path="/schedule" element={<TimeBlockSchedule />} />
-                    <Route path="/meditation" element={<Meditation />} />
-                    <Route path="/sleep" element={<SleepTracker />} /> {/* New route */}
-                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </Sidebar>
-                <CommandPalette isAddTaskOpen={isAddTaskOpen} setIsAddTaskOpen={setIsAddTaskOpen} currentDate={currentDate} setCurrentDate={setCurrentDate} />
-              </BrowserRouter>
+              <AppContent />
             </SoundProvider>
           </UIProvider>
         </AuthProvider>

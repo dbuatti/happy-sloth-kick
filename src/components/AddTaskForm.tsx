@@ -137,7 +137,7 @@ const parseNaturalLanguage = (text: string, categories: Category[]) => {
     remindAt,
     reminderTimeStr,
     priority,
-    categoryId, // Return category ID
+    categoryId: categoryId, // Corrected from parsedCategoryId
   };
 };
 
@@ -174,14 +174,14 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
       remindAt,
       reminderTimeStr,
       priority,
-      categoryId: parsedCategoryId,
+      categoryId, // Corrected from parsedCategoryId
     } = parseNaturalLanguage(newTaskDescription, allCategories);
 
     if (priority) {
       setNewTaskPriority(priority);
     }
-    if (parsedCategoryId) {
-      setNewTaskCategory(parsedCategoryId);
+    if (categoryId) { // Corrected from parsedCategoryId
+      setNewTaskCategory(categoryId);
     }
     if (dueDate) {
       setNewTaskDueDate(dueDate);
@@ -242,9 +242,9 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onAddTask, userId, onTaskAdde
   };
 
   return (
-    <div className="p-3 bg-gray-50 dark:bg-card rounded-lg"> {/* Reduced p-4 to p-3 */}
+    <div className="p-4 bg-gray-50 dark:bg-card rounded-lg">
       <h2 className="text-xl font-semibold mb-3">Add New Task</h2>
-      <div className="space-y-2"> {/* Reduced space-y-3 to space-y-2 */}
+      <div className="space-y-3">
         <div>
           <Label htmlFor="new-task-description">Task Description</Label>
           <div className="flex gap-2">

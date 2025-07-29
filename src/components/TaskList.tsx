@@ -17,7 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import ManageSectionsDialog from './ManageSectionsDialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
@@ -275,7 +275,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
     <>
       <div className="flex-1 flex flex-col">
         <main className="flex-grow">
-          <Card className="w-full shadow-lg p-3">
+          <Card className="w-full shadow-lg p-4">
             <CardHeader className="pb-3">
               <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
                 <CheckCircle2 className="h-7 w-7" /> Your Tasks
@@ -396,7 +396,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                             updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
                           />
                           {isExpanded && (
-                            <div className="mt-1 space-y-1 pl-2">
+                            <div className="mt-2 space-y-2 pl-2">
                               <SortableContext items={sectionTasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
                                 <ul className="list-none space-y-2">
                                   {sectionTasks.length === 0 ? (

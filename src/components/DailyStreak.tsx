@@ -21,8 +21,8 @@ const DailyStreak: React.FC<DailyStreakProps> = ({ tasks, currentDate }) => {
   }, [tasks]); // 'tasks' is already date-filtered and status-filtered
 
   return (
-    <Card className="w-full shadow-sm mb-2">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
+    <Card className="w-full shadow-sm mb-4">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">Today's Progress</CardTitle>
         <Target className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
