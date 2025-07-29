@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { DateRange } from 'react-day-picker';
 import { MadeWithDyad } from "@/components/made-with-dyad";
+import { Skeleton } from '@/components/ui/skeleton'; // Import Skeleton
 
 // Define the task type
 interface Task {
@@ -207,8 +208,18 @@ const Analytics: React.FC<AnalyticsProps> = ({ currentDate, setCurrentDate }) =>
           </CardHeader>
           <CardContent className="pt-0">
             {loading ? (
-              <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+              <div className="space-y-6">
+                <div className="grid gap-4 md:grid-cols-4">
+                  {[...Array(4)].map((_, i) => (
+                    <Skeleton key={i} className="h-24 w-full" />
+                  ))}
+                </div>
+                <Skeleton className="h-80 w-full" />
+                <Skeleton className="h-80 w-full" />
+                <div className="grid md:grid-cols-2 gap-6">
+                  <Skeleton className="h-80 w-full" />
+                  <Skeleton className="h-80 w-full" />
+                </div>
               </div>
             ) : (
               <div className="space-y-6"> {/* Reduced space-y-8 to space-y-6 */}

@@ -114,7 +114,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
         onCheckedChange={handleCheckboxChange}
         id={`task-${task.id}`}
         onClick={(e) => e.stopPropagation()}
-        className="flex-shrink-0"
+        className="flex-shrink-0 h-3.5 w-3.5" // Reduced size from h-4 w-4 to h-3.5 w-3.5
         data-no-dnd="true" // Add this attribute
       />
 

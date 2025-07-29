@@ -16,7 +16,7 @@ const BulkActions: React.FC<BulkActionsProps> = ({ selectedTaskIds, onAction, on
     <div
       className={cn(
         "flex items-center justify-between bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700",
-        "h-[70px] px-4", // Fixed height and horizontal padding
+        "h-[60px] px-3", // Fixed height and horizontal padding
         "transition-all duration-300 ease-in-out",
         isActive ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
       )}

@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
 import { MadeWithDyad } from "@/components/made-with-dyad"; // Ensure MadeWithDyad is imported
 import WorkHoursSettings from '@/components/WorkHoursSettings';
+import { Skeleton } from '@/components/ui/skeleton'; // Import Skeleton
 
 interface Profile {
   id: string;
@@ -108,7 +109,12 @@ const Settings = () => {
             </CardHeader>
             <CardContent className="pt-0">
               {loading ? (
-                <div className="text-center">Loading profile...</div>
+                <div className="space-y-4">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
               ) : (
                 <form onSubmit={updateProfile} className="space-y-3"> {/* Reduced space-y-4 to space-y-3 */}
                   <div>

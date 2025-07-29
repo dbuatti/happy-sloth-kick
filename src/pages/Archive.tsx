@@ -6,6 +6,7 @@ import TaskItem from '@/components/TaskItem'; // Changed import from SortableTas
 import { Archive as ArchiveIcon } from 'lucide-react';
 import { Task } from '@/hooks/useTasks';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
+import { Skeleton } from '@/components/ui/skeleton'; // Import Skeleton
 
 interface ArchiveProps {
   currentDate: Date;
@@ -50,8 +51,10 @@ const Archive: React.FC<ArchiveProps> = ({ currentDate, setCurrentDate }) => {
               <CardTitle className="text-3xl font-bold text-center">Archived Tasks</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+              <div className="space-y-3">
+                {[...Array(5)].map((_, i) => (
+                  <Skeleton key={i} className="h-20 w-full rounded-lg" />
+                ))}
               </div>
             </CardContent>
           </Card>
