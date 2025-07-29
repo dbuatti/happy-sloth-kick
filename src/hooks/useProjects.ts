@@ -11,6 +11,7 @@ export interface Project {
   description: string | null;
   current_count: number;
   created_at: string;
+  link: string | null; // Added link field
 }
 
 export interface UserSettings {
@@ -121,7 +122,7 @@ export const useProjects = () => {
     fetchProjectsAndSettings();
   }, [fetchProjectsAndSettings]);
 
-  const addProject = useCallback(async (name: string, description: string | null) => {
+  const addProject = useCallback(async (name: string, description: string | null, link: string | null) => {
     if (!userId) {
       showError('User not authenticated.');
       return false;
@@ -129,7 +130,7 @@ export const useProjects = () => {
     try {
       const { data, error } = await supabase
         .from('projects')
-        .insert({ user_id: userId, name, description, current_count: 0 })
+        .insert({ user_id: userId, name, description, current_count: 0, link })
         .select()
         .single();
 
@@ -207,6 +208,18 @@ export const useProjects = () => {
     }
   }, [userId, projects, updateProject]);
 
+  const decrementProjectCount = useCallback(async (projectId: string) => {
+    if (!userId) {
+      showError('User not authenticated.');
+      return;
+    }
+    const projectToUpdate = projects.find(p => p.id === projectId);
+    if (projectToUpdate && projectToUpdate.current_count > 0) {
+      const newCount = projectToUpdate.current_count - 1;
+      await updateProject(projectId, { current_count: newCount });
+    }
+  }, [userId, projects, updateProject]);
+
   const resetAllProjectCounts = useCallback(async () => {
     if (!userId) {
       showError('User not authenticated.');
@@ -259,6 +272,7 @@ export const useProjects = () => {
     updateProject,
     deleteProject,
     incrementProjectCount,
+    decrementProjectCount, // Export new decrement function
     resetAllProjectCounts,
     updateProjectTrackerTitle,
     userId,

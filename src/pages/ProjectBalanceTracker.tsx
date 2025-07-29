@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Edit, Trash2, Sparkles, RefreshCcw, Lightbulb, RotateCcw, LayoutGrid, CheckCircle2 } from 'lucide-react'; // Added CheckCircle2
+import { Plus, Edit, Trash2, Sparkles, RefreshCcw, Lightbulb, RotateCcw, LayoutGrid, CheckCircle2, Minus, Link as LinkIcon } from 'lucide-react'; // Added Minus and LinkIcon
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useProjects, Project } from '@/hooks/useProjects';
 import { cn } from '@/lib/utils';
@@ -32,6 +32,7 @@ const ProjectBalanceTracker: React.FC = () => {
     updateProject,
     deleteProject,
     incrementProjectCount,
+    decrementProjectCount, // Destructure new decrement function
     resetAllProjectCounts,
     updateProjectTrackerTitle,
     userId,
@@ -42,6 +43,7 @@ const ProjectBalanceTracker: React.FC = () => {
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectDescription, setNewProjectDescription] = useState('');
+  const [newProjectLink, setNewProjectLink] = useState(''); // New state for new project link
   const [isSavingProject, setIsSavingProject] = useState(false); // New state for project add/edit
 
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -51,6 +53,7 @@ const ProjectBalanceTracker: React.FC = () => {
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [editingProjectName, setEditingProjectName] = useState('');
   const [editingProjectDescription, setEditingProjectDescription] = useState('');
+  const [editingProjectLink, setEditingProjectLink] = useState(''); // New state for editing project link
 
   const [showCelebration, setShowCelebration] = useState(false);
 
@@ -88,10 +91,11 @@ const ProjectBalanceTracker: React.FC = () => {
   const handleAddProject = async () => {
     if (newProjectName.trim()) {
       setIsSavingProject(true);
-      const success = await addProject(newProjectName.trim(), newProjectDescription.trim() || null);
+      const success = await addProject(newProjectName.trim(), newProjectDescription.trim() || null, newProjectLink.trim() || null);
       if (success) {
         setNewProjectName('');
         setNewProjectDescription('');
+        setNewProjectLink(''); // Clear link after adding
         setIsAddProjectOpen(false);
       }
       setIsSavingProject(false);
@@ -102,6 +106,7 @@ const ProjectBalanceTracker: React.FC = () => {
     setEditingProjectId(project.id);
     setEditingProjectName(project.name);
     setEditingProjectDescription(project.description || '');
+    setEditingProjectLink(project.link || ''); // Set link for editing
   };
 
   const handleSaveProjectEdit = async () => {
@@ -110,11 +115,13 @@ const ProjectBalanceTracker: React.FC = () => {
       const success = await updateProject(editingProjectId, {
         name: editingProjectName.trim(),
         description: editingProjectDescription.trim() || null,
+        link: editingProjectLink.trim() || null, // Save edited link
       });
       if (success) {
         setEditingProjectId(null);
         setEditingProjectName('');
         setEditingProjectDescription('');
+        setEditingProjectLink(''); // Clear link after editing
       }
       setIsSavingProject(false);
     }
@@ -138,6 +145,11 @@ const ProjectBalanceTracker: React.FC = () => {
   const handleIncrement = async (projectId: string) => {
     // No need for isSavingProject here, as it's a quick update
     await incrementProjectCount(projectId);
+  };
+
+  const handleDecrement = async (projectId: string) => {
+    // No need for isSavingProject here, as it's a quick update
+    await decrementProjectCount(projectId);
   };
 
   const handleResetIndividualProjectClick = (projectId: string) => {
@@ -246,6 +258,17 @@ const ProjectBalanceTracker: React.FC = () => {
                         disabled={isSavingProject}
                       />
                     </div>
+                    <div>
+                      <Label htmlFor="project-link">Link (Optional)</Label>
+                      <Input
+                        id="project-link"
+                        type="url"
+                        value={newProjectLink}
+                        onChange={(e) => setNewProjectLink(e.target.value)}
+                        placeholder="e.g., https://github.com/my-project"
+                        disabled={isSavingProject}
+                      />
+                    </div>
                   </div>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setIsAddProjectOpen(false)} disabled={isSavingProject}>Cancel</Button>
@@ -293,7 +316,7 @@ const ProjectBalanceTracker: React.FC = () => {
                       <Skeleton className="h-4 w-1/2" />
                     </div>
                     <div className="flex items-center gap-3 flex-shrink-0 mt-3 sm:mt-0">
-                      <Skeleton className="h-4 w-24 rounded-full" />
+                      <Skeleton className="h-7 w-7 rounded-full" /> {/* Reduced size */}
                       <Skeleton className="h-7 w-7 rounded-full" /> {/* Reduced size */}
                       <Skeleton className="h-7 w-7 rounded-full" /> {/* Reduced size */}
                       <Skeleton className="h-7 w-7 rounded-full" /> {/* Reduced size */}
@@ -324,11 +347,10 @@ const ProjectBalanceTracker: React.FC = () => {
                       key={project.id}
                       className={cn(
                         "border rounded-lg p-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3", // Reduced p-3 to p-2
-                        "transition-all duration-200 ease-in-out cursor-pointer group",
+                        "transition-all duration-200 ease-in-out group",
                         "hover:shadow-md",
                         editingProjectId === project.id ? "bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700" : "bg-card dark:bg-gray-800 border-border"
                       )}
-                      onClick={() => handleIncrement(project.id)}
                     >
                       <div className="flex-1 min-w-0">
                         {editingProjectId === project.id ? (
@@ -348,6 +370,13 @@ const ProjectBalanceTracker: React.FC = () => {
                               rows={2}
                               disabled={isSavingProject}
                             />
+                            <Input
+                              type="url"
+                              value={editingProjectLink}
+                              onChange={(e) => setEditingProjectLink(e.target.value)}
+                              placeholder="Project link (optional)"
+                              disabled={isSavingProject}
+                            />
                           </div>
                         ) : (
                           <>
@@ -355,6 +384,17 @@ const ProjectBalanceTracker: React.FC = () => {
                               {project.name}
                               {project.current_count === 10 && (
                                 <CheckCircle2 className="h-4 w-4 text-green-500" />
+                              )}
+                              {project.link && (
+                                <a 
+                                  href={project.link} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                                  onClick={(e) => e.stopPropagation()} // Prevent triggering card click
+                                >
+                                  <LinkIcon className="h-4 w-4" />
+                                </a>
                               )}
                             </h3>
                             {project.description && (
@@ -374,10 +414,28 @@ const ProjectBalanceTracker: React.FC = () => {
                           </div>
                         ) : (
                           <>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={(e) => { e.stopPropagation(); handleDecrement(project.id); }}
+                              disabled={project.current_count <= 0}
+                            >
+                              <Minus className="h-4 w-4" />
+                            </Button>
                             <div className="w-24">
                               <Progress value={project.current_count * 10} className="h-2" indicatorClassName={getProgressColor(project.current_count)} />
                               <p className="text-sm text-muted-foreground text-center mt-1">{project.current_count}/10</p>
                             </div>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={(e) => { e.stopPropagation(); handleIncrement(project.id); }}
+                              disabled={project.current_count >= 10}
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
                             <Button
                               variant="ghost"
                               size="icon"
