@@ -209,9 +209,10 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
         sectionTasks.forEach((task, index) => {
           if (task.order !== index) { // Only update if order needs correction
-            const updatedTask = {
+            // Create the payload for the database upsert
+            const dbUpdatePayload = {
               id: task.id,
-              description: task.description, // Include all non-nullable fields
+              description: task.description,
               status: task.status,
               recurring_type: task.recurring_type,
               created_at: task.created_at,
@@ -222,11 +223,18 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
               remind_at: task.remind_at,
               section_id: task.section_id,
               parent_task_id: task.parent_task_id,
+              original_task_id: task.original_task_id, // Include original_task_id for DB
               order: index, // The field we are actually updating
               user_id: userId, // Include user_id for RLS
             };
-            updatesForDb.push(updatedTask);
-            tasksById.set(task.id, updatedTask); // Update the task in the map with new order
+            updatesForDb.push(dbUpdatePayload);
+
+            // Create the object for local state update (must conform to Task interface)
+            const localTaskStateUpdate: Task = {
+              ...task, // Start with existing task to retain all properties
+              order: index, // Apply the new order
+            };
+            tasksById.set(task.id, localTaskStateUpdate); // Update the task in the map with new order
           }
         });
       }
@@ -781,10 +789,8 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       return;
     }
 
-    // Capture current state for potential rollback
-    const originalTasks = [...tasks];
+    const originalTasks = [...tasks]; // Capture current state for potential rollback
 
-    // Calculate new order based on current state before optimistic update
     const tasksInCurrentSection = tasks.filter(t => t.parent_task_id === null && t.section_id === sectionId)
                                       .sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
     const activeIndex = tasksInCurrentSection.findIndex(t => t.id === activeId);
@@ -813,12 +819,19 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
     // Optimistic update
     setTasks(prevTasks => {
-      const updatedTasksMap = new Map(updates.map(u => [u.id, u.order]));
-      return prevTasks.map(task => {
+      const updatedTasksMap = new Map(updates.map(u => [u.id, u])); // Map full updated task objects
+      const newTasksState = prevTasks.map(task => {
         if (updatedTasksMap.has(task.id)) {
-          return { ...task, order: updatedTasksMap.get(task.id) };
+          return { ...task, ...updatedTasksMap.get(task.id) }; // Apply full updated object
         }
         return task;
+      });
+      // Re-sort the entire tasks array to maintain consistency
+      return newTasksState.sort((a, b) => {
+        const aSectionOrder = sections.find(s => s.id === a.section_id)?.order ?? Infinity;
+        const bSectionOrder = sections.find(s => s.id === b.section_id)?.order ?? Infinity;
+        if (aSectionOrder !== bSectionOrder) return aSectionOrder - bSectionOrder;
+        return (a.order || Infinity) - (b.order || Infinity);
       });
     });
 
@@ -837,7 +850,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       showError('Failed to reorder task.');
       setTasks(originalTasks); // Revert to original state on error
     }
-  }, [userId, tasks]);
+  }, [userId, tasks, sections]); // Added sections to dependencies
 
   const moveTaskToNewSection = useCallback(async (activeId: string, oldSectionId: string | null, newSectionId: string | null, overId: string | null) => {
     if (!userId) {
@@ -913,11 +926,18 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     // Optimistic update
     setTasks(prevTasks => {
       const updatedTasksMap = new Map(allUpdatesForDb.map(u => [u.id, u]));
-      return prevTasks.map(task => {
+      const newTasksState = prevTasks.map(task => {
         if (updatedTasksMap.has(task.id)) {
           return { ...task, ...updatedTasksMap.get(task.id) };
         }
         return task;
+      });
+      // Re-sort the entire tasks array to maintain consistency
+      return newTasksState.sort((a, b) => {
+        const aSectionOrder = sections.find(s => s.id === a.section_id)?.order ?? Infinity;
+        const bSectionOrder = sections.find(s => s.id === b.section_id)?.order ?? Infinity;
+        if (aSectionOrder !== bSectionOrder) return aSectionOrder - bSectionOrder;
+        return (a.order || Infinity) - (b.order || Infinity);
       });
     });
 
@@ -935,7 +955,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       showError('Failed to move task.');
       setTasks(originalTasks); // Revert to original state on error
     }
-  }, [userId, tasks]);
+  }, [userId, tasks, sections]); // Added sections to dependencies
 
   const reorderSections = useCallback(async (activeId: string, overId: string) => {
     if (!userId) {
@@ -1015,7 +1035,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       .filter(t => t.section_id === currentSectionId && t.parent_task_id === null)
       .sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
 
-    console.log('moveTask: Tasks in current section (before reorder):', tasksInCurrentSection.map(t => ({ id: t.id, order: t.order, description: t.description })));
+    console.log('moveTask: Tasks in current section (after filter and sort):', tasksInCurrentSection.map(t => ({ id: t.id, order: t.order, description: t.description })));
 
     const currentIndex = tasksInCurrentSection.findIndex(t => t.id === taskId);
 
@@ -1064,19 +1084,26 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       user_id: userId, // Include user_id for RLS
     }));
 
-    console.log('moveTask: Updates payload for Supabase:', updates);
+    console.log('moveTask: Updates payload for Supabase:', updates.map(u => ({id: u.id, order: u.order})));
 
     // Optimistic update
     setTasks(prevTasks => {
-      const updatedTasksMap = new Map(updates.map(u => [u.id, u.order]));
-      return prevTasks.map(task => {
+      const updatedTasksMap = new Map(updates.map(u => [u.id, u])); // Map full updated task objects
+      const newTasksState = prevTasks.map(task => {
         if (updatedTasksMap.has(task.id)) {
-          return { ...task, order: updatedTasksMap.get(task.id) };
+          return { ...task, ...updatedTasksMap.get(task.id) }; // Apply full updated object
         }
         return task;
       });
+      // Re-sort the entire tasks array to maintain consistency
+      return newTasksState.sort((a, b) => {
+        const aSectionOrder = sections.find(s => s.id === a.section_id)?.order ?? Infinity;
+        const bSectionOrder = sections.find(s => s.id === b.section_id)?.order ?? Infinity;
+        if (aSectionOrder !== bSectionOrder) return aSectionOrder - bSectionOrder;
+        return (a.order || Infinity) - (b.order || Infinity);
+      });
     });
-    console.log('moveTask: Optimistic update applied.');
+    console.log('moveTask: Optimistic update applied and tasks state re-sorted.');
 
     try {
       const { error } = await supabase
@@ -1094,7 +1121,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       showError('Failed to reorder task.');
       fetchDataAndSections(); // Revert by refetching
     }
-  }, [userId, tasks, fetchDataAndSections]);
+  }, [userId, tasks, sections, fetchDataAndSections]); // Added sections and fetchDataAndSections to dependencies
 
   const { finalFilteredTasks, nextAvailableTask, focusModeTasksForDailyStreak } = useMemo(() => {
     console.log('filteredTasks/nextAvailableTask: --- START FILTERING ---');
