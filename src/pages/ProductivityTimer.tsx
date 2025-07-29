@@ -286,7 +286,7 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
             Choose your focus method.
           </p>
         </CardHeader>
-        <CardContent className="space-y-6 min-h-[500px]"> {/* Added min-h to prevent layout shift */}
+        <CardContent className="space-y-6 min-h-[500px]">
           <Tabs value={activeTab} onValueChange={(value) => {
             setActiveTab(value as 'pomodoro' | 'custom');
             // Pause any running timer when switching tabs
@@ -392,165 +392,35 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
                 </>
               )}
               <p className="text-sm text-muted-foreground">
-                Completed Pomodoros: {pomI've completely overhauled the sound system for your application.
+                Completed Pomodoros: {pomodoroCount} / {POMODORO_CYCLES}
+              </p>
+            </TabsContent>
 
-Here's a summary of the changes:
-
-1.  **New Sound Map**: I've defined a comprehensive set of sound effects (`success`, `pause`, `reset`, `alert`, `start`, `complete`, `delete`, `move`, `focus`) in the `SoundContext`.
-2.  **Updated Components**: I've updated the `Meditation` and `ProductivityTimer` components to use the new sound effects for key events like starting, pausing, resetting, and completing a session.
-3.  **Consistent Feedback**: The new sounds provide distinct and appropriate audio feedback for different user actions, enhancing the overall user experience.
-
-Please note that the sound files (`/sounds/*.mp3`) are currently placeholders. You will need to replace them with your actual sound files in the `public/sounds` directory for the sounds to work.
-
-I'll now update the `SleepTracker` component to use the new sound system as well.
-
-<dyad-write path="src/pages/SleepTracker.tsx" description="Updated the Sleep Tracker to use the new sound effects for saving a record.">
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { MadeWithDyad } from "@/components/made-with-dyad";
-import DateNavigator from '@/components/DateNavigator';
-import { useSleepRecords, NewSleepRecordData } from '@/hooks/useSleepRecords';
-import { format, addDays, parseISO } from 'date-fns';
-import { Moon, Bed, AlarmClock, LogOut } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useSound } from '@/context/SoundContext';
-
-const SleepTracker: React.FC = () => {
-  const { playSound } = useSound();
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const { sleepRecord, loading, saveSleepRecord } = useSleepRecords({ selectedDate: currentDate });
-
-  const [bedTime, setBedTime] = useState<string>('');
-  const [lightsOffTime, setLightsOffTime] = useState<string>('');
-  const [wakeUpTime, setWakeUpTime] = useState<string>('');
-  const [getOutOfBedTime, setGetOutOfBedTime] = useState<string>('');
-  const [isSaving, setIsSaving] = useState(false);
-
-  useEffect(() => {
-    if (!loading) {
-      setBedTime(sleepRecord?.bed_time ? sleepRecord.bed_time.substring(0, 5) : '');
-      setLightsOffTime(sleepRecord?.lights_off_time ? sleepRecord.lights_off_time.substring(0, 5) : '');
-      setWakeUpTime(sleepRecord?.wake_up_time ? sleepRecord.wake_up_time.substring(0, 5) : '');
-      setGetOutOfBedTime(sleepRecord?.get_out_of_bed_time ? sleepRecord.get_out_of_bed_time.substring(0, 5) : '');
-    }
-  }, [sleepRecord, loading]);
-
-  const handlePreviousDay = () => {
-    setCurrentDate(prevDate => addDays(prevDate, -1));
-  };
-
-  const handleNextDay = () => {
-    setCurrentDate(prevDate => addDays(prevDate, 1));
-  };
-
-  const handleGoToToday = () => {
-    setCurrentDate(new Date());
-  };
-
-  const handleSubmit = async () => {
-    setIsSaving(true);
-    const dataToSave: NewSleepRecordData = {
-      date: format(currentDate, 'yyyy-MM-dd'),
-      bed_time: bedTime || null,
-      lights_off_time: lightsOffTime || null,
-      wake_up_time: wakeUpTime || null,
-      get_out_of_bed_time: getOutOfBedTime || null,
-    };
-    const success = await saveSleepRecord(dataToSave);
-    if (success) {
-      playSound('success'); // Play success sound on save
-    }
-    setIsSaving(false);
-  };
-
-  return (
-    <div className="flex-1 flex flex-col">
-      <main className="flex-grow p-4 flex justify-center">
-        <Card className="w-full max-w-md mx-auto shadow-lg p-3">
-          <CardHeader className="pb-1">
-            <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
-              <Moon className="h-7 w-7 text-blue-600" /> Sleep Tracker
-            </CardTitle>
-            <p className="text-sm text-muted-foreground text-center">Log your sleep times for better insights.</p>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <DateNavigator
-              currentDate={currentDate}
-              onPreviousDay={handlePreviousDay}
-              onNextDay={handleNextDay}
-              onGoToToday={handleGoToToday}
-              setCurrentDate={setCurrentDate}
-            />
-
-            {loading ? (
-              <div className="space-y-4">
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
+            <TabsContent value="custom" className="mt-6 space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Set a custom timer for any activity.
+              </p>
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">Select Duration:</p>
+                <Select value={(customDuration / 60).toString()} onValueChange={handleCustomDurationChange} disabled={customIsRunning}>
+                  <SelectTrigger className="w-full max-w-[180px] mx-auto">
+                    <SelectValue placeholder="Select duration" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="5">5 Minutes</SelectItem>
+                    <SelectItem value="10">10 Minutes</SelectItem>
+                    <SelectItem value="15">15 Minutes</SelectItem>
+                    <SelectItem value="20">20 Minutes</SelectItem>
+                    <SelectItem value="30">30 Minutes</SelectItem>
+                    <SelectItem value="45">45 Minutes</SelectItem>
+                    <SelectItem value="60">60 Minutes</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="bed-time" className="flex items-center gap-2">
-                    <Bed className="h-4 w-4" /> Go to Bed
-                  </Label>
-                  <Input
-                    id="bed-time"
-                    type="time"
-                    value={bedTime}
-                    onChange={(e) => setBedTime(e.target.value)}
-                    disabled={isSaving}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lights-off-time" className="flex items-center gap-2">
-                    <Moon className="h-4 w-4" /> Lights Off
-                  </Label>
-                  <Input
-                    id="lights-off-time"
-                    type="time"
-                    value={lightsOffTime}
-                    onChange={(e) => setLightsOffTime(e.target.value)}
-                    disabled={isSaving}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="wake-up-time" className="flex items-center gap-2">
-                    <AlarmClock className="h-4 w-4" /> Wake Up
-                  </Label>
-                  <Input
-                    id="wake-up-time"
-                    type="time"
-                    value={wakeUpTime}
-                    onChange={(e) => setWakeUpTime(e.target.value)}
-                    disabled={isSaving}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="get-out-of-bed-time" className="flex items-center gap-2">
-                    <LogOut className="h-4 w-4" /> Get Out of Bed
-                  </Label>
-                  <Input
-                    id="get-out-of-bed-time"
-                    type="time"
-                    value={getOutOfBedTime}
-                    onChange={(e) => setGetOutOfBedTime(e.target.value)}
-                    disabled={isSaving}
-                  />
-                </div>
-                <Button onClick={handleSubmit} className="w-full" disabled={isSaving}>
-                  {isSaving ? 'Saving...' : 'Save Sleep Record'}
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </main>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
       <footer className="p-4">
         <MadeWithDyad />
       </footer>
@@ -558,4 +428,4 @@ const SleepTracker: React.FC = () => {
   );
 };
 
-export default SleepTracker;
+export default ProductivityTimer;
