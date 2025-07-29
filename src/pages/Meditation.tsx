@@ -51,7 +51,7 @@ const Meditation: React.FC = () => {
     if (timeRemaining > 0) {
       setIsRunning(true);
       setIsSessionActive(true);
-      playSound('success'); // Play success sound on start
+      playSound('start'); // Play start sound on start
     }
   }, [timeRemaining, playSound]);
 

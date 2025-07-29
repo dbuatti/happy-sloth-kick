@@ -9,8 +9,10 @@ import { useSleepRecords, NewSleepRecordData } from '@/hooks/useSleepRecords';
 import { format, addDays, parseISO } from 'date-fns';
 import { Moon, Bed, AlarmClock, LogOut } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useSound } from '@/context/SoundContext';
 
 const SleepTracker: React.FC = () => {
+  const { playSound } = useSound();
   const [currentDate, setCurrentDate] = useState(new Date());
   const { sleepRecord, loading, saveSleepRecord } = useSleepRecords({ selectedDate: currentDate });
 
@@ -51,6 +53,9 @@ const SleepTracker: React.FC = () => {
       get_out_of_bed_time: getOutOfBedTime || null,
     };
     const success = await saveSleepRecord(dataToSave);
+    if (success) {
+      playSound('success'); // Play success sound on save
+    }
     setIsSaving(false);
   };
 

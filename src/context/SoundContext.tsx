@@ -12,10 +12,15 @@ const SoundContext = createContext<SoundContextType | undefined>(undefined);
 // IMPORTANT: Replace these placeholder URLs with actual links to your hosted sound files.
 // You can find free sound effects on sites like freesound.org or zapsplat.com.
 const soundMap = {
-  success: '/sounds/success.mp3', // Placeholder for a positive/completion sound
-  pause: '/sounds/pause.mp3',     // Placeholder for a pause sound
-  reset: '/sounds/reset.mp3',     // Placeholder for a reset sound
-  alert: '/sounds/alert.mp3',     // Placeholder for an alert/notification sound (e.g., timer end)
+  success: '/sounds/success.mp3', // A positive, uplifting chime for completions
+  pause: '/sounds/pause.mp3',     // A short, neutral tone for pausing
+  reset: '/sounds/reset.mp3',     // A soft, descending tone for resetting
+  alert: '/sounds/alert.mp3',     // A clear, attention-grabbing sound for timers ending
+  start: '/sounds/start.mp3',     // A short, ascending tone for starting timers
+  complete: '/sounds/complete.mp3', // A satisfying, longer chime for task completion
+  delete: '/sounds/delete.mp3',   // A short, slightly negative tone for deletions
+  move: '/sounds/move.mp3',       // A subtle "whoosh" or "click" for reordering
+  focus: '/sounds/focus.mp3',     // A gentle, focusing sound for entering focus mode
 };
 
 // Function to play an audio file from a URL
