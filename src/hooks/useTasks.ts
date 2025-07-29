@@ -1018,71 +1018,73 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
   }, [userId, sections]);
 
   const moveTask = useCallback(async (taskId: string, direction: 'up' | 'down') => {
+    const debugId = uuidv4().substring(0, 4); // Unique ID for this call
+    console.log(`[${debugId}] moveTask: Attempting to move task ${taskId} in direction: ${direction}`);
+
     if (!userId) {
       showError('[ERROR SOURCE] User not authenticated.');
-      console.error('moveTask: User not authenticated.');
+      console.error(`[${debugId}] moveTask: User not authenticated.`);
       return;
     }
-
-    console.log(`moveTask: Attempting to move task ${taskId} in direction: ${direction}`); // Added direction log
 
     const taskToMove = tasksRef.current.find(t => t.id === taskId); // Use tasksRef.current
     if (!taskToMove) {
       showError('[ERROR SOURCE] Task not found.');
-      console.error(`moveTask: Task with ID ${taskId} not found.`);
+      console.error(`[${debugId}] moveTask: Task with ID ${taskId} not found.`);
       return;
     }
-    console.log(`moveTask: Task to move details:`, taskToMove);
+    console.log(`[${debugId}] moveTask: Task to move details:`, taskToMove);
     if (taskToMove.parent_task_id !== null) {
       showError('[ERROR SOURCE] Cannot reorder sub-tasks directly.');
-      console.error(`moveTask: Attempted to reorder sub-task ${taskId}.`);
+      console.error(`[${debugId}] moveTask: Attempted to reorder sub-task ${taskId}.`);
       return;
     }
 
     const currentSectionId = taskToMove.section_id;
-    console.log(`moveTask: Task ${taskId} is in section ${currentSectionId || 'No Section'}`);
+    console.log(`[${debugId}] moveTask: Task ${taskId} is in section ${currentSectionId || 'No Section'}`);
 
     const tasksInCurrentSection = tasksRef.current // Use tasksRef.current
       .filter(t => t.section_id === currentSectionId && t.parent_task_id === null)
       .sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
 
-    console.log('moveTask: Tasks in current section (after filter and sort):', tasksInCurrentSection.map(t => ({ id: t.id, order: t.order, description: t.description })));
+    console.log(`[${debugId}] moveTask: Tasks in current section (after filter and sort):`, tasksInCurrentSection.map(t => ({ id: t.id, order: t.order, description: t.description })));
 
     const currentIndex = tasksInCurrentSection.findIndex(t => t.id === taskId);
 
-    console.log(`moveTask: tasksInCurrentSection length: ${tasksInCurrentSection.length}, currentIndex: ${currentIndex}`);
-    console.log('moveTask: Current tasksInCurrentSection before check', tasksInCurrentSection.map(t => ({ id: t.id, order:  t.order, description: t.description })));
+    console.log(`[${debugId}] moveTask: Before 'already at bottom/top' check. Current index: ${currentIndex}, Length: ${tasksInCurrentSection.length}`);
+    console.log(`[${debugId}] moveTask: Current tasksInCurrentSection before check`, tasksInCurrentSection.map(t => ({ id: t.id, order:  t.order, description: t.description })));
 
 
     if (currentIndex === -1) {
-      console.error(`moveTask: Task ${taskId} not found in its filtered section list.`);
+      console.error(`[${debugId}] moveTask: Task ${taskId} not found in its filtered section list. This should not happen.`);
+      showError('[ERROR SOURCE] Internal error: Task not found in section list.');
       return;
     }
 
     let newIndex = currentIndex;
     if (direction === 'up') {
-      console.log(`moveTask: Checking move UP. Current index: ${currentIndex}, Length: ${tasksInCurrentSection.length}`); // NEW LOG
       if (currentIndex === 0) {
-        console.log(`moveTask: Attempted to move UP from top. Current index: ${currentIndex}, Length: ${tasksInCurrentSection.length}`);
+        console.log(`[${debugId}] moveTask: Attempted to move UP from top. Current index: ${currentIndex}, Length: ${tasksInCurrentSection.length}`);
         showError('[ERROR SOURCE] Task is already at the top.');
         return;
       }
       newIndex = currentIndex - 1;
     } else { // direction === 'down'
-      console.log(`moveTask: Checking move DOWN. Current index: ${currentIndex}, Length: ${tasksInCurrentSection.length}`); // NEW LOG
       if (currentIndex === tasksInCurrentSection.length - 1) {
-        console.log(`moveTask: Attempted to move DOWN from bottom. Current index: ${currentIndex}, Length: ${tasksInCurrentSection.length}`);
+        console.log(`[${debugId}] moveTask: Attempted to move DOWN from bottom. Current index: ${currentIndex}, Length: ${tasksInCurrentSection.length}`);
+        // THIS IS THE CRITICAL LOG: What are the values *at this exact moment*?
+        console.log(`[${debugId}] CRITICAL CHECK: currentIndex=${currentIndex}, tasksInCurrentSection.length=${tasksInCurrentSection.length}`);
         showError('[ERROR SOURCE] Task is already at the bottom.');
         return;
       }
       newIndex = currentIndex + 1;
     }
 
-    console.log(`moveTask: Moving from index ${currentIndex} to ${newIndex}`);
+    console.log(`[${debugId}] moveTask: Moving from index ${currentIndex} to ${newIndex}`);
 
     const newOrderedTasksInSection = arrayMove(tasksInCurrentSection, currentIndex, newIndex);
 
-    console.log('moveTask: Tasks in current section (after arrayMove):', newOrderedTasksInSection.map(t => ({ id: t.id, order: t.order, description: t.description })));
+    console.log(`[${debugId}] moveTask: Tasks in current section (after arrayMove):`, newOrderedTasksInSection.map(t => ({ id: t.id, order: t.order, description: t.description })));
 
     const updates = newOrderedTasksInSection.map((task, index) => ({
       id: task.id,
@@ -1101,7 +1103,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       user_id: userId, // Include user_id for RLS
     }));
 
-    console.log('moveTask: Updates payload for Supabase:', updates.map(u => ({id: u.id, order: u.order})));
+    console.log(`[${debugId}] moveTask: Updates payload for Supabase:`, updates.map(u => ({id: u.id, order: u.order})));
 
     // Optimistic update
     setTasks(prevTasks => {
@@ -1119,10 +1121,10 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         if (aSectionOrder !== bSectionOrder) return aSectionOrder - bSectionOrder;
         return (a.order || Infinity) - (b.order || Infinity);
       });
-      console.log('moveTask: Tasks state after optimistic update and sort:', finalSortedState.map(t => ({ id: t.id, description: t.description, order: t.order, section_id: t.section_id })));
+      console.log(`[${debugId}] moveTask: Tasks state after optimistic update and sort:`, finalSortedState.map(t => ({ id: t.id, description: t.description, order: t.order, section_id: t.section_id })));
       return finalSortedState;
     });
-    console.log('moveTask: Optimistic update applied and tasks state re-sorted.');
+    console.log(`[${debugId}] moveTask: Optimistic update applied and tasks state re-sorted.`);
 
     try {
       const { error } = await supabase
@@ -1130,13 +1132,13 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         .upsert(updates, { onConflict: 'id' });
 
       if (error) {
-        console.error('moveTask: Supabase upsert error:', error);
+        console.error(`[${debugId}] moveTask: Supabase upsert error:`, error);
         throw error;
       }
       showSuccess('Task reordered successfully!');
-      console.log('moveTask: Supabase upsert successful.');
+      console.log(`[${debugId}] moveTask: Supabase upsert successful.`);
     } catch (error: any) {
-      console.error('moveTask: Caught error during reordering:', error);
+      console.error(`[${debugId}] moveTask: Caught error during reordering:`, error);
       showError('[ERROR SOURCE] Failed to reorder task.');
       // No manual refetch here, rely on real-time subscription
     }
