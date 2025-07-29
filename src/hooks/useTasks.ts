@@ -1047,7 +1047,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       .filter(t => t.section_id === currentSectionId && t.parent_task_id === null)
       .sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
 
-    console.log(`[${debugId}] moveTask: Tasks in current section (after filter and sort):`, tasksInCurrentSection.map(t => ({ id: t.id, order: t.order, description: t.description })));
+    console.log(`[${debugId}] moveTask: Tasks in current section (before arrayMove):`, tasksInCurrentSection.map(t => ({ id: t.id, order: t.order, description: t.description })));
 
     const currentIndex = tasksInCurrentSection.findIndex(t => t.id === taskId);
     console.log(`[${debugId}] moveTask: Result of findIndex for ${taskId}: ${currentIndex}`);

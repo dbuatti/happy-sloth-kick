@@ -142,6 +142,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
     });
 
     // Use filteredTasks for grouping to ensure only relevant tasks are displayed
+    // filteredTasks is already sorted by order (among other criteria)
     const tasksForGrouping = filteredTasks.filter(task => task.parent_task_id === null);
 
     tasksForGrouping.forEach(task => {
@@ -153,10 +154,10 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
       }
     });
 
-    // Sorting is already handled by useTasks's filteredTasks, but ensure order within sections
-    Object.entries(grouped).forEach(([sectionKey, taskList]) => {
-      grouped[sectionKey] = taskList.sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
-    });
+    // No longer sorting here, relying on filteredTasks being pre-sorted
+    // Object.entries(grouped).forEach(([sectionKey, taskList]) => {
+    //   grouped[sectionKey] = taskList.sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
+    // });
 
     return grouped;
   }, [filteredTasks, sections]); // Depend on filteredTasks
