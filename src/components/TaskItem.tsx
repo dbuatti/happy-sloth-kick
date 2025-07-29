@@ -89,14 +89,14 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
   const handleMoveUpClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    console.log(`TaskItem: Moving UP task ${task.id} (Order: ${task.order}, Section: ${task.section_id})`);
+    console.log(`TaskItem: Attempting to move UP task ${task.id} (Order: ${task.order}, Section: ${task.section_id})`); // Added log
     onMoveUp(task.id);
     playSound();
   };
 
   const handleMoveDownClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    console.log(`TaskItem: Moving DOWN task ${task.id} (Order: ${task.order}, Section: ${task.section_id})`);
+    console.log(`TaskItem: Attempting to move DOWN task ${task.id} (Order: ${task.order}, Section: ${task.section_id})`); // Added log
     onMoveDown(task.id);
     playSound();
   };
