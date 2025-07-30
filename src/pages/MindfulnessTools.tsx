@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import BodyScanMeditation from '@/components/BodyScanMeditation'; // Import BodyScanMeditation
 import MindfulEatingGuide from '@/components/MindfulEatingGuide'; // Import MindfulEatingGuide
 import ProgressiveMuscleRelaxation from '@/components/ProgressiveMuscleRelaxation'; // Import ProgressiveMuscleRelaxation
+import GuidedImagery from '@/components/GuidedImagery'; // Import GuidedImagery
 
 // 5-4-3-2-1 Sensory Tool Component
 const SensoryTool: React.FC = () => {
@@ -339,7 +340,8 @@ const MindfulnessTools: React.FC = () => {
           <GratitudeJournal />
           <BodyScanMeditation />
           <MindfulEatingGuide />
-          <ProgressiveMuscleRelaxation /> {/* New: Add the ProgressiveMuscleRelaxation component */}
+          <ProgressiveMuscleRelaxation />
+          <GuidedImagery /> {/* New: Add the GuidedImagery component */}
         </div>
       </main>
       <footer className="p-4">
