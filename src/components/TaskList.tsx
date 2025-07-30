@@ -470,7 +470,8 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                             ))}
                           </ul>
                         </SortableContext>
-                        <div id="no-section-drop-area" className="h-10 border border-dashed border-muted-foreground/50 rounded-md flex items-center justify-center text-sm text-muted-foreground" data-no-dnd="true">
+                        <div id="no-section-drop-area" className="h-16 border-2 border-dashed border-blue-400 dark:border-blue-600 bg-blue-50/20 dark:bg-blue-900/20 rounded-md flex flex-col items-center justify-center text-sm text-blue-600 dark:text-blue-400 font-medium transition-colors duration-200 hover:border-blue-500 hover:bg-blue-100/30 dark:hover:bg-blue-800/30" data-no-dnd="true">
+                          <FolderOpen className="h-6 w-6 mb-1" />
                           Drop tasks here for 'No Section'
                         </div>
                       </div>

@@ -113,7 +113,11 @@ const TaskItem: React.FC<TaskItemProps> = ({
         data-no-dnd="true"
       />
 
-      <div className="flex-1 min-w-0">
+      <div 
+        className="flex-1 min-w-0 cursor-pointer py-1" // Added py-1 for better click area
+        onClick={() => onEditTask(task)}
+        data-no-dnd="true" // Ensure this area doesn't initiate drag
+      >
         <Tooltip>
           <TooltipTrigger asChild>
             <label

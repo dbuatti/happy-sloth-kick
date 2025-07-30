@@ -149,6 +149,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
               value={editingDescription}
               onChange={(e) => setEditingDescription(e.target.value)}
               disabled={isSaving}
+              autoFocus // Added autoFocus here
             />
           </div>
 
