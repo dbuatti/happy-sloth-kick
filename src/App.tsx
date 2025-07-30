@@ -21,6 +21,7 @@ import { UIProvider, useUI } from "@/context/UIContext"; // Import useUI
 import { SoundProvider } from "@/context/SoundContext";
 import { addDays, startOfDay } from 'date-fns';
 import { cn } from '@/lib/utils'; // Import cn
+import { useTasks } from '@/hooks/useTasks'; // Import useTasks to get necessary props
 
 // Helper to get UTC start of day
 const getUTCStartOfDay = (date: Date) => {
@@ -33,6 +34,10 @@ const AppContent = () => {
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(() => getUTCStartOfDay(new Date()));
   const { isFocusModeActive } = useUI(); // Use the UI context
+
+  // Use useTasks here to get nextAvailableTask, manualFocusTaskId, onSetAsFocusTask, onClearManualFocus
+  // Pass currentDate and setCurrentDate to useTasks as well, as it's a dependency for task filtering
+  const { nextAvailableTask, manualFocusTaskId, onSetAsFocusTask, onClearManualFocus } = useTasks({ currentDate, setCurrentDate });
 
   return (
     <BrowserRouter>
@@ -57,7 +62,16 @@ const AppContent = () => {
           </Routes>
         </div>
       </Sidebar>
-      <CommandPalette isAddTaskOpen={isAddTaskOpen} setIsAddTaskOpen={setIsAddTaskOpen} currentDate={currentDate} setCurrentDate={setCurrentDate} />
+      <CommandPalette 
+        isAddTaskOpen={isAddTaskOpen} 
+        setIsAddTaskOpen={setIsAddTaskOpen} 
+        currentDate={currentDate} 
+        setCurrentDate={setCurrentDate} 
+        nextAvailableTask={nextAvailableTask} // Pass nextAvailableTask
+        manualFocusTaskId={manualFocusTaskId} // Pass manualFocusTaskId
+        onSetAsFocusTask={onSetAsFocusTask} // Pass onSetAsFocusTask
+        onClearManualFocus={onClearManualFocus} // Pass onClearManualFocus
+      />
     </BrowserRouter>
   );
 };

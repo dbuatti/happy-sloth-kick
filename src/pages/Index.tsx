@@ -12,6 +12,7 @@ import NextTaskCard from '@/components/NextTaskCard'; // Import NextTaskCard
 import TaskDetailDialog from '@/components/TaskDetailDialog'; // Import TaskDetailDialog
 import FocusTaskOverlay from '@/components/FocusTaskOverlay'; // Import FocusTaskOverlay
 import { Task } from '@/hooks/useTasks'; // Import Task type
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 // Helper to get UTC start of day
 const getUTCStartOfDay = (date: Date) => {
@@ -27,6 +28,7 @@ interface IndexProps {
 const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen, currentDate, setCurrentDate }) => {
   const { user, loading: authLoading } = useAuth();
   const { tasks, nextAvailableTask, updateTask, deleteTask, userId, loading: tasksLoading } = useTasks({ currentDate, setCurrentDate }); // Get all tasks, nextAvailableTask and other task actions
+  const navigate = useNavigate(); // Initialize useNavigate
 
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null); // Use Task type
@@ -102,7 +104,8 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen, currentDate, setCurrent
 
   const handleSetAsFocusTask = (taskId: string) => {
     setManualFocusTaskId(taskId);
-    setIsFocusOverlayOpen(true); // Open overlay immediately
+    // Navigate to focus mode and pass the task ID
+    navigate('/focus', { state: { focusedTaskId: taskId } });
   };
 
   const handleClearManualFocus = () => {

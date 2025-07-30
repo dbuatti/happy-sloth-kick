@@ -3,7 +3,7 @@ import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, C
 import { useTasks } from '@/hooks/useTasks';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Settings, BarChart3, Home, FolderOpen, ChevronLeft, ChevronRight, LogOut, LayoutGrid, CalendarClock, CalendarDays } from 'lucide-react';
+import { Plus, Settings, BarChart3, Home, FolderOpen, ChevronLeft, ChevronRight, LogOut, LayoutGrid, CalendarClock, CalendarDays, Target, XCircle } from 'lucide-react'; // Added Target and XCircle
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -11,15 +11,20 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import AddTaskForm from './AddTaskForm';
 import { useSound } from '@/context/SoundContext';
+import { Task } from '@/hooks/useTasks'; // Import Task type
 
 interface CommandPaletteProps {
   isAddTaskOpen: boolean;
   setIsAddTaskOpen: (open: boolean) => void;
   currentDate: Date; // New prop
   setCurrentDate: React.Dispatch<React.SetStateAction<Date>>; // New prop
+  nextAvailableTask: Task | null; // New prop
+  manualFocusTaskId: string | null; // New prop
+  onSetAsFocusTask: (taskId: string) => void; // New prop
+  onClearManualFocus: () => void; // New prop
 }
 
-const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAddTaskOpen, currentDate, setCurrentDate }) => {
+const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAddTaskOpen, currentDate, setCurrentDate, nextAvailableTask, manualFocusTaskId, onSetAsFocusTask, onClearManualFocus }) => {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -90,6 +95,18 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
                     <Plus className="mr-2 h-4 w-4" />
                     <span>Add New Task</span>
                   </CommandItem>
+                  {nextAvailableTask && (
+                    <CommandItem onSelect={() => handleSelect(() => onSetAsFocusTask(nextAvailableTask.id))}>
+                      <Target className="mr-2 h-4 w-4" />
+                      <span>Focus on Next Task</span>
+                    </CommandItem>
+                  )}
+                  {manualFocusTaskId && (
+                    <CommandItem onSelect={() => handleSelect(onClearManualFocus)}>
+                      <XCircle className="mr-2 h-4 w-4" />
+                      <span>Clear Focus Task</span>
+                    </CommandItem>
+                  )}
                   <CommandItem onSelect={() => handleSelect(() => navigate('/'))}>
                     <Home className="mr-2 h-4 w-4" />
                     <span>Go to Daily Tasks</span>
@@ -164,6 +181,18 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
                 <Plus className="mr-2 h-4 w-4" />
                 <span>Add New Task</span>
               </CommandItem>
+              {nextAvailableTask && (
+                <CommandItem onSelect={() => handleSelect(() => onSetAsFocusTask(nextAvailableTask.id))}>
+                  <Target className="mr-2 h-4 w-4" />
+                  <span>Focus on Next Task</span>
+                </CommandItem>
+              )}
+              {manualFocusTaskId && (
+                <CommandItem onSelect={() => handleSelect(onClearManualFocus)}>
+                  <XCircle className="mr-2 h-4 w-4" />
+                  <span>Clear Focus Task</span>
+                </CommandItem>
+              )}
               <CommandItem onSelect={() => handleSelect(() => navigate('/'))}>
                 <Home className="mr-2 h-4 w-4" />
                 <span>Go to Daily Tasks</span>

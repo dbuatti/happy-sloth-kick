@@ -13,6 +13,7 @@ import { useUI } from '@/context/UIContext';
 import { useSound } from '@/context/SoundContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useLocation } from 'react-router-dom'; // Import useLocation
 
 const WORK_DURATION = 25 * 60; // 25 minutes in seconds
 const SHORT_BREAK_DURATION = 5 * 60; // 5 minutes in seconds
@@ -29,6 +30,9 @@ interface ProductivityTimerProps {
 const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setCurrentDate }) => {
   const { user } = useAuth();
   const userId = user?.id;
+  const location = useLocation(); // Get location object
+  const focusedTaskIdFromState = (location.state as { focusedTaskId?: string })?.focusedTaskId;
+
   const { filteredTasks, updateTask, sections } = useTasks({ currentDate: new Date(), setCurrentDate: () => {}, viewMode: 'focus' }); 
   const { setIsFocusModeActive } = useUI();
   const { playSound } = useSound();
@@ -49,6 +53,14 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
   const customTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const [activeTab, setActiveTab] = useState('pomodoro'); // 'pomodoro' or 'custom'
+
+  // Effect to set initial focused task from navigation state
+  useEffect(() => {
+    if (focusedTaskIdFromState && !pomodoroCurrentTaskId) {
+      setPomodoroCurrentTaskId(focusedTaskIdFromState);
+      showSuccess(`Focusing on task from navigation: "${filteredTasks.find(t => t.id === focusedTaskIdFromState)?.description || focusedTaskIdFromState}"`);
+    }
+  }, [focusedTaskIdFromState, pomodoroCurrentTaskId, filteredTasks]);
 
   const suggestedTasks = React.useMemo(() => {
     if (!filteredTasks || !sections) return [];
