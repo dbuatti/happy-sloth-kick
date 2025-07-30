@@ -125,7 +125,7 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
       localStorage.removeItem('pomodoroCurrentTaskId');
       // Reset the timer with the new duration for the next session type
       resetPomodoroTimerHook(getPomodoroDuration(pomodoroSessionType === 'work' ? (pomodoroCount + 1) % POMODORO_CYCLES === 0 ? 'long_break' : 'short_break' : 'work'));
-    }, [pomodoroSessionType, pomodoroCount, playSound, pomodoroCurrentTaskId, filteredTasks, pomodoroSessionStartTime, addFocusSession, getPomodoroDuration]), // Removed resetPomodoroTimerHook from dependencies
+    }, [pomodoroSessionType, pomodoroCount, playSound, pomodoroCurrentTaskId, filteredTasks, pomodoroSessionStartTime, addFocusSession, getPomodoroDuration]),
     onTick: useCallback((time) => {
       // console.log(`[ProductivityTimer] Pomodoro Tick: ${time}`);
     }, []),
@@ -163,7 +163,7 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
       setCustomSessionStartTime(null);
       showSuccess('Custom timer finished!');
       resetCustomTimerHook(customDuration); // Reset the timer with its current duration
-    }, [playSound, customDuration, customSessionStartTime, addFocusSession]), // Removed resetCustomTimerHook from dependencies
+    }, [playSound, customDuration, customSessionStartTime, addFocusSession]),
   });
 
   const [activeTab, setActiveTab] = useState('pomodoro'); // 'pomodoro' or 'custom'
