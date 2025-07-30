@@ -84,14 +84,12 @@ const TaskItem: React.FC<TaskItemProps> = ({
     }
   };
 
-  const handleMoveUpClick = (e: React.SyntheticEvent) => { // Changed type to React.SyntheticEvent
-    e.stopPropagation();
+  const handleMoveUpClick = () => {
     onMoveUp(task.id);
     playSound('success');
   };
 
-  const handleMoveDownClick = (e: React.SyntheticEvent) => { // Changed type to React.SyntheticEvent
-    e.stopPropagation();
+  const handleMoveDownClick = () => {
     onMoveDown(task.id);
     playSound('success');
   };
@@ -268,10 +266,10 @@ const TaskItem: React.FC<TaskItemProps> = ({
               </DropdownMenuSubContent>
             </DropdownMenuSub>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleMoveUpClick(e); }}>
+            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleMoveUpClick(); }}>
               <ArrowUp className="mr-2 h-4 w-4" /> Move Up
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleMoveDownClick(e); }}>
+            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleMoveDownClick(); }}>
               <ArrowDown className="mr-2 h-4 w-4" /> Move Down
             </DropdownMenuItem>
             <DropdownMenuSeparator />
