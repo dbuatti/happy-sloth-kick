@@ -143,7 +143,22 @@ const BreathingBubble: React.FC = () => {
     if (timerRef.current) clearInterval(timerRef.current);
 
     const currentPhaseDuration = cycle[phaseIndexRef.current].duration;
-    setPhase(cycle[phaseIndexRef.current].name.toLowerCase().includes('inhale') ? 'inhale' : cycle[phaseIndexRef.current].name.toLowerCase().includes('exhale') ? 'exhale' : 'hold-top'); // Simplified phase state
+    
+    // Corrected logic for setting the 'phase' state
+    const currentCycleItem = cycle[phaseIndexRef.current];
+    let newPhaseState: typeof phase;
+    if (currentCycleItem.name.toLowerCase().includes('inhale')) {
+      newPhaseState = 'inhale';
+    } else if (currentCycleItem.name.toLowerCase().includes('exhale')) {
+      newPhaseState = 'exhale';
+    } else { // It's a 'Hold' phase
+      if (phaseIndexRef.current === 1) { // This is the hold after inhale
+        newPhaseState = 'hold-top';
+      } else { // This is the hold after exhale (phaseIndexRef.current === 3)
+        newPhaseState = 'hold-bottom';
+      }
+    }
+    setPhase(newPhaseState);
     setTimer(currentPhaseDuration);
 
     timerRef.current = setInterval(() => {
@@ -204,15 +219,16 @@ const BreathingBubble: React.FC = () => {
 
   const getBubbleAnimationClass = () => {
     if (!isRunning) return '';
-    switch (phase) {
-      case 'inhale': return 'animate-breathe-in';
-      case 'exhale': return 'animate-breathe-out';
-      default: return ''; // For hold phases, no continuous animation
-    }
+    if (phase === 'inhale') return 'animate-breathe-in';
+    if (phase === 'exhale') return 'animate-breathe-out';
+    return ''; // For 'hold' phases, no animation class
   };
 
   const getPhaseText = () => {
-    return cycle[phaseIndexRef.current].name;
+    // Map internal phase state back to display text
+    if (phase === 'inhale') return 'Inhale';
+    if (phase === 'exhale') return 'Exhale';
+    return 'Hold';
   };
 
   return (
@@ -234,7 +250,10 @@ const BreathingBubble: React.FC = () => {
             )}
             style={{
               animationDuration: `${currentPhaseData.duration}s`,
-              transform: isRunning && (phase === 'hold-top' || phase === 'exhale') ? 'scale(1.2)' : isRunning && (phase === 'hold-bottom' || phase === 'inhale') ? 'scale(0.7)' : 'scale(0.7)'
+              // Only apply transform if no animation class is active, letting CSS animation handle it otherwise
+              transform: getBubbleAnimationClass() === '' ?
+                         (phase === 'hold-top' ? 'scale(1.2)' : 'scale(0.7)') :
+                         undefined // Let animation handle transform if class is present
             }}
           >
             {isRunning ? getPhaseText() : 'Start'}
