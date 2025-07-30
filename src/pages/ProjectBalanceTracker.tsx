@@ -367,7 +367,7 @@ const ProjectBalanceTracker: React.FC = () => {
                             <Input
                               type="url"
                               value={editingProjectLink}
-                              onChange={(e) => setNewProjectLink(e.target.value)}
+                              onChange={(e) => setEditingProjectLink(e.target.value)}
                               placeholder="Project link (optional)"
                               disabled={isSavingProject}
                             />
