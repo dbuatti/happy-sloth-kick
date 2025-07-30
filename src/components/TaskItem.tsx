@@ -218,52 +218,64 @@ const TaskItem: React.FC<TaskItemProps> = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" data-no-dnd="true">
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'to-do'); playSound('success'); }}>
+            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onStatusChange(task.id, 'to-do'); playSound('success'); }}>
               Mark as To-Do
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'completed'); playSound('success'); }}>
+            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onStatusChange(task.id, 'completed'); playSound('success'); }}>
               Mark as Completed
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'skipped'); playSound('success'); }}>
+            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onStatusChange(task.id, 'skipped'); playSound('success'); }}>
               Mark as Skipped
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'archived'); playSound('success'); }}>
+            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onStatusChange(task.id, 'archived'); playSound('success'); }}>
               <Archive className="mr-2 h-4 w-4" /> Archive
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuSub>
-              <DropdownMenuSubTrigger data-no-dnd="true">
+              <DropdownMenuSubTrigger onSelect={(e) => e.preventDefault()} data-no-dnd="true">
                 <FolderOpen className="mr-2 h-4 w-4" /> Move to Section
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent data-no-dnd="true">
                 {sections.length === 0 ? (
                   <DropdownMenuItem disabled>No sections available</DropdownMenuItem>
                 ) : (
-                  sections.map(section => (
+                  <>
                     <DropdownMenuItem 
-                      key={section.id} 
-                      onClick={(e) => { 
-                        e.stopPropagation(); 
-                        onUpdate(task.id, { section_id: section.id }); 
+                      onSelect={(e) => { 
+                        e.preventDefault(); 
+                        onUpdate(task.id, { section_id: null }); 
                         playSound('success');
                       }}
-                      disabled={task.section_id === section.id}
+                      disabled={task.section_id === null}
                     >
-                      {section.name}
+                      No Section
                     </DropdownMenuItem>
-                  ))
+                    {sections.map(section => (
+                      <DropdownMenuItem 
+                        key={section.id} 
+                        onSelect={(e) => { 
+                          e.preventDefault(); 
+                          onUpdate(task.id, { section_id: section.id }); 
+                          playSound('success');
+                        }}
+                        disabled={task.section_id === section.id}
+                      >
+                        {section.name}
+                      </DropdownMenuItem>
+                    ))}
+                  </>
                 )}
               </DropdownMenuSubContent>
             </DropdownMenuSub>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleMoveUpClick}>
+            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleMoveUpClick(e); }}>
               <ArrowUp className="mr-2 h-4 w-4" /> Move Up
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleMoveDownClick}>
+            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleMoveDownClick(e); }}>
               <ArrowDown className="mr-2 h-4 w-4" /> Move Down
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete(task.id); playSound('alert'); }} className="text-destructive focus:text-destructive">
+            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onDelete(task.id); playSound('alert'); }} className="text-destructive focus:text-destructive">
               <Trash2 className="mr-2 h-4 w-4" /> Delete
             </DropdownMenuItem>
           </DropdownMenuContent>
