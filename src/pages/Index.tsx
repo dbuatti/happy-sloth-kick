@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import AuthComponent from "@/components/AuthComponent";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,6 +37,8 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen, currentDate, setCurrent
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
   const [isFocusOverlayOpen, setIsFocusOverlayOpen] = useState(false);
 
+  const navigate = useNavigate();
+
   // Determine the task to show in the overlay
   const manualFocusTask = manualFocusTaskId ? tasks.find(t => t.id === manualFocusTaskId) : null;
   const taskForOverlay = manualFocusTask || nextAvailableTask;
@@ -63,7 +65,7 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen, currentDate, setCurrent
     setCurrentDate(today);
   };
 
-  const handleMarkNextTaskComplete = async (taskId: string) => {
+  const handleMarkTaskComplete = async (taskId: string) => {
     await updateTask(taskId, { status: 'completed' });
     // If the completed task was the manual focus, clear it
     if (manualFocusTaskId === taskId) {
@@ -85,6 +87,11 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen, currentDate, setCurrent
   const handleCloseFocusOverlay = () => {
     setIsFocusOverlayOpen(false);
   };
+
+  const handleStartFocusTimer = useCallback((durationMinutes: number, taskId: string) => {
+    onSetAsFocusTask(taskId); // Ensure the task is set as focused
+    navigate('/focus', { state: { focusedTaskId: taskId, initialDuration: durationMinutes } });
+  }, [navigate, onSetAsFocusTask]);
 
   // Define keyboard shortcuts
   const shortcuts: ShortcutMap = {
@@ -117,7 +124,7 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen, currentDate, setCurrent
             />
             <NextTaskCard 
               task={taskForOverlay}
-              onMarkComplete={handleMarkNextTaskComplete} 
+              onMarkComplete={handleMarkTaskComplete} 
               onEditTask={handleEditNextTask} 
               currentDate={currentDate}
               loading={tasksLoading}
@@ -165,6 +172,8 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen, currentDate, setCurrent
             isOpen={isFocusOverlayOpen} 
             onClose={handleCloseFocusOverlay} 
             onClearManualFocus={onClearManualFocus}
+            onMarkComplete={handleMarkTaskComplete} // Pass down
+            onStartFocusTimer={handleStartFocusTimer} // Pass down
           />
         </>
       ) : (

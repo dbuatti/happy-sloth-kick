@@ -32,6 +32,7 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
   const userId = user?.id;
   const location = useLocation(); // Get location object
   const focusedTaskIdFromState = (location.state as { focusedTaskId?: string })?.focusedTaskId;
+  const initialDurationFromState = (location.state as { initialDuration?: number })?.initialDuration;
 
   const { filteredTasks, updateTask, sections } = useTasks({ currentDate: new Date(), setCurrentDate: () => {}, viewMode: 'focus' }); 
   const { setIsFocusModeActive } = useUI();
@@ -74,6 +75,18 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
       }
     }
   }, [focusedTaskIdFromState, pomodoroCurrentTaskId, filteredTasks]);
+
+  // Effect to handle initialDuration from navigation state
+  useEffect(() => {
+    if (initialDurationFromState) {
+      setActiveTab('custom');
+      setCustomDuration(initialDurationFromState * 60);
+      setCustomTimeRemaining(initialDurationFromState * 60);
+      // Automatically start the timer if a duration is provided
+      setCustomIsRunning(true);
+      playSound('start');
+    }
+  }, [initialDurationFromState, playSound]);
 
   // Persist pomodoroCurrentTaskId to localStorage whenever it changes
   useEffect(() => {
@@ -446,6 +459,7 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
                     <SelectValue placeholder="Select duration" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="2">2 Minutes</SelectItem>
                     <SelectItem value="5">5 Minutes</SelectItem>
                     <SelectItem value="10">10 Minutes</SelectItem>
                     <SelectItem value="15">15 Minutes</SelectItem>
