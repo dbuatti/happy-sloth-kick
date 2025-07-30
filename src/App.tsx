@@ -103,6 +103,7 @@ const AppContent = () => {
   }, [manualFocusTaskId, nextAvailableTask, tasks]);
 
   const handleCloseFocusOverlay = () => {
+    console.log('App.tsx: handleCloseFocusOverlay called. Setting isFocusOverlayOpen to false.'); // Debug log
     setIsFocusOverlayOpen(false);
     setInitialOverlayDuration(undefined);
   };

@@ -85,6 +85,7 @@ const FocusTaskOverlay: React.FC<FocusTaskOverlayProps> = ({
   }
 
   const handleCloseButtonClick = (e: React.MouseEvent) => {
+    console.log('FocusTaskOverlay: Close button clicked!'); // Debug log
     e.stopPropagation(); // Ensure this doesn't trigger parent clicks
     e.preventDefault(); // Prevent default browser action
     pause(); // Pause timer when closing
@@ -144,11 +145,11 @@ const FocusTaskOverlay: React.FC<FocusTaskOverlayProps> = ({
     <div
       className={cn(
         "fixed inset-0 z-[9999] flex items-center justify-center",
-        "bg-background text-foreground pointer-events-none" // Changed to bg-background text-foreground
+        "bg-background text-foreground" // Removed pointer-events-none
       )}
     >
       <div 
-        className="max-w-4xl mx-auto text-center p-4 pointer-events-auto" // Added pointer-events-auto
+        className="max-w-4xl mx-auto text-center p-4 pointer-events-auto" 
         onClick={(e) => e.stopPropagation()}
       >
         <h1 className="text-5xl md:text-7xl font-extrabold leading-tight tracking-tight">
@@ -166,7 +167,7 @@ const FocusTaskOverlay: React.FC<FocusTaskOverlayProps> = ({
             className="absolute w-full h-full rounded-full bg-muted"
             indicatorClassName={cn(
               "transition-all duration-1000 ease-linear",
-              "bg-primary" // Changed to bg-primary
+              "bg-primary"
             )}
           />
           <div className="relative z-10 text-5xl font-bold text-primary-foreground">
@@ -216,7 +217,7 @@ const FocusTaskOverlay: React.FC<FocusTaskOverlayProps> = ({
         </div>
       </div>
       <button
-        className="absolute top-4 right-4 text-primary-foreground opacity-70 hover:opacity-100 transition-opacity duration-200 pointer-events-auto" // Added pointer-events-auto
+        className="absolute top-4 right-4 text-primary-foreground opacity-70 hover:opacity-100 transition-opacity duration-200 pointer-events-auto"
         onClick={handleCloseButtonClick}
         aria-label="Clear manual focus and close"
       >
