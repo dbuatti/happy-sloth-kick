@@ -71,49 +71,51 @@ const AppContent = () => {
   }, []);
 
   return (
-    <Sidebar>
-      <div className={cn(
-        "flex-1 flex flex-col",
-        isFocusModeActive && "border-l-4 border-primary-foreground"
-      )}>
-        <Routes>
-          <Route 
-            path="/" 
-            element={
-              <Index 
-                setIsAddTaskOpen={setIsAddTaskOpen} 
-                currentDate={currentDate} 
-                setCurrentDate={setCurrentDate} 
-                manualFocusTaskId={manualFocusTaskId} // Pass down
-                onSetAsFocusTask={onSetAsFocusTask} // Pass down
-                onClearManualFocus={onClearManualFocus} // Pass down
-              />
-            } 
-          />
-          <Route path="/analytics" element={<Analytics currentDate={currentDate} setCurrentDate={setCurrentDate} />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/help" element={<Help />} />
-          <Route path="/archive" element={<Archive currentDate={currentDate} setCurrentDate={setCurrentDate} />} />
-          <Route path="/focus" element={<ProductivityTimer currentDate={currentDate} setCurrentDate={setCurrentDate} />} />
-          <Route path="/projects" element={<ProjectBalanceTracker />} />
-          <Route path="/schedule" element={<TimeBlockSchedule />} />
-          <Route path="/meditation" element={<Meditation />} />
-          <Route path="/sleep" element={<SleepTracker />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </div>
-    </Sidebar>
-    <CommandPalette 
-      isAddTaskOpen={isAddTaskOpen} 
-      setIsAddTaskOpen={setIsAddTaskOpen} 
-      currentDate={currentDate} 
-      setCurrentDate={setCurrentDate} 
-      nextAvailableTask={nextAvailableTask}
-      manualFocusTaskId={manualFocusTaskId} // Pass down
-      onSetAsFocusTask={onSetAsFocusTask} // Pass down
-      onClearManualFocus={onClearManualFocus} // Pass down
-    />
+    <div> {/* Added a div to wrap both Sidebar and CommandPalette */}
+      <Sidebar>
+        <div className={cn(
+          "flex-1 flex flex-col",
+          isFocusModeActive && "border-l-4 border-primary-foreground"
+        )}>
+          <Routes>
+            <Route 
+              path="/" 
+              element={
+                <Index 
+                  setIsAddTaskOpen={setIsAddTaskOpen} 
+                  currentDate={currentDate} 
+                  setCurrentDate={setCurrentDate} 
+                  manualFocusTaskId={manualFocusTaskId} // Pass down
+                  onSetAsFocusTask={onSetAsFocusTask} // Pass down
+                  onClearManualFocus={onClearManualFocus} // Pass down
+                />
+              } 
+            />
+            <Route path="/analytics" element={<Analytics currentDate={currentDate} setCurrentDate={setCurrentDate} />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/help" element={<Help />} />
+            <Route path="/archive" element={<Archive currentDate={currentDate} setCurrentDate={setCurrentDate} />} />
+            <Route path="/focus" element={<ProductivityTimer currentDate={currentDate} setCurrentDate={setCurrentDate} />} />
+            <Route path="/projects" element={<ProjectBalanceTracker />} />
+            <Route path="/schedule" element={<TimeBlockSchedule />} />
+            <Route path="/meditation" element={<Meditation />} />
+            <Route path="/sleep" element={<SleepTracker />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </div>
+      </Sidebar>
+      <CommandPalette 
+        isAddTaskOpen={isAddTaskOpen} 
+        setIsAddTaskOpen={setIsAddTaskOpen} 
+        currentDate={currentDate} 
+        setCurrentDate={setCurrentDate} 
+        nextAvailableTask={nextAvailableTask}
+        manualFocusTaskId={manualFocusTaskId} // Pass down
+        onSetAsFocusTask={onSetAsFocusTask} // Pass down
+        onClearManualFocus={onClearManualFocus} // Pass down
+      />
+    </div>
   );
 };
 
