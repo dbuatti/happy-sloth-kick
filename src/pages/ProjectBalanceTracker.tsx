@@ -45,11 +45,6 @@ const ProjectBalanceTracker: React.FC = () => {
   const [newProjectLink, setNewProjectLink] = useState('');
   const [isSavingProject, setIsSavingProject] = useState(false);
 
-  // Removed states for editing title:
-  // const [isEditingTitle, setIsEditingTitle] = useState(false);
-  // const [tempSectionTitle, setTempSectionTitle] = useState(sectionTitle);
-  // const [isSavingTitle, setIsSavingTitle] = useState(false);
-
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [editingProjectName, setEditingProjectName] = useState('');
   const [editingProjectDescription, setEditingProjectDescription] = useState('');
@@ -175,16 +170,6 @@ const ProjectBalanceTracker: React.FC = () => {
     setShowConfirmResetAllDialog(false);
   };
 
-  // Removed handleSaveTitle as editing is moved to Settings page
-  // const handleSaveTitle = async () => {
-  //   if (tempSectionTitle.trim()) {
-  //     setIsSavingTitle(true);
-  //     await updateProjectTrackerTitle(tempSectionTitle.trim());
-  //     setIsEditingTitle(false);
-  //     setIsSavingTitle(false);
-  //   }
-  // };
-
   const getProgressColor = (count: number) => {
     if (count >= 8) return 'bg-green-500';
     if (count >= 4) return 'bg-yellow-500';
@@ -196,11 +181,10 @@ const ProjectBalanceTracker: React.FC = () => {
       <main className="flex-grow p-4">
         <Card className="w-full max-w-4xl mx-auto shadow-lg p-4">
           <CardHeader className="pb-2">
-            {/* Simplified title display */}
-            <CardTitle className="text-3xl font-bold flex items-center gap-2">
-              {sectionTitle}
+            <CardTitle className="text-3xl font-bold flex items-center justify-center gap-2">
+              <LayoutGrid className="h-7 w-7" /> {sectionTitle}
             </CardTitle>
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-4">
               <Dialog open={isAddProjectOpen} onOpenChange={setIsAddProjectOpen}>
                 <DialogTrigger asChild>
                   <Button disabled={isSavingProject}>
@@ -322,10 +306,11 @@ const ProjectBalanceTracker: React.FC = () => {
                     <li
                       key={project.id}
                       className={cn(
-                        "border rounded-lg p-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3",
+                        "border rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4",
                         "transition-all duration-200 ease-in-out group",
                         "hover:shadow-md",
-                        editingProjectId === project.id ? "bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700" : "bg-card dark:bg-gray-800 border-border"
+                        editingProjectId === project.id ? "bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700" : "bg-card dark:bg-gray-800 border-border",
+                        leastWorkedOnProject?.id === project.id && "border-2 border-blue-500 dark:border-blue-400" // Highlight least worked on
                       )}
                     >
                       <div className="flex-1 min-w-0">
@@ -349,17 +334,17 @@ const ProjectBalanceTracker: React.FC = () => {
                             <Input
                               type="url"
                               value={editingProjectLink}
-                              onChange={(e) => setEditingProjectLink(e.target.value)}
+                              onChange={(e) => setNewProjectLink(e.target.value)}
                               placeholder="Project link (optional)"
                               disabled={isSavingProject}
                             />
                           </div>
                         ) : (
                           <>
-                            <h3 className="text-lg font-semibold truncate flex items-center gap-2">
+                            <h3 className="text-xl font-bold truncate flex items-center gap-2">
                               {project.name}
                               {project.current_count === 10 && (
-                                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                <CheckCircle2 className="h-5 w-5 text-green-500" />
                               )}
                               {project.link && (
                                 <a 
@@ -374,74 +359,78 @@ const ProjectBalanceTracker: React.FC = () => {
                               )}
                             </h3>
                             {project.description && (
-                              <p className="text-sm text-muted-foreground truncate">{project.description}</p>
+                              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{project.description}</p>
                             )}
                           </>
                         )}
                       </div>
 
-                      <div className="flex items-center gap-3 flex-shrink-0 mt-3 sm:mt-0">
+                      <div className="flex flex-col sm:flex-row items-center gap-3 flex-shrink-0 w-full sm:w-auto">
                         {editingProjectId === project.id ? (
-                          <div className="flex gap-2">
-                            <Button size="sm" onClick={(e) => { e.stopPropagation(); handleSaveProjectEdit(); }} disabled={isSavingProject || !editingProjectName.trim()}>
+                          <div className="flex gap-2 w-full">
+                            <Button size="sm" onClick={(e) => { e.stopPropagation(); handleSaveProjectEdit(); }} disabled={isSavingProject || !editingProjectName.trim()} className="flex-1">
                               {isSavingProject ? 'Saving...' : 'Save'}
                             </Button>
-                            <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setEditingProjectId(null); }} disabled={isSavingProject}>Cancel</Button>
+                            <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setEditingProjectId(null); }} disabled={isSavingProject} className="flex-1">Cancel</Button>
                           </div>
                         ) : (
                           <>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={(e) => { e.stopPropagation(); handleDecrement(project.id); }}
-                              disabled={project.current_count <= 0}
-                            >
-                              <Minus className="h-4 w-4" />
-                            </Button>
-                            <div className="w-24">
-                              <Progress value={project.current_count * 10} className="h-2" indicatorClassName={getProgressColor(project.current_count)} />
-                              <p className="text-sm text-muted-foreground text-center mt-1">{project.current_count}/10</p>
+                            <div className="flex items-center gap-2 w-full sm:w-auto">
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={(e) => { e.stopPropagation(); handleDecrement(project.id); }}
+                                disabled={project.current_count <= 0}
+                              >
+                                <Minus className="h-5 w-5" />
+                              </Button>
+                              <div className="flex-1">
+                                <Progress value={project.current_count * 10} className="h-3" indicatorClassName={getProgressColor(project.current_count)} />
+                                <p className="text-sm text-muted-foreground text-center mt-1">{project.current_count}/10</p>
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={(e) => { e.stopPropagation(); handleIncrement(project.id); }}
+                                disabled={project.current_count >= 10}
+                              >
+                                <Plus className="h-5 w-5" />
+                              </Button>
                             </div>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={(e) => { e.stopPropagation(); handleIncrement(project.id); }}
-                              disabled={project.current_count >= 10}
-                            >
-                              <Plus className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                              onClick={(e) => { e.stopPropagation(); handleEditProject(project); }}
-                              aria-label={`Edit ${project.name}`}
-                              disabled={isSavingProject}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                              onClick={(e) => { e.stopPropagation(); handleResetIndividualProjectClick(project.id); }}
-                              aria-label={`Reset ${project.name}`}
-                              disabled={isSavingProject}
-                            >
-                              <RotateCcw className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-destructive"
-                              onClick={(e) => { e.stopPropagation(); handleDeleteProjectClick(project.id); }}
-                              aria-label={`Delete ${project.name}`}
-                              disabled={isSavingProject}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            <div className="flex gap-2 w-full sm:w-auto sm:ml-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                onClick={(e) => { e.stopPropagation(); handleEditProject(project); }}
+                                aria-label={`Edit ${project.name}`}
+                                disabled={isSavingProject}
+                              >
+                                <Edit className="h-5 w-5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                onClick={(e) => { e.stopPropagation(); handleResetIndividualProjectClick(project.id); }}
+                                aria-label={`Reset ${project.name}`}
+                                disabled={isSavingProject}
+                              >
+                                <RotateCcw className="h-5 w-5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-destructive"
+                                onClick={(e) => { e.stopPropagation(); handleDeleteProjectClick(project.id); }}
+                                aria-label={`Delete ${project.name}`}
+                                disabled={isSavingProject}
+                              >
+                                <Trash2 className="h-5 w-5" />
+                              </Button>
+                            </div>
                           </>
                         )}
                       </div>
