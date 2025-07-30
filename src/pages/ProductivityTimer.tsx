@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTimer } from '@/hooks/useTimer'; // Import useTimer hook
 import { useFocusSessions } from '@/hooks/useFocusSessions'; // Import useFocusSessions hook
-import { formatISO } from 'date-fns';
+import { formatISO } => 'date-fns';
 
 const WORK_DURATION = 25 * 60; // 25 minutes in seconds
 const SHORT_BREAK_DURATION = 5 * 60; // 5 minutes in seconds
@@ -125,7 +125,7 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
       localStorage.removeItem('pomodoroCurrentTaskId');
       // Reset the timer with the new duration for the next session type
       resetPomodoroTimerHook(getPomodoroDuration(pomodoroSessionType === 'work' ? (pomodoroCount + 1) % POMODORO_CYCLES === 0 ? 'long_break' : 'short_break' : 'work'));
-    }, [pomodoroSessionType, pomodoroCount, playSound, pomodoroCurrentTaskId, filteredTasks, pomodoroSessionStartTime, addFocusSession, getPomodoroDuration]),
+    }, [pomodoroSessionType, pomodoroCount, playSound, pomodoroCurrentTaskId, filteredTasks, pomodoroSessionStartTime, addFocusSession, getPomodoroDuration, resetPomodoroTimerHook]),
     onTick: useCallback((time) => {
       // console.log(`[ProductivityTimer] Pomodoro Tick: ${time}`);
     }, []),
@@ -163,22 +163,10 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
       setCustomSessionStartTime(null);
       showSuccess('Custom timer finished!');
       resetCustomTimerHook(customDuration); // Reset the timer with its current duration
-    }, [playSound, customDuration, customSessionStartTime, addFocusSession]),
+    }, [playSound, customDuration, customSessionStartTime, addFocusSession, resetCustomTimerHook]),
   });
 
   const [activeTab, setActiveTab] = useState('pomodoro'); // 'pomodoro' or 'custom'
-
-  // Reset Pomodoro timer when session type changes
-  useEffect(() => {
-    console.log(`[ProductivityTimer] useEffect [pomodoroSessionType]: sessionType changed to ${pomodoroSessionType}. Resetting Pomodoro timer.`);
-    resetPomodoroTimerHook(getPomodoroDuration(pomodoroSessionType));
-  }, [pomodoroSessionType, resetPomodoroTimerHook, getPomodoroDuration]);
-
-  // Reset Custom timer when duration changes
-  useEffect(() => {
-    console.log(`[ProductivityTimer] useEffect [customDuration]: customDuration changed to ${customDuration}. Resetting Custom timer.`);
-    resetCustomTimerHook(customDuration);
-  }, [customDuration, resetCustomTimerHook]);
 
   // Persist pomodoroCurrentTaskId to localStorage whenever it changes
   useEffect(() => {
