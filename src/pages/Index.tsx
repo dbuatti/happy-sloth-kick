@@ -105,10 +105,7 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen, currentDate, setCurrent
 
   const handleSetAsFocusTask = (taskId: string) => {
     setManualFocusTaskId(taskId);
-    // Only navigate if not already on the focus page
-    if (location.pathname !== '/focus') {
-      navigate('/focus', { state: { focusedTaskId: taskId } });
-    }
+    // Removed automatic navigation to /focus
   };
 
   const handleClearManualFocus = () => {
