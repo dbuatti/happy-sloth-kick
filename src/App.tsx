@@ -24,13 +24,7 @@ import { cn } from '@/lib/utils';
 import { useTasks, Task } from '@/hooks/useTasks';
 import { useNavigate, useLocation } from 'react-router-dom';
 import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
-import AuthComponent from "@/components/AuthComponent"; // Added import
-import DateNavigator from '@/components/DateNavigator'; // Added import
-import NextTaskCard from '@/components/NextTaskCard'; // Added import
-import TaskList from "@/components/TaskList"; // Added import
-import { MadeWithDyad } from "@/components/made-with-dyad"; // Added import
-import TaskDetailDialog from "@/components/TaskDetailDialog"; // Added import
-import FocusTaskOverlay from "@/components/FocusTaskOverlay"; // Added import
+import AuthComponent from "./components/AuthComponent"; // Added import for AuthComponent
 
 // Helper to get UTC start of day
 const getUTCStartOfDay = (date: Date) => {
