@@ -127,7 +127,7 @@ const App = () => {
         <AuthProvider>
           <UIProvider>
             <SoundProvider>
-              <BrowserRouter> {/* BrowserRouter now wraps AppContent */}
+              <BrowserRouter>
                 <AppContent />
               </BrowserRouter>
             </SoundProvider>
