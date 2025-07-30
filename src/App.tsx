@@ -16,7 +16,7 @@ import SleepTracker from "./pages/SleepTracker";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import CommandPalette from "./components/CommandPalette";
 import { useState, useEffect, useCallback } from 'react';
-import Sidebar from "./components/Sidebar";
+import Sidebar from "./components/Sidebar"; // Ensure Sidebar is imported
 import { UIProvider, useUI } from "@/context/UIContext";
 import { SoundProvider } from "@/context/SoundContext";
 import { addDays, startOfDay } from 'date-fns';
@@ -25,12 +25,12 @@ import { useTasks, Task } from '@/hooks/useTasks';
 import { useNavigate, useLocation } from 'react-router-dom';
 import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
 import AuthComponent from "@/components/AuthComponent";
-import DateNavigator from '@/components/DateNavigator'; // Re-added import
-import NextTaskCard from '@/components/NextTaskCard'; // Re-added import
-import TaskList from "@/components/TaskList"; // Re-added import
-import { MadeWithDyad } from "@/components/made-with-dyad"; // Re-added import
-import TaskDetailDialog from "@/components/TaskDetailDialog"; // Re-added import
-import FocusTaskOverlay from "@/components/FocusTaskOverlay"; // Re-added import
+import DateNavigator from '@/components/DateNavigator';
+import NextTaskCard from '@/components/NextTaskCard';
+import TaskList from "@/components/TaskList";
+import { MadeWithDyad } from "@/components/made-with-dyad";
+import TaskDetailDialog from "@/components/TaskDetailDialog";
+import FocusTaskOverlay from "@/components/FocusTaskOverlay";
 
 // Helper to get UTC start of day
 const getUTCStartOfDay = (date: Date) => {
@@ -163,70 +163,96 @@ const AppContent = () => {
   return (
     <div className="flex-1 flex flex-col">
       {user ? (
-        <>
-          <main className="flex-grow p-4">
-            <DateNavigator
-              currentDate={currentDate}
-              onPreviousDay={handlePreviousDay}
-              onNextDay={handleNextDay}
-              onGoToToday={handleGoToToday}
-              setCurrentDate={setCurrentDate}
-            />
-            <NextTaskCard
-              task={manualFocusTaskId ? tasks.find(t => t.id === manualFocusTaskId) || nextAvailableTask : nextAvailableTask}
-              onMarkComplete={handleMarkTaskComplete}
-              onEditTask={handleEditNextTask}
-              currentDate={currentDate}
-              loading={tasksLoading}
-              onCardClick={() => handleOpenFocusOverlay()}
-              onSetAsFocusTask={(taskId) => { onSetAsFocusTask(taskId); handleOpenFocusOverlay(); }}
-              isManualFocus={!!manualFocusTaskId}
-              onClearManualFocus={onClearManualFocus}
-              onOpenFocusOverlay={() => handleOpenFocusOverlay()}
-            />
-            <TaskList
-              setIsAddTaskOpen={setIsAddTaskOpen}
-              currentDate={currentDate}
-              setCurrentDate={setCurrentDate}
-              onSetAsFocusTask={(taskId) => { onSetAsFocusTask(taskId); handleOpenFocusOverlay(); }}
-              manualFocusTaskId={manualFocusTaskId}
-              onClearManualFocus={onClearManualFocus}
-              onOpenFocusOverlay={() => handleOpenFocusOverlay()}
-            />
-          </main>
-          <footer className="p-4">
-            <MadeWithDyad />
-          </footer>
-          <div className="fixed bottom-4 right-4 z-50">
-            <span className="bg-background text-muted-foreground text-sm px-3 py-2 rounded-full shadow-lg opacity-80 hover:opacity-100 transition-opacity duration-200">
-              Press <kbd className="font-mono">Cmd/Ctrl + K</kbd> for commands
-            </span>
-          </div>
-          {taskToEdit && (
-            <TaskDetailDialog
-              task={taskToEdit}
-              userId={userId}
-              isOpen={isTaskDetailOpen}
-              onClose={() => setIsTaskDetailOpen(false)}
-              onUpdate={updateTask}
-              onDelete={deleteTask}
-              currentDate={currentDate}
-              setCurrentDate={setCurrentDate}
-              onSetAsFocusTask={(taskId) => { onSetAsFocusTask(taskId); handleOpenFocusOverlay(); }}
-              onClearManualFocus={onClearManualFocus}
-              onOpenFocusOverlay={() => handleOpenFocusOverlay()}
-            />
-          )}
-          <FocusTaskOverlay
-            task={activeOverlayTask}
-            isOpen={isFocusOverlayOpen}
-            onClose={handleCloseFocusOverlay}
+        <Sidebar> {/* Wrap content with Sidebar */}
+          <Routes>
+            <Route path="/" element={
+              <>
+                <main className="flex-grow p-4">
+                  <DateNavigator
+                    currentDate={currentDate}
+                    onPreviousDay={handlePreviousDay}
+                    onNextDay={handleNextDay}
+                    onGoToToday={handleGoToToday}
+                    setCurrentDate={setCurrentDate}
+                  />
+                  <NextTaskCard
+                    task={manualFocusTaskId ? tasks.find(t => t.id === manualFocusTaskId) || nextAvailableTask : nextAvailableTask}
+                    onMarkComplete={handleMarkTaskComplete}
+                    onEditTask={handleEditNextTask}
+                    currentDate={currentDate}
+                    loading={tasksLoading}
+                    onCardClick={() => handleOpenFocusOverlay()}
+                    onSetAsFocusTask={(taskId) => { onSetAsFocusTask(taskId); handleOpenFocusOverlay(); }}
+                    isManualFocus={!!manualFocusTaskId}
+                    onClearManualFocus={onClearManualFocus}
+                    onOpenFocusOverlay={() => handleOpenFocusOverlay()}
+                  />
+                  <TaskList
+                    setIsAddTaskOpen={setIsAddTaskOpen}
+                    currentDate={currentDate}
+                    setCurrentDate={setCurrentDate}
+                    onSetAsFocusTask={(taskId) => { onSetAsFocusTask(taskId); handleOpenFocusOverlay(); }}
+                    manualFocusTaskId={manualFocusTaskId}
+                    onClearManualFocus={onClearManualFocus}
+                    onOpenFocusOverlay={() => handleOpenFocusOverlay()}
+                  />
+                </main>
+                <footer className="p-4">
+                  <MadeWithDyad />
+                </footer>
+                <div className="fixed bottom-4 right-4 z-50">
+                  <span className="bg-background text-muted-foreground text-sm px-3 py-2 rounded-full shadow-lg opacity-80 hover:opacity-100 transition-opacity duration-200">
+                    Press <kbd className="font-mono">Cmd/Ctrl + K</kbd> for commands
+                  </span>
+                </div>
+                {taskToEdit && (
+                  <TaskDetailDialog
+                    task={taskToEdit}
+                    userId={userId}
+                    isOpen={isTaskDetailOpen}
+                    onClose={() => setIsTaskDetailOpen(false)}
+                    onUpdate={updateTask}
+                    onDelete={deleteTask}
+                    currentDate={currentDate}
+                    setCurrentDate={setCurrentDate}
+                    onSetAsFocusTask={(taskId) => { onSetAsFocusTask(taskId); handleOpenFocusOverlay(); }}
+                    onClearManualFocus={onClearManualFocus}
+                    onOpenFocusOverlay={() => handleOpenFocusOverlay()}
+                  />
+                )}
+                <FocusTaskOverlay
+                  task={activeOverlayTask}
+                  isOpen={isFocusOverlayOpen}
+                  onClose={handleCloseFocusOverlay}
+                  onClearManualFocus={onClearManualFocus}
+                  onMarkComplete={handleMarkTaskComplete}
+                  initialTimerDurationMinutes={initialOverlayDuration}
+                  onSetIsFocusModeActive={setIsFocusModeActive}
+                />
+              </>
+            } />
+            <Route path="/analytics" element={<Analytics currentDate={currentDate} setCurrentDate={setCurrentDate} />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/help" element={<Help />} />
+            <Route path="/archive" element={<Archive currentDate={currentDate} setCurrentDate={setCurrentDate} />} />
+            <Route path="/focus" element={<ProductivityTimer currentDate={currentDate} setCurrentDate={setCurrentDate} />} />
+            <Route path="/projects" element={<ProjectBalanceTracker />} />
+            <Route path="/schedule" element={<TimeBlockSchedule />} />
+            <Route path="/meditation" element={<Meditation />} />
+            <Route path="/sleep" element={<SleepTracker />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          <CommandPalette
+            isAddTaskOpen={isAddTaskOpen}
+            setIsAddTaskOpen={setIsAddTaskOpen}
+            currentDate={currentDate}
+            setCurrentDate={setCurrentDate}
+            nextAvailableTask={nextAvailableTask}
+            manualFocusTaskId={manualFocusTaskId}
+            onSetAsFocusTask={onSetAsFocusTask}
             onClearManualFocus={onClearManualFocus}
-            onMarkComplete={handleMarkTaskComplete}
-            initialTimerDurationMinutes={initialOverlayDuration}
-            onSetIsFocusModeActive={setIsFocusModeActive}
           />
-        </>
+        </Sidebar>
       ) : (
         <div className="flex-1 flex items-center justify-center p-4">
           <AuthComponent />
