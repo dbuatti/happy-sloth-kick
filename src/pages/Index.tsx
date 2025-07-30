@@ -10,6 +10,7 @@ import { addDays, startOfDay } from 'date-fns';
 import { useAuth } from '@/context/AuthContext';
 import NextTaskCard from '@/components/NextTaskCard'; // Import NextTaskCard
 import TaskDetailDialog from '@/components/TaskDetailDialog'; // Import TaskDetailDialog
+import FocusTaskOverlay from '@/components/FocusTaskOverlay'; // Import FocusTaskOverlay
 
 // Helper to get UTC start of day
 const getUTCStartOfDay = (date: Date) => {
@@ -28,6 +29,7 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen, currentDate, setCurrent
 
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<any>(null); // Use 'any' for now, or define a more specific type if needed
+  const [isFocusOverlayOpen, setIsFocusOverlayOpen] = useState(false); // State for the focus overlay
 
   useEffect(() => {
     // No longer need to manage session state here, useAuth handles it
@@ -62,6 +64,16 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen, currentDate, setCurrent
   const handleEditNextTask = (task: any) => {
     setTaskToEdit(task);
     setIsTaskDetailOpen(true);
+  };
+
+  const handleOpenFocusOverlay = () => {
+    if (nextAvailableTask) {
+      setIsFocusOverlayOpen(true);
+    }
+  };
+
+  const handleCloseFocusOverlay = () => {
+    setIsFocusOverlayOpen(false);
   };
 
   // Define keyboard shortcuts
@@ -99,6 +111,7 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen, currentDate, setCurrent
               onEditTask={handleEditNextTask} 
               currentDate={currentDate}
               loading={tasksLoading} // Pass loading state
+              onCardClick={handleOpenFocusOverlay} // Pass the new handler
             />
             <TaskList setIsAddTaskOpen={setIsAddTaskOpen} currentDate={currentDate} setCurrentDate={setCurrentDate} />
           </main>
@@ -122,6 +135,11 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen, currentDate, setCurrent
               setCurrentDate={setCurrentDate}
             />
           )}
+          <FocusTaskOverlay 
+            task={nextAvailableTask} 
+            isOpen={isFocusOverlayOpen} 
+            onClose={handleCloseFocusOverlay} 
+          />
         </>
       ) : (
         <div className="flex-1 flex items-center justify-center p-4">

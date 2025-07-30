@@ -6,7 +6,7 @@ import { Task } from '@/hooks/useTasks';
 import { cn } from '@/lib/utils';
 import { getCategoryColorProps } from '@/lib/categoryColors';
 import { format, parseISO } from 'date-fns';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from '@/components/ui/skeleton'; // Import Skeleton
 
 interface NextTaskCardProps {
@@ -15,9 +15,10 @@ interface NextTaskCardProps {
   onEditTask: (task: Task) => void;
   currentDate: Date;
   loading: boolean; // New prop for loading state
+  onCardClick: () => void; // New prop for card click
 }
 
-const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEditTask, currentDate, loading }) => {
+const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEditTask, currentDate, loading, onCardClick }) => {
   if (loading) {
     return (
       <Card className="w-full shadow-sm mb-4 border-l-4 border-blue-500 dark:border-blue-700">
@@ -85,12 +86,15 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
   const isDueToday = task.due_date && task.status !== 'completed' && format(parseISO(task.due_date), 'yyyy-MM-dd') === format(currentDate, 'yyyy-MM-dd');
 
   return (
-    <Card className={cn(
-      "w-full shadow-sm mb-4",
-      isOverdue ? "border-l-4 border-red-500 dark:border-red-700" :
-      isDueToday ? "border-l-4 border-orange-400 dark:border-orange-600" :
-      "border-l-4 border-blue-500 dark:border-blue-700"
-    )}>
+    <Card 
+      className={cn(
+        "w-full shadow-sm mb-4 cursor-pointer", // Added cursor-pointer
+        isOverdue ? "border-l-4 border-red-500 dark:border-red-700" :
+        isDueToday ? "border-l-4 border-orange-400 dark:border-orange-600" :
+        "border-l-4 border-blue-500 dark:border-blue-700"
+      )}
+      onClick={onCardClick} // Added onClick handler
+    >
       <CardHeader className="pb-2">
         <CardTitle className="text-lg font-semibold flex items-center gap-2">
           <Lightbulb className="h-5 w-5 text-blue-500" /> Your Next Task
@@ -135,10 +139,10 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
         </div>
 
         <div className="flex gap-2 mt-4">
-          <Button onClick={() => onMarkComplete(task.id)} className="flex-1">
+          <Button onClick={(e) => { e.stopPropagation(); onMarkComplete(task.id); }} className="flex-1">
             <CheckCircle2 className="mr-2 h-4 w-4" /> Mark Complete
           </Button>
-          <Button variant="outline" onClick={() => onEditTask(task)} className="flex-1">
+          <Button variant="outline" onClick={(e) => { e.stopPropagation(); onEditTask(task); }} className="flex-1">
             <Edit className="mr-2 h-4 w-4" /> Edit Task
           </Button>
         </div>
