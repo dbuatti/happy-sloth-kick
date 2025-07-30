@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, BarChart3, Settings as SettingsIcon, HelpCircle, Archive as ArchiveIcon, Timer, LayoutGrid, CalendarClock, Menu, Leaf, Moon } from 'lucide-react';
+import { Home, BarChart3, Settings as SettingsIcon, HelpCircle, Archive as ArchiveIcon, Timer, LayoutGrid, CalendarClock, Menu, Leaf, Moon, Volume2, VolumeX } from 'lucide-react';
 import ThemeSelector from './ThemeSelector';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -8,6 +8,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
 import { Badge } from '@/components/ui/badge';
+import { useSound } from '@/context/SoundContext';
 
 interface SidebarProps {
   children: React.ReactNode;
@@ -62,6 +63,7 @@ const NavigationLinks = ({ onLinkClick }: { onLinkClick?: () => void }) => {
 
 const Sidebar: React.FC<SidebarProps> = ({ children }) => {
   const isMobile = useIsMobile();
+  const { isSoundEnabled, toggleSound } = useSound();
 
   if (false) { // isFocusModeActive is removed, so this condition is always false
     return <div className="flex-1 flex flex-col">{children}</div>;
@@ -90,6 +92,9 @@ const Sidebar: React.FC<SidebarProps> = ({ children }) => {
                 </p>
                 <div className="flex items-center space-x-2">
                   <ThemeSelector />
+                  <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"}>
+                    {isSoundEnabled ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
+                  </Button>
                 </div>
               </div>
             </SheetContent>
@@ -97,6 +102,9 @@ const Sidebar: React.FC<SidebarProps> = ({ children }) => {
           <h1 className="text-xl font-bold text-gray-800 dark:text-white">TaskMaster</h1>
           <div className="flex items-center space-x-2">
             <ThemeSelector />
+            <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"}>
+              {isSoundEnabled ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
+            </Button>
           </div>
         </header>
         <div className="flex-1 overflow-auto">
@@ -119,6 +127,9 @@ const Sidebar: React.FC<SidebarProps> = ({ children }) => {
           </p>
           <div className="flex items-center space-x-2">
             <ThemeSelector />
+            <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"}>
+              {isSoundEnabled ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
+            </Button>
           </div>
         </div>
       </div>

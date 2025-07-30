@@ -213,7 +213,9 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
 
   const confirmBulkDelete = async () => {
     setIsBulkActionInProgress(true);
-    await bulkUpdateTasks({ status: 'archived' }, selectedTaskIds);
+    for (const taskId of selectedTaskIds) {
+      await deleteTask(taskId); // Call individual deleteTask
+    }
     clearSelectedTasks();
     setShowConfirmBulkDeleteDialog(false);
     setIsBulkActionInProgress(false);
@@ -435,46 +437,58 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                   {tasksBySection['no-section'].length > 0 && (
                     <div className="mb-3">
                       <div className="rounded-lg bg-muted dark:bg-gray-700 text-foreground shadow-sm">
-                        <div className="flex items-center justify-between p-2">
-                          <h3 className="text-xl font-semibold flex items-center gap-2">
-                            <span>No Section</span> ({tasksBySection['no-section'].length})
-                          </h3>
+                        <div className="flex items-center justify-between p-2 pl-3">
+                          <div className="flex items-center gap-2 flex-1 cursor-pointer" onClick={() => toggleSection('no-section-group')}>
+                            <h3 className="text-xl font-semibold flex items-center gap-2">
+                              <FolderOpen className="h-5 w-5 text-muted-foreground" />
+                              <span>No Section</span> ({tasksBySection['no-section'].length})
+                            </h3>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 p-0"
+                              onClick={() => handleAddTaskToSpecificSection(null)}
+                              title="Add task to No Section"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => toggleSection('no-section-group')} className="h-6 w-6 p-0">
+                              <ChevronDown className={cn("h-5 w-5 transition-transform", expandedSections['no-section-group'] !== false ? "rotate-0" : "-rotate-90")} />
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                      <div className="mt-2 space-y-2 pl-2">
-                        <Button 
-                          variant="outline" 
-                          className="w-full justify-center gap-2 mb-2"
-                          onClick={() => handleAddTaskToSpecificSection(null)}
-                        >
-                          <Plus className="mr-2 h-4 w-4" /> Add Task to No Section
-                        </Button>
-                        <SortableContext items={tasksBySection['no-section'].map(t => t.id)} strategy={verticalListSortingStrategy}>
-                          <ul className="list-none space-y-2">
-                            {tasksBySection['no-section'].map(task => (
-                              <SortableTaskItem
-                                key={`${task.id}-${task.order}`}
-                                task={task}
-                                userId={userId}
-                                onStatusChange={handleStatusChange}
-                                onDelete={deleteTask}
-                                onUpdate={updateTask}
-                                isSelected={selectedTaskIds.includes(task.id)}
-                                onToggleSelect={toggleTaskSelection}
-                                sections={sections}
-                                onEditTask={handleEditTask}
-                                currentDate={currentDate}
-                                onMoveUp={(taskId) => moveTask(taskId, 'up')}
-                                onMoveDown={(taskId) => moveTask(taskId, 'down')}
-                              />
-                            ))}
-                          </ul>
-                        </SortableContext>
-                        <div id="no-section-drop-area" className="h-16 border-2 border-dashed border-blue-400 dark:border-blue-600 bg-blue-50/20 dark:bg-blue-900/20 rounded-md flex flex-col items-center justify-center text-sm text-blue-600 dark:text-blue-400 font-medium transition-colors duration-200 hover:border-blue-500 hover:bg-blue-100/30 dark:hover:bg-blue-800/30" data-no-dnd="true">
-                          <FolderOpen className="h-6 w-6 mb-1" />
-                          Drop tasks here for 'No Section'
+                      {expandedSections['no-section-group'] !== false && (
+                        <div className="mt-2 space-y-2 pl-2">
+                          <SortableContext items={tasksBySection['no-section'].map(t => t.id)} strategy={verticalListSortingStrategy}>
+                            <ul className="list-none space-y-2">
+                              {tasksBySection['no-section'].map(task => (
+                                <SortableTaskItem
+                                  key={`${task.id}-${task.order}`}
+                                  task={task}
+                                  userId={userId}
+                                  onStatusChange={handleStatusChange}
+                                  onDelete={deleteTask}
+                                  onUpdate={updateTask}
+                                  isSelected={selectedTaskIds.includes(task.id)}
+                                  onToggleSelect={toggleTaskSelection}
+                                  sections={sections}
+                                  onEditTask={handleEditTask}
+                                  currentDate={currentDate}
+                                  onMoveUp={(taskId) => moveTask(taskId, 'up')}
+                                  onMoveDown={(taskId) => moveTask(taskId, 'down')}
+                                />
+                              ))}
+                            </ul>
+                          </SortableContext>
+                          <div id="no-section-drop-area" className="h-16 border-2 border-dashed border-blue-400 dark:border-blue-600 bg-blue-50/20 dark:bg-blue-900/20 rounded-md flex flex-col items-center justify-center text-sm text-blue-600 dark:text-blue-400 font-medium transition-colors duration-200 hover:border-blue-500 hover:bg-blue-100/30 dark:hover:bg-blue-800/30" data-no-dnd="true">
+                            <FolderOpen className="h-6 w-6 mb-1" />
+                            Drop tasks here for 'No Section'
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   )}
 
@@ -573,7 +587,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete {selectedTaskIds.length > 0 ? `${selectedTaskIds.length} selected tasks` : 'this section'}.
+              This action cannot be undone. This will permanently delete {selectedTaskIds.length > 0 ? `${selectedTaskIds.length} selected tasks` : 'the selected tasks'}.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
