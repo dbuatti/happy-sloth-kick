@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
-import { Calendar, BellRing, Trash2, Plus, CheckCircle2, Target } from 'lucide-react'; // Added Target icon
+import { Calendar, BellRing, Trash2, Plus, CheckCircle2, Target, XCircle } from 'lucide-react'; // Added Target and XCircle icons
 import { format, parseISO, setHours, setMinutes } from 'date-fns';
 import { cn } from "@/lib/utils";
 import CategorySelector from "./CategorySelector";
@@ -37,6 +37,7 @@ interface TaskDetailDialogProps {
   currentDate: Date; // New prop
   setCurrentDate: React.Dispatch<React.SetStateAction<Date>>; // New prop
   onSetAsFocusTask: (taskId: string) => void; // New prop
+  onClearManualFocus: () => void; // New prop
 }
 
 const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
@@ -49,6 +50,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   currentDate,
   setCurrentDate,
   onSetAsFocusTask, // Destructure new prop
+  onClearManualFocus, // Destructure new prop
 }) => {
   const { sections, tasks: allTasks, handleAddTask, updateTask, allCategories } = useTasks({ currentDate, setCurrentDate });
   const [editingDescription, setEditingDescription] = useState('');
@@ -299,9 +301,15 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
             <Trash2 className="mr-2 h-4 w-4" /> Delete Task
           </Button>
           <div className="flex space-x-2 w-full sm:w-auto">
-            <Button variant="outline" onClick={() => { onSetAsFocusTask(task.id); onClose(); }} disabled={isSaving} className="flex-1">
-              <Target className="mr-2 h-4 w-4" /> Set as Focus
-            </Button>
+            {task.id === localStorage.getItem('manualFocusTaskId') ? (
+              <Button variant="outline" onClick={() => { onClearManualFocus(); onClose(); }} disabled={isSaving} className="flex-1">
+                <XCircle className="mr-2 h-4 w-4" /> Unset Focus
+              </Button>
+            ) : (
+              <Button variant="outline" onClick={() => { onSetAsFocusTask(task.id); onClose(); }} disabled={isSaving} className="flex-1">
+                <Target className="mr-2 h-4 w-4" /> Set as Focus
+              </Button>
+            )}
             <Button variant="outline" onClick={onClose} disabled={isSaving} className="flex-1">
               Cancel
             </Button>

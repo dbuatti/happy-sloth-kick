@@ -66,7 +66,7 @@ const Archive: React.FC<ArchiveProps> = ({ currentDate, setCurrentDate }) => {
   }
 
   return (
-    <div className="flex-1 flex flex-col"> {/* Changed from <> to <div> */}
+    <div className="flex-1 flex flex-col">
       <main className="flex-grow p-4">
         <Card className="w-full max-w-4xl mx-auto shadow-lg p-4">
           <CardHeader className="pb-2">
@@ -99,6 +99,8 @@ const Archive: React.FC<ArchiveProps> = ({ currentDate, setCurrentDate }) => {
                       onMoveUp={async () => {}}
                       onMoveDown={async () => {}}
                       onSetAsFocusTask={() => {}}
+                      manualFocusTaskId={null} {/* Added this prop */}
+                      onClearManualFocus={() => {}} {/* Added this prop */}
                     />
                   </li>
                 ))}
@@ -121,6 +123,7 @@ const Archive: React.FC<ArchiveProps> = ({ currentDate, setCurrentDate }) => {
           currentDate={currentDate}
           setCurrentDate={setCurrentDate}
           onSetAsFocusTask={() => {}}
+          onClearManualFocus={() => {}} {/* Added this prop */}
         />
       )}
     </div>

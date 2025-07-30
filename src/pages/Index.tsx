@@ -147,12 +147,15 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen, currentDate, setCurrent
               onCardClick={handleOpenFocusOverlay} // Pass the new handler
               onSetAsFocusTask={handleSetAsFocusTask} // Pass new prop
               isManualFocus={!!manualFocusTaskId} // Indicate if it's manually set
+              onClearManualFocus={handleClearManualFocus} // Pass new prop
             />
             <TaskList 
               setIsAddTaskOpen={setIsAddTaskOpen} 
               currentDate={currentDate} 
               setCurrentDate={setCurrentDate} 
               onSetAsFocusTask={handleSetAsFocusTask} // Pass new prop
+              manualFocusTaskId={manualFocusTaskId} // Pass new prop
+              onClearManualFocus={handleClearManualFocus} // Pass new prop
             />
           </main>
           <footer className="p-4">
@@ -174,6 +177,7 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen, currentDate, setCurrent
               currentDate={currentDate}
               setCurrentDate={setCurrentDate}
               onSetAsFocusTask={handleSetAsFocusTask} // Pass new prop
+              onClearManualFocus={handleClearManualFocus} // Pass new prop
             />
           )}
           <FocusTaskOverlay 

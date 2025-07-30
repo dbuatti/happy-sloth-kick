@@ -19,10 +19,14 @@ interface SortableTaskItemProps {
   onMoveUp: (taskId: string) => Promise<void>; // Added
   onMoveDown: (taskId: string) => Promise<void>; // Added
   onSetAsFocusTask: (taskId: string) => void; // New prop
+  manualFocusTaskId: string | null; // New prop
+  onClearManualFocus: () => void; // New prop
 }
 
 const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   task,
+  manualFocusTaskId, // Destructure new prop
+  onClearManualFocus, // Destructure new prop
   ...rest
 }) => {
   const {
@@ -49,10 +53,16 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
       {...listeners}
       className={cn(
         "relative border rounded-lg p-2 transition-all duration-200 ease-in-out group",
-        isDragging ? "ring-2 ring-primary shadow-lg" : "hover:shadow-md"
+        isDragging ? "ring-2 ring-primary shadow-lg" : "hover:shadow-md",
+        task.id === manualFocusTaskId ? "ring-2 ring-purple-500 dark:ring-purple-400 bg-purple-50/10 dark:bg-purple-900/10" : "" // Visual highlight
       )}
     >
-      <TaskItem task={task} {...rest} />
+      <TaskItem 
+        task={task} 
+        manualFocusTaskId={manualFocusTaskId} // Pass new prop
+        onClearManualFocus={onClearManualFocus} // Pass new prop
+        {...rest} 
+      />
     </li>
   );
 };

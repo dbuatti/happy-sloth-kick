@@ -47,9 +47,11 @@ interface TaskListProps {
   currentDate: Date;
   setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
   onSetAsFocusTask: (taskId: string) => void; // New prop
+  manualFocusTaskId: string | null; // New prop
+  onClearManualFocus: () => void; // New prop
 }
 
-const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setCurrentDate, onSetAsFocusTask }) => {
+const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setCurrentDate, onSetAsFocusTask, manualFocusTaskId, onClearManualFocus }) => {
   const {
     tasks,
     filteredTasks,
@@ -423,6 +425,8 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                                         onMoveUp={(taskId) => moveTask(taskId, 'up')}
                                         onMoveDown={(taskId) => moveTask(taskId, 'down')}
                                         onSetAsFocusTask={onSetAsFocusTask} // Pass new prop
+                                        manualFocusTaskId={manualFocusTaskId} // Pass new prop
+                                        onClearManualFocus={onClearManualFocus} // Pass new prop
                                       />
                                     ))
                                   )}
@@ -470,6 +474,8 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                                 onMoveUp={(taskId) => moveTask(taskId, 'up')}
                                 onMoveDown={(taskId) => moveTask(taskId, 'down')}
                                 onSetAsFocusTask={onSetAsFocusTask} // Pass new prop
+                                manualFocusTaskId={manualFocusTaskId} // Pass new prop
+                                onClearManualFocus={onClearManualFocus} // Pass new prop
                               />
                             ))}
                           </ul>
@@ -510,6 +516,8 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                           onMoveUp={(taskId) => moveTask(taskId, 'up')}
                           onMoveDown={(taskId) => moveTask(taskId, 'down')}
                           onSetAsFocusTask={onSetAsFocusTask} // Pass new prop
+                          manualFocusTaskId={manualFocusTaskId} // Pass new prop
+                          onClearManualFocus={onClearManualFocus} // Pass new prop
                         />
                       )}
                       {activeSection && (
@@ -570,6 +578,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
           currentDate={currentDate}
           setCurrentDate={setCurrentDate}
           onSetAsFocusTask={onSetAsFocusTask} // Pass new prop
+          onClearManualFocus={onClearManualFocus} // Pass new prop
         />
       )}
 
