@@ -14,8 +14,8 @@ export const useTimer = ({ initialDurationSeconds, onTimerEnd, onTick }: UseTime
   const [timeRemaining, setTimeRemaining] = useState(initialDurationSeconds);
   const [isRunning, setIsRunning] = useState(false);
   const timerIdRef = useRef<NodeJS.Timeout | null>(null);
-  const onTimerEndRef = useRef(onTimerEnd);
-  const onTickRef = useRef(onTick);
+  const onTimerEndRef = useRef(onTimerEnd); // Use refs for callbacks to avoid re-creating interval
+  const onTickRef = useRef(onTick); // Use refs for callbacks to avoid re-creating interval
 
   // Update refs when callbacks change
   useEffect(() => {
@@ -80,7 +80,7 @@ export const useTimer = ({ initialDurationSeconds, onTimerEnd, onTick }: UseTime
         timerIdRef.current = null;
       }
     };
-  }, [isRunning, timeRemaining]); // Keep timeRemaining here for the `if (timeRemaining <= 0)` check
+  }, [isRunning]); // Removed timeRemaining from dependencies
 
   const start = useCallback(() => {
     console.log(`[useTimer ACTION] start called. timeRemaining: ${timeRemaining}, isRunning: ${isRunning}`);
