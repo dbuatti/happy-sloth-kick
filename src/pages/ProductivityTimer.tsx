@@ -121,16 +121,16 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
         });
       }
 
-      // Update the pomodoroSessionType state for the next cycle
+      // Reset the timer first with the duration for the *next* session
+      resetPomodoroTimerHook(getPomodoroDuration(nextSessionType)); 
+
+      // Then update the pomodoroSessionType state for the next cycle
       setPomodoroSessionType(nextSessionType); 
 
       setPomodoroSessionStartTime(null);
       setPomodoroCurrentTaskId(null);
       localStorage.removeItem('pomodoroCurrentTaskId');
       
-      // Reset the timer with the duration of the *next* session type.
-      // This will cause useTimer to update its internal timeRemaining.
-      resetPomodoroTimerHook(getPomodoroDuration(nextSessionType)); 
     }, [pomodoroSessionType, pomodoroCount, playSound, pomodoroCurrentTaskId, filteredTasks, pomodoroSessionStartTime, addFocusSession, getPomodoroDuration]),
     onTick: useCallback((time) => {
       // console.log(`[ProductivityTimer] Pomodoro Tick: ${time}`);
@@ -296,6 +296,9 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
     setCustomDuration(newDuration);
     // The useEffect for customDuration will handle resetting the timer
   };
+
+  // Debugging log for component render
+  console.log(`[ProductivityTimer Render] Type: ${pomodoroSessionType}, Count: ${pomodoroCount}, Time: ${pomodoroTimeRemaining}, Running: ${pomodoroIsRunning}`);
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-4">

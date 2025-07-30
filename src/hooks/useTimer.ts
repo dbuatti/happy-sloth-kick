@@ -20,11 +20,9 @@ export const useTimer = ({ initialDurationSeconds, onTimerEnd, onTick }: UseTime
       setTimeRemaining(initialDurationSeconds);
       console.log(`[useTimer] useEffect [initialDurationSeconds]: Set timeRemaining to ${initialDurationSeconds}.`);
     } else {
-      // If running, we don't want to reset the current countdown, but ensure the base duration is updated
-      // This is handled by the reset function if called explicitly.
       console.log(`[useTimer] useEffect [initialDurationSeconds]: Timer is running, not resetting timeRemaining.`);
     }
-  }, [initialDurationSeconds]); // Only re-run when initialDurationSeconds changes
+  }, [initialDurationSeconds, isRunning]);
 
   // Main timer logic
   useEffect(() => {
@@ -64,9 +62,9 @@ export const useTimer = ({ initialDurationSeconds, onTimerEnd, onTick }: UseTime
     console.log(`[useTimer] Action: start called. timeRemaining=${timeRemaining}, isRunning=${isRunning}`);
     if (timeRemaining > 0 && !isRunning) {
       setIsRunning(true);
-      console.log(`[useTimer] Action: Setting isRunning to true.`);
+      console.log(`[useTimer] Action: Setting isRunning to true. Current timeRemaining: ${timeRemaining}`);
     } else {
-      console.log(`[useTimer] Action: Start ignored. timeRemaining=${timeRemaining}, isRunning=${isRunning}`);
+      console.log(`[useTimer] Action: Start ignored. Condition: timeRemaining > 0 (${timeRemaining > 0}) && !isRunning (${!isRunning}).`);
     }
   }, [timeRemaining, isRunning]);
 
