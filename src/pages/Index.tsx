@@ -13,6 +13,7 @@ import TaskDetailDialog from '@/components/TaskDetailDialog';
 import { Task } from '@/hooks/useTasks';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useUI } from '@/context/UIContext';
+import TimerTest from '@/components/TimerTest'; // Import the new test component
 
 // Helper to get UTC start of day
 const getUTCStartOfDay = (date: Date) => {
@@ -103,6 +104,8 @@ const Index: React.FC<IndexPageProps> = ({
           currentDate={currentDate}
           setCurrentDate={setCurrentDate}
         />
+        {/* Temporary Timer Test Component */}
+        <TimerTest />
       </main>
       <footer className="p-4">
         <MadeWithDyad />
