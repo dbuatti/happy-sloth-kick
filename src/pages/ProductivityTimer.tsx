@@ -181,6 +181,21 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
     };
   }, [setIsFocusModeActive, activeTab, pomodoroIsRunning]);
 
+  // Effect to automatically start the next Pomodoro session after a type change
+  useEffect(() => {
+    // This condition checks if:
+    // 1. The timer is currently NOT running (`!pomodoroIsRunning`).
+    // 2. The time remaining is exactly the full duration for the current session type.
+    //    This implies the timer just reset to its initial state for the new session.
+    // 3. It's not a custom timer (as custom timers don't auto-chain).
+    // 4. A session start time hasn't been set yet for the current cycle (prevents re-starting if manually paused/started).
+    if (!pomodoroIsRunning && pomodoroTimeRemaining === getPomodoroDuration(pomodoroSessionType) && pomodoroSessionType !== 'custom' && pomodoroSessionStartTime === null) {
+      startPomodoroTimer();
+      setPomodoroSessionStartTime(new Date()); // Set start time for the new session
+    }
+  }, [pomodoroSessionType, pomodoroIsRunning, pomodoroTimeRemaining, getPomodoroDuration, startPomodoroTimer, pomodoroSessionStartTime]);
+
+
   const handleStartPomodoro = useCallback(() => {
     if (!pomodoroIsRunning) {
       startPomodoroTimer();

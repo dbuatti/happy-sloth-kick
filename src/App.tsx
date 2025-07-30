@@ -29,7 +29,6 @@ import NextTaskCard from '@/components/NextTaskCard';
 import TaskList from "@/components/TaskList";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import TaskDetailDialog from "@/components/TaskDetailDialog";
-// import TimerTest from '@/components/TimerTest'; // Removed import
 
 // Helper to get UTC start of day
 const getUTCStartOfDay = (date: Date) => {
@@ -123,8 +122,6 @@ const AppContent = () => {
                     currentDate={currentDate}
                     setCurrentDate={setCurrentDate}
                   />
-                  {/* Removed Temporary Timer Test Component */}
-                  {/* <TimerTest /> */}
                 </main>
                 <footer className="p-4">
                   <MadeWithDyad />
