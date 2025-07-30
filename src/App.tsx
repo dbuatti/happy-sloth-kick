@@ -7,7 +7,6 @@ import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
 import Help from "./pages/Help";
 import Archive from "./pages/Archive";
-import ProductivityTimer from "./pages/ProductivityTimer";
 import ProjectBalanceTracker from "./pages/ProjectBalanceTracker";
 import TimeBlockSchedule from "./pages/TimeBlockSchedule";
 import Meditation from "./pages/Meditation";
@@ -16,7 +15,6 @@ import { AuthProvider, useAuth } from "@/context/AuthContext";
 import CommandPalette from "./components/CommandPalette";
 import { useState, useEffect, useCallback } from 'react';
 import Sidebar from "./components/Sidebar";
-import { UIProvider, useUI } from "@/context/UIContext";
 import { SoundProvider } from "@/context/SoundContext";
 import { addDays, startOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -149,7 +147,6 @@ const AppContent = () => {
             <Route path="/settings" element={<Settings />} />
             <Route path="/help" element={<Help />} />
             <Route path="/archive" element={<Archive currentDate={currentDate} setCurrentDate={setCurrentDate} />} />
-            <Route path="/focus" element={<ProductivityTimer currentDate={currentDate} setCurrentDate={setCurrentDate} />} />
             <Route path="/projects" element={<ProjectBalanceTracker />} />
             <Route path="/schedule" element={<TimeBlockSchedule />} />
             <Route path="/meditation" element={<Meditation />} />
@@ -178,13 +175,11 @@ const App = () => {
       <TooltipProvider>
         <Sonner position="top-right" />
         <AuthProvider>
-          <UIProvider>
-            <SoundProvider>
-              <BrowserRouter>
-                <AppContent />
-              </BrowserRouter>
-            </SoundProvider>
-          </UIProvider>
+          <SoundProvider>
+            <BrowserRouter>
+              <AppContent />
+            </BrowserRouter>
+          </SoundProvider>
         </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>

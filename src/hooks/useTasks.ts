@@ -72,7 +72,7 @@ const getUTCStartOfDay = (date: Date) => {
 interface UseTasksProps {
   currentDate?: Date;
   setCurrentDate?: React.Dispatch<React.SetStateAction<Date>>;
-  viewMode?: 'daily' | 'archive' | 'focus';
+  viewMode?: 'daily' | 'archive'; // Removed 'focus'
 }
 
 export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: UseTasksProps = {}) => {
@@ -1171,11 +1171,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     if (viewMode === 'archive') {
       relevantTasks = tasks.filter(task => task.status === 'archived');
       console.log('filteredTasks/nextAvailableTask: Archive mode - relevantTasks (archived only).');
-    } else if (viewMode === 'focus') {
-      // For focus mode, consider all non-archived top-level tasks initially
-      relevantTasks = tasks.filter(task => task.status !== 'archived' && task.parent_task_id === null);
-      console.log('filteredTasks/nextAvailableTask: Focus mode - relevantTasks (all non-archived top-level tasks).');
-    } else { // Default to 'daily' logic
+    } else { // Default to 'daily' logic (and previously 'focus')
       const effectiveCurrentDateUTC = currentDate ? getUTCStartOfDay(currentDate) : getUTCStartOfDay(new Date());
       console.log('filteredTasks/nextAvailableTask: Daily mode - Current Date (UTC):', effectiveCurrentDateUTC.toISOString());
       const processedOriginalIds = new Set<string>();
@@ -1236,15 +1232,9 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       });
     }
 
-    // Calculate focusModeSectionIds once
-    const focusModeSectionIds = new Set(sections.filter(s => s.include_in_focus_mode).map(s => s.id));
+    // No longer need focusModeSectionIds or tasksForFocusModeDisplay as 'focus' viewMode is removed.
+    // The filtering below applies to 'daily' and 'archive' modes.
 
-    // This is the set of tasks that would be shown in Focus Mode, regardless of current viewMode
-    let tasksForFocusModeDisplay = relevantTasks.filter(task => 
-      task.section_id === null || focusModeSectionIds.has(task.section_id)
-    );
-
-    // Now, apply the viewMode specific filtering for finalFilteredTasks
     let currentViewFilteredTasks = relevantTasks; // Start with the relevantTasks determined above
 
     if (viewMode === 'daily') {
@@ -1253,8 +1243,6 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       } else {
         currentViewFilteredTasks = currentViewFilteredTasks.filter(task => task.status !== 'archived');
       }
-    } else if (viewMode === 'focus') {
-      currentViewFilteredTasks = tasksForFocusModeDisplay; // This is where the focus mode filter is applied
     }
     // Apply search, category, priority, section filters to currentViewFilteredTasks
     if (searchFilter) {

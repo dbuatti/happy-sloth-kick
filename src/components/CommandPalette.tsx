@@ -3,7 +3,7 @@ import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, C
 import { useTasks } from '@/hooks/useTasks';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Settings, BarChart3, Home, FolderOpen, ChevronLeft, ChevronRight, LogOut, LayoutGrid, CalendarClock, CalendarDays } from 'lucide-react';
+import { Plus, Settings, BarChart3, Home, FolderOpen, ChevronLeft, ChevronRight, LogOut, LayoutGrid, CalendarClock, Menu, Leaf, CalendarDays } from 'lucide-react'; // Added CalendarDays
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from "@/utils/toast";
 import { useIsMobile } from '@/hooks/use-mobile';

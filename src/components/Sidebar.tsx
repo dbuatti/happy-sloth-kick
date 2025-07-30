@@ -6,7 +6,6 @@ import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { useUI } from '@/context/UIContext';
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
 import { Badge } from '@/components/ui/badge';
 
@@ -16,7 +15,6 @@ interface SidebarProps {
 
 const navItems = [
   { name: 'Daily Tasks', path: '/', icon: Home, showCount: true },
-  { name: 'Focus Mode', path: '/focus', icon: Timer },
   { name: 'Meditation', path: '/meditation', icon: Leaf },
   { name: 'Sleep Tracker', path: '/sleep', icon: Moon },
   { name: 'Project Balance', path: '/projects', icon: LayoutGrid },
@@ -64,12 +62,12 @@ const NavigationLinks = ({ onLinkClick }: { onLinkClick?: () => void }) => {
 
 const Sidebar: React.FC<SidebarProps> = ({ children }) => {
   const isMobile = useIsMobile();
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const { isFocusModeActive } = useUI();
 
-  if (isFocusModeActive) {
+  if (false) { // isFocusModeActive is removed, so this condition is always false
     return <div className="flex-1 flex flex-col">{children}</div>;
   }
+
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   if (isMobile) {
     return (
