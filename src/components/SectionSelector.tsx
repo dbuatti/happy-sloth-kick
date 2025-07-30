@@ -31,9 +31,10 @@ const SectionSelector: React.FC<SectionSelectorProps> = ({ value, onChange, user
 
   useEffect(() => {
     // If no section is selected and sections exist, default to the first one
-    if (!value && sections.length > 0) {
-      onChange(sections[0].id);
-    }
+    // Removed this auto-selection to allow explicit 'No Section'
+    // if (!value && sections.length > 0) {
+    //   onChange(sections[0].id);
+    // }
   }, [value, sections, onChange]);
 
   // Removed fetchSections, createSection, deleteSection functions
@@ -50,9 +51,8 @@ const SectionSelector: React.FC<SectionSelectorProps> = ({ value, onChange, user
             onChange={(e) => onChange(e.target.value === '' ? null : e.target.value)}
             className="w-full p-2 border rounded-md bg-background"
           >
-            {sections.length === 0 ? (
-              <option value="" disabled>No sections available</option>
-            ) : (
+            <option value="">No Section</option> {/* Explicit 'No Section' option */}
+            {sections.length > 0 && (
               sections.map(section => (
                 <option key={section.id} value={section.id}>
                   {section.name}
