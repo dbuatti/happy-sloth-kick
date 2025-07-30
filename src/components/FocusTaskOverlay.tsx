@@ -17,7 +17,7 @@ const FocusTaskOverlay: React.FC<FocusTaskOverlayProps> = ({ task, isOpen, onClo
     <div
       className={cn(
         "fixed inset-0 z-[9999] flex items-center justify-center p-4",
-        "bg-primary text-primary-foreground cursor-pointer"
+        "bg-primary text-white cursor-pointer" // Changed text-primary-foreground to text-white
       )}
       onClick={onClose}
     >
