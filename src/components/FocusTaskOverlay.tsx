@@ -144,7 +144,7 @@ const FocusTaskOverlay: React.FC<FocusTaskOverlayProps> = ({
     <div
       className={cn(
         "fixed inset-0 z-[9999] flex items-center justify-center",
-        "bg-primary text-primary-foreground pointer-events-none" // Added pointer-events-none
+        "bg-background text-foreground pointer-events-none" // Changed to bg-background text-foreground
       )}
     >
       <div 
@@ -166,7 +166,7 @@ const FocusTaskOverlay: React.FC<FocusTaskOverlayProps> = ({
             className="absolute w-full h-full rounded-full bg-muted"
             indicatorClassName={cn(
               "transition-all duration-1000 ease-linear",
-              "bg-primary-foreground"
+              "bg-primary" // Changed to bg-primary
             )}
           />
           <div className="relative z-10 text-5xl font-bold text-primary-foreground">
