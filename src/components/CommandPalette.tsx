@@ -3,32 +3,28 @@ import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, C
 import { useTasks } from '@/hooks/useTasks';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Settings, BarChart3, Home, FolderOpen, ChevronLeft, ChevronRight, LogOut, LayoutGrid, CalendarClock, CalendarDays, Target, XCircle } from 'lucide-react'; // Added Target and XCircle
+import { Plus, Settings, BarChart3, Home, FolderOpen, ChevronLeft, ChevronRight, LogOut, LayoutGrid, CalendarClock, CalendarDays } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { showError, showSuccess } from '@/utils/toast';
+import { showError, showSuccess } from "@/utils/toast";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import AddTaskForm from './AddTaskForm';
 import { useSound } from '@/context/SoundContext';
-import { Task } from '@/hooks/useTasks'; // Import Task type
+import { Task } from '@/hooks/useTasks';
 
 interface CommandPaletteProps {
   isAddTaskOpen: boolean;
   setIsAddTaskOpen: (open: boolean) => void;
-  currentDate: Date; // New prop
-  setCurrentDate: React.Dispatch<React.SetStateAction<Date>>; // New prop
-  nextAvailableTask: Task | null; // New prop
-  manualFocusTaskId: string | null; // New prop
-  onSetAsFocusTask: (taskId: string) => void; // New prop
-  onClearManualFocus: () => void; // New prop
+  currentDate: Date;
+  setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
 }
 
-const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAddTaskOpen, currentDate, setCurrentDate, nextAvailableTask, manualFocusTaskId, onSetAsFocusTask, onClearManualFocus }) => {
+const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAddTaskOpen, currentDate, setCurrentDate }) => {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { handleAddTask, sections, allCategories } = useTasks({ currentDate, setCurrentDate }); // Pass currentDate and setCurrentDate, and allCategories
+  const { handleAddTask, sections, allCategories } = useTasks({ currentDate, setCurrentDate });
   const isMobile = useIsMobile();
   const { playSound } = useSound();
 
@@ -38,7 +34,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
         e.preventDefault();
         setOpen((prevOpen) => {
           const newOpen = !prevOpen;
-          if (newOpen) playSound('success'); // Play sound on open
+          if (newOpen) playSound('success');
           return newOpen;
         });
       }
@@ -49,7 +45,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
 
   const handleSelect = useCallback((callback: () => void) => {
     setOpen(false);
-    playSound('success'); // Play sound on select
+    playSound('success');
     callback();
   }, [playSound]);
 
@@ -61,7 +57,6 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
       navigate('/');
     } catch (error: any) {
       showError(error.message);
-      console.error('Error signing out:', error);
     }
   };
 
@@ -69,7 +64,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
     const success = await handleAddTask(taskData);
     if (success) {
       setIsAddTaskOpen(false);
-      playSound('success'); // Play sound on task added
+      playSound('success');
     }
     return success;
   };
@@ -79,7 +74,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
       {isMobile ? (
         <Sheet open={open} onOpenChange={(newOpen) => {
           setOpen(newOpen);
-          if (newOpen) playSound('success'); // Play sound on open
+          if (newOpen) playSound('success');
         }}>
           <SheetContent className="h-full">
             <SheetHeader>
@@ -95,18 +90,6 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
                     <Plus className="mr-2 h-4 w-4" />
                     <span>Add New Task</span>
                   </CommandItem>
-                  {nextAvailableTask && (
-                    <CommandItem onSelect={() => handleSelect(() => onSetAsFocusTask(nextAvailableTask.id))}>
-                      <Target className="mr-2 h-4 w-4" />
-                      <span>Focus on Next Task</span>
-                    </CommandItem>
-                  )}
-                  {manualFocusTaskId && (
-                    <CommandItem onSelect={() => handleSelect(onClearManualFocus)}>
-                      <XCircle className="mr-2 h-4 w-4" />
-                      <span>Clear Focus Task</span>
-                    </CommandItem>
-                  )}
                   <CommandItem onSelect={() => handleSelect(() => navigate('/'))}>
                     <Home className="mr-2 h-4 w-4" />
                     <span>Go to Daily Tasks</span>
@@ -170,7 +153,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
       ) : (
         <CommandDialog open={open} onOpenChange={(newOpen) => {
           setOpen(newOpen);
-          if (newOpen) playSound('success'); // Play sound on open
+          if (newOpen) playSound('success');
         }}>
           <CommandInput placeholder="Type a command or search..." />
           <CommandList>
@@ -181,18 +164,6 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
                 <Plus className="mr-2 h-4 w-4" />
                 <span>Add New Task</span>
               </CommandItem>
-              {nextAvailableTask && (
-                <CommandItem onSelect={() => handleSelect(() => onSetAsFocusTask(nextAvailableTask.id))}>
-                  <Target className="mr-2 h-4 w-4" />
-                  <span>Focus on Next Task</span>
-                </CommandItem>
-              )}
-              {manualFocusTaskId && (
-                <CommandItem onSelect={() => handleSelect(onClearManualFocus)}>
-                  <XCircle className="mr-2 h-4 w-4" />
-                  <span>Clear Focus Task</span>
-                </CommandItem>
-              )}
               <CommandItem onSelect={() => handleSelect(() => navigate('/'))}>
                 <Home className="mr-2 h-4 w-4" />
                 <span>Go to Daily Tasks</span>

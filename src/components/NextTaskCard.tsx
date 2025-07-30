@@ -1,28 +1,23 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Edit, Lightbulb, Target, XCircle } from 'lucide-react'; // Added Target and XCircle icons
+import { CheckCircle2, Edit, Lightbulb } from 'lucide-react';
 import { Task } from '@/hooks/useTasks';
 import { cn } from '@/lib/utils';
 import { getCategoryColorProps } from '@/lib/categoryColors';
 import { format, parseISO } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Skeleton } from '@/components/ui/skeleton'; // Import Skeleton
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface NextTaskCardProps {
   task: Task | null;
   onMarkComplete: (taskId: string) => Promise<void>;
   onEditTask: (task: Task) => void;
   currentDate: Date;
-  loading: boolean; // New prop for loading state
-  onCardClick: () => void; // New prop for card click
-  onSetAsFocusTask: (taskId: string) => void; // New prop to set as manual focus
-  isManualFocus: boolean; // New prop to indicate if it's manually set
-  onClearManualFocus: () => void; // New prop to clear manual focus
-  onOpenFocusOverlay: () => void; // New prop
+  loading: boolean;
 }
 
-const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEditTask, currentDate, loading, onCardClick, onSetAsFocusTask, isManualFocus, onClearManualFocus, onOpenFocusOverlay }) => {
+const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEditTask, currentDate, loading }) => {
   if (loading) {
     return (
       <Card className="w-full shadow-sm mb-4 border-l-4 border-blue-500 dark:border-blue-700">
@@ -53,7 +48,7 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
         </CardHeader>
         <CardContent className="pt-0">
           <p className="text-muted-foreground">No incomplete tasks found for today. Time to add some!</p>
-          <Button variant="outline" className="mt-3 w-full" onClick={() => onEditTask(null as any)}> {/* Pass null or handle appropriately */}
+          <Button variant="outline" className="mt-3 w-full" onClick={() => onEditTask(null as any)}>
             Add New Task
           </Button>
         </CardContent>
@@ -92,21 +87,16 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
   return (
     <Card 
       className={cn(
-        "w-full shadow-sm mb-4 cursor-pointer", // Added cursor-pointer
+        "w-full shadow-sm mb-4 cursor-pointer",
         isOverdue ? "border-l-4 border-red-500 dark:border-red-700" :
         isDueToday ? "border-l-4 border-orange-400 dark:border-orange-600" :
         "border-l-4 border-blue-500 dark:border-blue-700"
       )}
-      onClick={onCardClick} // Added onClick handler
+      onClick={() => onEditTask(task)}
     >
       <CardHeader className="pb-2">
         <CardTitle className="text-lg font-semibold flex items-center gap-2">
-          {isManualFocus ? (
-            <Target className="h-5 w-5 text-purple-500" />
-          ) : (
-            <Lightbulb className="h-5 w-5 text-blue-500" />
-          )}
-          {isManualFocus ? 'Manually Focused Task' : 'Your Next Task'}
+          <Lightbulb className="h-5 w-5 text-blue-500" /> Your Next Task
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-0 space-y-3">
@@ -137,11 +127,11 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
             <Tooltip>
               <TooltipTrigger asChild>
                 <span className="truncate max-w-[100px] text-xs px-2 py-0.5 rounded-full bg-muted-foreground/10">
-                  {task.section_id} {/* This should ideally be section name, but task object doesn't have it directly */}
+                  {task.section_id}
                 </span>
               </TooltipTrigger>
               <TooltipContent>
-                Section: {task.section_id} {/* Replace with actual section name if available */}
+                Section: {task.section_id}
               </TooltipContent>
             </Tooltip>
           )}
@@ -154,15 +144,6 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
           <Button variant="outline" onClick={(e) => { e.stopPropagation(); onEditTask(task); }} className="flex-1">
             <Edit className="mr-2 h-4 w-4" /> Edit Task
           </Button>
-          {isManualFocus ? (
-            <Button variant="outline" onClick={(e) => { e.stopPropagation(); onClearManualFocus(); }} className="flex-1">
-              <XCircle className="mr-2 h-4 w-4" /> Unset Focus
-            </Button>
-          ) : (
-            <Button variant="outline" onClick={(e) => { e.stopPropagation(); onSetAsFocusTask(task.id); onOpenFocusOverlay(); }} className="flex-1">
-              <Target className="mr-2 h-4 w-4" /> Set as Focus
-            </Button>
-          )}
         </div>
       </CardContent>
     </Card>

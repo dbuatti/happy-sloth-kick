@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing, FolderOpen, Repeat, ListTodo, CheckCircle2, ArrowUp, ArrowDown, Target, XCircle } from 'lucide-react'; // Added Target and XCircle icons
+import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing, FolderOpen, Repeat, ListTodo, CheckCircle2, ArrowUp, ArrowDown } from 'lucide-react';
 import * as dateFns from 'date-fns';
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
@@ -22,11 +22,7 @@ interface TaskItemProps {
   onEditTask: (task: Task) => void;
   currentDate: Date;
   onMoveUp: (taskId: string) => Promise<void>;
-  onMoveDown: (taskId: string) => Promise<void>; // Corrected type definition
-  onSetAsFocusTask: (taskId: string) => void; // New prop
-  manualFocusTaskId: string | null; // New prop
-  onClearManualFocus: () => void; // New prop
-  onOpenFocusOverlay: () => void; // New prop
+  onMoveDown: (taskId: string) => Promise<void>;
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -42,10 +38,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
   currentDate,
   onMoveUp,
   onMoveDown,
-  onSetAsFocusTask, // Destructure new prop
-  manualFocusTaskId, // Destructure new prop
-  onClearManualFocus, // Destructure new prop
-  onOpenFocusOverlay, // Destructure new prop
 }) => {
   const { playSound } = useSound();
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
@@ -84,7 +76,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
     onToggleSelect(task.id, checked);
     onStatusChange(task.id, checked ? 'completed' : 'to-do');
     if (checked) {
-      playSound('success'); // Play success sound on completion
+      playSound('success');
       setShowCompletionEffect(true);
       setTimeout(() => {
         setShowCompletionEffect(false);
@@ -95,13 +87,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const handleMoveUpClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onMoveUp(task.id);
-    playSound('success'); // Play success sound on move
+    playSound('success');
   };
 
   const handleMoveDownClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onMoveDown(task.id);
-    playSound('success'); // Play success sound on move
+    playSound('success');
   };
 
   return (
@@ -234,16 +226,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'archived'); playSound('success'); }}>
               <Archive className="mr-2 h-4 w-4" /> Archive
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            {task.id === manualFocusTaskId ? (
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onClearManualFocus(); playSound('success'); }}>
-                <XCircle className="mr-2 h-4 w-4" /> Unset Focus Task
-              </DropdownMenuItem>
-            ) : (
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSetAsFocusTask(task.id); onOpenFocusOverlay(); playSound('success'); }}>
-                <Target className="mr-2 h-4 w-4" /> Set as Focus Task
-              </DropdownMenuItem>
-            )}
             <DropdownMenuSeparator />
             <DropdownMenuSub>
               <DropdownMenuSubTrigger data-no-dnd="true">

@@ -10,7 +10,6 @@ import { addDays, startOfDay } from 'date-fns';
 import { useAuth } from '@/context/AuthContext';
 import NextTaskCard from '@/components/NextTaskCard';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
-import FocusTaskOverlay from '@/components/FocusTaskOverlay';
 import { Task } from '@/hooks/useTasks';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useUI } from '@/context/UIContext';
@@ -24,20 +23,12 @@ interface IndexPageProps {
   setIsAddTaskOpen: (open: boolean) => void;
   currentDate: Date;
   setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
-  manualFocusTaskId: string | null;
-  onSetAsFocusTask: (taskId: string) => void;
-  onClearManualFocus: () => void;
-  onOpenFocusOverlay: (duration?: number) => void;
 }
 
 const Index: React.FC<IndexPageProps> = ({
   setIsAddTaskOpen,
   currentDate,
   setCurrentDate,
-  manualFocusTaskId,
-  onSetAsFocusTask,
-  onClearManualFocus,
-  onOpenFocusOverlay,
 }) => {
   const { user, loading: authLoading } = useAuth();
   const { tasks, nextAvailableTask, updateTask, deleteTask, userId, loading: tasksLoading } = useTasks({ currentDate, setCurrentDate });
@@ -66,9 +57,6 @@ const Index: React.FC<IndexPageProps> = ({
 
   const handleMarkTaskComplete = async (taskId: string) => {
     await updateTask(taskId, { status: 'completed' });
-    if (manualFocusTaskId === taskId) {
-      onClearManualFocus();
-    }
   };
 
   const handleEditNextTask = (task: Task) => {
@@ -104,25 +92,16 @@ const Index: React.FC<IndexPageProps> = ({
           setCurrentDate={setCurrentDate}
         />
         <NextTaskCard
-          task={manualFocusTaskId ? tasks.find(t => t.id === manualFocusTaskId) || nextAvailableTask : nextAvailableTask}
+          task={nextAvailableTask}
           onMarkComplete={handleMarkTaskComplete}
           onEditTask={handleEditNextTask}
           currentDate={currentDate}
           loading={tasksLoading}
-          onCardClick={() => onOpenFocusOverlay()}
-          onSetAsFocusTask={onSetAsFocusTask}
-          isManualFocus={!!manualFocusTaskId}
-          onClearManualFocus={onClearManualFocus}
-          onOpenFocusOverlay={onOpenFocusOverlay}
         />
         <TaskList
           setIsAddTaskOpen={setIsAddTaskOpen}
           currentDate={currentDate}
           setCurrentDate={setCurrentDate}
-          onSetAsFocusTask={onSetAsFocusTask}
-          manualFocusTaskId={manualFocusTaskId}
-          onClearManualFocus={onClearManualFocus}
-          onOpenFocusOverlay={onOpenFocusOverlay}
         />
       </main>
       <footer className="p-4">
@@ -143,9 +122,6 @@ const Index: React.FC<IndexPageProps> = ({
           onDelete={deleteTask}
           currentDate={currentDate}
           setCurrentDate={setCurrentDate}
-          onSetAsFocusTask={onSetAsFocusTask}
-          onClearManualFocus={onClearManualFocus}
-          onOpenFocusOverlay={onOpenFocusOverlay}
         />
       )}
     </>

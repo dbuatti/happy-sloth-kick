@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
-import { Calendar, BellRing, Trash2, Plus, CheckCircle2, Target, XCircle } from 'lucide-react'; // Added Target and XCircle icons
+import { Calendar, BellRing, Trash2, Plus, CheckCircle2 } from 'lucide-react';
 import { format, parseISO, setHours, setMinutes } from 'date-fns';
 import { cn } from "@/lib/utils";
 import CategorySelector from "./CategorySelector";
@@ -34,11 +34,8 @@ interface TaskDetailDialogProps {
   onClose: () => void;
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<void>;
   onDelete: (taskId: string) => void;
-  currentDate: Date; // New prop
-  setCurrentDate: React.Dispatch<React.SetStateAction<Date>>; // New prop
-  onSetAsFocusTask: (taskId: string) => void; // New prop
-  onClearManualFocus: () => void; // New prop
-  onOpenFocusOverlay: () => void; // New prop
+  currentDate: Date;
+  setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
 }
 
 const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
@@ -50,15 +47,12 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   onDelete,
   currentDate,
   setCurrentDate,
-  onSetAsFocusTask, // Destructure new prop
-  onClearManualFocus, // Destructure new prop
-  onOpenFocusOverlay, // Destructure new prop
 }) => {
   const { sections, tasks: allTasks, handleAddTask, updateTask, allCategories } = useTasks({ currentDate, setCurrentDate });
   const [editingDescription, setEditingDescription] = useState('');
   const [editingNotes, setEditingNotes] = useState('');
   const [editingDueDate, setEditingDueDate] = useState<Date | undefined>(undefined);
-  const [editingCategory, setEditingCategory] = useState(''); // This is the category ID
+  const [editingCategory, setEditingCategory] = useState('');
   const [editingPriority, setEditingPriority] = useState('');
   const [editingRemindAt, setEditingRemindAt] = useState<Date | undefined>(undefined);
   const [reminderTime, setReminderTime] = useState('');
@@ -74,7 +68,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
       setEditingDescription(task.description);
       setEditingNotes(task.notes || '');
       setEditingDueDate(task.due_date ? parseISO(task.due_date) : undefined);
-      setEditingCategory(task.category); // Set category ID
+      setEditingCategory(task.category);
       setEditingPriority(task.priority);
       setEditingRemindAt(task.remind_at ? parseISO(task.remind_at) : undefined);
       setReminderTime(task.remind_at ? format(parseISO(task.remind_at), 'HH:mm') : '');
@@ -101,7 +95,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
       description: editingDescription,
       notes: editingNotes || null,
       due_date: editingDueDate ? editingDueDate.toISOString() : null,
-      category: editingCategory, // Pass the category ID
+      category: editingCategory,
       priority: editingPriority,
       remind_at: finalRemindAt ? finalRemindAt.toISOString() : null,
       section_id: editingSectionId,
@@ -258,9 +252,9 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
                     onAddTask={handleAddSubtask}
                     userId={userId}
                     onTaskAdded={() => setIsAddSubtaskOpen(false)}
-                    sections={sections} // Pass sections prop
-                    allCategories={allCategories} // Pass allCategories prop
-                    autoFocus={true} // Auto-focus for subtask form
+                    sections={sections}
+                    allCategories={allCategories}
+                    autoFocus={true}
                   />
                 </DialogContent>
               </Dialog>
@@ -303,15 +297,6 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
             <Trash2 className="mr-2 h-4 w-4" /> Delete Task
           </Button>
           <div className="flex space-x-2 w-full sm:w-auto">
-            {task.id === localStorage.getItem('manualFocusTaskId') ? (
-              <Button variant="outline" onClick={() => { onClearManualFocus(); onClose(); }} disabled={isSaving} className="flex-1">
-                <XCircle className="mr-2 h-4 w-4" /> Unset Focus
-              </Button>
-            ) : (
-              <Button variant="outline" onClick={() => { onSetAsFocusTask(task.id); onOpenFocusOverlay(); onClose(); }} disabled={isSaving} className="flex-1">
-                <Target className="mr-2 h-4 w-4" /> Set as Focus
-              </Button>
-            )}
             <Button variant="outline" onClick={onClose} disabled={isSaving} className="flex-1">
               Cancel
             </Button>

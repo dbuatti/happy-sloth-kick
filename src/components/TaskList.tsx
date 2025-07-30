@@ -46,13 +46,9 @@ interface TaskListProps {
   setIsAddTaskOpen: (open: boolean) => void;
   currentDate: Date;
   setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
-  onSetAsFocusTask: (taskId: string) => void; // New prop
-  manualFocusTaskId: string | null; // New prop
-  onClearManualFocus: () => void; // New prop
-  onOpenFocusOverlay: () => void; // New prop
 }
 
-const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setCurrentDate, onSetAsFocusTask, manualFocusTaskId, onClearManualFocus, onOpenFocusOverlay }) => {
+const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setCurrentDate }) => {
   const {
     tasks,
     filteredTasks,
@@ -86,7 +82,6 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
     setPriorityFilter,
     sectionFilter,
     setSectionFilter,
-    focusModeTasksForDailyStreak,
   } = useTasks({ currentDate, setCurrentDate });
 
   const [isAddTaskFormOpen, setIsAddTaskForm] = useState(false);
@@ -353,7 +348,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-                <DailyStreak tasks={focusModeTasksForDailyStreak} currentDate={currentDate} />
+                <DailyStreak tasks={filteredTasks} currentDate={currentDate} />
                 <SmartSuggestions tasks={filteredTasks} currentDate={currentDate} setCurrentDate={setCurrentDate} bulkUpdateTasks={bulkUpdateTasks} clearSelectedTasks={clearSelectedTasks} />
               </div>
 
@@ -425,10 +420,6 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                                         currentDate={currentDate}
                                         onMoveUp={(taskId) => moveTask(taskId, 'up')}
                                         onMoveDown={(taskId) => moveTask(taskId, 'down')}
-                                        onSetAsFocusTask={onSetAsFocusTask} // Pass new prop
-                                        manualFocusTaskId={manualFocusTaskId} // Pass new prop
-                                        onClearManualFocus={onClearManualFocus} // Pass new prop
-                                        onOpenFocusOverlay={onOpenFocusOverlay} // Pass new prop
                                       />
                                     ))
                                   )}
@@ -475,10 +466,6 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                                 currentDate={currentDate}
                                 onMoveUp={(taskId) => moveTask(taskId, 'up')}
                                 onMoveDown={(taskId) => moveTask(taskId, 'down')}
-                                onSetAsFocusTask={onSetAsFocusTask} // Pass new prop
-                                manualFocusTaskId={manualFocusTaskId} // Pass new prop
-                                onClearManualFocus={onClearManualFocus} // Pass new prop
-                                onOpenFocusOverlay={onOpenFocusOverlay} // Pass new prop
                               />
                             ))}
                           </ul>
@@ -518,10 +505,6 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                           currentDate={currentDate}
                           onMoveUp={(taskId) => moveTask(taskId, 'up')}
                           onMoveDown={(taskId) => moveTask(taskId, 'down')}
-                          onSetAsFocusTask={onSetAsFocusTask} // Pass new prop
-                          manualFocusTaskId={manualFocusTaskId} // Pass new prop
-                          onClearManualFocus={onClearManualFocus} // Pass new prop
-                          onOpenFocusOverlay={onOpenFocusOverlay} // Pass new prop
                         />
                       )}
                       {activeSection && (
@@ -581,9 +564,6 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
           onDelete={deleteTask}
           currentDate={currentDate}
           setCurrentDate={setCurrentDate}
-          onSetAsFocusTask={onSetAsFocusTask} // Pass new prop
-          onClearManualFocus={onClearManualFocus} // Pass new prop
-          onOpenFocusOverlay={onOpenFocusOverlay} // Pass new prop
         />
       )}
 

@@ -16,7 +16,7 @@ import SleepTracker from "./pages/SleepTracker";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import CommandPalette from "./components/CommandPalette";
 import { useState, useEffect, useCallback } from 'react';
-import Sidebar from "./components/Sidebar"; // Ensure Sidebar is imported
+import Sidebar from "./components/Sidebar";
 import { UIProvider, useUI } from "@/context/UIContext";
 import { SoundProvider } from "@/context/SoundContext";
 import { addDays, startOfDay } from 'date-fns';
@@ -30,7 +30,6 @@ import NextTaskCard from '@/components/NextTaskCard';
 import TaskList from "@/components/TaskList";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import TaskDetailDialog from "@/components/TaskDetailDialog";
-import FocusTaskOverlay from "@/components/FocusTaskOverlay";
 
 // Helper to get UTC start of day
 const getUTCStartOfDay = (date: Date) => {
@@ -42,71 +41,15 @@ const queryClient = new QueryClient();
 const AppContent = () => {
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(() => getUTCStartOfDay(new Date()));
-  const { isFocusModeActive, setIsFocusModeActive } = useUI();
   const { user, loading: authLoading } = useAuth();
 
   const { tasks, nextAvailableTask, updateTask, deleteTask, userId, loading: tasksLoading } = useTasks({ currentDate, setCurrentDate });
-
-  const [manualFocusTaskId, setManualFocusTaskId] = useState<string | null>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('manualFocusTaskId');
-    }
-    return null;
-  });
-
-  const [activeOverlayTask, setActiveOverlayTask] = useState<Task | null>(null);
-  const [isFocusOverlayOpen, setIsFocusOverlayOpen] = useState(false);
-  const [initialOverlayDuration, setInitialOverlayDuration] = useState<number | undefined>(undefined);
 
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
 
   const navigate = useNavigate();
   const location = useLocation();
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      if (manualFocusTaskId) {
-        localStorage.setItem('manualFocusTaskId', manualFocusTaskId);
-      } else {
-        localStorage.removeItem('manualFocusTaskId');
-      }
-    }
-  }, [manualFocusTaskId]);
-
-  const onSetAsFocusTask = useCallback((taskId: string) => {
-    setManualFocusTaskId(taskId);
-    const task = tasks.find(t => t.id === taskId);
-    if (task) {
-      setActiveOverlayTask(task);
-    }
-  }, [tasks]);
-
-  const onClearManualFocus = useCallback(() => {
-    setManualFocusTaskId(null);
-    setActiveOverlayTask(null);
-  }, []);
-
-  const handleOpenFocusOverlay = useCallback((duration?: number) => {
-    let taskToShow: Task | null = null;
-    if (manualFocusTaskId) {
-      taskToShow = tasks.find(t => t.id === manualFocusTaskId) || null;
-    } else {
-      taskToShow = nextAvailableTask;
-    }
-
-    if (taskToShow) {
-      setActiveOverlayTask(taskToShow);
-      setInitialOverlayDuration(duration);
-      setIsFocusOverlayOpen(true);
-    }
-  }, [manualFocusTaskId, nextAvailableTask, tasks]);
-
-  const handleCloseFocusOverlay = () => {
-    console.log('App.tsx: handleCloseFocusOverlay called. Setting isFocusOverlayOpen to false.'); // Debug log
-    setIsFocusOverlayOpen(false);
-    setInitialOverlayDuration(undefined);
-  };
 
   const handlePreviousDay = () => {
     setCurrentDate(prevDate => {
@@ -132,13 +75,6 @@ const AppContent = () => {
 
   const handleMarkTaskComplete = async (taskId: string) => {
     await updateTask(taskId, { status: 'completed' });
-    if (manualFocusTaskId === taskId) {
-      onClearManualFocus();
-    }
-    if (activeOverlayTask?.id === taskId) {
-      setActiveOverlayTask(null);
-      setIsFocusOverlayOpen(false);
-    }
   };
 
   const handleEditNextTask = (task: Task) => {
@@ -164,7 +100,7 @@ const AppContent = () => {
   return (
     <div className="flex-1 flex flex-col">
       {user ? (
-        <Sidebar> {/* Wrap content with Sidebar */}
+        <Sidebar>
           <Routes>
             <Route path="/" element={
               <>
@@ -177,25 +113,16 @@ const AppContent = () => {
                     setCurrentDate={setCurrentDate}
                   />
                   <NextTaskCard
-                    task={manualFocusTaskId ? tasks.find(t => t.id === manualFocusTaskId) || nextAvailableTask : nextAvailableTask}
+                    task={nextAvailableTask}
                     onMarkComplete={handleMarkTaskComplete}
                     onEditTask={handleEditNextTask}
                     currentDate={currentDate}
                     loading={tasksLoading}
-                    onCardClick={() => handleOpenFocusOverlay()}
-                    onSetAsFocusTask={(taskId) => { onSetAsFocusTask(taskId); handleOpenFocusOverlay(); }}
-                    isManualFocus={!!manualFocusTaskId}
-                    onClearManualFocus={onClearManualFocus}
-                    onOpenFocusOverlay={() => handleOpenFocusOverlay()}
                   />
                   <TaskList
                     setIsAddTaskOpen={setIsAddTaskOpen}
                     currentDate={currentDate}
                     setCurrentDate={setCurrentDate}
-                    onSetAsFocusTask={(taskId) => { onSetAsFocusTask(taskId); handleOpenFocusOverlay(); }}
-                    manualFocusTaskId={manualFocusTaskId}
-                    onClearManualFocus={onClearManualFocus}
-                    onOpenFocusOverlay={() => handleOpenFocusOverlay()}
                   />
                 </main>
                 <footer className="p-4">
@@ -216,20 +143,8 @@ const AppContent = () => {
                     onDelete={deleteTask}
                     currentDate={currentDate}
                     setCurrentDate={setCurrentDate}
-                    onSetAsFocusTask={(taskId) => { onSetAsFocusTask(taskId); handleOpenFocusOverlay(); }}
-                    onClearManualFocus={onClearManualFocus}
-                    onOpenFocusOverlay={() => handleOpenFocusOverlay()}
                   />
                 )}
-                <FocusTaskOverlay
-                  task={activeOverlayTask}
-                  isOpen={isFocusOverlayOpen}
-                  onClose={handleCloseFocusOverlay}
-                  onClearManualFocus={onClearManualFocus}
-                  onMarkComplete={handleMarkTaskComplete}
-                  initialTimerDurationMinutes={initialOverlayDuration}
-                  onSetIsFocusModeActive={setIsFocusModeActive}
-                />
               </>
             } />
             <Route path="/analytics" element={<Analytics currentDate={currentDate} setCurrentDate={setCurrentDate} />} />
@@ -248,10 +163,6 @@ const AppContent = () => {
             setIsAddTaskOpen={setIsAddTaskOpen}
             currentDate={currentDate}
             setCurrentDate={setCurrentDate}
-            nextAvailableTask={nextAvailableTask}
-            manualFocusTaskId={manualFocusTaskId}
-            onSetAsFocusTask={onSetAsFocusTask}
-            onClearManualFocus={onClearManualFocus}
           />
         </Sidebar>
       ) : (

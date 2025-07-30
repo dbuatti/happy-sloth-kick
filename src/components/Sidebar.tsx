@@ -16,9 +16,9 @@ interface SidebarProps {
 
 const navItems = [
   { name: 'Daily Tasks', path: '/', icon: Home, showCount: true },
-  { name: 'Focus Mode', path: '/focus', icon: Timer }, // Updated path
+  { name: 'Focus Mode', path: '/focus', icon: Timer },
   { name: 'Meditation', path: '/meditation', icon: Leaf },
-  { name: 'Sleep Tracker', path: '/sleep', icon: Moon }, // New nav item
+  { name: 'Sleep Tracker', path: '/sleep', icon: Moon },
   { name: 'Project Balance', path: '/projects', icon: LayoutGrid },
   { name: 'Time Blocks', path: '/schedule', icon: CalendarClock },
   { name: 'Analytics', path: '/analytics', icon: BarChart3 },

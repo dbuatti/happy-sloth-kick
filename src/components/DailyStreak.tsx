@@ -3,22 +3,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/Progress";
 import { CheckCircle2, Target } from 'lucide-react';
 import { format, isSameDay } from 'date-fns';
-import { Task } from '@/hooks/useTasks'; // Import Task type
+import { Task } from '@/hooks/useTasks';
 
 interface DailyStreakProps {
-  tasks: Task[]; // Now receives filtered tasks
+  tasks: Task[];
   currentDate: Date;
 }
 
 const DailyStreak: React.FC<DailyStreakProps> = ({ tasks, currentDate }) => {
   const { completedTasksToday, totalTasksToday, completionPercentage } = useMemo(() => {
-    // The 'tasks' prop now contains tasks relevant for the current day,
-    // including carry-overs and focus-mode filtering, and excludes archived tasks.
     const completed = tasks.filter(task => task.status === 'completed').length;
-    const total = tasks.length; // Count all tasks in the 'tasks' prop
+    const total = tasks.length;
     const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
     return { completedTasksToday: completed, totalTasksToday: total, completionPercentage: percentage };
-  }, [tasks]); // 'tasks' is already date-filtered and status-filtered
+  }, [tasks]);
 
   return (
     <Card className="w-full shadow-sm mb-4">
