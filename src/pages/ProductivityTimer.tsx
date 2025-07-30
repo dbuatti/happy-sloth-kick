@@ -168,18 +168,6 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
 
   const [activeTab, setActiveTab] = useState('pomodoro'); // 'pomodoro' or 'custom'
 
-  // Reset Pomodoro timer when session type changes
-  useEffect(() => {
-    console.log(`[ProductivityTimer] useEffect [pomodoroSessionType]: sessionType changed to ${pomodoroSessionType}. Resetting Pomodoro timer.`);
-    resetPomodoroTimerHook(getPomodoroDuration(pomodoroSessionType));
-  }, [pomodoroSessionType, resetPomodoroTimerHook, getPomodoroDuration]);
-
-  // Reset Custom timer when duration changes
-  useEffect(() => {
-    console.log(`[ProductivityTimer] useEffect [customDuration]: customDuration changed to ${customDuration}. Resetting Custom timer.`);
-    resetCustomTimerHook(customDuration);
-  }, [customDuration, resetCustomTimerHook]);
-
   // Persist pomodoroCurrentTaskId to localStorage whenever it changes
   useEffect(() => {
     if (typeof window !== 'undefined') {
