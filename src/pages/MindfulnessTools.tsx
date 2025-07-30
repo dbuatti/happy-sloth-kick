@@ -6,6 +6,7 @@ import { Eye, Hand, Ear, Soup, Utensils, RefreshCcw, Play, Pause, Leaf, Wind, Sp
 import { cn } from '@/lib/utils';
 import { useSound } from '@/context/SoundContext';
 import WorryJournal from '@/components/WorryJournal'; // Import WorryJournal
+import GratitudeJournal from '@/components/GratitudeJournal'; // Import GratitudeJournal
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Import Select components
 
 // 5-4-3-2-1 Sensory Tool Component
@@ -331,7 +332,8 @@ const MindfulnessTools: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl">
           <SensoryTool />
           <BreathingBubble />
-          <WorryJournal /> {/* New: Add the WorryJournal component */}
+          <WorryJournal />
+          <GratitudeJournal /> {/* New: Add the GratitudeJournal component */}
         </div>
       </main>
       <footer className="p-4">
