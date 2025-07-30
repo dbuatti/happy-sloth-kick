@@ -25,8 +25,7 @@ export const useTimer = ({ initialDurationSeconds, onTimerEnd, onTick }: UseTime
 
   // Effect to handle starting and stopping the timer
   useEffect(() => {
-    if (isRunning && timeRemaining > 0) {
-      // Start the interval
+    if (isRunning && timeRemaining > 0) { // Keep timeRemaining > 0 here to prevent starting if already 0
       intervalRef.current = setInterval(() => {
         setTimeRemaining(prevTime => {
           const newTime = prevTime - 1;
@@ -58,7 +57,7 @@ export const useTimer = ({ initialDurationSeconds, onTimerEnd, onTick }: UseTime
         intervalRef.current = null;
       }
     };
-  }, [isRunning]); // Only re-run this effect when `isRunning` changes
+  }, [isRunning]); // ONLY depends on isRunning
 
   // Effect to reset time when initialDurationSeconds prop changes
   useEffect(() => {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react'; // Import useRef
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/Progress";
@@ -48,6 +48,9 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
   });
   const [pomodoroSessionStartTime, setPomodoroSessionStartTime] = useState<Date | null>(null);
 
+  // Ref to hold the startPomodoroTimer function
+  const startPomodoroTimerRef = useRef<(() => void) | null>(null);
+
   // Determine initial duration for Pomodoro timer based on session type
   const getPomodoroDuration = useCallback((type: SessionType) => {
     switch (type) {
@@ -62,7 +65,7 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
   const {
     timeRemaining: pomodoroTimeRemaining,
     isRunning: pomodoroIsRunning,
-    start: startPomodoroTimer,
+    start: actualStartPomodoroTimer, // Renamed to avoid direct conflict in callback definition
     pause: pausePomodoroTimer,
     reset: resetPomodoroTimerHook,
     formatTime: formatPomodoroTime,
@@ -115,8 +118,11 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
         });
       }
 
-      setPomodoroSessionType(nextSessionType); // This will trigger useTimer's initialDurationSeconds change
-      setPomodoroSessionStartTime(null);
+      // Set the next session type and immediately start the timer for it
+      setPomodoroSessionType(nextSessionType);
+      setPomodoroSessionStartTime(new Date()); // Set start time for the *new* session
+      startPomodoroTimerRef.current?.(); // Use the ref here to call the start function
+      
       setPomodoroCurrentTaskId(null);
       localStorage.removeItem('pomodoroCurrentTaskId');
       
@@ -125,6 +131,11 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
       // console.log(`Pomodoro Tick: ${time}`);
     }, []),
   });
+
+  // Update the ref whenever actualStartPomodoroTimer changes
+  useEffect(() => {
+    startPomodoroTimerRef.current = actualStartPomodoroTimer;
+  }, [actualStartPomodoroTimer]);
 
   // Custom Timer states
   const [customDuration, setCustomDuration] = useState(5 * 60); // Default to 5 minutes
@@ -181,28 +192,15 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
     };
   }, [setIsFocusModeActive, activeTab, pomodoroIsRunning]);
 
-  // Effect to automatically start the next Pomodoro session after a type change
-  useEffect(() => {
-    // This condition checks if:
-    // 1. The timer is currently NOT running (`!pomodoroIsRunning`).
-    // 2. The time remaining is exactly the full duration for the current session type.
-    //    This implies the timer just reset to its initial state for the new session.
-    // 3. It's not a custom timer (as custom timers don't auto-chain).
-    // 4. A session start time hasn't been set yet for the current cycle (prevents re-starting if manually paused/started).
-    if (!pomodoroIsRunning && pomodoroTimeRemaining === getPomodoroDuration(pomodoroSessionType) && pomodoroSessionType !== 'custom' && pomodoroSessionStartTime === null) {
-      startPomodoroTimer();
-      setPomodoroSessionStartTime(new Date()); // Set start time for the new session
-    }
-  }, [pomodoroSessionType, pomodoroIsRunning, pomodoroTimeRemaining, getPomodoroDuration, startPomodoroTimer, pomodoroSessionStartTime]);
-
-
   const handleStartPomodoro = useCallback(() => {
     if (!pomodoroIsRunning) {
-      startPomodoroTimer();
-      setPomodoroSessionStartTime(new Date());
+      actualStartPomodoroTimer(); // Use the actual function here
+      if (!pomodoroSessionStartTime) { // Only set start time if it's a fresh start, not a resume
+        setPomodoroSessionStartTime(new Date());
+      }
       playSound('start');
     }
-  }, [pomodoroIsRunning, startPomodoroTimer, playSound]);
+  }, [pomodoroIsRunning, actualStartPomodoroTimer, playSound, pomodoroSessionStartTime]);
 
   const handlePausePomodoro = useCallback(() => {
     pausePomodoroTimer();
@@ -217,7 +215,7 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
     localStorage.removeItem('pomodoroCurrentTaskId');
     setPomodoroSessionStartTime(null);
     playSound('reset');
-    resetPomodoroTimerHook(WORK_DURATION);
+    resetPomodoroTimerHook(WORK_DURATION); // Ensure reset uses the initial WORK_DURATION
   }, [pausePomodoroTimer, playSound, resetPomodoroTimerHook]);
 
   const handleStartCustom = useCallback(() => {
@@ -238,7 +236,7 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
     playSound('reset');
     setCustomSessionStartTime(null);
     resetCustomTimerHook(customDuration);
-  }, [pauseCustomTimer, playSound, resetCustomTimerHook, customDuration]);
+  }, [pausePomodoroTimer, playSound, resetCustomTimerHook, customDuration]); // Corrected dependency: use `pauseCustomTimer`
 
   const handleMarkTaskComplete = async (task: Task) => {
     if (!userId) {
