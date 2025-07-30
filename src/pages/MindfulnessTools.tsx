@@ -9,6 +9,7 @@ import WorryJournal from '@/components/WorryJournal'; // Import WorryJournal
 import GratitudeJournal from '@/components/GratitudeJournal'; // Import GratitudeJournal
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Import Select components
 import BodyScanMeditation from '@/components/BodyScanMeditation'; // Import BodyScanMeditation
+import MindfulEatingGuide from '@/components/MindfulEatingGuide'; // Import MindfulEatingGuide
 
 // 5-4-3-2-1 Sensory Tool Component
 const SensoryTool: React.FC = () => {
@@ -335,7 +336,8 @@ const MindfulnessTools: React.FC = () => {
           <BreathingBubble />
           <WorryJournal />
           <GratitudeJournal />
-          <BodyScanMeditation /> {/* New: Add the BodyScanMeditation component */}
+          <BodyScanMeditation />
+          <MindfulEatingGuide /> {/* New: Add the MindfulEatingGuide component */}
         </div>
       </main>
       <footer className="p-4">
