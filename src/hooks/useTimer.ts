@@ -13,21 +13,20 @@ export const useTimer = ({ initialDurationSeconds, onTimerEnd, onTick }: UseTime
 
   console.log(`[useTimer] Init/Render: initialDurationSeconds=${initialDurationSeconds}, timeRemaining=${timeRemaining}, isRunning=${isRunning}`);
 
-  // Effect to update timeRemaining when initialDurationSeconds changes, but only if not running
+  // Effect to synchronize timeRemaining with initialDurationSeconds when not running
+  // or when initialDurationSeconds changes and timer is reset.
   useEffect(() => {
-    console.log(`[useTimer] useEffect [initialDurationSeconds]: initialDurationSeconds changed to ${initialDurationSeconds}. isRunning=${isRunning}`);
+    console.log(`[useTimer] useEffect [initialDurationSeconds, isRunning]: initialDurationSeconds=${initialDurationSeconds}, isRunning=${isRunning}`);
     if (!isRunning) {
       setTimeRemaining(initialDurationSeconds);
-      console.log(`[useTimer] useEffect [initialDurationSeconds]: Set timeRemaining to ${initialDurationSeconds}.`);
-    } else {
-      console.log(`[useTimer] useEffect [initialDurationSeconds]: Timer is running, not resetting timeRemaining.`);
+      console.log(`[useTimer] useEffect [initialDurationSeconds, isRunning]: Set timeRemaining to ${initialDurationSeconds}.`);
     }
-  }, [initialDurationSeconds, isRunning]);
+  }, [initialDurationSeconds, isRunning]); // Keep isRunning here to re-evaluate when timer stops
 
   // Main timer logic
   useEffect(() => {
-    console.log(`[useTimer] useEffect [isRunning]: isRunning changed to ${isRunning}. timeRemaining=${timeRemaining}`);
-    if (isRunning) {
+    console.log(`[useTimer] useEffect [isRunning, timeRemaining]: isRunning=${isRunning}, timeRemaining=${timeRemaining}`);
+    if (isRunning && timeRemaining > 0) { // Only start if running and time is left
       timerRef.current = setInterval(() => {
         setTimeRemaining(prevTime => {
           const newTime = prevTime - 1;
@@ -45,8 +44,12 @@ export const useTimer = ({ initialDurationSeconds, onTimerEnd, onTick }: UseTime
       }, 1000);
     } else {
       if (timerRef.current) {
-        console.log(`[useTimer] Paused/Stopped: Clearing interval.`);
+        console.log(`[useTimer] Paused/Stopped/Ended: Clearing interval.`);
         clearInterval(timerRef.current);
+      }
+      // If timer ended (timeRemaining <= 0), ensure isRunning is false
+      if (timeRemaining <= 0) {
+        setIsRunning(false);
       }
     }
 
@@ -56,7 +59,7 @@ export const useTimer = ({ initialDurationSeconds, onTimerEnd, onTick }: UseTime
         clearInterval(timerRef.current);
       }
     };
-  }, [isRunning, onTimerEnd, onTick]);
+  }, [isRunning, timeRemaining, onTimerEnd, onTick]); // Add timeRemaining to dependencies for immediate stop at 0
 
   const start = useCallback(() => {
     console.log(`[useTimer] Action: start called. timeRemaining=${timeRemaining}, isRunning=${isRunning}`);
@@ -78,7 +81,6 @@ export const useTimer = ({ initialDurationSeconds, onTimerEnd, onTick }: UseTime
     }
   }, [isRunning]);
 
-  // Modified reset to accept an optional newDuration
   const reset = useCallback((newDuration?: number) => {
     console.log(`[useTimer] Action: reset called. newDuration=${newDuration}, current initialDurationSeconds=${initialDurationSeconds}`);
     pause(); // First, pause the timer
@@ -86,7 +88,7 @@ export const useTimer = ({ initialDurationSeconds, onTimerEnd, onTick }: UseTime
     setTimeRemaining(durationToSet);
     setIsRunning(false); // Ensure it's not running after reset
     console.log(`[useTimer] Action: Reset complete. timeRemaining set to ${durationToSet}.`);
-  }, [pause, initialDurationSeconds]); // initialDurationSeconds is a dependency because it's the default if newDuration is not provided
+  }, [pause, initialDurationSeconds]);
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
