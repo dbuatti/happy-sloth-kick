@@ -158,7 +158,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       const newCategoriesMap = new Map<string, string>();
       fetchedCategories.forEach(cat => newCategoriesMap.set(cat.id, cat.color));
       setCategoriesMap(newCategoriesMap);
-      console.log('useTasks: categoriesMap after population:', Array.from(newCategoriesMap.entries()));
+      console.log('useTasks: categoriesMap after population.');
 
       const { data: initialTasksFromDB, error: fetchError } = await supabase
         .from('tasks')
@@ -166,7 +166,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         .eq('user_id', userId);
 
       if (fetchError) throw fetchError;
-      console.log('fetchTasks: Initial tasks fetched from DB:', initialTasksFromDB);
+      console.log('fetchTasks: Initial tasks fetched from DB.');
 
       const mappedTasks: Task[] = initialTasksFromDB.map((task: any) => ({
         ...task,
@@ -243,14 +243,14 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       // Reconstruct the full tasks array with updated orders
       const finalTasksState = mappedTasks.map(task => tasksById.get(task.id) || task);
       setTasks(finalTasksState);
-      console.log('useTasks: Mapped tasks with normalized orders:', finalTasksState.map(t => ({ id: t.id, description: t.description, order: t.order })));
+      console.log('useTasks: Mapped tasks with normalized orders.');
 
       // Send updates to DB if any orders were changed
       if (updatesForDb.length > 0) {
-        console.log('useTasks: Sending order normalization updates to DB:', updatesForDb.map(u => ({ id: u.id, order: u.order })));
+        console.log('useTasks: Sending order normalization updates to DB.');
         const { error: upsertError } = await supabase
           .from('tasks')
-          .upsert(updatesForDb, { onConflict: 'id' });
+          .upsert(updatesForDb, { onConflict: 'id' }); // Corrected: used updatesForDb
         if (upsertError) {
           console.error('useTasks: Error normalizing task orders in DB:', upsertError);
           showError('Failed to synchronize task orders.');
@@ -306,7 +306,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       parent_task_id: null,
     };
 
-    console.log('createRecurringTaskInstance: New instance data prepared for DB:', newInstanceDataForDb);
+    console.log('createRecurringTaskInstance: New instance data prepared for DB.');
 
     const { data, error: insertError } = await supabase
       .from('tasks')
@@ -399,7 +399,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
     if (newTasksAdded.length > 0) {
       setTasks(prevTasks => [...prevTasks, ...newTasksAdded]);
-      console.log('syncRecurringTasks: Added new recurring task instances to state:', newTasksAdded.map(t => t.id));
+      console.log('syncRecurringTasks: Added new recurring task instances to state.');
     }
   }, [userId, currentDate, createRecurringTaskInstance, loading, viewMode, tasks]);
 
@@ -832,7 +832,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         if (aSectionOrder !== bSectionOrder) return aSectionOrder - bSectionOrder;
         return (a.order || Infinity) - (b.order || Infinity);
       });
-      console.log('reorderTasksInSameSection: Tasks state after optimistic update and sort:', finalSortedState.map(t => ({ id: t.id, description: t.description, order: t.order, section_id: t.section_id })));
+      console.log('reorderTasksInSameSection: Tasks state after optimistic update and sort.');
       return finalSortedState;
     });
 
@@ -941,7 +941,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         if (aSectionOrder !== bSectionOrder) return aSectionOrder - bSectionOrder;
         return (a.order || Infinity) - (b.order || Infinity);
       });
-      console.log('moveTaskToNewSection: Tasks state after optimistic update and sort:', finalSortedState.map(t => ({ id: t.id, description: t.description, order: t.order, section_id: t.section_id })));
+      console.log('moveTaskToNewSection: Tasks state after optimistic update and sort.');
       return finalSortedState;
     });
 
@@ -994,7 +994,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         }
         return section;
       }).sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
-      console.log('reorderSections: Sections state after optimistic update and sort:', finalSortedState.map(s => ({ id: s.id, name: s.name, order: s.order })));
+      console.log('reorderSections: Sections state after optimistic update and sort.');
       return finalSortedState;
     });
 
@@ -1045,7 +1045,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       .filter(t => t.section_id === currentSectionId && t.parent_task_id === null)
       .sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
 
-    console.log(`[${debugId}] moveTask: Tasks in current section (after filter and sort):`, tasksInCurrentSection.map(t => ({ id: t.id, order: t.order, description: t.description })));
+    console.log(`[${debugId}] moveTask: Tasks in current section (after filter and sort).`);
 
     const currentIndex = tasksInCurrentSection.findIndex(t => t.id === taskId);
     console.log(`[${debugId}] moveTask: Result of findIndex for ${taskId}: ${currentIndex}`);
@@ -1054,7 +1054,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     }
 
     console.log(`[${debugId}] moveTask: Before 'already at bottom/top' check. Current index: ${currentIndex}, Length: ${tasksInCurrentSection.length}`);
-    console.log(`[${debugId}] moveTask: Current tasksInCurrentSection before check`, tasksInCurrentSection.map(t => ({ id: t.id, order:  t.order, description: t.description })));
+    console.log(`[${debugId}] moveTask: Current tasksInCurrentSection before check.`);
 
 
     if (currentIndex === -1) {
@@ -1086,7 +1086,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
     const newOrderedTasksInSection = arrayMove(tasksInCurrentSection, currentIndex, newIndex);
 
-    console.log(`[${debugId}] moveTask: Tasks in current section (after arrayMove):`, newOrderedTasksInSection.map(t => ({ id: t.id, order: t.order, description: t.description })));
+    console.log(`[${debugId}] moveTask: Tasks in current section (after arrayMove).`);
 
     const updates = newOrderedTasksInSection.map((task, index) => ({
       id: task.id,
@@ -1105,7 +1105,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       user_id: userId,
     }));
 
-    console.log(`[${debugId}] moveTask: Updates payload for Supabase:`, updates.map(u => ({id: u.id, order: u.order})));
+    console.log(`[${debugId}] moveTask: Updates payload for Supabase.`);
 
     // Optimistic update
     setTasks(prevTasks => {
@@ -1123,7 +1123,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         if (aSectionOrder !== bSectionOrder) return aSectionOrder - bSectionOrder;
         return (a.order || Infinity) - (b.order || Infinity);
       });
-      console.log(`[${debugId}] moveTask: Tasks state after optimistic update and sort:`, finalSortedState.map(t => ({ id: t.id, description: t.description, order: t.order, section_id: t.section_id })));
+      console.log(`[${debugId}] moveTask: Tasks state after optimistic update and sort.`);
       return finalSortedState;
     });
     console.log(`[${debugId}] moveTask: Optimistic update applied and tasks state re-sorted.`);
@@ -1149,24 +1149,18 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
   const { finalFilteredTasks, nextAvailableTask } = useMemo(() => {
     console.log('filteredTasks/nextAvailableTask: --- START FILTERING ---');
     console.log('filteredTasks/nextAvailableTask: Current viewMode:', viewMode);
-    console.log('filteredTasks/nextAvailableTask: Raw tasks state at start of memo:', tasks.map(t => ({
-      id: t.id,
-      description: t.description,
-      status: t.status,
-      created_at: t.created_at,
-      original_task_id: t.original_task_id,
-      recurring_type: t.recurring_type,
-      parent_task_id: t.parent_task_id,
-      category: t.category,
-      category_color: t.category_color
-    })));
+    console.log('filteredTasks/nextAvailableTask: Raw tasks state at start of memo.');
 
     let relevantTasks: Task[] = [];
 
     if (viewMode === 'archive') {
       relevantTasks = tasks.filter(task => task.status === 'archived');
-      console.log('filteredTasks/nextAvailableTask: Archive mode - relevantTasks (archived only):', relevantTasks.map(t => t.id));
-    } else {
+      console.log('filteredTasks/nextAvailableTask: Archive mode - relevantTasks (archived only).');
+    } else if (viewMode === 'focus') {
+      // For focus mode, consider all non-archived top-level tasks initially
+      relevantTasks = tasks.filter(task => task.status !== 'archived' && task.parent_task_id === null);
+      console.log('filteredTasks/nextAvailableTask: Focus mode - relevantTasks (all non-archived top-level tasks).');
+    } else { // Default to 'daily' logic
       const effectiveCurrentDateUTC = currentDate ? getUTCStartOfDay(currentDate) : getUTCStartOfDay(new Date());
       console.log('filteredTasks/nextAvailableTask: Daily mode - Current Date (UTC):', effectiveCurrentDateUTC.toISOString());
       const processedOriginalIds = new Set<string>();
@@ -1215,13 +1209,13 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
             const isTaskCreatedOnCurrentDate = isSameDay(taskCreatedAtUTC, effectiveCurrentDateUTC);
 
             if (isTaskCreatedOnCurrentDate && task.status !== 'archived') {
-                console.log(`filteredTasks/nextAvailableTask: Pushing non-recurring task created on current date: ${task.id}, ${task.description}`);
+                console.log(`filteredTasks/nextAvailableTask: Pushing non-recurring task created on current date.`);
                 relevantTasks.push(task);
             } else if (isBefore(taskCreatedAtUTC, effectiveCurrentDateUTC) && task.status === 'to-do') {
-                console.log(`filteredTasks/nextAvailableTask: Pushing non-recurring carry-over task: ${task.id}, ${task.description}`);
+                console.log(`filteredTasks/nextAvailableTask: Pushing non-recurring carry-over task.`);
                 relevantTasks.push(task);
             } else {
-                console.log(`filteredTasks/nextAvailableTask: Skipping non-recurring task: ${task.id}, ${task.description} (not created today, not to-do carry-over, or archived)`);
+                console.log(`filteredTasks/nextAvailableTask: Skipping non-recurring task (not created today, not to-do carry-over, or archived).`);
             }
         }
       });
@@ -1236,7 +1230,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     );
 
     // Now, apply the viewMode specific filtering for finalFilteredTasks
-    let currentViewFilteredTasks = relevantTasks;
+    let currentViewFilteredTasks = relevantTasks; // Start with the relevantTasks determined above
 
     if (viewMode === 'daily') {
       if (statusFilter !== 'all') {
@@ -1245,7 +1239,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         currentViewFilteredTasks = currentViewFilteredTasks.filter(task => task.status !== 'archived');
       }
     } else if (viewMode === 'focus') {
-      currentViewFilteredTasks = tasksForFocusModeDisplay;
+      currentViewFilteredTasks = tasksForFocusModeDisplay; // This is where the focus mode filter is applied
     }
     // Apply search, category, priority, section filters to currentViewFilteredTasks
     if (searchFilter) {
@@ -1292,18 +1286,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       ) || null;
     }
 
-    console.log('filteredTasks/nextAvailableTask: Final tasks AFTER all filters and sorting:', currentViewFilteredTasks.map(t => ({
-      id: t.id,
-      description: t.description,
-      status: t.status,
-      created_at: t.created_at,
-      original_task_id: t.original_task_id,
-      recurring_type: t.recurring_type,
-      parent_task_id: t.parent_task_id,
-      category: t.category,
-      category_color: t.category_color
-    })));
-    console.log('filteredTasks/nextAvailableTask: Next available task:', nextAvailableTask ? nextAvailableTask.description : 'None');
+    console.log('filteredTasks/nextAvailableTask: Final tasks AFTER all filters and sorting.');
     console.log('filteredTasks/nextAvailableTask: --- END FILTERING ---');
     return { 
       finalFilteredTasks: currentViewFilteredTasks, 

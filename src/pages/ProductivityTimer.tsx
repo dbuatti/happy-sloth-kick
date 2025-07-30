@@ -121,7 +121,7 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
       setPomodoroCurrentTaskId(null);
       localStorage.removeItem('pomodoroCurrentTaskId');
       resetPomodoroTimerHook(); // Reset the timer so it can be started again
-    }, [pomodoroSessionType, pomodoroCount, playSound, pomodoroCurrentTaskId, filteredTasks, pomodoroSessionStartTime, addFocusSession, resetPomodoroTimerHook]),
+    }, [pomodoroSessionType, pomodoroCount, playSound, pomodoroCurrentTaskId, filteredTasks, pomodoroSessionStartTime, addFocusSession]), // Removed resetPomodoroTimerHook from dependencies
     onTick: useCallback((time) => {
       // Optional: save progress to local storage or DB if needed
     }, []),
@@ -158,7 +158,7 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
       setCustomSessionStartTime(null);
       showSuccess('Custom timer finished!');
       resetCustomTimerHook(); // Reset the timer so it can be started again
-    }, [playSound, customDuration, customSessionStartTime, addFocusSession, resetCustomTimerHook]),
+    }, [playSound, customDuration, customSessionStartTime, addFocusSession]), // Removed resetCustomTimerHook from dependencies
   });
 
   const [activeTab, setActiveTab] = useState('pomodoro'); // 'pomodoro' or 'custom'
@@ -328,7 +328,7 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
                 "relative z-10 text-5xl font-bold",
                 activeTab === 'pomodoro' && pomodoroSessionType === 'work' ? "text-primary-foreground" : "text-white"
               )}>
-                {activeTab === 'pomodoro' ? formatPomodoroTime(pomodoroTimeRemaining) : formatCustomTime(customTimeRemaining)}
+                {activeTab === 'pomodoro' ? formatPomodoroTime(pomodoroTimeRemaining) : formatCustomTime(currentTimerValue)}
               </div>
             </div>
 
