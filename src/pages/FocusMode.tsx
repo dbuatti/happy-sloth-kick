@@ -245,7 +245,7 @@ const FocusMode: React.FC = () => {
     pauseTimer();
     playSound('reset'); // Use reset sound for skipping
     if (isFocusPhase) {
-      setSessionsCompleted((prev: number) => prev + 1); // Explicitly type prev
+      setSessionsCompleted((prev: number) => prev + 1);
       const nextPhaseIsLongBreak = (sessionsCompleted + 1) % 4 === 0;
       setIsFocusPhase(false);
       setTimeRemaining(nextPhaseIsLongBreak ? longBreakDuration : breakDuration);
