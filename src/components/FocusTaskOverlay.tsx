@@ -74,8 +74,9 @@ const FocusTaskOverlay: React.FC<FocusTaskOverlayProps> = ({
     return null;
   }
 
-  const handleClearAndClose = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  // Renamed to be more specific, as it's now only for the X button
+  const handleCloseButtonClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Ensure this doesn't trigger parent clicks
     pause(); // Pause timer when closing
     if (task && sessionStartTime) {
       logSession('custom', (sessionStartTime.getTime() - new Date().getTime()) / 1000, sessionStartTime, new Date(), task.id, completedDuringSession);
@@ -98,17 +99,6 @@ const FocusTaskOverlay: React.FC<FocusTaskOverlayProps> = ({
   const handleStartTimerClick = (e: React.MouseEvent, duration: number) => {
     e.stopPropagation();
     reset(); // Reset to ensure new duration is applied
-    // Manually set the initial duration for the useTimer hook
-    // This is a workaround as useTimer's initialDurationSeconds is only read on mount
-    // A more robust useTimer would allow changing duration dynamically.
-    // For now, we'll rely on the next render to pick up the new initialDurationSeconds.
-    // A better approach would be to pass a `setDuration` function from useTimer.
-    // For this specific request, we'll just restart the timer with the new duration.
-    // This requires a slight modification to useTimer to allow dynamic duration changes.
-    // Let's assume useTimer can handle `initialDurationSeconds` changing.
-    // If not, we'd need to re-instantiate the hook or add a `setDuration` method.
-    // For now, I'll just call reset and start, assuming the `initialDurationSeconds` prop will update the internal ref.
-    // This is handled by the `useEffect` in `useTimer` that updates `initialDurationRef.current`.
     start();
     setSessionStartTime(new Date());
     playSound('start');
@@ -140,11 +130,11 @@ const FocusTaskOverlay: React.FC<FocusTaskOverlayProps> = ({
     <div
       className={cn(
         "fixed inset-0 z-[9999] flex items-center justify-center",
-        "bg-primary text-primary-foreground cursor-pointer"
+        "bg-primary text-primary-foreground" // Removed cursor-pointer and onClick
       )}
-      onClick={handleClearAndClose} // Click anywhere to close and clear
+      // No onClick here anymore
     >
-      <div className="max-w-4xl mx-auto text-center p-4" onClick={(e) => e.stopPropagation()}> {/* Prevent click from closing overlay */}
+      <div className="max-w-4xl mx-auto text-center p-4" onClick={(e) => e.stopPropagation()}> {/* This still prevents clicks inside from bubbling out of this content area */}
         <h1 className="text-5xl md:text-7xl font-extrabold leading-tight tracking-tight">
           {task.description}
         </h1>
@@ -211,7 +201,7 @@ const FocusTaskOverlay: React.FC<FocusTaskOverlayProps> = ({
       </div>
       <button
         className="absolute top-4 right-4 text-primary-foreground opacity-70 hover:opacity-100 transition-opacity duration-200"
-        onClick={handleClearAndClose}
+        onClick={handleCloseButtonClick}
         aria-label="Clear manual focus and close"
       >
         <XCircle className="h-8 w-8" />
