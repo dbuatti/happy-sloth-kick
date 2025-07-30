@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, BarChart3, Settings as SettingsIcon, HelpCircle, Archive as ArchiveIcon, Timer, LayoutGrid, CalendarClock, Menu, Leaf, Moon, Volume2, VolumeX } from 'lucide-react';
+import { Home, BarChart3, Settings as SettingsIcon, HelpCircle, Archive as ArchiveIcon, Timer, LayoutGrid, CalendarClock, Menu, Leaf, Moon, Volume2, VolumeX, Brain } from 'lucide-react'; // Added Brain icon
 import ThemeSelector from './ThemeSelector';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -16,6 +16,7 @@ interface SidebarProps {
 
 const navItems = [
   { name: 'Daily Tasks', path: '/', icon: Home, showCount: true },
+  { name: 'Mindfulness', path: '/mindfulness', icon: Brain }, // New nav item
   { name: 'Meditation', path: '/meditation', icon: Leaf },
   { name: 'Sleep Tracker', path: '/sleep', icon: Moon },
   { name: 'Project Balance', path: '/projects', icon: LayoutGrid },

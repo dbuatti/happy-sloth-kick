@@ -11,6 +11,7 @@ import ProjectBalanceTracker from "./pages/ProjectBalanceTracker";
 import TimeBlockSchedule from "./pages/TimeBlockSchedule";
 import Meditation from "./pages/Meditation";
 import SleepTracker from "./pages/SleepTracker";
+import MindfulnessTools from "./pages/MindfulnessTools"; // Import the new page
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import CommandPalette from "./components/CommandPalette";
 import { useState, useEffect, useCallback } from 'react';
@@ -151,6 +152,7 @@ const AppContent = () => {
             <Route path="/schedule" element={<TimeBlockSchedule />} />
             <Route path="/meditation" element={<Meditation />} />
             <Route path="/sleep" element={<SleepTracker />} />
+            <Route path="/mindfulness" element={<MindfulnessTools />} /> {/* New route */}
             <Route path="*" element={<NotFound />} />
           </Routes>
           <CommandPalette
