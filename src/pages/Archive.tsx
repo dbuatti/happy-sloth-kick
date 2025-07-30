@@ -23,7 +23,7 @@ const Archive: React.FC<ArchiveProps> = ({ currentDate, setCurrentDate }) => {
     sections,
     setStatusFilter,
     allCategories,
-  } = useTasks({ currentDate: new Date(), setCurrentDate: () => {}, viewMode: 'archive' });
+  } = useTasks({ viewMode: 'archive' });
 
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);

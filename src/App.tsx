@@ -2,7 +2,6 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
@@ -30,6 +29,7 @@ import NextTaskCard from '@/components/NextTaskCard';
 import TaskList from "@/components/TaskList";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import TaskDetailDialog from "@/components/TaskDetailDialog";
+import TimerTest from '@/components/TimerTest'; // Import the new test component
 
 // Helper to get UTC start of day
 const getUTCStartOfDay = (date: Date) => {
@@ -47,9 +47,6 @@ const AppContent = () => {
 
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
-
-  const navigate = useNavigate();
-  const location = useLocation();
 
   const handlePreviousDay = () => {
     setCurrentDate(prevDate => {
@@ -85,6 +82,8 @@ const AppContent = () => {
   const shortcuts: ShortcutMap = {
     'arrowleft': handlePreviousDay,
     'arrowright': handleNextDay,
+    't': handleGoToToday, // Added shortcut for 'Today'
+    'f': () => { /* Focus search input, if implemented */ }, // Placeholder for 'Focus search'
   };
 
   useKeyboardShortcuts(shortcuts);
@@ -124,6 +123,8 @@ const AppContent = () => {
                     currentDate={currentDate}
                     setCurrentDate={setCurrentDate}
                   />
+                  {/* Temporary Timer Test Component */}
+                  <TimerTest />
                 </main>
                 <footer className="p-4">
                   <MadeWithDyad />

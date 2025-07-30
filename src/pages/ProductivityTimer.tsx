@@ -30,7 +30,7 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
   const { user } = useAuth();
   const userId = user?.id;
 
-  const { filteredTasks, updateTask, sections } = useTasks({ currentDate: new Date(), setCurrentDate: () => {}, viewMode: 'focus' }); 
+  const { filteredTasks, updateTask, sections } = useTasks({ viewMode: 'focus' }); 
   const { setIsFocusModeActive } = useUI();
   const { playSound } = useSound();
 
