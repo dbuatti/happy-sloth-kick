@@ -12,7 +12,7 @@ import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useUI } from '@/context/UIContext';
 import { useSound } from '@/context/SoundContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } => "@/components/ui/select";
 import { useTimer } from '@/hooks/useTimer'; // Import useTimer hook
 import { useFocusSessions } from '@/hooks/useFocusSessions'; // Import useFocusSessions hook
 import { formatISO } from 'date-fns';
@@ -76,55 +76,61 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
       playSound('alert');
       const endTime = new Date();
       
-      if (pomodoroSessionType === 'work') {
-        const newPomodoroCount = pomodoroCount + 1;
-        setPomodoroCount(newPomodoroCount);
+      let sessionTypeForLogging = pomodoroSessionType; // Capture current session type for logging
+      let durationForLogging = getPomodoroDuration(pomodoroSessionType); // Capture current duration for logging
+      let completedDuringSession = false;
+      let newPomodoroCount = pomodoroCount; // Initialize with current count
 
-        let completedDuringSession = false;
+      if (pomodoroSessionType === 'work') {
+        newPomodoroCount = pomodoroCount + 1;
+        setPomodoroCount(newPomodoroCount); // Update count state
+
         if (pomodoroCurrentTaskId) {
           const task = filteredTasks.find(t => t.id === pomodoroCurrentTaskId);
           if (task && task.status === 'completed') {
             completedDuringSession = true;
           }
         }
+      }
 
-        if (pomodoroSessionStartTime) {
-          await addFocusSession({
-            session_type: 'work',
-            duration_minutes: WORK_DURATION / 60,
-            start_time: formatISO(pomodoroSessionStartTime),
-            end_time: formatISO(endTime),
-            task_id: pomodoroCurrentTaskId,
-            completed_during_session: completedDuringSession,
-          });
-        }
-
+      // Determine the NEXT session type based on the *updated* pomodoroCount (if work session)
+      // or the current pomodoroSessionType (if break session)
+      let nextSessionType: SessionType;
+      if (sessionTypeForLogging === 'work') { // If the session that just ended was 'work'
         if (newPomodoroCount % POMODORO_CYCLES === 0) {
-          setPomodoroSessionType('long_break');
+          nextSessionType = 'long_break';
           showSuccess('Work session complete! Time for a long break.');
         } else {
-          setPomodoroSessionType('short_break');
+          nextSessionType = 'short_break';
           showSuccess('Work session complete! Time for a short break.');
         }
-      } else {
-        if (pomodoroSessionStartTime) {
-          await addFocusSession({
-            session_type: pomodoroSessionType,
-            duration_minutes: (pomodoroSessionType === 'short_break' ? SHORT_BREAK_DURATION : LONG_BREAK_DURATION) / 60,
-            start_time: formatISO(pomodoroSessionStartTime),
-            end_time: formatISO(endTime),
-            task_id: null,
-            completed_during_session: false,
-          });
-        }
-        setPomodoroSessionType('work');
+      } else { // If the session that just ended was a break
+        nextSessionType = 'work';
         showSuccess('Break over! Time to focus.');
       }
+
+      // Log the session that just finished
+      if (pomodoroSessionStartTime) {
+        await addFocusSession({
+          session_type: sessionTypeForLogging, // Use the type of the session that just ended
+          duration_minutes: durationForLogging / 60, // Use the duration of the session that just ended
+          start_time: formatISO(pomodoroSessionStartTime),
+          end_time: formatISO(endTime),
+          task_id: pomodoroCurrentTaskId,
+          completed_during_session: completedDuringSession,
+        });
+      }
+
+      // Update the pomodoroSessionType state for the next cycle
+      setPomodoroSessionType(nextSessionType); 
+
       setPomodoroSessionStartTime(null);
       setPomodoroCurrentTaskId(null);
       localStorage.removeItem('pomodoroCurrentTaskId');
-      // Reset the timer with the new duration for the next session type
-      resetPomodoroTimerHook(getPomodoroDuration(pomodoroSessionType === 'work' ? (pomodoroCount + 1) % POMODORO_CYCLES === 0 ? 'long_break' : 'short_break' : 'work'));
+      
+      // Reset the timer with the duration of the *next* session type.
+      // This will cause useTimer to update its internal timeRemaining.
+      resetPomodoroTimerHook(getPomodoroDuration(nextSessionType)); 
     }, [pomodoroSessionType, pomodoroCount, playSound, pomodoroCurrentTaskId, filteredTasks, pomodoroSessionStartTime, addFocusSession, getPomodoroDuration]),
     onTick: useCallback((time) => {
       // console.log(`[ProductivityTimer] Pomodoro Tick: ${time}`);
@@ -204,13 +210,13 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
   }, [setIsFocusModeActive, activeTab, pomodoroIsRunning]);
 
   const handleStartPomodoro = useCallback(() => {
-    console.log(`[ProductivityTimer] handleStartPomodoro: isRunning=${pomodoroIsRunning}`);
+    console.log(`[ProductivityTimer] handleStartPomodoro: isRunning=${pomodoroIsRunning}, timeRemaining=${pomodoroTimeRemaining}`);
     if (!pomodoroIsRunning) {
       startPomodoroTimer();
       setPomodoroSessionStartTime(new Date());
       playSound('start');
     }
-  }, [pomodoroIsRunning, startPomodoroTimer, playSound]);
+  }, [pomodoroIsRunning, startPomodoroTimer, playSound, pomodoroTimeRemaining]);
 
   const handlePausePomodoro = useCallback(() => {
     console.log(`[ProductivityTimer] handlePausePomodoro: isRunning=${pomodoroIsRunning}`);
