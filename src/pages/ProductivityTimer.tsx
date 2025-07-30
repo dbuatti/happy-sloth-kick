@@ -13,6 +13,7 @@ import { useUI } from '@/context/UIContext';
 import { useSound } from '@/context/SoundContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useTimer } from '@/hooks/useTimer'; // Import useTimer hook
 
 const WORK_DURATION = 25 * 60; // 25 minutes in seconds
 const SHORT_BREAK_DURATION = 5 * 60; // 5 minutes in seconds
@@ -35,8 +36,6 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
   const { playSound } = useSound();
 
   // Pomodoro states
-  const [pomodoroTimeRemaining, setPomodoroTimeRemaining] = useState(WORK_DURATION);
-  const [pomodoroIsRunning, setPomodoroIsRunning] = useState(false);
   const [pomodoroSessionType, setPomodoroSessionType] = useState<SessionType>('work');
   const [pomodoroCount, setPomodoroCount] = useState(0);
   const [pomodoroCurrentTaskId, setPomodoroCurrentTaskId] = useState<string | null>(() => {
@@ -46,15 +45,83 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
     return null;
   });
   const [pomodoroSessionStartTime, setPomodoroSessionStartTime] = useState<Date | null>(null);
-  const pomodoroTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Determine initial duration for Pomodoro timer based on session type
+  const getPomodoroDuration = useCallback((type: SessionType) => {
+    switch (type) {
+      case 'work': return WORK_DURATION;
+      case 'short_break': return SHORT_BREAK_DURATION;
+      case 'long_break': return LONG_BREAK_DURATION;
+    }
+  }, []);
+
+  // Pomodoro Timer instance
+  const {
+    timeRemaining: pomodoroTimeRemaining,
+    isRunning: pomodoroIsRunning,
+    start: startPomodoroTimer,
+    pause: pausePomodoroTimer,
+    reset: resetPomodoroTimerHook,
+    formatTime: formatPomodoroTime,
+    progress: pomodoroProgress,
+  } = useTimer({
+    initialDurationSeconds: getPomodoroDuration(pomodoroSessionType),
+    onTimerEnd: useCallback(() => {
+      playSound('alert');
+      if (pomodoroSessionType === 'work') {
+        const newPomodoroCount = pomodoroCount + 1;
+        setPomodoroCount(newPomodoroCount);
+        if (newPomodoroCount % POMODORO_CYCLES === 0) {
+          setPomodoroSessionType('long_break');
+          showSuccess('Work session complete! Time for a long break.');
+        } else {
+          setPomodoroSessionType('short_break');
+          showSuccess('Work session complete! Time for a short break.');
+        }
+      } else {
+        setPomodoroSessionType('work');
+        showSuccess('Break over! Time to focus.');
+      }
+      setPomodoroSessionStartTime(null);
+      setPomodoroCurrentTaskId(null);
+      localStorage.removeItem('pomodoroCurrentTaskId');
+    }, [pomodoroSessionType, pomodoroCount, playSound]),
+    onTick: useCallback((time) => {
+      // Optional: save progress to local storage or DB if needed
+    }, []),
+  });
 
   // Custom Timer states
   const [customDuration, setCustomDuration] = useState(5 * 60); // Default to 5 minutes
-  const [customTimeRemaining, setCustomTimeRemaining] = useState(5 * 60);
-  const [customIsRunning, setCustomIsRunning] = useState(false);
-  const customTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Custom Timer instance
+  const {
+    timeRemaining: customTimeRemaining,
+    isRunning: customIsRunning,
+    start: startCustomTimer,
+    pause: pauseCustomTimer,
+    reset: resetCustomTimerHook,
+    formatTime: formatCustomTime,
+    progress: customProgress,
+  } = useTimer({
+    initialDurationSeconds: customDuration,
+    onTimerEnd: useCallback(() => {
+      playSound('alert');
+      showSuccess('Custom timer finished!');
+    }, [playSound]),
+  });
 
   const [activeTab, setActiveTab] = useState('pomodoro'); // 'pomodoro' or 'custom'
+
+  // Reset Pomodoro timer when session type changes
+  useEffect(() => {
+    resetPomodoroTimerHook(getPomodoroDuration(pomodoroSessionType));
+  }, [pomodoroSessionType, getPomodoroDuration, resetPomodoroTimerHook]);
+
+  // Reset Custom timer when duration changes
+  useEffect(() => {
+    resetCustomTimerHook(customDuration);
+  }, [customDuration, resetCustomTimerHook]);
 
   // Persist pomodoroCurrentTaskId to localStorage whenever it changes
   useEffect(() => {
@@ -82,88 +149,6 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
     return sortedTasks.slice(0, 5);
   }, [filteredTasks, sections]);
 
-  const handlePomodoroSessionEnd = useCallback(() => {
-    playSound('alert');
-
-    if (pomodoroSessionType === 'work') {
-      const newPomodoroCount = pomodoroCount + 1;
-      setPomodoroCount(newPomodoroCount);
-      if (newPomodoroCount % POMODORO_CYCLES === 0) {
-        setPomodoroSessionType('long_break');
-        setPomodoroTimeRemaining(LONG_BREAK_DURATION);
-        showSuccess('Work session complete! Time for a long break.');
-      } else {
-        setPomodoroSessionType('short_break');
-        setPomodoroTimeRemaining(SHORT_BREAK_DURATION);
-        showSuccess('Work session complete! Time for a short break.');
-      }
-    } else {
-      setPomodoroSessionType('work');
-      setPomodoroTimeRemaining(WORK_DURATION);
-      showSuccess('Break over! Time to focus.');
-    }
-    setPomodoroIsRunning(false);
-    setPomodoroSessionStartTime(null);
-    setPomodoroCurrentTaskId(null);
-    localStorage.removeItem('pomodoroCurrentTaskId');
-  }, [pomodoroSessionType, pomodoroCount, playSound]);
-
-  const handleCustomTimerEnd = useCallback(() => {
-    setCustomIsRunning(false);
-    playSound('alert');
-    showSuccess('Custom timer finished!');
-  }, [playSound]);
-
-  // Effect for Pomodoro Timer
-  useEffect(() => {
-    if (pomodoroIsRunning) {
-      pomodoroTimerRef.current = setInterval(() => {
-        setPomodoroTimeRemaining(prevTime => {
-          if (prevTime <= 1) {
-            clearInterval(pomodoroTimerRef.current!);
-            handlePomodoroSessionEnd();
-            return 0;
-          }
-          return prevTime - 1;
-        });
-      }, 1000);
-    } else {
-      if (pomodoroTimerRef.current) {
-        clearInterval(pomodoroTimerRef.current);
-      }
-    }
-    return () => {
-      if (pomodoroTimerRef.current) {
-        clearInterval(pomodoroTimerRef.current);
-      }
-    };
-  }, [pomodoroIsRunning, handlePomodoroSessionEnd]);
-
-  // Effect for Custom Timer
-  useEffect(() => {
-    if (customIsRunning) {
-      customTimerRef.current = setInterval(() => {
-        setCustomTimeRemaining(prevTime => {
-          if (prevTime <= 1) {
-            clearInterval(customTimerRef.current!);
-            handleCustomTimerEnd();
-            return 0;
-          }
-          return prevTime - 1;
-        });
-      }, 1000);
-    } else {
-      if (customTimerRef.current) {
-        clearInterval(customTimerRef.current);
-      }
-    }
-    return () => {
-      if (customTimerRef.current) {
-        clearInterval(customTimerRef.current);
-      }
-    };
-  }, [customIsRunning, handleCustomTimerEnd]);
-
   // UI Context for sidebar visibility
   useEffect(() => {
     setIsFocusModeActive(activeTab === 'pomodoro' && pomodoroIsRunning);
@@ -172,33 +157,47 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
     };
   }, [setIsFocusModeActive, activeTab, pomodoroIsRunning]);
 
-  const startPomodoroTimer = useCallback(() => {
+  const handleStartPomodoro = useCallback(() => {
     if (!pomodoroIsRunning) {
-      setPomodoroIsRunning(true);
+      startPomodoroTimer();
       setPomodoroSessionStartTime(new Date());
       playSound('start');
     }
-  }, [pomodoroIsRunning, playSound]);
+  }, [pomodoroIsRunning, startPomodoroTimer, playSound]);
 
-  const pausePomodoroTimer = useCallback(() => {
-    setPomodoroIsRunning(false);
-    if (pomodoroTimerRef.current) {
-      clearInterval(pomodoroTimerRef.current);
-      pomodoroTimerRef.current = null;
-      playSound('pause');
-    }
-  }, [playSound]);
-
-  const resetPomodoroTimer = useCallback(() => {
+  const handlePausePomodoro = useCallback(() => {
     pausePomodoroTimer();
-    setPomodoroTimeRemaining(WORK_DURATION);
+    playSound('pause');
+  }, [pausePomodoroTimer, playSound]);
+
+  const handleResetPomodoro = useCallback(() => {
+    pausePomodoroTimer();
     setPomodoroSessionType('work');
     setPomodoroCount(0);
     setPomodoroCurrentTaskId(null);
     localStorage.removeItem('pomodoroCurrentTaskId');
     setPomodoroSessionStartTime(null);
     playSound('reset');
-  }, [pausePomodoroTimer, playSound]);
+    resetPomodoroTimerHook(WORK_DURATION); // Explicitly reset the hook's internal state
+  }, [pausePomodoroTimer, playSound, resetPomodoroTimerHook]);
+
+  const handleStartCustom = useCallback(() => {
+    if (!customIsRunning && customTimeRemaining > 0) {
+      startCustomTimer();
+      playSound('start');
+    }
+  }, [customIsRunning, customTimeRemaining, startCustomTimer, playSound]);
+
+  const handlePauseCustom = useCallback(() => {
+    pauseCustomTimer();
+    playSound('pause');
+  }, [pauseCustomTimer, playSound]);
+
+  const handleResetCustom = useCallback(() => {
+    pauseCustomTimer();
+    playSound('reset');
+    resetCustomTimerHook(customDuration); // Explicitly reset the hook's internal state
+  }, [pauseCustomTimer, playSound, resetCustomTimerHook, customDuration]);
 
   const handleMarkTaskComplete = async (task: Task) => {
     if (!userId) {
@@ -223,46 +222,9 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
 
   const currentTaskDetails = pomodoroCurrentTaskId ? filteredTasks.find(t => t.id === pomodoroCurrentTaskId) : null;
 
-  // Custom Timer functions
-  const startCustomTimer = useCallback(() => {
-    if (!customIsRunning && customTimeRemaining > 0) {
-      setCustomIsRunning(true);
-      playSound('start');
-    }
-  }, [customIsRunning, customTimeRemaining, playSound]);
-
-  const pauseCustomTimer = useCallback(() => {
-    setCustomIsRunning(false);
-    if (customTimerRef.current) {
-      clearInterval(customTimerRef.current);
-      customTimerRef.current = null;
-      playSound('pause');
-    }
-  }, [playSound]);
-
-  const resetCustomTimer = useCallback(() => {
-    pauseCustomTimer();
-    setCustomTimeRemaining(customDuration);
-    playSound('reset');
-  }, [pauseCustomTimer, customDuration, playSound]);
-
-  const handleCustomDurationChange = (value: string) => {
-    const newDuration = parseInt(value) * 60;
-    setCustomDuration(newDuration);
-    if (!customIsRunning) {
-      setCustomTimeRemaining(newDuration);
-    }
-  };
-
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
-
   const currentTimerValue = activeTab === 'pomodoro' ? pomodoroTimeRemaining : customTimeRemaining;
   const currentDurationBase = activeTab === 'pomodoro' 
-    ? (pomodoroSessionType === 'work' ? WORK_DURATION : pomodoroSessionType === 'short_break' ? SHORT_BREAK_DURATION : LONG_BREAK_DURATION)
+    ? getPomodoroDuration(pomodoroSessionType)
     : customDuration;
   const currentIsRunning = activeTab === 'pomodoro' ? pomodoroIsRunning : customIsRunning;
 
@@ -279,8 +241,8 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
           <Tabs value={activeTab} onValueChange={(value) => {
             setActiveTab(value as 'pomodoro' | 'custom');
             // Pause any running timer when switching tabs
-            if (pomodoroIsRunning) pausePomodoroTimer();
-            if (customIsRunning) pauseCustomTimer();
+            if (pomodoroIsRunning) handlePausePomodoro();
+            if (customIsRunning) handlePauseCustom();
           }} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="pomodoro">Pomodoro</TabsTrigger>
@@ -303,14 +265,14 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
                 "relative z-10 text-5xl font-bold",
                 activeTab === 'pomodoro' && pomodoroSessionType === 'work' ? "text-primary-foreground" : "text-white"
               )}>
-                {formatTime(currentTimerValue)}
+                {activeTab === 'pomodoro' ? formatPomodoroTime(pomodoroTimeRemaining) : formatCustomTime(customTimeRemaining)}
               </div>
             </div>
 
             <div className="flex justify-center space-x-4 mt-6">
               <Button
                 size="lg"
-                onClick={activeTab === 'pomodoro' ? (pomodoroIsRunning ? pausePomodoroTimer : startPomodoroTimer) : (customIsRunning ? pauseCustomTimer : startCustomTimer)}
+                onClick={activeTab === 'pomodoro' ? (pomodoroIsRunning ? handlePausePomodoro : handleStartPomodoro) : (customIsRunning ? handlePauseCustom : handleStartCustom)}
                 className={cn(
                   "w-24",
                   currentIsRunning ? "bg-yellow-500 hover:bg-yellow-600" : (activeTab === 'pomodoro' ? "bg-primary hover:bg-primary-foreground" : "bg-purple-600 hover:bg-purple-700")
@@ -321,7 +283,7 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
               <Button 
                 size="lg" 
                 variant="outline" 
-                onClick={activeTab === 'pomodoro' ? resetPomodoroTimer : resetCustomTimer} 
+                onClick={activeTab === 'pomodoro' ? handleResetPomodoro : handleResetCustom} 
                 className="w-24"
               >
                 <RotateCcw className="h-6 w-6" />
