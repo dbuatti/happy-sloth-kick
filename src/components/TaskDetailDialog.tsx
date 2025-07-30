@@ -38,6 +38,7 @@ interface TaskDetailDialogProps {
   setCurrentDate: React.Dispatch<React.SetStateAction<Date>>; // New prop
   onSetAsFocusTask: (taskId: string) => void; // New prop
   onClearManualFocus: () => void; // New prop
+  onOpenFocusOverlay: () => void; // New prop
 }
 
 const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
@@ -51,6 +52,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   setCurrentDate,
   onSetAsFocusTask, // Destructure new prop
   onClearManualFocus, // Destructure new prop
+  onOpenFocusOverlay, // Destructure new prop
 }) => {
   const { sections, tasks: allTasks, handleAddTask, updateTask, allCategories } = useTasks({ currentDate, setCurrentDate });
   const [editingDescription, setEditingDescription] = useState('');
@@ -306,7 +308,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
                 <XCircle className="mr-2 h-4 w-4" /> Unset Focus
               </Button>
             ) : (
-              <Button variant="outline" onClick={() => { onSetAsFocusTask(task.id); onClose(); }} disabled={isSaving} className="flex-1">
+              <Button variant="outline" onClick={() => { onSetAsFocusTask(task.id); onOpenFocusOverlay(); onClose(); }} disabled={isSaving} className="flex-1">
                 <Target className="mr-2 h-4 w-4" /> Set as Focus
               </Button>
             )}

@@ -21,12 +21,14 @@ interface SortableTaskItemProps {
   onSetAsFocusTask: (taskId: string) => void; // New prop
   manualFocusTaskId: string | null; // New prop
   onClearManualFocus: () => void; // New prop
+  onOpenFocusOverlay: () => void; // New prop
 }
 
 const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   task,
   manualFocusTaskId, // Destructure new prop
   onClearManualFocus, // Destructure new prop
+  onOpenFocusOverlay, // Destructure new prop
   ...rest
 }) => {
   const {
@@ -61,6 +63,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         task={task} 
         manualFocusTaskId={manualFocusTaskId} // Pass new prop
         onClearManualFocus={onClearManualFocus} // Pass new prop
+        onOpenFocusOverlay={onOpenFocusOverlay} // Pass new prop
         {...rest} 
       />
     </li>

@@ -122,17 +122,19 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen, currentDate, setCurrent
               currentDate={currentDate}
               loading={tasksLoading}
               onCardClick={handleOpenFocusOverlay}
-              onSetAsFocusTask={onSetAsFocusTask}
+              onSetAsFocusTask={(taskId) => { onSetAsFocusTask(taskId); handleOpenFocusOverlay(); }} // Trigger overlay here
               isManualFocus={!!manualFocusTaskId}
               onClearManualFocus={onClearManualFocus}
+              onOpenFocusOverlay={handleOpenFocusOverlay}
             />
             <TaskList 
               setIsAddTaskOpen={setIsAddTaskOpen} 
               currentDate={currentDate} 
               setCurrentDate={setCurrentDate} 
-              onSetAsFocusTask={onSetAsFocusTask}
+              onSetAsFocusTask={(taskId) => { onSetAsFocusTask(taskId); handleOpenFocusOverlay(); }} // Trigger overlay here
               manualFocusTaskId={manualFocusTaskId}
               onClearManualFocus={onClearManualFocus}
+              onOpenFocusOverlay={handleOpenFocusOverlay} // Pass down to TaskList
             />
           </main>
           <footer className="p-4">
@@ -153,8 +155,9 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen, currentDate, setCurrent
               onDelete={deleteTask}
               currentDate={currentDate}
               setCurrentDate={setCurrentDate}
-              onSetAsFocusTask={onSetAsFocusTask}
+              onSetAsFocusTask={(taskId) => { onSetAsFocusTask(taskId); handleOpenFocusOverlay(); }} // Trigger overlay here
               onClearManualFocus={onClearManualFocus}
+              onOpenFocusOverlay={handleOpenFocusOverlay} // Pass down to TaskDetailDialog
             />
           )}
           <FocusTaskOverlay 

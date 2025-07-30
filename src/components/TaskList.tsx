@@ -49,9 +49,10 @@ interface TaskListProps {
   onSetAsFocusTask: (taskId: string) => void; // New prop
   manualFocusTaskId: string | null; // New prop
   onClearManualFocus: () => void; // New prop
+  onOpenFocusOverlay: () => void; // New prop
 }
 
-const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setCurrentDate, onSetAsFocusTask, manualFocusTaskId, onClearManualFocus }) => {
+const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setCurrentDate, onSetAsFocusTask, manualFocusTaskId, onClearManualFocus, onOpenFocusOverlay }) => {
   const {
     tasks,
     filteredTasks,
@@ -427,6 +428,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                                         onSetAsFocusTask={onSetAsFocusTask} // Pass new prop
                                         manualFocusTaskId={manualFocusTaskId} // Pass new prop
                                         onClearManualFocus={onClearManualFocus} // Pass new prop
+                                        onOpenFocusOverlay={onOpenFocusOverlay} // Pass new prop
                                       />
                                     ))
                                   )}
@@ -476,6 +478,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                                 onSetAsFocusTask={onSetAsFocusTask} // Pass new prop
                                 manualFocusTaskId={manualFocusTaskId} // Pass new prop
                                 onClearManualFocus={onClearManualFocus} // Pass new prop
+                                onOpenFocusOverlay={onOpenFocusOverlay} // Pass new prop
                               />
                             ))}
                           </ul>
@@ -518,6 +521,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                           onSetAsFocusTask={onSetAsFocusTask} // Pass new prop
                           manualFocusTaskId={manualFocusTaskId} // Pass new prop
                           onClearManualFocus={onClearManualFocus} // Pass new prop
+                          onOpenFocusOverlay={onOpenFocusOverlay} // Pass new prop
                         />
                       )}
                       {activeSection && (
@@ -579,6 +583,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
           setCurrentDate={setCurrentDate}
           onSetAsFocusTask={onSetAsFocusTask} // Pass new prop
           onClearManualFocus={onClearManualFocus} // Pass new prop
+          onOpenFocusOverlay={onOpenFocusOverlay} // Pass new prop
         />
       )}
 

@@ -41,30 +41,6 @@ const Archive: React.FC<ArchiveProps> = ({ currentDate, setCurrentDate }) => {
     setIsTaskDetailOpen(true);
   };
 
-  if (loading) {
-    return (
-      <div className="flex-1 flex flex-col">
-        <main className="flex-grow p-4 flex justify-center">
-          <Card className="w-full max-w-4xl mx-auto shadow-lg p-4">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-3xl font-bold text-center">Archived Tasks</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="space-y-3">
-                {[...Array(5)].map((_, i) => (
-                  <Skeleton key={i} className="h-20 w-full rounded-lg" />
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </main>
-        <footer className="p-4">
-          <MadeWithDyad />
-        </footer>
-      </div>
-    );
-  }
-
   return (
     <div className="flex-1 flex flex-col">
       <main className="flex-grow p-4">
@@ -101,6 +77,7 @@ const Archive: React.FC<ArchiveProps> = ({ currentDate, setCurrentDate }) => {
                       onSetAsFocusTask={() => {}}
                       manualFocusTaskId={null}
                       onClearManualFocus={() => {}}
+                      onOpenFocusOverlay={() => {}} // No-op for archive view
                     />
                   </li>
                 ))}
@@ -124,6 +101,7 @@ const Archive: React.FC<ArchiveProps> = ({ currentDate, setCurrentDate }) => {
           setCurrentDate={setCurrentDate}
           onSetAsFocusTask={() => {}}
           onClearManualFocus={() => {}}
+          onOpenFocusOverlay={() => {}} // No-op for archive view
         />
       )}
     </div>

@@ -26,6 +26,7 @@ interface TaskItemProps {
   onSetAsFocusTask: (taskId: string) => void; // New prop
   manualFocusTaskId: string | null; // New prop
   onClearManualFocus: () => void; // New prop
+  onOpenFocusOverlay: () => void; // New prop
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -44,6 +45,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   onSetAsFocusTask, // Destructure new prop
   manualFocusTaskId, // Destructure new prop
   onClearManualFocus, // Destructure new prop
+  onOpenFocusOverlay, // Destructure new prop
 }) => {
   const { playSound } = useSound();
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
@@ -238,7 +240,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
                 <XCircle className="mr-2 h-4 w-4" /> Unset Focus Task
               </DropdownMenuItem>
             ) : (
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSetAsFocusTask(task.id); playSound('success'); }}>
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSetAsFocusTask(task.id); onOpenFocusOverlay(); playSound('success'); }}>
                 <Target className="mr-2 h-4 w-4" /> Set as Focus Task
               </DropdownMenuItem>
             )}

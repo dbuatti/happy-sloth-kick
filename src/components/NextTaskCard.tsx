@@ -19,9 +19,10 @@ interface NextTaskCardProps {
   onSetAsFocusTask: (taskId: string) => void; // New prop to set as manual focus
   isManualFocus: boolean; // New prop to indicate if it's manually set
   onClearManualFocus: () => void; // New prop to clear manual focus
+  onOpenFocusOverlay: () => void; // New prop
 }
 
-const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEditTask, currentDate, loading, onCardClick, onSetAsFocusTask, isManualFocus, onClearManualFocus }) => {
+const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEditTask, currentDate, loading, onCardClick, onSetAsFocusTask, isManualFocus, onClearManualFocus, onOpenFocusOverlay }) => {
   if (loading) {
     return (
       <Card className="w-full shadow-sm mb-4 border-l-4 border-blue-500 dark:border-blue-700">
@@ -158,7 +159,7 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
               <XCircle className="mr-2 h-4 w-4" /> Unset Focus
             </Button>
           ) : (
-            <Button variant="outline" onClick={(e) => { e.stopPropagation(); onSetAsFocusTask(task.id); }} className="flex-1">
+            <Button variant="outline" onClick={(e) => { e.stopPropagation(); onSetAsFocusTask(task.id); onOpenFocusOverlay(); }} className="flex-1">
               <Target className="mr-2 h-4 w-4" /> Set as Focus
             </Button>
           )}
