@@ -131,10 +131,10 @@ const BreathingBubble: React.FC = () => {
   const phaseIndexRef = useRef(0);
 
   const cycle = [
-    { name: 'Inhale', duration: 4, nextPhase: 'hold-top', animation: 'animate-breathe-in' },
-    { name: 'Hold', duration: 7, nextPhase: 'exhale', animation: '' },
-    { name: 'Exhale', duration: 8, nextPhase: 'hold-bottom', animation: 'animate-breathe-out' },
-    { name: 'Hold', duration: 1, nextPhase: 'inhale', animation: '' },
+    { name: 'Inhale', duration: 4, animationKeyframe: 'breathe-in' },
+    { name: 'Hold', duration: 7, animationKeyframe: null }, // No animation during hold
+    { name: 'Exhale', duration: 8, animationKeyframe: 'breathe-out' },
+    { name: 'Hold', duration: 1, animationKeyframe: null }, // No animation during hold
   ];
 
   const currentPhaseData = cycle[phaseIndexRef.current];
@@ -147,9 +147,9 @@ const BreathingBubble: React.FC = () => {
     // Corrected logic for setting the 'phase' state
     const currentCycleItem = cycle[phaseIndexRef.current];
     let newPhaseState: typeof phase;
-    if (currentCycleItem.name.toLowerCase().includes('inhale')) {
+    if (currentCycleItem.name === 'Inhale') {
       newPhaseState = 'inhale';
-    } else if (currentCycleItem.name.toLowerCase().includes('exhale')) {
+    } else if (currentCycleItem.name === 'Exhale') {
       newPhaseState = 'exhale';
     } else { // It's a 'Hold' phase
       if (phaseIndexRef.current === 1) { // This is the hold after inhale
@@ -217,13 +217,6 @@ const BreathingBubble: React.FC = () => {
     }
   };
 
-  const getBubbleAnimationClass = () => {
-    if (!isRunning) return '';
-    if (phase === 'inhale') return 'animate-breathe-in';
-    if (phase === 'exhale') return 'animate-breathe-out';
-    return ''; // For 'hold' phases, no animation class
-  };
-
   const getPhaseText = () => {
     // Map internal phase state back to display text
     if (phase === 'inhale') return 'Inhale';
@@ -246,14 +239,14 @@ const BreathingBubble: React.FC = () => {
           <div
             className={cn(
               "w-full h-full rounded-full bg-blue-500 flex items-center justify-center text-white text-xl font-bold transition-transform duration-500 ease-in-out",
-              getBubbleAnimationClass()
             )}
             style={{
-              animationDuration: `${currentPhaseData.duration}s`,
-              // Only apply transform if no animation class is active, letting CSS animation handle it otherwise
-              transform: getBubbleAnimationClass() === '' ?
-                         (phase === 'hold-top' ? 'scale(1.2)' : 'scale(0.7)') :
-                         undefined // Let animation handle transform if class is present
+              animation: isRunning && currentPhaseData.animationKeyframe
+                ? `${currentPhaseData.animationKeyframe} ${currentPhaseData.duration}s ease-in-out forwards`
+                : 'none',
+              transform: (isRunning && currentPhaseData.animationKeyframe)
+                ? undefined // Let animation handle transform
+                : (phase === 'hold-top' || phase === 'inhale' ? 'scale(1.2)' : 'scale(0.7)'), // Explicitly set for non-animated states
             }}
           >
             {isRunning ? getPhaseText() : 'Start'}

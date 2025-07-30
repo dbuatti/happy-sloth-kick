@@ -493,11 +493,3 @@
   from { transform: scale(1.2); }
   to { transform: scale(0.7); }
 }
-
-.animate-breathe-in {
-  animation: breathe-in 4s ease-in-out forwards;
-}
-
-.animate-breathe-out {
-  animation: breathe-out 8s ease-in-out forwards;
-}
