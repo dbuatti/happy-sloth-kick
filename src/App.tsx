@@ -23,6 +23,7 @@ import { addDays, startOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useTasks, Task } from '@/hooks/useTasks'; // Import useTasks to get necessary props
 import { useNavigate, useLocation } from 'react-router-dom'; // Import useNavigate and useLocation
+import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts'; // Import useKeyboardShortcuts
 
 // Helper to get UTC start of day
 const getUTCStartOfDay = (date: Date) => {
