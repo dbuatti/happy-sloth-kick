@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing, FolderOpen, Repeat, ListTodo, CheckCircle2, ArrowUp, ArrowDown } from 'lucide-react';
+import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing, FolderOpen, Repeat, ListTodo, CheckCircle2, ArrowUp, ArrowDown, Target } from 'lucide-react'; // Added Target icon
 import * as dateFns from 'date-fns';
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
@@ -23,6 +23,7 @@ interface TaskItemProps {
   currentDate: Date;
   onMoveUp: (taskId: string) => Promise<void>;
   onMoveDown: (taskId: string) => Promise<void>; // Corrected type definition
+  onSetAsFocusTask: (taskId: string) => void; // New prop
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -38,6 +39,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   currentDate,
   onMoveUp,
   onMoveDown,
+  onSetAsFocusTask, // Destructure new prop
 }) => {
   const { playSound } = useSound();
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
@@ -225,6 +227,10 @@ const TaskItem: React.FC<TaskItemProps> = ({
             </DropdownMenuItem>
             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'archived'); playSound('success'); }}>
               <Archive className="mr-2 h-4 w-4" /> Archive
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSetAsFocusTask(task.id); playSound('success'); }}>
+              <Target className="mr-2 h-4 w-4" /> Set as Focus Task
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuSub>

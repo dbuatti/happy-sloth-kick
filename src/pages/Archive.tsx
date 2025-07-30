@@ -99,6 +99,7 @@ const Archive: React.FC<ArchiveProps> = ({ currentDate, setCurrentDate }) => {
                         currentDate={currentDate}
                         onMoveUp={async () => {}}
                         onMoveDown={async () => {}}
+                        onSetAsFocusTask={() => {}} {/* Added this prop */}
                       />
                     </li>
                   ))}
@@ -121,6 +122,7 @@ const Archive: React.FC<ArchiveProps> = ({ currentDate, setCurrentDate }) => {
           onDelete={deleteTask}
           currentDate={currentDate}
           setCurrentDate={setCurrentDate}
+          onSetAsFocusTask={() => {}} {/* Added this prop */}
         />
       )}
     </>

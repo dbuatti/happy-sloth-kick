@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Edit, Lightbulb } from 'lucide-react';
+import { CheckCircle2, Edit, Lightbulb, Target, XCircle } from 'lucide-react'; // Added Target and XCircle icons
 import { Task } from '@/hooks/useTasks';
 import { cn } from '@/lib/utils';
 import { getCategoryColorProps } from '@/lib/categoryColors';
@@ -16,9 +16,11 @@ interface NextTaskCardProps {
   currentDate: Date;
   loading: boolean; // New prop for loading state
   onCardClick: () => void; // New prop for card click
+  onSetAsFocusTask: (taskId: string) => void; // New prop to set as manual focus
+  isManualFocus: boolean; // New prop to indicate if it's manually set
 }
 
-const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEditTask, currentDate, loading, onCardClick }) => {
+const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEditTask, currentDate, loading, onCardClick, onSetAsFocusTask, isManualFocus }) => {
   if (loading) {
     return (
       <Card className="w-full shadow-sm mb-4 border-l-4 border-blue-500 dark:border-blue-700">
@@ -97,7 +99,12 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
     >
       <CardHeader className="pb-2">
         <CardTitle className="text-lg font-semibold flex items-center gap-2">
-          <Lightbulb className="h-5 w-5 text-blue-500" /> Your Next Task
+          {isManualFocus ? (
+            <Target className="h-5 w-5 text-purple-500" />
+          ) : (
+            <Lightbulb className="h-5 w-5 text-blue-500" />
+          )}
+          {isManualFocus ? 'Manually Focused Task' : 'Your Next Task'}
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-0 space-y-3">
@@ -145,6 +152,11 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
           <Button variant="outline" onClick={(e) => { e.stopPropagation(); onEditTask(task); }} className="flex-1">
             <Edit className="mr-2 h-4 w-4" /> Edit Task
           </Button>
+          {!isManualFocus && (
+            <Button variant="outline" onClick={(e) => { e.stopPropagation(); onSetAsFocusTask(task.id); }} className="flex-1">
+              <Target className="mr-2 h-4 w-4" /> Set as Focus
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>

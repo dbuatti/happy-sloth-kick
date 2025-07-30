@@ -18,6 +18,7 @@ interface SortableTaskItemProps {
   currentDate: Date;
   onMoveUp: (taskId: string) => Promise<void>; // Added
   onMoveDown: (taskId: string) => Promise<void>; // Added
+  onSetAsFocusTask: (taskId: string) => void; // New prop
 }
 
 const SortableTaskItem: React.FC<SortableTaskItemProps> = ({

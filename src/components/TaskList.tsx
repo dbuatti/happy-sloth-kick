@@ -46,9 +46,10 @@ interface TaskListProps {
   setIsAddTaskOpen: (open: boolean) => void;
   currentDate: Date;
   setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
+  onSetAsFocusTask: (taskId: string) => void; // New prop
 }
 
-const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setCurrentDate }) => {
+const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setCurrentDate, onSetAsFocusTask }) => {
   const {
     tasks,
     filteredTasks,
@@ -421,6 +422,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                                         currentDate={currentDate}
                                         onMoveUp={(taskId) => moveTask(taskId, 'up')}
                                         onMoveDown={(taskId) => moveTask(taskId, 'down')}
+                                        onSetAsFocusTask={onSetAsFocusTask} // Pass new prop
                                       />
                                     ))
                                   )}
@@ -467,6 +469,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                                 currentDate={currentDate}
                                 onMoveUp={(taskId) => moveTask(taskId, 'up')}
                                 onMoveDown={(taskId) => moveTask(taskId, 'down')}
+                                onSetAsFocusTask={onSetAsFocusTask} // Pass new prop
                               />
                             ))}
                           </ul>
@@ -506,6 +509,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                           currentDate={currentDate}
                           onMoveUp={(taskId) => moveTask(taskId, 'up')}
                           onMoveDown={(taskId) => moveTask(taskId, 'down')}
+                          onSetAsFocusTask={onSetAsFocusTask} // Pass new prop
                         />
                       )}
                       {activeSection && (
@@ -565,6 +569,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
           onDelete={deleteTask}
           currentDate={currentDate}
           setCurrentDate={setCurrentDate}
+          onSetAsFocusTask={onSetAsFocusTask} // Pass new prop
         />
       )}
 
