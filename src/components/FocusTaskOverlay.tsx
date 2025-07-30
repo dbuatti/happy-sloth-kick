@@ -50,23 +50,27 @@ const FocusTaskOverlay: React.FC<FocusTaskOverlayProps> = ({
         logSession('custom', currentTimerDuration * 60, sessionStartTime, new Date(), task.id, completedDuringSession);
       }
       onSetIsFocusModeActive(false); // Deactivate focus mode when timer ends
+      onClose(); // Close the overlay when timer ends
     },
   });
 
   // Effect to set initial timer duration when overlay opens or prop changes
   useEffect(() => {
-    if (isOpen && propInitialTimerDurationMinutes !== undefined && task) {
-      setCurrentTimerDuration(propInitialTimerDurationMinutes);
-      reset(); // Ensure it resets to the initial duration when opened with one
-      start();
+    if (isOpen && task) {
+      const durationToSet = propInitialTimerDurationMinutes !== undefined ? propInitialTimerDurationMinutes : 25;
+      setCurrentTimerDuration(durationToSet); // Update the duration state
+      reset(durationToSet * 60); // Reset to the new duration
+      start(); // Start the timer immediately when overlay opens
       setSessionStartTime(new Date());
       playSound('start');
-    } else if (isOpen && propInitialTimerDurationMinutes === undefined && task) {
-      // If opened without a specific duration, ensure it defaults to 25 and is reset
-      setCurrentTimerDuration(25);
-      reset(); // Reset to 25 minutes
+    } else if (!isOpen) {
+      // When overlay closes, ensure timer is paused and state is reset
+      pause(); // Pause the timer
+      setSessionStartTime(null); // Clear session start time
+      setCompletedDuringSession(false); // Reset completion status
+      onClearManualFocus(); // Clear manual focus when overlay closes
     }
-  }, [isOpen, propInitialTimerDurationMinutes, task, reset, start, playSound]);
+  }, [isOpen, propInitialTimerDurationMinutes, task, reset, start, pause, playSound, onClearManualFocus]);
 
   // Sync focus mode state with UIContext
   useEffect(() => {
@@ -87,7 +91,6 @@ const FocusTaskOverlay: React.FC<FocusTaskOverlayProps> = ({
     if (task && sessionStartTime) {
       logSession('custom', (new Date().getTime() - sessionStartTime.getTime()) / 1000, sessionStartTime, new Date(), task.id, completedDuringSession);
     }
-    onClearManualFocus();
     onClose();
   };
 
@@ -107,7 +110,7 @@ const FocusTaskOverlay: React.FC<FocusTaskOverlayProps> = ({
     e.stopPropagation();
     e.preventDefault(); // Prevent default browser action
     setCurrentTimerDuration(duration); // Update the duration state
-    reset(); // This will set timeRemaining to the new currentTimerDuration * 60
+    reset(duration * 60); // Pass the new duration directly to reset
     start(); // This will start the timer
     setSessionStartTime(new Date());
     playSound('start');

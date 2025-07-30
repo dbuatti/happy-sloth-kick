@@ -11,12 +11,13 @@ export const useTimer = ({ initialDurationSeconds, onTimerEnd, onTick }: UseTime
   const [isRunning, setIsRunning] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Effect to initialize timeRemaining when initialDurationSeconds changes, but only if not running
+  // Effect to update timeRemaining when initialDurationSeconds changes, but only if not running
+  // This prevents mid-session resets if the base duration changes.
   useEffect(() => {
-    if (!isRunning && timeRemaining !== initialDurationSeconds) {
+    if (!isRunning) {
       setTimeRemaining(initialDurationSeconds);
     }
-  }, [initialDurationSeconds, isRunning]); // Removed timeRemaining from dependencies here to prevent loop
+  }, [initialDurationSeconds, isRunning]);
 
   useEffect(() => {
     if (isRunning) {
@@ -58,9 +59,9 @@ export const useTimer = ({ initialDurationSeconds, onTimerEnd, onTick }: UseTime
     }
   }, [isRunning]);
 
-  const reset = useCallback(() => {
+  const reset = useCallback((newDurationSeconds?: number) => { // Added optional parameter
     pause();
-    setTimeRemaining(initialDurationSeconds); // Reset to the current initialDurationSeconds prop
+    setTimeRemaining(newDurationSeconds !== undefined ? newDurationSeconds : initialDurationSeconds);
   }, [pause, initialDurationSeconds]);
 
   const formatTime = (seconds: number) => {
