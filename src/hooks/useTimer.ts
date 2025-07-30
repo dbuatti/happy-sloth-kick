@@ -11,15 +11,12 @@ export const useTimer = ({ initialDurationSeconds, onTimerEnd, onTick }: UseTime
   const [isRunning, setIsRunning] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Effect to update timeRemaining when initialDurationSeconds changes.
-  // This ensures that when a new duration button is clicked, the timer resets to that new duration.
+  // Effect to initialize timeRemaining when initialDurationSeconds changes, but only if not running
   useEffect(() => {
-    // Only update if the timer is not running, or if the new duration is different from current remaining time
-    // This prevents resetting mid-countdown unless a new duration is explicitly selected.
-    if (!isRunning || initialDurationSeconds !== timeRemaining) {
+    if (!isRunning && timeRemaining !== initialDurationSeconds) {
       setTimeRemaining(initialDurationSeconds);
     }
-  }, [initialDurationSeconds, isRunning]); // Depend on initialDurationSeconds and isRunning
+  }, [initialDurationSeconds, isRunning]); // Removed timeRemaining from dependencies here to prevent loop
 
   useEffect(() => {
     if (isRunning) {
@@ -64,7 +61,7 @@ export const useTimer = ({ initialDurationSeconds, onTimerEnd, onTick }: UseTime
   const reset = useCallback(() => {
     pause();
     setTimeRemaining(initialDurationSeconds); // Reset to the current initialDurationSeconds prop
-  }, [pause, initialDurationSeconds]); // Depend on initialDurationSeconds
+  }, [pause, initialDurationSeconds]);
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -79,6 +76,6 @@ export const useTimer = ({ initialDurationSeconds, onTimerEnd, onTick }: UseTime
     pause,
     reset,
     formatTime,
-    progress: (timeRemaining / initialDurationSeconds) * 100, // Use initialDurationSeconds for progress calculation
+    progress: (timeRemaining / initialDurationSeconds) * 100,
   };
 };

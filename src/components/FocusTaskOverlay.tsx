@@ -83,6 +83,7 @@ const FocusTaskOverlay: React.FC<FocusTaskOverlayProps> = ({
 
   const handleCloseButtonClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Ensure this doesn't trigger parent clicks
+    e.preventDefault(); // Prevent default browser action
     pause(); // Pause timer when closing
     if (task && sessionStartTime) {
       logSession('custom', (new Date().getTime() - sessionStartTime.getTime()) / 1000, sessionStartTime, new Date(), task.id, completedDuringSession);
@@ -93,6 +94,7 @@ const FocusTaskOverlay: React.FC<FocusTaskOverlayProps> = ({
 
   const handleMarkCompleteClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault(); // Prevent default browser action
     setCompletedDuringSession(true); // Mark as completed during session
     await onMarkComplete(task.id);
     pause(); // Pause timer
@@ -104,6 +106,7 @@ const FocusTaskOverlay: React.FC<FocusTaskOverlayProps> = ({
 
   const handleStartTimerClick = (e: React.MouseEvent, duration: number) => {
     e.stopPropagation();
+    e.preventDefault(); // Prevent default browser action
     setCurrentTimerDuration(duration); // Update the duration state
     // The useEffect in useTimer will now react to currentTimerDuration change
     // and reset timeRemaining. Then we just need to start it.
@@ -114,6 +117,7 @@ const FocusTaskOverlay: React.FC<FocusTaskOverlayProps> = ({
 
   const handlePlayPause = (e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault(); // Prevent default browser action
     if (isRunning) {
       pause();
       playSound('pause');
@@ -126,6 +130,7 @@ const FocusTaskOverlay: React.FC<FocusTaskOverlayProps> = ({
 
   const handleReset = (e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault(); // Prevent default browser action
     reset();
     setSessionStartTime(null);
     setCompletedDuringSession(false);
