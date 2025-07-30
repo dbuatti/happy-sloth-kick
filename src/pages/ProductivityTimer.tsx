@@ -12,7 +12,7 @@ import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useUI } from '@/context/UIContext';
 import { useSound } from '@/context/SoundContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } => "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTimer } from '@/hooks/useTimer'; // Import useTimer hook
 import { useFocusSessions } from '@/hooks/useFocusSessions'; // Import useFocusSessions hook
 import { formatISO } from 'date-fns';
