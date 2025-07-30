@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
 import { MadeWithDyad } from "@/components/made-with-dyad"; // Ensure MadeWithDyad is imported
 import WorkHoursSettings from '@/components/WorkHoursSettings';
+import ProjectTrackerSettings from '@/components/ProjectTrackerSettings'; // Import new component
 import { Skeleton } from '@/components/ui/skeleton'; // Import Skeleton
 
 interface Profile {
@@ -153,6 +154,7 @@ const Settings = () => {
           </Card>
 
           <WorkHoursSettings />
+          <ProjectTrackerSettings /> {/* Add the new component here */}
         </div>
       </main>
       <footer className="p-4">

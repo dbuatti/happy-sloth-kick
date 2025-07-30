@@ -27,14 +27,13 @@ const ProjectBalanceTracker: React.FC = () => {
   const {
     projects,
     loading,
-    sectionTitle,
+    sectionTitle, // Keep sectionTitle for display
     addProject,
     updateProject,
     deleteProject,
     incrementProjectCount,
     decrementProjectCount,
     resetAllProjectCounts,
-    updateProjectTrackerTitle,
     userId,
     sortOption,
     setSortOption,
@@ -46,9 +45,10 @@ const ProjectBalanceTracker: React.FC = () => {
   const [newProjectLink, setNewProjectLink] = useState('');
   const [isSavingProject, setIsSavingProject] = useState(false);
 
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [tempSectionTitle, setTempSectionTitle] = useState(sectionTitle);
-  const [isSavingTitle, setIsSavingTitle] = useState(false);
+  // Removed states for editing title:
+  // const [isEditingTitle, setIsEditingTitle] = useState(false);
+  // const [tempSectionTitle, setTempSectionTitle] = useState(sectionTitle);
+  // const [isSavingTitle, setIsSavingTitle] = useState(false);
 
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [editingProjectName, setEditingProjectName] = useState('');
@@ -175,14 +175,15 @@ const ProjectBalanceTracker: React.FC = () => {
     setShowConfirmResetAllDialog(false);
   };
 
-  const handleSaveTitle = async () => {
-    if (tempSectionTitle.trim()) {
-      setIsSavingTitle(true);
-      await updateProjectTrackerTitle(tempSectionTitle.trim());
-      setIsEditingTitle(false);
-      setIsSavingTitle(false);
-    }
-  };
+  // Removed handleSaveTitle as editing is moved to Settings page
+  // const handleSaveTitle = async () => {
+  //   if (tempSectionTitle.trim()) {
+  //     setIsSavingTitle(true);
+  //     await updateProjectTrackerTitle(tempSectionTitle.trim());
+  //     setIsEditingTitle(false);
+  //     setIsSavingTitle(false);
+  //   }
+  // };
 
   const getProgressColor = (count: number) => {
     if (count >= 8) return 'bg-green-500';
@@ -195,29 +196,10 @@ const ProjectBalanceTracker: React.FC = () => {
       <main className="flex-grow p-4">
         <Card className="w-full max-w-4xl mx-auto shadow-lg p-4">
           <CardHeader className="pb-2">
-            {isEditingTitle ? (
-              <div className="flex items-center w-full gap-2">
-                <Input
-                  value={tempSectionTitle}
-                  onChange={(e) => setTempSectionTitle(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSaveTitle()}
-                  className="text-3xl font-bold"
-                  autoFocus // Auto-focus here
-                  disabled={isSavingTitle}
-                />
-                <Button size="sm" onClick={handleSaveTitle} disabled={isSavingTitle || !tempSectionTitle.trim()}>
-                  {isSavingTitle ? 'Saving...' : 'Save'}
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => setIsEditingTitle(false)} disabled={isSavingTitle}>Cancel</Button>
-              </div>
-            ) : (
-              <CardTitle className="text-3xl font-bold flex items-center gap-2">
-                {sectionTitle}
-                <Button variant="ghost" size="icon" onClick={() => setIsEditingTitle(true)} className="h-6 w-6">
-                  <Edit className="h-4 w-4" />
-                </Button>
-              </CardTitle>
-            )}
+            {/* Simplified title display */}
+            <CardTitle className="text-3xl font-bold flex items-center gap-2">
+              {sectionTitle}
+            </CardTitle>
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <Dialog open={isAddProjectOpen} onOpenChange={setIsAddProjectOpen}>
                 <DialogTrigger asChild>

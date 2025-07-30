@@ -84,13 +84,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
     }
   };
 
-  const handleMoveUpClick = (e: React.MouseEvent) => {
+  const handleMoveUpClick = (e: React.SyntheticEvent) => { // Changed type to React.SyntheticEvent
     e.stopPropagation();
     onMoveUp(task.id);
     playSound('success');
   };
 
-  const handleMoveDownClick = (e: React.MouseEvent) => {
+  const handleMoveDownClick = (e: React.SyntheticEvent) => { // Changed type to React.SyntheticEvent
     e.stopPropagation();
     onMoveDown(task.id);
     playSound('success');
