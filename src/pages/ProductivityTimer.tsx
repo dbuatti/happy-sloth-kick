@@ -120,7 +120,8 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
       setPomodoroSessionStartTime(null);
       setPomodoroCurrentTaskId(null);
       localStorage.removeItem('pomodoroCurrentTaskId');
-    }, [pomodoroSessionType, pomodoroCount, playSound, pomodoroCurrentTaskId, filteredTasks, pomodoroSessionStartTime, addFocusSession]),
+      resetPomodoroTimerHook(); // Reset the timer so it can be started again
+    }, [pomodoroSessionType, pomodoroCount, playSound, pomodoroCurrentTaskId, filteredTasks, pomodoroSessionStartTime, addFocusSession, resetPomodoroTimerHook]),
     onTick: useCallback((time) => {
       // Optional: save progress to local storage or DB if needed
     }, []),
@@ -156,19 +157,20 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
       }
       setCustomSessionStartTime(null);
       showSuccess('Custom timer finished!');
-    }, [playSound, customDuration, customSessionStartTime, addFocusSession]),
+      resetCustomTimerHook(); // Reset the timer so it can be started again
+    }, [playSound, customDuration, customSessionStartTime, addFocusSession, resetCustomTimerHook]),
   });
 
   const [activeTab, setActiveTab] = useState('pomodoro'); // 'pomodoro' or 'custom'
 
   // Reset Pomodoro timer when session type changes
   useEffect(() => {
-    resetPomodoroTimerHook(getPomodoroDuration(pomodoroSessionType));
-  }, [pomodoroSessionType, getPomodoroDuration, resetPomodoroTimerHook]);
+    resetPomodoroTimerHook(); // Call without argument, useTimer will pick up new initialDurationSeconds
+  }, [pomodoroSessionType, resetPomodoroTimerHook]);
 
   // Reset Custom timer when duration changes
   useEffect(() => {
-    resetCustomTimerHook(customDuration);
+    resetCustomTimerHook(); // Call without argument, useTimer will pick up new initialDurationSeconds
   }, [customDuration, resetCustomTimerHook]);
 
   // Persist pomodoroCurrentTaskId to localStorage whenever it changes
@@ -226,7 +228,7 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
     localStorage.removeItem('pomodoroCurrentTaskId');
     setPomodoroSessionStartTime(null);
     playSound('reset');
-    resetPomodoroTimerHook(WORK_DURATION); // Explicitly reset the hook's internal state
+    resetPomodoroTimerHook(); // Explicitly reset the hook's internal state
   }, [pausePomodoroTimer, playSound, resetPomodoroTimerHook]);
 
   const handleStartCustom = useCallback(() => {
@@ -246,8 +248,8 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
     pauseCustomTimer();
     playSound('reset');
     setCustomSessionStartTime(null);
-    resetCustomTimerHook(customDuration); // Explicitly reset the hook's internal state
-  }, [pauseCustomTimer, playSound, resetCustomTimerHook, customDuration]);
+    resetCustomTimerHook(); // Explicitly reset the hook's internal state
+  }, [pauseCustomTimer, playSound, resetCustomTimerHook]);
 
   const handleMarkTaskComplete = async (task: Task) => {
     if (!userId) {
@@ -351,7 +353,7 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
               </Button>
             </div>
 
-            <TabsContent value="pomodoro" className="mt-6 space-y-4">
+            <TabsContent value="pomodoro" className="mt-6 space-y-4 min-h-[400px]">
               <p className="text-sm text-muted-foreground">
                 {pomodoroSessionType === 'work' ? 'Time to focus!' : 'Take a well-deserved break.'}
               </p>
@@ -408,7 +410,7 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
               </p>
             </TabsContent>
 
-            <TabsContent value="custom" className="mt-6 space-y-4">
+            <TabsContent value="custom" className="mt-6 space-y-4 min-h-[400px]">
               <p className="text-sm text-muted-foreground">
                 Set a custom timer for any activity.
               </p>
