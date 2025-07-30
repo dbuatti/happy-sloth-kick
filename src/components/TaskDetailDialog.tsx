@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
-import { Calendar, BellRing, Trash2, Plus, CheckCircle2 } from 'lucide-react';
+import { Calendar, BellRing, Trash2, Plus, CheckCircle2, ListTodo } from 'lucide-react';
 import { format, parseISO, setHours, setMinutes } from 'date-fns';
 import { cn } from "@/lib/utils";
 import CategorySelector from "./CategorySelector";
@@ -26,6 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useSound } from '@/context/SoundContext'; // Import useSound
 
 interface TaskDetailDialogProps {
   task: Task | null;
@@ -49,6 +50,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   setCurrentDate,
 }) => {
   const { sections, tasks: allTasks, handleAddTask, updateTask, allCategories } = useTasks({ currentDate, setCurrentDate });
+  const { playSound } = useSound(); // Use the sound hook
   const [editingDescription, setEditingDescription] = useState('');
   const [editingNotes, setEditingNotes] = useState('');
   const [editingDueDate, setEditingDueDate] = useState<Date | undefined>(undefined);
@@ -131,6 +133,20 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
 
   const handleSubtaskStatusChange = async (subtaskId: string, newStatus: Task['status']) => {
     await updateTask(subtaskId, { status: newStatus });
+  };
+
+  const handleToggleTaskStatus = async () => {
+    if (!task) return;
+    setIsSaving(true);
+    const newStatus = task.status === 'completed' ? 'to-do' : 'completed';
+    await onUpdate(task.id, { status: newStatus });
+    if (newStatus === 'completed') {
+      playSound('success');
+    } else {
+      playSound('success'); // Or a different sound for 'to-do'
+    }
+    setIsSaving(false);
+    onClose(); // Close after status change
   };
 
   if (!task) return null;
@@ -294,6 +310,19 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
           </div>
         </div>
         <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2 pt-3">
+          {/* New status toggle button */}
+          <Button
+            variant={task.status === 'completed' ? 'outline' : 'default'}
+            onClick={handleToggleTaskStatus}
+            disabled={isSaving}
+            className="w-full sm:w-auto mt-2 sm:mt-0"
+          >
+            {task.status === 'completed' ? (
+              <><ListTodo className="mr-2 h-4 w-4" /> Mark To-Do</>
+            ) : (
+              <><CheckCircle2 className="mr-2 h-4 w-4" /> Mark Complete</>
+            )}
+          </Button>
           <Button variant="destructive" onClick={handleDeleteClick} disabled={isSaving} className="w-full sm:w-auto mt-2 sm:mt-0">
             <Trash2 className="mr-2 h-4 w-4" /> Delete Task
           </Button>
