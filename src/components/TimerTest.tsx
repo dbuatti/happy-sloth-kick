@@ -67,7 +67,7 @@ const TimerTest: React.FC = () => {
           <Button size="lg" onClick={isRunning ? pause : start} className="w-24">
             {isRunning ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
           </Button>
-          <Button size="lg" variant="outline" onClick={reset} className="w-24">
+          <Button size="lg" variant="outline" onClick={() => reset()} className="w-24">
             <RotateCcw className="h-6 w-6" />
           </Button>
         </div>
