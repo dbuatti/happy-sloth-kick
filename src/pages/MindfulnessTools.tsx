@@ -6,6 +6,7 @@ import { Eye, Hand, Ear, Soup, Utensils, RefreshCcw, Play, Pause, Leaf, Wind, Sp
 import { cn } from '@/lib/utils';
 import { useSound } from '@/context/SoundContext';
 import WorryJournal from '@/components/WorryJournal'; // Import WorryJournal
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Import Select components
 
 // 5-4-3-2-1 Sensory Tool Component
 const SensoryTool: React.FC = () => {
@@ -121,6 +122,22 @@ const SensoryTool: React.FC = () => {
   );
 };
 
+interface BreathCycle {
+  name: string;
+  inhale: number;
+  holdTop: number;
+  exhale: number;
+  holdBottom: number;
+  description: string;
+}
+
+const breathCycles: BreathCycle[] = [
+  { name: '4-7-8 Breathing', inhale: 4, holdTop: 7, exhale: 8, holdBottom: 1, description: 'Relaxing breath for sleep and anxiety.' },
+  { name: 'Box Breathing (4-4-4-4)', inhale: 4, holdTop: 4, exhale: 4, holdBottom: 4, description: 'Calming and focusing, equal phases.' },
+  { name: 'Relaxation Breathing (6-2-8)', inhale: 6, holdTop: 2, exhale: 8, holdBottom: 0, description: 'Longer exhale for deep relaxation.' },
+  { name: 'Equal Breathing (4-0-4-0)', inhale: 4, holdTop: 0, exhale: 4, holdBottom: 0, description: 'Simple, balanced inhale and exhale.' },
+];
+
 // Interactive Breathing Bubble Component
 const BreathingBubble: React.FC = () => {
   const { playSound } = useSound();
@@ -129,32 +146,38 @@ const BreathingBubble: React.FC = () => {
   const [timer, setTimer] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const phaseIndexRef = useRef(0);
+  const [selectedCycleName, setSelectedCycleName] = useState(breathCycles[0].name);
 
-  const cycle = [
-    { name: 'Inhale', duration: 4, animationKeyframe: 'breathe-in' },
-    { name: 'Hold', duration: 7, animationKeyframe: null }, // No animation during hold
-    { name: 'Exhale', duration: 8, animationKeyframe: 'breathe-out' },
-    { name: 'Hold', duration: 1, animationKeyframe: null }, // No animation during hold
-  ];
+  const currentBreathCycle = breathCycles.find(c => c.name === selectedCycleName) || breathCycles[0];
 
-  const currentPhaseData = cycle[phaseIndexRef.current];
+  const cyclePhases = [
+    { name: 'Inhale', duration: currentBreathCycle.inhale, animationKeyframe: 'breathe-in' },
+    { name: 'Hold', duration: currentBreathCycle.holdTop, animationKeyframe: null },
+    { name: 'Exhale', duration: currentBreathCycle.exhale, animationKeyframe: 'breathe-out' },
+    { name: 'Hold', duration: currentBreathCycle.holdBottom, animationKeyframe: null },
+  ].filter(p => p.duration > 0); // Filter out phases with 0 duration
+
+  const currentPhaseData = cyclePhases[phaseIndexRef.current];
 
   const startCycle = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
 
-    const currentPhaseDuration = cycle[phaseIndexRef.current].duration;
+    if (cyclePhases.length === 0) { // Handle case where a cycle might have all 0 durations
+      setIsRunning(false);
+      return;
+    }
+
+    const currentPhaseDuration = cyclePhases[phaseIndexRef.current].duration;
     
-    // Corrected logic for setting the 'phase' state
-    const currentCycleItem = cycle[phaseIndexRef.current];
     let newPhaseState: typeof phase;
-    if (currentCycleItem.name === 'Inhale') {
+    if (cyclePhases[phaseIndexRef.current].name === 'Inhale') {
       newPhaseState = 'inhale';
-    } else if (currentCycleItem.name === 'Exhale') {
+    } else if (cyclePhases[phaseIndexRef.current].name === 'Exhale') {
       newPhaseState = 'exhale';
     } else { // It's a 'Hold' phase
-      if (phaseIndexRef.current === 1) { // This is the hold after inhale
+      if (phaseIndexRef.current === 1 || (cyclePhases.length === 2 && phaseIndexRef.current === 0)) { // This is the hold after inhale (or first phase if only 2)
         newPhaseState = 'hold-top';
-      } else { // This is the hold after exhale (phaseIndexRef.current === 3)
+      } else { // This is the hold after exhale
         newPhaseState = 'hold-bottom';
       }
     }
@@ -165,14 +188,14 @@ const BreathingBubble: React.FC = () => {
       setTimer(prev => {
         if (prev <= 1) {
           clearInterval(timerRef.current!);
-          phaseIndexRef.current = (phaseIndexRef.current + 1) % cycle.length;
+          phaseIndexRef.current = (phaseIndexRef.current + 1) % cyclePhases.length;
           startCycle(); // Move to next phase
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
-  }, []);
+  }, [cyclePhases]); // Dependency on cyclePhases to react to cycle changes
 
   useEffect(() => {
     if (isRunning) {
@@ -189,6 +212,11 @@ const BreathingBubble: React.FC = () => {
       }
     };
   }, [isRunning, startCycle, playSound]);
+
+  // Reset when selected cycle changes
+  useEffect(() => {
+    handleReset();
+  }, [selectedCycleName]);
 
   const handleStartPause = () => {
     setIsRunning(prev => {
@@ -210,8 +238,8 @@ const BreathingBubble: React.FC = () => {
     playSound('reset');
     setIsRunning(false);
     phaseIndexRef.current = 0;
-    setPhase('inhale');
-    setTimer(cycle[0].duration);
+    setPhase('inhale'); // Always start with inhale visually
+    setTimer(cyclePhases[0]?.duration || 0); // Reset timer to first phase duration
     if (timerRef.current) {
       clearInterval(timerRef.current);
     }
@@ -231,20 +259,36 @@ const BreathingBubble: React.FC = () => {
           <Wind className="h-6 w-6 text-blue-600" /> Interactive Breathing
         </CardTitle>
         <p className="text-muted-foreground">
-          Follow the bubble to regulate your breath (4-7-8 technique).
+          Follow the bubble to regulate your breath.
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
+        <div className="space-y-2">
+          <Select value={selectedCycleName} onValueChange={setSelectedCycleName} disabled={isRunning}>
+            <SelectTrigger className="w-full max-w-[240px] mx-auto">
+              <SelectValue placeholder="Select breathing cycle" />
+            </SelectTrigger>
+            <SelectContent>
+              {breathCycles.map(cycle => (
+                <SelectItem key={cycle.name} value={cycle.name}>
+                  {cycle.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-sm text-muted-foreground">{currentBreathCycle.description}</p>
+        </div>
+
         <div className="relative w-48 h-48 mx-auto flex items-center justify-center">
           <div
             className={cn(
               "w-full h-full rounded-full bg-blue-500 flex items-center justify-center text-white text-xl font-bold transition-transform duration-500 ease-in-out",
             )}
             style={{
-              animation: isRunning && currentPhaseData.animationKeyframe
+              animation: isRunning && currentPhaseData?.animationKeyframe
                 ? `${currentPhaseData.animationKeyframe} ${currentPhaseData.duration}s ease-in-out forwards`
                 : 'none',
-              transform: (isRunning && currentPhaseData.animationKeyframe)
+              transform: (isRunning && currentPhaseData?.animationKeyframe)
                 ? undefined // Let animation handle transform
                 : (phase === 'hold-top' || phase === 'inhale' ? 'scale(1.2)' : 'scale(0.7)'), // Explicitly set for non-animated states
             }}
@@ -266,6 +310,7 @@ const BreathingBubble: React.FC = () => {
               "w-24",
               isRunning ? "bg-yellow-500 hover:bg-yellow-600" : "bg-blue-600 hover:bg-blue-700"
             )}
+            disabled={cyclePhases.length === 0}
           >
             {isRunning ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
           </Button>
