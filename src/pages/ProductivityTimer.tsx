@@ -13,7 +13,7 @@ import { useUI } from '@/context/UIContext';
 import { useSound } from '@/context/SoundContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useLocation } from 'react-router-dom'; // Import useLocation
+import { useFocusSessions } from '@/hooks/useFocusSessions'; // Import useFocusSessions
 
 const WORK_DURATION = 25 * 60; // 25 minutes in seconds
 const SHORT_BREAK_DURATION = 5 * 60; // 5 minutes in seconds
@@ -30,9 +30,7 @@ interface ProductivityTimerProps {
 const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setCurrentDate }) => {
   const { user } = useAuth();
   const userId = user?.id;
-  const location = useLocation(); // Get location object
-  const focusedTaskIdFromState = (location.state as { focusedTaskId?: string })?.focusedTaskId;
-  const initialDurationFromState = (location.state as { initialDuration?: number })?.initialDuration;
+  const { logSession } = useFocusSessions(); // Use the new hook
 
   const { filteredTasks, updateTask, sections } = useTasks({ currentDate: new Date(), setCurrentDate: () => {}, viewMode: 'focus' }); 
   const { setIsFocusModeActive } = useUI();
@@ -60,34 +58,6 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
 
   const [activeTab, setActiveTab] = useState('pomodoro'); // 'pomodoro' or 'custom'
 
-  // Effect to set initial focused task from navigation state or localStorage
-  useEffect(() => {
-    if (focusedTaskIdFromState) {
-      setPomodoroCurrentTaskId(focusedTaskIdFromState);
-      localStorage.setItem('pomodoroCurrentTaskId', focusedTaskIdFromState);
-      showSuccess(`Focusing on task from navigation: "${filteredTasks.find(t => t.id === focusedTaskIdFromState)?.description || focusedTaskIdFromState}"`);
-    } else if (pomodoroCurrentTaskId) {
-      // If no state, but localStorage has a task, ensure it's still valid
-      const taskExists = filteredTasks.some(t => t.id === pomodoroCurrentTaskId);
-      if (!taskExists) {
-        setPomodoroCurrentTaskId(null);
-        localStorage.removeItem('pomodoroCurrentTaskId');
-      }
-    }
-  }, [focusedTaskIdFromState, pomodoroCurrentTaskId, filteredTasks]);
-
-  // Effect to handle initialDuration from navigation state
-  useEffect(() => {
-    if (initialDurationFromState) {
-      setActiveTab('custom');
-      setCustomDuration(initialDurationFromState * 60);
-      setCustomTimeRemaining(initialDurationFromState * 60);
-      // Automatically start the timer if a duration is provided
-      setCustomIsRunning(true);
-      playSound('start');
-    }
-  }, [initialDurationFromState, playSound]);
-
   // Persist pomodoroCurrentTaskId to localStorage whenever it changes
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -113,27 +83,6 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
     });
     return sortedTasks.slice(0, 5);
   }, [filteredTasks, sections]);
-
-  const logSession = useCallback(async (type: SessionType, duration: number, start: Date, end: Date, taskId: string | null, completedDuringSession: boolean) => {
-    if (!userId) return;
-    try {
-      const { error } = await supabase.from('focus_sessions').insert({
-        user_id: userId,
-        session_type: type,
-        duration_minutes: Math.round(duration / 60),
-        start_time: start.toISOString(),
-        end_time: end.toISOString(),
-        task_id: taskId,
-        completed_during_session: completedDuringSession,
-      });
-      if (error) throw error;
-      console.log('Focus session logged successfully!');
-    }
-    catch (error: any) {
-      console.error('Error logging focus session:', error.message);
-      showError('Failed to log focus session.');
-    }
-  }, [userId]);
 
   const handlePomodoroSessionEnd = useCallback(() => {
     const endTime = new Date();

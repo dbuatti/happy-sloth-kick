@@ -13,6 +13,7 @@ import TaskDetailDialog from '@/components/TaskDetailDialog';
 import FocusTaskOverlay from '@/components/FocusTaskOverlay';
 import { Task } from '@/hooks/useTasks';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useUI } from '@/context/UIContext'; // Import useUI
 
 // Helper to get UTC start of day
 const getUTCStartOfDay = (date: Date) => {
@@ -32,10 +33,12 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen, currentDate, setCurrent
   const { user, loading: authLoading } = useAuth();
   // Get tasks, nextAvailableTask, updateTask, deleteTask, userId, loading from useTasks
   const { tasks, nextAvailableTask, updateTask, deleteTask, userId, loading: tasksLoading } = useTasks({ currentDate, setCurrentDate });
+  const { setIsFocusModeActive } = useUI(); // Use UI context
 
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
   const [isFocusOverlayOpen, setIsFocusOverlayOpen] = useState(false);
+  const [initialOverlayDuration, setInitialOverlayDuration] = useState<number | undefined>(undefined); // State for initial duration
 
   const navigate = useNavigate();
 
@@ -78,20 +81,22 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen, currentDate, setCurrent
     setIsTaskDetailOpen(true);
   };
 
-  const handleOpenFocusOverlay = () => {
+  const handleOpenFocusOverlay = useCallback((duration?: number) => {
     if (taskForOverlay) {
+      setInitialOverlayDuration(duration);
       setIsFocusOverlayOpen(true);
     }
-  };
+  }, [taskForOverlay]);
 
   const handleCloseFocusOverlay = () => {
     setIsFocusOverlayOpen(false);
+    setInitialOverlayDuration(undefined); // Clear duration when closing
   };
 
   const handleStartFocusTimer = useCallback((durationMinutes: number, taskId: string) => {
     onSetAsFocusTask(taskId); // Ensure the task is set as focused
-    navigate('/focus', { state: { focusedTaskId: taskId, initialDuration: durationMinutes } });
-  }, [navigate, onSetAsFocusTask]);
+    handleOpenFocusOverlay(durationMinutes); // Open overlay with duration
+  }, [onSetAsFocusTask, handleOpenFocusOverlay]);
 
   // Define keyboard shortcuts
   const shortcuts: ShortcutMap = {
@@ -128,11 +133,11 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen, currentDate, setCurrent
               onEditTask={handleEditNextTask} 
               currentDate={currentDate}
               loading={tasksLoading}
-              onCardClick={handleOpenFocusOverlay}
+              onCardClick={() => handleOpenFocusOverlay()} // Open without specific duration
               onSetAsFocusTask={(taskId) => { onSetAsFocusTask(taskId); handleOpenFocusOverlay(); }} // Trigger overlay here
               isManualFocus={!!manualFocusTaskId}
               onClearManualFocus={onClearManualFocus}
-              onOpenFocusOverlay={handleOpenFocusOverlay}
+              onOpenFocusOverlay={() => handleOpenFocusOverlay()} // Pass down to NextTaskCard
             />
             <TaskList 
               setIsAddTaskOpen={setIsAddTaskOpen} 
@@ -141,7 +146,7 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen, currentDate, setCurrent
               onSetAsFocusTask={(taskId) => { onSetAsFocusTask(taskId); handleOpenFocusOverlay(); }} // Trigger overlay here
               manualFocusTaskId={manualFocusTaskId}
               onClearManualFocus={onClearManualFocus}
-              onOpenFocusOverlay={handleOpenFocusOverlay} // Pass down to TaskList
+              onOpenFocusOverlay={() => handleOpenFocusOverlay()} // Pass down to TaskList
             />
           </main>
           <footer className="p-4">
@@ -164,7 +169,7 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen, currentDate, setCurrent
               setCurrentDate={setCurrentDate}
               onSetAsFocusTask={(taskId) => { onSetAsFocusTask(taskId); handleOpenFocusOverlay(); }} // Trigger overlay here
               onClearManualFocus={onClearManualFocus}
-              onOpenFocusOverlay={handleOpenFocusOverlay} // Pass down to TaskDetailDialog
+              onOpenFocusOverlay={() => handleOpenFocusOverlay()} // Pass down to TaskDetailDialog
             />
           )}
           <FocusTaskOverlay 
@@ -173,7 +178,8 @@ const Index: React.FC<IndexProps> = ({ setIsAddTaskOpen, currentDate, setCurrent
             onClose={handleCloseFocusOverlay} 
             onClearManualFocus={onClearManualFocus}
             onMarkComplete={handleMarkTaskComplete} // Pass down
-            onStartFocusTimer={handleStartFocusTimer} // Pass down
+            initialTimerDurationMinutes={initialOverlayDuration} // Pass initial duration
+            onSetIsFocusModeActive={setIsFocusModeActive} // Pass setIsFocusModeActive
           />
         </>
       ) : (
