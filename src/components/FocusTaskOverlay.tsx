@@ -25,13 +25,14 @@ const FocusTaskOverlay: React.FC<FocusTaskOverlayProps> = ({
   onClose,
   onClearManualFocus,
   onMarkComplete,
-  initialTimerDurationMinutes,
+  initialTimerDurationMinutes: propInitialTimerDurationMinutes, // Rename prop to avoid conflict
   onSetIsFocusModeActive,
 }) => {
   const { logSession } = useFocusSessions();
   const { playSound } = useSound();
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
   const [completedDuringSession, setCompletedDuringSession] = useState(false);
+  const [currentTimerDuration, setCurrentTimerDuration] = useState(propInitialTimerDurationMinutes || 25); // New state for current duration
 
   const {
     timeRemaining,
@@ -42,25 +43,31 @@ const FocusTaskOverlay: React.FC<FocusTaskOverlayProps> = ({
     formatTime,
     progress,
   } = useTimer({
-    initialDurationSeconds: (initialTimerDurationMinutes || 25) * 60, // Default to 25 min
+    initialDurationSeconds: currentTimerDuration * 60, // Pass state to hook
     onTimerEnd: () => {
       playSound('alert');
       if (task && sessionStartTime) {
-        logSession('custom', initialTimerDurationMinutes ? initialTimerDurationMinutes * 60 : 0, sessionStartTime, new Date(), task.id, completedDuringSession);
+        logSession('custom', currentTimerDuration * 60, sessionStartTime, new Date(), task.id, completedDuringSession);
       }
       onSetIsFocusModeActive(false); // Deactivate focus mode when timer ends
     },
   });
 
-  // Effect to set initial timer duration and start if provided
+  // Effect to set initial timer duration when overlay opens or prop changes
   useEffect(() => {
-    if (isOpen && initialTimerDurationMinutes && task) {
-      reset(); // Reset to ensure correct duration is set
+    if (isOpen && propInitialTimerDurationMinutes !== undefined && task) {
+      setCurrentTimerDuration(propInitialTimerDurationMinutes);
+      // The useTimer's internal useEffect will pick this up and reset timeRemaining
+      // We still need to explicitly start it if it's meant to start immediately
       start();
       setSessionStartTime(new Date());
       playSound('start');
+    } else if (isOpen && propInitialTimerDurationMinutes === undefined && task) {
+      // If opened without a specific duration, ensure it defaults to 25 and is reset
+      setCurrentTimerDuration(25);
+      reset(); // Reset to 25 minutes
     }
-  }, [isOpen, initialTimerDurationMinutes, task, reset, start, playSound]);
+  }, [isOpen, propInitialTimerDurationMinutes, task, reset, start, playSound]);
 
   // Sync focus mode state with UIContext
   useEffect(() => {
@@ -74,12 +81,11 @@ const FocusTaskOverlay: React.FC<FocusTaskOverlayProps> = ({
     return null;
   }
 
-  // Renamed to be more specific, as it's now only for the X button
   const handleCloseButtonClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Ensure this doesn't trigger parent clicks
     pause(); // Pause timer when closing
     if (task && sessionStartTime) {
-      logSession('custom', (sessionStartTime.getTime() - new Date().getTime()) / 1000, sessionStartTime, new Date(), task.id, completedDuringSession);
+      logSession('custom', (new Date().getTime() - sessionStartTime.getTime()) / 1000, sessionStartTime, new Date(), task.id, completedDuringSession);
     }
     onClearManualFocus();
     onClose();
@@ -91,14 +97,16 @@ const FocusTaskOverlay: React.FC<FocusTaskOverlayProps> = ({
     await onMarkComplete(task.id);
     pause(); // Pause timer
     if (task && sessionStartTime) {
-      logSession('custom', (sessionStartTime.getTime() - new Date().getTime()) / 1000, sessionStartTime, new Date(), task.id, true);
+      logSession('custom', (new Date().getTime() - sessionStartTime.getTime()) / 1000, sessionStartTime, new Date(), task.id, true);
     }
     onClose();
   };
 
   const handleStartTimerClick = (e: React.MouseEvent, duration: number) => {
     e.stopPropagation();
-    reset(); // Reset to ensure new duration is applied
+    setCurrentTimerDuration(duration); // Update the duration state
+    // The useEffect in useTimer will now react to currentTimerDuration change
+    // and reset timeRemaining. Then we just need to start it.
     start();
     setSessionStartTime(new Date());
     playSound('start');
@@ -130,11 +138,10 @@ const FocusTaskOverlay: React.FC<FocusTaskOverlayProps> = ({
     <div
       className={cn(
         "fixed inset-0 z-[9999] flex items-center justify-center",
-        "bg-primary text-primary-foreground" // Removed cursor-pointer and onClick
+        "bg-primary text-primary-foreground"
       )}
-      // No onClick here anymore
     >
-      <div className="max-w-4xl mx-auto text-center p-4" onClick={(e) => e.stopPropagation()}> {/* This still prevents clicks inside from bubbling out of this content area */}
+      <div className="max-w-4xl mx-auto text-center p-4" onClick={(e) => e.stopPropagation()}>
         <h1 className="text-5xl md:text-7xl font-extrabold leading-tight tracking-tight">
           {task.description}
         </h1>

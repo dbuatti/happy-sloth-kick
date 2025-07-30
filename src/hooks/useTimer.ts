@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 interface UseTimerProps {
-  initialDurationSeconds: number;
+  initialDurationSeconds: number; // This is now the *current* desired duration
   onTimerEnd?: () => void;
   onTick?: (timeRemaining: number) => void;
 }
@@ -10,15 +10,16 @@ export const useTimer = ({ initialDurationSeconds, onTimerEnd, onTick }: UseTime
   const [timeRemaining, setTimeRemaining] = useState(initialDurationSeconds);
   const [isRunning, setIsRunning] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const initialDurationRef = useRef(initialDurationSeconds);
 
-  // Update initialDurationRef if initialDurationSeconds changes
+  // Effect to update timeRemaining when initialDurationSeconds changes.
+  // This ensures that when a new duration button is clicked, the timer resets to that new duration.
   useEffect(() => {
-    initialDurationRef.current = initialDurationSeconds;
-    if (!isRunning) { // Only reset time if timer is not running
+    // Only update if the timer is not running, or if the new duration is different from current remaining time
+    // This prevents resetting mid-countdown unless a new duration is explicitly selected.
+    if (!isRunning || initialDurationSeconds !== timeRemaining) {
       setTimeRemaining(initialDurationSeconds);
     }
-  }, [initialDurationSeconds, isRunning]);
+  }, [initialDurationSeconds, isRunning]); // Depend on initialDurationSeconds and isRunning
 
   useEffect(() => {
     if (isRunning) {
@@ -62,8 +63,8 @@ export const useTimer = ({ initialDurationSeconds, onTimerEnd, onTick }: UseTime
 
   const reset = useCallback(() => {
     pause();
-    setTimeRemaining(initialDurationRef.current);
-  }, [pause]);
+    setTimeRemaining(initialDurationSeconds); // Reset to the current initialDurationSeconds prop
+  }, [pause, initialDurationSeconds]); // Depend on initialDurationSeconds
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -78,6 +79,6 @@ export const useTimer = ({ initialDurationSeconds, onTimerEnd, onTick }: UseTime
     pause,
     reset,
     formatTime,
-    progress: (timeRemaining / initialDurationRef.current) * 100,
+    progress: (timeRemaining / initialDurationSeconds) * 100, // Use initialDurationSeconds for progress calculation
   };
 };
