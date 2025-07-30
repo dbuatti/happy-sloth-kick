@@ -11,7 +11,7 @@ export const useTimer = ({ initialDurationSeconds, onTimerEnd, onTick }: UseTime
   const [isRunning, setIsRunning] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Refs for callbacks to prevent stale closures in setInterval
+  // Store callbacks in refs to prevent stale closures in setInterval
   const onTimerEndRef = useRef(onTimerEnd);
   const onTickRef = useRef(onTick);
 
@@ -23,51 +23,48 @@ export const useTimer = ({ initialDurationSeconds, onTimerEnd, onTick }: UseTime
     onTickRef.current = onTick;
   }, [onTick]);
 
-  // Effect to initialize/reset timeRemaining when initialDurationSeconds changes
-  useEffect(() => {
-    setTimeRemaining(initialDurationSeconds);
-    setIsRunning(false); // Stop timer if duration changes
-    // Clear any existing interval to prevent multiple timers running
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-  }, [initialDurationSeconds]);
-
-  // Main timer logic
+  // Effect to handle starting and stopping the timer
   useEffect(() => {
     if (isRunning && timeRemaining > 0) {
+      // Start the interval
       intervalRef.current = setInterval(() => {
         setTimeRemaining(prevTime => {
           const newTime = prevTime - 1;
-          onTickRef.current?.(newTime);
+          onTickRef.current?.(newTime); // Call onTick with the new time
 
           if (newTime <= 0) {
+            // Timer finished, clear interval and trigger end callback
             if (intervalRef.current) {
               clearInterval(intervalRef.current);
               intervalRef.current = null;
             }
-            setIsRunning(false);
-            onTimerEndRef.current?.();
-            return 0;
+            setIsRunning(false); // Stop running
+            onTimerEndRef.current?.(); // Call onTimerEnd
+            return 0; // Set time to 0
           }
-          return newTime;
+          return newTime; // Continue counting down
         });
       }, 1000);
-    } else if (!isRunning && intervalRef.current) {
-      // If timer is paused or stopped, clear the interval
+    } else if (intervalRef.current) {
+      // If not running or time is 0, clear any existing interval
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
 
-    // Cleanup function to clear interval when component unmounts or dependencies change
+    // Cleanup function: clear interval when component unmounts or effect re-runs
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
     };
-  }, [isRunning, timeRemaining]); // timeRemaining is here to ensure cleanup if it hits 0 while running
+  }, [isRunning]); // Only re-run this effect when `isRunning` changes
+
+  // Effect to reset time when initialDurationSeconds prop changes
+  useEffect(() => {
+    setTimeRemaining(initialDurationSeconds);
+    setIsRunning(false); // Ensure timer stops if duration changes
+  }, [initialDurationSeconds]);
 
   const start = useCallback(() => {
     if (timeRemaining > 0 && !isRunning) {
@@ -83,10 +80,6 @@ export const useTimer = ({ initialDurationSeconds, onTimerEnd, onTick }: UseTime
 
   const reset = useCallback((newDuration?: number) => {
     const durationToSet = newDuration !== undefined ? newDuration : initialDurationSeconds;
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
     setTimeRemaining(durationToSet);
     setIsRunning(false);
   }, [initialDurationSeconds]);
