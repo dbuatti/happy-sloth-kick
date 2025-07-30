@@ -42,7 +42,12 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
   const [pomodoroIsRunning, setPomodoroIsRunning] = useState(false);
   const [pomodoroSessionType, setPomodoroSessionType] = useState<SessionType>('work');
   const [pomodoroCount, setPomodoroCount] = useState(0);
-  const [pomodoroCurrentTaskId, setPomodoroCurrentTaskId] = useState<string | null>(null);
+  const [pomodoroCurrentTaskId, setPomodoroCurrentTaskId] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('pomodoroCurrentTaskId');
+    }
+    return null;
+  });
   const [pomodoroSessionStartTime, setPomodoroSessionStartTime] = useState<Date | null>(null);
   const pomodoroTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -54,13 +59,32 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
 
   const [activeTab, setActiveTab] = useState('pomodoro'); // 'pomodoro' or 'custom'
 
-  // Effect to set initial focused task from navigation state
+  // Effect to set initial focused task from navigation state or localStorage
   useEffect(() => {
-    if (focusedTaskIdFromState && !pomodoroCurrentTaskId) {
+    if (focusedTaskIdFromState) {
       setPomodoroCurrentTaskId(focusedTaskIdFromState);
+      localStorage.setItem('pomodoroCurrentTaskId', focusedTaskIdFromState);
       showSuccess(`Focusing on task from navigation: "${filteredTasks.find(t => t.id === focusedTaskIdFromState)?.description || focusedTaskIdFromState}"`);
+    } else if (pomodoroCurrentTaskId) {
+      // If no state, but localStorage has a task, ensure it's still valid
+      const taskExists = filteredTasks.some(t => t.id === pomodoroCurrentTaskId);
+      if (!taskExists) {
+        setPomodoroCurrentTaskId(null);
+        localStorage.removeItem('pomodoroCurrentTaskId');
+      }
     }
   }, [focusedTaskIdFromState, pomodoroCurrentTaskId, filteredTasks]);
+
+  // Persist pomodoroCurrentTaskId to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (pomodoroCurrentTaskId) {
+        localStorage.setItem('pomodoroCurrentTaskId', pomodoroCurrentTaskId);
+      } else {
+        localStorage.removeItem('pomodoroCurrentTaskId');
+      }
+    }
+  }, [pomodoroCurrentTaskId]);
 
   const suggestedTasks = React.useMemo(() => {
     if (!filteredTasks || !sections) return [];
@@ -125,7 +149,8 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
     }
     setPomodoroIsRunning(false);
     setPomodoroSessionStartTime(null);
-    setPomodoroCurrentTaskId(null);
+    setPomodoroCurrentTaskId(null); // Clear task on session end
+    localStorage.removeItem('pomodoroCurrentTaskId'); // Clear from localStorage
   }, [pomodoroSessionType, pomodoroCount, pomodoroSessionStartTime, pomodoroCurrentTaskId, logSession, playSound]);
 
   const handleCustomTimerEnd = useCallback(() => {
@@ -214,7 +239,8 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
     setPomodoroTimeRemaining(WORK_DURATION);
     setPomodoroSessionType('work');
     setPomodoroCount(0);
-    setPomodoroCurrentTaskId(null);
+    setPomodoroCurrentTaskId(null); // Clear task on reset
+    localStorage.removeItem('pomodoroCurrentTaskId'); // Clear from localStorage
     setPomodoroSessionStartTime(null);
     playSound('reset'); // Play reset sound on reset
   }, [pausePomodoroTimer, playSound]);
@@ -232,7 +258,8 @@ const ProductivityTimer: React.FC<ProductivityTimerProps> = ({ currentDate, setC
         const actualDuration = (endTime.getTime() - pomodoroSessionStartTime.getTime()) / 1000;
         logSession(pomodoroSessionType, actualDuration, pomodoroSessionStartTime, endTime, task.id, true);
       }
-      setPomodoroCurrentTaskId(null);
+      setPomodoroCurrentTaskId(null); // Clear task on completion
+      localStorage.removeItem('pomodoroCurrentTaskId'); // Clear from localStorage
     } catch (error) {
       showError('Failed to mark task as complete.');
       console.error('Error marking task complete:', error);
