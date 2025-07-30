@@ -375,56 +375,6 @@ const FocusMode: React.FC = () => {
             </CardContent>
           </Card>
 
-          <Card className="w-full shadow-lg">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
-                <ListTodo className="h-6 w-6 text-primary" /> Current Task
-              </CardTitle>
-              {focusModeSections.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center">
-                  No sections are set to "Include in Focus Mode". Go to <a href="/settings" className="text-blue-500 hover:underline flex items-center gap-1 justify-center">
-                    <Settings className="h-4 w-4" /> Settings
-                  </a> to manage your sections.
-                </p>
-              ) : (
-                <p className="text-sm text-muted-foreground text-center">
-                  Tasks from sections: {focusModeSections.map(s => s.name).join(', ') || 'No Section'}
-                </p>
-              )}
-            </CardHeader>
-            <CardContent className="pt-0">
-              {loading ? (
-                <div className="text-center">Loading tasks...</div>
-              ) : currentTask ? (
-                <div className="border rounded-lg p-4 space-y-3 bg-background">
-                  <div className="flex items-center space-x-3">
-                    <div className={cn("w-4 h-4 rounded-full flex items-center justify-center border", getCategoryColorProps(currentTask.category_color).backgroundClass, getCategoryColorProps(currentTask.category_color).dotBorder)}>
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: getCategoryColorProps(currentTask.category_color).dotColor }}></div>
-                    </div>
-                    <h3 className="text-xl font-bold flex-1 line-clamp-2">{currentTask.description}</h3>
-                  </div>
-                  {currentTask.notes && (
-                    <p className="text-sm text-muted-foreground line-clamp-2">{currentTask.notes}</p>
-                  )}
-                  <div className="flex gap-2 mt-4">
-                    <Button onClick={() => handleMarkTaskComplete(currentTask.id)} className="flex-1">
-                      <CheckCircle2 className="mr-2 h-4 w-4" /> Mark Complete
-                    </Button>
-                    <Button variant="outline" onClick={() => handleEditTask(currentTask)} className="flex-1">
-                      <Settings className="mr-2 h-4 w-4" /> Edit Task
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
-                  <ListTodo className="h-12 w-12 text-muted-foreground" />
-                  <p className="text-lg font-medium mb-2">No tasks in focus sections.</p>
-                  <p className="text-sm">Add tasks to sections marked for focus mode, or enable focus mode for existing sections in settings.</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
           <MiniBreathingBubble />
         </div>
       </main>

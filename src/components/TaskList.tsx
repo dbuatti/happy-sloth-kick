@@ -5,7 +5,7 @@ import { Plus, Settings, CheckCircle2, ListTodo, FolderOpen, ChevronDown, Edit, 
 import { useTasks } from '@/hooks/useTasks';
 import TaskItem from './TaskItem';
 import BulkActions from './BulkActions';
-import AddTaskForm from './AddTaskForm';
+import AddTaskForm from './AddTaskForm'; // Still use AddTaskForm as a wrapper for new tasks
 import DailyStreak from './DailyStreak';
 import SmartSuggestions from './SmartSuggestions';
 import { Task, TaskSection } from '@/hooks/useTasks';
@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import TaskFilter from './TaskFilter';
 import { Skeleton } from '@/components/ui/skeleton';
 import ManageSectionsDialog from './ManageSectionsDialog';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Label } from "@/components/ui/label";
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -36,7 +36,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
   sortableKeyboardCoordinates,
-  arrayMove, // Imported arrayMove
+  arrayMove,
 } from '@dnd-kit/sortable';
 import { createPortal } from 'react-dom';
 import { CustomPointerSensor } from '@/lib/CustomPointerSensor';
@@ -217,7 +217,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
           // This is a simplified approach and might need more thought for complex scenarios
           const updatesForRealSections = newOrderedAllSections
             .filter(s => s.id !== 'no-section-header')
-            .map((s, idx) => ({ id: s.id, order: idx })); // Assign new order based on new position
+            .map((s, idx) => ({ id: s.id, order: idx }));
           
           // This part needs to be handled by a new function in useTasks or directly here
           // For now, we'll just let the visual reorder happen.

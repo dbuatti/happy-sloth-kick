@@ -3,13 +3,13 @@ import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, C
 import { useTasks } from '@/hooks/useTasks';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Settings, BarChart3, Home, FolderOpen, ChevronLeft, ChevronRight, LogOut, LayoutGrid, CalendarClock, Menu, Leaf, CalendarDays, Target } from 'lucide-react'; // Added Target icon
+import { Plus, Settings, BarChart3, Home, FolderOpen, ChevronLeft, ChevronRight, LogOut, LayoutGrid, CalendarClock, Menu, Leaf, CalendarDays, Target } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from "@/utils/toast";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import AddTaskForm from './AddTaskForm';
+import AddTaskForm from './AddTaskForm'; // Still use AddTaskForm as a wrapper for new tasks
 import { useSound } from '@/context/SoundContext';
 import { Task } from '@/hooks/useTasks';
 
