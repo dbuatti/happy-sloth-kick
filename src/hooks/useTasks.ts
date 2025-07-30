@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { showError, showSuccess, showReminder } from '@/utils/toast';
+import { showError, showSuccess } from '@/utils/toast'; // Removed showReminder
+import { useReminders } from '@/context/ReminderContext'; // Import useReminders
 import { v4 as uuidv4 } from 'uuid';
 import { isSameDay, isPast, startOfDay as fnsStartOfDay, parseISO, format, isAfter, isBefore, addDays, addWeeks, addMonths } from 'date-fns';
 import { getCategoryColorProps } from '@/lib/categoryColors';
@@ -72,13 +73,14 @@ const getUTCStartOfDay = (date: Date) => {
 interface UseTasksProps {
   currentDate?: Date;
   setCurrentDate?: React.Dispatch<React.SetStateAction<Date>>;
-  viewMode?: 'daily' | 'archive' | 'focus'; // Added 'focus'
+  viewMode?: 'daily' | 'archive' | 'focus';
 }
 
 export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: UseTasksProps = {}) => {
-  const HOOK_VERSION = "2024-07-30-17"; // Updated version for tracking
+  const HOOK_VERSION = "2024-07-30-17";
   const { user, loading: authLoading } = useAuth();
   const userId = user?.id;
+  const { addReminder, dismissReminder } = useReminders(); // Use reminder context
 
   const [tasks, setTasks] = useState<Task[]>([]);
 
@@ -99,7 +101,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
   const [priorityFilter, setPriorityFilter] = useState(() => getInitialFilter('priority', 'all'));
   const [sectionFilter, setSectionFilter] = useState(() => getInitialFilter('section', 'all'));
 
-  const remindedTaskIdsRef = useRef<Set<string>>(new Set());
+  // Removed remindedTaskIdsRef as reminders are now managed by ReminderContext
 
   useEffect(() => {
     if (viewMode === 'daily') {
@@ -258,7 +260,6 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
           console.log('useTasks: Task orders normalized in DB.');
         }
       }
-      // --- END NEW LOGIC ---
       
     } catch (error: any) {
       console.error('Error in fetchDataAndSections:', error);
@@ -277,7 +278,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
     // Check if an instance for this original task (root) already exists for the target date
     // This check is crucial to prevent duplicates based on the root original_task_id and created_at date
-    const existingInstance = currentTasks.find(t => // Use currentTasks passed as argument
+    const existingInstance = currentTasks.find(t =>
       (t.original_task_id === rootOriginalTaskId || t.id === rootOriginalTaskId) &&
       isSameDay(getUTCStartOfDay(parseISO(t.created_at)), targetDateUTC) &&
       t.status !== 'archived'
@@ -321,7 +322,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     }
     // Ensure category_color is added back for local state consistency after DB insert
     return { ...data, category_color: categoriesMap.get(data.category) || 'gray' };
-  }, [userId, categoriesMap]); // Removed `tasks` from dependencies
+  }, [userId, categoriesMap]);
 
   const syncRecurringTasks = useCallback(async () => {
     if (viewMode !== 'daily' || !userId) {
@@ -354,7 +355,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         const originalTaskCreatedAtUTC = getUTCStartOfDay(parseISO(originalTask.created_at));
 
         // Find all instances of this recurring task, including the original itself
-        const allInstancesOfThisRecurringTask = currentTasks.filter(t => // Use currentTasks
+        const allInstancesOfThisRecurringTask = currentTasks.filter(t =>
             t.original_task_id === originalTask.id || t.id === originalTask.id
         );
 
@@ -368,7 +369,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         const latestRelevantInstance = sortedInstances.find(t => t.status !== 'archived') || originalTask;
 
         // Check if an instance for the current day already exists
-        const instanceForCurrentDay = allInstancesOfThisRecurringTask.find(t => // Use currentTasks
+        const instanceForCurrentDay = allInstancesOfThisRecurringTask.find(t =>
             isSameDay(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status !== 'archived'
         );
 
@@ -385,7 +386,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
             console.log(`syncRecurringTasks: Original task "${originalTask.description}" created today. Creating first instance.`);
         } else if (isBefore(originalTaskCreatedAtUTC, effectiveCurrentDateUTC)) {
             // If the original task was created before today, check the latest previous instance
-            const latestPreviousInstance = allInstancesOfThisRecurringTask // Use currentTasks
+            const latestPreviousInstance = allInstancesOfThisRecurringTask
                 .filter(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status === 'to-do')
                 .sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime())[0];
 
@@ -405,7 +406,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         }
 
         if (shouldCreateNewInstance) {
-            const createdTask = await createRecurringTaskInstance(latestRelevantInstance, effectiveCurrentDateUTC, originalTask.id, currentTasks); // Pass currentTasks
+            const createdTask = await createRecurringTaskInstance(latestRelevantInstance, effectiveCurrentDateUTC, originalTask.id, currentTasks);
             if (createdTask) {
                 newTasksAdded.push(createdTask);
             }
@@ -416,7 +417,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       setTasks(prevTasks => [...prevTasks, ...newTasksAdded]);
       console.log('syncRecurringTasks: Added new recurring task instances to state.');
     }
-  }, [userId, currentDate, createRecurringTaskInstance, viewMode, categoriesMap]); // Removed `tasks` and `loading` from dependencies
+  }, [userId, currentDate, createRecurringTaskInstance, viewMode, categoriesMap]);
 
   useEffect(() => {
     if (!authLoading && userId) {
@@ -437,7 +438,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
   }, [userId, authLoading, fetchDataAndSections]);
 
   useEffect(() => {
-    if (userId && viewMode === 'daily') { // Removed `!loading` from condition
+    if (userId && viewMode === 'daily') {
       syncRecurringTasks();
     }
   }, [userId, currentDate, syncRecurringTasks, viewMode]);
@@ -445,22 +446,23 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
   useEffect(() => {
     if (!userId) return;
 
-    const reminderInterval = setInterval(() => {
-      tasks.forEach(task => {
-        if (task.remind_at && task.status === 'to-do' && !remindedTaskIdsRef.current.has(task.id)) {
-          const reminderTime = parseISO(task.remind_at);
-          const fiveMinutesAgo = new Date(new Date().getTime() - 5 * 60 * 1000);
-          
-          if (reminderTime <= new Date() && reminderTime > fiveMinutesAgo) {
-            showReminder(`Reminder: ${task.description}`, task.id);
-            remindedTaskIdsRef.current.add(task.id);
-          }
-        }
-      });
-    }, 30 * 1000);
+    // Clear all existing reminders when tasks change or user logs out/in
+    // This prevents stale reminders from previous sessions or task states
+    dismissReminder('all'); // Assuming dismissReminder can handle 'all' or iterate
 
-    return () => clearInterval(reminderInterval);
-  }, [userId, tasks]);
+    tasks.forEach(task => {
+      if (task.remind_at && task.status === 'to-do') {
+        const reminderTime = parseISO(task.remind_at);
+        // Only add reminder if it's in the future or very recently passed (within 1 minute)
+        if (reminderTime > new Date(new Date().getTime() - 60 * 1000)) {
+          addReminder(task.id, `Reminder: ${task.description}`, reminderTime);
+        }
+      } else {
+        // If task is completed/archived or reminder is removed, dismiss it from context
+        dismissReminder(task.id);
+      }
+    });
+  }, [userId, tasks, addReminder, dismissReminder]); // Depend on tasks and reminder context functions
 
   const handleAddTask = useCallback(async (newTaskData: NewTaskData) => {
     if (!userId) {
@@ -526,6 +528,10 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       setTasks(prev => prev.map(t => t.id === data.id ? { ...data, category_color: categoriesMap.get(data.category) || 'gray' } : t));
 
       showSuccess('Task added successfully!');
+      // Add reminder to context if applicable
+      if (newTask.remind_at) {
+        addReminder(newTask.id, `Reminder: ${newTask.description}`, parseISO(newTask.remind_at));
+      }
       return true;
     } catch (error: any) {
       console.error('Error adding task:', error);
@@ -533,7 +539,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       setTasks(prev => prev.filter(task => task.id !== newTask.id));
       return false;
     }
-  }, [userId, currentDate, categoriesMap, tasks]);
+  }, [userId, currentDate, categoriesMap, tasks, addReminder]);
 
   const updateTask = useCallback(async (taskId: string, updates: TaskUpdate) => {
     if (!userId) {
@@ -566,12 +572,22 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       if (error) throw error;
       showSuccess('Task updated successfully!');
 
+      // Update reminder in context if applicable
+      const updatedTask = tasks.find(t => t.id === taskId);
+      if (updatedTask) {
+        if (updates.remind_at && updatedTask.status === 'to-do') {
+          addReminder(updatedTask.id, `Reminder: ${updatedTask.description}`, parseISO(updates.remind_at));
+        } else if (updates.status === 'completed' || updates.status === 'archived' || updates.remind_at === null) {
+          dismissReminder(updatedTask.id);
+        }
+      }
+
     } catch (error: any) {
       console.error('Error updating task:', error);
       showError('Failed to update task.');
       // No manual refetch here, rely on real-time subscription
     }
-  }, [userId, categoriesMap]);
+  }, [userId, categoriesMap, tasks, addReminder, dismissReminder]);
 
   const deleteTask = useCallback(async (taskId: string) => {
     if (!userId) {
@@ -602,13 +618,15 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
       if (error) throw error;
       showSuccess('Task(s) deleted successfully!');
+      // Dismiss reminder from context
+      idsToDelete.forEach(id => dismissReminder(id));
     }
     catch (error: any) {
       console.error('Error deleting task:', error);
       showError('Failed to delete task.');
       // No manual refetch here, rely on real-time subscription
     }
-  }, [userId, tasks]);
+  }, [userId, tasks, dismissReminder]);
 
   const toggleTaskSelection = useCallback((taskId: string, checked: boolean) => {
     setSelectedTaskIds(prev =>
@@ -654,13 +672,24 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       showSuccess(`${ids.length} tasks updated successfully!`);
       clearSelectedTasks();
       
-      // No manual refetch here, rely on real-time subscription
+      // Update reminders in context for bulk actions
+      ids.forEach(id => {
+        const updatedTask = tasks.find(t => t.id === id);
+        if (updatedTask) {
+          if (updates.status === 'completed' || updates.status === 'archived' || updates.remind_at === null) {
+            dismissReminder(updatedTask.id);
+          } else if (updatedTask.remind_at) {
+            addReminder(updatedTask.id, `Reminder: ${updatedTask.description}`, parseISO(updatedTask.remind_at));
+          }
+        }
+      });
+
     } catch (error: any) {
       console.error('Error bulk updating tasks:', error);
       showError('Failed to update tasks in bulk.');
       // No manual refetch here, rely on real-time subscription
     }
-  }, [userId, selectedTaskIds, clearSelectedTasks, categoriesMap]);
+  }, [userId, selectedTaskIds, clearSelectedTasks, categoriesMap, tasks, addReminder, dismissReminder]);
 
   const markAllTasksInSectionCompleted = useCallback(async (sectionId: string | null) => {
     if (!userId) {
@@ -690,13 +719,14 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
       if (error) throw error;
       showSuccess(`${taskIdsToComplete.length} tasks in section marked as completed!`);
-      // No manual refetch here, rely on real-time subscription
+      // Dismiss reminders for completed tasks
+      taskIdsToComplete.forEach(id => dismissReminder(id));
     } catch (error: any) {
       console.error('Error marking all tasks in section as completed:', error);
       showError('Failed to mark tasks as completed.');
       // No manual refetch here, rely on real-time subscription
     }
-  }, [userId, tasks]);
+  }, [userId, tasks, dismissReminder]);
 
   const createSection = useCallback(async (name: string) => {
     if (!userId) {
@@ -1290,7 +1320,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     });
 
     let nextAvailableTask: Task | null = null;
-    if (viewMode === 'daily' || viewMode === 'focus') { // Next task logic applies to daily and focus
+    if (viewMode === 'daily' || viewMode === 'focus') {
       nextAvailableTask = currentViewFilteredTasks.find(task => 
         task.status === 'to-do' && task.parent_task_id === null
       ) || null;

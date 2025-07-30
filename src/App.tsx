@@ -12,8 +12,9 @@ import TimeBlockSchedule from "./pages/TimeBlockSchedule";
 import Meditation from "./pages/Meditation";
 import SleepTracker from "./pages/SleepTracker";
 import MindfulnessTools from "./pages/MindfulnessTools";
-import FocusMode from "./pages/FocusMode"; // Import the new FocusMode page
+import FocusMode from "./pages/FocusMode";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { ReminderProvider } from "@/context/ReminderContext"; // Import ReminderProvider
 import CommandPalette from "./components/CommandPalette";
 import { useState, useEffect, useCallback } from 'react';
 import Sidebar from "./components/Sidebar";
@@ -154,7 +155,7 @@ const AppContent = () => {
             <Route path="/meditation" element={<Meditation />} />
             <Route path="/sleep" element={<SleepTracker />} />
             <Route path="/mindfulness" element={<MindfulnessTools />} />
-            <Route path="/focus" element={<FocusMode />} /> {/* New route for Focus Mode */}
+            <Route path="/focus" element={<FocusMode />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <CommandPalette
@@ -180,9 +181,11 @@ const App = () => {
         <Sonner position="top-right" />
         <AuthProvider>
           <SoundProvider>
-            <BrowserRouter>
-              <AppContent />
-            </BrowserRouter>
+            <ReminderProvider> {/* Wrap with ReminderProvider */}
+              <BrowserRouter>
+                <AppContent />
+              </BrowserRouter>
+            </ReminderProvider>
           </SoundProvider>
         </AuthProvider>
       </TooltipProvider>

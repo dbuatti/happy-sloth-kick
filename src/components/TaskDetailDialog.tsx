@@ -17,6 +17,7 @@ import {
 import { useSound } from '@/context/SoundContext';
 import TaskForm from './TaskForm'; // Import the new TaskForm
 import { cn } from '@/lib/utils'; // Import cn
+import { parseISO } from 'date-fns'; // Import parseISO
 
 interface TaskDetailDialogProps {
   task: Task | null;
@@ -73,8 +74,16 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
 
   const handleAddSubtask = async (subtaskData: TaskFormData) => {
     if (!task || !userId) return false;
-    const success = await handleAddTask({
+
+    // Convert ISO strings back to Date objects for handleAddTask
+    const convertedSubtaskData = {
       ...subtaskData,
+      due_date: subtaskData.due_date ? parseISO(subtaskData.due_date) : null,
+      remind_at: subtaskData.remind_at ? parseISO(subtaskData.remind_at) : null,
+    };
+
+    const success = await handleAddTask({
+      ...convertedSubtaskData,
       parent_task_id: task.id,
       section_id: task.section_id, // Inherit section from parent
     });
