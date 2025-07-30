@@ -99,8 +99,8 @@ const Archive: React.FC<ArchiveProps> = ({ currentDate, setCurrentDate }) => {
                       onMoveUp={async () => {}}
                       onMoveDown={async () => {}}
                       onSetAsFocusTask={() => {}}
-                      manualFocusTaskId={null} {/* Added this prop */}
-                      onClearManualFocus={() => {}} {/* Added this prop */}
+                      manualFocusTaskId={null}
+                      onClearManualFocus={() => {}}
                     />
                   </li>
                 ))}
@@ -123,7 +123,7 @@ const Archive: React.FC<ArchiveProps> = ({ currentDate, setCurrentDate }) => {
           currentDate={currentDate}
           setCurrentDate={setCurrentDate}
           onSetAsFocusTask={() => {}}
-          onClearManualFocus={() => {}} {/* Added this prop */}
+          onClearManualFocus={() => {}}
         />
       )}
     </div>
