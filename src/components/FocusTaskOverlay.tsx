@@ -57,8 +57,7 @@ const FocusTaskOverlay: React.FC<FocusTaskOverlayProps> = ({
   useEffect(() => {
     if (isOpen && propInitialTimerDurationMinutes !== undefined && task) {
       setCurrentTimerDuration(propInitialTimerDurationMinutes);
-      // The useTimer's internal useEffect will pick this up and reset timeRemaining
-      // We still need to explicitly start it if it's meant to start immediately
+      reset(); // Ensure it resets to the initial duration when opened with one
       start();
       setSessionStartTime(new Date());
       playSound('start');
@@ -108,9 +107,8 @@ const FocusTaskOverlay: React.FC<FocusTaskOverlayProps> = ({
     e.stopPropagation();
     e.preventDefault(); // Prevent default browser action
     setCurrentTimerDuration(duration); // Update the duration state
-    // The useEffect in useTimer will now react to currentTimerDuration change
-    // and reset timeRemaining. Then we just need to start it.
-    start();
+    reset(); // This will set timeRemaining to the new currentTimerDuration * 60
+    start(); // This will start the timer
     setSessionStartTime(new Date());
     playSound('start');
   };
@@ -143,10 +141,13 @@ const FocusTaskOverlay: React.FC<FocusTaskOverlayProps> = ({
     <div
       className={cn(
         "fixed inset-0 z-[9999] flex items-center justify-center",
-        "bg-primary text-primary-foreground"
+        "bg-primary text-primary-foreground pointer-events-none" // Added pointer-events-none
       )}
     >
-      <div className="max-w-4xl mx-auto text-center p-4" onClick={(e) => e.stopPropagation()}>
+      <div 
+        className="max-w-4xl mx-auto text-center p-4 pointer-events-auto" // Added pointer-events-auto
+        onClick={(e) => e.stopPropagation()}
+      >
         <h1 className="text-5xl md:text-7xl font-extrabold leading-tight tracking-tight">
           {task.description}
         </h1>
@@ -212,7 +213,7 @@ const FocusTaskOverlay: React.FC<FocusTaskOverlayProps> = ({
         </div>
       </div>
       <button
-        className="absolute top-4 right-4 text-primary-foreground opacity-70 hover:opacity-100 transition-opacity duration-200"
+        className="absolute top-4 right-4 text-primary-foreground opacity-70 hover:opacity-100 transition-opacity duration-200 pointer-events-auto" // Added pointer-events-auto
         onClick={handleCloseButtonClick}
         aria-label="Clear manual focus and close"
       >
