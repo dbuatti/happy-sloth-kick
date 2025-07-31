@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Trash2, CheckCircle2, ListTodo } from 'lucide-react';
-import { Task } from '@/hooks/useTasks';
-import { useTasks } from '@/hooks/useTasks';
+import { Task, TaskSection, Category } from '@/hooks/useTasks'; // Import Task, TaskSection, Category types
+import { useTasks } from '@/hooks/useTasks'; // Keep useTasks for subtask updates and handleAddTask
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,10 +15,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useSound } from '@/context/SoundContext';
-import TaskForm from './TaskForm'; // Import the new TaskForm
-import { cn } from '@/lib/utils'; // Import cn
-import { parseISO } from 'date-fns'; // Import parseISO
-import { Checkbox } from "@/components/ui/checkbox"; // Import Checkbox component
+import TaskForm from './TaskForm';
+import { cn } from '@/lib/utils';
+import { parseISO } from 'date-fns';
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface TaskDetailDialogProps {
   task: Task | null;
@@ -27,7 +27,8 @@ interface TaskDetailDialogProps {
   onClose: () => void;
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<void>;
   onDelete: (taskId: string) => void;
-  // Removed unused props: currentDate, setCurrentDate
+  sections: TaskSection[]; // Passed as prop
+  allCategories: Category[]; // Passed as prop
 }
 
 const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
@@ -37,18 +38,19 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   onClose,
   onUpdate,
   onDelete,
-  // Removed unused props from here
+  sections, // Destructure from props
+  allCategories, // Destructure from props
 }) => {
-  const { sections, tasks: allTasks, handleAddTask, updateTask: updateSubtask, allCategories, currentDate, setCurrentDate } = useTasks(); // Get currentDate from useTasks
+  // Only use useTasks for actions that require it, not for fetching global state
+  const { tasks: allTasks, handleAddTask, updateTask: updateSubtask } = useTasks(); 
   const { playSound } = useSound();
   const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
-  const [isSaving, setIsSaving] = useState(false); // To manage saving state for main task form
+  const [isSaving, setIsSaving] = useState(false);
   const [isAddSubtaskOpen, setIsAddSubtaskOpen] = useState(false);
 
   const subtasks = allTasks.filter(t => t.parent_task_id === task?.id)
     .sort((a, b) => (a.order || 0) - (b.order || 0));
 
-  // Define the type for the task data expected by onSave
   type TaskFormData = Parameters<typeof TaskForm>['0']['onSave'] extends ((taskData: infer T) => any) ? T : never;
 
   const handleSaveMainTask = async (taskData: TaskFormData) => {
@@ -56,7 +58,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
     setIsSaving(true);
     await onUpdate(task.id, taskData);
     setIsSaving(false);
-    return true; // Indicate success
+    return true;
   };
 
   const handleDeleteClick = () => {
@@ -74,7 +76,6 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   const handleAddSubtask = async (subtaskData: TaskFormData) => {
     if (!task || !userId) return false;
 
-    // Convert ISO strings back to Date objects for handleAddTask
     const convertedSubtaskData = {
       ...subtaskData,
       due_date: subtaskData.due_date ? parseISO(subtaskData.due_date) : null,
@@ -84,7 +85,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
     const success = await handleAddTask({
       ...convertedSubtaskData,
       parent_task_id: task.id,
-      section_id: task.section_id, // Inherit section from parent
+      section_id: task.section_id,
     });
     if (success) {
       setIsAddSubtaskOpen(false);
@@ -104,10 +105,10 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
     if (newStatus === 'completed') {
       playSound('success');
     } else {
-      playSound('success'); // Or a different sound for 'to-do'
+      playSound('success');
     }
     setIsSaving(false);
-    onClose(); // Close after status change
+    onClose();
   };
 
   if (!task) return null;
@@ -125,10 +126,9 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
           userId={userId}
           sections={sections}
           allCategories={allCategories}
-          autoFocus={false} // Auto-focus handled by dialog's initialFocus
+          autoFocus={false}
         />
 
-        {/* Sub-tasks section */}
         <div className="space-y-2 mt-4 border-t pt-3">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-semibold">Sub-tasks ({subtasks.length})</h3>
@@ -184,7 +184,6 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
         </DialogFooter>
       </DialogContent>
 
-      {/* Add Subtask Dialog */}
       <Dialog open={isAddSubtaskOpen} onOpenChange={setIsAddSubtaskOpen}>
         <DialogContent>
           <DialogHeader>
@@ -198,7 +197,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
             allCategories={allCategories}
             autoFocus={true}
             parentTaskId={task.id}
-            preselectedSectionId={task.section_id} // Pre-select parent's section
+            preselectedSectionId={task.section_id}
           />
         </DialogContent>
       </Dialog>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -142,7 +142,8 @@ const MyHub: React.FC = () => {
     userId: archiveUserId, // This will be the same as currentUserId
     updateTask,
     deleteTask,
-    sections,
+    sections, // Get sections from useTasks
+    allCategories, // Get allCategories from useTasks
     setStatusFilter,
   } = useTasks({ viewMode: 'archive' });
 
@@ -585,6 +586,8 @@ const MyHub: React.FC = () => {
           onClose={() => setIsTaskDetailOpen(false)}
           onUpdate={updateTask}
           onDelete={deleteTask}
+          sections={sections}
+          allCategories={allCategories}
         />
       )}
     </div>

@@ -326,7 +326,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
     <>
       <div className="flex-1 flex flex-col">
         <main className="flex-grow">
-          <Card className="w-full max-w-3xl mx-auto shadow-lg p-4"> {/* Changed max-w-4xl to max-w-3xl */}
+          <Card className="w-full max-w-3xl mx-auto shadow-lg p-4">
             <CardHeader className="pb-3">
               <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
                 <CheckCircle2 className="h-7 w-7" /> Your Tasks
@@ -569,6 +569,8 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
           onClose={() => setIsTaskDetail(false)}
           onUpdate={updateTask}
           onDelete={deleteTask}
+          sections={sections}
+          allCategories={allCategories}
         />
       )}
 

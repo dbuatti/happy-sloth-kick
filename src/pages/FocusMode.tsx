@@ -14,7 +14,7 @@ import MiniBreathingBubble from '@/components/MiniBreathingBubble'; // Import Mi
 
 const FocusMode: React.FC = () => {
   const { playSound } = useSound();
-  const { filteredTasks, loading, updateTask, userId, sections, nextAvailableTask } = useTasks({ viewMode: 'focus' });
+  const { filteredTasks, loading, updateTask, userId, sections, nextAvailableTask, allCategories } = useTasks({ viewMode: 'focus' });
 
   const [focusDuration, setFocusDuration] = useState(25 * 60); // 25 minutes
   const [breakDuration, setBreakDuration] = useState(5 * 60); // 5 minutes
@@ -153,7 +153,7 @@ const FocusMode: React.FC = () => {
                       isFocusPhase ? "bg-green-500" : "bg-blue-500"
                     )}
                   />
-                  <div className="relative z-10 text-6xl font-bold text-primary-foreground"> {/* Changed text-foreground to text-primary-foreground */}
+                  <div className="relative z-10 text-6xl font-bold text-primary-foreground">
                     {formatTime(timeRemaining)}
                   </div>
                 </div>
@@ -240,6 +240,8 @@ const FocusMode: React.FC = () => {
           onClose={() => setIsTaskDetailOpen(false)}
           onUpdate={updateTask}
           onDelete={() => { /* Delete not typically in focus mode */ }}
+          sections={sections}
+          allCategories={allCategories}
         />
       )}
     </div>

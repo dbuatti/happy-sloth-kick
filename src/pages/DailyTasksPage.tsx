@@ -18,7 +18,7 @@ const DailyTasksPage: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(() => getUTCStartOfDay(new Date()));
   const { user } = useAuth();
 
-  const { tasks, nextAvailableTask, updateTask, deleteTask, userId, loading: tasksLoading } = useTasks({ currentDate, setCurrentDate });
+  const { tasks, nextAvailableTask, updateTask, deleteTask, userId, loading: tasksLoading, sections, allCategories } = useTasks({ currentDate, setCurrentDate });
 
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
@@ -90,6 +90,8 @@ const DailyTasksPage: React.FC = () => {
           onClose={() => setIsTaskDetailOpen(false)}
           onUpdate={updateTask}
           onDelete={deleteTask}
+          sections={sections}
+          allCategories={allCategories}
         />
       )}
     </>
