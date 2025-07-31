@@ -5,7 +5,11 @@
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "jsx": "react-jsx",
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
-    "types": ["vite/client"]
+    "types": ["vite/client"],
+    "module": "esnext", // Ensures import.meta.env is allowed
+    "esModuleInterop": true, // Allows default imports for modules like React
+    "allowSyntheticDefaultImports": true, // Often works with esModuleInterop, good to be explicit
+    "allowImportingTsExtensions": true // Allows .tsx extensions in import paths
   },
   "include": ["src"],
   "exclude": ["supabase/functions"]

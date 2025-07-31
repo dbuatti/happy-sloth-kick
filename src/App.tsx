@@ -13,7 +13,8 @@ import MindfulnessTools from "./pages/MindfulnessTools";
 import FocusMode from "./pages/FocusMode";
 import DailyFlowPrototype from "./pages/DailyFlowPrototype";
 import LandingPage from "./pages/LandingPage";
-import DailyTasksPage from "./pages/DailyTasksPage"; // DailyTasksPage now manages its own state
+import DailyTasksPage from "./pages/DailyTasksPage";
+import DailyTasksTest from "./pages/DailyTasksTest"; // Import the new page
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { ReminderProvider } from "@/context/ReminderContext";
 import { SoundProvider } from "@/context/SoundContext";
@@ -49,7 +50,8 @@ const AppContent = () => {
         <Sidebar>
           <Routes>
             <Route path="/" element={<LandingPage />} />
-            <Route path="/daily-tasks" element={<DailyTasksPage />} /> {/* DailyTasksPage now handles its own CommandPalette */}
+            <Route path="/daily-tasks" element={<DailyTasksPage />} />
+            <Route path="/daily-tasks-test" element={<DailyTasksTest />} /> {/* New route */}
             <Route path="/my-hub" element={<MyHub />} />
             <Route path="/help" element={<Help />} />
             <Route path="/projects" element={<ProjectBalanceTracker />} />

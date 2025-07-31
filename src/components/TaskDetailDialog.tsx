@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Trash2, CheckCircle2, ListTodo } from 'lucide-react';
-import { Task, TaskSection, Category } from '@/hooks/useTasks'; // Import Task, TaskSection, Category types
-import { useTasks } from '@/hooks/useTasks'; // Keep useTasks for subtask updates and handleAddTask
+import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks'; // Import NewTaskData
+import { useTasks } from '@/hooks/useTasks';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,8 +27,8 @@ interface TaskDetailDialogProps {
   onClose: () => void;
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<void>;
   onDelete: (taskId: string) => void;
-  sections: TaskSection[]; // Passed as prop
-  allCategories: Category[]; // Passed as prop
+  sections: TaskSection[];
+  allCategories: Category[];
 }
 
 const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
@@ -38,10 +38,9 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   onClose,
   onUpdate,
   onDelete,
-  sections, // Destructure from props
-  allCategories, // Destructure from props
+  sections,
+  allCategories,
 }) => {
-  // Only use useTasks for actions that require it, not for fetching global state
   const { tasks: allTasks, handleAddTask, updateTask: updateSubtask } = useTasks(); 
   const { playSound } = useSound();
   const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
@@ -51,7 +50,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   const subtasks = allTasks.filter(t => t.parent_task_id === task?.id)
     .sort((a, b) => (a.order || 0) - (b.order || 0));
 
-  type TaskFormData = Parameters<typeof TaskForm>['0']['onSave'] extends ((taskData: infer T) => any) ? T : never;
+  type TaskFormData = NewTaskData; // Directly use NewTaskData type
 
   const handleSaveMainTask = async (taskData: TaskFormData) => {
     if (!task) return false;
