@@ -67,6 +67,14 @@ const Meditation: React.FC = () => {
     playSound('reset'); // Play reset sound on reset
   }, [pauseTimer, duration, playSound]);
 
+  const handleDurationChange = useCallback((value: string) => {
+    const newDuration = parseInt(value) * 60;
+    setDuration(newDuration);
+    if (!isRunning) { // Only reset timeRemaining if timer is not running
+      setTimeRemaining(newDuration);
+    }
+  }, [isRunning]);
+
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
