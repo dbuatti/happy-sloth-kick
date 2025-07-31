@@ -86,7 +86,7 @@ const SmartSuggestions: React.FC<SmartSuggestionsProps> = ({ tasks, currentDate,
             </Button>
           )}
           {completedTasksCountForArchiveSuggestion > 0 && (
-            <Button variant="outline" className="justify-start gap-2 h-10" onClick={handleArchiveCompletedClick}>
+            <Button variant="outline" className="justify-start gap-2 h-10 w-fit" onClick={handleArchiveCompletedClick}> {/* Added w-fit here */}
               <Archive className="h-4 w-4 text-primary" />
               Archive All Completed Tasks
             </Button>
@@ -103,7 +103,7 @@ const SmartSuggestions: React.FC<SmartSuggestionsProps> = ({ tasks, currentDate,
       <AlertDialog open={showConfirmArchiveDialog} onOpenChange={setShowConfirmArchiveDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Archive Completed Tasks?</AlertDialogTitle>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
               This will move all your completed tasks to the archive. You can view them later in the Archive page.
             </AlertDialogDescription>
