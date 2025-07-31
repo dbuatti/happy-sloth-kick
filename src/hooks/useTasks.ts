@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess } from '@/utils/toast';
 import { useReminders } from '@/context/ReminderContext';
 import { v4 as uuidv4 } from 'uuid';
-import { isSameDay, isPast, startOfDay as fnsStartOfDay, parseISO, format, isAfter, isBefore, addDays, addWeeks, addMonths, isValid } from 'date-fns'; // Added isValid
+import { isSameDay, isPast, startOfDay as fnsStartOfDay, parseISO, format, isAfter, isBefore, addDays, addWeeks, addMonths, isValid } from 'date-fns';
 import { getCategoryColorProps } from '@/lib/categoryColors';
 import { arrayMove } from '@dnd-kit/sortable';
 
@@ -25,7 +25,7 @@ export interface Task {
   order: number | null;
   original_task_id: string | null;
   parent_task_id: string | null;
-  link: string | null; // Added link field
+  link: string | null;
 }
 
 export interface TaskSection {
@@ -57,7 +57,7 @@ interface NewTaskData {
   remind_at?: Date | null;
   section_id?: string | null;
   parent_task_id?: string | null;
-  link?: string | null; // Added link field
+  link?: string | null;
 }
 
 const getInitialFilter = (key: string, defaultValue: string) => {
@@ -92,7 +92,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [sections, setSections] = useState<TaskSection[]>([]);
   const [allCategories, setAllCategories] = useState<Category[]>([]);
-  const [categoriesMap, setCategoriesMap] = useState<Map<string, string>>(new Map());
+  const [categoriesMap, setCategoriesMap] = useState<Map<string, string>>(new Map()); // Corrected initialization
 
   const [searchFilter, setSearchFilter] = useState(() => getInitialFilter('search', ''));
   const [statusFilter, setStatusFilter] = useState(() => getInitialFilter('status', 'all'));
@@ -152,6 +152,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       setAllCategories(fetchedCategories);
       const newCategoriesMap = new Map<string, string>();
       fetchedCategories.forEach(cat => newCategoriesMap.set(cat.id, cat.color));
+      // Update the state variable for categoriesMap
       setCategoriesMap(newCategoriesMap);
 
       const { data: initialTasksFromDB, error: fetchError } = await supabase
@@ -218,7 +219,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
               section_id: task.section_id,
               parent_task_id: task.parent_task_id,
               original_task_id: task.original_task_id,
-              link: task.link, // Include link
+              link: task.link,
               order: index,
               user_id: userId,
             };
@@ -288,7 +289,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       order: templateTask.order,
       original_task_id: rootOriginalTaskId,
       parent_task_id: null,
-      link: templateTask.link, // Include link
+      link: templateTask.link,
     };
 
     const { data, error: insertError } = await supabase
@@ -405,19 +406,17 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
   useEffect(() => {
     if (!userId) return;
 
-    clearAllReminders();
-
     tasks.forEach(task => {
       if (task.remind_at && task.status === 'to-do') {
         const reminderTime = parseISO(task.remind_at);
-        if (isValid(reminderTime) && reminderTime > new Date(new Date().getTime() - 60 * 1000)) { // Added isValid check
+        if (isValid(reminderTime) && reminderTime > new Date(new Date().getTime() - 60 * 1000)) {
           addReminder(task.id, `Reminder: ${task.description}`, reminderTime);
         }
       } else {
         dismissReminder(task.id);
       }
     });
-  }, [userId, tasks, addReminder, dismissReminder, clearAllReminders]);
+  }, [userId, tasks, addReminder, dismissReminder]);
 
   const handleAddTask = useCallback(async (newTaskData: NewTaskData) => {
     if (!userId) {
@@ -448,7 +447,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         original_task_id: null,
         parent_task_id: newTaskData.parent_task_id || null,
         description: newTaskData.description,
-        link: newTaskData.link || null, // Include link
+        link: newTaskData.link || null,
       };
       setTasks(prev => [...prev, newTask]);
 
@@ -468,7 +467,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         original_task_id: newTask.original_task_id,
         parent_task_id: newTask.parent_task_id,
         description: newTask.description,
-        link: newTask.link, // Include link
+        link: newTask.link,
       };
 
       const { data, error } = await supabase
@@ -482,10 +481,9 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       setTasks(prev => prev.map(t => t.id === data.id ? { ...data, category_color: categoriesMap.get(data.category) || 'gray' } : t));
 
       showSuccess('Task added successfully!');
-      // Check if remind_at is a valid string before parsing and adding reminder
       if (newTask.remind_at && typeof newTask.remind_at === 'string') {
         const reminderDate = parseISO(newTask.remind_at);
-        if (isValid(reminderDate)) { // Ensure it's a valid date object
+        if (isValid(reminderDate)) {
           addReminder(newTask.id, `Reminder: ${newTask.description}`, reminderDate);
         }
       }
@@ -531,10 +529,9 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
       const updatedTask = tasks.find(t => t.id === taskId);
       if (updatedTask) {
-        // Check if remind_at is a valid string before parsing and adding reminder
         if (updates.remind_at && typeof updates.remind_at === 'string') {
           const reminderDate = parseISO(updates.remind_at);
-          if (isValid(reminderDate) && updatedTask.status === 'to-do') { // Ensure it's a valid date object and task is 'to-do'
+          if (isValid(reminderDate) && updatedTask.status === 'to-do') {
             addReminder(updatedTask.id, `Reminder: ${updatedTask.description}`, reminderDate);
           }
         } else if (updates.status === 'completed' || updates.status === 'archived' || updates.remind_at === null) {
@@ -633,9 +630,9 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         if (updatedTask) {
           if (updates.status === 'completed' || updates.status === 'archived' || updates.remind_at === null) {
             dismissReminder(updatedTask.id);
-          } else if (updatedTask.remind_at && typeof updatedTask.remind_at === 'string') { // Added type check
+          } else if (updatedTask.remind_at && typeof updatedTask.remind_at === 'string') {
             const reminderDate = parseISO(updatedTask.remind_at);
-            if (isValid(reminderDate)) { // Added isValid check
+            if (isValid(reminderDate)) {
               addReminder(updatedTask.id, `Reminder: ${updatedTask.description}`, reminderDate);
             }
           }
@@ -812,7 +809,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       remind_at: task.remind_at,
       section_id: task.section_id,
       parent_task_id: task.parent_task_id,
-      link: task.link, // Include link
+      link: task.link,
       order: index,
       user_id: userId,
     }));
@@ -882,7 +879,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       remind_at: task.remind_at,
       section_id: task.section_id,
       parent_task_id: task.parent_task_id,
-      link: task.link, // Include link
+      link: task.link,
       order: index,
       user_id: userId,
     }));
@@ -912,7 +909,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       remind_at: task.remind_at,
       section_id: newSectionId,
       parent_task_id: task.parent_task_id,
-      link: task.link, // Include link
+      link: task.link,
       order: index,
       user_id: userId,
     }));
@@ -1066,7 +1063,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       remind_at: task.remind_at,
       section_id: task.section_id,
       parent_task_id: task.parent_task_id,
-      link: task.link, // Include link
+      link: task.link,
       order: index,
       user_id: userId,
     }));
