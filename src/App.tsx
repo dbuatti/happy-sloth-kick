@@ -26,7 +26,7 @@ import AuthComponent from "@/components/AuthComponent";
 import DateNavigator from '@/components/DateNavigator';
 import NextTaskCard from '@/components/NextTaskCard';
 import TaskList from "@/components/TaskList";
-import { MadeWithDyad } = "@/components/made-with-dyad";
+import { MadeWithDyad } from "@/components/made-with-dyad";
 import TaskDetailDialog from "@/components/TaskDetailDialog";
 
 // Helper to get UTC start of day
