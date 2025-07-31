@@ -24,7 +24,7 @@ const taskFormSchema = z.object({
   dueDate: z.date().nullable().optional(),
   notes: z.string().max(500, { message: 'Notes must be 500 characters or less.' }).nullable().optional(),
   remindAtDate: z.date().nullable().optional(),
-  remindAtTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, { message: 'Invalid time format (HH:MM).' }).nullable().optional(),
+  remindAtTime: z.string().optional(), // Changed to optional string
   sectionId: z.string().nullable().optional(),
   recurringType: z.enum(['none', 'daily', 'weekly', 'monthly']),
   parentTaskId: z.string().nullable().optional(),
@@ -49,13 +49,25 @@ const taskFormSchema = z.object({
     }
   }, { message: 'Must be a valid URL format (e.g., example.com or https://example.com).' }),
 }).refine((data) => {
-  if (data.remindAtDate && !data.remindAtTime) {
-    return false; // If date is set, time must also be set
+  if (data.remindAtDate) {
+    // If date is set, time is required and must be valid
+    if (!data.remindAtTime || data.remindAtTime.trim() === "") {
+      return false; // Time is required if date is set
+    }
+    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    if (!timeRegex.test(data.remindAtTime)) {
+      return false; // Invalid time format
+    }
+  } else {
+    // If date is NOT set, time must be empty or undefined
+    if (data.remindAtTime && data.remindAtTime.trim() !== "") {
+      return false; // Cannot have a time without a date
+    }
   }
   return true;
 }, {
-  message: 'Reminder time is required if a reminder date is set.',
-  path: ['remindAtTime'],
+  message: 'Reminder time is required if a reminder date is set, and must be a valid HH:MM format. Otherwise, it must be empty.',
+  path: ['remindAtTime'], // This path will apply to the time field
 });
 
 type TaskFormData = z.infer<typeof taskFormSchema>;
@@ -279,7 +291,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
 
   const onSubmit = async (data: TaskFormData) => {
     let finalRemindAt: Date | null = null;
-    if (data.remindAtDate && data.remindAtTime) {
+    if (data.remindAtDate && data.remindAtTime && data.remindAtTime.trim() !== "") {
       const [hours, minutes] = data.remindAtTime.split(':').map(Number);
       finalRemindAt = setMinutes(setHours(data.remindAtDate, hours), minutes);
     }
