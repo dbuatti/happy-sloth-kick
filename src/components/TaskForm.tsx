@@ -13,6 +13,32 @@ import SectionSelector from "./SectionSelector";
 import { format, setHours, setMinutes, parse, addDays, addWeeks, addMonths, startOfDay, parseISO } from 'date-fns'; // Added parseISO
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Task, TaskSection, Category } from '@/hooks/useTasks'; // Import Task, TaskSection, Category types
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+
+const taskFormSchema = z.object({
+  description: z.string().min(1, { message: 'Task description is required.' }).max(255, { message: 'Description must be 255 characters or less.' }),
+  category: z.string().min(1, { message: 'Category is required.' }),
+  priority: z.string().min(1, { message: 'Priority is required.' }),
+  dueDate: z.date().nullable().optional(),
+  notes: z.string().max(500, { message: 'Notes must be 500 characters or less.' }).nullable().optional(),
+  remindAtDate: z.date().nullable().optional(),
+  remindAtTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, { message: 'Invalid time format (HH:MM).' }).nullable().optional(),
+  sectionId: z.string().nullable().optional(),
+  recurringType: z.enum(['none', 'daily', 'weekly', 'monthly']),
+  parentTaskId: z.string().nullable().optional(),
+}).refine((data) => {
+  if (data.remindAtDate && !data.remindAtTime) {
+    return false; // If date is set, time must also be set
+  }
+  return true;
+}, {
+  message: 'Reminder time is required if a reminder date is set.',
+  path: ['remindAtTime'],
+});
+
+type TaskFormData = z.infer<typeof taskFormSchema>;
 
 interface TaskFormProps {
   initialData?: Task | null; // Optional: for editing an existing task
@@ -151,53 +177,62 @@ const TaskForm: React.FC<TaskFormProps> = ({
   preselectedSectionId = null,
   parentTaskId = null,
 }) => {
-  const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('');
-  const [priority, setPriority] = useState('medium');
-  const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
-  const [notes, setNotes] = useState('');
-  const [remindAt, setRemindAt] = useState<Date | undefined>(undefined);
-  const [reminderTime, setReminderTime] = useState('');
-  const [sectionId, setSectionId] = useState<string | null>(null);
-  const [recurringType, setRecurringType] = useState<'none' | 'daily' | 'weekly' | 'monthly'>('none');
   const [isSaving, setIsSaving] = useState(false);
+
+  const form = useForm<TaskFormData>({
+    resolver: zodResolver(taskFormSchema),
+    defaultValues: {
+      description: '',
+      category: '',
+      priority: 'medium',
+      dueDate: null,
+      notes: '',
+      remindAtDate: null,
+      remindAtTime: '',
+      sectionId: preselectedSectionId,
+      recurringType: 'none',
+      parentTaskId: parentTaskId,
+    },
+  });
+
+  const { register, handleSubmit, control, reset, setValue, watch, formState: { errors } } = form;
+
+  const description = watch('description');
+  const remindAtDate = watch('remindAtDate');
+  const recurringType = watch('recurringType');
 
   // Set initial data for editing or defaults for new task
   useEffect(() => {
     if (initialData) {
-      setDescription(initialData.description);
-      setCategory(initialData.category);
-      setPriority(initialData.priority);
-      setDueDate(initialData.due_date ? parseISO(initialData.due_date) : undefined);
-      setNotes(initialData.notes || '');
-      setRemindAt(initialData.remind_at ? parseISO(initialData.remind_at) : undefined);
-      setReminderTime(initialData.remind_at ? format(parseISO(initialData.remind_at), 'HH:mm') : '');
-      setSectionId(initialData.section_id);
-      setRecurringType(initialData.recurring_type);
+      reset({
+        description: initialData.description,
+        category: initialData.category,
+        priority: initialData.priority,
+        dueDate: initialData.due_date ? parseISO(initialData.due_date) : null,
+        notes: initialData.notes || '',
+        remindAtDate: initialData.remind_at ? parseISO(initialData.remind_at) : null,
+        remindAtTime: initialData.remind_at ? format(parseISO(initialData.remind_at), 'HH:mm') : '',
+        sectionId: initialData.section_id,
+        recurringType: initialData.recurring_type,
+        parentTaskId: initialData.parent_task_id,
+      });
     } else {
       // Defaults for new task
-      setDescription('');
-      setNotes('');
-      setDueDate(undefined);
-      setRemindAt(undefined);
-      setReminderTime('');
-      setRecurringType('none');
-      setPriority('medium');
-      setSectionId(preselectedSectionId); // Use preselected section if provided
-
-      // Set default category on initial load or when allCategories become available
-      if (allCategories.length > 0) {
-        const generalCategory = allCategories.find(cat => cat.name.toLowerCase() === 'general');
-        if (generalCategory) {
-          setCategory(generalCategory.id);
-        } else {
-          setCategory(allCategories[0]?.id || ''); // Fallback to first category if no 'General'
-        }
-      } else {
-        setCategory(''); // No categories loaded yet
-      }
+      const generalCategory = allCategories.find(cat => cat.name.toLowerCase() === 'general');
+      reset({
+        description: '',
+        category: generalCategory?.id || allCategories[0]?.id || '',
+        priority: 'medium',
+        dueDate: null,
+        notes: '',
+        remindAtDate: null,
+        remindAtTime: '',
+        sectionId: preselectedSectionId,
+        recurringType: 'none',
+        parentTaskId: parentTaskId,
+      });
     }
-  }, [initialData, preselectedSectionId, allCategories]);
+  }, [initialData, preselectedSectionId, parentTaskId, allCategories, reset]);
 
   const handleSuggest = useCallback(() => {
     const {
@@ -209,47 +244,40 @@ const TaskForm: React.FC<TaskFormProps> = ({
     } = parseNaturalLanguage(description, allCategories);
 
     if (suggestedPriority) {
-      setPriority(suggestedPriority);
+      setValue('priority', suggestedPriority);
     }
     if (suggestedCategoryId) {
-      setCategory(suggestedCategoryId);
+      setValue('category', suggestedCategoryId);
     }
     if (suggestedDueDate) {
-      setDueDate(suggestedDueDate);
+      setValue('dueDate', suggestedDueDate);
     }
     if (suggestedRemindAt) {
-      setRemindAt(suggestedRemindAt);
+      setValue('remindAtDate', suggestedRemindAt);
       if (suggestedReminderTimeStr) {
-        setReminderTime(format(suggestedRemindAt, 'HH:mm'));
+        setValue('remindAtTime', format(suggestedRemindAt, 'HH:mm'));
       }
     }
-  }, [description, allCategories]);
+  }, [description, allCategories, setValue]);
 
-  const handleSubmit = async () => {
-    if (!description.trim()) {
-      // Add a toast error here if needed
-      return;
-    }
-
-    let finalRemindAt = remindAt;
-    if (finalRemindAt && reminderTime) {
-      const [hours, minutes] = reminderTime.split(':').map(Number);
-      finalRemindAt = setMinutes(setHours(finalRemindAt, hours), minutes);
-    } else if (finalRemindAt && !reminderTime) {
-      finalRemindAt = undefined; // Clear reminder if date is set but time is empty
+  const onSubmit = async (data: TaskFormData) => {
+    let finalRemindAt: Date | null = null;
+    if (data.remindAtDate && data.remindAtTime) {
+      const [hours, minutes] = data.remindAtTime.split(':').map(Number);
+      finalRemindAt = setMinutes(setHours(data.remindAtDate, hours), minutes);
     }
 
     setIsSaving(true);
     const success = await onSave({
-      description: description.trim(),
-      category: category,
-      priority: priority,
-      due_date: dueDate ? dueDate.toISOString() : null,
-      notes: notes || null,
+      description: data.description.trim(),
+      category: data.category,
+      priority: data.priority,
+      due_date: data.dueDate ? data.dueDate.toISOString() : null,
+      notes: data.notes || null,
       remind_at: finalRemindAt ? finalRemindAt.toISOString() : null,
-      section_id: sectionId,
-      recurring_type: recurringType,
-      parent_task_id: parentTaskId,
+      section_id: data.sectionId,
+      recurring_type: data.recurringType,
+      parent_task_id: data.parentTaskId,
     });
     setIsSaving(false);
     if (success) {
@@ -260,20 +288,19 @@ const TaskForm: React.FC<TaskFormProps> = ({
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey && description.trim()) {
       event.preventDefault(); // Prevent new line in textarea
-      handleSubmit();
+      handleSubmit(onSubmit)();
     }
   };
 
   return (
-    <div className="space-y-4 py-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
       <div>
         <Label htmlFor="task-description">Task Description</Label>
         <div className="flex gap-2">
           <Input
             id="task-description"
             placeholder="Task description (e.g., 'Buy groceries by tomorrow high priority')"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            {...register('description')}
             onKeyDown={handleKeyDown}
             disabled={isSaving}
             autoFocus={autoFocus}
@@ -290,98 +317,142 @@ const TaskForm: React.FC<TaskFormProps> = ({
             <Lightbulb className="h-4 w-4" />
           </Button>
         </div>
+        {errors.description && <p className="text-destructive text-sm mt-1">{errors.description.message}</p>}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <CategorySelector value={category} onChange={setCategory} userId={userId} categories={allCategories} />
-        <PrioritySelector value={priority} onChange={setPriority} />
+        <Controller
+          control={control}
+          name="category"
+          render={({ field }) => (
+            <CategorySelector value={field.value} onChange={field.onChange} userId={userId} categories={allCategories} />
+          )}
+        />
+        {errors.category && <p className="text-destructive text-sm mt-1">{errors.category.message}</p>}
+
+        <Controller
+          control={control}
+          name="priority"
+          render={({ field }) => (
+            <PrioritySelector value={field.value} onChange={field.onChange} />
+          )}
+        />
+        {errors.priority && <p className="text-destructive text-sm mt-1">{errors.priority.message}</p>}
       </div>
 
       <div>
-        <SectionSelector value={sectionId} onChange={setSectionId} userId={userId} sections={sections} />
+        <Controller
+          control={control}
+          name="sectionId"
+          render={({ field }) => (
+            <SectionSelector value={field.value} onChange={field.onChange} userId={userId} sections={sections} />
+          )}
+        />
+        {errors.sectionId && <p className="text-destructive text-sm mt-1">{errors.sectionId.message}</p>}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
           <Label>Due Date</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !dueDate && "text-muted-foreground"
-                )}
-                disabled={isSaving}
-                aria-label="Select due date"
-              >
-                <Calendar className="mr-2 h-4 w-4" />
-                {dueDate ? format(dueDate, "PPP") : <span>Pick a date</span>}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <CalendarComponent
-                mode="single"
-                selected={dueDate}
-                onSelect={setDueDate}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
+          <Controller
+            control={control}
+            name="dueDate"
+            render={({ field }) => (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !field.value && "text-muted-foreground"
+                    )}
+                    disabled={isSaving}
+                    aria-label="Select due date"
+                  >
+                    <Calendar className="mr-2 h-4 w-4" />
+                    {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <CalendarComponent
+                    mode="single"
+                    selected={field.value || undefined}
+                    onSelect={field.onChange}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            )}
+          />
+          {errors.dueDate && <p className="text-destructive text-sm mt-1">{errors.dueDate.message}</p>}
         </div>
 
         <div>
           <Label>Recurring</Label>
-          <Select value={recurringType} onValueChange={(value: 'none' | 'daily' | 'weekly' | 'monthly') => setRecurringType(value)} disabled={!!initialData?.parent_task_id || isSaving}>
-            <SelectTrigger aria-label="Select recurrence type">
-              <SelectValue placeholder="Select recurrence" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">None</SelectItem>
-              <SelectItem value="daily">Daily</SelectItem>
-              <SelectItem value="weekly">Weekly</SelectItem>
-              <SelectItem value="monthly">Monthly</SelectItem>
-            </SelectContent>
-          </Select>
+          <Controller
+            control={control}
+            name="recurringType"
+            render={({ field }) => (
+              <Select value={field.value} onValueChange={field.onChange} disabled={!!initialData?.parent_task_id || isSaving}>
+                <SelectTrigger aria-label="Select recurrence type">
+                  <SelectValue placeholder="Select recurrence" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="daily">Daily</SelectItem>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
+          {errors.recurringType && <p className="text-destructive text-sm mt-1">{errors.recurringType.message}</p>}
         </div>
       </div>
 
       <div>
         <Label>Reminder</Label>
         <div className="flex gap-2">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "flex-1 justify-start text-left font-normal",
-                  !remindAt && "text-muted-foreground"
-                )}
-                disabled={isSaving}
-                aria-label="Set reminder date"
-              >
-                <BellRing className="mr-2 h-4 w-4" />
-                {remindAt ? format(remindAt, "PPP") : <span>Set reminder date</span>}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <CalendarComponent
-                mode="single"
-                selected={remindAt}
-                onSelect={setRemindAt}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
+          <Controller
+            control={control}
+            name="remindAtDate"
+            render={({ field }) => (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "flex-1 justify-start text-left font-normal",
+                      !field.value && "text-muted-foreground"
+                    )}
+                    disabled={isSaving}
+                    aria-label="Set reminder date"
+                  >
+                    <BellRing className="mr-2 h-4 w-4" />
+                    {field.value ? format(field.value, "PPP") : <span>Set reminder date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <CalendarComponent
+                    mode="single"
+                    selected={field.value || undefined}
+                    onSelect={field.onChange}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            )}
+          />
           <Input
             type="time"
-            value={reminderTime}
-            onChange={(e) => setReminderTime(e.target.value)}
+            {...register('remindAtTime')}
             className="w-24"
-            disabled={isSaving || !remindAt}
+            disabled={isSaving || !remindAtDate}
             aria-label="Set reminder time"
           />
         </div>
+        {errors.remindAtDate && <p className="text-destructive text-sm mt-1">{errors.remindAtDate.message}</p>}
+        {errors.remindAtTime && <p className="text-destructive text-sm mt-1">{errors.remindAtTime.message}</p>}
       </div>
 
       <div>
@@ -389,22 +460,22 @@ const TaskForm: React.FC<TaskFormProps> = ({
         <Textarea
           id="task-notes"
           placeholder="Add notes about this task..."
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
+          {...register('notes')}
           rows={2}
           disabled={isSaving}
         />
+        {errors.notes && <p className="text-destructive text-sm mt-1">{errors.notes.message}</p>}
       </div>
 
       <div className="flex justify-end space-x-2 mt-4">
-        <Button variant="outline" onClick={onCancel} disabled={isSaving}>
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isSaving}>
           Cancel
         </Button>
-        <Button onClick={handleSubmit} disabled={isSaving || !description.trim()}>
+        <Button type="submit" disabled={isSaving || !form.formState.isValid && form.formState.isSubmitted}>
           {isSaving ? 'Saving...' : (initialData ? 'Save Changes' : 'Add Task')}
         </Button>
       </div>
-    </div>
+    </form>
   );
 };
 

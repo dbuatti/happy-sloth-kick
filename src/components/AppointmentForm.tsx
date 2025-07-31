@@ -20,6 +20,27 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"; // Import AlertDialog components
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+
+const appointmentFormSchema = z.object({
+  title: z.string().min(1, { message: 'Title is required.' }).max(100, { message: 'Title must be 100 characters or less.' }),
+  description: z.string().max(500, { message: 'Description must be 500 characters or less.' }).nullable(),
+  date: z.date({ required_error: 'Date is required.' }),
+  startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, { message: 'Invalid start time format (HH:MM).' }),
+  endTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, { message: 'Invalid end time format (HH:MM).' }),
+  color: z.string().min(1, { message: 'Color is required.' }),
+}).refine((data) => {
+  const parsedStartTime = parse(data.startTime, 'HH:mm', data.date);
+  const parsedEndTime = parse(data.endTime, 'HH:mm', data.date);
+  return parsedStartTime < parsedEndTime;
+}, {
+  message: 'End time must be after start time.',
+  path: ['endTime'],
+});
+
+type AppointmentFormData = z.infer<typeof appointmentFormSchema>;
 
 interface AppointmentFormProps {
   isOpen: boolean;
@@ -51,87 +72,62 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   selectedDate,
   selectedTimeSlot,
 }) => {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [date, setDate] = useState<Date | undefined>(selectedDate);
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
-  const [color, setColor] = useState(presetColors[0].value);
   const [isSaving, setIsSaving] = useState(false);
   const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false); // State for delete confirmation
 
+  const form = useForm<AppointmentFormData>({
+    resolver: zodResolver(appointmentFormSchema),
+    defaultValues: {
+      title: '',
+      description: '',
+      date: selectedDate,
+      startTime: '',
+      endTime: '',
+      color: presetColors[0].value,
+    },
+  });
+
+  const { register, handleSubmit, control, reset, formState: { errors } } = form;
+
   useEffect(() => {
-    console.log('AppointmentForm useEffect triggered. isOpen:', isOpen);
     if (isOpen) {
       if (initialData) {
-        console.log('AppointmentForm: Initializing for edit with data:', initialData);
-        setTitle(initialData.title);
-        setDescription(initialData.description || '');
-        setDate(parseISO(initialData.date));
-        setStartTime(initialData.start_time.substring(0, 5)); // HH:MM
-        setEndTime(initialData.end_time.substring(0, 5));     // HH:MM
-        setColor(initialData.color);
+        reset({
+          title: initialData.title,
+          description: initialData.description || '',
+          date: parseISO(initialData.date),
+          startTime: initialData.start_time.substring(0, 5), // HH:MM
+          endTime: initialData.end_time.substring(0, 5),     // HH:MM
+          color: initialData.color,
+        });
       } else {
-        console.log('AppointmentForm: Initializing for new appointment with slot:', selectedTimeSlot);
-        setTitle('');
-        setDescription('');
-        setDate(selectedDate);
-        if (selectedTimeSlot) {
-          setStartTime(format(selectedTimeSlot.start, 'HH:mm'));
-          setEndTime(format(selectedTimeSlot.end, 'HH:mm'));
-        } else {
-          const now = new Date();
-          const defaultStartTime = format(setMinutes(setHours(now, now.getHours()), Math.floor(now.getMinutes() / 30) * 30), 'HH:mm');
-          setStartTime(defaultStartTime);
-          setEndTime(format(addMinutes(parse(defaultStartTime, 'HH:mm', now), 30), 'HH:mm'));
-        }
-        setColor(presetColors[0].value);
+        const now = new Date();
+        const defaultStartTime = format(setMinutes(setHours(now, now.getHours()), Math.floor(now.getMinutes() / 30) * 30), 'HH:mm');
+        const defaultEndTime = format(addMinutes(parse(defaultStartTime, 'HH:mm', now), 30), 'HH:mm');
+
+        reset({
+          title: '',
+          description: '',
+          date: selectedDate,
+          startTime: selectedTimeSlot ? format(selectedTimeSlot.start, 'HH:mm') : defaultStartTime,
+          endTime: selectedTimeSlot ? format(selectedTimeSlot.end, 'HH:mm') : defaultEndTime,
+          color: presetColors[0].value,
+        });
       }
     }
-  }, [isOpen, initialData, selectedDate, selectedTimeSlot]);
+  }, [isOpen, initialData, selectedDate, selectedTimeSlot, reset]);
 
-  const handleSubmit = async () => {
-    console.log('AppointmentForm: handleSubmit called');
-    if (!title.trim() || !date || !startTime || !endTime) {
-      console.log('AppointmentForm: Validation failed');
-      alert('Title, date, start time, and end time are required.');
-      return;
-    }
-
-    const parsedStartTime = parse(startTime, 'HH:mm', date);
-    const parsedEndTime = parse(endTime, 'HH:mm', date);
-
-    if (!isValid(parsedStartTime) || !isValid(parsedEndTime)) {
-      console.log('AppointmentForm: Invalid time format');
-      alert('Invalid time format. Please use HH:MM.');
-      return;
-    }
-
-    if (parsedStartTime >= parsedEndTime) {
-      console.log('AppointmentForm: End time must be after start time');
-      alert('End time must be after start time.');
-      return;
-    }
-
+  const onSubmit = async (data: AppointmentFormData) => {
     setIsSaving(true);
-    console.log('AppointmentForm: Calling onSave with data:', {
-      title: title.trim(),
-      description: description.trim() || null,
-      date: format(date, 'yyyy-MM-dd'),
-      start_time: format(parsedStartTime, 'HH:mm:ss'),
-      end_time: format(parsedEndTime, 'HH:mm:ss'),
-      color: color,
-    });
     const success = await onSave({
-      title: title.trim(),
-      description: description.trim() || null,
-      date: format(date, 'yyyy-MM-dd'),
-      start_time: format(parsedStartTime, 'HH:mm:ss'),
-      end_time: format(parsedEndTime, 'HH:mm:ss'),
-      color: color,
+      title: data.title.trim(),
+      description: data.description?.trim() || null,
+      date: format(data.date, 'yyyy-MM-dd'),
+      start_time: format(parse(data.startTime, 'HH:mm', data.date), 'HH:mm:ss'),
+      end_time: format(parse(data.endTime, 'HH:mm', data.date), 'HH:mm:ss'),
+      color: data.color,
     });
     setIsSaving(false);
-    console.log('AppointmentForm: onSave returned:', success);
     if (success) {
       onClose();
     }
@@ -157,77 +153,91 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
         <DialogHeader>
           <DialogTitle>{initialData ? 'Edit Appointment' : 'Add New Appointment'}</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="title">Title</Label>
             <Input
               id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              {...register('title')}
               placeholder="Appointment Title"
-              required
               disabled={isSaving}
               autoFocus
             />
+            {errors.title && <p className="text-destructive text-sm mt-1">{errors.title.message}</p>}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="description">Description (Optional)</Label>
             <Textarea
               id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              {...register('description')}
               placeholder="Details about the appointment..."
               rows={2}
               disabled={isSaving}
             />
+            {errors.description && <p className="text-destructive text-sm mt-1">{errors.description.message}</p>}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !date && "text-muted-foreground"
-                    )}
-                    disabled={isSaving}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date ? format(date, "PPP") : <span>Pick a date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <CalendarComponent
-                    mode="single"
-                    selected={date}
-                    onSelect={setDate}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+              <Controller
+                control={control}
+                name="date"
+                render={({ field }) => (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !field.value && "text-muted-foreground"
+                        )}
+                        disabled={isSaving}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <CalendarComponent
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                )}
+              />
+              {errors.date && <p className="text-destructive text-sm mt-1">{errors.date.message}</p>}
             </div>
             <div className="space-y-2">
               <Label>Color</Label>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {presetColors.map((c) => (
-                  <button
-                    key={c.value}
-                    className={cn(
-                      "w-8 h-8 rounded-full border-2 border-transparent transition-all duration-200",
-                      c.class,
-                      color === c.value && "ring-2 ring-offset-2 ring-primary"
-                    )}
-                    style={{ backgroundColor: c.value }}
-                    onClick={() => setColor(c.value)}
-                    aria-label={c.name}
-                    disabled={isSaving}
-                  />
-                ))}
-              </div>
+              <Controller
+                control={control}
+                name="color"
+                render={({ field }) => (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {presetColors.map((c) => (
+                      <button
+                        key={c.value}
+                        type="button"
+                        className={cn(
+                          "w-8 h-8 rounded-full border-2 border-transparent transition-all duration-200",
+                          c.class,
+                          field.value === c.value && "ring-2 ring-offset-2 ring-primary"
+                        )}
+                        style={{ backgroundColor: c.value }}
+                        onClick={() => field.onChange(c.value)}
+                        aria-label={c.name}
+                        disabled={isSaving}
+                      />
+                    ))}
+                  </div>
+                )}
+              />
+              {errors.color && <p className="text-destructive text-sm mt-1">{errors.color.message}</p>}
             </div>
           </div>
 
@@ -237,40 +247,38 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
               <Input
                 id="start-time"
                 type="time"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                required
+                {...register('startTime')}
                 disabled={isSaving}
               />
+              {errors.startTime && <p className="text-destructive text-sm mt-1">{errors.startTime.message}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="end-time">End Time</Label>
             <Input
                 id="end-time"
                 type="time"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                required
+                {...register('endTime')}
                 disabled={isSaving}
               />
+              {errors.endTime && <p className="text-destructive text-sm mt-1">{errors.endTime.message}</p>}
             </div>
           </div>
-        </div>
-        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2 pt-4">
-          {initialData && ( // Only show delete button if editing an existing appointment
-            <Button variant="destructive" onClick={handleDeleteClick} disabled={isSaving} className="w-full sm:w-auto mt-2 sm:mt-0">
-              <Trash2 className="mr-2 h-4 w-4" /> Delete Appointment
-            </Button>
-          )}
-          <div className="flex space-x-2 w-full sm:w-auto">
-            <Button variant="outline" onClick={onClose} disabled={isSaving} className="flex-1">
-              Cancel
-            </Button>
-            <Button onClick={handleSubmit} disabled={isSaving} className="flex-1">
-              {isSaving ? 'Saving...' : 'Save Appointment'}
-            </Button>
-          </div>
-        </DialogFooter>
+          <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2 pt-4">
+            {initialData && ( // Only show delete button if editing an existing appointment
+              <Button type="button" variant="destructive" onClick={handleDeleteClick} disabled={isSaving} className="w-full sm:w-auto mt-2 sm:mt-0">
+                <Trash2 className="mr-2 h-4 w-4" /> Delete Appointment
+              </Button>
+            )}
+            <div className="flex space-x-2 w-full sm:w-auto">
+              <Button type="button" variant="outline" onClick={onClose} disabled={isSaving} className="flex-1">
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSaving} className="flex-1">
+                {isSaving ? 'Saving...' : 'Save Appointment'}
+              </Button>
+            </div>
+          </DialogFooter>
+        </form>
       </DialogContent>
 
       {/* Delete Appointment Confirmation Dialog */}
