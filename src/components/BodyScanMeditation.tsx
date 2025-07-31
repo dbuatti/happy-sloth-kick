@@ -153,7 +153,7 @@ const BodyScanMeditation: React.FC = () => {
                   "bg-primary"
                 )}
               />
-              <div className="relative z-10 text-5xl font-bold text-foreground">
+              <div className="relative z-10 text-5xl font-bold text-primary-foreground"> {/* Changed text-foreground to text-primary-foreground */}
                 {formatTime(timeRemainingInStep)}
               </div>
             </div>

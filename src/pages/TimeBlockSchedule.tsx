@@ -264,7 +264,7 @@ const TimeBlockSchedule: React.FC = () => {
                 <p className="text-sm">Please check your work hour settings. Ensure your start time is before your end time.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-[60px_1fr] sm:grid-cols-[80px_1fr] gap-x-2">
+              <div className="grid grid-cols-[min-content_1fr] sm:grid-cols-[80px_1fr] gap-x-2"> {/* Changed grid-cols-[60px_1fr] to grid-cols-[min-content_1fr] */}
                 <div className="grid" style={{
                   gridTemplateRows: `repeat(${timeBlocks.length}, ${rowHeight}px)`,
                   height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`,

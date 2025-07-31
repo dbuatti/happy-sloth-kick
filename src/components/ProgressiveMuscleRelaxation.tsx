@@ -194,7 +194,7 @@ const ProgressiveMuscleRelaxation: React.FC = () => {
                   isTensingPhase ? "bg-destructive" : "bg-primary"
                 )}
               />
-              <div className="relative z-10 text-5xl font-bold text-foreground">
+              <div className="relative z-10 text-5xl font-bold text-primary-foreground"> {/* Changed text-foreground to text-primary-foreground */}
                 {formatTime(timeRemainingInPhase)}
               </div>
             </div>

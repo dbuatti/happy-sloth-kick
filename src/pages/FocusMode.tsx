@@ -153,7 +153,7 @@ const FocusMode: React.FC = () => {
                       isFocusPhase ? "bg-green-500" : "bg-blue-500"
                     )}
                   />
-                  <div className="relative z-10 text-6xl font-bold text-foreground">
+                  <div className="relative z-10 text-6xl font-bold text-primary-foreground"> {/* Changed text-foreground to text-primary-foreground */}
                     {formatTime(timeRemaining)}
                   </div>
                 </div>
