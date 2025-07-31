@@ -15,15 +15,15 @@ interface SidebarProps {
 }
 
 const navItems = [
-  { name: 'Daily Tasks', path: '/', icon: Home, showCount: true },
-  { name: 'Daily Flow Prototype', path: '/daily-flow-prototype', icon: Sparkles }, // New prototype link
+  { name: 'Daily Tasks', path: '/daily-tasks', icon: Home, showCount: true }, // Updated path
+  { name: 'Daily Flow Prototype', path: '/daily-flow-prototype', icon: Sparkles },
   { name: 'Focus Mode', path: '/focus', icon: Target },
   { name: 'Mindfulness', path: '/mindfulness', icon: Brain },
   { name: 'Meditation', path: '/meditation', icon: Leaf },
   { name: 'Sleep Tracker', path: '/sleep', icon: Moon },
   { name: 'Project Balance', path: '/projects', icon: LayoutGrid },
   { name: 'Time Blocks', path: '/schedule', icon: CalendarClock },
-  { name: 'My Hub', path: '/my-hub', icon: LayoutDashboard }, // New consolidated page
+  { name: 'My Hub', path: '/my-hub', icon: LayoutDashboard },
   { name: 'Help', path: '/help', icon: HelpCircle },
 ];
 
