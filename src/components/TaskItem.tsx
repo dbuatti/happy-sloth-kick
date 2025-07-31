@@ -68,7 +68,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   };
 
   const isOverdue = task.due_date && task.status !== 'completed' && dateFns.isBefore(dateFns.parseISO(task.due_date) as Date, currentRefDate as Date) && !dateFns.isSameDay(dateFns.parseISO(task.due_date) as Date, currentRefDate as Date);
-  const isUpcoming = task.due_date && task.status !== 'completed' && dateFns.isSameDay(dateFns.parseISO(task.due_date) as Date, currentRefDate as Date);
+  const isDueToday = task.due_date && task.status !== 'completed' && dateFns.isSameDay(dateFns.parseISO(task.due_date) as Date, currentRefDate as Date);
 
   const categoryColorProps = getCategoryColorProps(task.category_color);
 
@@ -97,8 +97,11 @@ const TaskItem: React.FC<TaskItemProps> = ({
   return (
     <div
       className={cn(
-        "relative flex items-start space-x-3 w-full",
+        "relative flex items-start space-x-3 w-full p-3 rounded-lg", // Added padding and rounded corners
         task.status === 'completed' ? "opacity-70 bg-green-50/20 dark:bg-green-900/20" : "",
+        isOverdue ? "border-l-4 border-status-overdue" :
+        isDueToday ? "border-l-4 border-status-due-today" :
+        "border-l-4 border-transparent" // Default transparent border
       )}
     >
       <Checkbox
@@ -107,14 +110,14 @@ const TaskItem: React.FC<TaskItemProps> = ({
         onCheckedChange={handleCheckboxChange}
         id={`task-${task.id}`}
         onClick={(e) => e.stopPropagation()}
-        className="flex-shrink-0 h-4 w-4 mt-1"
+        className="flex-shrink-0 h-5 w-5 mt-0.5" // Slightly larger checkbox
         data-no-dnd="true"
       />
 
       <div 
-        className="flex-1 min-w-0 cursor-pointer py-1" // Added py-1 for better click area
+        className="flex-1 min-w-0 cursor-pointer py-1"
         onClick={() => onEditTask(task)}
-        data-no-dnd="true" // Ensure this area doesn't initiate drag
+        data-no-dnd="true"
       >
         <Tooltip>
           <TooltipTrigger asChild>
@@ -123,8 +126,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
               className={cn(
                 "text-base font-medium leading-tight line-clamp-2",
                 task.status === 'completed' ? 'line-through text-muted-foreground' : 'text-foreground',
-                isOverdue && "text-status-overdue",
-                isUpcoming && "text-status-due-today",
                 "block"
               )}
             >
@@ -136,7 +137,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           </TooltipContent>
         </Tooltip>
 
-        <div className="flex flex-wrap items-center text-xs text-muted-foreground mt-1 gap-x-2">
+        <div className="flex flex-wrap items-center text-xs text-muted-foreground mt-1 gap-x-2 gap-y-1"> {/* Added gap-y for better wrapping */}
           <div className={cn("w-3 h-3 rounded-full flex items-center justify-center border", categoryColorProps.backgroundClass, categoryColorProps.dotBorder)}>
             <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: categoryColorProps.dotColor }}></div>
           </div>
@@ -157,7 +158,11 @@ const TaskItem: React.FC<TaskItemProps> = ({
             </Tooltip>
           )}
           {task.due_date && (
-            <span className="flex items-center gap-1">
+            <span className={cn(
+              "flex items-center gap-1",
+              isOverdue && "text-status-overdue font-semibold", // Highlight overdue
+              isDueToday && "text-status-due-today font-semibold" // Highlight due today
+            )}>
               <Calendar className="h-3 w-3" />
               {getDueDateDisplay(task.due_date)}
             </span>
@@ -182,7 +187,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
         </div>
       )}
 
-      <div className="flex-shrink-0 flex items-center space-x-1"> {/* Removed opacity-0 group-hover:opacity-100 */}
+      <div className="flex-shrink-0 flex items-center space-x-1">
         {task.status === 'completed' && (
           <Button 
             variant="outline" 
@@ -195,7 +200,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
             <ListTodo className="h-3 w-3 mr-1" /> To-Do
           </Button>
         )}
-        {/* Removed direct Edit button */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button 
@@ -210,7 +214,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" data-no-dnd="true">
-            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onEditTask(task); }}> {/* Moved Edit to dropdown */}
+            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onEditTask(task); }}>
               <Edit className="mr-2 h-4 w-4" /> Edit Task
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onStatusChange(task.id, 'to-do'); playSound('success'); }}>
