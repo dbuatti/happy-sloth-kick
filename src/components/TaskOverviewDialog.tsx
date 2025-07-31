@@ -59,7 +59,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
       case 'urgent': return 'text-priority-urgent';
       case 'high': return 'text-priority-high';
       case 'medium': return 'text-priority-medium';
-      case 'low': return 'text-priority-low';
+      case 'low': return 'text-muted-foreground'; // Changed to muted-foreground for low priority
       default: return 'text-muted-foreground';
     }
   };
@@ -221,14 +221,9 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
               <><CheckCircle2 className="mr-2 h-4 w-4" /> Mark Complete</>
             )}
           </Button>
-          <div className="flex space-x-2 w-full sm:w-auto">
-            <Button type="button" variant="outline" onClick={() => onEditClick(task)} className="flex-1">
-              <Edit className="mr-2 h-4 w-4" /> Edit Task
-            </Button>
-            <Button variant="destructive" onClick={handleDeleteClick} disabled={isUpdatingStatus} className="flex-1">
-              <Trash2 className="mr-2 h-4 w-4" /> Delete
-            </Button>
-          </div>
+          <Button variant="destructive" onClick={handleDeleteClick} disabled={isUpdatingStatus} className="w-full sm:w-auto mt-2 sm:mt-0">
+            <Trash2 className="mr-2 h-4 w-4" /> Delete
+          </Button>
         </DialogFooter>
       </DialogContent>
 

@@ -25,7 +25,7 @@ export interface Task {
   order: number | null;
   original_task_id: string | null;
   parent_task_id: string | null;
-  link: string | null;
+  link: string | null; // Added link field
 }
 
 export interface TaskSection {
@@ -52,12 +52,12 @@ interface NewTaskData {
   recurring_type?: 'none' | 'daily' | 'weekly' | 'monthly';
   category: string;
   priority?: string;
-  due_date?: string | null; // Changed from Date | null to string | null
+  due_date?: string | null;
   notes?: string | null;
-  remind_at?: string | null; // Changed from Date | null to string | null
+  remind_at?: string | null;
   section_id?: string | null;
   parent_task_id?: string | null;
-  link?: string | null;
+  link?: string | null; // Added link field
 }
 
 const getInitialFilter = (key: string, defaultValue: string) => {
@@ -289,7 +289,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       order: templateTask.order,
       original_task_id: rootOriginalTaskId,
       parent_task_id: null,
-      link: templateTask.link,
+      link: templateTask.link, // Include link
     };
 
     const { data, error: insertError } = await supabase
@@ -814,7 +814,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       remind_at: task.remind_at,
       section_id: task.section_id,
       parent_task_id: task.parent_task_id,
-      link: task.link,
+      link: task.link, // Include link
       order: index,
       user_id: userId,
     }));
@@ -884,7 +884,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       remind_at: task.remind_at,
       section_id: task.section_id,
       parent_task_id: task.parent_task_id,
-      link: task.link,
+      link: task.link, // Include link
       order: index,
       user_id: userId,
     }));
@@ -914,7 +914,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       remind_at: task.remind_at,
       section_id: newSectionId,
       parent_task_id: task.parent_task_id,
-      link: task.link,
+      link: task.link, // Include link
       order: index,
       user_id: userId,
     }));
@@ -1068,7 +1068,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       remind_at: task.remind_at,
       section_id: task.section_id,
       parent_task_id: task.parent_task_id,
-      link: task.link,
+      link: task.link, // Include link
       order: index,
       user_id: userId,
     }));
