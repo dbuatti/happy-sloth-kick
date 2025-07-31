@@ -16,7 +16,7 @@ interface SidebarProps {
 
 const navItems = [
   { name: 'Daily Tasks', path: '/daily-tasks', icon: Home, showCount: true }, // Updated path
-  { name: 'Daily Flow Prototype', path: '/daily-flow-prototype', icon: Sparkles },
+  // { name: 'Daily Flow Prototype', path: '/daily-flow-prototype', icon: Sparkles }, Removed
   { name: 'Focus Mode', path: '/focus', icon: Target },
   { name: 'Mindfulness', path: '/mindfulness', icon: Brain },
   { name: 'Meditation', path: '/meditation', icon: Leaf },

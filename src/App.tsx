@@ -11,7 +11,6 @@ import Meditation from "./pages/Meditation";
 import SleepTracker from "./pages/SleepTracker";
 import MindfulnessTools from "./pages/MindfulnessTools";
 import FocusMode from "./pages/FocusMode";
-import DailyFlowPrototype from "./pages/DailyFlowPrototype";
 import LandingPage from "./pages/LandingPage";
 import DailyTasksV2 from "./pages/DailyTasksV2"; // Import the new V2 page
 import { AuthProvider, useAuth } from "@/context/AuthContext";
@@ -68,7 +67,7 @@ const AppContent = () => {
             <Route path="/sleep" element={<SleepTracker />} />
             <Route path="/mindfulness" element={<MindfulnessTools />} />
             <Route path="/focus" element={<FocusMode />} />
-            <Route path="/daily-flow-prototype" element={<DailyFlowPrototype />} />
+            {/* <Route path="/daily-flow-prototype" element={<DailyFlowPrototype />} /> Removed */}
             <Route path="/auth" element={<AuthComponent />} />
             
             {/* New routes for dedicated mindfulness tools */}
