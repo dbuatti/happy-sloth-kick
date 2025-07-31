@@ -5,14 +5,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar, BellRing, Lightbulb, Link } from 'lucide-react'; // Added Link icon
+import { Calendar, BellRing, Lightbulb, Link } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import CategorySelector from "./CategorySelector";
 import PrioritySelector from "./PrioritySelector";
 import SectionSelector from "./SectionSelector";
-import { format, setHours, setMinutes, parse, addDays, addWeeks, addMonths, startOfDay, parseISO } from 'date-fns'; // Added parseISO
+import { format, setHours, setMinutes, parse, addDays, addWeeks, addMonths, startOfDay, parseISO } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Task, TaskSection, Category } from '@/hooks/useTasks'; // Import Task, TaskSection, Category types
+import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -28,7 +28,26 @@ const taskFormSchema = z.object({
   sectionId: z.string().nullable().optional(),
   recurringType: z.enum(['none', 'daily', 'weekly', 'monthly']),
   parentTaskId: z.string().nullable().optional(),
-  link: z.string().url({ message: 'Must be a valid URL.' }).or(z.literal('')).nullable().optional(), // Adjusted schema for robustness
+  link: z.string().nullable().optional().transform((val) => {
+    if (!val) return null;
+    let processedVal = val.trim();
+    if (processedVal === '') return null;
+
+    // If it doesn't start with http:// or https://, prepend https://
+    if (!/^https?:\/\//i.test(processedVal)) {
+      processedVal = `https://${processedVal}`;
+    }
+    return processedVal;
+  }).refine((val) => {
+    // Only validate if not null
+    if (val === null) return true;
+    try {
+      new URL(val); // Attempt to create a URL object
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }, { message: 'Must be a valid URL format (e.g., example.com or https://example.com).' }),
 }).refine((data) => {
   if (data.remindAtDate && !data.remindAtTime) {
     return false; // If date is set, time must also be set
@@ -42,7 +61,7 @@ const taskFormSchema = z.object({
 type TaskFormData = z.infer<typeof taskFormSchema>;
 
 interface TaskFormProps {
-  initialData?: Task | null; // Optional: for editing an existing task
+  initialData?: Task | null;
   onSave: (taskData: {
     description: string;
     category: string;
@@ -53,7 +72,7 @@ interface TaskFormProps {
     section_id: string | null;
     recurring_type: 'none' | 'daily' | 'weekly' | 'monthly';
     parent_task_id: string | null;
-    link: string | null; // Added link
+    link: string | null;
   }) => Promise<any>;
   onCancel: () => void;
   userId: string | null;
@@ -61,10 +80,9 @@ interface TaskFormProps {
   allCategories: Category[];
   autoFocus?: boolean;
   preselectedSectionId?: string | null;
-  parentTaskId?: string | null; // For sub-tasks
+  parentTaskId?: string | null;
 }
 
-// Helper function for natural language parsing
 const parseNaturalLanguage = (text: string, categories: Category[]) => {
   let dueDate: Date | undefined = undefined;
   let remindAt: Date | undefined = undefined;
@@ -72,7 +90,6 @@ const parseNaturalLanguage = (text: string, categories: Category[]) => {
   let categoryId: string | undefined = undefined;
   let tempDescription = text;
 
-  // Priority detection
   const priorityKeywords = {
     'urgent': 'urgent', 'critical': 'urgent',
     'high': 'high', 'important': 'high',
@@ -88,7 +105,6 @@ const parseNaturalLanguage = (text: string, categories: Category[]) => {
     }
   }
 
-  // Category detection
   for (const category of categories) {
     const regex = new RegExp(`\\b${category.name.toLowerCase()}\\b`, 'i');
     if (regex.test(tempDescription)) {
@@ -98,7 +114,6 @@ const parseNaturalLanguage = (text: string, categories: Category[]) => {
     }
   }
 
-  // Date detection
   const today = startOfDay(new Date());
   if (/\btoday\b/i.test(tempDescription)) {
     dueDate = today;
@@ -134,7 +149,6 @@ const parseNaturalLanguage = (text: string, categories: Category[]) => {
     }
   }
 
-  // Time detection for reminder
   const timeRegex = /(at|by)\s*(\d{1,2}(:\d{2})?\s*(am|pm)?)/i;
   const timeMatch = tempDescription.match(timeRegex);
   let reminderTimeStr: string | undefined = undefined;
@@ -194,7 +208,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
       sectionId: preselectedSectionId,
       recurringType: 'none',
       parentTaskId: parentTaskId,
-      link: '', // Default for new task
+      link: '',
     },
   });
 
@@ -204,7 +218,6 @@ const TaskForm: React.FC<TaskFormProps> = ({
   const remindAtDate = watch('remindAtDate');
   const recurringType = watch('recurringType');
 
-  // Set initial data for editing or defaults for new task
   useEffect(() => {
     if (initialData) {
       reset({
@@ -218,10 +231,9 @@ const TaskForm: React.FC<TaskFormProps> = ({
         sectionId: initialData.section_id,
         recurringType: initialData.recurring_type,
         parentTaskId: initialData.parent_task_id,
-        link: initialData.link || '', // Set initial link
+        link: initialData.link || '',
       });
     } else {
-      // Defaults for new task
       const generalCategory = allCategories.find(cat => cat.name.toLowerCase() === 'general');
       reset({
         description: '',
@@ -234,7 +246,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
         sectionId: preselectedSectionId,
         recurringType: 'none',
         parentTaskId: parentTaskId,
-        link: '', // Default for new task
+        link: '',
       });
     }
   }, [initialData, preselectedSectionId, parentTaskId, allCategories, reset]);
@@ -283,17 +295,17 @@ const TaskForm: React.FC<TaskFormProps> = ({
       section_id: data.sectionId,
       recurring_type: data.recurringType,
       parent_task_id: data.parentTaskId,
-      link: data.link || null, // Pass link to onSave
+      link: data.link || null,
     });
     setIsSaving(false);
     if (success) {
-      onCancel(); // Close form on successful save
+      onCancel();
     }
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey && description.trim()) {
-      event.preventDefault(); // Prevent new line in textarea
+      event.preventDefault();
       handleSubmit(onSubmit)();
     }
   };

@@ -33,6 +33,18 @@ const getInitialSortOption = (): ProjectSortOption => {
   return 'created_at_asc'; // Default value
 };
 
+// Helper function to normalize URLs
+const normalizeUrl = (url: string | null): string | null => {
+  if (!url) return null;
+  let processedUrl = url.trim();
+  if (processedUrl === '') return null;
+  // If it doesn't start with http:// or https://, prepend https://
+  if (!/^https?:\/\//i.test(processedUrl)) {
+    processedUrl = `https://${processedUrl}`;
+  }
+  return processedUrl;
+};
+
 export const useProjects = () => {
   const { user } = useAuth();
   const userId = user?.id;
@@ -130,7 +142,7 @@ export const useProjects = () => {
     try {
       const { data, error } = await supabase
         .from('projects')
-        .insert({ user_id: userId, name, description, current_count: 0, link })
+        .insert({ user_id: userId, name, description, current_count: 0, link: normalizeUrl(link) })
         .select()
         .single();
 
@@ -152,9 +164,14 @@ export const useProjects = () => {
       return false;
     }
     try {
+      const updatesToSend = { ...updates };
+      if (updatesToSend.link !== undefined) {
+        updatesToSend.link = normalizeUrl(updatesToSend.link);
+      }
+
       const { data, error } = await supabase
         .from('projects')
-        .update(updates)
+        .update(updatesToSend)
         .eq('id', projectId)
         .eq('user_id', userId)
         .select()
