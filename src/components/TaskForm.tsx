@@ -28,7 +28,7 @@ const taskFormSchema = z.object({
   sectionId: z.string().nullable().optional(),
   recurringType: z.enum(['none', 'daily', 'weekly', 'monthly']),
   parentTaskId: z.string().nullable().optional(),
-  link: z.string().url({ message: 'Must be a valid URL.' }).nullable().optional().or(z.literal('')), // Added link field
+  link: z.string().url({ message: 'Must be a valid URL.' }).or(z.literal('')).nullable().optional(), // Adjusted schema for robustness
 }).refine((data) => {
   if (data.remindAtDate && !data.remindAtTime) {
     return false; // If date is set, time must also be set
