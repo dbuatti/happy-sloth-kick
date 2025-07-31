@@ -104,11 +104,10 @@ const getAnalyticsData = async (startDate: Date, endDate: Date, userId: string) 
 };
 
 interface AnalyticsProps {
-  currentDate: Date;
-  setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
+  // Removed unused props: currentDate, setCurrentDate
 }
 
-const Analytics: React.FC<AnalyticsProps> = ({ currentDate, setCurrentDate }) => {
+const Analytics: React.FC<AnalyticsProps> = () => { // Removed props from here
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: startOfMonth(new Date()),
     to: new Date(),

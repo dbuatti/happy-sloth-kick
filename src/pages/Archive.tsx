@@ -9,11 +9,10 @@ import TaskDetailDialog from '@/components/TaskDetailDialog';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface ArchiveProps {
-  currentDate: Date;
-  setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
+  // Removed unused props: currentDate, setCurrentDate
 }
 
-const Archive: React.FC<ArchiveProps> = ({ currentDate, setCurrentDate }) => {
+const Archive: React.FC<ArchiveProps> = () => { // Removed props from here
   const {
     filteredTasks, 
     loading,
@@ -71,7 +70,7 @@ const Archive: React.FC<ArchiveProps> = ({ currentDate, setCurrentDate }) => {
                       onToggleSelect={() => {}}
                       sections={sections}
                       onEditTask={handleEditTask}
-                      currentDate={currentDate}
+                      currentDate={new Date()} // Pass current date if needed for task dialog
                       onMoveUp={async () => {}}
                       onMoveDown={async () => {}}
                     />
@@ -93,8 +92,6 @@ const Archive: React.FC<ArchiveProps> = ({ currentDate, setCurrentDate }) => {
           onClose={() => setIsTaskDetailOpen(false)}
           onUpdate={updateTask}
           onDelete={deleteTask}
-          currentDate={currentDate}
-          setCurrentDate={setCurrentDate}
         />
       )}
     </div>

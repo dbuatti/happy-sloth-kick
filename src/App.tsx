@@ -51,7 +51,6 @@ const AppContent = () => {
   const handlePreviousDay = () => {
     setCurrentDate(prevDate => {
       const newDate = getUTCStartOfDay(addDays(prevDate, -1));
-      console.log('Index.tsx: Navigating to previous day. New currentDate:', newDate.toISOString());
       return newDate;
     });
   };
@@ -59,14 +58,12 @@ const AppContent = () => {
   const handleNextDay = () => {
     setCurrentDate(prevDate => {
       const newDate = getUTCStartOfDay(addDays(prevDate, 1));
-      console.log('Index.tsx: Navigating to next day. New currentDate:', newDate.toISOString());
       return newDate;
     });
   };
 
   const handleGoToToday = () => {
     const today = getUTCStartOfDay(new Date());
-    console.log('Index.tsx: Navigating to today. New currentDate:', today.toISOString());
     setCurrentDate(today);
   };
 
@@ -140,16 +137,14 @@ const AppContent = () => {
                     onClose={() => setIsTaskDetailOpen(false)}
                     onUpdate={updateTask}
                     onDelete={deleteTask}
-                    currentDate={currentDate}
-                    setCurrentDate={setCurrentDate}
                   />
                 )}
               </>
             } />
-            <Route path="/analytics" element={<Analytics currentDate={currentDate} setCurrentDate={setCurrentDate} />} />
+            <Route path="/analytics" element={<Analytics />} /> {/* Removed props */}
             <Route path="/settings" element={<Settings />} />
             <Route path="/help" element={<Help />} />
-            <Route path="/archive" element={<Archive currentDate={currentDate} setCurrentDate={setCurrentDate} />} />
+            <Route path="/archive" element={<Archive />} /> {/* Removed props */}
             <Route path="/projects" element={<ProjectBalanceTracker />} />
             <Route path="/schedule" element={<TimeBlockSchedule />} />
             <Route path="/meditation" element={<Meditation />} />

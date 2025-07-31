@@ -569,8 +569,6 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
           onClose={() => setIsTaskDetail(false)}
           onUpdate={updateTask}
           onDelete={deleteTask}
-          currentDate={currentDate}
-          setCurrentDate={setCurrentDate}
         />
       )}
 

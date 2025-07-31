@@ -27,8 +27,7 @@ interface TaskDetailDialogProps {
   onClose: () => void;
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<void>;
   onDelete: (taskId: string) => void;
-  currentDate: Date;
-  setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
+  // Removed unused props: currentDate, setCurrentDate
 }
 
 const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
@@ -38,10 +37,9 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   onClose,
   onUpdate,
   onDelete,
-  currentDate,
-  setCurrentDate,
+  // Removed unused props from here
 }) => {
-  const { sections, tasks: allTasks, handleAddTask, updateTask: updateSubtask, allCategories } = useTasks({ currentDate, setCurrentDate });
+  const { sections, tasks: allTasks, handleAddTask, updateTask: updateSubtask, allCategories, currentDate, setCurrentDate } = useTasks(); // Get currentDate from useTasks
   const { playSound } = useSound();
   const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
   const [isSaving, setIsSaving] = useState(false); // To manage saving state for main task form
