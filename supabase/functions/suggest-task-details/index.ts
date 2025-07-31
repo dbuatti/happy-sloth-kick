@@ -42,6 +42,8 @@ serve(async (req) => {
     
     Today's date is ${currentDate} (${dayOfWeek}).
     
+    IMPORTANT: If a relative date or day of the week (e.g., "tomorrow", "next Tuesday", "in 3 days", "next week", "Friday") is mentioned, you MUST calculate the exact 'YYYY-MM-DD' date based on Today's date and provide it in 'dueDate' or 'remindAt'. If no date is mentioned, leave null.
+
     Extract:
     - 'category': The most relevant category from the provided list. If no clear category, default to 'General'.
     - 'priority': 'low', 'medium', 'high', or 'urgent'. Default to 'medium'.
