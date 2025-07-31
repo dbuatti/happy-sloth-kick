@@ -96,7 +96,7 @@ export const ReminderProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       console.log(`[ReminderContext] dismissReminder: Removing reminder from active list for ${taskId}.`);
       return prev.filter(r => r.id !== taskId);
     });
-  }, []); // Dependencies: None, as it uses functional update for state and stable imports.
+  }, []); // Dependencies: [] - This is good, `dismissReminder` is stable.
 
   const snoozeReminder = useCallback((taskId: string, minutes: number = 5) => { // Added default minutes
     console.log(`[ReminderContext] snoozeReminder: Called for task ID: ${taskId}, minutes: ${minutes}`);
@@ -160,14 +160,18 @@ export const ReminderProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const clearAllReminders = useCallback(() => {
     console.log('[ReminderContext] clearAllReminders: Clearing all active reminders.');
-    activeReminders.forEach(r => {
-      if (r.toastId) dismissToast(r.toastId);
+    // Capture current active reminders to dismiss their toasts
+    setActiveReminders(prevReminders => {
+      prevReminders.forEach(r => {
+        if (r.toastId) dismissToast(r.toastId);
+      });
+      return []; // Set state to empty array
     });
+    // Clear all pending timeouts
     reminderQueueRef.current.forEach(timeoutId => clearTimeout(timeoutId));
     reminderQueueRef.current = [];
-    setActiveReminders([]);
     console.log('[ReminderContext] All reminders cleared.');
-  }, [activeReminders]); // activeReminders is a dependency here, which is fine.
+  }, []); // No dependencies needed here.
 
   // Cleanup timeouts on unmount
   useEffect(() => {
