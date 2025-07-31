@@ -157,8 +157,11 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
             )}
             {task.link && (
               <div className="flex items-center gap-2 col-span-2">
-                <LinkIcon className="h-4 w-4 text-muted-foreground" />
-                <span>Link: <a href={task.link} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline truncate max-w-[calc(100%-60px)] inline-block">{task.link}</a></span>
+                <LinkIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <span className="flex-shrink-0">Link:</span>
+                <a href={task.link} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline flex-1 min-w-0 truncate">
+                  {task.link}
+                </a>
               </div>
             )}
           </div>
