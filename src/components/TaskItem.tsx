@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing, FolderOpen, Repeat, ListTodo, CheckCircle2, ArrowUp, ArrowDown } from 'lucide-react';
+import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing, FolderOpen, Repeat, ListTodo, CheckCircle2, ArrowUp, ArrowDown, Link } from 'lucide-react'; // Added Link icon
 import * as dateFns from 'date-fns';
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
@@ -174,9 +174,36 @@ const TaskItem: React.FC<TaskItemProps> = ({
             </span>
           )}
           {task.notes && (
-            <span className="flex items-center gap-1">
-              <StickyNote className="h-3 w-3" />
-            </span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="flex items-center gap-1">
+                  <StickyNote className="h-3 w-3" />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p className="font-semibold">Notes:</p>
+                <p className="text-sm">{task.notes}</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+          {task.link && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <a 
+                  href={task.link} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="flex items-center gap-1 text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-500"
+                  onClick={(e) => e.stopPropagation()} // Prevent opening task detail dialog
+                >
+                  <Link className="h-3 w-3" />
+                </a>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p className="font-semibold">Link:</p>
+                <p className="text-sm truncate">{task.link}</p>
+              </TooltipContent>
+            </Tooltip>
           )}
         </div>
       </div>

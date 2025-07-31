@@ -25,6 +25,7 @@ export interface Task {
   order: number | null;
   original_task_id: string | null;
   parent_task_id: string | null;
+  link: string | null; // Added link field
 }
 
 export interface TaskSection {
@@ -56,6 +57,7 @@ interface NewTaskData {
   remind_at?: Date | null;
   section_id?: string | null;
   parent_task_id?: string | null;
+  link?: string | null; // Added link field
 }
 
 const getInitialFilter = (key: string, defaultValue: string) => {
@@ -216,6 +218,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
               section_id: task.section_id,
               parent_task_id: task.parent_task_id,
               original_task_id: task.original_task_id,
+              link: task.link, // Include link
               order: index,
               user_id: userId,
             };
@@ -285,6 +288,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       order: templateTask.order,
       original_task_id: rootOriginalTaskId,
       parent_task_id: null,
+      link: templateTask.link, // Include link
     };
 
     const { data, error: insertError } = await supabase
@@ -444,6 +448,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         original_task_id: null,
         parent_task_id: newTaskData.parent_task_id || null,
         description: newTaskData.description,
+        link: newTaskData.link || null, // Include link
       };
       setTasks(prev => [...prev, newTask]);
 
@@ -463,6 +468,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         original_task_id: newTask.original_task_id,
         parent_task_id: newTask.parent_task_id,
         description: newTask.description,
+        link: newTask.link, // Include link
       };
 
       const { data, error } = await supabase
@@ -795,6 +801,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       remind_at: task.remind_at,
       section_id: task.section_id,
       parent_task_id: task.parent_task_id,
+      link: task.link, // Include link
       order: index,
       user_id: userId,
     }));
@@ -864,6 +871,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       remind_at: task.remind_at,
       section_id: task.section_id,
       parent_task_id: task.parent_task_id,
+      link: task.link, // Include link
       order: index,
       user_id: userId,
     }));
@@ -893,6 +901,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       remind_at: task.remind_at,
       section_id: newSectionId,
       parent_task_id: task.parent_task_id,
+      link: task.link, // Include link
       order: index,
       user_id: userId,
     }));
@@ -1046,6 +1055,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       remind_at: task.remind_at,
       section_id: task.section_id,
       parent_task_id: task.parent_task_id,
+      link: task.link, // Include link
       order: index,
       user_id: userId,
     }));

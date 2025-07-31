@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar, BellRing, Lightbulb } from 'lucide-react';
+import { Calendar, BellRing, Lightbulb, Link } from 'lucide-react'; // Added Link icon
 import { cn } from "@/lib/utils";
 import CategorySelector from "./CategorySelector";
 import PrioritySelector from "./PrioritySelector";
@@ -28,6 +28,7 @@ const taskFormSchema = z.object({
   sectionId: z.string().nullable().optional(),
   recurringType: z.enum(['none', 'daily', 'weekly', 'monthly']),
   parentTaskId: z.string().nullable().optional(),
+  link: z.string().url({ message: 'Must be a valid URL.' }).nullable().optional().or(z.literal('')), // Added link field
 }).refine((data) => {
   if (data.remindAtDate && !data.remindAtTime) {
     return false; // If date is set, time must also be set
@@ -52,6 +53,7 @@ interface TaskFormProps {
     section_id: string | null;
     recurring_type: 'none' | 'daily' | 'weekly' | 'monthly';
     parent_task_id: string | null;
+    link: string | null; // Added link
   }) => Promise<any>;
   onCancel: () => void;
   userId: string | null;
@@ -192,6 +194,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
       sectionId: preselectedSectionId,
       recurringType: 'none',
       parentTaskId: parentTaskId,
+      link: '', // Default for new task
     },
   });
 
@@ -215,6 +218,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
         sectionId: initialData.section_id,
         recurringType: initialData.recurring_type,
         parentTaskId: initialData.parent_task_id,
+        link: initialData.link || '', // Set initial link
       });
     } else {
       // Defaults for new task
@@ -230,6 +234,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
         sectionId: preselectedSectionId,
         recurringType: 'none',
         parentTaskId: parentTaskId,
+        link: '', // Default for new task
       });
     }
   }, [initialData, preselectedSectionId, parentTaskId, allCategories, reset]);
@@ -278,6 +283,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
       section_id: data.sectionId,
       recurring_type: data.recurringType,
       parent_task_id: data.parentTaskId,
+      link: data.link || null, // Pass link to onSave
     });
     setIsSaving(false);
     if (success) {
@@ -453,6 +459,17 @@ const TaskForm: React.FC<TaskFormProps> = ({
         </div>
         {errors.remindAtDate && <p className="text-destructive text-sm mt-1">{errors.remindAtDate.message}</p>}
         {errors.remindAtTime && <p className="text-destructive text-sm mt-1">{errors.remindAtTime.message}</p>}
+      </div>
+
+      <div>
+        <Label htmlFor="task-link">Link (Optional)</Label>
+        <Input
+          id="task-link"
+          placeholder="e.g., https://example.com/task-details"
+          {...register('link')}
+          disabled={isSaving}
+        />
+        {errors.link && <p className="text-destructive text-sm mt-1">{errors.link.message}</p>}
       </div>
 
       <div>
