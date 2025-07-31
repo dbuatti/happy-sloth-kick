@@ -167,70 +167,42 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         category_color: newCategoriesMap.get(task.category) || 'gray',
       }));
 
-      // --- NEW LOGIC: Normalize task orders on fetch ---
-      const tasksToNormalize: Task[] = [];
-      const tasksById = new Map<string, Task>();
+      // Group tasks by their parent (section_id or parent_task_id) for order normalization
+      const groupedByParent: { [key: string]: Task[] } = {}; // Key will be sectionId or parentTaskId
+      sectionsData.forEach(sec => groupedByParent[sec.id] = []);
+      groupedByParent['no-section'] = []; // For tasks with no section
       mappedTasks.forEach(task => {
-        tasksById.set(task.id, task);
-        if (task.parent_task_id === null) { // Only normalize top-level tasks
-          tasksToNormalize.push(task);
+        const parentKey = task.parent_task_id || task.section_id || 'no-section';
+        if (!groupedByParent[parentKey]) {
+          groupedByParent[parentKey] = [];
         }
-      });
-
-      const groupedBySection: { [key: string]: Task[] } = { 'no-section': [] };
-      sectionsData.forEach(sec => groupedBySection[sec.id] = []);
-
-      tasksToNormalize.forEach(task => {
-        const sectionKey = task.section_id || 'no-section';
-        if (groupedBySection[sectionKey]) {
-          groupedBySection[sectionKey].push(task);
-        } else {
-          // Should not happen if sectionsData is comprehensive, but as a fallback
-          groupedBySection['no-section'].push(task);
-        }
+        groupedByParent[parentKey].push(task);
       });
 
       const updatesForDb: any[] = [];
-      
-      for (const sectionKey in groupedBySection) {
-        const sectionTasks = groupedBySection[sectionKey];
+      const tasksById = new Map<string, Task>(); // To reconstruct the final state
+
+      for (const parentKey in groupedByParent) {
+        const parentTasks = groupedByParent[parentKey];
         // Sort by existing order, then by created_at as a tie-breaker for initial consistency
-        sectionTasks.sort((a, b) => {
+        parentTasks.sort((a, b) => {
           const orderA = a.order ?? Infinity;
           const orderB = b.order ?? Infinity;
-          if (orderA !== orderB) return orderA - b.order;
+          if (orderA !== orderB) return orderA - orderB;
           return parseISO(a.created_at).getTime() - parseISO(b.created_at).getTime();
         });
 
-        sectionTasks.forEach((task, index) => {
+        parentTasks.forEach((task, index) => {
           if (task.order !== index) { // Only update if order needs correction
-            // Create the payload for the database upsert
             const dbUpdatePayload = {
-              id: task.id,
-              description: task.description, // Include all non-nullable fields
-              status: task.status,
-              recurring_type: task.recurring_type,
-              created_at: task.created_at,
-              category: task.category,
-              priority: task.priority,
-              due_date: task.due_date,
-              notes: task.notes,
-              remind_at: task.remind_at,
-              section_id: task.section_id,
-              parent_task_id: task.parent_task_id,
-              original_task_id: task.original_task_id,
-              link: task.link,
+              ...task, // Copy all existing fields
               order: index,
-              user_id: userId,
+              user_id: userId, // Ensure user_id is present for upsert
             };
             updatesForDb.push(dbUpdatePayload);
-
-            // Create the object for local state update (must conform to Task interface)
-            const localTaskStateUpdate: Task = {
-              ...task,
-              order: index,
-            };
-            tasksById.set(task.id, localTaskStateUpdate);
+            tasksById.set(task.id, { ...task, order: index }); // Update local map
+          } else {
+            tasksById.set(task.id, task); // Keep original if no change
           }
         });
       }
@@ -432,8 +404,12 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     try {
       const categoryColor = categoriesMap.get(newTaskData.category) || 'gray';
 
-      const targetSectionTasks = tasks.filter(t => t.parent_task_id === null && t.section_id === (newTaskData.section_id || null));
-      const newOrder = targetSectionTasks.length;
+      // Determine the order for the new task within its parent/section
+      const targetParentTasks = tasks.filter(t => 
+        (newTaskData.parent_task_id === null && t.parent_task_id === null && (t.section_id === newTaskData.section_id || (t.section_id === null && newTaskData.section_id === null))) ||
+        (newTaskData.parent_task_id !== null && t.parent_task_id === newTaskData.parent_task_id)
+      );
+      const newOrder = targetParentTasks.length;
 
       newTask = {
         id: uuidv4(),
@@ -758,6 +734,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       return;
     }
     try {
+      // Move all tasks from this section to 'no section'
       await supabase
         .from('tasks')
         .update({ section_id: null })
@@ -784,179 +761,101 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     }
   }, [userId]);
 
-  const reorderTasksInSameSection = useCallback(async (sectionId: string | null, activeId: string, overId: string) => {
+  const updateTaskParentAndOrder = useCallback(async (activeId: string, newParentId: string | null, newSectionId: string | null, overId: string | null) => {
     if (!userId) {
       showError('User not authenticated.');
       return;
     }
 
     const originalTasks = [...tasks];
+    const activeTask = tasks.find(t => t.id === activeId);
+    if (!activeTask) return;
 
-    const tasksInCurrentSection = tasks.filter(t => t.parent_task_id === null && t.section_id === sectionId)
-                                      .sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
-    const activeIndex = tasksInCurrentSection.findIndex(t => t.id === activeId);
-    const overIndex = tasksInCurrentSection.findIndex(t => t.id === overId);
+    const updates: Partial<Task>[] = [];
 
-    if (activeIndex === -1 || overIndex === -1) return;
+    // 1. Re-index tasks in the old parent
+    const oldParentIsSection = activeTask.parent_task_id === null;
+    const oldParentKey = oldParentIsSection ? (activeTask.section_id || 'no-section') : activeTask.parent_task_id;
 
-    const newOrderedTasksInSection = arrayMove(tasksInCurrentSection, activeIndex, overIndex);
-
-    const updates = newOrderedTasksInSection.map((task, index) => ({
-      id: task.id,
-      description: task.description,
-      status: task.status,
-      recurring_type: task.recurring_type,
-      created_at: task.created_at,
-      category: task.category,
-      priority: task.priority,
-      due_date: task.due_date,
-      notes: task.notes,
-      remind_at: task.remind_at,
-      section_id: task.section_id,
-      parent_task_id: task.parent_task_id,
-      link: task.link, // Include link
-      order: index,
-      user_id: userId,
-    }));
-
-    setTasks(prevTasks => {
-      const updatedTasksMap = new Map(updates.map(u => [u.id, u]));
-      const newTasksState = prevTasks.map(task => {
-        if (updatedTasksMap.has(task.id)) {
-          return { ...task, ...updatedTasksMap.get(task.id) };
-        }
-        return task;
-      });
-      const finalSortedState = newTasksState.sort((a, b) => {
-        const aSectionOrder = sections.find(s => s.id === a.section_id)?.order ?? Infinity;
-        const bSectionOrder = sections.find(s => s.id === b.section_id)?.order ?? Infinity;
-        if (aSectionOrder !== bSectionOrder) return aSectionOrder - bSectionOrder;
-        return (a.order || Infinity) - (b.order || Infinity);
-      });
-      return finalSortedState;
-    });
-
-    try {
-      const { error } = await supabase
-        .from('tasks')
-        .upsert(updates, { onConflict: 'id' });
-
-      if (error) {
-        throw error;
-      }
-      showSuccess('Task reordered successfully!');
-    }
-    catch (error: any) {
-      console.error('Error reordering tasks:', error);
-      showError('Failed to reorder task.');
-      setTasks(originalTasks);
-    }
-  }, [userId, sections, tasks]);
-
-  const moveTaskToNewSection = useCallback(async (activeId: string, oldSectionId: string | null, newSectionId: string | null, overId: string | null) => {
-    if (!userId) {
-      showError('User not authenticated.');
-      return;
-    }
-
-    const originalTasks = [...tasks];
-
-    let taskToMove: Task | undefined;
-    const tasksInOldSection = tasks.filter(t => t.section_id === oldSectionId && t.parent_task_id === null)
-                                   .sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
-    const tasksInNewSection = tasks.filter(t => t.section_id === newSectionId && t.parent_task_id === null)
-                                   .sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
-
-    taskToMove = tasks.find(t => t.id === activeId);
-    if (!taskToMove) return;
-
-    const oldSectionTasksAfterRemoval = tasksInOldSection.filter(t => t.id !== activeId);
-    const updatesForOldSection = oldSectionTasksAfterRemoval.map((task, index) => ({
-      id: task.id,
-      description: task.description,
-      status: task.status,
-      recurring_type: task.recurring_type,
-      created_at: task.created_at,
-      category: task.category,
-      priority: task.priority,
-      due_date: task.due_date,
-      notes: task.notes,
-      remind_at: task.remind_at,
-      section_id: task.section_id,
-      parent_task_id: task.parent_task_id,
-      link: task.link, // Include link
-      order: index,
-      user_id: userId,
-    }));
-
-    let newSectionTasksWithMoved = [...tasksInNewSection];
-    if (overId) {
-      const overIndex = newSectionTasksWithMoved.findIndex(t => t.id === overId);
-      if (overIndex !== -1) {
-        newSectionTasksWithMoved.splice(overIndex, 0, { ...taskToMove, section_id: newSectionId });
+    const oldSiblings = tasks.filter(t => {
+      if (oldParentIsSection) {
+        return t.parent_task_id === null && (t.section_id === oldParentKey || (t.section_id === null && oldParentKey === 'no-section'));
       } else {
-        newSectionTasksWithMoved.push({ ...taskToMove, section_id: newSectionId });
+        return t.parent_task_id === oldParentKey;
       }
-    } else {
-      newSectionTasksWithMoved.push({ ...taskToMove, section_id: newSectionId });
+    }).filter(t => t.id !== activeId).sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
+
+    oldSiblings.forEach((task, index) => {
+      updates.push({ id: task.id, order: index });
+    });
+
+    // 2. Determine new order and parent for the active task
+    let targetSiblings: Task[] = [];
+    if (newParentId === null) { // New parent is a section (or no-section)
+      targetSiblings = tasks.filter(t => t.parent_task_id === null && (t.section_id === newSectionId || (t.section_id === null && newSectionId === null)))
+                            .filter(t => t.id !== activeId)
+                            .sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
+    } else { // New parent is another task
+      targetSiblings = tasks.filter(t => t.parent_task_id === newParentId)
+                            .filter(t => t.id !== activeId)
+                            .sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
     }
 
-    const updatesForNewSection = newSectionTasksWithMoved.map((task, index) => ({
-      id: task.id,
-      description: task.description,
-      status: task.status,
-      recurring_type: task.recurring_type,
-      created_at: task.created_at,
-      category: task.category,
-      priority: task.priority,
-      due_date: task.due_date,
-      notes: task.notes,
-      remind_at: task.remind_at,
+    let newOrder = targetSiblings.length; // Default to end
+    if (overId) {
+      const overIndex = targetSiblings.findIndex(t => t.id === overId);
+      if (overIndex !== -1) {
+        newOrder = overIndex;
+      }
+    }
+    targetSiblings.splice(newOrder, 0, activeTask); // Temporarily insert active task for order calculation
+
+    // Update active task's properties
+    updates.push({
+      id: activeTask.id,
+      parent_task_id: newParentId,
       section_id: newSectionId,
-      parent_task_id: task.parent_task_id,
-      link: task.link, // Include link
-      order: index,
-      user_id: userId,
-    }));
+      order: newOrder,
+    });
 
-    const allUpdatesForDb = [
-      ...updatesForOldSection,
-      ...updatesForNewSection,
-    ];
+    // 3. Re-index tasks in the new parent (if different from old parent)
+    targetSiblings.forEach((task, index) => {
+      if (task.id !== activeId) { // Only update siblings, active task already handled
+        updates.push({ id: task.id, order: index });
+      }
+    });
 
+    // 4. Handle cascading section_id updates for subtasks of the moved task
+    // If a top-level task becomes a subtask, its own subtasks should inherit the new section_id
+    if (activeTask.parent_task_id === null && newParentId !== null) {
+      const subtasksOfMovedTask = tasks.filter(t => t.parent_task_id === activeTask.id);
+      subtasksOfMovedTask.forEach(subtask => {
+        updates.push({ id: subtask.id, section_id: newSectionId });
+      });
+    }
+    // If a subtask becomes a top-level task, its own subtasks should inherit the new section_id
+    if (activeTask.parent_task_id !== null && newParentId === null) {
+      const subtasksOfMovedTask = tasks.filter(t => t.parent_task_id === activeTask.id);
+      subtasksOfMovedTask.forEach(subtask => {
+        updates.push({ id: subtask.id, section_id: newSectionId });
+      });
+    }
+
+    // Optimistic UI update
     setTasks(prevTasks => {
-      const updatedTasksMap = new Map(allUpdatesForDb.map(u => [u.id, u]));
-      const newTasksState = prevTasks.map(task => {
-        if (updatedTasksMap.has(task.id)) {
-          return { ...task, ...updatedTasksMap.get(task.id) };
-        }
-        return task;
-      });
-      const finalSortedState = newTasksState.sort((a, b) => {
-        const aSectionOrder = sections.find(s => s.id === a.section_id)?.order ?? Infinity;
-        const bSectionOrder = sections.find(s => s.id === b.section_id)?.order ?? Infinity;
-        if (aSectionOrder !== bSectionOrder) return aSectionOrder - bSectionOrder;
-        return (a.order || Infinity) - (b.order || Infinity);
-      });
-      return finalSortedState;
+      const updatedMap = new Map(updates.map(u => [u.id, u]));
+      return prevTasks.map(task => updatedMap.has(task.id) ? { ...task, ...updatedMap.get(task.id)! } : task);
     });
 
     try {
-      const { error } = await supabase
-        .from('tasks')
-        .upsert(allUpdatesForDb, { onConflict: 'id' });
-
-      if (error) {
-        throw error;
-      }
+      await supabase.from('tasks').upsert(updates, { onConflict: 'id' });
       showSuccess('Task moved successfully!');
-    }
-    catch (error: any) {
+    } catch (error: any) {
       console.error('Error moving task:', error);
       showError('Failed to move task.');
-      setTasks(originalTasks);
+      setTasks(originalTasks); // Revert on error
     }
-  }, [userId, sections, tasks]);
+  }, [userId, tasks, sections]);
 
   const reorderSections = useCallback(async (activeId: string, overId: string) => {
     if (!userId) {
@@ -1020,21 +919,24 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       showError('Task not found.');
       return;
     }
-    if (taskToMove.parent_task_id !== null) {
-      showError('Cannot reorder sub-tasks directly.');
-      return;
-    }
 
-    const currentSectionId = taskToMove.section_id;
+    const currentParentId = taskToMove.parent_task_id || taskToMove.section_id || 'no-section';
+    const isParentSection = taskToMove.parent_task_id === null;
 
-    const tasksInCurrentSection = tasks
-      .filter(t => t.section_id === currentSectionId && t.parent_task_id === null)
+    const siblings = tasks
+      .filter(t => {
+        if (isParentSection) {
+          return t.parent_task_id === null && (t.section_id === taskToMove.section_id || (t.section_id === null && taskToMove.section_id === null));
+        } else {
+          return t.parent_task_id === taskToMove.parent_task_id;
+        }
+      })
       .sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
 
-    const currentIndex = tasksInCurrentSection.findIndex(t => t.id === taskId);
+    const currentIndex = siblings.findIndex(t => t.id === taskId);
     
     if (currentIndex === -1) {
-      showError('Internal error: Task not found in section list.');
+      showError('Internal error: Task not found in its parent list.');
       return;
     }
 
@@ -1046,48 +948,23 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       }
       newIndex = currentIndex - 1;
     } else { // direction === 'down'
-      if (currentIndex === tasksInCurrentSection.length - 1) {
+      if (currentIndex === siblings.length - 1) {
         showError('Task is already at the bottom.');
         return;
       }
       newIndex = currentIndex + 1;
     }
 
-    const newOrderedTasksInSection = arrayMove(tasksInCurrentSection, currentIndex, newIndex);
+    const newOrderedSiblings = arrayMove(siblings, currentIndex, newIndex);
 
-    const updates = newOrderedTasksInSection.map((task, index) => ({
+    const updates = newOrderedSiblings.map((task, index) => ({
       id: task.id,
-      description: task.description,
-      status: task.status,
-      recurring_type: task.recurring_type,
-      created_at: task.created_at,
-      category: task.category,
-      priority: task.priority,
-      due_date: task.due_date,
-      notes: task.notes,
-      remind_at: task.remind_at,
-      section_id: task.section_id,
-      parent_task_id: task.parent_task_id,
-      link: task.link, // Include link
       order: index,
-      user_id: userId,
     }));
 
     setTasks(prevTasks => {
       const updatedTasksMap = new Map(updates.map(u => [u.id, u]));
-      const newTasksState = prevTasks.map(task => {
-        if (updatedTasksMap.has(task.id)) {
-          return { ...task, ...updatedTasksMap.get(task.id) };
-        }
-        return task;
-      });
-      const finalSortedState = newTasksState.sort((a, b) => {
-        const aSectionOrder = sections.find(s => s.id === a.section_id)?.order ?? Infinity;
-        const bSectionOrder = sections.find(s => s.id === b.section_id)?.order ?? Infinity;
-        if (aSectionOrder !== bSectionOrder) return aSectionOrder - bSectionOrder;
-        return (a.order || Infinity) - (b.order || Infinity);
-      });
-      return finalSortedState;
+      return prevTasks.map(task => updatedTasksMap.has(task.id) ? { ...task, ...updatedTasksMap.get(task.id)! } : task);
     });
 
     try {
@@ -1103,7 +980,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       console.error('Error reordering task:', error);
       showError('Failed to reorder task.');
     }
-  }, [userId, sections, tasks]);
+  }, [userId, tasks]);
 
   const { finalFilteredTasks, nextAvailableTask } = useMemo(() => {
     let relevantTasks: Task[] = [];
@@ -1114,20 +991,17 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     } else if (viewMode === 'focus') {
       relevantTasks = tasks.filter(task => 
         (task.section_id === null || focusModeSectionIds.has(task.section_id)) &&
-        task.status === 'to-do' &&
-        task.parent_task_id === null
+        task.status === 'to-do'
       );
     }
-    else {
+    else { // Daily view
       const effectiveCurrentDateUTC = currentDate ? getUTCStartOfDay(currentDate) : getUTCStartOfDay(new Date());
       const processedOriginalIds = new Set<string>();
 
-      const topLevelTasks = tasks.filter(task => task.parent_task_id === null);
-
-      topLevelTasks.forEach(task => {
+      tasks.forEach(task => {
         const originalId = task.original_task_id || task.id;
 
-        if (processedOriginalIds.has(originalId)) {
+        if (processedOriginalIds.has(originalId) && task.recurring_type !== 'none') {
             return;
         }
 
@@ -1158,7 +1032,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
                 relevantTasks.push(taskToDisplay);
                 processedOriginalIds.add(originalId);
             }
-        } else {
+        } else { // Non-recurring task
             const taskCreatedAtUTC = getUTCStartOfDay(parseISO(task.created_at));
             const isTaskCreatedOnCurrentDate = isSameDay(taskCreatedAtUTC, effectiveCurrentDateUTC);
 
@@ -1173,6 +1047,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
     let currentViewFilteredTasks = relevantTasks;
 
+    // Apply filters for daily view
     if (viewMode === 'daily') {
       if (statusFilter !== 'all') {
         currentViewFilteredTasks = currentViewFilteredTasks.filter(task => task.status === statusFilter);
@@ -1201,33 +1076,56 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       }
     }
 
+    // Build a map for quick lookup of tasks by ID
+    const taskMap = new Map<string, Task>();
+    currentViewFilteredTasks.forEach(task => taskMap.set(task.id, task));
 
+    // Sort the flat list for display, respecting hierarchy
     currentViewFilteredTasks.sort((a, b) => {
-      const statusOrder = { 'to-do': 1, 'skipped': 2, 'completed': 3, 'archived': 4 };
-      const statusComparison = statusOrder[a.status] - statusOrder[b.status];
-      if (statusComparison !== 0) return statusComparison;
-
+      // 1. Sort by section order (for top-level tasks and their subtasks)
       const aSectionOrder = sections.find(s => s.id === a.section_id)?.order ?? Infinity;
       const bSectionOrder = sections.find(s => s.id === b.section_id)?.order ?? Infinity;
       if (aSectionOrder !== bSectionOrder) return aSectionOrder - bSectionOrder;
 
+      // 2. Sort by parent_task_id (null first, then by parent task's order)
+      if (a.parent_task_id === null && b.parent_task_id !== null) return -1; // a is top-level, b is subtask
+      if (a.parent_task_id !== null && b.parent_task_id === null) return 1;  // a is subtask, b is top-level
+
+      if (a.parent_task_id !== null && b.parent_task_id !== null) {
+        // Both are subtasks, sort by their parent's order
+        const aParent = taskMap.get(a.parent_task_id!);
+        const bParent = taskMap.get(b.parent_task_id!);
+        if (aParent && bParent) {
+          if (aParent.id !== bParent.id) {
+            return (aParent.order || Infinity) - (bParent.order || Infinity);
+          }
+        }
+      }
+
+      // 3. Sort by order within their direct parent
       const aOrder = a.order ?? Infinity;
       const bOrder = b.order ?? Infinity;
       if (aOrder !== bOrder) return aOrder - bOrder;
 
+      // 4. Tertiary sort: by status (to-do, skipped, completed, archived)
+      const statusOrder = { 'to-do': 1, 'skipped': 2, 'completed': 3, 'archived': 4 };
+      const statusComparison = statusOrder[a.status] - statusOrder[b.status];
+      if (statusComparison !== 0) return statusComparison;
+
+      // Fallback: by creation date
       return parseISO(a.created_at).getTime() - parseISO(b.created_at).getTime();
     });
 
     let nextAvailableTask: Task | null = null;
     if (viewMode === 'daily' || viewMode === 'focus') {
-      nextAvailableTask = currentViewFilteredTasks.find(task => 
-        task.status === 'to-do' && task.parent_task_id === null
+      nextAvailableTask = currentViewFilteredTasks.find(task =>
+        task.status === 'to-do' && task.parent_task_id === null // Only top-level tasks for next task card
       ) || null;
     }
 
-    return { 
-      finalFilteredTasks: currentViewFilteredTasks, 
-      nextAvailableTask, 
+    return {
+      finalFilteredTasks: currentViewFilteredTasks,
+      nextAvailableTask,
     };
   }, [tasks, currentDate, searchFilter, statusFilter, categoryFilter, priorityFilter, sectionFilter, sections, viewMode]);
 
@@ -1266,8 +1164,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode,
-    reorderTasksInSameSection,
-    moveTaskToNewSection,
+    updateTaskParentAndOrder, // Renamed and updated for nested DND
     reorderSections,
     moveTask,
     fetchDataAndSections,

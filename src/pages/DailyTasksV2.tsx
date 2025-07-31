@@ -59,8 +59,6 @@ const DailyTasksV2: React.FC = () => {
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode,
-    reorderTasksInSameSection,
-    moveTaskToNewSection,
     reorderSections,
     moveTask,
   } = useTasks({ currentDate, setCurrentDate, viewMode: 'daily' });
@@ -228,8 +226,6 @@ const DailyTasksV2: React.FC = () => {
                 updateSection={updateSection}
                 deleteSection={deleteSection}
                 updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-                reorderTasksInSameSection={reorderTasksInSameSection}
-                moveTaskToNewSection={moveTaskToNewSection}
                 reorderSections={reorderSections}
                 moveTask={moveTask}
                 allCategories={allCategories}

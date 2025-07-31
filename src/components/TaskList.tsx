@@ -29,6 +29,7 @@ import {
   DragEndEvent,
   DragOverlay,
   UniqueIdentifier,
+  useDroppable,
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -42,8 +43,8 @@ import SortableTaskItem from './SortableTaskItem';
 import SortableSectionHeader from './SortableSectionHeader';
 
 interface TaskListProps {
-  tasks: Task[];
-  filteredTasks: Task[];
+  tasks: Task[]; // All tasks from useTasks (for subtask filtering)
+  filteredTasks: Task[]; // Filtered and sorted flat list for DND
   loading: boolean;
   userId: string | null;
   handleAddTask: (taskData: any) => Promise<any>;
@@ -69,8 +70,7 @@ interface TaskListProps {
   updateSection: (sectionId: string, newName: string) => Promise<void>;
   deleteSection: (sectionId: string) => Promise<void>;
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
-  reorderTasksInSameSection: (sectionId: string | null, activeId: string, overId: string) => Promise<void>;
-  moveTaskToNewSection: (activeId: string, oldSectionId: string | null, newSectionId: string | null, overId: string | null) => Promise<void>;
+  updateTaskParentAndOrder: (activeId: string, newParentId: string | null, newSectionId: string | null, overId: string | null) => Promise<void>; // Updated
   reorderSections: (activeId: string, overId: string) => Promise<void>;
   moveTask: (taskId: string, direction: 'up' | 'down') => Promise<void>;
   allCategories: Category[];
@@ -82,8 +82,8 @@ interface TaskListProps {
 }
 
 const TaskList: React.FC<TaskListProps> = ({
-  tasks,
-  filteredTasks,
+  tasks, // All tasks (for subtask filtering in SortableTaskItem)
+  filteredTasks, // Filtered and sorted flat list for DND
   loading,
   userId,
   handleAddTask,
@@ -109,8 +109,7 @@ const TaskList: React.FC<TaskListProps> = ({
   updateSection,
   deleteSection,
   updateSectionIncludeInFocusMode,
-  reorderTasksInSameSection,
-  moveTaskToNewSection,
+  updateTaskParentAndOrder, // Updated
   reorderSections,
   moveTask,
   allCategories,
@@ -160,27 +159,7 @@ const TaskList: React.FC<TaskListProps> = ({
     });
   }, []);
 
-  const tasksBySection = useMemo(() => {
-    const grouped: Record<string, Task[]> = { 'no-section': [] };
-    
-    sections.forEach((currentSection: TaskSection) => {
-      grouped[currentSection.id] = [];
-    });
-
-    const tasksForGrouping = filteredTasks.filter(task => task.parent_task_id === null);
-
-    tasksForGrouping.forEach(task => {
-      const sectionId = task.section_id;
-      if (sectionId && grouped[sectionId] !== undefined) {
-        grouped[sectionId].push(task);
-      } else {
-        grouped['no-section'].push(task);
-      }
-    });
-
-    return grouped;
-  }, [filteredTasks, sections]);
-
+  // Memoize the list of all sortable section IDs, including the synthetic 'No Section'
   const allSortableSections = useMemo(() => {
     const noSection: TaskSection = {
       id: 'no-section-header', // Unique ID for the synthetic 'No Section' header
@@ -192,6 +171,9 @@ const TaskList: React.FC<TaskListProps> = ({
     // Combine actual sections with the synthetic 'No Section' for sorting
     return [...sections, noSection];
   }, [sections, userId]);
+
+  // Memoize the flat list of all draggable task IDs
+  const allSortableTaskIds = useMemo(() => filteredTasks.map(t => t.id), [filteredTasks]);
 
   const handleDragStart = (event: any) => {
     setActiveId(event.active.id);
@@ -205,42 +187,56 @@ const TaskList: React.FC<TaskListProps> = ({
       return;
     }
 
-    const activeType = active.data.current?.type;
-    const overType = over.data.current?.type;
+    const activeTask = tasks.find(t => t.id === active.id);
+    if (!activeTask) {
+      setActiveId(null);
+      return;
+    }
 
-    if (activeType === 'task' && overType === 'task') {
-      const activeTask = active.data.current?.task as Task;
-      const overTask = over.data.current?.task as Task;
+    const activeTaskOldParentId = activeTask.parent_task_id || activeTask.section_id || 'no-section-header';
 
-      if (activeTask.section_id === overTask.section_id) {
-        await reorderTasksInSameSection(activeTask.section_id, active.id as string, over.id as string);
+    let newParentId: string | null = null; // The ID of the new parent task or section
+    let newSectionId: string | null = null; // The section_id for the moved task
+    let overTargetId: string | null = null; // The ID of the item being dragged over (for ordering)
+
+    const overTask = tasks.find(t => t.id === over.id);
+    const overSectionHeader = allSortableSections.find(s => s.id === over.id);
+
+    if (overTask) {
+      // Dropped over another task
+      // If dropping over a task, it becomes a subtask of that task
+      newParentId = overTask.id;
+      newSectionId = overTask.section_id; // Inherit section from new parent task
+      overTargetId = overTask.id;
+    } else if (overSectionHeader) {
+      // Dropped over a section header (becomes top-level in that section)
+      newParentId = null;
+      newSectionId = overSectionHeader.id === 'no-section-header' ? null : overSectionHeader.id;
+      overTargetId = null; // Dropped into an empty section or at the end
+    } else {
+      // This case handles dropping into an empty section's droppable area
+      // The `over.id` might be the section's container ID if it's empty.
+      // We need to check if the `over.id` matches a section's container ID.
+      const targetSectionId = allSortableSections.find(s => s.id === over.id)?.id;
+      if (targetSectionId) {
+        newParentId = null;
+        newSectionId = targetSectionId === 'no-section-header' ? null : targetSectionId;
+        overTargetId = null;
       } else {
-        await moveTaskToNewSection(active.id as string, activeTask.section_id, overTask.section_id, over.id as string);
+        // If dropped somewhere unexpected, revert
+        setActiveId(null);
+        return;
       }
-    } else if (activeType === 'task' && overType === 'section') {
-      const activeTask = active.data.current?.task as Task;
-      const overSection = over.data.current?.section as TaskSection;
-      const newSectionId = overSection.id === 'no-section-header' ? null : overSection.id;
-      await moveTaskToNewSection(active.id as string, activeTask.section_id, newSectionId, null);
-    } else if (activeType === 'task' && over.id === 'no-section-drop-area') {
-      const activeTask = active.data.current?.task as Task;
-      await moveTaskToNewSection(active.id as string, activeTask.section_id, null, null);
-    } else if (activeType === 'section' && overType === 'section') {
+    }
+
+    // If it's a section reorder
+    if (active.data.current?.type === 'section' && over.data.current?.type === 'section') {
       if (active.id !== 'no-section-header' && over.id !== 'no-section-header') {
         await reorderSections(active.id as string, over.id as string);
-      } else {
-        const currentSectionOrderIds = allSortableSections.map(s => s.id);
-        const oldIndex = currentSectionOrderIds.indexOf(active.id as string);
-        const newIndex = currentSectionOrderIds.indexOf(over.id as string);
-        
-        if (oldIndex !== -1 && newIndex !== -1) {
-          // This part would typically update a local state for visual reordering
-          // but since allSortableSections is a memoized value, it will re-calculate
-          // based on `sections` state. For a true visual-only reorder,
-          // `allSortableSections` would need to be a `useState` and updated here.
-          // For now, the current `reorderSections` only affects persisted sections.
-        }
       }
+    } else if (active.data.current?.type === 'task') {
+      // If it's a task move/reorder
+      await updateTaskParentAndOrder(activeTask.id, newParentId, newSectionId, overTargetId);
     }
 
     setActiveId(null);
@@ -418,13 +414,17 @@ const TaskList: React.FC<TaskListProps> = ({
           <SortableContext items={allSortableSections.map(s => s.id)} strategy={verticalListSortingStrategy}>
             {allSortableSections.map((currentSection: TaskSection) => {
               const isExpanded = expandedSections[currentSection.id] !== false;
-              const sectionTasks = tasksBySection[currentSection.id === 'no-section-header' ? 'no-section' : currentSection.id] || [];
+              // Filter tasks that are top-level and belong to this section
+              const topLevelTasksInSection = filteredTasks.filter(t => 
+                t.parent_task_id === null && 
+                (t.section_id === currentSection.id || (t.section_id === null && currentSection.id === 'no-section-header'))
+              );
               
               return (
                 <div key={currentSection.id} className="mb-3">
                   <SortableSectionHeader
                     section={currentSection}
-                    sectionTasksCount={sectionTasks.length}
+                    sectionTasksCount={topLevelTasksInSection.length} // Count only top-level tasks for header
                     isExpanded={isExpanded}
                     toggleSection={toggleSection}
                     editingSectionId={editingSectionId}
@@ -439,19 +439,19 @@ const TaskList: React.FC<TaskListProps> = ({
                     updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
                   />
                   {isExpanded && (
-                    <div className="mt-2 space-y-2 pl-2">
-                      <SortableContext items={sectionTasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
+                    <div className="mt-2 space-y-2 pl-2" id={currentSection.id}> {/* Droppable area for section */}
+                      <SortableContext items={allSortableTaskIds} strategy={verticalListSortingStrategy}>
                         <ul className="list-none space-y-2">
-                          {sectionTasks.length === 0 ? (
-                            <div className="text-center text-gray-500 py-4 flex flex-col items-center gap-2" id={`empty-section-${currentSection.id}`} data-no-dnd="true">
+                          {topLevelTasksInSection.length === 0 ? (
+                            <div className="text-center text-gray-500 py-4 flex flex-col items-center gap-2" data-no-dnd="true">
                               <ListTodo className="h-8 w-8 text-muted-foreground" />
                               <p className="text-lg font-medium">No tasks in this section.</p>
                               <p className="text-sm">Drag a task here or add one using the menu above!</p>
                             </div>
                           ) : (
-                            sectionTasks.map(task => (
+                            topLevelTasksInSection.map(task => (
                               <SortableTaskItem
-                                key={`${task.id}-${task.order}`}
+                                key={task.id}
                                 task={task}
                                 userId={userId}
                                 onStatusChange={handleStatusChange}
@@ -464,6 +464,8 @@ const TaskList: React.FC<TaskListProps> = ({
                                 currentDate={currentDate}
                                 onMoveUp={(taskId) => moveTask(taskId, 'up')}
                                 onMoveDown={(taskId) => moveTask(taskId, 'down')}
+                                level={0} // Top-level tasks start at level 0
+                                allTasks={tasks} // Pass all tasks for subtask filtering
                               />
                             ))
                           )}
@@ -488,7 +490,7 @@ const TaskList: React.FC<TaskListProps> = ({
             <DragOverlay>
               {activeTask && (
                 <SortableTaskItem
-                  key={`${activeTask.id}-${activeTask.order}`}
+                  key={activeTask.id}
                   task={activeTask}
                   userId={userId}
                   onStatusChange={handleStatusChange}
@@ -501,12 +503,14 @@ const TaskList: React.FC<TaskListProps> = ({
                   currentDate={currentDate}
                   onMoveUp={(taskId) => moveTask(taskId, 'up')}
                   onMoveDown={(taskId) => moveTask(taskId, 'down')}
+                  level={activeTask.parent_task_id ? 1 : 0} // Simple level for overlay
+                  allTasks={tasks}
                 />
               )}
               {activeSection && (
                 <SortableSectionHeader
                   section={activeSection}
-                  sectionTasksCount={tasksBySection[activeSection.id === 'no-section-header' ? 'no-section' : activeSection.id]?.length || 0}
+                  sectionTasksCount={filteredTasks.filter(t => t.parent_task_id === null && (t.section_id === activeSection.id || (t.section_id === null && activeSection.id === 'no-section-header'))).length}
                   isExpanded={expandedSections[activeSection.id] !== false}
                   toggleSection={toggleSection}
                   editingSectionId={editingSectionId}
