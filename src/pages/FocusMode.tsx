@@ -205,7 +205,7 @@ const FocusMode: React.FC = () => {
             }
             return 0;
           }
-          return prev - 1;
+          return prevTime - 1;
         });
       }, 1000);
     } else {
