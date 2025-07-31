@@ -20,7 +20,7 @@ interface NextTaskCardProps {
 const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEditTask, currentDate, loading }) => {
   if (loading) {
     return (
-      <Card className="w-full shadow-sm mb-4 border-l-4 border-primary dark:border-primary">
+      <Card className="w-full max-w-3xl mx-auto shadow-sm mb-4 border-l-4 border-primary dark:border-primary">
         <CardHeader className="pb-2">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <Lightbulb className="h-5 w-5 text-primary" /> Your Next Task
@@ -40,7 +40,7 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
 
   if (!task) {
     return (
-      <Card className="w-full shadow-sm mb-4 border-l-4 border-primary dark:border-primary">
+      <Card className="w-full max-w-3xl mx-auto shadow-sm mb-4 border-l-4 border-primary dark:border-primary">
         <CardHeader className="pb-2">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <Lightbulb className="h-5 w-5 text-primary" /> Your Next Task
@@ -87,7 +87,7 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
   return (
     <Card 
       className={cn(
-        "w-full shadow-sm mb-4 cursor-pointer",
+        "w-full max-w-3xl mx-auto shadow-sm mb-4 cursor-pointer",
         isOverdue ? "border-l-4 border-status-overdue" :
         isDueToday ? "border-l-4 border-status-due-today" :
         "border-l-4 border-primary"
