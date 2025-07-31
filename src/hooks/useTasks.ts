@@ -567,7 +567,8 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         .from('tasks')
         .update(dbUpdates)
         .eq('id', taskId)
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .select();
 
       if (error) throw error;
       showSuccess('Task updated successfully!');
@@ -1061,77 +1062,50 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
   }, [userId, sections]);
 
   const moveTask = useCallback(async (taskId: string, direction: 'up' | 'down') => {
-    const debugId = uuidv4().substring(0, 4);
-    console.log(`[${debugId}] moveTask: START - Task ID: ${taskId}, Direction: ${direction}`);
-
     if (!userId) {
-      showError('[ERROR SOURCE] User not authenticated.');
-      console.error(`[${debugId}] moveTask: User not authenticated.`);
+      showError('User not authenticated.');
       return;
     }
 
     const taskToMove = tasks.find(t => t.id === taskId);
     if (!taskToMove) {
-      showError('[ERROR SOURCE] Task not found.');
-      console.error(`[${debugId}] moveTask: Task with ID ${taskId} not found.`);
+      showError('Task not found.');
       return;
     }
-    console.log(`[${debugId}] moveTask: Task to move details:`, taskToMove);
     if (taskToMove.parent_task_id !== null) {
-      showError('[ERROR SOURCE] Cannot reorder sub-tasks directly.');
-      console.error(`[${debugId}] moveTask: Attempted to reorder sub-task ${taskId}.`);
+      showError('Cannot reorder sub-tasks directly.');
       return;
     }
 
     const currentSectionId = taskToMove.section_id;
-    console.log(`[${debugId}] moveTask: Task ${taskId} is in section ${currentSectionId || 'No Section'}`);
 
     const tasksInCurrentSection = tasks
       .filter(t => t.section_id === currentSectionId && t.parent_task_id === null)
       .sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
 
-    console.log(`[${debugId}] moveTask: Tasks in current section (after filter and sort).`);
-
     const currentIndex = tasksInCurrentSection.findIndex(t => t.id === taskId);
-    console.log(`[${debugId}] moveTask: Result of findIndex for ${taskId}: ${currentIndex}`);
-    if (tasksInCurrentSection.length > 0) {
-        console.log(`[${debugId}] moveTask: Task at index 0: ID=${tasksInCurrentSection[0].id}, Order=${tasksInCurrentSection[0].order}`);
-    }
-
-    console.log(`[${debugId}] moveTask: Before 'already at bottom/top' check. Current index: ${currentIndex}, Length: ${tasksInCurrentSection.length}`);
-    console.log(`[${debugId}] moveTask: Current tasksInCurrentSection before check.`);
-
-
+    
     if (currentIndex === -1) {
-      console.error(`[${debugId}] moveTask: Task ${taskId} not found in its filtered section list. This should not happen.`);
-      showError('[ERROR SOURCE] Internal error: Task not found in section list.');
+      showError('Internal error: Task not found in section list.');
       return;
     }
 
     let newIndex = currentIndex;
     if (direction === 'up') {
       if (currentIndex === 0) {
-        console.log(`[${debugId}] moveTask: Attempted to move UP from top. Current index: ${currentIndex}, Length: ${tasksInCurrentSection.length}`);
-        showError('[ERROR SOURCE] Task is already at the top.');
+        showError('Task is already at the top.');
         return;
       }
       newIndex = currentIndex - 1;
     } else { // direction === 'down'
       if (currentIndex === tasksInCurrentSection.length - 1) {
-        console.log(`[${debugId}] moveTask: Attempted to move DOWN from bottom. Current index: ${currentIndex}, Length: ${tasksInCurrentSection.length}`);
-        // THIS IS THE CRITICAL LOG: What are the values *at this exact moment*?
-        console.log(`[${debugId}] CRITICAL CHECK: currentIndex=${currentIndex}, tasksInCurrentSection.length=${tasksInCurrentSection.length}`);
-        showError('[ERROR SOURCE] Task is already at the bottom.');
+        showError('Task is already at the bottom.');
         return;
       }
       newIndex = currentIndex + 1;
     }
 
-    console.log(`[${debugId}] moveTask: Moving from index ${currentIndex} to ${newIndex}`);
-
     const newOrderedTasksInSection = arrayMove(tasksInCurrentSection, currentIndex, newIndex);
-
-    console.log(`[${debugId}] moveTask: Tasks in current section (after arrayMove).`);
 
     const updates = newOrderedTasksInSection.map((task, index) => ({
       id: task.id,
@@ -1150,8 +1124,6 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       user_id: userId,
     }));
 
-    console.log(`[${debugId}] moveTask: Updates payload for Supabase.`);
-
     // Optimistic update
     setTasks(prevTasks => {
       const updatedTasksMap = new Map(updates.map(u => [u.id, u]));
@@ -1168,10 +1140,8 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         if (aSectionOrder !== bSectionOrder) return aSectionOrder - bSectionOrder;
         return (a.order || Infinity) - (b.order || Infinity);
       });
-      console.log(`[${debugId}] moveTask: Tasks state after optimistic update and sort.`);
       return finalSortedState;
     });
-    console.log(`[${debugId}] moveTask: Optimistic update applied and tasks state re-sorted.`);
 
     try {
       const { error } = await supabase
@@ -1179,14 +1149,12 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         .upsert(updates, { onConflict: 'id' });
 
       if (error) {
-        console.error(`[${debugId}] moveTask: Supabase upsert error:`, error);
         throw error;
       }
       showSuccess('Task reordered successfully!');
-      console.log(`[${debugId}] moveTask: Supabase upsert successful.`);
     } catch (error: any) {
-      console.error(`[${debugId}] moveTask: Caught error during reordering:`, error);
-      showError('[ERROR SOURCE] Failed to reorder task.');
+      console.error('Error reordering task:', error);
+      showError('Failed to reorder task.');
       // No manual refetch here, rely on real-time subscription
     }
   }, [userId, sections, tasks]);
@@ -1194,25 +1162,21 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
   const { finalFilteredTasks, nextAvailableTask } = useMemo(() => {
     console.log('filteredTasks/nextAvailableTask: --- START FILTERING ---');
     console.log('filteredTasks/nextAvailableTask: Current viewMode:', viewMode);
-    console.log('filteredTasks/nextAvailableTask: Raw tasks state at start of memo.');
 
     let relevantTasks: Task[] = [];
     const focusModeSectionIds = new Set(sections.filter(s => s.include_in_focus_mode).map(s => s.id));
 
     if (viewMode === 'archive') {
       relevantTasks = tasks.filter(task => task.status === 'archived');
-      console.log('filteredTasks/nextAvailableTask: Archive mode - relevantTasks (archived only).');
     } else if (viewMode === 'focus') {
       relevantTasks = tasks.filter(task => 
         (task.section_id === null || focusModeSectionIds.has(task.section_id)) &&
         task.status === 'to-do' &&
         task.parent_task_id === null // Only top-level tasks in focus mode
       );
-      console.log('filteredTasks/nextAvailableTask: Focus mode - relevantTasks (to-do, top-level, focus sections).');
     }
     else { // Default to 'daily' logic
       const effectiveCurrentDateUTC = currentDate ? getUTCStartOfDay(currentDate) : getUTCStartOfDay(new Date());
-      console.log('filteredTasks/nextAvailableTask: Daily mode - Current Date (UTC):', effectiveCurrentDateUTC.toISOString());
       const processedOriginalIds = new Set<string>();
 
       const topLevelTasks = tasks.filter(task => task.parent_task_id === null);
@@ -1221,7 +1185,6 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         const originalId = task.original_task_id || task.id;
 
         if (processedOriginalIds.has(originalId)) {
-            console.log(`filteredTasks/nextAvailableTask: Skipping already processed originalId: ${originalId}`);
             return;
         }
 
@@ -1259,13 +1222,9 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
             const isTaskCreatedOnCurrentDate = isSameDay(taskCreatedAtUTC, effectiveCurrentDateUTC);
 
             if (isTaskCreatedOnCurrentDate && task.status !== 'archived') {
-                console.log(`filteredTasks/nextAvailableTask: Pushing non-recurring task created on current date.`);
                 relevantTasks.push(task);
             } else if (isBefore(taskCreatedAtUTC, effectiveCurrentDateUTC) && task.status === 'to-do') {
-                console.log(`filteredTasks/nextAvailableTask: Pushing non-recurring carry-over task.`);
                 relevantTasks.push(task);
-            } else {
-                console.log(`filteredTasks/nextAvailableTask: Skipping non-recurring task (not created today, not to-do carry-over, or archived).`);
             }
         }
       });

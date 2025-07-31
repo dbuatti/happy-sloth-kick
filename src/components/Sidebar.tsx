@@ -67,9 +67,7 @@ const Sidebar: React.FC<SidebarProps> = ({ children }) => {
   const isMobile = useIsMobile();
   const { isSoundEnabled, toggleSound } = useSound();
 
-  if (false) { // isFocusModeActive is removed, so this condition is always false
-    return <div className="flex-1 flex flex-col">{children}</div>;
-  }
+  // Removed the 'if (false)' condition as it was dead code.
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 

@@ -190,6 +190,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
             className="h-7 px-2 text-xs"
             onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'to-do'); playSound('success'); }}
             data-no-dnd="true"
+            aria-label="Mark as To-Do"
           >
             <ListTodo className="h-3 w-3 mr-1" /> To-Do
           </Button>
@@ -200,6 +201,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           className="h-7 w-7"
           onClick={(e) => { e.stopPropagation(); onEditTask(task); }}
           data-no-dnd="true"
+          aria-label="Edit task"
         >
           <Edit className="h-4 w-4" />
         </Button>
@@ -210,6 +212,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
               className="h-7 w-7 p-0"
               onClick={(e) => e.stopPropagation()}
               data-no-dnd="true"
+              aria-label="More options"
             >
               <span className="sr-only">Open menu</span>
               <MoreHorizontal className="h-4 w-4" />
