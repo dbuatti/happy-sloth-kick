@@ -229,7 +229,7 @@ const DailyTasksV2: React.FC = () => {
                 updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
                 reorderSections={reorderSections}
                 moveTask={moveTask}
-                updateTaskParentAndOrder={updateTaskParentAndOrder} {/* Pass the new function here */}
+                updateTaskParentAndOrder={updateTaskParentAndOrder}
                 allCategories={allCategories}
               />
             </CardContent>
