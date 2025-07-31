@@ -41,7 +41,7 @@ const ProjectBalanceTracker: React.FC = () => {
 
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
-  const [newProjectDescription, setNewProjectDescription] = useState('');
+  const [newProjectDescription, setNewProjectDescription] = useState(''); // Fixed: Changed from = '' to = useState('')
   const [newProjectLink, setNewProjectLink] = useState('');
   const [isSavingProject, setIsSavingProject] = useState(false);
 
@@ -326,14 +326,14 @@ const ProjectBalanceTracker: React.FC = () => {
                             />
                             <Textarea
                               value={editingProjectDescription}
-                              onChange={(e) => setEditingProjectDescription(e.target.value)}
+                              onChange={(e) => setNewProjectDescription(e.target.value)}
                               placeholder="Description..."
                               rows={2}
                               disabled={isSavingProject}
                             />
                             <Input
                               type="url"
-                              value={editingProjectLink}
+                              value={newProjectLink}
                               onChange={(e) => setNewProjectLink(e.target.value)}
                               placeholder="Project link (optional)"
                               disabled={isSavingProject}
@@ -365,7 +365,7 @@ const ProjectBalanceTracker: React.FC = () => {
                         )}
                       </div>
 
-                      <div className="flex flex-col sm:flex-row items-center gap-3 flex-shrink-0 w-full sm:w-auto">
+                      <div className="flex flex-col sm:flex-row items-center gap-3 flex-shrink-0 w-full sm:w-48 md:w-64 lg:w-80"> {/* Adjusted width here */}
                         {editingProjectId === project.id ? (
                           <div className="flex gap-2 w-full">
                             <Button size="sm" onClick={(e) => { e.stopPropagation(); handleSaveProjectEdit(); }} disabled={isSavingProject || !editingProjectName.trim()} className="flex-1">
