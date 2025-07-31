@@ -3,10 +3,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import NotFound from "./pages/NotFound";
-import Analytics from "./pages/Analytics";
-import Settings from "./pages/Settings";
+import MyHub from "./pages/MyHub"; // Import the new MyHub page
 import Help from "./pages/Help";
-import Archive from "./pages/Archive";
 import ProjectBalanceTracker from "./pages/ProjectBalanceTracker";
 import TimeBlockSchedule from "./pages/TimeBlockSchedule";
 import Meditation from "./pages/Meditation";
@@ -14,7 +12,7 @@ import SleepTracker from "./pages/SleepTracker";
 import MindfulnessTools from "./pages/MindfulnessTools";
 import FocusMode from "./pages/FocusMode";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
-import { ReminderProvider } from "@/context/ReminderContext"; // Import ReminderProvider
+import { ReminderProvider } from "@/context/ReminderContext";
 import CommandPalette from "./components/CommandPalette";
 import { useState, useEffect, useCallback } from 'react';
 import Sidebar from "./components/Sidebar";
@@ -22,7 +20,7 @@ import { SoundProvider } from "@/context/SoundContext";
 import { addDays, startOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useTasks, Task } from '@/hooks/useTasks';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } => 'react-router-dom';
 import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
 import AuthComponent from "@/components/AuthComponent";
 import DateNavigator from '@/components/DateNavigator';
@@ -141,10 +139,8 @@ const AppContent = () => {
                 )}
               </>
             } />
-            <Route path="/analytics" element={<Analytics />} /> {/* Removed props */}
-            <Route path="/settings" element={<Settings />} />
+            <Route path="/my-hub" element={<MyHub />} />
             <Route path="/help" element={<Help />} />
-            <Route path="/archive" element={<Archive />} /> {/* Removed props */}
             <Route path="/projects" element={<ProjectBalanceTracker />} />
             <Route path="/schedule" element={<TimeBlockSchedule />} />
             <Route path="/meditation" element={<Meditation />} />
@@ -176,7 +172,7 @@ const App = () => {
         <Sonner position="top-right" />
         <AuthProvider>
           <SoundProvider>
-            <ReminderProvider> {/* Wrap with ReminderProvider */}
+            <ReminderProvider>
               <BrowserRouter>
                 <AppContent />
               </BrowserRouter>

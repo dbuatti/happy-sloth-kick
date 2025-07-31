@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, BarChart3, Settings as SettingsIcon, HelpCircle, Archive as ArchiveIcon, Timer, LayoutGrid, CalendarClock, Menu, Leaf, Moon, Volume2, VolumeX, Brain, Target } from 'lucide-react'; // Added Target icon for Focus Mode
+import { Home, BarChart3, Settings as SettingsIcon, HelpCircle, Archive as ArchiveIcon, Timer, LayoutGrid, CalendarClock, Menu, Leaf, Moon, Volume2, VolumeX, Brain, Target, LayoutDashboard } from 'lucide-react'; // Added LayoutDashboard for My Hub
 import ThemeSelector from './ThemeSelector';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -16,15 +16,13 @@ interface SidebarProps {
 
 const navItems = [
   { name: 'Daily Tasks', path: '/', icon: Home, showCount: true },
-  { name: 'Focus Mode', path: '/focus', icon: Target }, // New nav item for Focus Mode
+  { name: 'Focus Mode', path: '/focus', icon: Target },
   { name: 'Mindfulness', path: '/mindfulness', icon: Brain },
   { name: 'Meditation', path: '/meditation', icon: Leaf },
   { name: 'Sleep Tracker', path: '/sleep', icon: Moon },
   { name: 'Project Balance', path: '/projects', icon: LayoutGrid },
   { name: 'Time Blocks', path: '/schedule', icon: CalendarClock },
-  { name: 'Analytics', path: '/analytics', icon: BarChart3 },
-  { name: 'Archive', path: '/archive', icon: ArchiveIcon },
-  { name: 'Settings', path: '/settings', icon: SettingsIcon },
+  { name: 'My Hub', path: '/my-hub', icon: LayoutDashboard }, // New consolidated page
   { name: 'Help', path: '/help', icon: HelpCircle },
 ];
 
@@ -66,8 +64,6 @@ const NavigationLinks = ({ onLinkClick }: { onLinkClick?: () => void }) => {
 const Sidebar: React.FC<SidebarProps> = ({ children }) => {
   const isMobile = useIsMobile();
   const { isSoundEnabled, toggleSound } = useSound();
-
-  // Removed the 'if (false)' condition as it was dead code.
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
