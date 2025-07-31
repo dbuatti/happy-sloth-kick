@@ -10,7 +10,7 @@ import DailyStreak from './DailyStreak';
 import SmartSuggestions from './SmartSuggestions';
 import { Task, TaskSection } from '@/hooks/useTasks';
 import TaskDetailDialog from './TaskDetailDialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import TaskFilter from './TaskFilter';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -326,7 +326,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
     <>
       <div className="flex-1 flex flex-col">
         <main className="flex-grow">
-          <Card className="w-full shadow-lg p-4">
+          <Card className="w-full max-w-3xl mx-auto shadow-lg p-4"> {/* Changed max-w-4xl to max-w-3xl */}
             <CardHeader className="pb-3">
               <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
                 <CheckCircle2 className="h-7 w-7" /> Your Tasks
