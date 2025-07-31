@@ -130,7 +130,7 @@ const GratitudeJournal: React.FC = () => {
     <Card className="w-full max-w-md shadow-lg">
       <CardHeader>
         <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
-          <Heart className="h-6 w-6 text-pink-600" /> Gratitude Journal
+          <Heart className="h-6 w-6 text-primary" /> Gratitude Journal
         </CardTitle>
         <p className="text-muted-foreground text-center">
           Cultivate a positive mindset by noting what you're grateful for.

@@ -130,7 +130,7 @@ const WorryJournal: React.FC = () => {
     <Card className="w-full max-w-md shadow-lg">
       <CardHeader>
         <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
-          <Brain className="h-6 w-6 text-green-600" /> Worry Journal
+          <Brain className="h-6 w-6 text-primary" /> Worry Journal
         </CardTitle>
         <p className="text-muted-foreground text-center">
           Jot down intrusive thoughts to gain perspective.

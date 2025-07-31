@@ -25,7 +25,7 @@ const SleepTracker: React.FC = () => {
   useEffect(() => {
     if (!loading) {
       setBedTime(sleepRecord?.bed_time ? sleepRecord.bed_time.substring(0, 5) : '');
-      setLightsOffTime(sleepRecord?.lights_off_time ? sleepRecord.lights_off_time.substring(0, 5) : '');
+      setLightsOffTime(sleepRecord?.lights_off_time ? sleepRecord.lights_off_off_time.substring(0, 5) : '');
       setWakeUpTime(sleepRecord?.wake_up_time ? sleepRecord.wake_up_time.substring(0, 5) : '');
       setGetOutOfBedTime(sleepRecord?.get_out_of_bed_time ? sleepRecord.get_out_of_bed_time.substring(0, 5) : '');
     }
@@ -65,7 +65,7 @@ const SleepTracker: React.FC = () => {
         <Card className="w-full max-w-md mx-auto shadow-lg p-4">
           <CardHeader className="pb-2">
             <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
-              <Moon className="h-7 w-7 text-blue-600" /> Sleep Tracker
+              <Moon className="h-7 w-7 text-primary" /> Sleep Tracker
             </CardTitle>
             <p className="text-sm text-muted-foreground text-center">Log your sleep times for better insights.</p>
           </CardHeader>
@@ -90,7 +90,7 @@ const SleepTracker: React.FC = () => {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="bed-time" className="flex items-center gap-2">
-                    <Bed className="h-4 w-4" /> Go to Bed
+                    <Bed className="h-4 w-4 text-muted-foreground" /> Go to Bed
                   </Label>
                   <Input
                     id="bed-time"
@@ -102,7 +102,7 @@ const SleepTracker: React.FC = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lights-off-time" className="flex items-center gap-2">
-                    <Moon className="h-4 w-4" /> Lights Off
+                    <Moon className="h-4 w-4 text-muted-foreground" /> Lights Off
                   </Label>
                   <Input
                     id="lights-off-time"
@@ -114,7 +114,7 @@ const SleepTracker: React.FC = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="wake-up-time" className="flex items-center gap-2">
-                    <AlarmClock className="h-4 w-4" /> Wake Up
+                    <AlarmClock className="h-4 w-4 text-muted-foreground" /> Wake Up
                   </Label>
                   <Input
                     id="wake-up-time"
@@ -126,7 +126,7 @@ const SleepTracker: React.FC = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="get-out-of-bed-time" className="flex items-center gap-2">
-                    <LogOut className="h-4 w-4" /> Get Out of Bed
+                    <LogOut className="h-4 w-4 text-muted-foreground" /> Get Out of Bed
                   </Label>
                   <Input
                     id="get-out-of-bed-time"

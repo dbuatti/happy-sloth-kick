@@ -120,7 +120,7 @@ const BodyScanMeditation: React.FC = () => {
     <Card className="w-full max-w-md shadow-lg text-center">
       <CardHeader>
         <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
-          <ScanEye className="h-6 w-6 text-indigo-600" /> Body Scan Meditation
+          <ScanEye className="h-6 w-6 text-primary" /> Body Scan Meditation
         </CardTitle>
         <p className="text-muted-foreground">
           Systematically bring awareness to your body.
@@ -150,7 +150,7 @@ const BodyScanMeditation: React.FC = () => {
                 className="absolute w-full h-full rounded-full bg-muted"
                 indicatorClassName={cn(
                   "transition-all duration-1000 ease-linear",
-                  "bg-indigo-500"
+                  "bg-primary"
                 )}
               />
               <div className="relative z-10 text-5xl font-bold text-foreground">
@@ -164,7 +164,7 @@ const BodyScanMeditation: React.FC = () => {
                 onClick={isRunning ? pauseTimer : startTimer}
                 className={cn(
                   "w-24",
-                  isRunning ? "bg-yellow-500 hover:bg-yellow-600" : "bg-indigo-600 hover:bg-indigo-700"
+                  isRunning ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90"
                 )}
               >
                 {isRunning ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
