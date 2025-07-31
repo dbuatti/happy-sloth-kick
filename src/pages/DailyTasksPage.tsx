@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import DateNavigator from '@/components/DateNavigator';
 import NextTaskCard from '@/components/NextTaskCard';
 import TaskList from '@/components/TaskList';
 import { MadeWithDyad } from '@/components/made-with-dyad';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
-import TaskOverviewDialog from '@/components/TaskOverviewDialog'; // Import new overview dialog
+import TaskOverviewDialog from '@/components/TaskOverviewDialog';
 import { useTasks, Task } from '@/hooks/useTasks';
 import { useAuth } from '@/context/AuthContext';
 import { addDays, startOfDay } from 'date-fns';
+import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
+import CommandPalette from '@/components/CommandPalette'; // Import CommandPalette
 
 // Helper to get UTC start of day
 const getUTCStartOfDay = (date: Date) => {
@@ -21,11 +23,13 @@ const DailyTasksPage: React.FC = () => {
 
   const { tasks, filteredTasks, nextAvailableTask, updateTask, deleteTask, userId, loading: tasksLoading, sections, allCategories } = useTasks({ currentDate, setCurrentDate });
 
-  const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false); // New state for overview dialog
-  const [taskToOverview, setTaskToOverview] = useState<Task | null>(null); // Task for overview dialog
+  const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
+  const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
 
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+
+  const searchInputRef = useRef<HTMLInputElement>(null); // Ref for the search input
 
   const handlePreviousDay = () => {
     setCurrentDate(prevDate => {
@@ -56,10 +60,21 @@ const DailyTasksPage: React.FC = () => {
   };
 
   const handleEditTaskFromOverview = (task: Task) => {
-    setIsTaskOverviewOpen(false); // Close overview
+    setIsTaskOverviewOpen(false);
     setTaskToEdit(task);
-    setIsTaskDetailOpen(true); // Open edit dialog
+    setIsTaskDetailOpen(true);
   };
+
+  // Keyboard shortcuts for DailyTasksPage
+  const shortcuts: ShortcutMap = {
+    'arrowleft': handlePreviousDay,
+    'arrowright': handleNextDay,
+    't': handleGoToToday,
+    'cmd+f': (e) => { e.preventDefault(); searchInputRef.current?.focus(); }, // Cmd+F to focus search
+    'ctrl+f': (e) => { e.preventDefault(); searchInputRef.current?.focus(); }, // Ctrl+F to focus search
+  };
+
+  useKeyboardShortcuts(shortcuts);
 
   return (
     <>
@@ -74,7 +89,7 @@ const DailyTasksPage: React.FC = () => {
         <NextTaskCard
           task={nextAvailableTask}
           onMarkComplete={handleMarkTaskComplete}
-          onEditTask={handleOpenOverview} // NextTaskCard now opens overview
+          onEditTask={handleOpenOverview}
           currentDate={currentDate}
           loading={tasksLoading}
         />
@@ -82,6 +97,7 @@ const DailyTasksPage: React.FC = () => {
           setIsAddTaskOpen={setIsAddTaskOpen}
           currentDate={currentDate}
           setCurrentDate={setCurrentDate}
+          searchRef={searchInputRef} // Pass the ref to TaskList
         />
       </main>
       <footer className="p-4">
@@ -103,7 +119,7 @@ const DailyTasksPage: React.FC = () => {
           onDelete={deleteTask}
           sections={sections}
           allCategories={allCategories}
-          allTasks={tasks} // Pass all tasks for subtask filtering
+          allTasks={tasks}
         />
       )}
       {taskToEdit && (
@@ -118,6 +134,13 @@ const DailyTasksPage: React.FC = () => {
           allCategories={allCategories}
         />
       )}
+      {/* CommandPalette is now rendered here, receiving props from DailyTasksPage */}
+      <CommandPalette
+        isAddTaskOpen={isAddTaskOpen}
+        setIsAddTaskOpen={setIsAddTaskOpen}
+        currentDate={currentDate}
+        setCurrentDate={setCurrentDate}
+      />
     </>
   );
 };

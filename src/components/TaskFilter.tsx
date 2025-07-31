@@ -24,6 +24,7 @@ interface TaskFilterProps {
   setSectionFilter: (value: string) => void;
   sections: TaskSection[];
   allCategories: Category[];
+  searchRef: React.RefObject<HTMLInputElement>; // New prop for search input ref
 }
 
 const TaskFilter: React.FC<TaskFilterProps> = ({
@@ -41,6 +42,7 @@ const TaskFilter: React.FC<TaskFilterProps> = ({
   setSectionFilter,
   sections,
   allCategories,
+  searchRef, // Destructure new prop
 }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
@@ -84,6 +86,7 @@ const TaskFilter: React.FC<TaskFilterProps> = ({
       <div className="relative flex-1">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
         <Input
+          ref={searchRef} // Apply the ref here
           placeholder="Search tasks..."
           value={searchFilter}
           onChange={handleSearchChange}

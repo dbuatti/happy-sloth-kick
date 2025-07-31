@@ -48,9 +48,10 @@ interface TaskListProps {
   setIsAddTaskOpen: (open: boolean) => void;
   currentDate: Date;
   setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
+  searchRef: React.RefObject<HTMLInputElement>; // New prop for search input ref
 }
 
-const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setCurrentDate }) => {
+const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setCurrentDate, searchRef }) => {
   const {
     tasks, // All tasks, needed for subtask filtering in overview
     filteredTasks,
@@ -361,6 +362,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                   setSectionFilter={setSectionFilter}
                   sections={sections}
                   allCategories={allCategories}
+                  searchRef={searchRef}
                 />
 
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
