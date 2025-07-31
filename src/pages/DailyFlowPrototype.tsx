@@ -45,7 +45,7 @@ const DailyFlowPrototype: React.FC = () => {
 
   // Fetch data using existing hooks
   const { filteredTasks, loading: tasksLoading, nextAvailableTask, updateTask, deleteTask, userId, setCurrentDate: setTaskCurrentDate } = useTasks({ currentDate });
-  const { projects, loading: projectsLoading, sectionTitle: projectTrackerTitle } = useProjects(); // Fixed: Removed leastWorkedOnProject
+  const { projects, loading: projectsLoading, sectionTitle: projectTrackerTitle } = useProjects();
   const { sleepRecord, loading: sleepLoading } = useSleepRecords({ selectedDate: currentDate });
   const { workHours: singleDayWorkHours, loading: workHoursLoading } = useWorkHours({ date: currentDate });
 
@@ -85,16 +85,22 @@ const DailyFlowPrototype: React.FC = () => {
                 </CardContent>
               </Card>
             )}
-            <DailyStreak tasks={filteredTasks} currentDate={currentDate} />
-            <NextTaskCard
-              task={nextAvailableTask}
-              onMarkComplete={handleMarkTaskComplete}
-              onEditTask={handleEditNextTask}
-              currentDate={currentDate}
-              loading={tasksLoading}
-            />
-            <GratitudeJournal />
-            <MiniBreathingBubble />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="md:col-span-2">
+                <DailyStreak tasks={filteredTasks} currentDate={currentDate} />
+              </div>
+              <div className="md:col-span-2">
+                <NextTaskCard
+                  task={nextAvailableTask}
+                  onMarkComplete={handleMarkTaskComplete}
+                  onEditTask={handleEditNextTask}
+                  currentDate={currentDate}
+                  loading={tasksLoading}
+                />
+              </div>
+              <GratitudeJournal />
+              <MiniBreathingBubble />
+            </div>
           </div>
         );
       case 'work':
@@ -115,34 +121,38 @@ const DailyFlowPrototype: React.FC = () => {
                 </CardContent>
               </Card>
             )}
-            <NextTaskCard
-              task={nextAvailableTask}
-              onMarkComplete={handleMarkTaskComplete}
-              onEditTask={handleEditNextTask}
-              currentDate={currentDate}
-              loading={tasksLoading}
-            />
-            <MiniBreathingBubble />
-            <Card className="w-full shadow-lg">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xl font-bold flex items-center gap-2">
-                  <Lightbulb className="h-5 w-5 text-blue-500" /> Project Focus
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                {projectsLoading ? (
-                  <p>Loading projects...</p>
-                ) : leastWorkedOnProject ? (
-                  <p className="text-muted-foreground">
-                    Consider focusing on: <span className="font-semibold">{leastWorkedOnProject.name}</span> (Current count: {leastWorkedOnProject.current_count}/10)
-                  </p>
-                ) : (
-                  <p className="text-muted-foreground">No projects to balance yet.</p>
-                )}
-                <Button className="mt-4 w-full" onClick={() => navigate('/projects')}>Go to Projects</Button>
-              </CardContent>
-            </Card>
-            <WorryJournal />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="md:col-span-2">
+                <NextTaskCard
+                  task={nextAvailableTask}
+                  onMarkComplete={handleMarkTaskComplete}
+                  onEditTask={handleEditNextTask}
+                  currentDate={currentDate}
+                  loading={tasksLoading}
+                />
+              </div>
+              <MiniBreathingBubble />
+              <Card className="w-full shadow-lg">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xl font-bold flex items-center gap-2">
+                    <Lightbulb className="h-5 w-5 text-blue-500" /> Project Focus
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  {projectsLoading ? (
+                    <p>Loading projects...</p>
+                  ) : leastWorkedOnProject ? (
+                    <p className="text-muted-foreground">
+                      Consider focusing on: <span className="font-semibold">{leastWorkedOnProject.name}</span> (Current count: {leastWorkedOnProject.current_count}/10)
+                    </p>
+                  ) : (
+                    <p className="text-muted-foreground">No projects to balance yet.</p>
+                  )}
+                  <Button className="mt-4 w-full" onClick={() => navigate('/projects')}>Go to Projects</Button>
+                </CardContent>
+              </Card>
+              <WorryJournal />
+            </div>
           </div>
         );
       case 'break':
@@ -163,19 +173,21 @@ const DailyFlowPrototype: React.FC = () => {
                 </CardContent>
               </Card>
             )}
-            <MiniBreathingBubble />
-            <SensoryTool />
-            <Card className="w-full shadow-lg">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xl font-bold flex items-center gap-2">
-                  <Lightbulb className="h-5 w-5 text-green-500" /> Quick Meditation
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <p className="text-muted-foreground">A short guided meditation to clear your head.</p>
-                <Button className="mt-4 w-full" onClick={() => navigate('/meditation')}>Start 5-min Meditation</Button>
-              </CardContent>
-            </Card>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <MiniBreathingBubble />
+              <SensoryTool />
+              <Card className="w-full shadow-lg md:col-span-2">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xl font-bold flex items-center gap-2">
+                    <Lightbulb className="h-5 w-5 text-green-500" /> Quick Meditation
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="text-muted-foreground">A short guided meditation to clear your head.</p>
+                  <Button className="mt-4 w-full" onClick={() => navigate('/meditation')}>Start 5-min Meditation</Button>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         );
       case 'evening':
@@ -196,22 +208,24 @@ const DailyFlowPrototype: React.FC = () => {
                 </CardContent>
               </Card>
             )}
-            <WorryJournal />
-            <GratitudeJournal />
-            <Card className="w-full shadow-lg">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xl font-bold flex items-center gap-2">
-                  <Lightbulb className="h-5 w-5 text-blue-500" /> Tomorrow's Tasks
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <p className="text-muted-foreground">Review and plan for the day ahead.</p>
-                <Button className="mt-4 w-full" onClick={() => {
-                  setTaskCurrentDate(addDays(currentDate, 1));
-                  navigate('/');
-                }}>View Tomorrow</Button>
-              </CardContent>
-            </Card>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <WorryJournal />
+              <GratitudeJournal />
+              <Card className="w-full shadow-lg md:col-span-2">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xl font-bold flex items-center gap-2">
+                    <Lightbulb className="h-5 w-5 text-blue-500" /> Tomorrow's Tasks
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="text-muted-foreground">Review and plan for the day ahead.</p>
+                  <Button className="mt-4 w-full" onClick={() => {
+                    setTaskCurrentDate(addDays(currentDate, 1));
+                    navigate('/');
+                  }}>View Tomorrow</Button>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         );
       case 'night':
@@ -232,27 +246,31 @@ const DailyFlowPrototype: React.FC = () => {
                 </CardContent>
               </Card>
             )}
-            <Card className="w-full shadow-lg">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xl font-bold flex items-center gap-2">
-                  <Bed className="h-5 w-5 text-indigo-500" /> Sleep Log
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                {sleepLoading ? (
-                  <p>Loading sleep record...</p>
-                ) : sleepRecord ? (
-                  <p className="text-muted-foreground">
-                    Last recorded sleep: {sleepRecord.bed_time ? format(new Date(`2000-01-01T${sleepRecord.bed_time}`), 'h:mm a') : 'N/A'} - {sleepRecord.wake_up_time ? format(new Date(`2000-01-01T${sleepRecord.wake_up_time}`), 'h:mm a') : 'N/A'}
-                  </p>
-                ) : (
-                  <p className="text-muted-foreground">No sleep record for today.</p>
-                )}
-                <Button className="mt-4 w-full" onClick={() => navigate('/sleep')}>Log Sleep</Button>
-              </CardContent>
-            </Card>
-            <ProgressiveMuscleRelaxation />
-            <Meditation /> {/* Full meditation page for deep relaxation */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card className="w-full shadow-lg">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xl font-bold flex items-center gap-2">
+                    <Bed className="h-5 w-5 text-indigo-500" /> Sleep Log
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  {sleepLoading ? (
+                    <p>Loading sleep record...</p>
+                  ) : sleepRecord ? (
+                    <p className="text-muted-foreground">
+                      Last recorded sleep: {sleepRecord.bed_time ? format(new Date(`2000-01-01T${sleepRecord.bed_time}`), 'h:mm a') : 'N/A'} - {sleepRecord.wake_up_time ? format(new Date(`2000-01-01T${sleepRecord.wake_up_time}`), 'h:mm a') : 'N/A'}
+                    </p>
+                  ) : (
+                    <p className="text-muted-foreground">No sleep record for today.</p>
+                  )}
+                  <Button className="mt-4 w-full" onClick={() => navigate('/sleep')}>Log Sleep</Button>
+                </CardContent>
+              </Card>
+              <ProgressiveMuscleRelaxation />
+              <div className="md:col-span-2">
+                <Meditation /> {/* Full meditation page for deep relaxation */}
+              </div>
+            </div>
           </div>
         );
       default:
