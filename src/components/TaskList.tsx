@@ -221,11 +221,6 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
         if (oldIndex !== -1 && newIndex !== -1) {
           const newOrderedAllSections = arrayMove(allSortableSections, oldIndex, newIndex);
           // Now, update the 'order' for actual sections based on their new positions
-          // This is a simplified approach and might need more thought for complex scenarios
-          const updatesForRealSections = newOrderedAllSections
-            .filter(s => s.id !== 'no-section-header')
-            .map((s, idx) => ({ id: s.id, order: idx }));
-          
           // This part needs to be handled by a new function in useTasks or directly here
           // For now, we'll just let the visual reorder happen.
           // To persist, you'd need to call a `reorderSections` that takes an array of {id, order}
@@ -571,6 +566,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
             sections={sections}
             allCategories={allCategories}
             preselectedSectionId={sectionToPreselect}
+            currentDate={currentDate}
           />
         </DialogContent>
       </Dialog>

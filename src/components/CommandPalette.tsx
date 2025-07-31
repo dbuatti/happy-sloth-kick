@@ -228,7 +228,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
             <SheetHeader>
               <SheetTitle>Add New Task</SheetTitle>
             </SheetHeader>
-            <AddTaskForm onAddTask={handleNewTaskSubmit} userId={user?.id || null} onTaskAdded={() => setIsAddTaskOpen(false)} sections={sections} allCategories={allCategories} />
+            <AddTaskForm onAddTask={handleNewTaskSubmit} userId={user?.id || null} onTaskAdded={() => setIsAddTaskOpen(false)} sections={sections} allCategories={allCategories} currentDate={currentDate} />
           </SheetContent>
         </Sheet>
       ) : (
@@ -237,7 +237,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
             <DialogHeader>
               <DialogTitle>Add New Task</DialogTitle>
             </DialogHeader>
-            <AddTaskForm onAddTask={handleNewTaskSubmit} userId={user?.id || null} onTaskAdded={() => setIsAddTaskOpen(false)} sections={sections} allCategories={allCategories} />
+            <AddTaskForm onAddTask={handleNewTaskSubmit} userId={user?.id || null} onTaskAdded={() => setIsAddTaskOpen(false)} sections={sections} allCategories={allCategories} currentDate={currentDate} />
           </DialogContent>
         </Dialog>
       )}
