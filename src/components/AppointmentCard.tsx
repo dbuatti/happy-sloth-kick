@@ -53,8 +53,6 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
     top: `${calculatedTop}px`,
     height: `${calculatedHeight}px`,
     backgroundColor: appointment.color,
-    left: `${overlapOffset * 10}px`,
-    width: `calc(100% - ${overlapOffset * 10}px)`,
   };
 
   const startTime = parseISO(`2000-01-01T${appointment.start_time}`);
@@ -68,7 +66,10 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
         "absolute rounded-lg p-2 text-white shadow-md cursor-pointer",
         "flex flex-col justify-between transition-all duration-200 ease-in-out",
         "group",
-        isDragging ? "ring-2 ring-primary shadow-lg" : "hover:scale-[1.01] hover:shadow-lg"
+        isDragging ? "ring-2 ring-primary shadow-lg" : "hover:scale-[1.01] hover:shadow-lg",
+        // Responsive positioning and width for overlap
+        `left-[${overlapOffset * 5}px] w-[calc(100% - ${overlapOffset * 5}px)]`, // Default for mobile (smaller offset)
+        `sm:left-[${overlapOffset * 10}px] sm:w-[calc(100% - ${overlapOffset * 10}px)]` // Larger offset for sm and up
       )}
       {...(attributes || {})} // Conditionally spread attributes
       {...(listeners || {})} // Conditionally spread listeners
