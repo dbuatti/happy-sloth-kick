@@ -5,6 +5,7 @@ import { Play, Pause, RefreshCcw, Wind } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSound } from '@/context/SoundContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MadeWithDyad } from '@/components/made-with-dyad';
 
 interface BreathCycle {
   name: string;
@@ -22,7 +23,7 @@ const breathCycles: BreathCycle[] = [
   { name: 'Equal Breathing (4-0-4-0)', inhale: 4, holdTop: 0, exhale: 4, holdBottom: 0, description: 'Simple, balanced inhale and exhale.' },
 ];
 
-const BreathingBubble: React.FC = () => {
+const BreathingBubblePage: React.FC = () => {
   const { playSound } = useSound();
   const [isRunning, setIsRunning] = useState(false);
   const [phase, setPhase] = useState<'inhale' | 'hold-top' | 'exhale' | 'hold-bottom'>('inhale');
@@ -133,74 +134,81 @@ const BreathingBubble: React.FC = () => {
   };
 
   return (
-    <Card className="w-full max-w-md shadow-lg text-center">
-      <CardHeader>
-        <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
-          <Wind className="h-6 w-6 text-primary" /> Interactive Breathing
-        </CardTitle>
-        <p className="text-muted-foreground">
-          Follow the bubble to regulate your breath.
-        </p>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="space-y-2">
-          <Select value={selectedCycleName} onValueChange={setSelectedCycleName} disabled={isRunning}>
-            <SelectTrigger className="w-full max-w-[240px] mx-auto">
-              <SelectValue placeholder="Select breathing cycle" />
-            </SelectTrigger>
-            <SelectContent>
-              {breathCycles.map(cycle => (
-                <SelectItem key={cycle.name} value={cycle.name}>
-                  {cycle.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <p className="text-sm text-muted-foreground">{currentBreathCycle.description}</p>
-        </div>
-
-        <div className="relative w-48 h-48 mx-auto flex items-center justify-center">
-          <div
-            className={cn(
-              "w-full h-full rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xl font-bold transition-transform duration-500 ease-in-out",
-            )}
-            style={{
-              animation: isRunning && currentPhaseData?.animationKeyframe
-                ? `${currentPhaseData.animationKeyframe} ${currentPhaseData.duration}s ease-in-out forwards`
-                : 'none',
-              transform: (isRunning && currentPhaseData?.animationKeyframe)
-                ? undefined
-                : (phase === 'hold-top' || phase === 'inhale' ? 'scale(1.2)' : 'scale(0.7)'),
-            }}
-          >
-            {isRunning ? getPhaseText() : 'Start'}
-          </div>
-          {isRunning && (
-            <div className="absolute bottom-4 text-sm text-muted-foreground">
-              {timer}s
+    <div className="flex-1 flex flex-col">
+      <main className="flex-grow p-4 flex justify-center">
+        <Card className="w-full max-w-md shadow-lg text-center">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
+              <Wind className="h-6 w-6 text-primary" /> Interactive Breathing
+            </CardTitle>
+            <p className="text-muted-foreground">
+              Follow the bubble to regulate your breath.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <Select value={selectedCycleName} onValueChange={setSelectedCycleName} disabled={isRunning}>
+                <SelectTrigger className="w-full max-w-[240px] mx-auto">
+                  <SelectValue placeholder="Select breathing cycle" />
+                </SelectTrigger>
+                <SelectContent>
+                  {breathCycles.map(cycle => (
+                    <SelectItem key={cycle.name} value={cycle.name}>
+                      {cycle.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground">{currentBreathCycle.description}</p>
             </div>
-          )}
-        </div>
 
-        <div className="flex justify-center space-x-4">
-          <Button
-            size="lg"
-            onClick={handleStartPause}
-            className={cn(
-              "w-24",
-              isRunning ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90"
-            )}
-            disabled={cyclePhases.length === 0}
-          >
-            {isRunning ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
-          </Button>
-          <Button size="lg" variant="outline" onClick={handleReset} className="w-24">
-            <RefreshCcw className="h-6 w-6" />
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+            <div className="relative w-48 h-48 mx-auto flex items-center justify-center">
+              <div
+                className={cn(
+                  "w-full h-full rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xl font-bold transition-transform duration-500 ease-in-out",
+                )}
+                style={{
+                  animation: isRunning && currentPhaseData?.animationKeyframe
+                    ? `${currentPhaseData.animationKeyframe} ${currentPhaseData.duration}s ease-in-out forwards`
+                    : 'none',
+                  transform: (isRunning && currentPhaseData?.animationKeyframe)
+                    ? undefined
+                    : (phase === 'hold-top' || phase === 'inhale' ? 'scale(1.2)' : 'scale(0.7)'),
+                }}
+              >
+                {isRunning ? getPhaseText() : 'Start'}
+              </div>
+              {isRunning && (
+                <div className="absolute bottom-4 text-sm text-muted-foreground">
+                  {timer}s
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-center space-x-4">
+              <Button
+                size="lg"
+                onClick={handleStartPause}
+                className={cn(
+                  "w-24",
+                  isRunning ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90"
+                )}
+                disabled={cyclePhases.length === 0}
+              >
+                {isRunning ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
+              </Button>
+              <Button size="lg" variant="outline" onClick={handleReset} className="w-24">
+                <RefreshCcw className="h-6 w-6" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </main>
+      <footer className="p-4">
+        <MadeWithDyad />
+      </footer>
+    </div>
   );
 };
 
-export default BreathingBubble;
+export default BreathingBubblePage;

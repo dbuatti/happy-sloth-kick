@@ -6,6 +6,7 @@ import { Play, Pause, RefreshCcw, Mountain, Home, TreePine, Sparkles } from 'luc
 import { cn } from '@/lib/utils';
 import { useSound } from '@/context/SoundContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MadeWithDyad } from '@/components/made-with-dyad';
 
 interface ImageryTheme {
   name: string;
@@ -73,7 +74,7 @@ const imageryThemes: ImageryTheme[] = [
   },
 ];
 
-const GuidedImagery: React.FC = () => {
+const GuidedImageryPage: React.FC = () => {
   const { playSound } = useSound();
   const [selectedThemeName, setSelectedThemeName] = useState(imageryThemes[0].name);
   const [currentScriptIndex, setCurrentScriptIndex] = useState(0);
@@ -160,87 +161,94 @@ const GuidedImagery: React.FC = () => {
   const progressValue = (timeRemaining / totalDuration) * 100;
 
   return (
-    <Card className="w-full max-w-md shadow-lg text-center">
-      <CardHeader>
-        <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
-          <CurrentIcon className="h-6 w-6 text-primary" /> Guided Imagery
-        </CardTitle>
-        <p className="text-muted-foreground">
-          Visualize a peaceful place to find calm and safety.
-        </p>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="space-y-2">
-          <Select value={selectedThemeName} onValueChange={setSelectedThemeName} disabled={isRunning}>
-            <SelectTrigger className="w-full max-w-[240px] mx-auto">
-              <SelectValue placeholder="Select a theme" />
-            </SelectTrigger>
-            <SelectContent>
-              {imageryThemes.map(theme => (
-                <SelectItem key={theme.name} value={theme.name}>
-                  <div className="flex items-center gap-2">
-                    <theme.icon className="h-4 w-4" /> {theme.name}
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <p className="text-sm text-muted-foreground">{currentTheme.description}</p>
-        </div>
-
-        {isSessionComplete ? (
-          <div className="text-center space-y-4">
-            <Sparkles className="h-16 w-16 text-primary mx-auto animate-bounce" />
-            <p className="text-xl font-semibold">Meditation Complete!</p>
-            <p className="text-muted-foreground">You've completed your guided imagery session.</p>
-            <Button onClick={resetMeditation}>
-              <RefreshCcw className="mr-2 h-4 w-4" /> Start Over
-            </Button>
-          </div>
-        ) : (
-          <>
+    <div className="flex-1 flex flex-col">
+      <main className="flex-grow p-4 flex justify-center">
+        <Card className="w-full max-w-md shadow-lg text-center">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
+              <CurrentIcon className="h-6 w-6 text-primary" /> Guided Imagery
+            </CardTitle>
+            <p className="text-muted-foreground">
+              Visualize a peaceful place to find calm and safety.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-6">
             <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">Current Instruction:</p>
-              <p className="text-md text-foreground min-h-[60px] flex items-center justify-center">
-                {currentTheme.script[currentScriptIndex]}
-              </p>
+              <Select value={selectedThemeName} onValueChange={setSelectedThemeName} disabled={isRunning}>
+                <SelectTrigger className="w-full max-w-[240px] mx-auto">
+                  <SelectValue placeholder="Select a theme" />
+                </SelectTrigger>
+                <SelectContent>
+                  {imageryThemes.map(theme => (
+                    <SelectItem key={theme.name} value={theme.name}>
+                      <div className="flex items-center gap-2">
+                        <theme.icon className="h-4 w-4" /> {theme.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground">{currentTheme.description}</p>
             </div>
 
-            <div className="relative w-48 h-48 mx-auto flex items-center justify-center">
-              <Progress
-                value={progressValue}
-                className="absolute w-full h-full rounded-full bg-muted"
-                indicatorClassName={cn(
-                  "transition-all duration-1000 ease-linear",
-                  "bg-primary"
-                )}
-              />
-              <div className="relative z-10 text-5xl font-bold text-foreground">
-                {formatTime(timeRemaining)}
+            {isSessionComplete ? (
+              <div className="text-center space-y-4">
+                <Sparkles className="h-16 w-16 text-primary mx-auto animate-bounce" />
+                <p className="text-xl font-semibold">Meditation Complete!</p>
+                <p className="text-muted-foreground">You've completed your guided imagery session.</p>
+                <Button onClick={resetMeditation}>
+                  <RefreshCcw className="mr-2 h-4 w-4" /> Start Over
+                </Button>
               </div>
-            </div>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">Current Instruction:</p>
+                  <p className="text-md text-foreground min-h-[60px] flex items-center justify-center">
+                    {currentTheme.script[currentScriptIndex]}
+                  </p>
+                </div>
 
-            <div className="flex justify-center space-x-4">
-              <Button
-                size="lg"
-                onClick={isRunning ? pauseTimer : startTimer}
-                className={cn(
-                  "w-24",
-                  isRunning ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90"
-                )}
-                disabled={timeRemaining === 0 && !isRunning}
-              >
-                {isRunning ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
-              </Button>
-              <Button size="lg" variant="outline" onClick={resetMeditation} className="w-24">
-                <RefreshCcw className="h-6 w-6" />
-              </Button>
-            </div>
-          </>
-        )}
-      </CardContent>
-    </Card>
+                <div className="relative w-48 h-48 mx-auto flex items-center justify-center">
+                  <Progress
+                    value={progressValue}
+                    className="absolute w-full h-full rounded-full bg-muted"
+                    indicatorClassName={cn(
+                      "transition-all duration-1000 ease-linear",
+                      "bg-primary"
+                    )}
+                  />
+                  <div className="relative z-10 text-5xl font-bold text-primary-foreground">
+                    {formatTime(timeRemaining)}
+                  </div>
+                </div>
+
+                <div className="flex justify-center space-x-4">
+                  <Button
+                    size="lg"
+                    onClick={isRunning ? pauseTimer : startTimer}
+                    className={cn(
+                      "w-24",
+                      isRunning ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90"
+                    )}
+                    disabled={timeRemaining === 0 && !isRunning}
+                  >
+                    {isRunning ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
+                  </Button>
+                  <Button size="lg" variant="outline" onClick={resetMeditation} className="w-24">
+                    <RefreshCcw className="h-6 w-6" />
+                  </Button>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </main>
+      <footer className="p-4">
+        <MadeWithDyad />
+      </footer>
+    </div>
   );
 };
 
-export default GuidedImagery;
+export default GuidedImageryPage;

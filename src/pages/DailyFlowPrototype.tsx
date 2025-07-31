@@ -12,13 +12,11 @@ import NextTaskCard from '@/components/NextTaskCard';
 import WorryJournal from '@/components/WorryJournal';
 import GratitudeJournal from '@/components/GratitudeJournal';
 import MiniBreathingBubble from '@/components/MiniBreathingBubble';
-import SensoryTool from '@/components/SensoryTool';
-import Meditation from '@/pages/Meditation'; // Using the full page for now
-import ProgressiveMuscleRelaxation from '@/components/ProgressiveMuscleRelaxation';
 import { format, isSameDay, addDays } from 'date-fns'; // Added addDays
-import { Lightbulb, Sun, Briefcase, Coffee, Moon, Bed, Sparkles, Brain } from 'lucide-react'; // Added Brain
+import { Lightbulb, Sun, Briefcase, Coffee, Moon, Bed, Sparkles, Brain, Eye, Armchair } from 'lucide-react'; // Added Brain, Eye, Armchair
 import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import { cn } from '@/lib/utils'; // Import cn for conditional classes
+import Meditation from '@/pages/Meditation'; // Import Meditation page
 
 type TimeOfDay = 'morning' | 'work' | 'break' | 'evening' | 'night';
 
@@ -182,7 +180,17 @@ const DailyFlowPrototype: React.FC = () => {
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <MiniBreathingBubble />
-              <SensoryTool />
+              <Card className="w-full shadow-lg">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xl font-bold flex items-center gap-2">
+                    <Eye className="h-5 w-5 text-primary" /> Sensory Tool
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="text-muted-foreground">Ground yourself in the present moment.</p>
+                  <Button className="mt-4 w-full" onClick={() => navigate('/mindfulness/sensory-tool')}>Start Sensory Tool</Button>
+                </CardContent>
+              </Card>
               <Card className="w-full shadow-lg md:col-span-2">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-xl font-bold flex items-center gap-2">
@@ -273,7 +281,17 @@ const DailyFlowPrototype: React.FC = () => {
                   <Button className="mt-4 w-full" onClick={() => navigate('/sleep')}>Log Sleep</Button>
                 </CardContent>
               </Card>
-              <ProgressiveMuscleRelaxation />
+              <Card className="w-full shadow-lg">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xl font-bold flex items-center gap-2">
+                    <Armchair className="h-5 w-5 text-primary" /> Progressive Muscle Relaxation
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="text-muted-foreground">Release physical tension before sleep.</p>
+                  <Button className="mt-4 w-full" onClick={() => navigate('/mindfulness/pmr')}>Start PMR</Button>
+                </CardContent>
+              </Card>
               <div className="md:col-span-2">
                 <Meditation /> {/* Full meditation page for deep relaxation */}
               </div>

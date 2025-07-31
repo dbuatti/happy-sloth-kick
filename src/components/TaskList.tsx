@@ -5,7 +5,7 @@ import { Plus, Settings, CheckCircle2, ListTodo, FolderOpen, ChevronDown, Edit, 
 import { useTasks } from '@/hooks/useTasks';
 import TaskItem from './TaskItem';
 import BulkActions from './BulkActions';
-import { Task, TaskSection } from '@/hooks/useTasks';
+import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import TaskDetailDialog from './TaskDetailDialog';
 import TaskOverviewDialog from './TaskOverviewDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -91,6 +91,14 @@ const TaskList: React.FC<TaskListProps> = ({
   deleteTask,
   searchFilter,
   setSearchFilter,
+  statusFilter,
+  setStatusFilter,
+  categoryFilter,
+  setCategoryFilter,
+  priorityFilter,
+  setPriorityFilter,
+  sectionFilter,
+  setSectionFilter,
   selectedTaskIds,
   toggleTaskSelection,
   clearSelectedTasks,

@@ -20,6 +20,16 @@ import { SoundProvider } from "@/context/SoundContext";
 import Sidebar from "./components/Sidebar";
 import AuthComponent from "@/components/AuthComponent";
 
+// Import new dedicated mindfulness tool pages
+import BodyScanMeditationPage from "./pages/mindfulness/BodyScanMeditationPage";
+import MindfulEatingGuidePage from "./pages/mindfulness/MindfulEatingGuidePage";
+import ProgressiveMuscleRelaxationPage from "./pages/mindfulness/ProgressiveMuscleRelaxationPage";
+import GuidedImageryPage from "./pages/mindfulness/GuidedImageryPage";
+import ThoughtDiffusionToolPage from "./pages/mindfulness/ThoughtDiffusionToolPage";
+import SensoryToolPage from "./pages/mindfulness/SensoryToolPage";
+import BreathingBubblePage from "./pages/mindfulness/BreathingBubblePage";
+
+
 const queryClient = new QueryClient();
 
 const AppContent = () => {
@@ -60,6 +70,16 @@ const AppContent = () => {
             <Route path="/focus" element={<FocusMode />} />
             <Route path="/daily-flow-prototype" element={<DailyFlowPrototype />} />
             <Route path="/auth" element={<AuthComponent />} />
+            
+            {/* New routes for dedicated mindfulness tools */}
+            <Route path="/mindfulness/body-scan" element={<BodyScanMeditationPage />} />
+            <Route path="/mindfulness/mindful-eating" element={<MindfulEatingGuidePage />} />
+            <Route path="/mindfulness/pmr" element={<ProgressiveMuscleRelaxationPage />} />
+            <Route path="/mindfulness/guided-imagery" element={<GuidedImageryPage />} />
+            <Route path="/mindfulness/thought-diffusion" element={<ThoughtDiffusionToolPage />} />
+            <Route path="/mindfulness/sensory-tool" element={<SensoryToolPage />} />
+            <Route path="/mindfulness/breathing-bubble" element={<BreathingBubblePage />} />
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Sidebar>

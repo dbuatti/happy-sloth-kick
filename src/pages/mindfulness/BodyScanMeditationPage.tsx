@@ -5,7 +5,7 @@ import { Progress } from "@/components/Progress";
 import { Play, Pause, RefreshCcw, ScanEye, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSound } from '@/context/SoundContext';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MadeWithDyad } from '@/components/made-with-dyad';
 
 interface BodyScanStep {
   part: string;
@@ -25,7 +25,7 @@ const defaultSteps: BodyScanStep[] = [
   { part: 'Whole Body', duration: 60, instruction: 'Now, expand your awareness to your entire body. Feel your body as a whole, breathing and present.' },
 ];
 
-const BodyScanMeditation: React.FC = () => {
+const BodyScanMeditationPage: React.FC = () => {
   const { playSound } = useSound();
   const [steps, setSteps] = useState<BodyScanStep[]>(defaultSteps);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -117,76 +117,83 @@ const BodyScanMeditation: React.FC = () => {
   const progressValue = (timeRemainingInStep / currentStep.duration) * 100;
 
   return (
-    <Card className="w-full max-w-md shadow-lg text-center">
-      <CardHeader>
-        <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
-          <ScanEye className="h-6 w-6 text-primary" /> Body Scan Meditation
-        </CardTitle>
-        <p className="text-muted-foreground">
-          Systematically bring awareness to your body.
-        </p>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {isMeditationComplete ? (
-          <div className="text-center space-y-4">
-            <ScanEye className="h-16 w-16 text-green-500 mx-auto animate-bounce" />
-            <p className="text-xl font-semibold">Meditation Complete!</p>
-            <p className="text-muted-foreground">You've completed the body scan.</p>
-            <Button onClick={resetMeditation}>
-              <RefreshCcw className="mr-2 h-4 w-4" /> Start Over
-            </Button>
-          </div>
-        ) : (
-          <>
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">Step {currentStepIndex + 1} of {steps.length}:</p>
-              <h3 className="text-xl font-semibold text-primary">{currentStep.part}</h3>
-              <p className="text-md text-foreground">{currentStep.instruction}</p>
-            </div>
-
-            <div className="relative w-48 h-48 mx-auto flex items-center justify-center">
-              <Progress
-                value={progressValue}
-                className="absolute w-full h-full rounded-full bg-muted"
-                indicatorClassName={cn(
-                  "transition-all duration-1000 ease-linear",
-                  "bg-primary"
-                )}
-              />
-              <div className="relative z-10 text-5xl font-bold text-primary-foreground"> {/* Changed text-foreground to text-primary-foreground */}
-                {formatTime(timeRemainingInStep)}
+    <div className="flex-1 flex flex-col">
+      <main className="flex-grow p-4 flex justify-center">
+        <Card className="w-full max-w-md shadow-lg text-center">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
+              <ScanEye className="h-6 w-6 text-primary" /> Body Scan Meditation
+            </CardTitle>
+            <p className="text-muted-foreground">
+              Systematically bring awareness to your body.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {isMeditationComplete ? (
+              <div className="text-center space-y-4">
+                <ScanEye className="h-16 w-16 text-green-500 mx-auto animate-bounce" />
+                <p className="text-xl font-semibold">Meditation Complete!</p>
+                <p className="text-muted-foreground">You've completed the body scan.</p>
+                <Button onClick={resetMeditation}>
+                  <RefreshCcw className="mr-2 h-4 w-4" /> Start Over
+                </Button>
               </div>
-            </div>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">Step {currentStepIndex + 1} of {steps.length}:</p>
+                  <h3 className="text-xl font-semibold text-primary">{currentStep.part}</h3>
+                  <p className="text-md text-foreground">{currentStep.instruction}</p>
+                </div>
 
-            <div className="flex justify-center space-x-4">
-              <Button
-                size="lg"
-                onClick={isRunning ? pauseTimer : startTimer}
-                className={cn(
-                  "w-24",
-                  isRunning ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90"
-                )}
-              >
-                {isRunning ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
-              </Button>
-              <Button size="lg" variant="outline" onClick={resetMeditation} className="w-24">
-                <RefreshCcw className="h-6 w-6" />
-              </Button>
-            </div>
+                <div className="relative w-48 h-48 mx-auto flex items-center justify-center">
+                  <Progress
+                    value={progressValue}
+                    className="absolute w-full h-full rounded-full bg-muted"
+                    indicatorClassName={cn(
+                      "transition-all duration-1000 ease-linear",
+                      "bg-primary"
+                    )}
+                  />
+                  <div className="relative z-10 text-5xl font-bold text-primary-foreground">
+                    {formatTime(timeRemainingInStep)}
+                  </div>
+                </div>
 
-            <div className="flex justify-between items-center">
-              <Button variant="ghost" onClick={goToPreviousStep} disabled={currentStepIndex === 0}>
-                <ChevronLeft className="mr-2 h-4 w-4" /> Previous
-              </Button>
-              <Button variant="ghost" onClick={goToNextStep} disabled={currentStepIndex === steps.length - 1}>
-                Next <ChevronRight className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
-          </>
-        )}
-      </CardContent>
-    </Card>
+                <div className="flex justify-center space-x-4">
+                  <Button
+                    size="lg"
+                    onClick={isRunning ? pauseTimer : startTimer}
+                    className={cn(
+                      "w-24",
+                      isRunning ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90"
+                    )}
+                  >
+                    {isRunning ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
+                  </Button>
+                  <Button size="lg" variant="outline" onClick={resetMeditation} className="w-24">
+                    <RefreshCcw className="h-6 w-6" />
+                  </Button>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <Button variant="ghost" onClick={goToPreviousStep} disabled={currentStepIndex === 0}>
+                    <ChevronLeft className="mr-2 h-4 w-4" /> Previous
+                  </Button>
+                  <Button variant="ghost" onClick={goToNextStep} disabled={currentStepIndex === steps.length - 1}>
+                    Next <ChevronRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </main>
+      <footer className="p-4">
+        <MadeWithDyad />
+      </footer>
+    </div>
   );
 };
 
-export default BodyScanMeditation;
+export default BodyScanMeditationPage;

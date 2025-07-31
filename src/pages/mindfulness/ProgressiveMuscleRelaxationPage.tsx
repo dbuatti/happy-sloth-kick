@@ -5,6 +5,7 @@ import { Progress } from "@/components/Progress";
 import { Play, Pause, RefreshCcw, Armchair, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSound } from '@/context/SoundContext';
+import { MadeWithDyad } from '@/components/made-with-dyad';
 
 interface PMRStep {
   part: string;
@@ -27,7 +28,7 @@ const defaultPMRSteps: PMRStep[] = [
   { part: 'Whole Body', tenseDuration: 0, relaxDuration: 30, instruction: 'Now, simply allow your entire body to relax deeply. Notice the feeling of calm spreading throughout.' },
 ];
 
-const ProgressiveMuscleRelaxation: React.FC = () => {
+const ProgressiveMuscleRelaxationPage: React.FC = () => {
   const { playSound } = useSound();
   const [steps, setSteps] = useState<PMRStep[]>(defaultPMRSteps);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -156,78 +157,85 @@ const ProgressiveMuscleRelaxation: React.FC = () => {
   const progressValue = (timeRemainingInPhase / currentPhaseDuration) * 100;
 
   return (
-    <Card className="w-full max-w-md shadow-lg text-center">
-      <CardHeader>
-        <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
-          <Armchair className="h-6 w-6 text-primary" /> Progressive Muscle Relaxation
-        </CardTitle>
-        <p className="text-muted-foreground">
-          Systematically tense and relax muscle groups to release tension.
-        </p>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {isMeditationComplete ? (
-          <div className="text-center space-y-4">
-            <Armchair className="h-16 w-16 text-primary mx-auto animate-bounce" />
-            <p className="text-xl font-semibold">PMR Complete!</p>
-            <p className="text-muted-foreground">You've completed the relaxation exercise.</p>
-            <Button onClick={resetMeditation}>
-              <RefreshCcw className="mr-2 h-4 w-4" /> Start Over
-            </Button>
-          </div>
-        ) : (
-          <>
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">Step {currentStepIndex + 1} of {steps.length}:</p>
-              <h3 className="text-xl font-semibold text-primary">{currentStep.part}</h3>
-              <p className="text-md text-foreground">
-                {isTensingPhase && currentStep.tenseDuration > 0 ? `Tense: ${currentStep.instruction}` : `Relax: Release all tension in your ${currentStep.part}.`}
-              </p>
-            </div>
-
-            <div className="relative w-48 h-48 mx-auto flex items-center justify-center">
-              <Progress
-                value={progressValue}
-                className="absolute w-full h-full rounded-full bg-muted"
-                indicatorClassName={cn(
-                  "transition-all duration-1000 ease-linear",
-                  isTensingPhase ? "bg-destructive" : "bg-primary"
-                )}
-              />
-              <div className="relative z-10 text-5xl font-bold text-primary-foreground"> {/* Changed text-foreground to text-primary-foreground */}
-                {formatTime(timeRemainingInPhase)}
+    <div className="flex-1 flex flex-col">
+      <main className="flex-grow p-4 flex justify-center">
+        <Card className="w-full max-w-md shadow-lg text-center">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
+              <Armchair className="h-6 w-6 text-primary" /> Progressive Muscle Relaxation
+            </CardTitle>
+            <p className="text-muted-foreground">
+              Systematically tense and relax muscle groups to release tension.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {isMeditationComplete ? (
+              <div className="text-center space-y-4">
+                <Armchair className="h-16 w-16 text-primary mx-auto animate-bounce" />
+                <p className="text-xl font-semibold">PMR Complete!</p>
+                <p className="text-muted-foreground">You've completed the relaxation exercise.</p>
+                <Button onClick={resetMeditation}>
+                  <RefreshCcw className="mr-2 h-4 w-4" /> Start Over
+                </Button>
               </div>
-            </div>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">Step {currentStepIndex + 1} of {steps.length}:</p>
+                  <h3 className="text-xl font-semibold text-primary">{currentStep.part}</h3>
+                  <p className="text-md text-foreground">
+                    {isTensingPhase && currentStep.tenseDuration > 0 ? `Tense: ${currentStep.instruction}` : `Relax: Release all tension in your ${currentStep.part}.`}
+                  </p>
+                </div>
 
-            <div className="flex justify-center space-x-4">
-              <Button
-                size="lg"
-                onClick={isRunning ? pauseTimer : startTimer}
-                className={cn(
-                  "w-24",
-                  isRunning ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90"
-                )}
-              >
-                {isRunning ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
-              </Button>
-              <Button size="lg" variant="outline" onClick={resetMeditation} className="w-24">
-                <RefreshCcw className="h-6 w-6" />
-              </Button>
-            </div>
+                <div className="relative w-48 h-48 mx-auto flex items-center justify-center">
+                  <Progress
+                    value={progressValue}
+                    className="absolute w-full h-full rounded-full bg-muted"
+                    indicatorClassName={cn(
+                      "transition-all duration-1000 ease-linear",
+                      isTensingPhase ? "bg-destructive" : "bg-primary"
+                    )}
+                  />
+                  <div className="relative z-10 text-5xl font-bold text-primary-foreground">
+                    {formatTime(timeRemainingInPhase)}
+                  </div>
+                </div>
 
-            <div className="flex justify-between items-center">
-              <Button variant="ghost" onClick={goToPreviousStep} disabled={currentStepIndex === 0 && isTensingPhase}>
-                <ChevronLeft className="mr-2 h-4 w-4" /> Previous
-              </Button>
-              <Button variant="ghost" onClick={goToNextStep} disabled={currentStepIndex === steps.length - 1 && !isTensingPhase}>
-                Next <ChevronRight className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
-          </>
-        )}
-      </CardContent>
-    </Card>
+                <div className="flex justify-center space-x-4">
+                  <Button
+                    size="lg"
+                    onClick={isRunning ? pauseTimer : startTimer}
+                    className={cn(
+                      "w-24",
+                      isRunning ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90"
+                    )}
+                  >
+                    {isRunning ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
+                  </Button>
+                  <Button size="lg" variant="outline" onClick={resetMeditation} className="w-24">
+                    <RefreshCcw className="h-6 w-6" />
+                  </Button>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <Button variant="ghost" onClick={goToPreviousStep} disabled={currentStepIndex === 0 && isTensingPhase}>
+                    <ChevronLeft className="mr-2 h-4 w-4" /> Previous
+                  </Button>
+                  <Button variant="ghost" onClick={goToNextStep} disabled={currentStepIndex === steps.length - 1 && !isTensingPhase}>
+                    Next <ChevronRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </main>
+      <footer className="p-4">
+        <MadeWithDyad />
+      </footer>
+    </div>
   );
 };
 
-export default ProgressiveMuscleRelaxation;
+export default ProgressiveMuscleRelaxationPage;

@@ -15,7 +15,7 @@ import { Task } from '@/hooks/useTasks';
 
 interface CommandPaletteProps {
   isCommandPaletteOpen: boolean;
-  setIsCommandPaletteOpen: (open: boolean) => void;
+  setIsCommandPaletteOpen: React.Dispatch<React.SetStateAction<boolean>>;
   currentDate: Date;
   setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
 }
