@@ -104,6 +104,7 @@ interface TaskFormProps {
   autoFocus?: boolean;
   preselectedSectionId?: string | null;
   parentTaskId?: string | null;
+  currentDate?: Date; // Added currentDate prop
 }
 
 const TaskForm: React.FC<TaskFormProps> = ({
@@ -116,6 +117,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
   autoFocus = false,
   preselectedSectionId = null,
   parentTaskId = null,
+  currentDate = new Date(), // Default to new Date() if not provided
 }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
@@ -183,7 +185,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
     }
     setIsSuggesting(true);
     try {
-      const suggestions = await suggestTaskDetails(description, allCategories.map(cat => ({ id: cat.id, name: cat.name })));
+      const suggestions = await suggestTaskDetails(description, allCategories.map(cat => ({ id: cat.id, name: cat.name })), currentDate);
 
       if (suggestions) {
         setValue('description', suggestions.cleanedDescription);
@@ -219,7 +221,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
     } finally {
       setIsSuggesting(false);
     }
-  }, [description, allCategories, sections, setValue]);
+  }, [description, allCategories, sections, setValue, currentDate]);
 
   const onSubmit = async (data: TaskFormData) => {
     let finalRemindAt: Date | null = null;

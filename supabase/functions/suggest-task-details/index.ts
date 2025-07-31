@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { description, categories } = await req.json();
+    const { description, categories, currentDate } = await req.json(); // Destructure currentDate
 
     if (!description) {
       return new Response(JSON.stringify({ error: 'Task description is required.' }), {
@@ -34,7 +34,13 @@ serve(async (req) => {
 
     const categoryNames = categories.map((cat: { name: string }) => cat.name).join(', ');
 
+    // Get day of the week for currentDate
+    const today = new Date(currentDate);
+    const dayOfWeek = today.toLocaleDateString('en-US', { weekday: 'long' });
+
     const prompt = `Analyze the following task description and extract structured data in JSON format.
+    
+    Today's date is ${currentDate} (${dayOfWeek}).
     
     Extract:
     - 'category': The most relevant category from the provided list. If no clear category, default to 'General'.
@@ -111,10 +117,6 @@ serve(async (req) => {
     const parsedData = JSON.parse(jsonString);
 
     // Ensure dates are correctly formatted or null
-    const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1);
-
     const parseDateString = (dateStr: string | null) => {
       if (!dateStr) return null;
       try {

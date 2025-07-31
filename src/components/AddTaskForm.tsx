@@ -21,6 +21,7 @@ interface AddTaskFormProps {
   autoFocus?: boolean;
   preselectedSectionId?: string | null;
   parentTaskId?: string | null; // For sub-tasks
+  currentDate: Date; // Added currentDate prop
 }
 
 const AddTaskForm: React.FC<AddTaskFormProps> = ({
@@ -32,6 +33,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({
   autoFocus,
   preselectedSectionId,
   parentTaskId,
+  currentDate, // Destructure currentDate
 }) => {
   const handleSave = async (taskData: Parameters<typeof onAddTask>[0]) => {
     const success = await onAddTask(taskData);
@@ -51,6 +53,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({
       autoFocus={autoFocus}
       preselectedSectionId={preselectedSectionId}
       parentTaskId={parentTaskId}
+      currentDate={currentDate} // Pass currentDate to TaskForm
     />
   );
 };

@@ -1,4 +1,5 @@
 import { supabase } from './client';
+import { format } from 'date-fns'; // Import format
 
 interface SuggestTaskDetailsResponse {
   category: string;
@@ -9,10 +10,14 @@ interface SuggestTaskDetailsResponse {
   cleanedDescription: string;
 }
 
-export const suggestTaskDetails = async (description: string, categories: { id: string; name: string }[]): Promise<SuggestTaskDetailsResponse | null> => {
+export const suggestTaskDetails = async (description: string, categories: { id: string; name: string }[], currentDate: Date): Promise<SuggestTaskDetailsResponse | null> => {
   try {
     const { data, error } = await supabase.functions.invoke('suggest-task-details', {
-      body: { description, categories },
+      body: { 
+        description, 
+        categories,
+        currentDate: format(currentDate, 'yyyy-MM-dd'), // Pass current date as YYYY-MM-DD
+      },
     });
 
     if (error) {
