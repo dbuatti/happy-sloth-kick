@@ -10,6 +10,7 @@ import DailyStreak from './DailyStreak';
 import SmartSuggestions from './SmartSuggestions';
 import { Task, TaskSection } from '@/hooks/useTasks';
 import TaskDetailDialog from './TaskDetailDialog';
+import TaskOverviewDialog from './TaskOverviewDialog'; // Import new overview dialog
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import TaskFilter from './TaskFilter';
@@ -51,7 +52,7 @@ interface TaskListProps {
 
 const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setCurrentDate }) => {
   const {
-    tasks,
+    tasks, // All tasks, needed for subtask filtering in overview
     filteredTasks,
     loading,
     userId,
@@ -87,8 +88,13 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
 
   const [isAddTaskFormOpen, setIsAddTaskForm] = useState(false);
   const [sectionToPreselect, setSectionToPreselect] = useState<string | null>(null);
+  
+  const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false); // New state for overview dialog
+  const [taskToOverview, setTaskToOverview] = useState<Task | null>(null); // Task for overview dialog
+
   const [isTaskDetailOpen, setIsTaskDetail] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+  
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() => {
     try {
       const saved = localStorage.getItem('taskList_expandedSections');
@@ -243,9 +249,15 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
     return success;
   };
 
-  const handleEditTask = (task: Task) => {
+  const handleOpenOverview = (task: Task) => {
+    setTaskToOverview(task);
+    setIsTaskOverviewOpen(true);
+  };
+
+  const handleEditTaskFromOverview = (task: Task) => {
+    setIsTaskOverviewOpen(false); // Close overview
     setTaskToEdit(task);
-    setIsTaskDetail(true);
+    setIsTaskDetail(true); // Open edit dialog
   };
 
   const handleBulkAction = (action: string) => {
@@ -468,7 +480,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                                         isSelected={selectedTaskIds.includes(task.id)}
                                         onToggleSelect={toggleTaskSelection}
                                         sections={sections}
-                                        onEditTask={handleEditTask}
+                                        onOpenOverview={handleOpenOverview} // Pass new handler
                                         currentDate={currentDate}
                                         onMoveUp={(taskId) => moveTask(taskId, 'up')}
                                         onMoveDown={(taskId) => moveTask(taskId, 'down')}
@@ -508,7 +520,7 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
                           isSelected={false}
                           onToggleSelect={() => {}}
                           sections={sections}
-                          onEditTask={handleEditTask}
+                          onOpenOverview={handleOpenOverview} // Pass new handler
                           currentDate={currentDate}
                           onMoveUp={(taskId) => moveTask(taskId, 'up')}
                           onMoveDown={(taskId) => moveTask(taskId, 'down')}
@@ -560,6 +572,21 @@ const TaskList: React.FC<TaskListProps> = ({ setIsAddTaskOpen, currentDate, setC
           />
         </DialogContent>
       </Dialog>
+
+      {taskToOverview && (
+        <TaskOverviewDialog
+          task={taskToOverview}
+          userId={userId}
+          isOpen={isTaskOverviewOpen}
+          onClose={() => setIsTaskOverviewOpen(false)}
+          onEditClick={handleEditTaskFromOverview}
+          onUpdate={updateTask}
+          onDelete={deleteTask}
+          sections={sections}
+          allCategories={allCategories}
+          allTasks={tasks} // Pass all tasks for subtask filtering
+        />
+      )}
 
       {taskToEdit && (
         <TaskDetailDialog

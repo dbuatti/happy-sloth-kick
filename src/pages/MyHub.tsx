@@ -18,6 +18,7 @@ import { useTasks, Task } from '@/hooks/useTasks';
 import TaskItem from '@/components/TaskItem';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import { useAuth } from '@/context/AuthContext';
+import TaskOverviewDialog from '@/components/TaskOverviewDialog'; // Import TaskOverviewDialog
 
 // --- Analytics Logic (moved from src/pages/Analytics.tsx) ---
 interface AnalyticsTask {
@@ -137,6 +138,7 @@ const MyHub: React.FC = () => {
 
   // State for Archive Tab
   const {
+    tasks: allTasks, // Need all tasks for subtask filtering in overview
     filteredTasks: archivedTasks, 
     loading: archiveLoading,
     userId: archiveUserId, // This will be the same as currentUserId
@@ -146,6 +148,9 @@ const MyHub: React.FC = () => {
     allCategories, // Get allCategories from useTasks
     setStatusFilter,
   } = useTasks({ viewMode: 'archive' });
+
+  const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false); // New state for overview dialog
+  const [taskToOverview, setTaskToOverview] = useState<Task | null>(null); // Task for overview dialog
 
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
@@ -264,9 +269,15 @@ const MyHub: React.FC = () => {
     await updateTask(taskId, { status: newStatus });
   };
 
-  const handleEditTask = (task: Task) => {
+  const handleOpenOverview = (task: Task) => {
+    setTaskToOverview(task);
+    setIsTaskOverviewOpen(true);
+  };
+
+  const handleEditTaskFromOverview = (task: Task) => {
+    setIsTaskOverviewOpen(false); // Close overview
     setTaskToEdit(task);
-    setIsTaskDetailOpen(true);
+    setIsTaskDetailOpen(true); // Open edit dialog
   };
 
   return (
@@ -561,7 +572,7 @@ const MyHub: React.FC = () => {
                           isSelected={false}
                           onToggleSelect={() => {}}
                           sections={sections}
-                          onEditTask={handleEditTask}
+                          onOpenOverview={handleOpenOverview} // Changed from onEditTask to onOpenOverview
                           currentDate={new Date()}
                           onMoveUp={async () => {}}
                           onMoveDown={async () => {}}
@@ -578,6 +589,20 @@ const MyHub: React.FC = () => {
       <footer className="p-4">
         <MadeWithDyad />
       </footer>
+      {taskToOverview && (
+        <TaskOverviewDialog
+          task={taskToOverview}
+          userId={archiveUserId}
+          isOpen={isTaskOverviewOpen}
+          onClose={() => setIsTaskOverviewOpen(false)}
+          onEditClick={handleEditTaskFromOverview}
+          onUpdate={updateTask}
+          onDelete={deleteTask}
+          sections={sections}
+          allCategories={allCategories}
+          allTasks={allTasks} // Pass all tasks for subtask filtering
+        />
+      )}
       {taskToEdit && (
         <TaskDetailDialog
           task={taskToEdit}

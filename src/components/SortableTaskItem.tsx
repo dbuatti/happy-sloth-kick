@@ -14,7 +14,7 @@ interface SortableTaskItemProps {
   isSelected: boolean;
   onToggleSelect: (taskId: string, checked: boolean) => void;
   sections: { id: string; name: string }[];
-  onEditTask: (task: Task) => void;
+  onOpenOverview: (task: Task) => void; // Added this prop
   currentDate: Date;
   onMoveUp: (taskId: string) => Promise<void>;
   onMoveDown: (taskId: string) => Promise<void>;

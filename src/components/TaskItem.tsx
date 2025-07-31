@@ -19,7 +19,7 @@ interface TaskItemProps {
   isSelected: boolean;
   onToggleSelect: (taskId: string, checked: boolean) => void;
   sections: { id: string; name: string }[];
-  onEditTask: (task: Task) => void;
+  onOpenOverview: (task: Task) => void; // New prop to open overview
   currentDate: Date;
   onMoveUp: (taskId: string) => Promise<void>;
   onMoveDown: (taskId: string) => Promise<void>;
@@ -34,7 +34,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   isSelected,
   onToggleSelect,
   sections,
-  onEditTask,
+  onOpenOverview, // Destructure new prop
   currentDate,
   onMoveUp,
   onMoveDown,
@@ -116,7 +116,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
       <div 
         className="flex-1 min-w-0 cursor-pointer" // Removed py-0.5
-        onClick={() => onEditTask(task)}
+        onClick={() => onOpenOverview(task)} // Changed to open overview
         data-no-dnd="true"
       >
         <Tooltip>
@@ -241,8 +241,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" data-no-dnd="true">
-            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onEditTask(task); }}>
-              <Edit className="mr-2 h-4 w-4" /> Edit Task
+            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onOpenOverview(task); }}> {/* Changed to open overview */}
+              <Edit className="mr-2 h-4 w-4" /> View Details
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onStatusChange(task.id, 'to-do'); playSound('success'); }}>
               Mark as To-Do

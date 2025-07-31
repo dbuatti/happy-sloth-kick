@@ -4,6 +4,7 @@ import NextTaskCard from '@/components/NextTaskCard';
 import TaskList from '@/components/TaskList';
 import { MadeWithDyad } from '@/components/made-with-dyad';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
+import TaskOverviewDialog from '@/components/TaskOverviewDialog'; // Import new overview dialog
 import { useTasks, Task } from '@/hooks/useTasks';
 import { useAuth } from '@/context/AuthContext';
 import { addDays, startOfDay } from 'date-fns';
@@ -18,7 +19,10 @@ const DailyTasksPage: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(() => getUTCStartOfDay(new Date()));
   const { user } = useAuth();
 
-  const { tasks, nextAvailableTask, updateTask, deleteTask, userId, loading: tasksLoading, sections, allCategories } = useTasks({ currentDate, setCurrentDate });
+  const { tasks, filteredTasks, nextAvailableTask, updateTask, deleteTask, userId, loading: tasksLoading, sections, allCategories } = useTasks({ currentDate, setCurrentDate });
+
+  const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false); // New state for overview dialog
+  const [taskToOverview, setTaskToOverview] = useState<Task | null>(null); // Task for overview dialog
 
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
@@ -46,9 +50,15 @@ const DailyTasksPage: React.FC = () => {
     await updateTask(taskId, { status: 'completed' });
   };
 
-  const handleEditNextTask = (task: Task) => {
+  const handleOpenOverview = (task: Task) => {
+    setTaskToOverview(task);
+    setIsTaskOverviewOpen(true);
+  };
+
+  const handleEditTaskFromOverview = (task: Task) => {
+    setIsTaskOverviewOpen(false); // Close overview
     setTaskToEdit(task);
-    setIsTaskDetailOpen(true);
+    setIsTaskDetailOpen(true); // Open edit dialog
   };
 
   return (
@@ -64,7 +74,7 @@ const DailyTasksPage: React.FC = () => {
         <NextTaskCard
           task={nextAvailableTask}
           onMarkComplete={handleMarkTaskComplete}
-          onEditTask={handleEditNextTask}
+          onEditTask={handleOpenOverview} // NextTaskCard now opens overview
           currentDate={currentDate}
           loading={tasksLoading}
         />
@@ -82,6 +92,20 @@ const DailyTasksPage: React.FC = () => {
           <kbd className="font-mono">Cmd/Ctrl + K</kbd> for commands
         </span>
       </div>
+      {taskToOverview && (
+        <TaskOverviewDialog
+          task={taskToOverview}
+          userId={user?.id || null}
+          isOpen={isTaskOverviewOpen}
+          onClose={() => setIsTaskOverviewOpen(false)}
+          onEditClick={handleEditTaskFromOverview}
+          onUpdate={updateTask}
+          onDelete={deleteTask}
+          sections={sections}
+          allCategories={allCategories}
+          allTasks={tasks} // Pass all tasks for subtask filtering
+        />
+      )}
       {taskToEdit && (
         <TaskDetailDialog
           task={taskToEdit}
