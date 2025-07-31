@@ -66,18 +66,18 @@ const MindfulEatingGuide: React.FC = () => {
     playSound('reset');
   }, [pauseTimer, duration, playSound]);
 
+  const handleDurationChange = useCallback((value: string) => {
+    const newDuration = parseInt(value) * 60;
+    setDuration(newDuration);
+    if (!isRunning) { // Only reset timeRemaining if timer is not running
+      setTimeRemaining(newDuration);
+    }
+  }, [isRunning]);
+
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
-
-  const handleDurationChange = (value: string) => {
-    const newDuration = parseInt(value) * 60;
-    setDuration(newDuration);
-    if (!isRunning) {
-      setTimeRemaining(newDuration);
-    }
   };
 
   const progressValue = (timeRemaining / duration) * 100;
@@ -86,7 +86,7 @@ const MindfulEatingGuide: React.FC = () => {
     <Card className="w-full max-w-md shadow-lg text-center">
       <CardHeader>
         <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
-          <UtensilsCrossed className="h-6 w-6 text-orange-600" /> Mindful Eating
+          <UtensilsCrossed className="h-6 w-6 text-primary" /> Mindful Eating
         </CardTitle>
         <p className="text-muted-foreground">
           Bring full awareness to your food and the act of eating.
@@ -111,7 +111,7 @@ const MindfulEatingGuide: React.FC = () => {
             className="absolute w-full h-full rounded-full bg-muted"
             indicatorClassName={cn(
               "transition-all duration-1000 ease-linear",
-              "bg-orange-500"
+              "bg-primary"
             )}
           />
           <div className="relative z-10 text-5xl font-bold text-foreground">
@@ -125,7 +125,7 @@ const MindfulEatingGuide: React.FC = () => {
             onClick={isRunning ? pauseTimer : startTimer}
             className={cn(
               "w-24",
-              isRunning ? "bg-yellow-500 hover:bg-yellow-600" : "bg-orange-600 hover:bg-orange-700"
+              isRunning ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90"
             )}
             disabled={timeRemaining === 0 && isSessionActive}
           >

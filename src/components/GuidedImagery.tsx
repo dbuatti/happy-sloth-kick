@@ -163,7 +163,7 @@ const GuidedImagery: React.FC = () => {
     <Card className="w-full max-w-md shadow-lg text-center">
       <CardHeader>
         <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
-          <CurrentIcon className="h-6 w-6 text-green-600" /> Guided Imagery
+          <CurrentIcon className="h-6 w-6 text-primary" /> Guided Imagery
         </CardTitle>
         <p className="text-muted-foreground">
           Visualize a peaceful place to find calm and safety.
@@ -190,7 +190,7 @@ const GuidedImagery: React.FC = () => {
 
         {isSessionComplete ? (
           <div className="text-center space-y-4">
-            <Sparkles className="h-16 w-16 text-green-500 mx-auto animate-bounce" />
+            <Sparkles className="h-16 w-16 text-primary mx-auto animate-bounce" />
             <p className="text-xl font-semibold">Meditation Complete!</p>
             <p className="text-muted-foreground">You've completed your guided imagery session.</p>
             <Button onClick={resetMeditation}>
@@ -212,7 +212,7 @@ const GuidedImagery: React.FC = () => {
                 className="absolute w-full h-full rounded-full bg-muted"
                 indicatorClassName={cn(
                   "transition-all duration-1000 ease-linear",
-                  "bg-green-500"
+                  "bg-primary"
                 )}
               />
               <div className="relative z-10 text-5xl font-bold text-foreground">
@@ -226,7 +226,7 @@ const GuidedImagery: React.FC = () => {
                 onClick={isRunning ? pauseTimer : startTimer}
                 className={cn(
                   "w-24",
-                  isRunning ? "bg-yellow-500 hover:bg-yellow-600" : "bg-green-600 hover:bg-green-700"
+                  isRunning ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90"
                 )}
                 disabled={timeRemaining === 0 && !isRunning}
               >

@@ -51,7 +51,7 @@ const MiniBreathingBubble: React.FC = () => {
     setTimer(currentPhaseDuration);
 
     timerRef.current = setInterval(() => {
-      setTimer(prev => {
+      setTimer(prev => { // Corrected from setTimeRemaining to setTimer
         if (prev <= 1) {
           clearInterval(timerRef.current!);
           phaseIndexRef.current = (phaseIndexRef.current + 1) % cyclePhases.length;
@@ -116,14 +116,14 @@ const MiniBreathingBubble: React.FC = () => {
     <Card className="w-full shadow-lg text-center">
       <CardHeader className="pb-2">
         <CardTitle className="text-xl font-bold flex items-center justify-center gap-2">
-          <Wind className="h-5 w-5 text-blue-600" /> Breathing Exercise
+          <Wind className="h-5 w-5 text-primary" /> Breathing Exercise
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="relative w-32 h-32 mx-auto flex items-center justify-center">
           <div
             className={cn(
-              "w-full h-full rounded-full bg-blue-500 flex items-center justify-center text-white text-lg font-bold transition-transform duration-500 ease-in-out",
+              "w-full h-full rounded-full bg-primary flex items-center justify-center text-primary-foreground text-lg font-bold transition-transform duration-500 ease-in-out",
             )}
             style={{
               animation: isRunning && currentPhaseData?.animationKeyframe
@@ -143,7 +143,7 @@ const MiniBreathingBubble: React.FC = () => {
           )}
         </div>
         <div className="flex justify-center space-x-2">
-          <Button size="sm" onClick={handleStartPause} className={cn(isRunning ? "bg-yellow-500 hover:bg-yellow-600" : "bg-blue-600 hover:bg-blue-700")}>
+          <Button size="sm" onClick={handleStartPause} className={cn(isRunning ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90")}>
             {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
           </Button>
           <Button size="sm" variant="outline" onClick={handleReset}>

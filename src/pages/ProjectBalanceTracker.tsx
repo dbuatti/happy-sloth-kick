@@ -171,9 +171,9 @@ const ProjectBalanceTracker: React.FC = () => {
   };
 
   const getProgressColor = (count: number) => {
-    if (count >= 8) return 'bg-green-500';
-    if (count >= 4) return 'bg-yellow-500';
-    return 'bg-red-500';
+    if (count >= 8) return 'bg-primary';
+    if (count >= 4) return 'bg-accent';
+    return 'bg-destructive';
   };
 
   return (
@@ -257,8 +257,8 @@ const ProjectBalanceTracker: React.FC = () => {
           </CardHeader>
           <CardContent className="pt-0">
             {showCelebration && (
-              <div className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 p-4 rounded-lg mb-4 text-center flex flex-col items-center gap-2">
-                <Sparkles className="h-8 w-8 text-green-600 dark:text-green-400 animate-bounce" />
+              <div className="bg-primary/5 dark:bg-primary/10 text-primary p-4 rounded-lg mb-4 text-center flex flex-col items-center gap-2">
+                <Sparkles className="h-8 w-8 text-primary animate-bounce" />
                 <p className="text-xl font-semibold">Congratulations! All projects are balanced!</p>
                 <p>Ready to start a new cycle?</p>
                 <Button onClick={handleResetAllClick} className="mt-2" disabled={isResettingAll}>
@@ -293,9 +293,9 @@ const ProjectBalanceTracker: React.FC = () => {
             ) : (
               <div className="space-y-4">
                 {leastWorkedOnProject && (
-                  <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 p-3 rounded-lg flex items-center gap-3">
-                    <Lightbulb className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                    <p className="text-sm text-blue-800 dark:text-blue-200">
+                  <div className="bg-primary/5 dark:bg-primary/10 border border-primary/20 dark:border-primary/30 p-3 rounded-lg flex items-center gap-3">
+                    <Lightbulb className="h-5 w-5 text-primary flex-shrink-0" />
+                    <p className="text-sm text-foreground">
                       Consider focusing on: <span className="font-semibold">{leastWorkedOnProject.name}</span> (Current count: {leastWorkedOnProject.current_count})
                     </p>
                   </div>
@@ -309,8 +309,8 @@ const ProjectBalanceTracker: React.FC = () => {
                         "border rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4",
                         "transition-all duration-200 ease-in-out group",
                         "hover:shadow-md",
-                        editingProjectId === project.id ? "bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700" : "bg-card dark:bg-gray-800 border-border",
-                        leastWorkedOnProject?.id === project.id && "border-2 border-blue-500 dark:border-blue-400" // Highlight least worked on
+                        editingProjectId === project.id ? "bg-accent/5 dark:bg-accent/10 border-accent/30 dark:border-accent/70" : "bg-card dark:bg-gray-800 border-border",
+                        leastWorkedOnProject?.id === project.id && "border-2 border-primary dark:border-primary" // Highlight least worked on
                       )}
                     >
                       <div className="flex-1 min-w-0">
@@ -344,14 +344,14 @@ const ProjectBalanceTracker: React.FC = () => {
                             <h3 className="text-xl font-bold truncate flex items-center gap-2">
                               {project.name}
                               {project.current_count === 10 && (
-                                <CheckCircle2 className="h-5 w-5 text-green-500" />
+                                <CheckCircle2 className="h-5 w-5 text-primary" />
                               )}
                               {project.link && (
                                 <a 
                                   href={project.link} 
                                   target="_blank" 
                                   rel="noopener noreferrer" 
-                                  className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                                  className="text-primary hover:text-primary/90 dark:text-primary/90 dark:hover:text-primary"
                                   onClick={(e) => e.stopPropagation()}
                                 >
                                   <LinkIcon className="h-4 w-4" />

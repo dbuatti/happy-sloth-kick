@@ -78,7 +78,7 @@ const BreathingBubble: React.FC = () => {
         return prev - 1;
       });
     }, 1000);
-  }, [cyclePhases]);
+  }, [cyclePhases, playSound]);
 
   useEffect(() => {
     if (isRunning) {
@@ -136,7 +136,7 @@ const BreathingBubble: React.FC = () => {
     <Card className="w-full max-w-md shadow-lg text-center">
       <CardHeader>
         <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
-          <Wind className="h-6 w-6 text-blue-600" /> Interactive Breathing
+          <Wind className="h-6 w-6 text-primary" /> Interactive Breathing
         </CardTitle>
         <p className="text-muted-foreground">
           Follow the bubble to regulate your breath.
@@ -162,7 +162,7 @@ const BreathingBubble: React.FC = () => {
         <div className="relative w-48 h-48 mx-auto flex items-center justify-center">
           <div
             className={cn(
-              "w-full h-full rounded-full bg-blue-500 flex items-center justify-center text-white text-xl font-bold transition-transform duration-500 ease-in-out",
+              "w-full h-full rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xl font-bold transition-transform duration-500 ease-in-out",
             )}
             style={{
               animation: isRunning && currentPhaseData?.animationKeyframe
@@ -188,7 +188,7 @@ const BreathingBubble: React.FC = () => {
             onClick={handleStartPause}
             className={cn(
               "w-24",
-              isRunning ? "bg-yellow-500 hover:bg-yellow-600" : "bg-blue-600 hover:bg-blue-700"
+              isRunning ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90"
             )}
             disabled={cyclePhases.length === 0}
           >

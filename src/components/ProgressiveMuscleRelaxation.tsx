@@ -40,40 +40,57 @@ const ProgressiveMuscleRelaxation: React.FC = () => {
   const currentStep = steps[currentStepIndex];
   const currentPhaseDuration = isTensingPhase ? currentStep.tenseDuration : currentStep.relaxDuration;
 
+  // Refactored startTimer to simply set isRunning to true and play sound
   const startTimer = useCallback(() => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    setIsRunning(true);
-    playSound('start');
+    if (timeRemainingInPhase > 0) {
+      setIsRunning(true);
+      playSound('start');
+    }
+  }, [timeRemainingInPhase, playSound]);
 
-    timerRef.current = setInterval(() => {
-      setTimeRemainingInPhase(prevTime => {
-        if (prevTime <= 1) {
-          clearInterval(timerRef.current!);
-          if (isTensingPhase) {
-            // Transition from tense to relax phase
-            setIsTensingPhase(false);
+  useEffect(() => {
+    if (isRunning) {
+      timerRef.current = setInterval(() => {
+        setTimeRemainingInPhase(prevTime => {
+          if (prevTime <= 1) {
+            clearInterval(timerRef.current!);
+            setIsRunning(false);
             playSound('success'); // Chime for phase transition
-            return currentStep.relaxDuration;
-          } else {
-            // Transition from relax phase to next step
-            if (currentStepIndex < steps.length - 1) {
-              setCurrentStepIndex(prevIndex => prevIndex + 1);
-              setIsTensingPhase(true); // Next step starts with tensing
-              playSound('success'); // Chime for step transition
-              return steps[currentStepIndex + 1].tenseDuration;
+
+            if (isTensingPhase) {
+              // Transition from tense to relax phase
+              setIsTensingPhase(false);
+              return currentStep.relaxDuration;
             } else {
-              // Meditation complete
-              setIsRunning(false);
-              setIsMeditationComplete(true);
-              playSound('complete'); // Sound for meditation completion
-              return 0;
+              // Transition from relax phase to next step
+              if (currentStepIndex < steps.length - 1) {
+                setCurrentStepIndex(prevIndex => prevIndex + 1);
+                setIsTensingPhase(true); // Next step starts with tensing
+                return steps[currentStepIndex + 1].tenseDuration;
+              } else {
+                // Meditation complete
+                setIsRunning(false);
+                setIsMeditationComplete(true);
+                playSound('complete'); // Sound for meditation completion
+                return 0;
+              }
             }
           }
-        }
-        return prevTime - 1;
-      });
-    }, 1000);
-  }, [currentStepIndex, isTensingPhase, steps, playSound, currentStep.relaxDuration]);
+          return prevTime - 1;
+        });
+      }, 1000);
+    } else {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [isRunning, isTensingPhase, currentStepIndex, steps, playSound, currentStep.relaxDuration, currentStep.tenseDuration]);
 
   const pauseTimer = useCallback(() => {
     setIsRunning(false);
@@ -117,10 +134,10 @@ const ProgressiveMuscleRelaxation: React.FC = () => {
     if (currentStepIndex < steps.length) {
       setTimeRemainingInPhase(isTensingPhase ? currentStep.tenseDuration : currentStep.relaxDuration);
       if (isRunning) {
-        startTimer(); // Restart timer for new phase/step
+        // No need to call startTimer here, the main useEffect handles it
       }
     }
-  }, [currentStepIndex, isTensingPhase, steps, isRunning, startTimer, currentStep.tenseDuration, currentStep.relaxDuration]);
+  }, [currentStepIndex, isTensingPhase, steps, isRunning, currentStep.tenseDuration, currentStep.relaxDuration]);
 
   useEffect(() => {
     return () => {
@@ -142,7 +159,7 @@ const ProgressiveMuscleRelaxation: React.FC = () => {
     <Card className="w-full max-w-md shadow-lg text-center">
       <CardHeader>
         <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
-          <Armchair className="h-6 w-6 text-purple-600" /> Progressive Muscle Relaxation
+          <Armchair className="h-6 w-6 text-primary" /> Progressive Muscle Relaxation
         </CardTitle>
         <p className="text-muted-foreground">
           Systematically tense and relax muscle groups to release tension.
@@ -151,7 +168,7 @@ const ProgressiveMuscleRelaxation: React.FC = () => {
       <CardContent className="space-y-6">
         {isMeditationComplete ? (
           <div className="text-center space-y-4">
-            <Armchair className="h-16 w-16 text-green-500 mx-auto animate-bounce" />
+            <Armchair className="h-16 w-16 text-primary mx-auto animate-bounce" />
             <p className="text-xl font-semibold">PMR Complete!</p>
             <p className="text-muted-foreground">You've completed the relaxation exercise.</p>
             <Button onClick={resetMeditation}>
@@ -174,7 +191,7 @@ const ProgressiveMuscleRelaxation: React.FC = () => {
                 className="absolute w-full h-full rounded-full bg-muted"
                 indicatorClassName={cn(
                   "transition-all duration-1000 ease-linear",
-                  isTensingPhase ? "bg-red-500" : "bg-green-500"
+                  isTensingPhase ? "bg-destructive" : "bg-primary"
                 )}
               />
               <div className="relative z-10 text-5xl font-bold text-foreground">
@@ -188,7 +205,7 @@ const ProgressiveMuscleRelaxation: React.FC = () => {
                 onClick={isRunning ? pauseTimer : startTimer}
                 className={cn(
                   "w-24",
-                  isRunning ? "bg-yellow-500 hover:bg-yellow-600" : "bg-purple-600 hover:bg-purple-700"
+                  isRunning ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90"
                 )}
               >
                 {isRunning ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}

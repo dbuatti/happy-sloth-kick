@@ -78,14 +78,14 @@ const DailyFlowPrototype: React.FC = () => {
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold flex items-center gap-2">
-              <Sun className="h-6 w-6 text-yellow-500" /> Good Morning!
+              <Sun className="h-6 w-6 text-primary" /> Good Morning!
             </h2>
             <p className="text-muted-foreground">Start your day with intention and gratitude.</p>
             {showMorningNudge && (
-              <Card className="w-full shadow-lg bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 animate-in fade-in duration-500">
+              <Card className="w-full shadow-lg bg-primary/5 dark:bg-primary/10 border border-primary/20 dark:border-primary/30 animate-in fade-in duration-500">
                 <CardContent className="p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                  <Brain className="h-6 w-6 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                  <p className="text-sm text-blue-800 dark:text-blue-200 flex-grow">
+                  <Brain className="h-6 w-6 text-primary flex-shrink-0" />
+                  <p className="text-sm text-foreground flex-grow">
                     **AI Nudge:** "Let's set a positive tone! What are three things you're grateful for today?"
                   </p>
                   <Button variant="outline" size="sm" onClick={() => setShowMorningNudge(false)} className="flex-shrink-0 mt-2 sm:mt-0">Got it!</Button>
@@ -114,14 +114,14 @@ const DailyFlowPrototype: React.FC = () => {
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold flex items-center gap-2">
-              <Briefcase className="h-6 w-6 text-blue-500" /> Focus & Productivity
+              <Briefcase className="h-6 w-6 text-primary" /> Focus & Productivity
             </h2>
             <p className="text-muted-foreground">Dive into your tasks and balance your projects.</p>
             {showWorkNudge && (
-              <Card className="w-full shadow-lg bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 animate-in fade-in duration-500">
+              <Card className="w-full shadow-lg bg-primary/5 dark:bg-primary/10 border border-primary/20 dark:border-primary/30 animate-in fade-in duration-500">
                 <CardContent className="p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                  <Brain className="h-6 w-6 text-green-600 dark:text-green-400 flex-shrink-0" />
-                  <p className="text-sm text-green-800 dark:text-green-200 flex-grow">
+                  <Brain className="h-6 w-6 text-primary flex-shrink-0" />
+                  <p className="text-sm text-foreground flex-grow">
                     **AI Nudge:** "Ready for deep work? Consider starting a focus session for your next task!"
                   </p>
                   <Button variant="outline" size="sm" onClick={() => setShowWorkNudge(false)} className="flex-shrink-0 mt-2 sm:mt-0">Got it!</Button>
@@ -142,7 +142,7 @@ const DailyFlowPrototype: React.FC = () => {
               <Card className="w-full shadow-lg">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-xl font-bold flex items-center gap-2">
-                    <Lightbulb className="h-5 w-5 text-blue-500" /> Project Focus
+                    <Lightbulb className="h-5 w-5 text-primary" /> Project Focus
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
@@ -166,14 +166,14 @@ const DailyFlowPrototype: React.FC = () => {
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold flex items-center gap-2">
-              <Coffee className="h-6 w-6 text-orange-500" /> Recharge & Reset
+              <Coffee className="h-6 w-6 text-primary" /> Recharge & Reset
             </h2>
             <p className="text-muted-foreground">Take a moment to refresh your mind and body.</p>
             {showBreakNudge && (
-              <Card className="w-full shadow-lg bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700 animate-in fade-in duration-500">
+              <Card className="w-full shadow-lg bg-primary/5 dark:bg-primary/10 border border-primary/20 dark:border-primary/30 animate-in fade-in duration-500">
                 <CardContent className="p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                  <Brain className="h-6 w-6 text-purple-600 dark:text-purple-400 flex-shrink-0" />
-                  <p className="text-sm text-purple-800 dark:text-purple-200 flex-grow">
+                  <Brain className="h-6 w-6 text-primary flex-shrink-0" />
+                  <p className="text-sm text-foreground flex-grow">
                     **AI Nudge:** "Feeling overwhelmed? Try the 5-4-3-2-1 Sensory Tool to ground yourself."
                   </p>
                   <Button variant="outline" size="sm" onClick={() => setShowBreakNudge(false)} className="flex-shrink-0 mt-2 sm:mt-0">Got it!</Button>
@@ -186,7 +186,7 @@ const DailyFlowPrototype: React.FC = () => {
               <Card className="w-full shadow-lg md:col-span-2">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-xl font-bold flex items-center gap-2">
-                    <Lightbulb className="h-5 w-5 text-green-500" /> Quick Meditation
+                    <Lightbulb className="h-5 w-5 text-primary" /> Quick Meditation
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
@@ -201,14 +201,14 @@ const DailyFlowPrototype: React.FC = () => {
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold flex items-center gap-2">
-              <Moon className="h-6 w-6 text-purple-500" /> Wind Down & Reflect
+              <Moon className="h-6 w-6 text-primary" /> Wind Down & Reflect
             </h2>
             <p className="text-muted-foreground">Prepare for a restful night and clear your mind.</p>
             {showEveningNudge && (
-              <Card className="w-full shadow-lg bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 animate-in fade-in duration-500">
+              <Card className="w-full shadow-lg bg-primary/5 dark:bg-primary/10 border border-primary/20 dark:border-primary/30 animate-in fade-in duration-500">
                 <CardContent className="p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                  <Brain className="h-6 w-6 text-yellow-600 dark:text-yellow-400 flex-shrink-0" />
-                  <p className="text-sm text-yellow-800 dark:text-yellow-200 flex-grow">
+                  <Brain className="h-6 w-6 text-primary flex-shrink-0" />
+                  <p className="text-sm text-foreground flex-grow">
                     **AI Nudge:** "Any lingering worries? Jot them down in your Worry Journal before bed."
                   </p>
                   <Button variant="outline" size="sm" onClick={() => setShowEveningNudge(false)} className="flex-shrink-0 mt-2 sm:mt-0">Got it!</Button>
@@ -221,7 +221,7 @@ const DailyFlowPrototype: React.FC = () => {
               <Card className="w-full shadow-lg md:col-span-2">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-xl font-bold flex items-center gap-2">
-                    <Lightbulb className="h-5 w-5 text-blue-500" /> Tomorrow's Tasks
+                    <Lightbulb className="h-5 w-5 text-primary" /> Tomorrow's Tasks
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
@@ -239,14 +239,14 @@ const DailyFlowPrototype: React.FC = () => {
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold flex items-center gap-2">
-              <Bed className="h-6 w-6 text-indigo-500" /> Rest & Recovery
+              <Bed className="h-6 w-6 text-primary" /> Rest & Recovery
             </h2>
             <p className="text-muted-foreground">Log your sleep and prepare for deep rest.</p>
             {showNightNudge && (
-              <Card className="w-full shadow-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 animate-in fade-in duration-500">
+              <Card className="w-full shadow-lg bg-primary/5 dark:bg-primary/10 border border-primary/20 dark:border-primary/30 animate-in fade-in duration-500">
                 <CardContent className="p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                  <Brain className="h-6 w-6 text-red-600 dark:text-red-400 flex-shrink-0" />
-                  <p className="text-sm text-red-800 dark:text-red-200 flex-grow">
+                  <Brain className="h-6 w-6 text-primary flex-shrink-0" />
+                  <p className="text-sm text-foreground flex-grow">
                     **AI Nudge:** "Ensure a good night's rest. Have you logged your sleep yet?"
                   </p>
                   <Button variant="outline" size="sm" onClick={() => setShowNightNudge(false)} className="flex-shrink-0 mt-2 sm:mt-0">Got it!</Button>
@@ -257,7 +257,7 @@ const DailyFlowPrototype: React.FC = () => {
               <Card className="w-full shadow-lg">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-xl font-bold flex items-center gap-2">
-                    <Bed className="h-5 w-5 text-indigo-500" /> Sleep Log
+                    <Bed className="h-5 w-5 text-primary" /> Sleep Log
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">

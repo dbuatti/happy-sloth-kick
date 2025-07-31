@@ -70,10 +70,7 @@ const ThoughtDiffusionTool: React.FC = () => {
 
     switch (technique) {
       case 'funny-voice':
-        setDisplayedThought(originalThought.split('').map((char, i) => {
-          const styles = ['font-serif italic', 'font-mono', 'font-sans font-bold', 'text-lg', 'text-xl', 'text-2xl'];
-          return <span key={i} className={styles[Math.floor(Math.random() * styles.length)]}>{char}</span>;
-        }));
+        setDisplayedThought(<span className="italic">{originalThought}</span>); // Simplified styling
         break;
       case 'having-thought':
         setDisplayedThought(`I'm having the thought that... "${originalThought}"`);
@@ -115,7 +112,7 @@ const ThoughtDiffusionTool: React.FC = () => {
     <Card className="w-full max-w-md shadow-lg text-center">
       <CardHeader>
         <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
-          <Lightbulb className="h-6 w-6 text-yellow-600" /> Thought Diffusion
+          <Lightbulb className="h-6 w-6 text-primary" /> Thought Diffusion
         </CardTitle>
         <p className="text-muted-foreground">
           Change your relationship with difficult thoughts.
@@ -166,7 +163,7 @@ const ThoughtDiffusionTool: React.FC = () => {
         <div className="min-h-[100px] p-4 border rounded-lg bg-muted flex items-center justify-center text-center text-lg font-semibold text-foreground break-words">
           {isComplete && activeTechnique === 'repeat' ? (
             <div className="flex flex-col items-center gap-2">
-              <Sparkles className="h-8 w-8 text-green-500" />
+              <Sparkles className="h-8 w-8 text-primary" />
               <p>Thought diffused!</p>
             </div>
           ) : (
@@ -189,7 +186,7 @@ const ThoughtDiffusionTool: React.FC = () => {
                 onClick={handlePlayPause}
                 className={cn(
                   "w-24",
-                  isRunning ? "bg-yellow-500 hover:bg-yellow-600" : "bg-green-600 hover:bg-green-700"
+                  isRunning ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90"
                 )}
                 disabled={isComplete}
               >

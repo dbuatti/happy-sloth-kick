@@ -75,7 +75,7 @@ const SensoryTool: React.FC = () => {
     <Card className="w-full max-w-md shadow-lg text-center">
       <CardHeader>
         <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
-          <Eye className="h-6 w-6 text-purple-600" /> 5-4-3-2-1 Sensory Tool
+          <Eye className="h-6 w-6 text-primary" /> 5-4-3-2-1 Sensory Tool
         </CardTitle>
         <p className="text-muted-foreground">
           Ground yourself in the present moment.
@@ -84,7 +84,7 @@ const SensoryTool: React.FC = () => {
       <CardContent className="space-y-6">
         {step === 0 ? (
           <div className="text-center space-y-4">
-            <Sparkles className="h-16 w-16 text-green-500 mx-auto animate-bounce" />
+            <Sparkles className="h-16 w-16 text-primary mx-auto animate-bounce" />
             <p className="text-xl font-semibold">Exercise Complete!</p>
             <p className="text-muted-foreground">You've successfully grounded yourself.</p>
             <Button onClick={handleReset}>
