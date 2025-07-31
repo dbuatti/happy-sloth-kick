@@ -3,7 +3,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import NotFound from "./pages/NotFound";
-import MyHub from "./pages/MyHub"; // Import the new MyHub page
+import MyHub from "./pages/MyHub";
 import Help from "./pages/Help";
 import ProjectBalanceTracker from "./pages/ProjectBalanceTracker";
 import TimeBlockSchedule from "./pages/TimeBlockSchedule";
@@ -20,13 +20,13 @@ import { SoundProvider } from "@/context/SoundContext";
 import { addDays, startOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useTasks, Task } from '@/hooks/useTasks';
-import { useNavigate, useLocation } => 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
 import AuthComponent from "@/components/AuthComponent";
 import DateNavigator from '@/components/DateNavigator';
 import NextTaskCard from '@/components/NextTaskCard';
 import TaskList from "@/components/TaskList";
-import { MadeWithDyad } from "@/components/made-with-dyad";
+import { MadeWithDyad } = "@/components/made-with-dyad";
 import TaskDetailDialog from "@/components/TaskDetailDialog";
 
 // Helper to get UTC start of day
