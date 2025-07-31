@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, BarChart3, Settings as SettingsIcon, HelpCircle, Archive as ArchiveIcon, Timer, LayoutGrid, CalendarClock, Menu, Leaf, Moon, Volume2, VolumeX, Brain, Target, LayoutDashboard, Sparkles } from 'lucide-react';
+import { Home, BarChart3, Settings as SettingsIcon, HelpCircle, Archive as ArchiveIcon, Timer, LayoutGrid, CalendarClock, Menu, Leaf, Moon, Volume2, VolumeX, Brain, Target, LayoutDashboard, Sparkles } from 'lucide-react'; // Added Sparkles for prototype
 import ThemeSelector from './ThemeSelector';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -15,8 +15,7 @@ interface SidebarProps {
 }
 
 const navItems = [
-  { name: 'Daily Tasks', path: '/daily-tasks', icon: Home, showCount: true },
-  { name: 'Daily Tasks Test', path: '/daily-tasks-test', icon: Sparkles }, // New nav item
+  { name: 'Daily Tasks', path: '/daily-tasks', icon: Home, showCount: true }, // Updated path
   { name: 'Daily Flow Prototype', path: '/daily-flow-prototype', icon: Sparkles },
   { name: 'Focus Mode', path: '/focus', icon: Target },
   { name: 'Mindfulness', path: '/mindfulness', icon: Brain },
@@ -94,7 +93,8 @@ const Sidebar: React.FC<SidebarProps> = ({ children }) => {
                     {isSoundEnabled ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
                   </Button>
                 </div>
-              </SheetContent>
+              </div>
+            </SheetContent>
           </Sheet>
           <h1 className="text-xl font-bold text-gray-800 dark:text-white">TaskMaster</h1>
           <div className="flex items-center space-x-2">
