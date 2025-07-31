@@ -25,7 +25,7 @@ const SleepTracker: React.FC = () => {
   useEffect(() => {
     if (!loading) {
       setBedTime(sleepRecord?.bed_time ? sleepRecord.bed_time.substring(0, 5) : '');
-      setLightsOffTime(sleepRecord?.lights_off_time ? sleepRecord.lights_off_off_time.substring(0, 5) : '');
+      setLightsOffTime(sleepRecord?.lights_off_time ? sleepRecord.lights_off_time.substring(0, 5) : '');
       setWakeUpTime(sleepRecord?.wake_up_time ? sleepRecord.wake_up_time.substring(0, 5) : '');
       setGetOutOfBedTime(sleepRecord?.get_out_of_bed_time ? sleepRecord.get_out_of_bed_time.substring(0, 5) : '');
     }
