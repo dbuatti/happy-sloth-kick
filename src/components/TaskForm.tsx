@@ -48,26 +48,35 @@ const taskFormSchema = z.object({
       return false;
     }
   }, { message: 'Must be a valid URL format (e.g., example.com or https://example.com).' }),
-}).refine((data) => {
+}).superRefine((data, ctx) => { // Using superRefine for more robust conditional validation
   if (data.remindAtDate) {
-    // If date is set, time is required and must be valid
+    // If remindAtDate is set, remindAtTime is required and must be valid
     if (!data.remindAtTime || data.remindAtTime.trim() === "") {
-      return false; // Time is required if date is set
-    }
-    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
-    if (!timeRegex.test(data.remindAtTime)) {
-      return false; // Invalid time format
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Reminder time is required if a reminder date is set.',
+        path: ['remindAtTime'],
+      });
+    } else {
+      const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+      if (!timeRegex.test(data.remindAtTime)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Invalid time format (HH:MM).',
+          path: ['remindAtTime'],
+        });
+      }
     }
   } else {
-    // If date is NOT set, time must be empty or undefined
+    // If remindAtDate is NOT set, remindAtTime must be empty or undefined
     if (data.remindAtTime && data.remindAtTime.trim() !== "") {
-      return false; // Cannot have a time without a date
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Cannot set a reminder time without a reminder date.',
+        path: ['remindAtTime'],
+      });
     }
   }
-  return true;
-}, {
-  message: 'Reminder time is required if a reminder date is set, and must be a valid HH:MM format. Otherwise, it must be empty.',
-  path: ['remindAtTime'], // This path will apply to the time field
 });
 
 type TaskFormData = z.infer<typeof taskFormSchema>;
@@ -307,7 +316,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
       section_id: data.sectionId,
       recurring_type: data.recurringType,
       parent_task_id: data.parentTaskId,
-      link: data.link || null,
+      link: data.link || null, // Include link
     });
     setIsSaving(false);
     if (success) {
@@ -318,7 +327,13 @@ const TaskForm: React.FC<TaskFormProps> = ({
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey && description.trim()) {
       event.preventDefault();
-      handleSubmit(onSubmit)();
+      // Only attempt submission if the form is currently valid
+      if (form.formState.isValid) {
+        handleSubmit(onSubmit)();
+      } else {
+        // Trigger validation to show errors if not valid
+        form.trigger();
+      }
     }
   };
 
