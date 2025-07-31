@@ -247,11 +247,11 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       // Reconstruct the full tasks array with updated orders
       const finalTasksState = mappedTasks.map(task => tasksById.get(task.id) || task);
       setTasks(finalTasksState);
-      console.log('[useTasks] Final tasks state after order normalization:', finalTasksState);
+      console.log('[useTasks] fetchDataAndSections: Tasks state set. Total tasks:', finalTasksState.length);
 
       // Send updates to DB if any orders were changed
       if (updatesForDb.length > 0) {
-        console.log('[useTasks] Sending DB upsert for order normalization:', updatesForDb);
+        console.log('[useTasks] fetchDataAndSections: Sending DB upsert for order normalization:', updatesForDb);
         const { error: upsertError } = await supabase
           .from('tasks')
           .upsert(updatesForDb, { onConflict: 'id' });
@@ -1268,6 +1268,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
   const { finalFilteredTasks, nextAvailableTask } = useMemo(() => {
     console.log('[useTasks] useMemo: Recalculating filtered tasks and next available task.');
+    
     let relevantTasks: Task[] = [];
     const focusModeSectionIds = new Set(sections.filter(s => s.include_in_focus_mode).map(s => s.id));
     console.log('[useTasks] useMemo: Focus mode sections:', Array.from(focusModeSectionIds));
@@ -1411,7 +1412,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       finalFilteredTasks: currentViewFilteredTasks, 
       nextAvailableTask, 
     };
-  }, [tasks, currentDate, searchFilter, statusFilter, categoryFilter, priorityFilter, sectionFilter, sections, viewMode]);
+  }, [tasks, sections, viewMode, currentDate, statusFilter, searchFilter, categoryFilter, priorityFilter, sectionFilter]);
 
   return {
     tasks,
