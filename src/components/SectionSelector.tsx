@@ -46,12 +46,12 @@ const SectionSelector: React.FC<SectionSelectorProps> = ({ value, onChange, user
     <div className="space-y-2">
       <Label>Section</Label>
       <div className="flex space-x-2">
-        <Select value={value || ''} onValueChange={(val) => onChange(val === '' ? null : val)}>
+        <Select value={value || "no-section-option"} onValueChange={(val) => onChange(val === "no-section-option" ? null : val)}>
           <SelectTrigger className="flex-1">
             <SelectValue placeholder="Select section" />
           </SelectTrigger>
           <SelectContent className="z-[9999]">
-            <SelectItem value="">No Section</SelectItem> {/* Explicit 'No Section' option */}
+            <SelectItem value="no-section-option">No Section</SelectItem> {/* Explicit 'No Section' option */}
             {sections.length > 0 && (
               sections.map(section => (
                 <SelectItem key={section.id} value={section.id}>
