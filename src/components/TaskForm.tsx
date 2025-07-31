@@ -240,6 +240,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
   const recurringType = watch('recurringType');
 
   useEffect(() => {
+    console.log('[TaskForm] Initializing/Resetting form. InitialData:', initialData);
     if (initialData) {
       reset({
         description: initialData.description,
@@ -273,6 +274,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
   }, [initialData, preselectedSectionId, parentTaskId, allCategories, reset]);
 
   const handleSuggest = useCallback(() => {
+    console.log('[TaskForm] Running natural language suggestion for description:', description);
     const {
       dueDate: suggestedDueDate,
       remindAt: suggestedRemindAt,
@@ -283,26 +285,35 @@ const TaskForm: React.FC<TaskFormProps> = ({
 
     if (suggestedPriority) {
       setValue('priority', suggestedPriority);
+      console.log('[TaskForm] Suggested Priority:', suggestedPriority);
     }
     if (suggestedCategoryId) {
       setValue('category', suggestedCategoryId);
+      console.log('[TaskForm] Suggested Category ID:', suggestedCategoryId);
     }
     if (suggestedDueDate) {
       setValue('dueDate', suggestedDueDate);
+      console.log('[TaskForm] Suggested Due Date:', suggestedDueDate);
     }
     if (suggestedRemindAt) {
       setValue('remindAtDate', suggestedRemindAt);
+      console.log('[TaskForm] Suggested Remind At Date:', suggestedRemindAt);
       if (suggestedReminderTimeStr) {
         setValue('remindAtTime', format(suggestedRemindAt, 'HH:mm'));
+        console.log('[TaskForm] Suggested Remind At Time String:', format(suggestedRemindAt, 'HH:mm'));
       }
     }
   }, [description, allCategories, setValue]);
 
   const onSubmit = async (data: TaskFormData) => {
+    console.log('[TaskForm] Form submitted. Raw data:', data);
     let finalRemindAt: Date | null = null;
     if (data.remindAtDate && data.remindAtTime && data.remindAtTime.trim() !== "") {
       const [hours, minutes] = data.remindAtTime.split(':').map(Number);
       finalRemindAt = setMinutes(setHours(data.remindAtDate, hours), minutes);
+      console.log('[TaskForm] Calculated finalRemindAt:', finalRemindAt, 'isValid:', finalRemindAt ? !isNaN(finalRemindAt.getTime()) : false);
+    } else {
+      console.log('[TaskForm] No finalRemindAt calculated (remindAtDate or remindAtTime missing/empty).');
     }
 
     setIsSaving(true);
@@ -319,6 +330,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
       link: data.link || null, // Include link
     });
     setIsSaving(false);
+    console.log('[TaskForm] onSave result:', success);
     if (success) {
       onCancel();
     }
@@ -327,10 +339,13 @@ const TaskForm: React.FC<TaskFormProps> = ({
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey && description.trim()) {
       event.preventDefault();
+      console.log('[TaskForm] Enter key pressed. Checking form validity...');
       // Only attempt submission if the form is currently valid
       if (form.formState.isValid) {
+        console.log('[TaskForm] Form is valid. Attempting submission.');
         handleSubmit(onSubmit)();
       } else {
+        console.log('[TaskForm] Form is NOT valid. Triggering validation to show errors.');
         // Trigger validation to show errors if not valid
         form.trigger();
       }
