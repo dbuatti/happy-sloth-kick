@@ -41,7 +41,7 @@ const ProjectBalanceTracker: React.FC = () => {
 
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
-  const [newProjectDescription, setNewProjectDescription] = useState(''); // Fixed: Changed from = '' to = useState('')
+  const [newProjectDescription, setNewProjectDescription] = useState('');
   const [newProjectLink, setNewProjectLink] = useState('');
   const [isSavingProject, setIsSavingProject] = useState(false);
 
@@ -187,7 +187,7 @@ const ProjectBalanceTracker: React.FC = () => {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-4">
               <Dialog open={isAddProjectOpen} onOpenChange={setIsAddProjectOpen}>
                 <DialogTrigger asChild>
-                  <Button disabled={isSavingProject} className="w-full sm:w-auto"> {/* Added w-full */}
+                  <Button disabled={isSavingProject} className="w-full sm:w-auto">
                     <Plus className="mr-2 h-4 w-4" /> Add Project
                   </Button>
                 </DialogTrigger>
@@ -238,10 +238,10 @@ const ProjectBalanceTracker: React.FC = () => {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
-              <div className="flex items-center gap-2 w-full sm:w-auto"> {/* Added w-full */}
+              <div className="flex items-center gap-2 w-full sm:w-auto">
                 <Label htmlFor="sort-by">Sort by:</Label>
                 <Select value={sortOption} onValueChange={(value: 'name_asc' | 'count_asc' | 'count_desc' | 'created_at_asc' | 'created_at_desc') => setSortOption(value)}>
-                  <SelectTrigger className="w-full sm:w-[180px]"> {/* Adjusted width */}
+                  <SelectTrigger className="w-full sm:w-[180px]">
                     <SelectValue placeholder="Sort projects" />
                   </SelectTrigger>
                   <SelectContent>
@@ -321,19 +321,19 @@ const ProjectBalanceTracker: React.FC = () => {
                               onChange={(e) => setEditingProjectName(e.target.value)}
                               onKeyDown={(e) => e.key === 'Enter' && handleSaveProjectEdit()}
                               className="text-lg font-semibold"
-                              autoFocus // Auto-focus here
+                              autoFocus
                               disabled={isSavingProject}
                             />
                             <Textarea
                               value={editingProjectDescription}
-                              onChange={(e) => setNewProjectDescription(e.target.value)}
+                              onChange={(e) => setEditingProjectDescription(e.target.value)}
                               placeholder="Description..."
                               rows={2}
                               disabled={isSavingProject}
                             />
                             <Input
                               type="url"
-                              value={newProjectLink}
+                              value={editingProjectLink}
                               onChange={(e) => setNewProjectLink(e.target.value)}
                               placeholder="Project link (optional)"
                               disabled={isSavingProject}
@@ -365,7 +365,7 @@ const ProjectBalanceTracker: React.FC = () => {
                         )}
                       </div>
 
-                      <div className="flex flex-col sm:flex-row items-center gap-3 flex-shrink-0 w-full sm:w-48 md:w-64 lg:w-80"> {/* Adjusted width here */}
+                      <div className="flex flex-col sm:flex-row items-center gap-3 flex-shrink-0 w-full sm:w-64 md:w-80 lg:w-96"> {/* Increased width for sm, md, lg */}
                         {editingProjectId === project.id ? (
                           <div className="flex gap-2 w-full">
                             <Button size="sm" onClick={(e) => { e.stopPropagation(); handleSaveProjectEdit(); }} disabled={isSavingProject || !editingProjectName.trim()} className="flex-1">
@@ -375,7 +375,7 @@ const ProjectBalanceTracker: React.FC = () => {
                           </div>
                         ) : (
                           <>
-                            <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <div className="flex items-center gap-2 w-full"> {/* Removed sm:w-auto to ensure it takes full width of parent */}
                               <Button
                                 variant="outline"
                                 size="icon"
