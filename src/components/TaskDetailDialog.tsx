@@ -18,6 +18,7 @@ import { useSound } from '@/context/SoundContext';
 import TaskForm from './TaskForm'; // Import the new TaskForm
 import { cn } from '@/lib/utils'; // Import cn
 import { parseISO } from 'date-fns'; // Import parseISO
+import { Checkbox } from "@/components/ui/checkbox"; // Import Checkbox component
 
 interface TaskDetailDialogProps {
   task: Task | null;
@@ -143,12 +144,11 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
             <ul className="space-y-2">
               {subtasks.map(subtask => (
                 <li key={subtask.id} className="flex items-center space-x-2 p-2 border rounded-md bg-background">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={subtask.status === 'completed'}
-                    onChange={(e) => handleSubtaskStatusChange(subtask.id, e.target.checked ? 'completed' : 'to-do')}
+                    onCheckedChange={(checked: boolean) => handleSubtaskStatusChange(subtask.id, checked ? 'completed' : 'to-do')}
                     id={`subtask-${subtask.id}`}
-                    className="flex-shrink-0 h-3.5 w-3.5 rounded text-primary focus:ring-primary"
+                    className="flex-shrink-0 h-4 w-4"
                   />
                   <label
                     htmlFor={`subtask-${subtask.id}`}
