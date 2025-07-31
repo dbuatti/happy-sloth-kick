@@ -264,7 +264,7 @@ const TimeBlockSchedule: React.FC = () => {
                 <p className="text-sm">Please check your work hour settings. Ensure your start time is before your end time.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-[60px_1fr] gap-x-2">
+              <div className="grid grid-cols-[60px_1fr] sm:grid-cols-[80px_1fr] gap-x-2">
                 <div className="grid" style={{
                   gridTemplateRows: `repeat(${timeBlocks.length}, ${rowHeight}px)`,
                   height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`,
@@ -273,7 +273,7 @@ const TimeBlockSchedule: React.FC = () => {
                     getMinutes(block.start) === 0 && (
                       <div
                         key={`label-${format(block.start, 'HH:mm')}`}
-                        className="flex items-start justify-end pr-2 text-xs text-muted-foreground"
+                        className="flex items-start justify-end pr-2 text-xs sm:text-sm text-muted-foreground"
                         style={{ gridRow: `${index + 1} / span 2` }}
                       >
                         <span>{format(block.start, 'h a')}</span>
