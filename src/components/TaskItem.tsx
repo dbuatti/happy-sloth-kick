@@ -97,7 +97,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   return (
     <div
       className={cn(
-        "relative flex items-start space-x-3 w-full p-3 rounded-lg", // Added padding and rounded corners
+        "relative flex items-start space-x-3 w-full p-2 rounded-lg", // Changed p-3 to p-2
         task.status === 'completed' ? "opacity-70 bg-green-50/20 dark:bg-green-900/20" : "",
         isOverdue ? "border-l-4 border-status-overdue" :
         isDueToday ? "border-l-4 border-status-due-today" :
@@ -115,7 +115,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
       />
 
       <div 
-        className="flex-1 min-w-0 cursor-pointer py-1"
+        className="flex-1 min-w-0 cursor-pointer py-0.5" // Changed py-1 to py-0.5
         onClick={() => onEditTask(task)}
         data-no-dnd="true"
       >
