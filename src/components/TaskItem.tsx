@@ -97,7 +97,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   return (
     <div
       className={cn(
-        "relative flex items-start space-x-3 w-full p-2 rounded-lg", // Changed p-3 to p-2
+        "relative flex items-start space-x-3 w-full py-1 px-2 rounded-lg", // Changed p-2 to py-1 px-2
         task.status === 'completed' ? "opacity-70 bg-green-50/20 dark:bg-green-900/20" : "",
         isOverdue ? "border-l-4 border-status-overdue" :
         isDueToday ? "border-l-4 border-status-due-today" :
@@ -110,12 +110,12 @@ const TaskItem: React.FC<TaskItemProps> = ({
         onCheckedChange={handleCheckboxChange}
         id={`task-${task.id}`}
         onClick={(e) => e.stopPropagation()}
-        className="flex-shrink-0 h-5 w-5 mt-0.5" // Slightly larger checkbox
+        className="flex-shrink-0 h-5 w-5" // Removed mt-0.5
         data-no-dnd="true"
       />
 
       <div 
-        className="flex-1 min-w-0 cursor-pointer py-0.5" // Changed py-1 to py-0.5
+        className="flex-1 min-w-0 cursor-pointer" // Removed py-0.5
         onClick={() => onEditTask(task)}
         data-no-dnd="true"
       >
@@ -137,7 +137,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           </TooltipContent>
         </Tooltip>
 
-        <div className="flex flex-wrap items-center text-xs text-muted-foreground mt-1 gap-x-2 gap-y-1"> {/* Added gap-y for better wrapping */}
+        <div className="flex flex-wrap items-center text-xs text-muted-foreground mt-0.5 gap-x-2 gap-y-0.5"> {/* Changed mt-1 to mt-0.5 and gap-y-1 to gap-y-0.5 */}
           <div className={cn("w-3 h-3 rounded-full flex items-center justify-center border", categoryColorProps.backgroundClass, categoryColorProps.dotBorder)}>
             <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: categoryColorProps.dotColor }}></div>
           </div>
