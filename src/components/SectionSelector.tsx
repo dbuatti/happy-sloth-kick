@@ -3,6 +3,7 @@ import { Label } from "@/components/ui/label";
 import { FolderOpen } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client"; // Keep for fetching initial sections if needed, but will be passed as prop
 import { showError } from "@/utils/toast"; // Keep for error handling if fetching internally
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Import Select components
 
 interface TaskSection {
   id: string;
@@ -45,22 +46,21 @@ const SectionSelector: React.FC<SectionSelectorProps> = ({ value, onChange, user
     <div className="space-y-2">
       <Label>Section</Label>
       <div className="flex space-x-2">
-        <div className="flex-1">
-          <select
-            value={value || ''}
-            onChange={(e) => onChange(e.target.value === '' ? null : e.target.value)}
-            className="w-full p-2 border rounded-md bg-background"
-          >
-            <option value="">No Section</option> {/* Explicit 'No Section' option */}
+        <Select value={value || ''} onValueChange={(val) => onChange(val === '' ? null : val)}>
+          <SelectTrigger className="flex-1">
+            <SelectValue placeholder="Select section" />
+          </SelectTrigger>
+          <SelectContent className="z-[9999]">
+            <SelectItem value="">No Section</SelectItem> {/* Explicit 'No Section' option */}
             {sections.length > 0 && (
               sections.map(section => (
-                <option key={section.id} value={section.id}>
+                <SelectItem key={section.id} value={section.id}>
                   {section.name}
-                </option>
+                </SelectItem>
               ))
             )}
-          </select>
-        </div>
+          </SelectContent>
+        </Select>
         {/* Removed Dialog for managing sections */}
       </div>
       

@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { showError, showSuccess } from '@/utils/toast'; // Removed showReminder
-import { useReminders } from '@/context/ReminderContext'; // Import useReminders
+import { showError, showSuccess } from '@/utils/toast';
+import { useReminders } from '@/context/ReminderContext';
 import { v4 as uuidv4 } from 'uuid';
 import { isSameDay, isPast, startOfDay as fnsStartOfDay, parseISO, format, isAfter, isBefore, addDays, addWeeks, addMonths } from 'date-fns';
 import { getCategoryColorProps } from '@/lib/categoryColors';
@@ -80,13 +80,13 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
   const HOOK_VERSION = "2024-07-30-17";
   const { user, loading: authLoading } = useAuth();
   const userId = user?.id;
-  const { addReminder, dismissReminder } = useReminders(); // Use reminder context
+  const { addReminder, dismissReminder, clearAllReminders } = useReminders(); // Use reminder context
 
   const [tasks, setTasks] = useState<Task[]>([]);
 
   const [loading, setLoading] = useState(true);
-  console.log(`useTasks hook version: ${HOOK_VERSION}`);
-  console.log('useTasks: Re-rendering. Current viewMode:', viewMode, 'Current date received:', currentDate?.toISOString());
+  // console.log(`useTasks hook version: ${HOOK_VERSION}`); // Removed verbose logging
+  // console.log('useTasks: Re-rendering. Current viewMode:', viewMode, 'Current date received:', currentDate?.toISOString()); // Removed verbose logging
 
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [sortKey, setSortKey] = useState<'priority' | 'due_date' | 'created_at' | 'order'>('order');
@@ -101,8 +101,6 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
   const [priorityFilter, setPriorityFilter] = useState(() => getInitialFilter('priority', 'all'));
   const [sectionFilter, setSectionFilter] = useState(() => getInitialFilter('section', 'all'));
 
-  // Removed remindedTaskIdsRef as reminders are now managed by ReminderContext
-
   useEffect(() => {
     if (viewMode === 'daily') {
       localStorage.setItem('task_filter_search', searchFilter);
@@ -116,12 +114,12 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
   useEffect(() => {
     if (viewMode === 'daily') {
       setSelectedTaskIds([]);
-      console.log('Cleared selectedTaskIds due to currentDate change.');
+      // console.log('Cleared selectedTaskIds due to currentDate change.'); // Removed verbose logging
     }
   }, [currentDate, viewMode]);
 
   const fetchDataAndSections = useCallback(async () => {
-    console.trace('fetchDataAndSections called');
+    // console.trace('fetchDataAndSections called'); // Removed verbose logging
     setLoading(true);
 
     try {
@@ -133,7 +131,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         .order('name', { ascending: true });
       if (sectionsError) throw sectionsError;
       setSections(sectionsData || []);
-      console.log('useTasks useEffect: Sections fetched.');
+      // console.log('useTasks useEffect: Sections fetched.'); // Removed verbose logging
 
       const { data: categoriesData, error: categoriesError } = await supabase
         .from('task_categories')
@@ -153,14 +151,14 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         if (insertCatError) throw insertCatError;
         fetchedCategories = [...fetchedCategories, newGeneralCat];
         generalCategory = newGeneralCat;
-        console.log('Created default "General" category:', newGeneralCat);
+        // console.log('Created default "General" category:', newGeneralCat); // Removed verbose logging
       }
       
       setAllCategories(fetchedCategories);
       const newCategoriesMap = new Map<string, string>();
       fetchedCategories.forEach(cat => newCategoriesMap.set(cat.id, cat.color));
       setCategoriesMap(newCategoriesMap);
-      console.log('useTasks: categoriesMap after population.');
+      // console.log('useTasks: categoriesMap after population.'); // Removed verbose logging
 
       const { data: initialTasksFromDB, error: fetchError } = await supabase
         .from('tasks')
@@ -168,7 +166,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         .eq('user_id', userId);
 
       if (fetchError) throw fetchError;
-      console.log('fetchTasks: Initial tasks fetched from DB.');
+      // console.log('fetchTasks: Initial tasks fetched from DB.'); // Removed verbose logging
 
       const mappedTasks: Task[] = initialTasksFromDB.map((task: any) => ({
         ...task,
@@ -245,11 +243,11 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       // Reconstruct the full tasks array with updated orders
       const finalTasksState = mappedTasks.map(task => tasksById.get(task.id) || task);
       setTasks(finalTasksState);
-      console.log('useTasks: Mapped tasks with normalized orders.');
+      // console.log('useTasks: Mapped tasks with normalized orders.'); // Removed verbose logging
 
       // Send updates to DB if any orders were changed
       if (updatesForDb.length > 0) {
-        console.log('useTasks: Sending order normalization updates to DB.');
+        // console.log('useTasks: Sending order normalization updates to DB.'); // Removed verbose logging
         const { error: upsertError } = await supabase
           .from('tasks')
           .upsert(updatesForDb, { onConflict: 'id' }); // Corrected: used updatesForDb
@@ -257,7 +255,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
           console.error('useTasks: Error normalizing task orders in DB:', upsertError);
           showError('Failed to synchronize task orders.');
         } else {
-          console.log('useTasks: Task orders normalized in DB.');
+          // console.log('useTasks: Task orders normalized in DB.'); // Removed verbose logging
         }
       }
       
@@ -266,12 +264,12 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       showError('An unexpected error occurred while loading data.');
     } finally {
       setLoading(false);
-      console.log('fetchTasks: Fetch process completed.');
+      // console.log('fetchTasks: Fetch process completed.'); // Removed verbose logging
     }
   }, [userId]);
 
   const createRecurringTaskInstance = useCallback(async (templateTask: Task, targetDate: Date, rootOriginalTaskId: string, currentTasks: Task[]): Promise<Task | null> => {
-    console.log(`createRecurringTaskInstance: Attempting to create instance for original task "${templateTask.description}" on ${format(targetDate, 'yyyy-MM-dd')}`);
+    // console.log(`createRecurringTaskInstance: Attempting to create instance for original task "${templateTask.description}" on ${format(targetDate, 'yyyy-MM-dd')}`); // Removed verbose logging
     if (templateTask.recurring_type === 'none' || !userId) return null;
 
     const targetDateUTC = getUTCStartOfDay(targetDate);
@@ -285,7 +283,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     );
 
     if (existingInstance) {
-      console.log(`createRecurringTaskInstance: Skipping creation: Instance for root "${rootOriginalTaskId}" on ${format(targetDate, 'yyyy-MM-dd')} already exists in state with status: ${existingInstance.status}.`);
+      // console.log(`createRecurringTaskInstance: Skipping creation: Instance for root "${rootOriginalTaskId}" on ${format(targetDate, 'yyyy-MM-dd')} already exists in state with status: ${existingInstance.status}.`); // Removed verbose logging
       return null;
     }
 
@@ -307,7 +305,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       parent_task_id: null,
     };
 
-    console.log('createRecurringTaskInstance: New instance data prepared for DB.');
+    // console.log('createRecurringTaskInstance: New instance data prepared for DB.'); // Removed verbose logging
 
     const { data, error: insertError } = await supabase
       .from('tasks')
@@ -326,11 +324,11 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
   const syncRecurringTasks = useCallback(async () => {
     if (viewMode !== 'daily' || !userId) {
-      console.log('syncRecurringTasks: Skipping sync - not daily view, no user.');
+      // console.log('syncRecurringTasks: Skipping sync - not daily view, no user.'); // Removed verbose logging
       return;
     }
 
-    console.log(`syncRecurringTasks: Running for date ${currentDate?.toISOString()}`);
+    // console.log(`syncRecurringTasks: Running for date ${currentDate?.toISOString()}`); // Removed verbose logging
     const effectiveCurrentDateUTC = currentDate ? getUTCStartOfDay(currentDate) : getUTCStartOfDay(new Date());
     let newTasksAdded: Task[] = [];
 
@@ -374,7 +372,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         );
 
         if (instanceForCurrentDay) {
-            console.log(`syncRecurringTasks: For original ${originalTask.id}, found instance for current date (${format(effectiveCurrentDateUTC, 'yyyy-MM-dd')}) with status: ${instanceForCurrentDay.status}. No new instance needed.`);
+            // console.log(`syncRecurringTasks: For original ${originalTask.id}, found instance for current date (${format(effectiveCurrentDateUTC, 'yyyy-MM-dd')}) with status: ${instanceForCurrentDay.status}. No new instance needed.`); // Removed verbose logging
             continue;
         }
 
@@ -383,7 +381,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         if (isSameDay(originalTaskCreatedAtUTC, effectiveCurrentDateUTC)) {
             // If the original task was created today, and no instance exists for today, create it.
             shouldCreateNewInstance = true;
-            console.log(`syncRecurringTasks: Original task "${originalTask.description}" created today. Creating first instance.`);
+            // console.log(`syncRecurringTasks: Original task "${originalTask.description}" created today. Creating first instance.`); // Removed verbose logging
         } else if (isBefore(originalTaskCreatedAtUTC, effectiveCurrentDateUTC)) {
             // If the original task was created before today, check the latest previous instance
             const latestPreviousInstance = allInstancesOfThisRecurringTask
@@ -393,9 +391,9 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
             if (latestPreviousInstance) {
                 if (latestPreviousInstance.status === 'completed' || latestPreviousInstance.status === 'skipped') {
                     shouldCreateNewInstance = true;
-                    console.log(`syncRecurringTasks: Latest previous instance (${latestPreviousInstance.id}) was completed/skipped. Creating new 'to-do' instance for today.`);
+                    // console.log(`syncRecurringTasks: Latest previous instance (${latestPreviousInstance.id}) was completed/skipped. Creating new 'to-do' instance for today.`); // Removed verbose logging
                 } else if (latestPreviousInstance.status === 'to-do') {
-                    console.log(`syncRecurringTasks: Latest previous instance (${latestPreviousInstance.id}) was 'to-do'. It should carry over. No new instance needed.`);
+                    // console.log(`syncRecurringTasks: Latest previous instance (${latestPreviousInstance.id}) was 'to-do'. It should carry over. No new instance needed.`); // Removed verbose logging
                 }
             } else {
                 // This case should ideally not happen if originalTaskCreatedAtUTC is before effectiveCurrentDateUTC
@@ -415,7 +413,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
     if (newTasksAdded.length > 0) {
       setTasks(prevTasks => [...prevTasks, ...newTasksAdded]);
-      console.log('syncRecurringTasks: Added new recurring task instances to state.');
+      // console.log('syncRecurringTasks: Added new recurring task instances to state.'); // Removed verbose logging
     }
   }, [userId, currentDate, createRecurringTaskInstance, viewMode, categoriesMap]);
 
@@ -427,13 +425,13 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       setSections([]);
       setAllCategories([]);
       setLoading(false);
-      console.log('useTasks useEffect: Auth loaded, no user ID, clearing tasks and sections.');
+      // console.log('useTasks useEffect: Auth loaded, no user ID, clearing tasks and sections.'); // Removed verbose logging
     } else if (authLoading) {
       setTasks([]);
       setSections([]);
       setAllCategories([]);
       setLoading(true);
-      console.log('useTasks useEffect: Auth still loading, clearing tasks and setting loading true.');
+      // console.log('useTasks useEffect: Auth still loading, clearing tasks and setting loading true.'); // Removed verbose logging
     }
   }, [userId, authLoading, fetchDataAndSections]);
 
@@ -448,7 +446,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
     // Clear all existing reminders when tasks change or user logs out/in
     // This prevents stale reminders from previous sessions or task states
-    dismissReminder('all'); // Assuming dismissReminder can handle 'all' or iterate
+    clearAllReminders(); // Use the dedicated clearAllReminders function
 
     tasks.forEach(task => {
       if (task.remind_at && task.status === 'to-do') {
@@ -462,7 +460,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         dismissReminder(task.id);
       }
     });
-  }, [userId, tasks, addReminder, dismissReminder]); // Depend on tasks and reminder context functions
+  }, [userId, tasks, addReminder, dismissReminder, clearAllReminders]); // Depend on tasks and reminder context functions
 
   const handleAddTask = useCallback(async (newTaskData: NewTaskData) => {
     if (!userId) {
@@ -878,7 +876,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         if (aSectionOrder !== bSectionOrder) return aSectionOrder - bSectionOrder;
         return (a.order || Infinity) - (b.order || Infinity);
       });
-      console.log('reorderTasksInSameSection: Tasks state after optimistic update and sort.');
+      // console.log('reorderTasksInSameSection: Tasks state after optimistic update and sort.'); // Removed verbose logging
       return finalSortedState;
     });
 
@@ -987,7 +985,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         if (aSectionOrder !== bSectionOrder) return aSectionOrder - bSectionOrder;
         return (a.order || Infinity) - (b.order || Infinity);
       });
-      console.log('moveTaskToNewSection: Tasks state after optimistic update and sort.');
+      // console.log('moveTaskToNewSection: Tasks state after optimistic update and sort.'); // Removed verbose logging
       return finalSortedState;
     });
 
@@ -1040,7 +1038,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         }
         return section;
       }).sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
-      console.log('reorderSections: Sections state after optimistic update and sort.');
+      // console.log('reorderSections: Sections state after optimistic update and sort.'); // Removed verbose logging
       return finalSortedState;
     });
 
@@ -1160,8 +1158,8 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
   }, [userId, sections, tasks]);
 
   const { finalFilteredTasks, nextAvailableTask } = useMemo(() => {
-    console.log('filteredTasks/nextAvailableTask: --- START FILTERING ---');
-    console.log('filteredTasks/nextAvailableTask: Current viewMode:', viewMode);
+    // console.log('filteredTasks/nextAvailableTask: --- START FILTERING ---'); // Removed verbose logging
+    // console.log('filteredTasks/nextAvailableTask: Current viewMode:', viewMode); // Removed verbose logging
 
     let relevantTasks: Task[] = [];
     const focusModeSectionIds = new Set(sections.filter(s => s.include_in_focus_mode).map(s => s.id));
@@ -1285,8 +1283,8 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       ) || null;
     }
 
-    console.log('filteredTasks/nextAvailableTask: Final tasks AFTER all filters and sorting.');
-    console.log('filteredTasks/nextAvailableTask: --- END FILTERING ---');
+    // console.log('filteredTasks/nextAvailableTask: Final tasks AFTER all filters and sorting.'); // Removed verbose logging
+    // console.log('filteredTasks/nextAvailableTask: --- END FILTERING ---'); // Removed verbose logging
     return { 
       finalFilteredTasks: currentViewFilteredTasks, 
       nextAvailableTask, 
