@@ -61,6 +61,7 @@ const DailyTasksV2: React.FC = () => {
     updateSectionIncludeInFocusMode,
     reorderSections,
     moveTask,
+    updateTaskParentAndOrder, // Destructure the new function
   } = useTasks({ currentDate, setCurrentDate, viewMode: 'daily' });
 
   const { dailyTaskCount, loading: dailyCountLoading } = useDailyTaskCount();
@@ -228,6 +229,7 @@ const DailyTasksV2: React.FC = () => {
                 updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
                 reorderSections={reorderSections}
                 moveTask={moveTask}
+                updateTaskParentAndOrder={updateTaskParentAndOrder} {/* Pass the new function here */}
                 allCategories={allCategories}
               />
             </CardContent>
