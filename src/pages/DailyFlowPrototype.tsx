@@ -15,17 +15,19 @@ import MiniBreathingBubble from '@/components/MiniBreathingBubble';
 import SensoryTool from '@/components/SensoryTool';
 import Meditation from '@/pages/Meditation'; // Using the full page for now
 import ProgressiveMuscleRelaxation from '@/components/ProgressiveMuscleRelaxation';
-import { format, isSameDay } from 'date-fns';
-import { Lightbulb, Sun, Briefcase, Coffee, Moon, Bed, Sparkles } from 'lucide-react';
+import { format, isSameDay, addDays } from 'date-fns'; // Added addDays
+import { Lightbulb, Sun, Briefcase, Coffee, Moon, Bed, Sparkles, Brain } from 'lucide-react'; // Added Brain
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 type TimeOfDay = 'morning' | 'work' | 'break' | 'evening' | 'night';
 
 const DailyFlowPrototype: React.FC = () => {
+  const navigate = useNavigate(); // Initialize useNavigate
   const [currentTimeOfDay, setCurrentTimeOfDay] = useState<TimeOfDay>('morning');
   const currentDate = new Date(); // For task-related components
 
   // Fetch data using existing hooks
-  const { filteredTasks, loading: tasksLoading, nextAvailableTask, updateTask, deleteTask, userId } = useTasks({ currentDate });
+  const { filteredTasks, loading: tasksLoading, nextAvailableTask, updateTask, deleteTask, userId, setCurrentDate: setTaskCurrentDate } = useTasks({ currentDate });
   const { projects, loading: projectsLoading, sectionTitle: projectTrackerTitle, leastWorkedOnProject } = useProjects();
   const { sleepRecord, loading: sleepLoading } = useSleepRecords({ selectedDate: currentDate });
   const { workHours: singleDayWorkHours, loading: workHoursLoading } = useWorkHours({ date: currentDate });
@@ -48,6 +50,14 @@ const DailyFlowPrototype: React.FC = () => {
               <Sun className="h-6 w-6 text-yellow-500" /> Good Morning!
             </h2>
             <p className="text-muted-foreground">Start your day with intention and gratitude.</p>
+            <Card className="w-full shadow-lg bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700">
+              <CardContent className="p-4 flex items-center gap-3">
+                <Brain className="h-6 w-6 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                <p className="text-sm text-blue-800 dark:text-blue-200">
+                  **AI Nudge:** "Let's set a positive tone! What are three things you're grateful for today?"
+                </p>
+              </CardContent>
+            </Card>
             <DailyStreak tasks={filteredTasks} currentDate={currentDate} />
             <NextTaskCard
               task={nextAvailableTask}
@@ -67,6 +77,14 @@ const DailyFlowPrototype: React.FC = () => {
               <Briefcase className="h-6 w-6 text-blue-500" /> Focus & Productivity
             </h2>
             <p className="text-muted-foreground">Dive into your tasks and balance your projects.</p>
+            <Card className="w-full shadow-lg bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700">
+              <CardContent className="p-4 flex items-center gap-3">
+                <Brain className="h-6 w-6 text-green-600 dark:text-green-400 flex-shrink-0" />
+                <p className="text-sm text-green-800 dark:text-green-200">
+                  **AI Nudge:** "Ready for deep work? Consider starting a focus session for your next task!"
+                </p>
+              </CardContent>
+            </Card>
             <NextTaskCard
               task={nextAvailableTask}
               onMarkComplete={handleMarkTaskComplete}
@@ -91,7 +109,7 @@ const DailyFlowPrototype: React.FC = () => {
                 ) : (
                   <p className="text-muted-foreground">No projects to balance yet.</p>
                 )}
-                <Button className="mt-4 w-full" onClick={() => alert('Navigating to Project Balance Tracker...')}>Go to Projects</Button>
+                <Button className="mt-4 w-full" onClick={() => navigate('/projects')}>Go to Projects</Button>
               </CardContent>
             </Card>
             <WorryJournal />
@@ -104,6 +122,14 @@ const DailyFlowPrototype: React.FC = () => {
               <Coffee className="h-6 w-6 text-orange-500" /> Recharge & Reset
             </h2>
             <p className="text-muted-foreground">Take a moment to refresh your mind and body.</p>
+            <Card className="w-full shadow-lg bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700">
+              <CardContent className="p-4 flex items-center gap-3">
+                <Brain className="h-6 w-6 text-purple-600 dark:text-purple-400 flex-shrink-0" />
+                <p className="text-sm text-purple-800 dark:text-purple-200">
+                  **AI Nudge:** "Feeling overwhelmed? Try the 5-4-3-2-1 Sensory Tool to ground yourself."
+                </p>
+              </CardContent>
+            </Card>
             <MiniBreathingBubble />
             <SensoryTool />
             <Card className="w-full shadow-lg">
@@ -114,7 +140,7 @@ const DailyFlowPrototype: React.FC = () => {
               </CardHeader>
               <CardContent className="pt-0">
                 <p className="text-muted-foreground">A short guided meditation to clear your head.</p>
-                <Button className="mt-4 w-full" onClick={() => alert('Starting a 5-minute meditation...')}>Start 5-min Meditation</Button>
+                <Button className="mt-4 w-full" onClick={() => navigate('/meditation')}>Start 5-min Meditation</Button>
               </CardContent>
             </Card>
           </div>
@@ -126,6 +152,14 @@ const DailyFlowPrototype: React.FC = () => {
               <Moon className="h-6 w-6 text-purple-500" /> Wind Down & Reflect
             </h2>
             <p className="text-muted-foreground">Prepare for a restful night and clear your mind.</p>
+            <Card className="w-full shadow-lg bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700">
+              <CardContent className="p-4 flex items-center gap-3">
+                <Brain className="h-6 w-6 text-yellow-600 dark:text-yellow-400 flex-shrink-0" />
+                <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                  **AI Nudge:** "Any lingering worries? Jot them down in your Worry Journal before bed."
+                </p>
+              </CardContent>
+            </Card>
             <WorryJournal />
             <GratitudeJournal />
             <Card className="w-full shadow-lg">
@@ -136,7 +170,10 @@ const DailyFlowPrototype: React.FC = () => {
               </CardHeader>
               <CardContent className="pt-0">
                 <p className="text-muted-foreground">Review and plan for the day ahead.</p>
-                <Button className="mt-4 w-full" onClick={() => alert('Navigating to tomorrow\'s tasks...')}>View Tomorrow</Button>
+                <Button className="mt-4 w-full" onClick={() => {
+                  setTaskCurrentDate(addDays(currentDate, 1));
+                  navigate('/');
+                }}>View Tomorrow</Button>
               </CardContent>
             </Card>
           </div>
@@ -148,6 +185,14 @@ const DailyFlowPrototype: React.FC = () => {
               <Bed className="h-6 w-6 text-indigo-500" /> Rest & Recovery
             </h2>
             <p className="text-muted-foreground">Log your sleep and prepare for deep rest.</p>
+            <Card className="w-full shadow-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700">
+              <CardContent className="p-4 flex items-center gap-3">
+                <Brain className="h-6 w-6 text-red-600 dark:text-red-400 flex-shrink-0" />
+                <p className="text-sm text-red-800 dark:text-red-200">
+                  **AI Nudge:** "Ensure a good night's rest. Have you logged your sleep yet?"
+                </p>
+              </CardContent>
+            </Card>
             <Card className="w-full shadow-lg">
               <CardHeader className="pb-2">
                 <CardTitle className="text-xl font-bold flex items-center gap-2">
@@ -164,7 +209,7 @@ const DailyFlowPrototype: React.FC = () => {
                 ) : (
                   <p className="text-muted-foreground">No sleep record for today.</p>
                 )}
-                <Button className="mt-4 w-full" onClick={() => alert('Navigating to Sleep Tracker...')}>Log Sleep</Button>
+                <Button className="mt-4 w-full" onClick={() => navigate('/sleep')}>Log Sleep</Button>
               </CardContent>
             </Card>
             <ProgressiveMuscleRelaxation />
@@ -174,7 +219,7 @@ const DailyFlowPrototype: React.FC = () => {
       default:
         return <p className="text-muted-foreground">Select a time of day to see the adaptive flow.</p>;
     }
-  }, [currentTimeOfDay, filteredTasks, tasksLoading, nextAvailableTask, currentDate, projectsLoading, leastWorkedOnProject, sleepLoading, sleepRecord]);
+  }, [currentTimeOfDay, filteredTasks, tasksLoading, nextAvailableTask, currentDate, projectsLoading, leastWorkedOnProject, sleepLoading, sleepRecord, navigate, setTaskCurrentDate]);
 
   return (
     <div className="flex-1 flex flex-col">
