@@ -77,16 +77,13 @@ interface UseTasksProps {
 }
 
 export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: UseTasksProps = {}) => {
-  const HOOK_VERSION = "2024-07-30-17";
   const { user, loading: authLoading } = useAuth();
   const userId = user?.id;
-  const { addReminder, dismissReminder, clearAllReminders } = useReminders(); // Use reminder context
+  const { addReminder, dismissReminder, clearAllReminders } = useReminders();
 
   const [tasks, setTasks] = useState<Task[]>([]);
 
   const [loading, setLoading] = useState(true);
-  // console.log(`useTasks hook version: ${HOOK_VERSION}`); // Removed verbose logging
-  // console.log('useTasks: Re-rendering. Current viewMode:', viewMode, 'Current date received:', currentDate?.toISOString()); // Removed verbose logging
 
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [sortKey, setSortKey] = useState<'priority' | 'due_date' | 'created_at' | 'order'>('order');
@@ -114,12 +111,10 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
   useEffect(() => {
     if (viewMode === 'daily') {
       setSelectedTaskIds([]);
-      // console.log('Cleared selectedTaskIds due to currentDate change.'); // Removed verbose logging
     }
   }, [currentDate, viewMode]);
 
   const fetchDataAndSections = useCallback(async () => {
-    // console.trace('fetchDataAndSections called'); // Removed verbose logging
     setLoading(true);
 
     try {
@@ -131,7 +126,6 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         .order('name', { ascending: true });
       if (sectionsError) throw sectionsError;
       setSections(sectionsData || []);
-      // console.log('useTasks useEffect: Sections fetched.'); // Removed verbose logging
 
       const { data: categoriesData, error: categoriesError } = await supabase
         .from('task_categories')
@@ -151,14 +145,12 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         if (insertCatError) throw insertCatError;
         fetchedCategories = [...fetchedCategories, newGeneralCat];
         generalCategory = newGeneralCat;
-        // console.log('Created default "General" category:', newGeneralCat); // Removed verbose logging
       }
       
       setAllCategories(fetchedCategories);
       const newCategoriesMap = new Map<string, string>();
       fetchedCategories.forEach(cat => newCategoriesMap.set(cat.id, cat.color));
       setCategoriesMap(newCategoriesMap);
-      // console.log('useTasks: categoriesMap after population.'); // Removed verbose logging
 
       const { data: initialTasksFromDB, error: fetchError } = await supabase
         .from('tasks')
@@ -166,7 +158,6 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         .eq('user_id', userId);
 
       if (fetchError) throw fetchError;
-      // console.log('fetchTasks: Initial tasks fetched from DB.'); // Removed verbose logging
 
       const mappedTasks: Task[] = initialTasksFromDB.map((task: any) => ({
         ...task,
@@ -204,7 +195,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         sectionTasks.sort((a, b) => {
           const orderA = a.order ?? Infinity;
           const orderB = b.order ?? Infinity;
-          if (orderA !== orderB) return orderA - b.order; // Fixed: use b.order
+          if (orderA !== orderB) return orderA - b.order;
           return parseISO(a.created_at).getTime() - parseISO(b.created_at).getTime();
         });
 
@@ -224,18 +215,18 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
               remind_at: task.remind_at,
               section_id: task.section_id,
               parent_task_id: task.parent_task_id,
-              original_task_id: task.original_task_id, // Include original_task_id for DB
-              order: index, // The field we are actually updating
-              user_id: userId, // Include user_id for RLS
+              original_task_id: task.original_task_id,
+              order: index,
+              user_id: userId,
             };
             updatesForDb.push(dbUpdatePayload);
 
             // Create the object for local state update (must conform to Task interface)
             const localTaskStateUpdate: Task = {
-              ...task, // Start with existing task to retain all properties
-              order: index, // Apply the new order
+              ...task,
+              order: index,
             };
-            tasksById.set(task.id, localTaskStateUpdate); // Update the task in the map with new order
+            tasksById.set(task.id, localTaskStateUpdate);
           }
         });
       }
@@ -243,19 +234,15 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       // Reconstruct the full tasks array with updated orders
       const finalTasksState = mappedTasks.map(task => tasksById.get(task.id) || task);
       setTasks(finalTasksState);
-      // console.log('useTasks: Mapped tasks with normalized orders.'); // Removed verbose logging
 
       // Send updates to DB if any orders were changed
       if (updatesForDb.length > 0) {
-        // console.log('useTasks: Sending order normalization updates to DB.'); // Removed verbose logging
         const { error: upsertError } = await supabase
           .from('tasks')
-          .upsert(updatesForDb, { onConflict: 'id' }); // Corrected: used updatesForDb
+          .upsert(updatesForDb, { onConflict: 'id' });
         if (upsertError) {
           console.error('useTasks: Error normalizing task orders in DB:', upsertError);
           showError('Failed to synchronize task orders.');
-        } else {
-          // console.log('useTasks: Task orders normalized in DB.'); // Removed verbose logging
         }
       }
       
@@ -264,18 +251,14 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       showError('An unexpected error occurred while loading data.');
     } finally {
       setLoading(false);
-      // console.log('fetchTasks: Fetch process completed.'); // Removed verbose logging
     }
   }, [userId]);
 
   const createRecurringTaskInstance = useCallback(async (templateTask: Task, targetDate: Date, rootOriginalTaskId: string, currentTasks: Task[]): Promise<Task | null> => {
-    // console.log(`createRecurringTaskInstance: Attempting to create instance for original task "${templateTask.description}" on ${format(targetDate, 'yyyy-MM-dd')}`); // Removed verbose logging
     if (templateTask.recurring_type === 'none' || !userId) return null;
 
     const targetDateUTC = getUTCStartOfDay(targetDate);
 
-    // Check if an instance for this original task (root) already exists for the target date
-    // This check is crucial to prevent duplicates based on the root original_task_id and created_at date
     const existingInstance = currentTasks.find(t =>
       (t.original_task_id === rootOriginalTaskId || t.id === rootOriginalTaskId) &&
       isSameDay(getUTCStartOfDay(parseISO(t.created_at)), targetDateUTC) &&
@@ -283,7 +266,6 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     );
 
     if (existingInstance) {
-      // console.log(`createRecurringTaskInstance: Skipping creation: Instance for root "${rootOriginalTaskId}" on ${format(targetDate, 'yyyy-MM-dd')} already exists in state with status: ${existingInstance.status}.`); // Removed verbose logging
       return null;
     }
 
@@ -305,8 +287,6 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       parent_task_id: null,
     };
 
-    // console.log('createRecurringTaskInstance: New instance data prepared for DB.'); // Removed verbose logging
-
     const { data, error: insertError } = await supabase
       .from('tasks')
       .insert(newInstanceDataForDb)
@@ -318,21 +298,17 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       showError('Failed to create the next instance of the recurring task.');
       return null;
     }
-    // Ensure category_color is added back for local state consistency after DB insert
     return { ...data, category_color: categoriesMap.get(data.category) || 'gray' };
   }, [userId, categoriesMap]);
 
   const syncRecurringTasks = useCallback(async () => {
     if (viewMode !== 'daily' || !userId) {
-      // console.log('syncRecurringTasks: Skipping sync - not daily view, no user.'); // Removed verbose logging
       return;
     }
 
-    // console.log(`syncRecurringTasks: Running for date ${currentDate?.toISOString()}`); // Removed verbose logging
     const effectiveCurrentDateUTC = currentDate ? getUTCStartOfDay(currentDate) : getUTCStartOfDay(new Date());
     let newTasksAdded: Task[] = [];
 
-    // Fetch tasks directly within this function to get the latest state
     const { data: currentTasksFromDB, error: fetchError } = await supabase
       .from('tasks')
       .select('*')
@@ -352,38 +328,27 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     for (const originalTask of originalRecurringTasks) {
         const originalTaskCreatedAtUTC = getUTCStartOfDay(parseISO(originalTask.created_at));
 
-        // Find all instances of this recurring task, including the original itself
         const allInstancesOfThisRecurringTask = currentTasks.filter(t =>
             t.original_task_id === originalTask.id || t.id === originalTask.id
         );
 
-        // Sort by created_at descending to find the latest relevant instance
         const sortedInstances = [...allInstancesOfThisRecurringTask]
             .sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime());
 
-        // Find the latest non-archived instance to use as a template
-        // This could be the original task itself if no instances exist yet,
-        // or the most recent instance that isn't archived.
         const latestRelevantInstance = sortedInstances.find(t => t.status !== 'archived') || originalTask;
 
-        // Check if an instance for the current day already exists
         const instanceForCurrentDay = allInstancesOfThisRecurringTask.find(t =>
             isSameDay(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status !== 'archived'
         );
 
         if (instanceForCurrentDay) {
-            // console.log(`syncRecurringTasks: For original ${originalTask.id}, found instance for current date (${format(effectiveCurrentDateUTC, 'yyyy-MM-dd')}) with status: ${instanceForCurrentDay.status}. No new instance needed.`); // Removed verbose logging
             continue;
         }
 
-        // Determine if a new instance should be created based on the latest relevant instance's status
         let shouldCreateNewInstance = false;
         if (isSameDay(originalTaskCreatedAtUTC, effectiveCurrentDateUTC)) {
-            // If the original task was created today, and no instance exists for today, create it.
             shouldCreateNewInstance = true;
-            // console.log(`syncRecurringTasks: Original task "${originalTask.description}" created today. Creating first instance.`); // Removed verbose logging
         } else if (isBefore(originalTaskCreatedAtUTC, effectiveCurrentDateUTC)) {
-            // If the original task was created before today, check the latest previous instance
             const latestPreviousInstance = allInstancesOfThisRecurringTask
                 .filter(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status === 'to-do')
                 .sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime())[0];
@@ -391,13 +356,8 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
             if (latestPreviousInstance) {
                 if (latestPreviousInstance.status === 'completed' || latestPreviousInstance.status === 'skipped') {
                     shouldCreateNewInstance = true;
-                    // console.log(`syncRecurringTasks: Latest previous instance (${latestPreviousInstance.id}) was completed/skipped. Creating new 'to-do' instance for today.`); // Removed verbose logging
-                } else if (latestPreviousInstance.status === 'to-do') {
-                    // console.log(`syncRecurringTasks: Latest previous instance (${latestPreviousInstance.id}) was 'to-do'. It should carry over. No new instance needed.`); // Removed verbose logging
                 }
             } else {
-                // This case should ideally not happen if originalTaskCreatedAtUTC is before effectiveCurrentDateUTC
-                // and no instances exist. It implies a gap. We should create one.
                 shouldCreateNewInstance = true;
                 console.warn(`syncRecurringTasks: No previous instance found for "${originalTask.description}" before ${format(effectiveCurrentDateUTC, 'yyyy-MM-dd')}. Creating an instance for today.`);
             }
@@ -413,7 +373,6 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
     if (newTasksAdded.length > 0) {
       setTasks(prevTasks => [...prevTasks, ...newTasksAdded]);
-      // console.log('syncRecurringTasks: Added new recurring task instances to state.'); // Removed verbose logging
     }
   }, [userId, currentDate, createRecurringTaskInstance, viewMode, categoriesMap]);
 
@@ -425,13 +384,11 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       setSections([]);
       setAllCategories([]);
       setLoading(false);
-      // console.log('useTasks useEffect: Auth loaded, no user ID, clearing tasks and sections.'); // Removed verbose logging
     } else if (authLoading) {
       setTasks([]);
       setSections([]);
       setAllCategories([]);
       setLoading(true);
-      // console.log('useTasks useEffect: Auth still loading, clearing tasks and setting loading true.'); // Removed verbose logging
     }
   }, [userId, authLoading, fetchDataAndSections]);
 
@@ -444,23 +401,19 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
   useEffect(() => {
     if (!userId) return;
 
-    // Clear all existing reminders when tasks change or user logs out/in
-    // This prevents stale reminders from previous sessions or task states
-    clearAllReminders(); // Use the dedicated clearAllReminders function
+    clearAllReminders();
 
     tasks.forEach(task => {
       if (task.remind_at && task.status === 'to-do') {
         const reminderTime = parseISO(task.remind_at);
-        // Only add reminder if it's in the future or very recently passed (within 1 minute)
         if (reminderTime > new Date(new Date().getTime() - 60 * 1000)) {
           addReminder(task.id, `Reminder: ${task.description}`, reminderTime);
         }
       } else {
-        // If task is completed/archived or reminder is removed, dismiss it from context
         dismissReminder(task.id);
       }
     });
-  }, [userId, tasks, addReminder, dismissReminder, clearAllReminders]); // Depend on tasks and reminder context functions
+  }, [userId, tasks, addReminder, dismissReminder, clearAllReminders]);
 
   const handleAddTask = useCallback(async (newTaskData: NewTaskData) => {
     if (!userId) {
@@ -474,7 +427,6 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       const targetSectionTasks = tasks.filter(t => t.parent_task_id === null && t.section_id === (newTaskData.section_id || null));
       const newOrder = targetSectionTasks.length;
 
-      // Construct the task object for local state update (includes category_color)
       newTask = {
         id: uuidv4(),
         user_id: userId,
@@ -495,7 +447,6 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       };
       setTasks(prev => [...prev, newTask]);
 
-      // Construct the payload for database insert (EXCLUDE category_color)
       const dbInsertPayload = {
         id: newTask.id,
         user_id: newTask.user_id,
@@ -522,11 +473,9 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
       if (error) throw error;
       
-      // Update local state with data returned from DB (which won't have category_color, so re-add it)
       setTasks(prev => prev.map(t => t.id === data.id ? { ...data, category_color: categoriesMap.get(data.category) || 'gray' } : t));
 
       showSuccess('Task added successfully!');
-      // Add reminder to context if applicable
       if (newTask.remind_at) {
         addReminder(newTask.id, `Reminder: ${newTask.description}`, parseISO(newTask.remind_at));
       }
@@ -555,7 +504,6 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     ));
 
     try {
-      // Exclude category_color from the updates sent to DB
       const dbUpdates = { ...updates };
       if ('category_color' in dbUpdates) {
         delete dbUpdates.category_color;
@@ -571,7 +519,6 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       if (error) throw error;
       showSuccess('Task updated successfully!');
 
-      // Update reminder in context if applicable
       const updatedTask = tasks.find(t => t.id === taskId);
       if (updatedTask) {
         if (updates.remind_at && updatedTask.status === 'to-do') {
@@ -584,7 +531,6 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     } catch (error: any) {
       console.error('Error updating task:', error);
       showError('Failed to update task.');
-      // No manual refetch here, rely on real-time subscription
     }
   }, [userId, categoriesMap, tasks, addReminder, dismissReminder]);
 
@@ -617,13 +563,11 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
       if (error) throw error;
       showSuccess('Task(s) deleted successfully!');
-      // Dismiss reminder from context
       idsToDelete.forEach(id => dismissReminder(id));
     }
     catch (error: any) {
       console.error('Error deleting task:', error);
       showError('Failed to delete task.');
-      // No manual refetch here, rely on real-time subscription
     }
   }, [userId, tasks, dismissReminder]);
 
@@ -654,7 +598,6 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     ));
 
     try {
-      // Exclude category_color from the updates sent to DB
       const dbUpdates = { ...updates };
       if ('category_color' in dbUpdates) {
         delete dbUpdates.category_color;
@@ -671,7 +614,6 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       showSuccess(`${ids.length} tasks updated successfully!`);
       clearSelectedTasks();
       
-      // Update reminders in context for bulk actions
       ids.forEach(id => {
         const updatedTask = tasks.find(t => t.id === id);
         if (updatedTask) {
@@ -686,7 +628,6 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     } catch (error: any) {
       console.error('Error bulk updating tasks:', error);
       showError('Failed to update tasks in bulk.');
-      // No manual refetch here, rely on real-time subscription
     }
   }, [userId, selectedTaskIds, clearSelectedTasks, categoriesMap, tasks, addReminder, dismissReminder]);
 
@@ -718,12 +659,10 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
       if (error) throw error;
       showSuccess(`${taskIdsToComplete.length} tasks in section marked as completed!`);
-      // Dismiss reminders for completed tasks
       taskIdsToComplete.forEach(id => dismissReminder(id));
     } catch (error: any) {
       console.error('Error marking all tasks in section as completed:', error);
       showError('Failed to mark tasks as completed.');
-      // No manual refetch here, rely on real-time subscription
     }
   }, [userId, tasks, dismissReminder]);
 
@@ -860,7 +799,6 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       user_id: userId,
     }));
 
-    // Optimistic update
     setTasks(prevTasks => {
       const updatedTasksMap = new Map(updates.map(u => [u.id, u]));
       const newTasksState = prevTasks.map(task => {
@@ -869,19 +807,16 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         }
         return task;
       });
-      // Re-sort the entire tasks array to maintain consistency
       const finalSortedState = newTasksState.sort((a, b) => {
         const aSectionOrder = sections.find(s => s.id === a.section_id)?.order ?? Infinity;
         const bSectionOrder = sections.find(s => s.id === b.section_id)?.order ?? Infinity;
         if (aSectionOrder !== bSectionOrder) return aSectionOrder - bSectionOrder;
         return (a.order || Infinity) - (b.order || Infinity);
       });
-      // console.log('reorderTasksInSameSection: Tasks state after optimistic update and sort.'); // Removed verbose logging
       return finalSortedState;
     });
 
     try {
-      // Persist to DB
       const { error } = await supabase
         .from('tasks')
         .upsert(updates, { onConflict: 'id' });
@@ -915,7 +850,6 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     taskToMove = tasks.find(t => t.id === activeId);
     if (!taskToMove) return;
 
-    // Remove task from old section's list for re-indexing
     const oldSectionTasksAfterRemoval = tasksInOldSection.filter(t => t.id !== activeId);
     const updatesForOldSection = oldSectionTasksAfterRemoval.map((task, index) => ({
       id: task.id,
@@ -934,7 +868,6 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       user_id: userId,
     }));
 
-    // Add task to new section's list at the correct position for re-indexing
     let newSectionTasksWithMoved = [...tasksInNewSection];
     if (overId) {
       const overIndex = newSectionTasksWithMoved.findIndex(t => t.id === overId);
@@ -969,7 +902,6 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       ...updatesForNewSection,
     ];
 
-    // Optimistic update
     setTasks(prevTasks => {
       const updatedTasksMap = new Map(allUpdatesForDb.map(u => [u.id, u]));
       const newTasksState = prevTasks.map(task => {
@@ -978,14 +910,12 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         }
         return task;
       });
-      // Re-sort the entire tasks array to maintain consistency
       const finalSortedState = newTasksState.sort((a, b) => {
         const aSectionOrder = sections.find(s => s.id === a.section_id)?.order ?? Infinity;
         const bSectionOrder = sections.find(s => s.id === b.section_id)?.order ?? Infinity;
         if (aSectionOrder !== bSectionOrder) return aSectionOrder - bSectionOrder;
         return (a.order || Infinity) - (b.order || Infinity);
       });
-      // console.log('moveTaskToNewSection: Tasks state after optimistic update and sort.'); // Removed verbose logging
       return finalSortedState;
     });
 
@@ -1029,7 +959,6 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       order: index,
     }));
 
-    // Optimistic update
     setSections(prevSections => {
       const updatedSectionsMap = new Map(updates.map(u => [u.id, u.order]));
       const finalSortedState = prevSections.map(section => {
@@ -1038,7 +967,6 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         }
         return section;
       }).sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
-      // console.log('reorderSections: Sections state after optimistic update and sort.'); // Removed verbose logging
       return finalSortedState;
     });
 
@@ -1122,7 +1050,6 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       user_id: userId,
     }));
 
-    // Optimistic update
     setTasks(prevTasks => {
       const updatedTasksMap = new Map(updates.map(u => [u.id, u]));
       const newTasksState = prevTasks.map(task => {
@@ -1131,7 +1058,6 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         }
         return task;
       });
-      // Re-sort the entire tasks array to maintain consistency
       const finalSortedState = newTasksState.sort((a, b) => {
         const aSectionOrder = sections.find(s => s.id === a.section_id)?.order ?? Infinity;
         const bSectionOrder = sections.find(s => s.id === b.section_id)?.order ?? Infinity;
@@ -1153,14 +1079,10 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     } catch (error: any) {
       console.error('Error reordering task:', error);
       showError('Failed to reorder task.');
-      // No manual refetch here, rely on real-time subscription
     }
   }, [userId, sections, tasks]);
 
   const { finalFilteredTasks, nextAvailableTask } = useMemo(() => {
-    // console.log('filteredTasks/nextAvailableTask: --- START FILTERING ---'); // Removed verbose logging
-    // console.log('filteredTasks/nextAvailableTask: Current viewMode:', viewMode); // Removed verbose logging
-
     let relevantTasks: Task[] = [];
     const focusModeSectionIds = new Set(sections.filter(s => s.include_in_focus_mode).map(s => s.id));
 
@@ -1170,10 +1092,10 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       relevantTasks = tasks.filter(task => 
         (task.section_id === null || focusModeSectionIds.has(task.section_id)) &&
         task.status === 'to-do' &&
-        task.parent_task_id === null // Only top-level tasks in focus mode
+        task.parent_task_id === null
       );
     }
-    else { // Default to 'daily' logic
+    else {
       const effectiveCurrentDateUTC = currentDate ? getUTCStartOfDay(currentDate) : getUTCStartOfDay(new Date());
       const processedOriginalIds = new Set<string>();
 
@@ -1193,7 +1115,6 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
             let taskToDisplay: Task | null = null;
 
-            // 1. Look for an instance created specifically for the current day
             const instanceForCurrentDay = allInstancesOfThisRecurringTask.find(t =>
                 isSameDay(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status !== 'archived'
             );
@@ -1201,7 +1122,6 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
             if (instanceForCurrentDay) {
                 taskToDisplay = instanceForCurrentDay;
             } else {
-                // 2. If no instance for today, look for the latest 'to-do' carry-over from a previous day
                 const carryOverTask = allInstancesOfThisRecurringTask
                     .filter(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status === 'to-do')
                     .sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime())[0];
@@ -1215,7 +1135,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
                 relevantTasks.push(taskToDisplay);
                 processedOriginalIds.add(originalId);
             }
-        } else { // Non-recurring task
+        } else {
             const taskCreatedAtUTC = getUTCStartOfDay(parseISO(task.created_at));
             const isTaskCreatedOnCurrentDate = isSameDay(taskCreatedAtUTC, effectiveCurrentDateUTC);
 
@@ -1228,9 +1148,8 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       });
     }
 
-    let currentViewFilteredTasks = relevantTasks; // Start with the relevantTasks determined above
+    let currentViewFilteredTasks = relevantTasks;
 
-    // Apply search, category, priority, section filters only for 'daily' view
     if (viewMode === 'daily') {
       if (statusFilter !== 'all') {
         currentViewFilteredTasks = currentViewFilteredTasks.filter(task => task.status === statusFilter);
@@ -1283,8 +1202,6 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       ) || null;
     }
 
-    // console.log('filteredTasks/nextAvailableTask: Final tasks AFTER all filters and sorting.'); // Removed verbose logging
-    // console.log('filteredTasks/nextAvailableTask: --- END FILTERING ---'); // Removed verbose logging
     return { 
       finalFilteredTasks: currentViewFilteredTasks, 
       nextAvailableTask, 

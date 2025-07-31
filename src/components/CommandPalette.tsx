@@ -9,7 +9,7 @@ import { showError, showSuccess } from "@/utils/toast";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import AddTaskForm from './AddTaskForm'; // Still use AddTaskForm as a wrapper for new tasks
+import AddTaskForm from './AddTaskForm';
 import { useSound } from '@/context/SoundContext';
 import { Task } from '@/hooks/useTasks';
 
@@ -32,20 +32,16 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        setOpen((prevOpen) => {
-          const newOpen = !prevOpen;
-          if (newOpen) playSound('success');
-          return newOpen;
-        });
+        setOpen((prevOpen) => !prevOpen); // No sound on open/close
       }
     };
     document.addEventListener("keydown", down);
     return () => document.removeEventListener("keydown", down);
-  }, [playSound]);
+  }, []); // Removed playSound from dependency array
 
   const handleSelect = useCallback((callback: () => void) => {
     setOpen(false);
-    playSound('success');
+    playSound('success'); // Play sound only on selection
     callback();
   }, [playSound]);
 
@@ -72,10 +68,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
   return (
     <>
       {isMobile ? (
-        <Sheet open={open} onOpenChange={(newOpen) => {
-          setOpen(newOpen);
-          if (newOpen) playSound('success');
-        }}>
+        <Sheet open={open} onOpenChange={setOpen}> {/* No sound on open/close */}
           <SheetContent className="h-full">
             <SheetHeader>
               <SheetTitle>Command Palette</SheetTitle>
@@ -155,10 +148,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
           </SheetContent>
         </Sheet>
       ) : (
-        <CommandDialog open={open} onOpenChange={(newOpen) => {
-          setOpen(newOpen);
-          if (newOpen) playSound('success');
-        }}>
+        <CommandDialog open={open} onOpenChange={setOpen}> {/* No sound on open/close */}
           <CommandInput placeholder="Type a command or search..." />
           <CommandList>
             <CommandEmpty>No results found.</CommandEmpty>
