@@ -7,10 +7,10 @@ interface PrioritySelectorProps {
 
 const PrioritySelector: React.FC<PrioritySelectorProps> = ({ value, onChange }) => {
   const priorities = [
-    { value: 'low', label: 'Low', color: 'text-blue-500' },
-    { value: 'medium', label: 'Medium', color: 'text-yellow-500' },
-    { value: 'high', label: 'High', color: 'text-red-500' },
-    { value: 'urgent', label: 'Urgent', color: 'text-red-700 font-bold' },
+    { value: 'low', label: 'Low', color: 'text-priority-low' },
+    { value: 'medium', label: 'Medium', color: 'text-priority-medium' },
+    { value: 'high', label: 'High', color: 'text-priority-high' },
+    { value: 'urgent', label: 'Urgent', color: 'text-priority-urgent' },
   ];
 
   const selectedPriority = priorities.find(p => p.value === value);

@@ -62,6 +62,13 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        // New semantic colors for consistency
+        'status-overdue': 'hsl(var(--destructive))',
+        'status-due-today': 'hsl(var(--accent))',
+        'priority-low': 'hsl(var(--primary))',
+        'priority-medium': 'hsl(var(--accent))',
+        'priority-high': 'hsl(var(--destructive))',
+        'priority-urgent': 'hsl(var(--destructive-foreground))',
       },
       borderRadius: {
         lg: "var(--radius)",

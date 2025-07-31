@@ -44,11 +44,11 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'urgent': return 'text-red-700 dark:text-red-400';
-      case 'high': return 'text-red-500 dark:text-red-300';
-      case 'medium': return 'text-yellow-500 dark:text-yellow-300';
-      case 'low': return 'text-blue-500 dark:text-blue-300';
-      default: return 'text-gray-500 dark:text-gray-400';
+      case 'urgent': return 'text-priority-urgent';
+      case 'high': return 'text-priority-high';
+      case 'medium': return 'text-priority-medium';
+      case 'low': return 'text-priority-low';
+      default: return 'text-muted-foreground';
     }
   };
 
@@ -122,9 +122,9 @@ const TaskItem: React.FC<TaskItemProps> = ({
               htmlFor={`task-${task.id}`}
               className={cn(
                 "text-base font-medium leading-tight line-clamp-2",
-                task.status === 'completed' ? 'line-through text-gray-500 dark:text-gray-400' : 'text-foreground',
-                isOverdue && "text-red-600 dark:text-red-400",
-                isUpcoming && "text-orange-500 dark:text-orange-300",
+                task.status === 'completed' ? 'line-through text-muted-foreground' : 'text-foreground',
+                isOverdue && "text-status-overdue",
+                isUpcoming && "text-status-due-today",
                 "block"
               )}
             >
@@ -149,7 +149,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           {task.recurring_type !== 'none' && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Repeat className="h-3 w-3 text-blue-500 dark:text-blue-400" />
+                <Repeat className="h-3 w-3 text-primary dark:text-primary" />
               </TooltipTrigger>
               <TooltipContent>
                 <p>Recurring: {task.recurring_type.charAt(0).toUpperCase() + task.recurring_type.slice(1)}</p>
@@ -163,7 +163,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
             </span>
           )}
           {task.remind_at && (
-            <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
+            <span className="flex items-center gap-1 text-primary dark:text-primary">
               <BellRing className="h-3 w-3" />
               {dateFns.format(dateFns.parseISO(task.remind_at), 'MMM d, HH:mm')}
             </span>
@@ -178,7 +178,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
       {showCompletionEffect && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-          <CheckCircle2 className="h-12 w-12 text-green-500 animate-fade-in-out-check" />
+          <CheckCircle2 className="h-12 w-12 text-primary animate-fade-in-out-check" />
         </div>
       )}
 

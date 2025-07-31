@@ -20,10 +20,10 @@ interface NextTaskCardProps {
 const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEditTask, currentDate, loading }) => {
   if (loading) {
     return (
-      <Card className="w-full shadow-sm mb-4 border-l-4 border-blue-500 dark:border-blue-700">
+      <Card className="w-full shadow-sm mb-4 border-l-4 border-primary dark:border-primary">
         <CardHeader className="pb-2">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <Lightbulb className="h-5 w-5 text-blue-500" /> Your Next Task
+            <Lightbulb className="h-5 w-5 text-primary" /> Your Next Task
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0 space-y-3">
@@ -40,10 +40,10 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
 
   if (!task) {
     return (
-      <Card className="w-full shadow-sm mb-4 border-l-4 border-blue-500 dark:border-blue-700">
+      <Card className="w-full shadow-sm mb-4 border-l-4 border-primary dark:border-primary">
         <CardHeader className="pb-2">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <Lightbulb className="h-5 w-5 text-blue-500" /> Your Next Task
+            <Lightbulb className="h-5 w-5 text-primary" /> Your Next Task
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
@@ -60,11 +60,11 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'urgent': return 'text-red-700 dark:text-red-400';
-      case 'high': return 'text-red-500 dark:text-red-300';
-      case 'medium': return 'text-yellow-500 dark:text-yellow-300';
-      case 'low': return 'text-blue-500 dark:text-blue-300';
-      default: return 'text-gray-500 dark:text-gray-400';
+      case 'urgent': return 'text-priority-urgent';
+      case 'high': return 'text-priority-high';
+      case 'medium': return 'text-priority-medium';
+      case 'low': return 'text-priority-low';
+      default: return 'text-muted-foreground';
     }
   };
 
@@ -88,15 +88,15 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
     <Card 
       className={cn(
         "w-full shadow-sm mb-4 cursor-pointer",
-        isOverdue ? "border-l-4 border-red-500 dark:border-red-700" :
-        isDueToday ? "border-l-4 border-orange-400 dark:border-orange-600" :
-        "border-l-4 border-blue-500 dark:border-blue-700"
+        isOverdue ? "border-l-4 border-status-overdue" :
+        isDueToday ? "border-l-4 border-status-due-today" :
+        "border-l-4 border-primary"
       )}
       onClick={() => onEditTask(task)}
     >
       <CardHeader className="pb-2">
         <CardTitle className="text-lg font-semibold flex items-center gap-2">
-          <Lightbulb className="h-5 w-5 text-blue-500" /> Your Next Task
+          <Lightbulb className="h-5 w-5 text-primary" /> Your Next Task
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-0 space-y-3">
@@ -117,8 +117,8 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
           {task.due_date && (
             <span className={cn(
               "flex items-center gap-1",
-              isOverdue && "text-red-600 dark:text-red-400",
-              isDueToday && "text-orange-500 dark:text-orange-300"
+              isOverdue && "text-status-overdue",
+              isDueToday && "text-status-due-today"
             )}>
               {getDueDateDisplay(task.due_date)}
             </span>
