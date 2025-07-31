@@ -76,10 +76,11 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   const handleAddSubtask = async (subtaskData: TaskFormData) => {
     if (!task || !userId) return false;
 
+    // Convert Date objects to ISO strings before passing to handleAddTask
     const convertedSubtaskData = {
       ...subtaskData,
-      due_date: subtaskData.due_date ? parseISO(subtaskData.due_date) : null,
-      remind_at: subtaskData.remind_at ? parseISO(subtaskData.remind_at) : null,
+      due_date: subtaskData.due_date || null, // Already string | null from TaskForm
+      remind_at: subtaskData.remind_at || null, // Already string | null from TaskForm
     };
 
     const success = await handleAddTask({

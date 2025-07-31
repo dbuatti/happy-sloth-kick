@@ -52,9 +52,9 @@ interface NewTaskData {
   recurring_type?: 'none' | 'daily' | 'weekly' | 'monthly';
   category: string;
   priority?: string;
-  due_date?: Date | null;
+  due_date?: string | null; // Changed from Date | null to string | null
   notes?: string | null;
-  remind_at?: Date | null;
+  remind_at?: string | null; // Changed from Date | null to string | null
   section_id?: string | null;
   parent_task_id?: string | null;
   link?: string | null;
@@ -92,8 +92,9 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [sections, setSections] = useState<TaskSection[]>([]);
   const [allCategories, setAllCategories] = useState<Category[]>([]);
-  const [categoriesMap, setCategoriesMap] = useState<Map<string, string>>(new Map()); // Corrected initialization
+  const [categoriesMap, setCategoriesMap] = useState<Map<string, string>>(new Map());
 
+  // Declaring filter state variables
   const [searchFilter, setSearchFilter] = useState(() => getInitialFilter('search', ''));
   const [statusFilter, setStatusFilter] = useState(() => getInitialFilter('status', 'all'));
   const [categoryFilter, setCategoryFilter] = useState(() => getInitialFilter('category', 'all'));
@@ -152,7 +153,6 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       setAllCategories(fetchedCategories);
       const newCategoriesMap = new Map<string, string>();
       fetchedCategories.forEach(cat => newCategoriesMap.set(cat.id, cat.color));
-      // Update the state variable for categoriesMap
       setCategoriesMap(newCategoriesMap);
 
       const { data: initialTasksFromDB, error: fetchError } = await supabase
@@ -358,14 +358,19 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
                 .filter(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), effectiveCurrentDateUTC) && t.status === 'to-do')
                 .sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime())[0];
 
-            if (latestPreviousInstance) {
-                if (latestPreviousInstance.status === 'completed' || latestPreviousInstance.status === 'skipped') {
+                // If there's a previous 'to-do' instance, we don't create a new one for today.
+                // We only create a new instance if the latest previous instance was completed/skipped,
+                // or if there are no previous instances at all (meaning it's the first time this recurring task is due).
+                if (latestPreviousInstance) {
+                    if (latestPreviousInstance.status === 'completed' || latestPreviousInstance.status === 'skipped') {
+                        shouldCreateNewInstance = true;
+                    }
+                } else {
+                    // If no previous instance exists, and the original task was created before today,
+                    // then we should create an instance for today.
                     shouldCreateNewInstance = true;
+                    console.warn(`syncRecurringTasks: No previous instance found for "${originalTask.description}" before ${format(effectiveCurrentDateUTC, 'yyyy-MM-dd')}. Creating an instance for today.`);
                 }
-            } else {
-                shouldCreateNewInstance = true;
-                console.warn(`syncRecurringTasks: No previous instance found for "${originalTask.description}" before ${format(effectiveCurrentDateUTC, 'yyyy-MM-dd')}. Creating an instance for today.`);
-            }
         }
 
         if (shouldCreateNewInstance) {
@@ -439,9 +444,9 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         category: newTaskData.category,
         category_color: categoryColor,
         priority: newTaskData.priority || 'medium',
-        due_date: newTaskData.due_date ? newTaskData.due_date.toISOString() : null,
+        due_date: newTaskData.due_date,
         notes: newTaskData.notes || null,
-        remind_at: newTaskData.remind_at ? newTaskData.remind_at.toISOString() : null,
+        remind_at: newTaskData.remind_at,
         section_id: newTaskData.section_id || null,
         order: newOrder,
         original_task_id: null,
