@@ -170,7 +170,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           {task.remind_at && (
             <span className="flex items-center gap-1 text-primary dark:text-primary">
               <BellRing className="h-3 w-3" />
-              {dateFns.format(dateFns.parseISO(task.remind_at), 'MMM d, HH:mm')}
+              {dateFns.isValid(dateFns.parseISO(task.remind_at)) ? dateFns.format(dateFns.parseISO(task.remind_at), 'MMM d, HH:mm') : 'Invalid Date'}
             </span>
           )}
           {task.notes && (

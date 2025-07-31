@@ -15,7 +15,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from '@/lib/utils';
-import { format, parseISO, isSameDay, isPast } from 'date-fns';
+import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns'; // Import isValid
 import { getCategoryColorProps } from '@/lib/categoryColors';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -152,7 +152,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
             {task.remind_at && (
               <div className="flex items-center gap-2 col-span-2">
                 <BellRing className="h-4 w-4 text-muted-foreground" />
-                <span>Reminder: <span className="font-semibold">{format(parseISO(task.remind_at), 'MMM d, yyyy HH:mm')}</span></span>
+                <span>Reminder: <span className="font-semibold">{isValid(parseISO(task.remind_at)) ? format(parseISO(task.remind_at), 'MMM d, yyyy HH:mm') : 'Invalid Date'}</span></span>
               </div>
             )}
             {task.link && (
