@@ -16,6 +16,8 @@ import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { suggestTaskDetails } from '@/integrations/supabase/functions'; // Import the new function
+import { showError } from '@/utils/toast'; // Import showError
 
 const taskFormSchema = z.object({
   description: z.string().min(1, { message: 'Task description is required.' }).max(255, { message: 'Description must be 255 characters or less.' }),
@@ -104,105 +106,6 @@ interface TaskFormProps {
   parentTaskId?: string | null;
 }
 
-const parseNaturalLanguage = (text: string, categories: Category[]) => {
-  let dueDate: Date | undefined = undefined;
-  let remindAt: Date | undefined = undefined;
-  let priority: string | undefined = undefined;
-  let categoryId: string | undefined = undefined;
-  let tempDescription = text;
-
-  const priorityKeywords = {
-    'urgent': 'urgent', 'critical': 'urgent',
-    'high': 'high', 'important': 'high',
-    'medium': 'medium', 'normal': 'medium',
-    'low': 'low', 'minor': 'low',
-  };
-  for (const [keyword, pValue] of Object.entries(priorityKeywords)) {
-    const regex = new RegExp(`\\b${keyword}\\b`, 'i');
-    if (regex.test(tempDescription)) {
-      priority = pValue;
-      tempDescription = tempDescription.replace(regex, '').trim();
-      break;
-    }
-  }
-
-  for (const category of categories) {
-    const regex = new RegExp(`\\b${category.name.toLowerCase()}\\b`, 'i');
-    if (regex.test(tempDescription)) {
-      categoryId = category.id;
-      tempDescription = tempDescription.replace(regex, '').trim();
-      break;
-    }
-  }
-
-  const today = startOfDay(new Date());
-  if (/\btoday\b/i.test(tempDescription)) {
-    dueDate = today;
-    tempDescription = tempDescription.replace(/\btoday\b/i, '').trim();
-  } else if (/\btomorrow\b/i.test(tempDescription)) {
-    dueDate = addDays(today, 1);
-    tempDescription = tempDescription.replace(/\btomorrow\b/i, '').trim();
-  } else if (/\bnext week\b/i.test(tempDescription)) {
-    dueDate = addWeeks(today, 1);
-    tempDescription = tempDescription.replace(/\bnext week\b/i, '').trim();
-  } else if (/\bnext month\b/i.test(tempDescription)) {
-    dueDate = addMonths(today, 1);
-    tempDescription = tempDescription.replace(/\bnext month\b/i, '').trim();
-  } else {
-    const dateRegex = /(on|by)?\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+\d{1,2}(,\s*\d{4})?|\d{1,2}\/\d{1,2}(?:[/]\d{2,4})?/i;
-    const match = tempDescription.match(dateRegex);
-    if (match) {
-      try {
-        const parsedDate = parse(match[0], 'MMM d, yyyy', new Date());
-        if (isNaN(parsedDate.getTime())) {
-          const currentYear = new Date().getFullYear();
-          const parsedDateNoYear = parse(`${match[0]} ${currentYear}`, 'MMM d yyyy', new Date());
-          if (!isNaN(parsedDateNoYear.getTime())) {
-            dueDate = parsedDateNoYear;
-          }
-        } else {
-          dueDate = parsedDate;
-        }
-        tempDescription = tempDescription.replace(match[0], '').trim();
-      } catch (e) {
-        // Ignore parsing errors
-      }
-    }
-  }
-
-  const timeRegex = /(at|by)\s*(\d{1,2}(:\d{2})?\s*(am|pm)?)/i;
-  const timeMatch = tempDescription.match(timeRegex);
-  let reminderTimeStr: string | undefined = undefined;
-  if (timeMatch) {
-    reminderTimeStr = timeMatch[2];
-    tempDescription = tempDescription.replace(timeMatch[0], '').trim();
-  }
-
-  if (reminderTimeStr) {
-    try {
-      const baseDate = dueDate || new Date();
-      let parsedTime = parse(reminderTimeStr, 'h:mm a', baseDate);
-      if (isNaN(parsedTime.getTime())) {
-        parsedTime = parse(reminderTimeStr, 'H:mm', baseDate);
-      }
-      if (!isNaN(parsedTime.getTime())) {
-        remindAt = parsedTime;
-      }
-    } catch (e) {
-      // Ignore parsing errors
-    }
-  }
-
-  return {
-    description: text,
-    dueDate,
-    remindAt,
-    reminderTimeStr,
-    priority,
-    categoryId,
-  };
-};
-
 const TaskForm: React.FC<TaskFormProps> = ({
   initialData,
   onSave,
@@ -215,6 +118,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
   parentTaskId = null,
 }) => {
   const [isSaving, setIsSaving] = useState(false);
+  const [isSuggesting, setIsSuggesting] = useState(false);
 
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskFormSchema),
@@ -272,31 +176,50 @@ const TaskForm: React.FC<TaskFormProps> = ({
     }
   }, [initialData, preselectedSectionId, parentTaskId, allCategories, reset]);
 
-  const handleSuggest = useCallback(() => {
-    const {
-      dueDate: suggestedDueDate,
-      remindAt: suggestedRemindAt,
-      reminderTimeStr: suggestedReminderTimeStr,
-      priority: suggestedPriority,
-      categoryId: suggestedCategoryId,
-    } = parseNaturalLanguage(description, allCategories);
+  const handleSuggest = useCallback(async () => {
+    if (!description.trim()) {
+      showError('Please enter a task description to get suggestions.');
+      return;
+    }
+    setIsSuggesting(true);
+    try {
+      const suggestions = await suggestTaskDetails(description, allCategories.map(cat => ({ id: cat.id, name: cat.name })));
 
-    if (suggestedPriority) {
-      setValue('priority', suggestedPriority);
-    }
-    if (suggestedCategoryId) {
-      setValue('category', suggestedCategoryId);
-    }
-    if (suggestedDueDate) {
-      setValue('dueDate', suggestedDueDate);
-    }
-    if (suggestedRemindAt) {
-      setValue('remindAtDate', suggestedRemindAt);
-      if (suggestedReminderTimeStr) {
-        setValue('remindAtTime', format(suggestedRemindAt, 'HH:mm'));
+      if (suggestions) {
+        setValue('description', suggestions.cleanedDescription);
+        setValue('priority', suggestions.priority);
+        setValue('category', suggestions.category);
+        
+        if (suggestions.dueDate) {
+          setValue('dueDate', parseISO(suggestions.dueDate));
+        } else {
+          setValue('dueDate', null);
+        }
+
+        if (suggestions.remindAt) {
+          const parsedRemindAt = parseISO(suggestions.remindAt);
+          setValue('remindAtDate', parsedRemindAt);
+          setValue('remindAtTime', format(parsedRemindAt, 'HH:mm'));
+        } else {
+          setValue('remindAtDate', null);
+          setValue('remindAtTime', '');
+        }
+
+        // For section, we need to find the actual section ID if it exists
+        const suggestedSection = sections.find(s => s.name.toLowerCase() === suggestions.section?.toLowerCase());
+        if (suggestedSection) {
+          setValue('sectionId', suggestedSection.id);
+        } else {
+          setValue('sectionId', null); // Default to no section if not found
+        }
       }
+    } catch (error) {
+      console.error('Error getting AI suggestions:', error);
+      showError('Failed to get AI suggestions. Please try again.');
+    } finally {
+      setIsSuggesting(false);
     }
-  }, [description, allCategories, setValue]);
+  }, [description, allCategories, sections, setValue]);
 
   const onSubmit = async (data: TaskFormData) => {
     let finalRemindAt: Date | null = null;
@@ -347,7 +270,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
             placeholder="Task description (e.g., 'Buy groceries by tomorrow high priority')"
             {...register('description')}
             onKeyDown={handleKeyDown}
-            disabled={isSaving}
+            disabled={isSaving || isSuggesting}
             autoFocus={autoFocus}
           />
           <Button
@@ -355,11 +278,15 @@ const TaskForm: React.FC<TaskFormProps> = ({
             variant="outline"
             size="icon"
             onClick={handleSuggest}
-            disabled={isSaving || !description.trim()}
+            disabled={isSaving || isSuggesting || !description.trim()}
             title="Suggest details from description"
             aria-label="Suggest task details"
           >
-            <Lightbulb className="h-4 w-4" />
+            {isSuggesting ? (
+              <span className="animate-spin h-4 w-4 border-b-2 border-primary rounded-full" />
+            ) : (
+              <Lightbulb className="h-4 w-4" />
+            )}
           </Button>
         </div>
         {errors.description && <p className="text-destructive text-sm mt-1">{errors.description.message}</p>}
@@ -411,7 +338,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
                       "w-full justify-start text-left font-normal",
                       !field.value && "text-muted-foreground"
                     )}
-                    disabled={isSaving}
+                    disabled={isSaving || isSuggesting}
                     aria-label="Select due date"
                   >
                     <Calendar className="mr-2 h-4 w-4" />
@@ -438,7 +365,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
             control={control}
             name="recurringType"
             render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange} disabled={!!initialData?.parent_task_id || isSaving}>
+              <Select value={field.value} onValueChange={field.onChange} disabled={!!initialData?.parent_task_id || isSaving || isSuggesting}>
                 <SelectTrigger aria-label="Select recurrence type">
                   <SelectValue placeholder="Select recurrence" />
                 </SelectTrigger>
@@ -470,7 +397,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
                       "flex-1 justify-start text-left font-normal",
                       !field.value && "text-muted-foreground"
                     )}
-                    disabled={isSaving}
+                    disabled={isSaving || isSuggesting}
                     aria-label="Set reminder date"
                   >
                     <BellRing className="mr-2 h-4 w-4" />
@@ -492,7 +419,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
             type="time"
             {...register('remindAtTime')}
             className="w-24"
-            disabled={isSaving || !remindAtDate}
+            disabled={isSaving || isSuggesting || !remindAtDate}
             aria-label="Set reminder time"
           />
         </div>
@@ -506,7 +433,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
           id="task-link"
           placeholder="e.g., https://example.com/task-details"
           {...register('link')}
-          disabled={isSaving}
+          disabled={isSaving || isSuggesting}
         />
         {errors.link && <p className="text-destructive text-sm mt-1">{errors.link.message}</p>}
       </div>
@@ -518,16 +445,16 @@ const TaskForm: React.FC<TaskFormProps> = ({
           placeholder="Add notes about this task..."
           {...register('notes')}
           rows={2}
-          disabled={isSaving}
+          disabled={isSaving || isSuggesting}
         />
         {errors.notes && <p className="text-destructive text-sm mt-1">{errors.notes.message}</p>}
       </div>
 
       <div className="flex justify-end space-x-2 mt-4">
-        <Button type="button" variant="outline" onClick={onCancel} disabled={isSaving}>
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isSaving || isSuggesting}>
           Cancel
         </Button>
-        <Button type="submit" disabled={isSaving || !form.formState.isValid && form.formState.isSubmitted}>
+        <Button type="submit" disabled={isSaving || isSuggesting || !form.formState.isValid && form.formState.isSubmitted}>
           {isSaving ? 'Saving...' : (initialData ? 'Save Changes' : 'Add Task')}
         </Button>
       </div>
