@@ -182,7 +182,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
         </div>
       )}
 
-      <div className="flex-shrink-0 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+      <div className="flex-shrink-0 flex items-center space-x-1"> {/* Removed opacity-0 group-hover:opacity-100 */}
         {task.status === 'completed' && (
           <Button 
             variant="outline" 
@@ -195,16 +195,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
             <ListTodo className="h-3 w-3 mr-1" /> To-Do
           </Button>
         )}
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="h-7 w-7"
-          onClick={(e) => { e.stopPropagation(); onEditTask(task); }}
-          data-no-dnd="true"
-          aria-label="Edit task"
-        >
-          <Edit className="h-4 w-4" />
-        </Button>
+        {/* Removed direct Edit button */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button 
@@ -219,6 +210,9 @@ const TaskItem: React.FC<TaskItemProps> = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" data-no-dnd="true">
+            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onEditTask(task); }}> {/* Moved Edit to dropdown */}
+              <Edit className="mr-2 h-4 w-4" /> Edit Task
+            </DropdownMenuItem>
             <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onStatusChange(task.id, 'to-do'); playSound('success'); }}>
               Mark as To-Do
             </DropdownMenuItem>

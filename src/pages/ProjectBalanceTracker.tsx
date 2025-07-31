@@ -187,7 +187,7 @@ const ProjectBalanceTracker: React.FC = () => {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-4">
               <Dialog open={isAddProjectOpen} onOpenChange={setIsAddProjectOpen}>
                 <DialogTrigger asChild>
-                  <Button disabled={isSavingProject}>
+                  <Button disabled={isSavingProject} className="w-full sm:w-auto"> {/* Added w-full */}
                     <Plus className="mr-2 h-4 w-4" /> Add Project
                   </Button>
                 </DialogTrigger>
@@ -238,10 +238,10 @@ const ProjectBalanceTracker: React.FC = () => {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full sm:w-auto"> {/* Added w-full */}
                 <Label htmlFor="sort-by">Sort by:</Label>
                 <Select value={sortOption} onValueChange={(value: 'name_asc' | 'count_asc' | 'count_desc' | 'created_at_asc' | 'created_at_desc') => setSortOption(value)}>
-                  <SelectTrigger className="w-[180px]">
+                  <SelectTrigger className="w-full sm:w-[180px]"> {/* Adjusted width */}
                     <SelectValue placeholder="Sort projects" />
                   </SelectTrigger>
                   <SelectContent>

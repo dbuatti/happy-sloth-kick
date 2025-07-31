@@ -24,7 +24,7 @@ const BulkActions: React.FC<BulkActionsProps> = ({ selectedTaskIds, onAction, on
       <div className="text-sm text-gray-600 dark:text-gray-300">
         {selectedTaskIds.length} task(s) selected
       </div>
-      <div className="flex space-x-2">
+      <div className="flex flex-wrap gap-2"> {/* Changed space-x-2 to flex-wrap gap-2 */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm">
