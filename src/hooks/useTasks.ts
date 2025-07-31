@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess } from '@/utils/toast';
 import { useReminders } from '@/context/ReminderContext';
 import { v4 as uuidv4 } from 'uuid';
-import { isSameDay, isPast, startOfDay as fnsStartOfDay, parseISO, format, isAfter, isBefore, addDays, addWeeks, addMonths } from 'date-fns';
+import { isSameDay, isPast, startOfDay as fnsStartOfDay, parseISO, format, isAfter, isBefore, addDays, addWeeks, addMonths, isValid } from 'date-fns'; // Added isValid
 import { getCategoryColorProps } from '@/lib/categoryColors';
 import { arrayMove } from '@dnd-kit/sortable';
 
@@ -410,7 +410,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     tasks.forEach(task => {
       if (task.remind_at && task.status === 'to-do') {
         const reminderTime = parseISO(task.remind_at);
-        if (reminderTime > new Date(new Date().getTime() - 60 * 1000)) {
+        if (isValid(reminderTime) && reminderTime > new Date(new Date().getTime() - 60 * 1000)) { // Added isValid check
           addReminder(task.id, `Reminder: ${task.description}`, reminderTime);
         }
       } else {
@@ -482,8 +482,12 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       setTasks(prev => prev.map(t => t.id === data.id ? { ...data, category_color: categoriesMap.get(data.category) || 'gray' } : t));
 
       showSuccess('Task added successfully!');
-      if (newTask.remind_at) {
-        addReminder(newTask.id, `Reminder: ${newTask.description}`, parseISO(newTask.remind_at));
+      // Check if remind_at is a valid string before parsing and adding reminder
+      if (newTask.remind_at && typeof newTask.remind_at === 'string') {
+        const reminderDate = parseISO(newTask.remind_at);
+        if (isValid(reminderDate)) { // Ensure it's a valid date object
+          addReminder(newTask.id, `Reminder: ${newTask.description}`, reminderDate);
+        }
       }
       return true;
     } catch (error: any) {
@@ -527,8 +531,12 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
       const updatedTask = tasks.find(t => t.id === taskId);
       if (updatedTask) {
-        if (updates.remind_at && updatedTask.status === 'to-do') {
-          addReminder(updatedTask.id, `Reminder: ${updatedTask.description}`, parseISO(updates.remind_at));
+        // Check if remind_at is a valid string before parsing and adding reminder
+        if (updates.remind_at && typeof updates.remind_at === 'string') {
+          const reminderDate = parseISO(updates.remind_at);
+          if (isValid(reminderDate) && updatedTask.status === 'to-do') { // Ensure it's a valid date object and task is 'to-do'
+            addReminder(updatedTask.id, `Reminder: ${updatedTask.description}`, reminderDate);
+          }
         } else if (updates.status === 'completed' || updates.status === 'archived' || updates.remind_at === null) {
           dismissReminder(updatedTask.id);
         }
@@ -625,8 +633,11 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         if (updatedTask) {
           if (updates.status === 'completed' || updates.status === 'archived' || updates.remind_at === null) {
             dismissReminder(updatedTask.id);
-          } else if (updatedTask.remind_at) {
-            addReminder(updatedTask.id, `Reminder: ${updatedTask.description}`, parseISO(updatedTask.remind_at));
+          } else if (updatedTask.remind_at && typeof updatedTask.remind_at === 'string') { // Added type check
+            const reminderDate = parseISO(updatedTask.remind_at);
+            if (isValid(reminderDate)) { // Added isValid check
+              addReminder(updatedTask.id, `Reminder: ${updatedTask.description}`, reminderDate);
+            }
           }
         }
       });
