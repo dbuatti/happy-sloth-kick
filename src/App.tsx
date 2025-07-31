@@ -11,6 +11,7 @@ import Meditation from "./pages/Meditation";
 import SleepTracker from "./pages/SleepTracker";
 import MindfulnessTools from "./pages/MindfulnessTools";
 import FocusMode from "./pages/FocusMode";
+import DailyFlowPrototype from "./pages/DailyFlowPrototype"; // Import the new prototype page
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { ReminderProvider } from "@/context/ReminderContext";
 import CommandPalette from "./components/CommandPalette";
@@ -147,6 +148,7 @@ const AppContent = () => {
             <Route path="/sleep" element={<SleepTracker />} />
             <Route path="/mindfulness" element={<MindfulnessTools />} />
             <Route path="/focus" element={<FocusMode />} />
+            <Route path="/daily-flow-prototype" element={<DailyFlowPrototype />} /> {/* New Route */}
             <Route path="*" element={<NotFound />} />
           </Routes>
           <CommandPalette
