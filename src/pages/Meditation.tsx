@@ -73,14 +73,6 @@ const Meditation: React.FC = () => {
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  const handleDurationChange = (value: string) => {
-    const newDuration = parseInt(value) * 60;
-    setDuration(newDuration);
-    if (!isRunning) { // Only reset time remaining if timer is not running
-      setTimeRemaining(newDuration);
-    }
-  };
-
   const progressValue = (timeRemaining / duration) * 100;
 
   return (
@@ -88,7 +80,7 @@ const Meditation: React.FC = () => {
       <Card className="w-full max-w-md shadow-lg text-center">
         <CardHeader>
           <CardTitle className="text-3xl font-bold flex items-center justify-center gap-2">
-            <Leaf className="h-7 w-7 text-green-600" /> Meditation Timer
+            <Leaf className="h-7 w-7 text-primary" /> Meditation Timer
           </CardTitle>
           <p className="text-muted-foreground">
             Find your calm and focus.
@@ -101,7 +93,7 @@ const Meditation: React.FC = () => {
               className="absolute w-full h-full rounded-full bg-muted"
               indicatorClassName={cn(
                 "transition-all duration-1000 ease-linear",
-                "bg-green-500"
+                "bg-primary"
               )}
             />
             <div className="relative z-10 text-5xl font-bold text-foreground">
@@ -115,7 +107,7 @@ const Meditation: React.FC = () => {
               onClick={isRunning ? pauseTimer : startTimer}
               className={cn(
                 "w-24",
-                isRunning ? "bg-yellow-500 hover:bg-yellow-600" : "bg-green-600 hover:bg-green-700"
+                isRunning ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90"
               )}
               disabled={timeRemaining === 0 && isSessionActive}
             >
