@@ -1,4 +1,4 @@
-import React, { useRef } from 'react'; // Import useRef
+import React, { useRef } from 'react';
 import { Appointment } from '@/hooks/useAppointments';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
@@ -45,6 +45,10 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
   const numberOfBlocksSpanned = gridRowEnd - gridRowStart;
   const calculatedHeight = numberOfBlocksSpanned * rowHeight + (numberOfBlocksSpanned > 0 ? (numberOfBlocksSpanned - 1) * gapHeight : 0);
 
+  // Calculate dynamic left and width based on overlapOffset
+  const calculatedLeft = overlapOffset * 10; // 10px offset per overlap
+  const calculatedWidth = `calc(100% - ${calculatedLeft}px)`;
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -53,6 +57,8 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
     top: `${calculatedTop}px`,
     height: `${calculatedHeight}px`,
     backgroundColor: appointment.color,
+    left: `${calculatedLeft}px`, // Apply dynamic left
+    width: calculatedWidth,      // Apply dynamic width
   };
 
   const startTime = parseISO(`2000-01-01T${appointment.start_time}`);
@@ -67,7 +73,6 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
         "flex flex-col justify-between transition-all duration-200 ease-in-out",
         "group",
         isDragging ? "ring-2 ring-primary shadow-lg" : "hover:scale-[1.01] hover:shadow-lg",
-        `left-[${overlapOffset * 10}px] w-[calc(100% - ${overlapOffset * 10}px)]`
       )}
       {...(attributes || {})} // Conditionally spread attributes
       {...(listeners || {})} // Conditionally spread listeners

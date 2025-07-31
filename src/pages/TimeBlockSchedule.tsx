@@ -253,8 +253,8 @@ const TimeBlockSchedule: React.FC = () => {
               <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
                 <Clock className="h-16 w-16 text-muted-foreground mb-4" />
                 <p className="text-xl font-medium mb-2">No work hours set or enabled for this day.</p>
-                <p className="text-md">Please go to <a href="/settings" className="text-blue-500 hover:underline flex items-center gap-1">
-                  <Settings className="h-4 w-4" /> Settings
+                <p className="text-md">Please go to <a href="/my-hub" className="text-blue-500 hover:underline flex items-center gap-1">
+                  <Settings className="h-4 w-4" /> My Hub (Settings tab)
                 </a> to define your work hours to start scheduling!</p>
               </div>
             ) : timeBlocks.length === 0 ? (
@@ -264,7 +264,7 @@ const TimeBlockSchedule: React.FC = () => {
                 <p className="text-sm">Please check your work hour settings. Ensure your start time is before your end time.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-[60px_1fr] sm:grid-cols-[80px_1fr] gap-x-2"> {/* Changed min-content to 60px for mobile */}
+              <div className="grid grid-cols-[60px_1fr] sm:grid-cols-[80px_1fr] md:grid-cols-[100px_1fr] lg:grid-cols-[120px_1fr] gap-x-2"> {/* Adjusted grid columns */}
                 <div className="grid" style={{
                   gridTemplateRows: `repeat(${timeBlocks.length}, ${rowHeight}px)`,
                   height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`,
@@ -321,6 +321,7 @@ const TimeBlockSchedule: React.FC = () => {
                           overlapOffset={app.overlapOffset}
                           rowHeight={rowHeight}
                           gapHeight={gapHeight}
+                          isOverlay={false}
                         />
                       ))}
                     </SortableContext>

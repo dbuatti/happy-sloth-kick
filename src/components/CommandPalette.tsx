@@ -14,36 +14,37 @@ import { useSound } from '@/context/SoundContext';
 import { Task } from '@/hooks/useTasks';
 
 interface CommandPaletteProps {
-  isAddTaskOpen: boolean;
-  setIsAddTaskOpen: (open: boolean) => void;
+  isCommandPaletteOpen: boolean;
+  setIsCommandPaletteOpen: (open: boolean) => void;
   currentDate: Date;
   setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
 }
 
-const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAddTaskOpen, currentDate, setCurrentDate }) => {
-  const [open, setOpen] = useState(false);
+const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, setIsCommandPaletteOpen, currentDate, setCurrentDate }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { handleAddTask, sections, allCategories } = useTasks({ currentDate, setCurrentDate });
   const isMobile = useIsMobile();
   const { playSound } = useSound();
 
+  const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
+
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        setOpen((prevOpen) => !prevOpen); // No sound on open/close
+        setIsCommandPaletteOpen((prevOpen) => !prevOpen);
       }
     };
     document.addEventListener("keydown", down);
     return () => document.removeEventListener("keydown", down);
-  }, []); // Removed playSound from dependency array
+  }, [setIsCommandPaletteOpen]);
 
   const handleSelect = useCallback((callback: () => void) => {
-    setOpen(false);
-    playSound('success'); // Play sound only on selection
+    setIsCommandPaletteOpen(false);
+    playSound('success');
     callback();
-  }, [playSound]);
+  }, [playSound, setIsCommandPaletteOpen]);
 
   const handleSignOut = async () => {
     try {
@@ -59,7 +60,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
   const handleNewTaskSubmit = async (taskData: any) => {
     const success = await handleAddTask(taskData);
     if (success) {
-      setIsAddTaskOpen(false);
+      setIsAddTaskDialogOpen(false);
       playSound('success');
     }
     return success;
@@ -68,7 +69,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
   return (
     <>
       {isMobile ? (
-        <Sheet open={open} onOpenChange={setOpen}> {/* No sound on open/close */}
+        <Sheet open={isCommandPaletteOpen} onOpenChange={setIsCommandPaletteOpen}>
           <SheetContent className="h-full">
             <SheetHeader>
               <SheetTitle>Command Palette</SheetTitle>
@@ -79,7 +80,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
                 <CommandEmpty>No results found.</CommandEmpty>
 
                 <CommandGroup heading="Actions">
-                  <CommandItem onSelect={() => handleSelect(() => setIsAddTaskOpen(true))}>
+                  <CommandItem onSelect={() => handleSelect(() => setIsAddTaskDialogOpen(true))}>
                     <Plus className="mr-2 h-4 w-4" />
                     <span>Add New Task</span>
                   </CommandItem>
@@ -103,9 +104,9 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
                     <CalendarClock className="mr-2 h-4 w-4" />
                     <span>Go to Time Blocks</span>
                   </CommandItem>
-                  <CommandItem onSelect={() => handleSelect(() => navigate('/analytics'))}>
+                  <CommandItem onSelect={() => handleSelect(() => navigate('/my-hub'))}>
                     <BarChart3 className="mr-2 h-4 w-4" />
-                    <span>Go to Analytics</span>
+                    <span>Go to My Hub</span>
                   </CommandItem>
                   <CommandItem onSelect={() => handleSelect(() => navigate('/settings'))}>
                     <Settings className="mr-2 h-4 w-4" />
@@ -134,7 +135,6 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
                   <CommandGroup heading="Sections">
                     {sections.map(section => (
                       <CommandItem key={section.id} onSelect={() => handleSelect(() => {
-                        console.log(`Selected section: ${section.name}`);
                         navigate('/');
                       })}>
                         <FolderOpen className="mr-2 h-4 w-4" />
@@ -148,13 +148,13 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
           </SheetContent>
         </Sheet>
       ) : (
-        <CommandDialog open={open} onOpenChange={setOpen}> {/* No sound on open/close */}
+        <CommandDialog open={isCommandPaletteOpen} onOpenChange={setIsCommandPaletteOpen}>
           <CommandInput placeholder="Type a command or search..." />
           <CommandList>
             <CommandEmpty>No results found.</CommandEmpty>
 
             <CommandGroup heading="Actions">
-              <CommandItem onSelect={() => handleSelect(() => setIsAddTaskOpen(true))}>
+              <CommandItem onSelect={() => handleSelect(() => setIsAddTaskDialogOpen(true))}>
                 <Plus className="mr-2 h-4 w-4" />
                 <span>Add New Task</span>
               </CommandItem>
@@ -178,9 +178,9 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
                 <CalendarClock className="mr-2 h-4 w-4" />
                 <span>Go to Time Blocks</span>
               </CommandItem>
-              <CommandItem onSelect={() => handleSelect(() => navigate('/analytics'))}>
+              <CommandItem onSelect={() => handleSelect(() => navigate('/my-hub'))}>
                 <BarChart3 className="mr-2 h-4 w-4" />
-                <span>Go to Analytics</span>
+                <span>Go to My Hub</span>
               </CommandItem>
               <CommandItem onSelect={() => handleSelect(() => navigate('/settings'))}>
                 <Settings className="mr-2 h-4 w-4" />
@@ -209,7 +209,6 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
                   <CommandGroup heading="Sections">
                     {sections.map(section => (
                       <CommandItem key={section.id} onSelect={() => handleSelect(() => {
-                        console.log(`Selected section: ${section.name}`);
                         navigate('/');
                       })}>
                         <FolderOpen className="mr-2 h-4 w-4" />
@@ -223,21 +222,21 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isAddTaskOpen, setIsAdd
       )}
 
       {isMobile ? (
-        <Sheet open={isAddTaskOpen} onOpenChange={setIsAddTaskOpen}>
+        <Sheet open={isAddTaskDialogOpen} onOpenChange={setIsAddTaskDialogOpen}>
           <SheetContent className="h-full sm:max-w-md">
             <SheetHeader>
               <SheetTitle>Add New Task</SheetTitle>
             </SheetHeader>
-            <AddTaskForm onAddTask={handleNewTaskSubmit} userId={user?.id || null} onTaskAdded={() => setIsAddTaskOpen(false)} sections={sections} allCategories={allCategories} currentDate={currentDate} />
+            <AddTaskForm onAddTask={handleNewTaskSubmit} userId={user?.id || null} onTaskAdded={() => setIsAddTaskDialogOpen(false)} sections={sections} allCategories={allCategories} currentDate={currentDate} />
           </SheetContent>
         </Sheet>
       ) : (
-        <Dialog open={isAddTaskOpen} onOpenChange={setIsAddTaskOpen}>
+        <Dialog open={isAddTaskDialogOpen} onOpenChange={setIsAddTaskDialogOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Add New Task</DialogTitle>
             </DialogHeader>
-            <AddTaskForm onAddTask={handleNewTaskSubmit} userId={user?.id || null} onTaskAdded={() => setIsAddTaskOpen(false)} sections={sections} allCategories={allCategories} currentDate={currentDate} />
+            <AddTaskForm onAddTask={handleNewTaskSubmit} userId={user?.id || null} onTaskAdded={() => setIsAddTaskDialogOpen(false)} sections={sections} allCategories={allCategories} currentDate={currentDate} />
           </DialogContent>
         </Dialog>
       )}
