@@ -42,8 +42,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const { playSound } = useSound();
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
 
-  console.log(`[TaskItem] Rendering task: ${task.id}, Description: "${task.description}", remind_at: ${task.remind_at}, type: ${typeof task.remind_at}`);
-
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'urgent': return 'text-priority-urgent';

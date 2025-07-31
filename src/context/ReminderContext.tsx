@@ -25,132 +25,86 @@ export const ReminderProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [activeReminders, setActiveReminders] = useState<Reminder[]>([]);
   const reminderQueueRef = useRef<NodeJS.Timeout[]>([]);
 
-  // Refs to hold the latest versions of snoozeReminder and dismissReminder
-  // These are used by scheduleReminder to call the most up-to-date versions
-  const snoozeReminderRef = useRef<(taskId: string, minutes?: number) => void>(() => {});
-  const dismissReminderRef = useRef<(taskId: string) => void>(() => {});
+  const snoozeReminder = useCallback((taskId: string, minutes: number = 5) => { // Added default minutes
+    setActiveReminders(prev => {
+      const reminderToSnooze = prev.find(r => r.id === taskId);
+      if (reminderToSnooze) {
+        if (reminderToSnooze.toastId) dismissToast(reminderToSnooze.toastId);
+        const newRemindAt = addMinutes(new Date(), minutes);
+        const updatedReminder = { ...reminderToSnooze, remindAt: newRemindAt };
+        scheduleReminder(updatedReminder);
+        console.log(`Reminder for task ${taskId} snoozed for ${minutes} minutes. Next due: ${newRemindAt.toISOString()}`);
+        return prev.map(r => r.id === taskId ? updatedReminder : r);
+      }
+      return prev;
+    });
+  }, []); // Removed scheduleReminder from dependency array as it's defined below
 
-  // scheduleReminder needs to be defined first, and it will use the refs for callbacks
-  const scheduleReminder = useCallback((reminder: Reminder) => {
-    console.log(`[ReminderContext] scheduleReminder: Attempting to schedule reminder:`, reminder);
-    if (!isValid(reminder.remindAt)) {
-      console.error('[ReminderContext] scheduleReminder: Attempted to schedule an invalid date reminder. Skipping.', reminder);
-      return;
-    }
-
-    const now = new Date();
-    const delay = reminder.remindAt.getTime() - now.getTime();
-    console.log(`[ReminderContext] scheduleReminder: Calculated delay for ${reminder.id}: ${delay}ms`);
-
-    // Clear any existing timeout for this reminder before scheduling a new one
-    // We attach _taskId to the timeout object for easy lookup
-    const existingTimeoutIndex = reminderQueueRef.current.findIndex((t: any) => t._taskId === reminder.id);
-    if (existingTimeoutIndex > -1) {
-      clearTimeout(reminderQueueRef.current[existingTimeoutIndex]);
-      reminderQueueRef.current.splice(existingTimeoutIndex, 1);
-      console.log(`[ReminderContext] scheduleReminder: Cleared existing timeout for ${reminder.id}.`);
-    }
-
-    const showToastAndSetState = (r: Reminder) => {
-      console.log(`[ReminderContext] scheduleReminder: Showing toast for reminder ${r.id}: ${r.message}`);
-      const toastId = showReminder(
-        r.message,
-        r.id,
-        (id) => snoozeReminderRef.current(id, 5), // Use ref here for snooze
-        (id) => dismissReminderRef.current(id) // Use ref here for dismiss
-      );
-      setActiveReminders(prev => prev.map(rem => rem.id === r.id ? { ...rem, toastId } : rem));
-      console.log(`[ReminderContext] scheduleReminder: Toast shown, ID: ${toastId}`);
-    };
-
-    if (delay <= 0) {
-      // If reminder is already due or overdue, show it immediately
-      showToastAndSetState(reminder);
-    } else {
-      // Schedule the reminder to appear in the future
-      const timeoutId: any = setTimeout(() => { // Cast to any to attach custom property
-        showToastAndSetState(reminder);
-      }, delay);
-      timeoutId._taskId = reminder.id; // Attach task ID to timeout for easier lookup
-      reminderQueueRef.current.push(timeoutId);
-      console.log(`[ReminderContext] scheduleReminder: Timeout ID ${timeoutId._taskId} added to queue.`);
-    }
-  }, []); // Dependencies: None, as it uses refs for callbacks and stable imports.
-
-  // Now define snoozeReminder and dismissReminder, which can call scheduleReminder
   const dismissReminder = useCallback((taskId: string) => {
-    console.log(`[ReminderContext] dismissReminder: Called for task ID: ${taskId}`);
     setActiveReminders(prev => {
       const reminderToDismiss = prev.find(r => r.id === taskId);
       if (reminderToDismiss && reminderToDismiss.toastId) {
         dismissToast(reminderToDismiss.toastId);
-        console.log(`[ReminderContext] dismissReminder: Dismissed toast for ${taskId}.`);
       }
-      // Also clear any pending timeouts for this reminder
-      const timeoutIndex = reminderQueueRef.current.findIndex((t: any) => t._taskId === taskId);
-      if (timeoutIndex > -1) {
-        clearTimeout(reminderQueueRef.current[timeoutIndex]);
-        reminderQueueRef.current.splice(timeoutIndex, 1);
-        console.log(`[ReminderContext] dismissReminder: Cleared pending timeout for ${taskId}.`);
-      }
-      console.log(`[ReminderContext] dismissReminder: Removing reminder from active list for ${taskId}.`);
       return prev.filter(r => r.id !== taskId);
     });
-  }, []); // Dependencies: [] - This is good, `dismissReminder` is stable.
+    console.log(`Reminder for task ${taskId} dismissed.`);
+  }, []);
 
-  const snoozeReminder = useCallback((taskId: string, minutes: number = 5) => { // Added default minutes
-    console.log(`[ReminderContext] snoozeReminder: Called for task ID: ${taskId}, minutes: ${minutes}`);
-    setActiveReminders(prev => {
-      const reminderToSnooze = prev.find(r => r.id === taskId);
-      if (reminderToSnooze) {
-        console.log(`[ReminderContext] snoozeReminder: Found reminder to snooze:`, reminderToSnooze);
-        if (reminderToSnooze.toastId) {
-          dismissToast(reminderToSnooze.toastId);
-          console.log(`[ReminderContext] snoozeReminder: Dismissed existing toast for ${taskId}.`);
-        }
-        const newRemindAt = addMinutes(new Date(), minutes);
-        const updatedReminder = { ...reminderToSnooze, remindAt: newRemindAt };
-        scheduleReminder(updatedReminder); // Call scheduleReminder directly
-        console.log(`[ReminderContext] snoozeReminder: Reminder for task ${taskId} snoozed for ${minutes} minutes. Next due: ${newRemindAt.toISOString()}`);
-        return prev.map(r => r.id === taskId ? updatedReminder : r);
-      }
-      console.log(`[ReminderContext] snoozeReminder: Reminder with task ID ${taskId} not found.`);
-      return prev;
-    });
-  }, [scheduleReminder]); // Dependency: scheduleReminder
+  const scheduleReminder = useCallback((reminder: Reminder) => {
+    if (!isValid(reminder.remindAt)) {
+      console.error('ReminderContext: Attempted to schedule an invalid date reminder:', reminder);
+      return; // Do not proceed with invalid date
+    }
 
-  // Update refs whenever snoozeReminder or dismissReminder change
-  // This ensures scheduleReminder's callbacks always point to the latest versions
-  useEffect(() => {
-    snoozeReminderRef.current = snoozeReminder;
-  }, [snoozeReminder]);
+    const now = new Date();
+    const delay = reminder.remindAt.getTime() - now.getTime();
 
-  useEffect(() => {
-    dismissReminderRef.current = dismissReminder;
-  }, [dismissReminder]);
+    if (delay <= 0) {
+      // If reminder is already due or overdue, show it immediately
+      console.log(`Showing overdue reminder for task ${reminder.id}: ${reminder.message}`);
+      const toastId = showReminder(
+        reminder.message,
+        reminder.id,
+        (id) => snoozeReminder(id, 5), // Default snooze for 5 minutes
+        (id) => dismissReminder(id)
+      );
+      setActiveReminders(prev => prev.map(r => r.id === reminder.id ? { ...r, toastId } : r));
+    } else {
+      // Schedule the reminder to appear in the future
+      console.log(`Scheduling reminder for task ${reminder.id} in ${delay / 1000} seconds.`);
+      const timeoutId = setTimeout(() => {
+        const toastId = showReminder(
+          reminder.message,
+          reminder.id,
+          (id) => snoozeReminder(id, 5), // Default snooze for 5 minutes
+          (id) => dismissReminder(id)
+        );
+        setActiveReminders(prev => prev.map(r => r.id === reminder.id ? { ...r, toastId } : r));
+      }, delay);
+      reminderQueueRef.current.push(timeoutId);
+    }
+  }, [dismissReminder, snoozeReminder]); // Added dismissReminder, snoozeReminder to dependencies
 
   const addReminder = useCallback((taskId: string, message: string, remindAt: Date) => {
-    console.log(`[ReminderContext] addReminder: Called for task ID: ${taskId}, message: "${message}", remindAt: ${remindAt.toISOString()}, isValid: ${isValid(remindAt)}`);
     if (!isValid(remindAt)) { // Add isValid check here too, at the entry point
-      console.error('[ReminderContext] addReminder: addReminder called with invalid date. Skipping.', remindAt);
+      console.error('ReminderContext: addReminder called with invalid date:', remindAt);
       return;
     }
     setActiveReminders(prev => {
       const existingReminder = prev.find(r => r.id === taskId);
       if (existingReminder) {
-        console.log(`[ReminderContext] addReminder: Existing reminder found for ${taskId}.`);
         // Update existing reminder if time changes or it's snoozed
         if (existingReminder.remindAt.getTime() !== remindAt.getTime()) {
-          console.log(`[ReminderContext] addReminder: Existing reminder time changed. Updating.`);
+          // Clear any pending timeouts for this reminder
+          if (existingReminder.toastId) dismissToast(existingReminder.toastId);
           const updatedReminder = { ...existingReminder, message, remindAt };
           scheduleReminder(updatedReminder);
           return prev.map(r => r.id === taskId ? updatedReminder : r);
         }
-        console.log(`[ReminderContext] addReminder: Existing reminder time unchanged. No update needed.`);
         return prev; // No change needed
       } else {
         // Add new reminder
-        console.log(`[ReminderContext] addReminder: No existing reminder found for ${taskId}. Adding new one.`);
         const newReminder: Reminder = { id: taskId, message, remindAt, originalRemindAt: remindAt };
         scheduleReminder(newReminder);
         return [...prev, newReminder];
@@ -159,25 +113,18 @@ export const ReminderProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [scheduleReminder]);
 
   const clearAllReminders = useCallback(() => {
-    console.log('[ReminderContext] clearAllReminders: Clearing all active reminders.');
-    // Capture current active reminders to dismiss their toasts
-    setActiveReminders(prevReminders => {
-      prevReminders.forEach(r => {
-        if (r.toastId) dismissToast(r.toastId);
-      });
-      return []; // Set state to empty array
+    activeReminders.forEach(r => {
+      if (r.toastId) dismissToast(r.toastId);
     });
-    // Clear all pending timeouts
     reminderQueueRef.current.forEach(timeoutId => clearTimeout(timeoutId));
     reminderQueueRef.current = [];
-    console.log('[ReminderContext] All reminders cleared.');
-  }, []); // No dependencies needed here.
+    setActiveReminders([]);
+    console.log('All reminders cleared.');
+  }, [activeReminders]);
 
   // Cleanup timeouts on unmount
   useEffect(() => {
-    console.log('[ReminderContext] Effect: Component mounted. Setting up cleanup for timeouts.');
     return () => {
-      console.log('[ReminderContext] Effect: Component unmounting. Clearing all pending timeouts.');
       reminderQueueRef.current.forEach(timeoutId => clearTimeout(timeoutId));
     };
   }, []);
