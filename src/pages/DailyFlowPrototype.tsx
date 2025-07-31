@@ -53,9 +53,16 @@ const DailyFlowPrototype: React.FC = () => {
     await updateTask(taskId, { status: 'completed' });
   };
 
+  // This function will now navigate to the main page when "Add New Task" is clicked
+  // or show an alert for editing existing tasks (for prototype simplicity)
   const handleEditNextTask = (task: any) => {
-    // For prototype, just log or show a simple alert
-    alert(`Editing task: ${task?.description || 'No task selected'}`);
+    if (!task) {
+      // If no task, navigate to main page to allow adding a new task
+      navigate('/');
+    } else {
+      // For prototype, just log or show a simple alert for editing existing tasks
+      alert(`Editing task: ${task?.description || 'No task selected'}`);
+    }
   };
 
   const leastWorkedOnProject = useMemo(() => {
@@ -280,8 +287,8 @@ const DailyFlowPrototype: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col">
-      <main className="flex-grow p-4 flex justify-center">
-        <Card className="w-full max-w-4xl mx-auto shadow-lg p-4">
+      <main className="flex-grow py-8 flex justify-center"> {/* Increased vertical padding */}
+        <Card className="w-full max-w-4xl mx-auto shadow-lg rounded-xl p-6"> {/* Updated card styling */}
           <CardHeader className="pb-2">
             <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
               <Sparkles className="h-7 w-7 text-primary" /> Adaptive Daily Flow Prototype
