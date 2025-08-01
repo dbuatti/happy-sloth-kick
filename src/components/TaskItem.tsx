@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing, FolderOpen, Repeat, ListTodo, CheckCircle2, ArrowUp, ArrowDown, Link, Undo2 } from 'lucide-react';
+import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing, FolderOpen, Repeat, ListTodo, CheckCircle2, ArrowUp, ArrowDown, Link as LinkIcon, Undo2 } from 'lucide-react';
 import * as dateFns from 'date-fns';
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
 import { getCategoryColorProps } from '@/lib/categoryColors';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Badge } from "@/components/ui/badge"; // Import Badge component
+import { Badge } from "@/components/ui/badge";
 
 interface TaskItemProps {
   task: Task;
@@ -20,7 +20,7 @@ interface TaskItemProps {
   isSelected: boolean;
   onToggleSelect: (taskId: string, checked: boolean) => void;
   sections: { id: string; name: string }[];
-  onOpenOverview: (task: Task) => void; // New prop to open overview
+  onOpenOverview: (task: Task) => void;
   currentDate: Date;
   onMoveUp: (taskId: string) => Promise<void>;
   onMoveDown: (taskId: string) => Promise<void>;
@@ -35,7 +35,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   isSelected,
   onToggleSelect,
   sections,
-  onOpenOverview, // Destructure new prop
+  onOpenOverview,
   currentDate,
   onMoveUp,
   onMoveDown,
@@ -57,7 +57,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
   const getDueDateDisplay = (dueDate: string | null) => {
     if (!dueDate) return null;
-    
     const date = dateFns.parseISO(dueDate);
     if (dateFns.isSameDay(date as Date, currentRefDate as Date)) {
       return 'Today';
@@ -147,8 +146,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
         </Tooltip>
 
         <div className="flex flex-wrap items-center text-xs text-muted-foreground mt-0.5 gap-x-1.5 gap-y-0">
-          <div className={cn("w-5 h-5 rounded-full flex items-center justify-center border", categoryColorProps.backgroundClass, categoryColorProps.dotBorder)}> {/* Increased size */}
-            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: categoryColorProps.dotColor }}></div> {/* Increased size */}
+          <div className={cn("w-5 h-5 rounded-full flex items-center justify-center border", categoryColorProps.backgroundClass, categoryColorProps.dotBorder)}>
+            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: categoryColorProps.dotColor }}></div>
           </div>
           <Badge className={cn("px-2 py-0.5 text-xs font-semibold", getPriorityColor(task.priority))}>
             {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
@@ -156,7 +155,9 @@ const TaskItem: React.FC<TaskItemProps> = ({
           {task.recurring_type !== 'none' && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Repeat className="h-4.5 w-4.5 text-primary dark:text-primary" /> {/* Increased size */}
+                <span className="inline-flex items-center">
+                  <Repeat className="h-4.5 w-4.5 text-primary dark:text-primary" />
+                </span>
               </TooltipTrigger>
               <TooltipContent>
                 <p>Recurring: {task.recurring_type.charAt(0).toUpperCase() + task.recurring_type.slice(1)}</p>
@@ -169,21 +170,28 @@ const TaskItem: React.FC<TaskItemProps> = ({
               isOverdue && "text-status-overdue font-semibold",
               isDueToday && "text-status-due-today font-semibold"
             )}>
-              <Calendar className="h-4.5 w-4.5" /> {/* Increased size */}
+              <Calendar className="h-4.5 w-4.5" />
               {getDueDateDisplay(task.due_date)}
             </span>
           )}
           {task.remind_at && (
-            <span className="flex items-center gap-1 text-primary dark:text-primary">
-              <BellRing className="h-4.5 w-4.5" /> {/* Increased size */}
-              {dateFns.isValid(dateFns.parseISO(task.remind_at)) ? dateFns.format(dateFns.parseISO(task.remind_at), 'MMM d, HH:mm') : 'Invalid Date'}
-            </span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex items-center text-primary dark:text-primary">
+                  <BellRing className="h-4.5 w-4.5" />
+                  <span className="sr-only">Reminder</span>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                {dateFns.isValid(dateFns.parseISO(task.remind_at)) ? dateFns.format(dateFns.parseISO(task.remind_at), 'MMM d, yyyy HH:mm') : 'Invalid Date'}
+              </TooltipContent>
+            </Tooltip>
           )}
           {task.notes && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className="flex items-center gap-1">
-                  <StickyNote className="h-4.5 w-4.5" /> {/* Increased size */}
+                <span className="inline-flex items-center">
+                  <StickyNote className="h-4.5 w-4.5" />
                 </span>
               </TooltipTrigger>
               <TooltipContent className="max-w-xs">
@@ -203,7 +211,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
                   onClick={(e) => e.stopPropagation()}
                   data-no-dnd="true"
                 >
-                  <Link className="h-4.5 w-4.5" /> {/* Increased size */}
+                  <LinkIcon className="h-4.5 w-4.5" />
                 </a>
               </TooltipTrigger>
               <TooltipContent className="max-w-xs">
