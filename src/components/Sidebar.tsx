@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, BarChart3, Settings as SettingsIcon, HelpCircle, Archive as ArchiveIcon, Timer, LayoutGrid, CalendarClock, Menu, Leaf, Moon, Volume2, VolumeX, Brain, Target, LayoutDashboard, Sparkles } from 'lucide-react'; // Added Sparkles for prototype
+import { Home, BarChart3, Settings as SettingsIcon, HelpCircle, Archive as ArchiveIcon, Timer, LayoutGrid, CalendarClock, Menu, Leaf, Moon, Volume2, VolumeX, Brain, Target, LayoutDashboard, Sparkles } from 'lucide-react';
 import ThemeSelector from './ThemeSelector';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -15,8 +15,7 @@ interface SidebarProps {
 }
 
 const navItems = [
-  { name: 'Daily Tasks', path: '/daily-tasks', icon: Home, showCount: true }, // Updated path
-  // { name: 'Daily Flow Prototype', path: '/daily-flow-prototype', icon: Sparkles }, Removed
+  { name: 'Daily Tasks', path: '/daily-tasks', icon: Home, showCount: true },
   { name: 'Focus Mode', path: '/focus', icon: Target },
   { name: 'Mindfulness', path: '/mindfulness', icon: Brain },
   { name: 'Meditation', path: '/meditation', icon: Leaf },
@@ -32,7 +31,7 @@ const NavigationLinks = ({ onLinkClick }: { onLinkClick?: () => void }) => {
   const { dailyTaskCount, loading: countLoading } = useDailyTaskCount();
 
   return (
-    <nav className="flex-1 px-4 space-y-2">
+    <nav className="flex-1 px-3 space-y-1">
       {navItems.map((item) => {
         const isActive = location.pathname === item.path;
         const Icon = item.icon;
@@ -41,10 +40,10 @@ const NavigationLinks = ({ onLinkClick }: { onLinkClick?: () => void }) => {
             key={item.path}
             to={item.path}
             className={cn(
-              "flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors duration-200",
+              "flex items-center space-x-3 px-3 py-2 rounded-md transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
               isActive
                 ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary dark:hover:text-primary-foreground'
+                : 'text-foreground/80 hover:bg-muted hover:text-foreground'
             )}
             onClick={onLinkClick}
           >
@@ -71,7 +70,7 @@ const Sidebar: React.FC<SidebarProps> = ({ children }) => {
   if (isMobile) {
     return (
       <div className="min-h-screen flex flex-col">
-        <header className="flex items-center justify-between p-4 bg-card shadow-md">
+        <header className="flex items-center justify-between p-4 bg-card/80 backdrop-blur shadow-sm">
           <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" aria-label="Open menu">
@@ -80,11 +79,11 @@ const Sidebar: React.FC<SidebarProps> = ({ children }) => {
             </SheetTrigger>
             <SheetContent side="left" className="w-64 bg-card flex flex-col">
               <div className="p-4 flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-gray-800 dark:text-white">TaskMaster</h1>
+                <h1 className="text-2xl font-bold">TaskMaster</h1>
               </div>
               <NavigationLinks onLinkClick={() => setIsSheetOpen(false)} />
-              <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+              <div className="p-4 border-t border-border flex justify-between items-center">
+                <p className="text-sm text-muted-foreground">
                   &copy; {new Date().getFullYear()} TaskMaster
                 </p>
                 <div className="flex items-center space-x-2">
@@ -96,7 +95,7 @@ const Sidebar: React.FC<SidebarProps> = ({ children }) => {
               </div>
             </SheetContent>
           </Sheet>
-          <h1 className="text-xl font-bold text-gray-800 dark:text-white">TaskMaster</h1>
+          <h1 className="text-xl font-bold">TaskMaster</h1>
           <div className="flex items-center space-x-2">
             <ThemeSelector />
             <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"}>
@@ -113,13 +112,13 @@ const Sidebar: React.FC<SidebarProps> = ({ children }) => {
 
   return (
     <div className="min-h-screen flex bg-background">
-      <div className="w-64 bg-card shadow-lg h-screen flex flex-col">
+      <div className="w-64 bg-card/80 backdrop-blur shadow-md h-screen flex flex-col">
         <div className="p-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">TaskMaster</h1>
+          <h1 className="text-2xl font-bold">TaskMaster</h1>
         </div>
         <NavigationLinks />
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+        <div className="p-4 border-t border-border flex justify-between items-center">
+          <p className="text-sm text-muted-foreground">
             &copy; {new Date().getFullYear()} TaskMaster
           </p>
           <div className="flex items-center space-x-2">
