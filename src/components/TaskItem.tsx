@@ -9,7 +9,7 @@ import { Task } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
 import { getCategoryColorProps } from '@/lib/categoryColors';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Badge } from "@/components/ui/badge";
+// Removed Badge import as it's no longer used for priority/status
 
 interface TaskItemProps {
   task: Task;
@@ -43,13 +43,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const { playSound } = useSound();
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
 
-  const getPriorityColor = (priority: string) => {
+  const getPriorityDotColor = (priority: string) => {
     switch (priority) {
-      case 'urgent': return 'bg-priority-urgent text-primary-foreground';
-      case 'high': return 'bg-priority-high text-primary-foreground';
-      case 'medium': return 'bg-priority-medium text-primary-foreground';
-      case 'low': return 'bg-priority-low text-primary-foreground';
-      default: return 'bg-muted text-muted-foreground';
+      case 'urgent': return 'bg-priority-urgent';
+      case 'high': return 'bg-priority-high';
+      case 'medium': return 'bg-priority-medium';
+      case 'low': return 'bg-priority-low';
+      default: return 'bg-gray-500'; // Default to gray if unknown
     }
   };
 
@@ -94,26 +94,14 @@ const TaskItem: React.FC<TaskItemProps> = ({
     playSound('success');
   };
 
-  const getStatusBadgeVariant = (status: Task['status']) => {
-    switch (status) {
-      case 'completed': return 'bg-status-completed text-primary-foreground'; /* Use new status-completed color */
-      case 'skipped': return 'bg-destructive text-destructive-foreground';
-      case 'archived': return 'bg-muted text-muted-foreground';
-      case 'to-do':
-      default: return 'bg-secondary text-secondary-foreground';
-    }
-  };
-
   return (
     <div
       className={cn(
-        "relative flex items-start space-x-3 w-full py-2 px-2 rounded-lg group",
-        task.status === 'completed' ? "opacity-70 bg-green-50/20 dark:bg-green-900/20" : "",
-        isOverdue ? "border-l-4 border-border-status-overdue bg-red-50/10 dark:bg-red-900/10" : // Thicker border
-        isDueToday ? "border-l-4 border-border-status-due-today bg-yellow-50/10 dark:bg-yellow-900/10" : // Thicker border
-        "border-l-4 border-transparent",
+        "relative flex items-start space-x-3 w-full py-2 px-2 group", // Removed rounded-lg, border-l-4, and bg-green-50/20
+        task.status === 'completed' ? "opacity-70" : "",
         "hover:shadow-sm transition-shadow duration-200" // Added subtle shadow on hover
       )}
+      style={{ paddingLeft: '4px', paddingRight: '4px' }} // Apply 4px gutter
     >
       <Checkbox
         key={`${task.id}-${task.status}`}
@@ -123,6 +111,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
         onClick={(e) => e.stopPropagation()}
         className="flex-shrink-0 h-5 w-5 mt-0.5" // Larger checkbox
         data-no-dnd="true"
+        aria-label={`Mark task "${task.description}" as ${task.status === 'completed' ? 'to-do' : 'completed'}`}
       />
 
       <div 
@@ -133,10 +122,11 @@ const TaskItem: React.FC<TaskItemProps> = ({
           <TooltipTrigger asChild>
             <span
               className={cn(
-                "text-base font-medium leading-tight line-clamp-2", // Larger text
+                "text-sm font-normal leading-tight line-clamp-2", // Changed to 12px font-size, 1.2 line-height
                 task.status === 'completed' ? 'line-through text-muted-foreground' : 'text-foreground',
                 "block"
               )}
+              style={{ fontSize: '12px', lineHeight: '1.2' }}
             >
               {task.description}
             </span>
@@ -147,12 +137,9 @@ const TaskItem: React.FC<TaskItemProps> = ({
         </Tooltip>
 
         <div className="flex flex-wrap items-center text-xs text-muted-foreground mt-1 gap-x-2 gap-y-0.5"> {/* Increased spacing */}
-          <div className={cn("w-3.5 h-3.5 rounded-full flex items-center justify-center border", categoryColorProps.backgroundClass, categoryColorProps.dotBorder)}> {/* Slightly smaller dot container */}
-            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: categoryColorProps.dotColor }}></div> {/* Slightly smaller dot */}
-          </div>
-          <Badge className={cn("px-1.5 py-0.5 text-xs font-semibold rounded-full", getPriorityColor(task.priority))}> {/* More compact badge */}
-            {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-          </Badge>
+          {/* Priority Dot */}
+          <div className={cn("w-1 h-1 rounded-full", getPriorityDotColor(task.priority))} />
+          
           {task.recurring_type !== 'none' && (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -231,9 +218,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
       )}
 
       <div className="flex-shrink-0 flex items-center space-x-1" data-no-dnd="true">
-        <Badge className={cn("px-2.5 py-1 text-xs font-semibold rounded-full", getStatusBadgeVariant(task.status))}> {/* Larger badge */}
-          {task.status.charAt(0).toUpperCase() + task.status.slice(1)}
-        </Badge>
+        {/* Removed Status Badge */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button 
