@@ -21,6 +21,8 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
+  DragStartEvent,
+  DragOverEvent,
   DragOverlay,
   UniqueIdentifier,
 } from '@dnd-kit/core';
@@ -73,43 +75,45 @@ interface TaskListProps {
   searchRef: React.RefObject<HTMLInputElement>;
 }
 
-const TaskList: React.FC<TaskListProps> = ({
-  tasks,
-  filteredTasks,
-  loading,
-  userId,
-  handleAddTask,
-  updateTask,
-  deleteTask,
-  searchFilter,
-  setSearchFilter,
-  statusFilter,
-  setStatusFilter,
-  categoryFilter,
-  setCategoryFilter,
-  priorityFilter,
-  setPriorityFilter,
-  sectionFilter,
-  setSectionFilter,
-  selectedTaskIds,
-  toggleTaskSelection,
-  clearSelectedTasks,
-  bulkUpdateTasks,
-  markAllTasksInSectionCompleted,
-  sections,
-  createSection,
-  updateSection,
-  deleteSection,
-  updateSectionIncludeInFocusMode,
-  updateTaskParentAndOrder,
-  reorderSections,
-  moveTask,
-  allCategories,
-  setIsAddTaskOpen,
-  currentDate,
-  setCurrentDate,
-  searchRef,
-}) => {
+const TaskList: React.FC<TaskListProps> = (props) => {
+  const {
+    tasks,
+    filteredTasks,
+    loading,
+    userId,
+    handleAddTask,
+    updateTask,
+    deleteTask,
+    searchFilter,
+    setSearchFilter,
+    statusFilter,
+    setStatusFilter,
+    categoryFilter,
+    setCategoryFilter,
+    priorityFilter,
+    setPriorityFilter,
+    sectionFilter,
+    setSectionFilter,
+    selectedTaskIds,
+    toggleTaskSelection,
+    clearSelectedTasks,
+    bulkUpdateTasks,
+    markAllTasksInSectionCompleted,
+    sections,
+    createSection,
+    updateSection,
+    deleteSection,
+    updateSectionIncludeInFocusMode,
+    updateTaskParentAndOrder,
+    reorderSections,
+    moveTask,
+    allCategories,
+    setIsAddTaskOpen,
+    currentDate,
+    setCurrentDate,
+    searchRef,
+  } = props;
+
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
@@ -135,7 +139,6 @@ const TaskList: React.FC<TaskListProps> = ({
   const [sectionToDeleteId, setSectionToDeleteId] = useState<string | null>(null);
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
 
-  // New: Add Task dialog state
   const [isAddTaskOpenLocal, setIsAddTaskOpenLocal] = useState(false);
   const [preselectedSectionId, setPreselectedSectionId] = useState<string | null>(null);
 
@@ -153,7 +156,6 @@ const TaskList: React.FC<TaskListProps> = ({
     priorityFilter !== 'all' ||
     sectionFilter !== 'all';
 
-  // Reset filters helper
   const handleResetFilters = () => {
     setSearchFilter('');
     setStatusFilter('all');
@@ -184,59 +186,111 @@ const TaskList: React.FC<TaskListProps> = ({
 
   const allSortableTaskIds = useMemo(() => filteredTasks.map(t => t.id), [filteredTasks]);
 
-  const handleDragStart = (event: any) => {
+  const isSectionHeaderId = (id: UniqueIdentifier | null) => {
+    if (!id) return false;
+    return id === 'no-section-header' || sections.some(s => s.id === id);
+  };
+
+  const getTaskById = (id: UniqueIdentifier | null) => {
+    if (!id) return undefined;
+    return tasks.find(t => t.id === id);
+  };
+
+  const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id);
+    // Log snapshot of active
+    console.log('[DnD] drag start', {
+      activeId: event.active.id,
+      activeData: event.active.data?.current,
+    });
+  };
+
+  const handleDragOver = (event: DragOverEvent) => {
+    const { active, over } = event;
+    if (!over) return;
+    console.log('[DnD] drag over', {
+      activeId: active.id,
+      overId: over.id,
+      overData: over.data?.current,
+    });
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
 
-    if (!over || active.id === over.id) {
+    if (!over) {
+      console.log('[DnD] drag end: no over, abort');
       setActiveId(null);
       return;
     }
 
-    const activeTask = tasks.find(t => t.id === active.id);
-    if (!activeTask) {
+    if (active.id === over.id) {
+      console.log('[DnD] drag end: same id, abort');
       setActiveId(null);
       return;
     }
 
+    const draggedTask = getTaskById(active.id);
+    const overTask = getTaskById(over.id);
+    const overIsSection = isSectionHeaderId(over.id);
+
+    // If dragging sections
+    if (isSectionHeaderId(active.id) && isSectionHeaderId(over.id)) {
+      const a = String(active.id);
+      const b = String(over.id);
+      if (a !== 'no-section-header' && b !== 'no-section-header') {
+        console.log('[DnD] reordering sections', { from: a, to: b });
+        await reorderSections(a, b);
+      } else {
+        console.log('[DnD] ignore reorder with no-section-header');
+      }
+      setActiveId(null);
+      return;
+    }
+
+    // If dragging a task
+    if (!draggedTask) {
+      console.warn('[DnD] drag end: active task not found', { activeId: active.id });
+      setActiveId(null);
+      return;
+    }
+
+    // Compute new parents/sections
     let newParentId: string | null = null;
     let newSectionId: string | null = null;
-    let overTargetId: string | null = null;
+    let overId: string | null = null;
 
-    const overTask = tasks.find(t => t.id === over.id);
-    const overSectionHeader = allSortableSections.find(s => s.id === over.id);
-
-    if (overTask) {
-      newParentId = overTask.id;
-      newSectionId = overTask.section_id;
-      overTargetId = overTask.id;
-    } else if (overSectionHeader) {
+    if (overIsSection) {
+      // Dropped onto a section header: make top-level in this section
+      const sectionId = over.id === 'no-section-header' ? null : String(over.id);
       newParentId = null;
-      newSectionId = overSectionHeader.id === 'no-section-header' ? null : overSectionHeader.id;
-      overTargetId = null;
+      newSectionId = sectionId;
+      overId = null; // append logic handled in hook
+    } else if (overTask) {
+      // Dropped onto a task item: become sibling or child; we’ll do sibling by default
+      newParentId = overTask.parent_task_id; // sibling under same parent
+      newSectionId = overTask.parent_task_id ? draggedTask.section_id : overTask.section_id;
+      overId = overTask.id;
     } else {
-      const targetSectionId = allSortableSections.find(s => s.id === over.id)?.id;
-      if (targetSectionId) {
-        newParentId = null;
-        newSectionId = targetSectionId === 'no-section-header' ? null : targetSectionId;
-        overTargetId = null;
-      } else {
-        setActiveId(null);
-        return;
-      }
+      console.log('[DnD] over is neither section nor task; ignoring', { overId: over.id });
+      setActiveId(null);
+      return;
     }
 
-    if (active.data.current?.type === 'section' && over.data.current?.type === 'section') {
-      if (active.id !== 'no-section-header' && over.id !== 'no-section-header') {
-        await reorderSections(active.id as string, over.id as string);
-      }
-    } else if (active.data.current?.type === 'task') {
-      await updateTaskParentAndOrder(activeTask.id, newParentId, newSectionId, overTargetId);
+    // Guard: cannot drop into itself or its descendants
+    if (newParentId === draggedTask.id) {
+      console.warn('[DnD] cannot drop a task into itself');
+      setActiveId(null);
+      return;
     }
 
+    console.log('[DnD] drag end resolved', {
+      draggedId: draggedTask.id,
+      from: { parent: draggedTask.parent_task_id, section: draggedTask.section_id },
+      to: { newParentId, newSectionId, overId },
+    });
+
+    await updateTaskParentAndOrder(draggedTask.id, newParentId, newSectionId, overId);
     setActiveId(null);
   };
 
@@ -251,7 +305,6 @@ const TaskList: React.FC<TaskListProps> = ({
     setIsTaskDetailOpen(true);
   };
 
-  // New: open Add Task for a specific section
   const openAddTaskForSection = (sectionId: string | null) => {
     setPreselectedSectionId(sectionId);
     setIsAddTaskOpenLocal(true);
@@ -282,7 +335,7 @@ const TaskList: React.FC<TaskListProps> = ({
           <div className="flex gap-1.5 w-full sm:w-auto">
             <Dialog open={isAddSectionOpen} onOpenChange={setIsAddSectionOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="flex-1 h-9"> {/* Standardized height */}
+                <Button variant="outline" size="sm" className="flex-1 h-9">
                   <Plus className="mr-2 h-3.5 w-3.5" /> Add Section
                 </Button>
               </DialogTrigger>
@@ -317,7 +370,7 @@ const TaskList: React.FC<TaskListProps> = ({
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="sm" className="flex-1 h-9"> {/* Standardized height */}
+                <Button variant="outline" size="sm" className="flex-1 h-9">
                   <Settings className="mr-2 h-3.5 w-3.5" /> Manage Sections
                 </Button>
               </TooltipTrigger>
@@ -340,6 +393,7 @@ const TaskList: React.FC<TaskListProps> = ({
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={[...allSortableSections.map(s => s.id)]} strategy={verticalListSortingStrategy}>
@@ -466,14 +520,13 @@ const TaskList: React.FC<TaskListProps> = ({
 
           {createPortal(
             <DragOverlay>
-              {/* unchanged overlay rendering */}
+              {/* Intentionally empty overlay to avoid multi-child issues */}
             </DragOverlay>,
             document.body
           )}
         </DndContext>
       )}
 
-      {/* existing dialogs unchanged ... */}
       <Dialog open={isAddTaskOpenLocal} onOpenChange={setIsAddTaskOpenLocal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -499,7 +552,6 @@ const TaskList: React.FC<TaskListProps> = ({
         </DialogContent>
       </Dialog>
 
-      {/* existing alerts and manage sections dialog unchanged */}
       <ManageSectionsDialog
         isOpen={isManageSectionsOpen}
         onClose={() => setIsManageSectionsOpen(false)}
