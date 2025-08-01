@@ -16,10 +16,10 @@ const BulkActions: React.FC<BulkActionsProps> = ({ selectedTaskIds, onAction, on
     <div
       className={cn(
         "flex flex-col sm:flex-row items-center justify-between bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700",
-        "py-2 px-3", // Adjusted vertical padding from py-3 to py-2
+        "py-2 px-3",
         "transition-all duration-300 ease-in-out",
         isActive ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
-        isActive ? "h-auto min-h-[56px]" : "h-0 overflow-hidden", // Adjusted min-h from 60px to 56px
+        isActive ? "h-auto min-h-[56px]" : "h-0 overflow-hidden",
         // New: Fixed positioning when active
         isActive ? "fixed bottom-0 left-0 right-0 z-50" : ""
       )}
@@ -27,11 +27,11 @@ const BulkActions: React.FC<BulkActionsProps> = ({ selectedTaskIds, onAction, on
       <div className="text-sm text-gray-600 dark:text-gray-300 mb-2 sm:mb-0">
         {selectedTaskIds.length} task(s) selected
       </div>
-      <div className="flex flex-wrap justify-center gap-1.5"> {/* Changed gap-2 to gap-1.5 */}
+      <div className="flex flex-wrap justify-center gap-1.5">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-7"> {/* Changed h-8 to h-7 */}
-              <Flag className="h-3.5 w-3.5 mr-2" />
+            <Button variant="outline" size="sm" className="h-8"> {/* Changed h-7 to h-8 */}
+              <Flag className="h-4 w-4 mr-2" /> {/* Changed h-3.5 w-3.5 to h-4 w-4 */}
               Priority
             </Button>
           </DropdownMenuTrigger>
@@ -55,23 +55,23 @@ const BulkActions: React.FC<BulkActionsProps> = ({ selectedTaskIds, onAction, on
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Button variant="outline" size="sm" onClick={() => onAction('complete')} className="h-7"> {/* Changed h-8 to h-7 */}
-          <Check className="h-3.5 w-3.5 mr-2" />
+        <Button variant="outline" size="sm" onClick={() => onAction('complete')} className="h-8"> {/* Changed h-7 to h-8 */}
+          <Check className="h-4 w-4 mr-2" /> {/* Changed h-3.5 w-3.5 to h-4 w-4 */}
           Complete
         </Button>
         
-        <Button variant="outline" size="sm" onClick={() => onAction('archive')} className="h-7"> {/* Changed h-8 to h-7 */}
-          <Archive className="h-3.5 w-3.5 mr-2" />
+        <Button variant="outline" size="sm" onClick={() => onAction('archive')} className="h-8"> {/* Changed h-7 to h-8 */}
+          <Archive className="h-4 w-4 mr-2" /> {/* Changed h-3.5 w-3.5 to h-4 w-4 */}
           Archive
         </Button>
         
-        <Button variant="outline" size="sm" onClick={() => onAction('delete')} className="h-7"> {/* Changed h-8 to h-7 */}
-          <Trash2 className="h-3.5 w-3.5 mr-2" />
+        <Button variant="outline" size="sm" onClick={() => onAction('delete')} className="h-8"> {/* Changed h-7 to h-8 */}
+          <Trash2 className="h-4 w-4 mr-2" /> {/* Changed h-3.5 w-3.5 to h-4 w-4 */}
           Delete
         </Button>
         
-        <Button variant="ghost" size="sm" onClick={onClearSelection} className="h-7 w-7 p-0"> {/* Changed h-8 w-8 to h-7 w-7 */}
-          <ListRestart className="h-3.5 w-3.5" />
+        <Button variant="ghost" size="sm" onClick={onClearSelection} className="h-8 w-8 p-0"> {/* Changed h-7 w-7 to h-8 w-8 */}
+          <ListRestart className="h-4 w-4" /> {/* Changed h-3.5 w-3.5 to h-4 w-4 */}
         </Button>
       </div>
     </div>

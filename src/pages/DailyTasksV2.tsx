@@ -198,17 +198,17 @@ const DailyTasksV2: React.FC = () => {
               </div>
 
               <div className="mt-2 grid grid-cols-3 gap-2 text-xs sm:text-sm">
-                <div className="rounded-md border bg-muted/30 px-2 py-1 text-center">
+                <div className="rounded-md border bg-muted/30 px-2 py-1.5 text-center">
                   <span className="text-muted-foreground block">Total</span>
-                  <div className="font-bold text-3xl">{totalCount}</div>
+                  <div className="font-bold text-4xl">{totalCount}</div>
                 </div>
-                <div className="rounded-md border bg-muted/30 px-2 py-1 text-center">
+                <div className="rounded-md border bg-muted/30 px-2 py-1.5 text-center">
                   <span className="text-muted-foreground block">Completed</span>
-                  <div className="font-bold text-3xl">{completedCount}</div>
+                  <div className="font-bold text-4xl">{completedCount}</div>
                 </div>
-                <div className={cn("rounded-md px-2 py-1 text-center border", overdueCount > 0 ? "bg-destructive/10 border-destructive/30" : "bg-muted/30")}>
+                <div className={cn("rounded-md px-2 py-1.5 text-center border", overdueCount > 0 ? "bg-destructive/10 border-destructive/30" : "bg-muted/30")}>
                   <span className="text-muted-foreground block">Overdue</span>
-                  <div className={cn("font-bold text-3xl", overdueCount > 0 ? "text-status-overdue" : "")}>{overdueCount}</div>
+                  <div className={cn("font-bold text-4xl", overdueCount > 0 ? "text-status-overdue" : "")}>{overdueCount}</div>
                 </div>
               </div>
             </CardHeader>
@@ -239,9 +239,9 @@ const DailyTasksV2: React.FC = () => {
                       placeholder='Quick add a task — press "/" to focus, Enter to add'
                       value={quickAddTaskDescription}
                       onChange={(e) => setQuickAddTaskDescription(e.target.value)}
-                      className="flex-1 h-8"
+                      className="flex-1 h-9"
                     />
-                    <Button type="submit" className="whitespace-nowrap h-8">
+                    <Button type="submit" className="whitespace-nowrap h-9">
                       <Plus className="mr-2 h-4 w-4" /> New Task
                     </Button>
                   </div>

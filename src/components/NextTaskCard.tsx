@@ -61,11 +61,11 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'urgent': return 'text-priority-urgent';
-      case 'high': return 'text-priority-high';
-      case 'medium': return 'text-priority-medium';
-      case 'low': return 'text-priority-low';
-      default: return 'text-muted-foreground';
+      case 'urgent': return 'bg-priority-urgent text-primary-foreground';
+      case 'high': return 'bg-priority-high text-primary-foreground';
+      case 'medium': return 'bg-priority-medium text-primary-foreground';
+      case 'low': return 'bg-priority-low text-primary-foreground';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -109,9 +109,9 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
         </div>
 
         <div className="flex items-center text-sm text-muted-foreground gap-2 flex-wrap">
-          <span className={cn("font-semibold", getPriorityColor(task.priority))}>
+          <Badge variant="secondary" className={cn("text-xs px-2 py-0.5 rounded-full", getPriorityColor(task.priority))}>
             {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)} Priority
-          </span>
+          </Badge>
           {task.due_date && (
             <span className={cn(
               "flex items-center gap-1",

@@ -282,7 +282,7 @@ const TaskList: React.FC<TaskListProps> = ({
           <div className="flex gap-1.5 w-full sm:w-auto">
             <Dialog open={isAddSectionOpen} onOpenChange={setIsAddSectionOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="flex-1 h-7"> {/* Changed h-8 to h-7 */}
+                <Button variant="outline" size="sm" className="flex-1 h-7">
                   <Plus className="mr-2 h-3.5 w-3.5" /> Add Section
                 </Button>
               </DialogTrigger>
@@ -317,7 +317,7 @@ const TaskList: React.FC<TaskListProps> = ({
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="sm" className="flex-1 h-7"> {/* Changed h-8 to h-7 */}
+                <Button variant="outline" size="sm" className="flex-1 h-7">
                   <Settings className="mr-2 h-3.5 w-3.5" /> Manage Sections
                 </Button>
               </TooltipTrigger>
@@ -381,12 +381,12 @@ const TaskList: React.FC<TaskListProps> = ({
                     updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
                   />
                   {isExpanded && (
-                    <div className="mt-1 space-y-1 pl-2">
+                    <div className="mt-1.5 space-y-1.5 pl-2">
                       <SortableContext items={[...allSortableTaskIds]} strategy={verticalListSortingStrategy}>
-                        <ul className="list-none space-y-1">
+                        <ul className="list-none space-y-1.5">
                           {topLevelTasksInSection.length === 0 ? (
-                            <div className="text-center text-foreground/80 dark:text-foreground/80 py-2 rounded-md border border-dashed border-border bg-muted/30" data-no-dnd="true">
-                              <div className="flex items-center justify-center gap-2 mb-1">
+                            <div className="text-center text-foreground/80 dark:text-foreground/80 py-3 rounded-md border border-dashed border-border bg-muted/30" data-no-dnd="true">
+                              <div className="flex items-center justify-center gap-2 mb-1.5">
                                 <ListTodo className="h-4 w-4" />
                                 <p className="text-sm font-medium">
                                   {anyFilterActive 

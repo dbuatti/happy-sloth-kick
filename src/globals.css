@@ -32,11 +32,15 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
 
-    --radius: 0.5rem;
-
     /* New custom properties for softer status borders */
     --border-status-due-today: 30 80% 60%; /* A softer orange/yellow */
     --border-status-overdue: 0 80% 50%; /* A softer red */
+
+    /* New custom properties for priority badge colors */
+    --priority-low: 140 60% 40%; /* Greenish */
+    --priority-medium: 40 80% 60%; /* Orangish */
+    --priority-high: 0 80% 60%; /* Reddish */
+    --priority-urgent: 240 80% 50%; /* Bluish-purple */
   }
 
   .dark {
@@ -71,6 +75,12 @@
     /* New custom properties for softer status borders in dark mode */
     --border-status-due-today: 40 95% 70%; /* Brighter yellow-orange for dark mode */
     --border-status-overdue: 0 90% 70%; /* Brighter red for dark mode */
+
+    /* New custom properties for priority badge colors in dark mode */
+    --priority-low: 140 70% 50%;
+    --priority-medium: 40 90% 70%;
+    --priority-high: 0 90% 70%;
+    --priority-urgent: 240 90% 60%;
   }
 
   .adhd-friendly {
@@ -94,6 +104,11 @@
     /* Theme-specific overrides for status borders */
     --border-status-due-today: 15 60% 55%;
     --border-status-overdue: 15 60% 55%;
+    /* Theme-specific overrides for priority badge colors */
+    --priority-low: 180 35% 45%;
+    --priority-medium: 25 50% 75%;
+    --priority-high: 15 60% 55%;
+    --priority-urgent: 0 0% 20%;
   }
 
   .dark .adhd-friendly {
@@ -117,6 +132,11 @@
     /* Theme-specific overrides for status borders */
     --border-status-due-today: 15 70% 70%;
     --border-status-overdue: 15 70% 70%;
+    /* Theme-specific overrides for priority badge colors */
+    --priority-low: 180 40% 60%;
+    --priority-medium: 25 60% 80%;
+    --priority-high: 15 70% 70%;
+    --priority-urgent: 25 10% 90%;
   }
 
   .calm-mist {
@@ -140,6 +160,11 @@
     /* Theme-specific overrides for status borders */
     --border-status-due-today: 30 25% 65%;
     --border-status-overdue: 15 60% 55%;
+    /* Theme-specific overrides for priority badge colors */
+    --priority-low: 140 25% 45%;
+    --priority-medium: 30 25% 65%;
+    --priority-high: 15 60% 55%;
+    --priority-urgent: 0 0% 20%;
   }
 
   .dark .calm-mist {
@@ -163,6 +188,11 @@
     /* Theme-specific overrides for status borders */
     --border-status-due-today: 30 30% 70%;
     --border-status-overdue: 15 70% 70%;
+    /* Theme-specific overrides for priority badge colors */
+    --priority-low: 140 30% 60%;
+    --priority-medium: 30 30% 70%;
+    --priority-high: 15 70% 70%;
+    --priority-urgent: 140 10% 90%;
   }
 
   .warm-dawn {
@@ -188,6 +218,11 @@
     /* Theme-specific overrides for status borders */
     --border-status-due-today: 15 20% 70%;
     --border-status-overdue: 15 60% 55%;
+    /* Theme-specific overrides for priority badge colors */
+    --priority-low: 140 10% 75%;
+    --priority-medium: 15 20% 70%;
+    --priority-high: 15 60% 55%;
+    --priority-urgent: 0 0% 30%;
   }
 
   .dark .warm-dawn {
@@ -213,6 +248,11 @@
     /* Theme-specific overrides for status borders */
     --border-status-due-today: 15 25% 75%;
     --border-status-overdue: 15 70% 70%;
+    /* Theme-specific overrides for priority badge colors */
+    --priority-low: 140 15% 85%;
+    --priority-medium: 15 25% 75%;
+    --priority-high: 15 70% 70%;
+    --priority-urgent: 30 10% 92%;
   }
 
   .gentle-night {
@@ -236,6 +276,11 @@
     /* Theme-specific overrides for status borders */
     --border-status-due-today: 30 25% 65%;
     --border-status-overdue: 15 60% 55%;
+    /* Theme-specific overrides for priority badge colors */
+    --priority-low: 220 25% 45%;
+    --priority-medium: 30 25% 65%;
+    --priority-high: 15 60% 55%;
+    --priority-urgent: 220 15% 25%;
   }
 
   .dark .gentle-night {
@@ -259,6 +304,11 @@
     /* Theme-specific overrides for status borders */
     --border-status-due-today: 30 30% 70%;
     --border-status-overdue: 15 70% 70%;
+    /* Theme-specific overrides for priority badge colors */
+    --priority-low: 220 30% 60%;
+    --priority-medium: 30 30% 70%;
+    --priority-high: 15 70% 70%;
+    --priority-urgent: 220 15% 92%;
   }
 
   .cosmic-dusk {
@@ -284,6 +334,11 @@
     /* Theme-specific overrides for status borders */
     --border-status-due-today: 345 55% 70%;
     --border-status-overdue: 25 75% 65%;
+    /* Theme-specific overrides for priority badge colors */
+    --priority-low: 225 45% 55%;
+    --priority-medium: 345 55% 70%;
+    --priority-high: 25 75% 65%;
+    --priority-urgent: 225 15% 92%;
   }
 
   .dark .cosmic-dusk {
@@ -309,6 +364,11 @@
     /* Theme-specific overrides for status borders */
     --border-status-due-today: 345 55% 70%;
     --border-status-overdue: 25 75% 65%;
+    /* Theme-specific overrides for priority badge colors */
+    --priority-low: 225 45% 55%;
+    --priority-medium: 345 55% 70%;
+    --priority-high: 25 75% 65%;
+    --priority-urgent: 225 15% 92%;
   }
 
   .focus-flow {
@@ -334,6 +394,11 @@
     /* Theme-specific overrides for status borders */
     --border-status-due-today: 60 70% 45%;
     --border-status-overdue: 0 70% 55%;
+    /* Theme-specific overrides for priority badge colors */
+    --priority-low: 200 60% 35%;
+    --priority-medium: 60 70% 45%;
+    --priority-high: 0 70% 55%;
+    --priority-urgent: 200 20% 15%;
   }
 
   .dark .focus-flow {
@@ -359,6 +424,11 @@
     /* Theme-specific overrides for status borders */
     --border-status-due-today: 60 75% 55%;
     --border-status-overdue: 0 75% 60%;
+    /* Theme-specific overrides for priority badge colors */
+    --priority-low: 200 65% 45%;
+    --priority-medium: 60 75% 55%;
+    --priority-high: 0 75% 60%;
+    --priority-urgent: 200 15% 92%;
   }
 
   .retro-wave {
@@ -384,6 +454,11 @@
     /* Theme-specific overrides for status borders */
     --border-status-due-today: 40 90% 60%;
     --border-status-overdue: 0 80% 60%;
+    /* Theme-specific overrides for priority badge colors */
+    --priority-low: 180 70% 50%;
+    --priority-medium: 40 90% 60%;
+    --priority-high: 0 80% 60%;
+    --priority-urgent: 300 80% 55%;
   }
 
   .dark .retro-wave {
@@ -409,6 +484,11 @@
     /* Theme-specific overrides for status borders */
     --border-status-due-today: 40 95% 70%;
     --border-status-overdue: 0 90% 70%;
+    /* Theme-specific overrides for priority badge colors */
+    --priority-low: 180 80% 60%;
+    --priority-medium: 40 95% 70%;
+    --priority-high: 0 90% 70%;
+    --priority-urgent: 300 90% 65%;
   }
 
   .sepia-dusk {
@@ -434,6 +514,11 @@
     /* Theme-specific overrides for status borders */
     --border-status-due-today: 99 25% 30%;
     --border-status-overdue: 6 48% 31%;
+    /* Theme-specific overrides for priority badge colors */
+    --priority-low: 99 25% 30%;
+    --priority-medium: 29 48% 81%;
+    --priority-high: 6 48% 31%;
+    --priority-urgent: 270 28% 36%;
   }
 
   .dark .sepia-dusk {
@@ -459,6 +544,11 @@
     /* Theme-specific overrides for status borders */
     --border-status-due-today: 99 34% 38%;
     --border-status-overdue: 6 48% 46%;
+    /* Theme-specific overrides for priority badge colors */
+    --priority-low: 99 34% 38%;
+    --priority-medium: 29 29% 21%;
+    --priority-high: 6 48% 46%;
+    --priority-urgent: 270 28% 54%;
   }
 
   .vibrant-flow {
@@ -484,6 +574,11 @@
     /* Theme-specific overrides for status borders */
     --border-status-due-today: 40 90% 60%;
     --border-status-overdue: 0 80% 60%;
+    /* Theme-specific overrides for priority badge colors */
+    --priority-low: 180 70% 50%;
+    --priority-medium: 40 90% 60%;
+    --priority-high: 0 80% 60%;
+    --priority-urgent: 260 80% 55%;
   }
 
   .dark .vibrant-flow {
@@ -509,6 +604,11 @@
     /* Theme-specific overrides for status borders */
     --border-status-due-today: 40 95% 70%;
     --border-status-overdue: 0 90% 70%;
+    /* Theme-specific overrides for priority badge colors */
+    --priority-low: 180 80% 60%;
+    --priority-medium: 40 95% 70%;
+    --priority-high: 0 90% 70%;
+    --priority-urgent: 260 90% 65%;
   }
 }
 

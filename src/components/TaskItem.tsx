@@ -45,11 +45,11 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'urgent': return 'text-priority-urgent';
-      case 'high': return 'text-priority-high';
-      case 'medium': return 'text-priority-medium';
-      case 'low': return 'text-priority-low';
-      default: return 'text-muted-foreground';
+      case 'urgent': return 'bg-priority-urgent text-primary-foreground';
+      case 'high': return 'bg-priority-high text-primary-foreground';
+      case 'medium': return 'bg-priority-medium text-primary-foreground';
+      case 'low': return 'bg-priority-low text-primary-foreground';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -108,11 +108,11 @@ const TaskItem: React.FC<TaskItemProps> = ({
   return (
     <div
       className={cn(
-        "relative flex items-start space-x-3 w-full py-1.5 px-2 rounded-lg",
+        "relative flex items-start space-x-3 w-full py-2 px-2 rounded-lg", /* Changed py-1.5 to py-2 */
         task.status === 'completed' ? "opacity-70 bg-green-50/20 dark:bg-green-900/20" : "",
-        isOverdue ? "border-l-2 border-border-status-overdue bg-red-50/10 dark:bg-red-900/10" : // Changed border-l-4 to border-l-2 and added background tint
-        isDueToday ? "border-l-2 border-border-status-due-today bg-yellow-50/10 dark:bg-yellow-900/10" : // Changed border-l-4 to border-l-2 and added background tint
-        "border-l-2 border-transparent" // Default transparent border, changed to border-l-2
+        isOverdue ? "border-l-2 border-border-status-overdue bg-red-50/10 dark:bg-red-900/10" :
+        isDueToday ? "border-l-2 border-border-status-due-today bg-yellow-50/10 dark:bg-yellow-900/10" :
+        "border-l-2 border-transparent"
       )}
     >
       <Checkbox
@@ -127,7 +127,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
       <div 
         className="flex-1 min-w-0 cursor-pointer"
-        onClick={() => onOpenOverview(task)} // Changed to open overview
+        onClick={() => onOpenOverview(task)}
       >
         <Tooltip>
           <TooltipTrigger asChild>
@@ -148,19 +148,16 @@ const TaskItem: React.FC<TaskItemProps> = ({
         </Tooltip>
 
         <div className="flex flex-wrap items-center text-xs text-muted-foreground mt-0.5 gap-x-1.5 gap-y-0">
-          <div className={cn("w-3 h-3 rounded-full flex items-center justify-center border", categoryColorProps.backgroundClass, categoryColorProps.dotBorder)}>
-            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: categoryColorProps.dotColor }}></div>
+          <div className={cn("w-4 h-4 rounded-full flex items-center justify-center border", categoryColorProps.backgroundClass, categoryColorProps.dotBorder)}> {/* Changed w-3 h-3 to w-4 h-4 */}
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: categoryColorProps.dotColor }}></div> {/* Changed w-1.5 h-1.5 to w-2 h-2 */}
           </div>
-          <span className={cn(
-            "font-semibold",
-            getPriorityColor(task.priority)
-          )}>
+          <Badge className={cn("px-2 py-0.5 text-xs font-semibold", getPriorityColor(task.priority))}> {/* Converted to Badge */}
             {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-          </span>
+          </Badge>
           {task.recurring_type !== 'none' && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Repeat className="h-3 w-3 text-primary dark:text-primary" />
+                <Repeat className="h-4 w-4 text-primary dark:text-primary" /> {/* Changed h-3 w-3 to h-4 w-4 */}
               </TooltipTrigger>
               <TooltipContent>
                 <p>Recurring: {task.recurring_type.charAt(0).toUpperCase() + task.recurring_type.slice(1)}</p>
@@ -170,16 +167,16 @@ const TaskItem: React.FC<TaskItemProps> = ({
           {task.due_date && (
             <span className={cn(
               "flex items-center gap-1",
-              isOverdue && "text-status-overdue font-semibold", // Highlight overdue
-              isDueToday && "text-status-due-today font-semibold" // Highlight due today
+              isOverdue && "text-status-overdue font-semibold",
+              isDueToday && "text-status-due-today font-semibold"
             )}>
-              <Calendar className="h-3 w-3" />
+              <Calendar className="h-4 w-4" /> {/* Changed h-3 w-3 to h-4 w-4 */}
               {getDueDateDisplay(task.due_date)}
             </span>
           )}
           {task.remind_at && (
             <span className="flex items-center gap-1 text-primary dark:text-primary">
-              <BellRing className="h-3 w-3" />
+              <BellRing className="h-4 w-4" /> {/* Changed h-3 w-3 to h-4 w-4 */}
               {dateFns.isValid(dateFns.parseISO(task.remind_at)) ? dateFns.format(dateFns.parseISO(task.remind_at), 'MMM d, HH:mm') : 'Invalid Date'}
             </span>
           )}
@@ -187,7 +184,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
             <Tooltip>
               <TooltipTrigger asChild>
                 <span className="flex items-center gap-1">
-                  <StickyNote className="h-3 w-3" />
+                  <StickyNote className="h-4 w-4" /> {/* Changed h-3 w-3 to h-4 w-4 */}
                 </span>
               </TooltipTrigger>
               <TooltipContent className="max-w-xs">
@@ -204,10 +201,10 @@ const TaskItem: React.FC<TaskItemProps> = ({
                   target="_blank" 
                   rel="noopener noreferrer" 
                   className="flex items-center gap-1 text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-500"
-                  onClick={(e) => e.stopPropagation()} // Prevent opening task detail dialog
-                  data-no-dnd="true" // Added this
+                  onClick={(e) => e.stopPropagation()}
+                  data-no-dnd="true"
                 >
-                  <Link className="h-3 w-3" />
+                  <Link className="h-4 w-4" /> {/* Changed h-3 w-3 to h-4 w-4 */}
                 </a>
               </TooltipTrigger>
               <TooltipContent className="max-w-xs">
@@ -233,21 +230,21 @@ const TaskItem: React.FC<TaskItemProps> = ({
           <DropdownMenuTrigger asChild>
             <Button 
               variant="ghost" 
-              className="h-6 w-6 p-0"
+              className="h-7 w-7 p-0" /* Changed h-6 w-6 to h-7 w-7 */
               onClick={(e) => e.stopPropagation()}
               aria-label="More options"
             >
               <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-3.5 w-3.5" />
+              <MoreHorizontal className="h-4 w-4" /> {/* Changed h-3.5 w-3.5 to h-4 w-4 */}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" data-no-dnd="true">
             <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onOpenOverview(task); }}>
-              <Edit className="mr-2 h-3.5 w-3.5" /> View Details
+              <Edit className="mr-2 h-4 w-4" /> View Details {/* Changed h-3.5 w-3.5 to h-4 w-4 */}
             </DropdownMenuItem>
             {task.status === 'archived' && (
               <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onStatusChange(task.id, 'to-do'); playSound('success'); }}>
-                <Undo2 className="mr-2 h-3.5 w-3.5" /> Restore
+                <Undo2 className="mr-2 h-4 w-4" /> Restore {/* Changed h-3.5 w-3.5 to h-4 w-4 */}
               </DropdownMenuItem>
             )}
             {task.status !== 'archived' && (
@@ -262,14 +259,14 @@ const TaskItem: React.FC<TaskItemProps> = ({
                   Mark as Skipped
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onStatusChange(task.id, 'archived'); playSound('success'); }}>
-                  <Archive className="mr-2 h-3.5 w-3.5" /> Archive
+                  <Archive className="mr-2 h-4 w-4" /> Archive {/* Changed h-3.5 w-3.5 to h-4 w-4 */}
                 </DropdownMenuItem>
               </>
             )}
             <DropdownMenuSeparator />
             <DropdownMenuSub>
               <DropdownMenuSubTrigger onSelect={(e) => e.preventDefault()} data-no-dnd="true">
-                <FolderOpen className="mr-2 h-3.5 w-3.5" /> Move to Section
+                <FolderOpen className="mr-2 h-4 w-4" /> Move to Section {/* Changed h-3.5 w-3.5 to h-4 w-4 */}
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent data-no-dnd="true">
                 {sections.length === 0 ? (
@@ -305,14 +302,14 @@ const TaskItem: React.FC<TaskItemProps> = ({
             </DropdownMenuSub>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleMoveUpClick(); }}>
-              <ArrowUp className="mr-2 h-3.5 w-3.5" /> Move Up
+              <ArrowUp className="mr-2 h-4 w-4" /> Move Up {/* Changed h-3.5 w-3.5 to h-4 w-4 */}
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleMoveDownClick(); }}>
-              <ArrowDown className="mr-2 h-3.5 w-3.5" /> Move Down
+              <ArrowDown className="mr-2 h-4 w-4" /> Move Down {/* Changed h-3.5 w-3.5 to h-4 w-4 */}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onDelete(task.id); playSound('alert'); }} className="text-destructive focus:text-destructive">
-              <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete
+              <Trash2 className="mr-2 h-4 w-4" /> Delete {/* Changed h-3.5 w-3.5 to h-4 w-4 */}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

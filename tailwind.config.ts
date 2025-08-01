@@ -65,10 +65,10 @@ export default {
         // New semantic colors for consistency
         'status-overdue': 'hsl(var(--destructive))',
         'status-due-today': 'hsl(var(--accent))',
-        'priority-low': 'hsl(var(--primary))',
-        'priority-medium': 'hsl(var(--accent))',
-        'priority-high': 'hsl(var(--destructive))',
-        'priority-urgent': 'hsl(var(--destructive-foreground))',
+        'priority-low': 'hsl(var(--priority-low))',
+        'priority-medium': 'hsl(var(--priority-medium))',
+        'priority-high': 'hsl(var(--priority-high))',
+        'priority-urgent': 'hsl(var(--priority-urgent))',
         // New colors for status borders
         'border-status-due-today': 'hsl(var(--border-status-due-today))',
         'border-status-overdue': 'hsl(var(--border-status-overdue))',
