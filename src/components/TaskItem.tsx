@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing, FolderOpen, Repeat, ListTodo, CheckCircle2, ArrowUp, ArrowDown, Link, Undo2 } from 'lucide-react'; // Added Undo2 icon
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"; // Added DropdownMenuTrigger
+import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing, FolderOpen, Repeat, ListTodo, CheckCircle2, ArrowUp, ArrowDown, Link, Undo2 } from 'lucide-react';
 import * as dateFns from 'date-fns';
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
@@ -195,6 +195,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
                   rel="noopener noreferrer" 
                   className="flex items-center gap-1 text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-500"
                   onClick={(e) => e.stopPropagation()} // Prevent opening task detail dialog
+                  data-no-dnd="true" // Added this
                 >
                   <Link className="h-3 w-3" />
                 </a>

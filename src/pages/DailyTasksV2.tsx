@@ -17,6 +17,7 @@ import { Plus, ListTodo } from 'lucide-react';
 import { showError } from '@/utils/toast';
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
 import { cn } from '@/lib/utils';
+import BulkActions from '@/components/BulkActions'; // Import BulkActions
 
 const getUTCStartOfDay = (date: Date) => {
   return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -177,9 +178,11 @@ const DailyTasksV2: React.FC = () => {
     setSectionFilter('all');
   };
 
+  const isBulkActionsActive = selectedTaskIds.length > 0;
+
   return (
     <div className="flex-1 flex flex-col">
-      <main className="flex-grow p-4">
+      <main className={cn("flex-grow p-4", isBulkActionsActive ? "pb-[80px]" : "")}> {/* Add conditional padding */}
         <div className="w-full max-w-4xl mx-auto space-y-4">
           <Card className="shadow-lg">
             <CardHeader className="pb-2">
@@ -311,6 +314,25 @@ const DailyTasksV2: React.FC = () => {
       <footer className="p-4">
         <MadeWithDyad />
       </footer>
+
+      {/* Render BulkActions here, outside the main content flow */}
+      <BulkActions
+        selectedTaskIds={selectedTaskIds}
+        onAction={async (action) => {
+          if (action.startsWith('priority-')) {
+            await bulkUpdateTasks({ priority: action.replace('priority-', '') as Task['priority'] });
+          } else if (action === 'complete') {
+            await bulkUpdateTasks({ status: 'completed' });
+          } else if (action === 'archive') {
+            await bulkUpdateTasks({ status: 'archived' });
+          } else if (action === 'delete') {
+            // For now, directly call delete (will add dialog later if requested)
+            await Promise.all(selectedTaskIds.map(id => deleteTask(id)));
+            clearSelectedTasks();
+          }
+        }}
+        onClearSelection={clearSelectedTasks}
+      />
 
       <CommandPalette
         isCommandPaletteOpen={isCommandPaletteOpen}

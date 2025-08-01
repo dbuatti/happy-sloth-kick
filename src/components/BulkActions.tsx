@@ -19,7 +19,9 @@ const BulkActions: React.FC<BulkActionsProps> = ({ selectedTaskIds, onAction, on
         "py-3 px-3", // Adjusted vertical padding
         "transition-all duration-300 ease-in-out",
         isActive ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
-        isActive ? "h-auto min-h-[60px]" : "h-0 overflow-hidden" // Dynamic height
+        isActive ? "h-auto min-h-[60px]" : "h-0 overflow-hidden", // Dynamic height
+        // New: Fixed positioning when active
+        isActive ? "fixed bottom-0 left-0 right-0 z-50" : ""
       )}
     >
       <div className="text-sm text-gray-600 dark:text-gray-300 mb-2 sm:mb-0"> {/* Added margin-bottom for mobile */}
