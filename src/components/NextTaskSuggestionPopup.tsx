@@ -80,7 +80,7 @@ const NextTaskSuggestionPopup: React.FC<NextTaskSuggestionPopupProps> = ({
       >
         <div className="flex items-center space-x-1">
           <div className={cn("w-1.5 h-1.5 rounded-full", getPriorityDotColor(task.priority))} />
-          <span className="text-[10px] font-normal text-foreground truncate"> {/* 10px text */}
+          <span className="text-sm font-normal text-foreground truncate"> {/* 10px text */}
             Next Task: {task.description}
           </span>
         </div>

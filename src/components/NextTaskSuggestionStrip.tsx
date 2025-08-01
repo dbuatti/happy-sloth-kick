@@ -33,7 +33,7 @@ const NextTaskSuggestionStrip: React.FC<NextTaskSuggestionStripProps> = ({ task,
   if (!task) {
     return (
       <Card className="w-full max-w-3xl mx-auto shadow-md mb-4 border-l-8 border-primary dark:border-primary h-10 flex items-center px-4">
-        <p className="text-muted-foreground text-xs">No incomplete tasks found for today. Time to add some!</p>
+        <p className="text-muted-foreground text-sm">No incomplete tasks found for today. Time to add some!</p>
       </Card>
     );
   }
@@ -63,7 +63,7 @@ const NextTaskSuggestionStrip: React.FC<NextTaskSuggestionStripProps> = ({ task,
           onClick={() => setIsPopupOpen(true)}
           aria-label="View next task details"
         />
-        <span className="text-xs font-normal text-foreground truncate"> {/* 10px text */}
+        <span className="text-sm font-normal text-foreground truncate"> {/* 10px text */}
           Next Task: {task.description}
         </span>
       </div>

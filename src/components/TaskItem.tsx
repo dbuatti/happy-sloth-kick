@@ -122,11 +122,10 @@ const TaskItem: React.FC<TaskItemProps> = ({
           <TooltipTrigger asChild>
             <span
               className={cn(
-                "text-sm font-normal leading-tight line-clamp-2", // Changed to 12px font-size, 1.2 line-height
+                "text-base font-normal leading-tight line-clamp-2", // Changed to 16px font-size, 1.2 line-height
                 task.status === 'completed' ? 'line-through text-muted-foreground' : 'text-foreground',
                 "block"
               )}
-              style={{ fontSize: '12px', lineHeight: '1.2' }}
             >
               {task.description}
             </span>
@@ -136,7 +135,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           </TooltipContent>
         </Tooltip>
 
-        <div className="flex flex-wrap items-center text-xs text-muted-foreground mt-1 gap-x-2 gap-y-0.5"> {/* Increased spacing */}
+        <div className="flex flex-wrap items-center text-sm text-muted-foreground mt-1 gap-x-2 gap-y-0.5"> {/* Increased spacing */}
           {/* Priority Dot */}
           <div className={cn("w-1 h-1 rounded-full", getPriorityDotColor(task.priority))} />
           

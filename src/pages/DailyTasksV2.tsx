@@ -201,7 +201,7 @@ const DailyTasksV2: React.FC = () => {
               </div>
 
               {/* Consolidated Summary Metrics */}
-              <div className="text-center text-xs text-gray-500 mt-2">
+              <div className="text-center text-sm text-muted-foreground mt-2">
                 <p>{totalCount} total, {completedCount} completed, {overdueCount} overdue</p>
               </div>
             </CardHeader>
@@ -231,9 +231,9 @@ const DailyTasksV2: React.FC = () => {
                       placeholder='Quick add a task — press "/" to focus, Enter to add'
                       value={quickAddTaskDescription}
                       onChange={(e) => setQuickAddTaskDescription(e.target.value)}
-                      className="flex-1 h-5 text-xs border-[#B0BEC5]" // h-5 (20px), text-xs (approx 10px), border-[#B0BEC5]
+                      className="flex-1 h-8 text-sm border-[#B0BEC5]" // h-5 (20px), text-xs (approx 10px), border-[#B0BEC5]
                     />
-                    <Button type="submit" className="whitespace-nowrap h-5 text-xs bg-primary" style={{ backgroundColor: '#9575CD' }}> {/* h-5 (20px), text-xs (approx 15px), bg-#9575CD */}
+                    <Button type="submit" className="whitespace-nowrap h-8 text-sm bg-primary" style={{ backgroundColor: '#9575CD' }}> {/* h-5 (20px), text-xs (approx 15px), bg-#9575CD */}
                       <Plus className="mr-1 h-3 w-3" /> Add {/* Smaller icon */}
                     </Button>
                   </div>
