@@ -19,7 +19,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Roboto Condensed', 'sans-serif'], // Set Roboto Condensed as the default sans-serif font
+        sans: ['Inter', 'sans-serif'], // Changed font to Inter
       },
       colors: {
         border: "hsl(var(--border))",

@@ -2,6 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 @layer base {
   :root {
     --background: 0 0% 100%; /* White */
@@ -621,10 +623,10 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Roboto Condensed', sans-serif;
-    font-weight: 300;
-    font-size: 12px;
-    line-height: 1.2;
+    font-family: 'Inter', sans-serif; /* Changed font to Inter */
+    font-weight: 400; /* Default to regular weight for better readability */
+    font-size: 14px; /* Increased base font size */
+    line-height: 1.5; /* Adjusted line height for better spacing */
     touch-action: none; /* Disable pinch-to-zoom */
   }
 }
