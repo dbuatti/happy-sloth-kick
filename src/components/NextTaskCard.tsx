@@ -7,8 +7,8 @@ import { cn } from '@/lib/utils';
 import { getCategoryColorProps } from '@/lib/categoryColors';
 import { format, parseISO } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge'; // Import Badge
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton'; // Import Skeleton
 
 interface NextTaskCardProps {
   task: Task | null;
@@ -102,8 +102,8 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
       </CardHeader>
       <CardContent className="pt-0 space-y-1">
         <div className="flex items-center space-x-2">
-          <div className={cn("w-3.5 h-3.5 rounded-full flex items-center justify-center border", categoryColorProps.backgroundClass, categoryColorProps.dotBorder)}>
-            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: categoryColorProps.dotColor }}></div>
+          <div className={cn("w-5 h-5 rounded-full flex items-center justify-center border", categoryColorProps.backgroundClass, categoryColorProps.dotBorder)}>
+            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: categoryColorProps.dotColor }}></div>
           </div>
           <h3 className="text-lg font-semibold flex-1 line-clamp-2">{task.description}</h3>
         </div>
@@ -134,16 +134,16 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
         </div>
 
         <div className="flex gap-2 mt-2">
-          <Button size="sm" onClick={(e) => { e.stopPropagation(); onMarkComplete(task.id); }} className="flex-1 h-7">
-            <CheckCircle2 className="mr-2 h-3 w-3" /> Mark Complete
+          <Button size="sm" onClick={(e) => { e.stopPropagation(); onMarkComplete(task.id); }} className="flex-1 h-8">
+            <CheckCircle2 className="mr-2 h-4 w-4" /> Mark Complete
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={(e) => { e.stopPropagation(); onOpenDetail ? onOpenDetail(task) : onEditTask(task); }}
-            className="flex-1 h-7"
+            className="flex-1 h-8"
           >
-            <Edit className="mr-2 h-3 w-3" /> Edit Task
+            <Edit className="mr-2 h-4 w-4" /> Edit Task
           </Button>
         </div>
       </CardContent>

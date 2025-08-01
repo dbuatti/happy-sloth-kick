@@ -76,25 +76,25 @@ const SmartSuggestions: React.FC<SmartSuggestionsProps> = ({ tasks, currentDate,
 
   return (
     <Card className="w-full shadow-sm mb-2">
-      <CardContent className="p-2"> {/* Changed p-1.5 to p-2 */}
-        <h3 className="text-xl font-bold mb-1.5">Smart Suggestions</h3> {/* Changed text-lg to text-xl and added font-bold */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5"> {/* Changed gap-1 to gap-1.5 */}
+      <CardContent className="p-2">
+        <h3 className="text-xl font-bold mb-1.5">Smart Suggestions</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
           {overdueTasksCount > 0 && (
-            <Button variant="outline" size="sm" className="justify-start gap-1.5 h-8"> {/* Changed gap-1 to gap-1.5 and h-7 to h-8 */}
-              <Clock className="h-3.5 w-3.5 text-destructive" /> {/* Changed h-3 w-3 to h-3.5 w-3.5 */}
-              Review {overdueTasksCount} Overdue Task{overdueTasksCount > 1 ? 's' : ''}
+            <Button variant="outline" size="sm" className="justify-start gap-1.5 h-8">
+              <Clock className="h-4 w-4 text-destructive" />
+              <span className="text-sm">Review {overdueTasksCount} Overdue Task{overdueTasksCount > 1 ? 's' : ''}</span> {/* Adjusted text size */}
             </Button>
           )}
           {completedTasksCountForArchiveSuggestion > 0 && (
-            <Button variant="outline" size="sm" className="justify-start gap-1.5 w-fit h-8" onClick={handleArchiveCompletedClick}> {/* Changed gap-1 to gap-1.5 and h-7 to h-8 */}
-              <Archive className="h-3.5 w-3.5 text-primary" /> {/* Changed h-3 w-3 to h-3.5 w-3.5 */}
-              Archive All Completed Tasks
+            <Button variant="outline" size="sm" className="justify-start gap-1.5 w-fit h-8" onClick={handleArchiveCompletedClick}>
+              <Archive className="h-4 w-4 text-primary" />
+              <span className="text-sm">Archive All Completed Tasks</span> {/* Adjusted text size */}
             </Button>
           )}
           {totalTasksToday === 0 && (
-            <Button variant="outline" size="sm" className="justify-start gap-1.5 h-8"> {/* Changed gap-1 to gap-1.5 and h-7 to h-8 */}
-              <Plus className="h-3.5 w-3.5 text-primary" /> {/* Changed h-3 w-3 to h-3.5 w-3.5 */}
-              Add Your First Task Today!
+            <Button variant="outline" size="sm" className="justify-start gap-1.5 h-8">
+              <Plus className="h-4 w-4 text-primary" />
+              <span className="text-sm">Add Your First Task Today!</span> {/* Adjusted text size */}
             </Button>
           )}
         </div>

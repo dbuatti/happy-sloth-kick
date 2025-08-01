@@ -70,7 +70,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         aria-label="Drag to reorder task"
         data-no-dnd="true" // Ensure this button is the only drag handle
       >
-        <GripVertical className="h-3.5 w-3.5" />
+        <GripVertical className="h-4 w-4" /> {/* Increased size */}
       </button>
       <div className="flex-1"> {/* Wrap TaskItem to allow it to take remaining space */}
         <TaskItem 

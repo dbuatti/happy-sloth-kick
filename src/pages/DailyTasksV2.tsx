@@ -12,7 +12,7 @@ import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts'
 import CommandPalette from '@/components/CommandPalette';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from '@/components/ui/input';
 import { Plus, ListTodo } from 'lucide-react';
 import { showError } from '@/utils/toast';
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
@@ -110,9 +110,12 @@ const DailyTasksV2: React.FC = () => {
       showError('Task description cannot be empty.');
       return;
     }
+    const generalCategory = allCategories.find(cat => cat.name.toLowerCase() === 'general');
+    const defaultCategoryId = generalCategory?.id || allCategories[0]?.id || '';
+
     const success = await handleAddTask({
       description: quickAddTaskDescription.trim(),
-      category: allCategories.find(cat => cat.name.toLowerCase() === 'general')?.id || allCategories[0]?.id || '',
+      category: defaultCategoryId,
       priority: 'medium',
       section_id: null,
       recurring_type: 'none',
@@ -199,15 +202,15 @@ const DailyTasksV2: React.FC = () => {
 
               <div className="mt-2 grid grid-cols-3 gap-2 text-xs sm:text-sm">
                 <div className="rounded-md border bg-muted/30 px-2 py-1.5 text-center">
-                  <span className="text-muted-foreground block">Total</span>
+                  <span className="text-sm text-muted-foreground block">Total</span> {/* Adjusted text size */}
                   <div className="font-bold text-4xl">{totalCount}</div>
                 </div>
                 <div className="rounded-md border bg-muted/30 px-2 py-1.5 text-center">
-                  <span className="text-muted-foreground block">Completed</span>
+                  <span className="text-sm text-muted-foreground block">Completed</span> {/* Adjusted text size */}
                   <div className="font-bold text-4xl">{completedCount}</div>
                 </div>
                 <div className={cn("rounded-md px-2 py-1.5 text-center border", overdueCount > 0 ? "bg-destructive/10 border-destructive/30" : "bg-muted/30")}>
-                  <span className="text-muted-foreground block">Overdue</span>
+                  <span className="text-sm text-muted-foreground block">Overdue</span> {/* Adjusted text size */}
                   <div className={cn("font-bold text-4xl", overdueCount > 0 ? "text-status-overdue" : "")}>{overdueCount}</div>
                 </div>
               </div>
