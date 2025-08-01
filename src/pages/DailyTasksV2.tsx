@@ -102,8 +102,8 @@ const DailyTasksV2: React.FC = () => {
     handleOpenDetail(task);
   };
 
-  const handleQuickAddTask = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleQuickAddTask = async (e?: React.FormEvent) => {
+    e?.preventDefault?.();
     if (!quickAddTaskDescription.trim()) {
       showError('Task description cannot be empty.');
       return;
@@ -160,19 +160,17 @@ const DailyTasksV2: React.FC = () => {
               </div>
 
               <div className="mt-2 grid grid-cols-3 gap-2 text-xs sm:text-sm">
-                <div className="rounded-md border bg-muted/30 px-2 py-1 text-center">
-                  <span className="text-muted-foreground">Total</span>
+                <div className="rounded-md border bg-muted/30 px-2 py-2 text-center">
+                  <span className="text-muted-foreground block">Total</span>
                   <div className="font-semibold">{totalCount}</div>
                 </div>
-                <div className="rounded-md border bg-muted/30 px-2 py-1 text-center">
-                  <span className="text-muted-foreground">Completed</span>
+                <div className="rounded-md border bg-muted/30 px-2 py-2 text-center">
+                  <span className="text-muted-foreground block">Completed</span>
                   <div className="font-semibold">{completedCount}</div>
                 </div>
-                <div className="rounded-md border bg-muted/30 px-2 py-1 text-center">
-                  <span className="text-muted-foreground">Overdue</span>
-                  <div className={cn("font-semibold", overdueCount > 0 ? "text-status-overdue" : "")}>
-                    {overdueCount}
-                  </div>
+                <div className={cn("rounded-md px-2 py-2 text-center border", overdueCount > 0 ? "bg-destructive/10 border-destructive/30" : "bg-muted/30")}>
+                  <span className="text-muted-foreground block">Overdue</span>
+                  <div className={cn("font-semibold", overdueCount > 0 ? "text-status-overdue" : "")}>{overdueCount}</div>
                 </div>
               </div>
             </CardHeader>
@@ -188,20 +186,23 @@ const DailyTasksV2: React.FC = () => {
                 />
               </div>
 
-              <form onSubmit={handleQuickAddTask} className="mb-4">
-                <div className="flex items-center gap-2 rounded-md border bg-card/60 p-2">
-                  <Input
-                    ref={quickAddInputRef}
-                    placeholder="Quick add a task (e.g., “Email client by 3pm”)"
-                    value={quickAddTaskDescription}
-                    onChange={(e) => setQuickAddTaskDescription(e.target.value)}
-                    className="flex-1"
-                  />
-                  <Button type="submit" className="whitespace-nowrap">
-                    <Plus className="mr-2 h-4 w-4" /> Add
-                  </Button>
-                </div>
-              </form>
+              {/* Sticky filter + quick add bar */}
+              <div className="sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border -mx-4 px-4 py-3">
+                <form onSubmit={handleQuickAddTask} className="mb-3">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      ref={quickAddInputRef}
+                      placeholder="Quick add a task (press Enter to add)"
+                      value={quickAddTaskDescription}
+                      onChange={(e) => setQuickAddTaskDescription(e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button type="submit" className="whitespace-nowrap">
+                      <Plus className="mr-2 h-4 w-4" /> New Task
+                    </Button>
+                  </div>
+                </form>
+              </div>
 
               <NextTaskCard
                 task={nextAvailableTask}

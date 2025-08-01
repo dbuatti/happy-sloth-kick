@@ -13,7 +13,7 @@ interface NextTaskCardProps {
   task: Task | null;
   onMarkComplete: (taskId: string) => Promise<void>;
   onEditTask: (task: Task) => void;
-  onOpenDetail?: (task: Task) => void; // added explicit edit handler
+  onOpenDetail?: (task: Task) => void;
   currentDate: Date;
   loading: boolean;
 }
@@ -49,9 +49,6 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
         </CardHeader>
         <CardContent className="pt-0">
           <p className="text-muted-foreground">No incomplete tasks found for today. Time to add some!</p>
-          <Button variant="outline" className="mt-3 w-full" onClick={() => onEditTask(null as any)}>
-            Add New Task
-          </Button>
         </CardContent>
       </Card>
     );
@@ -71,7 +68,6 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
 
   const getDueDateDisplay = (dueDate: string | null) => {
     if (!dueDate) return null;
-    
     const date = parseISO(dueDate);
     if (format(date, 'yyyy-MM-dd') === format(currentDate, 'yyyy-MM-dd')) {
       return 'Today';
@@ -85,10 +81,17 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
   const isOverdue = task.due_date && task.status !== 'completed' && parseISO(task.due_date) < currentDate && format(parseISO(task.due_date), 'yyyy-MM-dd') !== format(currentDate, 'yyyy-MM-dd');
   const isDueToday = task.due_date && task.status !== 'completed' && format(parseISO(task.due_date), 'yyyy-MM-dd') === format(currentDate, 'yyyy-MM-dd');
 
+  // Section chip (show friendly text)
+  const sectionChip = (
+    <span className="truncate max-w-[160px] text-xs px-2 py-0.5 rounded-full bg-muted">
+      {task.section_id ? 'In a section' : 'No Section'}
+    </span>
+  );
+
   return (
-    <Card 
+    <Card
       className={cn(
-        "w-full max-w-3xl mx-auto shadow-sm mb-4 cursor-pointer",
+        "w-full max-w-3xl mx-auto shadow-sm mb-4 cursor-pointer transition hover:shadow-md active:scale-[0.997]",
         isOverdue ? "border-l-4 border-status-overdue" :
         isDueToday ? "border-l-4 border-status-due-today" :
         "border-l-4 border-primary"
@@ -107,12 +110,9 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
           </div>
           <h3 className="text-xl font-bold flex-1 line-clamp-2">{task.description}</h3>
         </div>
-        
-        <div className="flex items-center text-sm text-muted-foreground space-x-2">
-          <span className={cn(
-            "font-semibold",
-            getPriorityColor(task.priority)
-          )}>
+
+        <div className="flex items-center text-sm text-muted-foreground gap-2 flex-wrap">
+          <span className={cn("font-semibold", getPriorityColor(task.priority))}>
             {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)} Priority
           </span>
           {task.due_date && (
@@ -124,18 +124,14 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
               {getDueDateDisplay(task.due_date)}
             </span>
           )}
-          {task.section_id && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="truncate max-w-[100px] text-xs px-2 py-0.5 rounded-full bg-muted-foreground/10">
-                  {task.section_id}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>
-                Section: {task.section_id}
-              </TooltipContent>
-            </Tooltip>
-          )}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              {sectionChip}
+            </TooltipTrigger>
+            <TooltipContent>
+              {task.section_id ? 'This task belongs to a section' : 'This task has no section'}
+            </TooltipContent>
+          </Tooltip>
         </div>
 
         <div className="flex gap-2 mt-4">
