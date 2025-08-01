@@ -296,7 +296,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
 
   return (
     <>
-      <div className="space-y-1.5 mb-2">
+      <div className="space-y-[4px] mb-[4px]"> {/* 4px gutter */}
         <TaskFilter
           currentDate={currentDate}
           setCurrentDate={setCurrentDate}
@@ -315,19 +315,19 @@ const TaskList: React.FC<TaskListProps> = (props) => {
           searchRef={searchRef}
         />
 
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-1.5">
-          <div className="flex gap-1.5 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-[4px]"> {/* 4px gutter */}
+          <div className="flex gap-[4px] w-full sm:w-auto"> {/* 4px gutter */}
             <Dialog open={isAddSectionOpen} onOpenChange={setIsAddSectionOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="flex-1">
-                  <Plus className="mr-2 h-4 w-4" /> Add Section
+                <Button variant="outline" size="sm" className="flex-1 h-[20px] text-[12px]"> {/* 20px height, 12px font */}
+                  <Plus className="mr-[5px] h-[20px] w-[20px]" /> Add Section {/* 20px icon, 5px margin */}
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Add New Section</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-4 py-4">
+                <div className="space-y-[4px] py-[4px]"> {/* 4px gutter */}
                   <div>
                     <Label htmlFor="new-section-name">Section Name</Label>
                     <Input
@@ -336,26 +336,27 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                       onChange={(e) => setNewSectionName(e.target.value)}
                       placeholder="e.g., Work, Personal, Groceries"
                       autoFocus
+                      className="h-[20px] text-[12px]" // 20px height, 12px font
                     />
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsAddSectionOpen(false)}>Cancel</Button>
+                  <Button variant="outline" onClick={() => setIsAddSectionOpen(false)} className="h-[20px] text-[12px]">Cancel</Button> {/* 20px height, 12px font */}
                   <Button onClick={() => {
                     if (newSectionName.trim()) {
                       createSection(newSectionName.trim());
                       setNewSectionName('');
                       setIsAddSectionOpen(false);
                     }
-                  }} disabled={!newSectionName.trim()}>Add Section</Button>
+                  }} disabled={!newSectionName.trim()} className="h-[20px] text-[12px]">Add Section</Button> {/* 20px height, 12px font */}
                 </DialogFooter>
               </DialogContent>
             </Dialog>
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="sm" className="flex-1">
-                  <Settings className="mr-2 h-4 w-4" /> Manage Sections
+                <Button variant="outline" size="sm" className="flex-1 h-[20px] text-[12px]"> {/* 20px height, 12px font */}
+                  <Settings className="mr-[5px] h-[20px] w-[20px]" /> Manage Sections {/* 20px icon, 5px margin */}
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
@@ -367,9 +368,9 @@ const TaskList: React.FC<TaskListProps> = (props) => {
       </div>
 
       {loading ? (
-        <div className="space-y-3">
+        <div className="space-y-[10px]"> {/* 10px spacing */}
           {[...Array(5)].map((_, i) => (
-            <Skeleton key={i} className="h-20 w-full rounded-lg" />
+            <Skeleton key={i} className="h-[40px] w-full rounded-none" /> /* 40px height, no rounded corners */
           ))}
         </div>
       ) : (
@@ -393,7 +394,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
               const sectionItemIds = topLevelTasksInSection.map(t => t.id);
 
               return (
-                <div key={currentSection.id} className="mb-1.5">
+                <div key={currentSection.id} className="mb-[4px]"> {/* 4px gutter */}
                   <SortableSectionHeader
                     section={currentSection}
                     sectionTasksCount={topLevelTasksInSection.length}
@@ -423,25 +424,25 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                   />
 
                   {isExpanded && (
-                    <div className="mt-1.5 space-y-1.5 pl-2">
+                    <div className="mt-[4px] space-y-[10px] pl-[4px]"> {/* 4px gutter, 10px spacing, 4px padding */}
                       <SortableContext items={sectionItemIds} strategy={verticalListSortingStrategy}>
-                        <ul className="list-none space-y-1.5">
+                        <ul className="list-none space-y-[10px]"> {/* 10px spacing */}
                           {topLevelTasksInSection.length === 0 ? (
-                            <div className="text-center text-foreground/80 dark:text-foreground/80 py-3 rounded-md border border-dashed border-border bg-muted/30" data-no-dnd="true">
-                              <div className="flex items-center justify-center gap-2 mb-1.5">
-                                <ListTodo className="h-4 w-4" />
-                                <p className="text-sm font-medium">
+                            <div className="text-center text-foreground/80 dark:text-foreground/80 py-[10px] rounded-none border border-dashed border-border bg-muted/30" data-no-dnd="true"> {/* 10px padding, no rounded corners */}
+                              <div className="flex items-center justify-center gap-[5px] mb-[5px]"> {/* 5px gap, 5px margin */}
+                                <ListTodo className="h-[20px] w-[20px]" /> {/* 20px icon */}
+                                <p className="text-[12px] font-normal"> {/* 12px font, normal weight */}
                                   {anyFilterActive 
                                     ? "No tasks match your filters in this section." 
                                     : "No tasks in this section yet."}
                                 </p>
                               </div>
-                              <div className="flex items-center justify-center gap-2">
-                                <Button size="sm" onClick={() => openAddTaskForSection(currentSection.id === 'no-section-header' ? null : currentSection.id)}>
-                                  <Plus className="mr-2 h-4 w-4" /> Add Task
+                              <div className="flex items-center justify-center gap-[5px]"> {/* 5px gap */}
+                                <Button size="sm" onClick={() => openAddTaskForSection(currentSection.id === 'no-section-header' ? null : currentSection.id)} className="h-[20px] text-[12px]"> {/* 20px height, 12px font */}
+                                  <Plus className="mr-[5px] h-[20px] w-[20px]" /> Add Task {/* 20px icon, 5px margin */}
                                 </Button>
                                 {anyFilterActive && (
-                                  <Button size="sm" variant="outline" onClick={handleResetFilters}>
+                                  <Button size="sm" variant="outline" onClick={handleResetFilters} className="h-[20px] text-[12px]"> {/* 20px height, 12px font */}
                                     Reset filters
                                   </Button>
                                 )}
