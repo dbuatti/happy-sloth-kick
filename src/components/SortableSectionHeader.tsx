@@ -110,9 +110,10 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
           <div className="flex items-center space-x-2">
             <Tooltip>
               <TooltipTrigger asChild>
-                        <Label htmlFor={`focus-mode-toggle-${section.id}`} className="text-xs text-muted-foreground cursor-pointer">
+                        {/* Replaced Label with span to fix React.Children.only error */}
+                        <span className="text-xs text-muted-foreground cursor-pointer">
                           {section.include_in_focus_mode ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />} {/* Changed h-3.5 w-3.5 to h-4 w-4 */}
-                        </Label>
+                        </span>
                       </TooltipTrigger>
                       <TooltipContent>
                         {section.include_in_focus_mode ? 'Included in Focus Mode' : 'Excluded from Focus Mode'}

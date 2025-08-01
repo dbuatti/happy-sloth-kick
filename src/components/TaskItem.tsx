@@ -131,8 +131,9 @@ const TaskItem: React.FC<TaskItemProps> = ({
       >
         <Tooltip>
           <TooltipTrigger asChild>
-            <label
-              htmlFor={`task-${task.id}`}
+            {/* Replaced label with span to fix React.Children.only error */}
+            <span
+              // htmlFor={`task-${task.id}`} // htmlFor is not valid on span
               className={cn(
                 "text-sm font-medium leading-tight line-clamp-2",
                 task.status === 'completed' ? 'line-through text-muted-foreground' : 'text-foreground',
@@ -140,7 +141,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
               )}
             >
               {task.description}
-            </label>
+            </span>
           </TooltipTrigger>
           <TooltipContent className="max-w-xs">
             {task.description}
