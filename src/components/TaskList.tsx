@@ -60,7 +60,7 @@ interface TaskListProps {
   markAllTasksInSectionCompleted: (sectionId: string | null) => Promise<void>;
   sections: TaskSection[];
   createSection: (name: string) => Promise<void>;
-  updateSection: (sectionId: string, newName: string) => Promise<void>;
+  updateSection: (name: string, newName: string) => Promise<void>;
   deleteSection: (sectionId: string) => Promise<void>;
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
   updateTaskParentAndOrder: (activeId: string, newParentId: string | null, newSectionId: string | null, overId: string | null) => Promise<void>;
@@ -388,7 +388,11 @@ const TaskList: React.FC<TaskListProps> = ({
                             <div className="text-center text-foreground/80 dark:text-foreground/80 py-6 rounded-md border border-dashed border-border bg-muted/30" data-no-dnd="true">
                               <div className="flex items-center justify-center gap-2 mb-2">
                                 <ListTodo className="h-5 w-5" />
-                                <p className="text-sm font-medium">No tasks in this section</p>
+                                <p className="text-sm font-medium">
+                                  {anyFilterActive 
+                                    ? "No tasks match your filters in this section." 
+                                    : "No tasks in this section yet."}
+                                </p>
                               </div>
                               <div className="flex items-center justify-center gap-2">
                                 <Button size="sm" onClick={() => openAddTaskForSection(currentSection.id === 'no-section-header' ? null : currentSection.id)}>
@@ -434,7 +438,18 @@ const TaskList: React.FC<TaskListProps> = ({
             })}
           </SortableContext>
 
-          {filteredTasks.length === 0 && !loading && (
+          {filteredTasks.length === 0 && !loading && !anyFilterActive && (
+            <div className="text-center text-foreground/80 dark:text-foreground/80 p-8 flex flex-col items-center gap-3 border border-dashed border-border rounded-md bg-muted/30">
+              <ListTodo className="h-8 w-8" />
+              <p className="text-base font-medium">You're all caught up!</p>
+              <p className="text-sm">No tasks found for today. Time to add some new goals!</p>
+              <Button size="sm" onClick={() => openAddTaskForSection(null)}>
+                <Plus className="mr-2 h-4 w-4" /> Add Your First Task
+              </Button>
+            </div>
+          )}
+
+          {filteredTasks.length === 0 && !loading && anyFilterActive && (
             <div className="text-center text-foreground/80 dark:text-foreground/80 p-8 flex flex-col items-center gap-3 border border-dashed border-border rounded-md bg-muted/30">
               <ListTodo className="h-8 w-8" />
               <p className="text-base font-medium">No tasks match your filters</p>

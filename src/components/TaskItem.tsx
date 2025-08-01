@@ -117,7 +117,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
       <div 
         className="flex-1 min-w-0 cursor-pointer" // Removed py-0.5
         onClick={() => onOpenOverview(task)} // Changed to open overview
-        data-no-dnd="true"
       >
         <Tooltip>
           <TooltipTrigger asChild>
@@ -215,14 +214,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
         </div>
       )}
 
-      <div className="flex-shrink-0 flex items-center space-x-1">
+      <div className="flex-shrink-0 flex items-center space-x-1" data-no-dnd="true"> {/* Added data-no-dnd to this div */}
         {task.status === 'completed' && (
           <Button 
             variant="outline" 
             size="sm" 
             className="h-7 px-2 text-xs"
             onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'to-do'); playSound('success'); }}
-            data-no-dnd="true"
             aria-label="Mark as To-Do"
           >
             <ListTodo className="h-3 w-3 mr-1" /> To-Do
@@ -234,14 +232,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
               variant="ghost" 
               className="h-7 w-7 p-0"
               onClick={(e) => e.stopPropagation()}
-              data-no-dnd="true"
               aria-label="More options"
             >
               <span className="sr-only">Open menu</span>
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" data-no-dnd="true">
+          <DropdownMenuContent align="end">
             <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onOpenOverview(task); }}> {/* Changed to open overview */}
               <Edit className="mr-2 h-4 w-4" /> View Details
             </DropdownMenuItem>
@@ -268,10 +265,10 @@ const TaskItem: React.FC<TaskItemProps> = ({
             )}
             <DropdownMenuSeparator />
             <DropdownMenuSub>
-              <DropdownMenuSubTrigger onSelect={(e) => e.preventDefault()} data-no-dnd="true">
+              <DropdownMenuSubTrigger onSelect={(e) => e.preventDefault()}>
                 <FolderOpen className="mr-2 h-4 w-4" /> Move to Section
               </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent data-no-dnd="true">
+              <DropdownMenuSubContent>
                 {sections.length === 0 ? (
                   <DropdownMenuItem disabled>No sections available</DropdownMenuItem>
                 ) : (

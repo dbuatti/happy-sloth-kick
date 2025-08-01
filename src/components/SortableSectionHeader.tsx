@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from '@/components/ui/switch';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { Plus, Settings, CheckCircle2, ListTodo, FolderOpen, ChevronDown, Edit, MoreHorizontal, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Plus, Settings, CheckCircle2, ListTodo, FolderOpen, ChevronDown, Edit, MoreHorizontal, Trash2, Eye, EyeOff, GripVertical } from 'lucide-react'; // Import GripVertical
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { TaskSection } from '@/hooks/useTasks';
@@ -64,14 +64,22 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
     <div
       ref={setNodeRef}
       style={style}
-      {...attributes}
-      {...listeners}
       className={cn(
         "relative rounded-lg bg-muted dark:bg-gray-700 text-foreground shadow-sm hover:shadow-md transition-shadow duration-200 group",
-        isDragging ? "ring-2 ring-primary shadow-lg" : ""
+        isDragging ? "ring-2 ring-primary shadow-lg" : "",
+        "flex items-center gap-2" // Use flex to align drag handle
       )}
     >
-      <div className="flex items-center justify-between p-2 pl-3">
+      <button
+        className="flex-shrink-0 h-full py-1 px-0.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-grab active:cursor-grabbing"
+        {...attributes}
+        {...listeners}
+        aria-label="Drag to reorder section"
+        data-no-dnd="true" // Ensure this button is the only drag handle
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
+      <div className="flex-1 flex items-center justify-between p-2 pl-0"> {/* Adjusted padding */}
         {editingSectionId === section.id ? (
           <div className="flex items-center w-full gap-2" data-no-dnd="true"> {/* Prevent drag when editing */}
             <Input
