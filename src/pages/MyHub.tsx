@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings as SettingsIcon, BarChart3, Archive as ArchiveIcon, LayoutGrid, CalendarIcon, Clock, CheckCircle2, ListTodo, Target } from 'lucide-react';
+import { Settings as SettingsIcon, BarChart3, Archive as ArchiveIcon, LayoutGrid, CalendarIcon, Clock, CheckCircle2, ListTodo, Target, Sun, Moon, MessageSquare } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { format, eachDayOfInterval, startOfMonth } from 'date-fns';
@@ -19,6 +19,7 @@ import TaskItem from '@/components/TaskItem';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import { useAuth } from '@/context/AuthContext';
 import TaskOverviewDialog from '@/components/TaskOverviewDialog'; // Import TaskOverviewDialog
+import { useTheme } from 'next-themes'; // Import useTheme
 
 // --- Analytics Logic (moved from src/pages/Analytics.tsx) ---
 interface AnalyticsTask {
@@ -117,6 +118,7 @@ interface Profile {
 const MyHub: React.FC = () => {
   const { user } = useAuth();
   const currentUserId = user?.id;
+  const { theme, setTheme } = useTheme();
 
   // State for Analytics Tab
   const [analyticsDateRange, setAnalyticsDateRange] = useState<DateRange | undefined>({
@@ -353,8 +355,47 @@ const MyHub: React.FC = () => {
                     )}
                   </CardContent>
                 </Card>
+
+                {/* Theme Toggle */}
+                <Card className="w-full shadow-lg">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-2xl font-bold flex items-center gap-2">
+                      <Sun className="h-6 w-6 text-primary" /> Theme
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground">Switch between light and dark modes.</p>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="flex items-center justify-between">
+                      <label htmlFor="dark-mode-toggle" className="text-base font-medium">Dark Mode</label>
+                      <Button
+                        id="dark-mode-toggle"
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                        aria-label="Toggle dark mode"
+                      >
+                        {theme === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
                 <WorkHoursSettings />
                 <ProjectTrackerSettings />
+
+                {/* Chat Link Placeholder */}
+                <Card className="w-full shadow-lg">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-2xl font-bold flex items-center gap-2">
+                      <MessageSquare className="h-6 w-6 text-primary" /> Support
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground">Need help? Contact our support team.</p>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <a href="#" className="text-blue-500 hover:underline text-sm">Chat with Support</a>
+                  </CardContent>
+                </Card>
               </TabsContent>
 
               {/* Analytics Tab Content */}

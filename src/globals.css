@@ -4,14 +4,14 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 0 0% 100%; /* White */
+    --foreground: 210 40% 10%; /* #212121 equivalent */
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 10%;
 
     --primary: 270 60% 40%; /* Deep Purple */
     --primary-foreground: 210 40% 98%;
@@ -28,7 +28,7 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
+    --border: 214.3 31.8% 91.4%; /* #E0E0E0 equivalent */
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
 
@@ -54,14 +54,14 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 220 20% 10%; /* #1F1F1F equivalent */
+    --foreground: 0 0% 88%; /* #D3D3D3 equivalent */
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 220 20% 10%;
+    --card-foreground: 0 0% 88%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 220 20% 10%;
+    --popover-foreground: 0 0% 88%;
 
     --primary: 270 70% 60%; /* Lighter Purple for dark mode */
     --primary-foreground: 222.2 47.4% 11.2%;
@@ -621,6 +621,11 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Roboto Condensed', sans-serif;
+    font-weight: 300;
+    font-size: 12px;
+    line-height: 1.2;
+    touch-action: none; /* Disable pinch-to-zoom */
   }
 }
 
@@ -657,4 +662,14 @@
 @keyframes breathe-out {
   from { transform: scale(1.2); }
   to { transform: scale(0.7); }
+}
+
+@keyframes flash {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+.animate-flash {
+  animation: flash 0.1s ease-in-out; /* 100ms flash */
 }

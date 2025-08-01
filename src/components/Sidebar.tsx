@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, BarChart3, Settings as SettingsIcon, HelpCircle, Archive as ArchiveIcon, Timer, LayoutGrid, CalendarClock, Menu, Leaf, Moon, Volume2, VolumeX, Brain, Target, LayoutDashboard, Sparkles } from 'lucide-react';
-import ThemeSelector from './ThemeSelector';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -87,7 +86,7 @@ const Sidebar: React.FC<SidebarProps> = ({ children }) => {
                   &copy; {new Date().getFullYear()} TaskMaster
                 </p>
                 <div className="flex items-center space-x-1">
-                  <ThemeSelector />
+                  {/* ThemeSelector removed from here */}
                   <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"} className="h-7 w-7">
                     {isSoundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
                   </Button>
@@ -97,7 +96,7 @@ const Sidebar: React.FC<SidebarProps> = ({ children }) => {
           </Sheet>
           <h1 className="text-xl font-bold">TaskMaster</h1>
           <div className="flex items-center space-x-1">
-            <ThemeSelector />
+            {/* ThemeSelector removed from here */}
             <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"} className="h-7 w-7">
               {isSoundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
             </Button>
@@ -122,7 +121,7 @@ const Sidebar: React.FC<SidebarProps> = ({ children }) => {
             &copy; {new Date().getFullYear()} TaskMaster
           </p>
           <div className="flex items-center space-x-1">
-            <ThemeSelector />
+            {/* ThemeSelector removed from here */}
             <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"} className="h-7 w-7">
               {isSoundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
             </Button>
