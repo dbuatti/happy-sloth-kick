@@ -77,7 +77,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
         aria-label="Drag to reorder section"
         data-no-dnd="true" // Ensure this button is the only drag handle
       >
-        <GripVertical className="h-3.5 w-3.5" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+        <GripVertical className="h-3.5 w-3.5" />
       </button>
       <div className="flex-1 flex items-center justify-between py-1.5 pl-0 pr-1">
         {editingSectionId === section.id ? (
@@ -86,11 +86,11 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               value={editingSectionName}
               onChange={(e) => setNewEditingSectionName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleRenameSection()}
-              className="text-lg font-semibold h-8" // Changed h-9 to h-8
+              className="text-lg font-semibold h-8"
               autoFocus
             />
-            <Button size="sm" onClick={handleRenameSection} disabled={!editingSectionName.trim()} className="h-8">Save</Button> {/* Changed h-9 to h-8 */}
-            <Button variant="ghost" size="sm" onClick={handleCancelSectionEdit} className="h-8">Cancel</Button> {/* Changed h-9 to h-8 */}
+            <Button size="sm" onClick={handleRenameSection} disabled={!editingSectionName.trim()} className="h-8">Save</Button>
+            <Button variant="ghost" size="sm" onClick={handleCancelSectionEdit} className="h-8">Cancel</Button>
           </div>
         ) : (
           <div 
@@ -98,7 +98,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
             onClick={() => toggleSection(section.id)}
           >
             <h3 className="text-lg font-semibold flex items-center gap-2">
-              <FolderOpen className="h-4 w-4 text-muted-foreground" /> {/* Changed h-5 w-5 to h-4 w-4 */}
+              <FolderOpen className="h-4 w-4 text-muted-foreground" />
               {section.name} ({sectionTasksCount})
             </h3>
             <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleEditSectionClick(section); }} className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200" data-no-dnd="true">

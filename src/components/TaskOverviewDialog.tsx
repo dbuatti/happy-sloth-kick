@@ -121,8 +121,8 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
             <span className="flex-1 truncate">{task.description}</span>
           </DialogTitle>
         </DialogHeader>
-        <div className="py-3 space-y-3 text-sm text-foreground"> {/* Changed py-4 space-y-4 to py-3 space-y-3 */}
-          <div className="grid grid-cols-2 gap-y-1.5 gap-x-4"> {/* Changed gap-y-2 to gap-y-1.5 */}
+        <div className="py-3 space-y-3 text-sm text-foreground">
+          <div className="grid grid-cols-2 gap-y-1.5 gap-x-4">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-3.5 w-3.5 text-muted-foreground" />
               <span>Status: <span className="font-semibold capitalize">{task.status}</span></span>
@@ -169,14 +169,14 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
             </div>
           )}
 
-          <div className="space-y-1.5"> {/* Changed space-y-2 to space-y-1.5 */}
+          <div className="space-y-1.5">
             <h4 className="font-semibold flex items-center gap-2"><ListTodo className="h-3.5 w-3.5 text-muted-foreground" /> Sub-tasks ({subtasks.length})</h4>
             {subtasks.length === 0 ? (
               <p className="text-sm text-muted-foreground">No sub-tasks for this task.</p>
             ) : (
-              <ul className="space-y-1.5"> {/* Changed space-y-2 to space-y-1.5 */}
+              <ul className="space-y-1.5">
                 {subtasks.map(subtask => (
-                  <li key={subtask.id} className="flex items-center space-x-2 p-1.5 border rounded-md bg-background"> {/* Changed p-2 to p-1.5 */}
+                  <li key={subtask.id} className="flex items-center space-x-2 p-1.5 border rounded-md bg-background">
                     <Checkbox
                       checked={subtask.status === 'completed'}
                       onCheckedChange={(checked: boolean) => handleSubtaskStatusChange(subtask.id, checked ? 'completed' : 'to-do')}
@@ -204,11 +204,11 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
           <p className="text-xs text-muted-foreground text-right">Created: {format(parseISO(task.created_at), 'MMM d, yyyy HH:mm')}</p>
         </div>
 
-        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2 pt-2"> {/* Changed pt-3 to pt-2 */}
+        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2 pt-2">
           <Button
             variant="default"
             onClick={() => onEditClick(task)}
-            className="w-full sm:w-auto mt-1.5 sm:mt-0 h-9" /* Changed mt-2 h-10 to mt-1.5 h-9 */
+            className="w-full sm:w-auto mt-1.5 sm:mt-0 h-9"
           >
             <Edit className="mr-2 h-3.5 w-3.5" /> Edit
           </Button>
@@ -217,7 +217,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
               variant={task.status === 'completed' ? 'outline' : 'default'}
               onClick={handleToggleMainTaskStatus}
               disabled={isUpdatingStatus}
-              className="flex-1 h-9" /* Changed h-10 to h-9 */
+              className="flex-1 h-9"
             >
               {task.status === 'completed' ? (
                 <><ListTodo className="mr-2 h-3.5 w-3.5" /> Mark To-Do</>
@@ -225,7 +225,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
                 <><CheckCircle2 className="mr-2 h-3.5 w-3.5" /> Mark Complete</>
               )}
             </Button>
-            <Button variant="destructive" onClick={handleDeleteClick} disabled={isUpdatingStatus} className="flex-1 h-9"> {/* Changed h-10 to h-9 */}
+            <Button variant="destructive" onClick={handleDeleteClick} disabled={isUpdatingStatus} className="flex-1 h-9">
               <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete
             </Button>
           </div>

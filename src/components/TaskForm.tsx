@@ -263,7 +263,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 py-3"> {/* Changed space-y-4 py-3 to space-y-3 py-3 */}
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 py-3">
       <div>
         <Label htmlFor="task-description">Task Description</Label>
         <div className="flex gap-1.5">
@@ -274,7 +274,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
             onKeyDown={handleKeyDown}
             disabled={isSaving || isSuggesting}
             autoFocus={autoFocus}
-            className="h-9" // Changed h-10 to h-9
+            className="h-9"
           />
           <Button
             type="button"
@@ -284,7 +284,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
             disabled={isSaving || isSuggesting || !description.trim()}
             title="Suggest details from description"
             aria-label="Suggest task details"
-            className="h-9 w-9" // Changed h-10 w-10 to h-9 w-9
+            className="h-9 w-9"
           >
             {isSuggesting ? (
               <span className="animate-spin h-3.5 w-3.5 border-b-2 border-primary rounded-full" />
@@ -339,7 +339,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal h-9", /* Changed h-10 to h-9 */
+                      "w-full justify-start text-left font-normal h-9",
                       !field.value && "text-muted-foreground"
                     )}
                     disabled={isSaving || isSuggesting}
@@ -370,7 +370,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
             name="recurringType"
             render={({ field }) => (
               <Select value={field.value} onValueChange={field.onChange} disabled={!!initialData?.parent_task_id || isSaving || isSuggesting}>
-                <SelectTrigger aria-label="Select recurrence type" className="h-9"> {/* Changed h-10 to h-9 */}
+                <SelectTrigger aria-label="Select recurrence type" className="h-9">
                   <SelectValue placeholder="Select recurrence" />
                 </SelectTrigger>
                 <SelectContent>
@@ -398,7 +398,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
                   <Button
                     variant="outline"
                     className={cn(
-                      "flex-1 justify-start text-left font-normal h-9", /* Changed h-10 to h-9 */
+                      "flex-1 justify-start text-left font-normal h-9",
                       !field.value && "text-muted-foreground"
                     )}
                     disabled={isSaving || isSuggesting}
@@ -422,7 +422,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
           <Input
             type="time"
             {...register('remindAtTime')}
-            className="w-24 h-9" /* Changed h-10 to h-9 */
+            className="w-24 h-9"
             disabled={isSaving || isSuggesting || !remindAtDate}
             aria-label="Set reminder time"
           />
@@ -438,7 +438,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
           placeholder="e.g., https://example.com/task-details"
           {...register('link')}
           disabled={isSaving || isSuggesting}
-          className="h-9" /* Changed h-10 to h-9 */
+          className="h-9"
         />
         {errors.link && <p className="text-destructive text-sm mt-1">{errors.link.message}</p>}
       </div>
@@ -455,11 +455,11 @@ const TaskForm: React.FC<TaskFormProps> = ({
         {errors.notes && <p className="text-destructive text-sm mt-1">{errors.notes.message}</p>}
       </div>
 
-      <div className="flex justify-end space-x-1.5 mt-3"> {/* Changed mt-4 to mt-3 */}
-        <Button type="button" variant="outline" onClick={onCancel} disabled={isSaving || isSuggesting} className="h-9"> {/* Changed h-10 to h-9 */}
+      <div className="flex justify-end space-x-1.5 mt-3">
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isSaving || isSuggesting} className="h-9">
           Cancel
         </Button>
-        <Button type="submit" disabled={isSaving || isSuggesting || !form.formState.isValid && form.formState.isSubmitted} className="h-9"> {/* Changed h-10 to h-9 */}
+        <Button type="submit" disabled={isSaving || isSuggesting || !form.formState.isValid && form.formState.isSubmitted} className="h-9">
           {isSaving ? 'Saving...' : (initialData ? 'Save Changes' : 'Add Task')}
         </Button>
       </div>

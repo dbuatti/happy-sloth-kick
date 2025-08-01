@@ -130,19 +130,19 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
           autoFocus={false}
         />
 
-        <div className="space-y-2 mt-3 border-t pt-2"> {/* Changed mt-4 pt-3 to mt-3 pt-2 */}
+        <div className="space-y-2 mt-3 border-t pt-2">
           <div className="flex justify-between items-center">
             <h3 className="text-base font-semibold">Sub-tasks ({subtasks.length})</h3>
-            <Button variant="outline" size="sm" className="h-8" onClick={() => setIsAddSubtaskOpen(true)}> {/* Changed h-9 to h-8 */}
+            <Button variant="outline" size="sm" className="h-8" onClick={() => setIsAddSubtaskOpen(true)}>
               Add Sub-task
             </Button>
           </div>
           {subtasks.length === 0 ? (
             <p className="text-sm text-muted-foreground">No sub-tasks yet. Break down this task into smaller steps!</p>
           ) : (
-            <ul className="space-y-1.5"> {/* Changed space-y-2 to space-y-1.5 */}
+            <ul className="space-y-1.5">
               {subtasks.map(subtask => (
-                <li key={subtask.id} className="flex items-center space-x-2 p-1.5 border rounded-md bg-background"> {/* Changed p-2 to p-1.5 */}
+                <li key={subtask.id} className="flex items-center space-x-2 p-1.5 border rounded-md bg-background">
                   <Checkbox
                     checked={subtask.status === 'completed'}
                     onCheckedChange={(checked: boolean) => handleSubtaskStatusChange(subtask.id, checked ? 'completed' : 'to-do')}
@@ -166,12 +166,12 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
           )}
         </div>
 
-        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2 pt-2"> {/* Changed pt-3 to pt-2 */}
+        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2 pt-2">
           <Button
             variant={task.status === 'completed' ? 'outline' : 'default'}
             onClick={handleToggleMainTaskStatus}
             disabled={isSaving}
-            className="w-full sm:w-auto mt-1.5 sm:mt-0 h-9" /* Changed mt-2 h-10 to mt-1.5 h-9 */
+            className="w-full sm:w-auto mt-1.5 sm:mt-0 h-9"
           >
             {task.status === 'completed' ? (
               <><ListTodo className="mr-2 h-3.5 w-3.5" /> Mark To-Do</>
@@ -179,7 +179,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
               <><CheckCircle2 className="mr-2 h-3.5 w-3.5" /> Mark Complete</>
             )}
           </Button>
-          <Button variant="destructive" onClick={handleDeleteClick} disabled={isSaving} className="w-full sm:w-auto mt-1.5 sm:mt-0 h-9"> {/* Changed mt-2 h-10 to mt-1.5 h-9 */}
+          <Button variant="destructive" onClick={handleDeleteClick} disabled={isSaving} className="w-full sm:w-auto mt-1.5 sm:mt-0 h-9">
             <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete Task
           </Button>
         </DialogFooter>

@@ -259,7 +259,7 @@ const TaskList: React.FC<TaskListProps> = ({
 
   return (
     <>
-      <div className="space-y-2 mb-3"> {/* Changed space-y-3 to space-y-2 */}
+      <div className="space-y-1.5 mb-2">
         <TaskFilter
           currentDate={currentDate}
           setCurrentDate={setCurrentDate}
@@ -278,12 +278,12 @@ const TaskList: React.FC<TaskListProps> = ({
           searchRef={searchRef}
         />
 
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-2">
-          <div className="flex gap-2 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-1.5">
+          <div className="flex gap-1.5 w-full sm:w-auto">
             <Dialog open={isAddSectionOpen} onOpenChange={setIsAddSectionOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="flex-1"> {/* Changed size to sm */}
-                  <Plus className="mr-2 h-4 w-4" /> Add Section
+                <Button variant="outline" size="sm" className="flex-1">
+                  <Plus className="mr-2 h-3.5 w-3.5" /> Add Section
                 </Button>
               </DialogTrigger>
               <DialogContent>
@@ -317,7 +317,7 @@ const TaskList: React.FC<TaskListProps> = ({
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="sm" className="flex-1"> {/* Changed size to sm */}
+                <Button variant="outline" size="sm" className="flex-1">
                   <Settings className="mr-2 h-4 w-4" /> Manage Sections
                 </Button>
               </TooltipTrigger>
@@ -351,7 +351,7 @@ const TaskList: React.FC<TaskListProps> = ({
               );
 
               return (
-                <div key={currentSection.id} className="mb-2"> {/* Changed mb-3 to mb-2 */}
+                <div key={currentSection.id} className="mb-1.5">
                   <SortableSectionHeader
                     section={currentSection}
                     sectionTasksCount={topLevelTasksInSection.length}
@@ -381,12 +381,12 @@ const TaskList: React.FC<TaskListProps> = ({
                     updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
                   />
                   {isExpanded && (
-                    <div className="mt-1.5 space-y-1.5 pl-2"> {/* Changed mt-2 space-y-2 to mt-1.5 space-y-1.5 */}
+                    <div className="mt-1 space-y-1 pl-2">
                       <SortableContext items={[...allSortableTaskIds]} strategy={verticalListSortingStrategy}>
-                        <ul className="list-none space-y-1.5"> {/* Changed space-y-2 to space-y-1.5 */}
+                        <ul className="list-none space-y-1">
                           {topLevelTasksInSection.length === 0 ? (
-                            <div className="text-center text-foreground/80 dark:text-foreground/80 py-3 rounded-md border border-dashed border-border bg-muted/30" data-no-dnd="true"> {/* Changed py-4 to py-3 */}
-                              <div className="flex items-center justify-center gap-2 mb-1.5"> {/* Changed mb-2 to mb-1.5 */}
+                            <div className="text-center text-foreground/80 dark:text-foreground/80 py-2 rounded-md border border-dashed border-border bg-muted/30" data-no-dnd="true">
+                              <div className="flex items-center justify-center gap-2 mb-1">
                                 <ListTodo className="h-4 w-4" />
                                 <p className="text-sm font-medium">
                                   {anyFilterActive 
@@ -439,8 +439,8 @@ const TaskList: React.FC<TaskListProps> = ({
           </SortableContext>
 
           {filteredTasks.length === 0 && !loading && !anyFilterActive && (
-            <div className="text-center text-foreground/80 dark:text-foreground/80 p-6 flex flex-col items-center gap-2 border border-dashed border-border rounded-md bg-muted/30"> {/* Changed p-8 gap-3 to p-6 gap-2 */}
-              <ListTodo className="h-7 w-7" /> {/* Changed h-8 w-8 to h-7 w-7 */}
+            <div className="text-center text-foreground/80 dark:text-foreground/80 p-6 flex flex-col items-center gap-2 border border-dashed border-border rounded-md bg-muted/30">
+              <ListTodo className="h-6 w-6" />
               <p className="text-base font-medium">You're all caught up!</p>
               <p className="text-sm">No tasks found for today. Time to add some new goals!</p>
               <Button size="sm" onClick={() => openAddTaskForSection(null)}>
@@ -450,8 +450,8 @@ const TaskList: React.FC<TaskListProps> = ({
           )}
 
           {filteredTasks.length === 0 && !loading && anyFilterActive && (
-            <div className="text-center text-foreground/80 dark:text-foreground/80 p-6 flex flex-col items-center gap-2 border border-dashed border-border rounded-md bg-muted/30"> {/* Changed p-8 gap-3 to p-6 gap-2 */}
-              <ListTodo className="h-7 w-7" /> {/* Changed h-8 w-8 to h-7 w-7 */}
+            <div className="text-center text-foreground/80 dark:text-foreground/80 p-6 flex flex-col items-center gap-2 border border-dashed border-border rounded-md bg-muted/30">
+              <ListTodo className="h-6 w-6" />
               <p className="text-base font-medium">No tasks match your filters</p>
               <div className="flex gap-2">
                 <Button size="sm" onClick={() => openAddTaskForSection(null)}>

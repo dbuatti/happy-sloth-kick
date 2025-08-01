@@ -75,25 +75,25 @@ const SmartSuggestions: React.FC<SmartSuggestionsProps> = ({ tasks, currentDate,
   };
 
   return (
-    <Card className="w-full shadow-sm mb-3">
-      <CardContent className="p-3">
-        <h3 className="text-base font-semibold mb-2">Smart Suggestions</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+    <Card className="w-full shadow-sm mb-2">
+      <CardContent className="p-2">
+        <h3 className="text-base font-semibold mb-1.5">Smart Suggestions</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
           {overdueTasksCount > 0 && (
-            <Button variant="outline" size="sm" className="justify-start gap-2"> {/* Changed h-8 to size="sm" */}
-              <Clock className="h-3.5 w-3.5 text-destructive" />
+            <Button variant="outline" size="sm" className="justify-start gap-1.5 h-8">
+              <Clock className="h-3 w-3 text-destructive" />
               Review {overdueTasksCount} Overdue Task{overdueTasksCount > 1 ? 's' : ''}
             </Button>
           )}
           {completedTasksCountForArchiveSuggestion > 0 && (
-            <Button variant="outline" size="sm" className="justify-start gap-2 w-fit" onClick={handleArchiveCompletedClick}> {/* Changed h-8 to size="sm" */}
-              <Archive className="h-3.5 w-3.5 text-primary" />
+            <Button variant="outline" size="sm" className="justify-start gap-1.5 w-fit h-8" onClick={handleArchiveCompletedClick}>
+              <Archive className="h-3 w-3 text-primary" />
               Archive All Completed Tasks
             </Button>
           )}
           {totalTasksToday === 0 && (
-            <Button variant="outline" size="sm" className="justify-start gap-2"> {/* Changed h-8 to size="sm" */}
-              <Plus className="h-3.5 w-3.5 text-primary" />
+            <Button variant="outline" size="sm" className="justify-start gap-1.5 h-8">
+              <Plus className="h-3 w-3 text-primary" />
               Add Your First Task Today!
             </Button>
           )}

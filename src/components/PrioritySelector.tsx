@@ -19,7 +19,7 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({ value, onChange }) 
     <div className="space-y-2">
       <label className="text-sm font-medium">Priority</label>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className={`w-full h-9 ${selectedPriority?.color}`}> {/* Changed h-10 to h-9 */}
+        <SelectTrigger className={`w-full h-9 ${selectedPriority?.color}`}>
           <SelectValue placeholder="Select priority" />
         </SelectTrigger>
         <SelectContent>

@@ -78,10 +78,10 @@ const ManageSectionsDialog: React.FC<ManageSectionsDialogProps> = ({
                         onChange={(e) => setEditingSectionName(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleSaveEdit()}
                         autoFocus
-                        className="h-9" /* Changed h-10 to h-9 */
+                        className="h-9"
                       />
-                      <Button size="sm" onClick={handleSaveEdit} disabled={!editingSectionName.trim()} className="h-9">Save</Button> {/* Changed h-10 to h-9 */}
-                      <Button variant="ghost" size="sm" onClick={() => setEditingSectionId(null)} className="h-9">Cancel</Button> {/* Changed h-10 to h-9 */}
+                      <Button size="sm" onClick={handleSaveEdit} disabled={!editingSectionName.trim()} className="h-9">Save</Button>
+                      <Button variant="ghost" size="sm" onClick={() => setEditingSectionId(null)} className="h-9">Cancel</Button>
                     </div>
                   ) : (
                     <span className="flex-1 font-medium">{section.name}</span>
@@ -105,8 +105,8 @@ const ManageSectionsDialog: React.FC<ManageSectionsDialogProps> = ({
                     />
                     {!editingSectionId && (
                       <>
-                        <Button variant="ghost" size="icon" className="h-6 w-6"> {/* Changed h-6 w-6 to h-6 w-6 */}
-                          <Edit className="h-3.5 w-3.5" onClick={() => handleEditClick(section)} /> {/* Added onClick */}
+                        <Button variant="ghost" size="icon" className="h-6 w-6">
+                          <Edit className="h-3.5 w-3.5" onClick={() => handleEditClick(section)} />
                         </Button>
                         <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => handleDeleteClick(section.id)}>
                           <Trash2 className="h-3.5 w-3.5" />

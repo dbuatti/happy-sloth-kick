@@ -183,10 +183,10 @@ const DailyTasksV2: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col">
-      <main className={cn("flex-grow p-3", isBulkActionsActive ? "pb-[80px]" : "")}>
-        <div className="w-full max-w-4xl mx-auto space-y-3">
+      <main className={cn("flex-grow p-2", isBulkActionsActive ? "pb-[80px]" : "")}>
+        <div className="w-full max-w-4xl mx-auto space-y-2">
           <Card className="shadow-lg p-3">
-            <CardHeader className="pb-1">
+            <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-3xl font-bold">Your Tasks</CardTitle>
                 {dailyTaskCount > 0 && (
@@ -198,15 +198,15 @@ const DailyTasksV2: React.FC = () => {
               </div>
 
               <div className="mt-2 grid grid-cols-3 gap-2 text-xs sm:text-sm">
-                <div className="rounded-md border bg-muted/30 px-2 py-2 text-center">
+                <div className="rounded-md border bg-muted/30 px-2 py-1.5 text-center">
                   <span className="text-muted-foreground block">Total</span>
                   <div className="font-semibold">{totalCount}</div>
                 </div>
-                <div className="rounded-md border bg-muted/30 px-2 py-2 text-center">
+                <div className="rounded-md border bg-muted/30 px-2 py-1.5 text-center">
                   <span className="text-muted-foreground block">Completed</span>
                   <div className="font-semibold">{completedCount}</div>
                 </div>
-                <div className={cn("rounded-md px-2 py-2 text-center border", overdueCount > 0 ? "bg-destructive/10 border-destructive/30" : "bg-muted/30")}>
+                <div className={cn("rounded-md px-2 py-1.5 text-center border", overdueCount > 0 ? "bg-destructive/10 border-destructive/30" : "bg-muted/30")}>
                   <span className="text-muted-foreground block">Overdue</span>
                   <div className={cn("font-semibold", overdueCount > 0 ? "text-status-overdue" : "")}>{overdueCount}</div>
                 </div>
@@ -214,7 +214,7 @@ const DailyTasksV2: React.FC = () => {
             </CardHeader>
 
             <CardContent className="pt-0">
-              <div className="mb-2">
+              <div className="mb-1.5">
                 <DateNavigator
                   currentDate={currentDate}
                   onPreviousDay={handlePreviousDay}
@@ -232,7 +232,7 @@ const DailyTasksV2: React.FC = () => {
                 )}
               >
                 <div ref={stickyRef} className="h-0 w-full -mt-1" aria-hidden />
-                <form onSubmit={handleQuickAddTask} className="mb-2">
+                <form onSubmit={handleQuickAddTask} className="mb-1.5">
                   <div className="flex items-center gap-2">
                     <Input
                       ref={quickAddInputRef}
