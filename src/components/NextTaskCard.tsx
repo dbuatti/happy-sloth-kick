@@ -8,6 +8,7 @@ import { getCategoryColorProps } from '@/lib/categoryColors';
 import { format, parseISO } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge'; // Import Badge
 
 interface NextTaskCardProps {
   task: Task | null;
@@ -83,13 +84,6 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
   const isOverdue = task.due_date && task.status !== 'completed' && parseISO(task.due_date) < currentDate && format(parseISO(task.due_date), 'yyyy-MM-dd') !== format(currentDate, 'yyyy-MM-dd');
   const isDueToday = task.due_date && task.status !== 'completed' && format(parseISO(task.due_date), 'yyyy-MM-dd') === format(currentDate, 'yyyy-MM-dd');
 
-  // Section chip (show friendly text)
-  const sectionChip = (
-    <span className="truncate max-w-[160px] text-xs px-2 py-0.5 rounded-full bg-muted">
-      {task.section_id ? 'In a section' : 'No Section'}
-    </span>
-  );
-
   return (
     <Card
       className={cn(
@@ -100,18 +94,18 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
       )}
       onClick={() => onOpenDetail ? onOpenDetail(task) : onEditTask(task)}
     >
-      <CardHeader className="pb-1.5">
-        <CardTitle className="text-sm font-semibold flex items-center gap-2">
-          <Lightbulb className="h-3.5 w-3.5 text-primary" />
+      <CardHeader className="pb-1">
+        <CardTitle className="text-base font-semibold flex items-center gap-2">
+          <Lightbulb className="h-4 w-4 text-primary" />
           Your Next Task
         </CardTitle>
       </CardHeader>
-      <CardContent className="pt-0 space-y-1.5">
+      <CardContent className="pt-0 space-y-1">
         <div className="flex items-center space-x-2">
           <div className={cn("w-3.5 h-3.5 rounded-full flex items-center justify-center border", categoryColorProps.backgroundClass, categoryColorProps.dotBorder)}>
             <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: categoryColorProps.dotColor }}></div>
           </div>
-          <h3 className="text-base font-semibold flex-1 line-clamp-2">{task.description}</h3>
+          <h3 className="text-lg font-semibold flex-1 line-clamp-2">{task.description}</h3>
         </div>
 
         <div className="flex items-center text-sm text-muted-foreground gap-2 flex-wrap">
@@ -127,25 +121,27 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
               {getDueDateDisplay(task.due_date)}
             </span>
           )}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              {sectionChip}
-            </TooltipTrigger>
-            <TooltipContent>
-              {task.section_id ? 'This task belongs to a section' : 'This task has no section'}
-            </TooltipContent>
-          </Tooltip>
+          {task.section_id && (
+            <Badge variant="secondary" className="text-xs px-2 py-0.5 rounded-full">
+              In a section
+            </Badge>
+          )}
+          {!task.section_id && (
+            <Badge variant="secondary" className="text-xs px-2 py-0.5 rounded-full">
+              No section
+            </Badge>
+          )}
         </div>
 
         <div className="flex gap-2 mt-2">
-          <Button size="sm" onClick={(e) => { e.stopPropagation(); onMarkComplete(task.id); }} className="flex-1 h-8">
+          <Button size="sm" onClick={(e) => { e.stopPropagation(); onMarkComplete(task.id); }} className="flex-1 h-7">
             <CheckCircle2 className="mr-2 h-3 w-3" /> Mark Complete
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={(e) => { e.stopPropagation(); onOpenDetail ? onOpenDetail(task) : onEditTask(task); }}
-            className="flex-1 h-8"
+            className="flex-1 h-7"
           >
             <Edit className="mr-2 h-3 w-3" /> Edit Task
           </Button>

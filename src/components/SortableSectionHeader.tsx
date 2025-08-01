@@ -79,7 +79,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
       >
         <GripVertical className="h-3.5 w-3.5" />
       </button>
-      <div className="flex-1 flex items-center justify-between py-1.5 pl-0 pr-1">
+      <div className="flex-1 flex items-center justify-between py-1 pl-0 pr-1"> {/* Changed py-1.5 to py-1 */}
         {editingSectionId === section.id ? (
           <div className="flex items-center w-full gap-2" data-no-dnd="true">
             <Input

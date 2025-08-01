@@ -282,7 +282,7 @@ const TaskList: React.FC<TaskListProps> = ({
           <div className="flex gap-1.5 w-full sm:w-auto">
             <Dialog open={isAddSectionOpen} onOpenChange={setIsAddSectionOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="flex-1">
+                <Button variant="outline" size="sm" className="flex-1 h-7"> {/* Changed h-8 to h-7 */}
                   <Plus className="mr-2 h-3.5 w-3.5" /> Add Section
                 </Button>
               </DialogTrigger>
@@ -317,8 +317,8 @@ const TaskList: React.FC<TaskListProps> = ({
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="sm" className="flex-1">
-                  <Settings className="mr-2 h-4 w-4" /> Manage Sections
+                <Button variant="outline" size="sm" className="flex-1 h-7"> {/* Changed h-8 to h-7 */}
+                  <Settings className="mr-2 h-3.5 w-3.5" /> Manage Sections
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
