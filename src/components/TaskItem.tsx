@@ -9,7 +9,7 @@ import { Task } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
 import { getCategoryColorProps } from '@/lib/categoryColors';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Badge } from "@/components/ui/badge";
+// import { Badge } from "@/components/ui/badge"; // Removed Badge import
 
 interface TaskItemProps {
   task: Task;
@@ -43,13 +43,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const { playSound } = useSound();
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
 
-  const getPriorityColor = (priority: string) => {
+  const getPriorityDotColor = (priority: string) => {
     switch (priority) {
-      case 'urgent': return 'bg-priority-urgent text-primary-foreground';
-      case 'high': return 'bg-priority-high text-primary-foreground';
-      case 'medium': return 'bg-priority-medium text-primary-foreground';
-      case 'low': return 'bg-priority-low text-primary-foreground';
-      default: return 'bg-muted text-muted-foreground';
+      case 'urgent': return 'bg-priority-urgent';
+      case 'high': return 'bg-priority-high';
+      case 'medium': return 'bg-priority-medium';
+      case 'low': return 'bg-priority-low';
+      default: return 'bg-muted-foreground';
     }
   };
 
@@ -94,20 +94,10 @@ const TaskItem: React.FC<TaskItemProps> = ({
     playSound('success');
   };
 
-  const getStatusBadgeVariant = (status: Task['status']) => {
-    switch (status) {
-      case 'completed': return 'bg-status-completed text-primary-foreground'; /* Use new status-completed color */
-      case 'skipped': return 'bg-destructive text-destructive-foreground';
-      case 'archived': return 'bg-muted text-muted-foreground';
-      case 'to-do':
-      default: return 'bg-secondary text-secondary-foreground';
-    }
-  };
-
   return (
     <div
       className={cn(
-        "relative flex items-start space-x-3 w-full py-2 px-2 rounded-lg group",
+        "relative flex items-start space-x-2.5 w-full py-2 px-1 group", // Adjusted padding and spacing
         task.status === 'completed' ? "opacity-70 bg-green-50/20 dark:bg-green-900/20" : "",
         isOverdue ? "border-l-4 border-border-status-overdue bg-red-50/10 dark:bg-red-900/10" : // Thicker border
         isDueToday ? "border-l-4 border-border-status-due-today bg-yellow-50/10 dark:bg-yellow-900/10" : // Thicker border
@@ -122,7 +112,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
         id={`task-${task.id}`}
         onClick={(e) => e.stopPropagation()}
         className="flex-shrink-0 h-5 w-5 mt-0.5" // Larger checkbox
-        data-no-dnd="true"
+        aria-checked={task.status === 'completed'} // Added aria-checked
       />
 
       <div 
@@ -133,7 +123,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           <TooltipTrigger asChild>
             <span
               className={cn(
-                "text-base font-medium leading-tight line-clamp-2", // Larger text
+                "text-xs font-medium leading-tight line-clamp-2", // Changed to text-xs (12px)
                 task.status === 'completed' ? 'line-through text-muted-foreground' : 'text-foreground',
                 "block"
               )}
@@ -146,18 +136,18 @@ const TaskItem: React.FC<TaskItemProps> = ({
           </TooltipContent>
         </Tooltip>
 
-        <div className="flex flex-wrap items-center text-xs text-muted-foreground mt-1 gap-x-2 gap-y-0.5"> {/* Increased spacing */}
+        <div className="flex flex-wrap items-center text-xs text-muted-foreground mt-1 gap-x-1.5 gap-y-0"> {/* Adjusted spacing */}
           <div className={cn("w-3.5 h-3.5 rounded-full flex items-center justify-center border", categoryColorProps.backgroundClass, categoryColorProps.dotBorder)}> {/* Slightly smaller dot container */}
             <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: categoryColorProps.dotColor }}></div> {/* Slightly smaller dot */}
           </div>
-          <Badge className={cn("px-1.5 py-0.5 text-xs font-semibold rounded-full", getPriorityColor(task.priority))}> {/* More compact badge */}
-            {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-          </Badge>
+          {/* Replaced Priority Badge with a 4px dot */}
+          <div className={cn("w-1 h-1 rounded-full", getPriorityDotColor(task.priority))} /> 
+          
           {task.recurring_type !== 'none' && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <span className="inline-flex items-center">
-                  <Repeat className="h-4 w-4 text-primary dark:text-primary" /> {/* Larger icon */}
+                  <Repeat className="h-5 w-5 text-primary dark:text-primary" /> {/* Changed to h-5 w-5 (20px) */}
                 </span>
               </TooltipTrigger>
               <TooltipContent>
@@ -167,11 +157,11 @@ const TaskItem: React.FC<TaskItemProps> = ({
           )}
           {task.due_date && (
             <span className={cn(
-              "flex items-center gap-1 text-sm", // Larger text
+              "flex items-center gap-1 text-xs", // Changed to text-xs (12px)
               isOverdue && "text-status-overdue font-semibold",
               isDueToday && "text-status-due-today font-semibold"
             )}>
-              <Calendar className="h-4 w-4" /> {/* Larger icon */}
+              <Calendar className="h-5 w-5" /> {/* Changed to h-5 w-5 (20px) */}
               {getDueDateDisplay(task.due_date)}
             </span>
           )}
@@ -179,7 +169,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
             <Tooltip>
               <TooltipTrigger asChild>
                 <span className="inline-flex items-center text-primary dark:text-primary">
-                  <BellRing className="h-4 w-4" /> {/* Larger icon */}
+                  <BellRing className="h-5 w-5" /> {/* Changed to h-5 w-5 (20px) */}
                   <span className="sr-only">Reminder</span>
                 </span>
               </TooltipTrigger>
@@ -192,12 +182,12 @@ const TaskItem: React.FC<TaskItemProps> = ({
             <Tooltip>
               <TooltipTrigger asChild>
                 <span className="inline-flex items-center">
-                  <StickyNote className="h-4 w-4" /> {/* Larger icon */}
+                  <StickyNote className="h-5 w-5" /> {/* Changed to h-5 w-5 (20px) */}
                 </span>
               </TooltipTrigger>
               <TooltipContent className="max-w-xs">
                 <p className="font-semibold">Notes:</p>
-                <p className="text-sm">{task.notes}</p>
+                <p className="text-xs">{task.notes}</p> {/* Changed to text-xs (12px) */}
               </TooltipContent>
             </Tooltip>
           )}
@@ -212,12 +202,12 @@ const TaskItem: React.FC<TaskItemProps> = ({
                   onClick={(e) => e.stopPropagation()}
                   data-no-dnd="true"
                 >
-                  <LinkIcon className="h-4 w-4" /> {/* Larger icon */}
+                  <LinkIcon className="h-5 w-5" /> {/* Changed to h-5 w-5 (20px) */}
                 </a>
               </TooltipTrigger>
               <TooltipContent className="max-w-xs">
                 <p className="font-semibold">Link:</p>
-                <p className="text-sm truncate">{task.link}</p>
+                <p className="text-xs truncate">{task.link}</p> {/* Changed to text-xs (12px) */}
               </TooltipContent>
             </Tooltip>
           )}
@@ -231,28 +221,26 @@ const TaskItem: React.FC<TaskItemProps> = ({
       )}
 
       <div className="flex-shrink-0 flex items-center space-x-1" data-no-dnd="true">
-        <Badge className={cn("px-2.5 py-1 text-xs font-semibold rounded-full", getStatusBadgeVariant(task.status))}> {/* Larger badge */}
-          {task.status.charAt(0).toUpperCase() + task.status.slice(1)}
-        </Badge>
+        {/* Removed Status Badge */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button 
               variant="ghost" 
-              className="h-8 w-8 p-0" // Larger button
+              className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200" // Added fade-in
               onClick={(e) => e.stopPropagation()}
               aria-label="More options"
             >
               <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4.5 w-4.5" /> {/* Larger icon */}
+              <MoreHorizontal className="h-5 w-5" /> {/* Changed to h-5 w-5 (20px) */}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" data-no-dnd="true">
             <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onOpenOverview(task); }}>
-              <Edit className="mr-2 h-4 w-4" /> View Details
+              <Edit className="mr-2 h-5 w-5" /> View Details {/* Changed to h-5 w-5 (20px) */}
             </DropdownMenuItem>
             {task.status === 'archived' && (
               <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onStatusChange(task.id, 'to-do'); playSound('success'); }}>
-                <Undo2 className="mr-2 h-4 w-4" /> Restore
+                <Undo2 className="mr-2 h-5 w-5" /> Restore {/* Changed to h-5 w-5 (20px) */}
               </DropdownMenuItem>
             )}
             {task.status !== 'archived' && (
@@ -267,14 +255,14 @@ const TaskItem: React.FC<TaskItemProps> = ({
                   Mark as Skipped
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onStatusChange(task.id, 'archived'); playSound('success'); }}>
-                  <Archive className="mr-2 h-4 w-4" /> Archive
+                  <Archive className="mr-2 h-5 w-5" /> Archive {/* Changed to h-5 w-5 (20px) */}
                 </DropdownMenuItem>
               </>
             )}
             <DropdownMenuSeparator />
             <DropdownMenuSub>
               <DropdownMenuSubTrigger onSelect={(e) => e.preventDefault()} data-no-dnd="true">
-                <FolderOpen className="mr-2 h-4 w-4" /> Move to Section
+                <FolderOpen className="mr-2 h-5 w-5" /> Move to Section {/* Changed to h-5 w-5 (20px) */}
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent data-no-dnd="true">
                 {sections.length === 0 ? (
@@ -310,14 +298,14 @@ const TaskItem: React.FC<TaskItemProps> = ({
             </DropdownMenuSub>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleMoveUpClick(); }}>
-              <ArrowUp className="mr-2 h-4 w-4" /> Move Up
+              <ArrowUp className="mr-2 h-5 w-5" /> Move Up {/* Changed to h-5 w-5 (20px) */}
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleMoveDownClick(); }}>
-              <ArrowDown className="mr-2 h-4 w-4" /> Move Down
+              <ArrowDown className="mr-2 h-5 w-5" /> Move Down {/* Changed to h-5 w-5 (20px) */}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onDelete(task.id); playSound('alert'); }} className="text-destructive focus:text-destructive">
-              <Trash2 className="mr-2 h-4 w-4" /> Delete
+              <Trash2 className="mr-2 h-5 w-5" /> Delete {/* Changed to h-5 w-5 (20px) */}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

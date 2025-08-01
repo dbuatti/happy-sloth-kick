@@ -423,9 +423,9 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                   />
 
                   {isExpanded && (
-                    <div className="mt-1.5 space-y-1.5 pl-2">
+                    <div className="mt-1.5 space-y-2.5"> {/* Adjusted spacing to 10px */}
                       <SortableContext items={sectionItemIds} strategy={verticalListSortingStrategy}>
-                        <ul className="list-none space-y-1.5">
+                        <ul className="list-none space-y-2.5" aria-label="task list"> {/* Added aria-label */}
                           {topLevelTasksInSection.length === 0 ? (
                             <div className="text-center text-foreground/80 dark:text-foreground/80 py-3 rounded-md border border-dashed border-border bg-muted/30" data-no-dnd="true">
                               <div className="flex items-center justify-center gap-2 mb-1.5">
