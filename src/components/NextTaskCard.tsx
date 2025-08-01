@@ -32,8 +32,8 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
           <Skeleton className="h-6 w-3/4" />
           <Skeleton className="h-4 w-1/2" />
           <div className="flex gap-2">
-            <Skeleton className="h-10 flex-1" />
-            <Skeleton className="h-10 flex-1" />
+            <Skeleton className="h-8 flex-1" /> {/* Changed h-10 to h-8 */}
+            <Skeleton className="h-8 flex-1" /> {/* Changed h-10 to h-8 */}
           </div>
         </CardContent>
       </Card>
@@ -138,11 +138,12 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
         </div>
 
         <div className="flex gap-2 mt-3"> {/* Changed mt-4 to mt-3 */}
-          <Button onClick={(e) => { e.stopPropagation(); onMarkComplete(task.id); }} className="flex-1">
+          <Button size="sm" onClick={(e) => { e.stopPropagation(); onMarkComplete(task.id); }} className="flex-1"> {/* Changed size to sm */}
             <CheckCircle2 className="mr-2 h-3.5 w-3.5" /> Mark Complete
           </Button>
           <Button
             variant="outline"
+            size="sm" // Changed size to sm
             onClick={(e) => { e.stopPropagation(); onOpenDetail ? onOpenDetail(task) : onEditTask(task); }}
             className="flex-1"
           >

@@ -259,7 +259,7 @@ const TaskList: React.FC<TaskListProps> = ({
 
   return (
     <>
-      <div className="space-y-3 mb-3">
+      <div className="space-y-2 mb-3"> {/* Changed space-y-3 to space-y-2 */}
         <TaskFilter
           currentDate={currentDate}
           setCurrentDate={setCurrentDate}
@@ -282,7 +282,7 @@ const TaskList: React.FC<TaskListProps> = ({
           <div className="flex gap-2 w-full sm:w-auto">
             <Dialog open={isAddSectionOpen} onOpenChange={setIsAddSectionOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" className="flex-1">
+                <Button variant="outline" size="sm" className="flex-1"> {/* Changed size to sm */}
                   <Plus className="mr-2 h-4 w-4" /> Add Section
                 </Button>
               </DialogTrigger>
@@ -317,7 +317,7 @@ const TaskList: React.FC<TaskListProps> = ({
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" className="flex-1">
+                <Button variant="outline" size="sm" className="flex-1"> {/* Changed size to sm */}
                   <Settings className="mr-2 h-4 w-4" /> Manage Sections
                 </Button>
               </TooltipTrigger>

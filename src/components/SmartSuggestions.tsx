@@ -80,19 +80,19 @@ const SmartSuggestions: React.FC<SmartSuggestionsProps> = ({ tasks, currentDate,
         <h3 className="text-base font-semibold mb-2">Smart Suggestions</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
           {overdueTasksCount > 0 && (
-            <Button variant="outline" className="justify-start gap-2 h-8"> {/* Changed h-9 to h-8 */}
+            <Button variant="outline" size="sm" className="justify-start gap-2"> {/* Changed h-8 to size="sm" */}
               <Clock className="h-3.5 w-3.5 text-destructive" />
               Review {overdueTasksCount} Overdue Task{overdueTasksCount > 1 ? 's' : ''}
             </Button>
           )}
           {completedTasksCountForArchiveSuggestion > 0 && (
-            <Button variant="outline" className="justify-start gap-2 h-8 w-fit" onClick={handleArchiveCompletedClick}> {/* Changed h-9 to h-8 */}
+            <Button variant="outline" size="sm" className="justify-start gap-2 w-fit" onClick={handleArchiveCompletedClick}> {/* Changed h-8 to size="sm" */}
               <Archive className="h-3.5 w-3.5 text-primary" />
               Archive All Completed Tasks
             </Button>
           )}
           {totalTasksToday === 0 && (
-            <Button variant="outline" className="justify-start gap-2 h-8"> {/* Changed h-9 to h-8 */}
+            <Button variant="outline" size="sm" className="justify-start gap-2"> {/* Changed h-8 to size="sm" */}
               <Plus className="h-3.5 w-3.5 text-primary" />
               Add Your First Task Today!
             </Button>

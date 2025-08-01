@@ -105,8 +105,8 @@ const ManageSectionsDialog: React.FC<ManageSectionsDialogProps> = ({
                     />
                     {!editingSectionId && (
                       <>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleEditClick(section)}>
-                          <Edit className="h-3.5 w-3.5" />
+                        <Button variant="ghost" size="icon" className="h-6 w-6"> {/* Changed h-6 w-6 to h-6 w-6 */}
+                          <Edit className="h-3.5 w-3.5" onClick={() => handleEditClick(section)} /> {/* Added onClick */}
                         </Button>
                         <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => handleDeleteClick(section.id)}>
                           <Trash2 className="h-3.5 w-3.5" />

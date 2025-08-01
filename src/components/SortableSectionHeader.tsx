@@ -86,11 +86,11 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               value={editingSectionName}
               onChange={(e) => setNewEditingSectionName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleRenameSection()}
-              className="text-lg font-semibold"
+              className="text-lg font-semibold h-8" // Changed h-9 to h-8
               autoFocus
             />
-            <Button size="sm" onClick={handleRenameSection} disabled={!editingSectionName.trim()}>Save</Button>
-            <Button variant="ghost" size="sm" onClick={handleCancelSectionEdit}>Cancel</Button>
+            <Button size="sm" onClick={handleRenameSection} disabled={!editingSectionName.trim()} className="h-8">Save</Button> {/* Changed h-9 to h-8 */}
+            <Button variant="ghost" size="sm" onClick={handleCancelSectionEdit} className="h-8">Cancel</Button> {/* Changed h-9 to h-8 */}
           </div>
         ) : (
           <div 
@@ -137,17 +137,17 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" data-no-dnd="true">
-              <DropdownMenuItem onClick={() => handleAddTaskToSpecificSection(section.id)}>
+              <DropdownMenuItem onSelect={() => handleAddTaskToSpecificSection(section.id)}>
                 <Plus className="mr-2 h-3.5 w-3.5" /> Add Task to Section
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => markAllTasksInSectionCompleted(section.id)}>
+              <DropdownMenuItem onSelect={() => markAllTasksInSectionCompleted(section.id)}>
                 <CheckCircle2 className="mr-2 h-3.5 w-3.5" /> Mark All Completed
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleEditSectionClick(section)}>
+              <DropdownMenuItem onSelect={() => handleEditSectionClick(section)}>
                 <Edit className="mr-2 h-3.5 w-3.5" /> Rename Section
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => handleDeleteSectionClick(section.id)} className="text-destructive focus:text-destructive">
+              <DropdownMenuItem onSelect={() => handleDeleteSectionClick(section.id)} className="text-destructive focus:text-destructive">
                 <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete Section
               </DropdownMenuItem>
             </DropdownMenuContent>

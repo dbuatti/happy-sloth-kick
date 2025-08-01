@@ -274,6 +274,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
             onKeyDown={handleKeyDown}
             disabled={isSaving || isSuggesting}
             autoFocus={autoFocus}
+            className="h-9" // Changed h-10 to h-9
           />
           <Button
             type="button"
@@ -283,6 +284,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
             disabled={isSaving || isSuggesting || !description.trim()}
             title="Suggest details from description"
             aria-label="Suggest task details"
+            className="h-9 w-9" // Changed h-10 w-10 to h-9 w-9
           >
             {isSuggesting ? (
               <span className="animate-spin h-3.5 w-3.5 border-b-2 border-primary rounded-full" />
