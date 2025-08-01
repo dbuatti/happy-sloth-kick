@@ -259,7 +259,7 @@ const TaskList: React.FC<TaskListProps> = ({
 
   return (
     <>
-      <div className="space-y-4 mb-4">
+      <div className="space-y-3 mb-3"> {/* Changed space-y-4 mb-4 to space-y-3 mb-3 */}
         <TaskFilter
           currentDate={currentDate}
           setCurrentDate={setCurrentDate}
@@ -278,7 +278,7 @@ const TaskList: React.FC<TaskListProps> = ({
           searchRef={searchRef}
         />
 
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-2"> {/* Changed gap-3 to gap-2 */}
           <div className="flex gap-2 w-full sm:w-auto">
             <Dialog open={isAddSectionOpen} onOpenChange={setIsAddSectionOpen}>
               <DialogTrigger asChild>
@@ -385,10 +385,10 @@ const TaskList: React.FC<TaskListProps> = ({
                       <SortableContext items={[...allSortableTaskIds]} strategy={verticalListSortingStrategy}>
                         <ul className="list-none space-y-2">
                           {topLevelTasksInSection.length === 0 ? (
-                            <div className="text-center text-foreground/80 dark:text-foreground/80 py-6 rounded-md border border-dashed border-border bg-muted/30" data-no-dnd="true">
+                            <div className="text-center text-foreground/80 dark:text-foreground/80 py-4 rounded-md border border-dashed border-border bg-muted/30" data-no-dnd="true"> {/* Changed py-6 to py-4 */}
                               <div className="flex items-center justify-center gap-2 mb-2">
-                                <ListTodo className="h-5 w-5" />
-                                <p className="text-sm font-medium">
+                                <ListTodo className="h-4 w-4" /> {/* Changed h-5 w-5 to h-4 w-4 */}
+                                <p className="text-sm font-medium"> {/* Changed text-sm to text-sm */}
                                   {anyFilterActive 
                                     ? "No tasks match your filters in this section." 
                                     : "No tasks in this section yet."}

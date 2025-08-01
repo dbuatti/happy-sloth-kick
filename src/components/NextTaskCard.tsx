@@ -21,10 +21,11 @@ interface NextTaskCardProps {
 const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEditTask, onOpenDetail, currentDate, loading }) => {
   if (loading) {
     return (
-      <Card className="w-full max-w-3xl mx-auto shadow-sm mb-4 border-l-4 border-primary dark:border-primary">
+      <Card className="w-full max-w-3xl mx-auto shadow-sm mb-3 border-l-4 border-primary dark:border-primary"> {/* Changed mb-4 to mb-3 */}
         <CardHeader className="pb-2">
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <Lightbulb className="h-5 w-5 text-primary" /> Your Next Task
+          <CardTitle className="text-base font-semibold flex items-center gap-2"> {/* Changed text-lg to text-base */}
+            <Lightbulb className="h-4 w-4 text-primary" /> {/* Changed h-5 w-5 to h-4 w-4 */}
+            Your Next Task
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0 space-y-3">
@@ -41,10 +42,11 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
 
   if (!task) {
     return (
-      <Card className="w-full max-w-3xl mx-auto shadow-sm mb-4 border-l-4 border-primary dark:border-primary">
+      <Card className="w-full max-w-3xl mx-auto shadow-sm mb-3 border-l-4 border-primary dark:border-primary"> {/* Changed mb-4 to mb-3 */}
         <CardHeader className="pb-2">
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <Lightbulb className="h-5 w-5 text-primary" /> Your Next Task
+          <CardTitle className="text-base font-semibold flex items-center gap-2"> {/* Changed text-lg to text-base */}
+            <Lightbulb className="h-4 w-4 text-primary" /> {/* Changed h-5 w-5 to h-4 w-4 */}
+            Your Next Task
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
@@ -91,7 +93,7 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
   return (
     <Card
       className={cn(
-        "w-full max-w-3xl mx-auto shadow-sm mb-4 cursor-pointer transition hover:shadow-md active:scale-[0.997]",
+        "w-full max-w-3xl mx-auto shadow-sm mb-3 cursor-pointer transition hover:shadow-md active:scale-[0.997]", /* Changed mb-4 to mb-3 */
         isOverdue ? "border-l-4 border-status-overdue" :
         isDueToday ? "border-l-4 border-status-due-today" :
         "border-l-4 border-primary"
@@ -99,8 +101,9 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
       onClick={() => onOpenDetail ? onOpenDetail(task) : onEditTask(task)}
     >
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg font-semibold flex items-center gap-2">
-          <Lightbulb className="h-5 w-5 text-primary" /> Your Next Task
+        <CardTitle className="text-base font-semibold flex items-center gap-2"> {/* Changed text-lg to text-base */}
+          <Lightbulb className="h-4 w-4 text-primary" /> {/* Changed h-5 w-5 to h-4 w-4 */}
+          Your Next Task
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-0 space-y-3">
@@ -108,7 +111,7 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
           <div className={cn("w-4 h-4 rounded-full flex items-center justify-center border", categoryColorProps.backgroundClass, categoryColorProps.dotBorder)}>
             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: categoryColorProps.dotColor }}></div>
           </div>
-          <h3 className="text-xl font-bold flex-1 line-clamp-2">{task.description}</h3>
+          <h3 className="text-lg font-bold flex-1 line-clamp-2">{task.description}</h3> {/* Changed text-xl to text-lg */}
         </div>
 
         <div className="flex items-center text-sm text-muted-foreground gap-2 flex-wrap">
@@ -136,14 +139,14 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
 
         <div className="flex gap-2 mt-4">
           <Button onClick={(e) => { e.stopPropagation(); onMarkComplete(task.id); }} className="flex-1">
-            <CheckCircle2 className="mr-2 h-4 w-4" /> Mark Complete
+            <CheckCircle2 className="mr-2 h-3.5 w-3.5" /> Mark Complete {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
           </Button>
           <Button
             variant="outline"
             onClick={(e) => { e.stopPropagation(); onOpenDetail ? onOpenDetail(task) : onEditTask(task); }}
             className="flex-1"
           >
-            <Edit className="mr-2 h-4 w-4" /> Edit Task
+            <Edit className="mr-2 h-3.5 w-3.5" /> Edit Task {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
           </Button>
         </div>
       </CardContent>

@@ -64,8 +64,6 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
     <div
       ref={setNodeRef}
       style={style}
-      {...attributes}
-      {...listeners}
       className={cn(
         "relative rounded-lg bg-muted dark:bg-gray-700 text-foreground shadow-sm hover:shadow-md transition-shadow duration-200 group",
         isDragging ? "ring-2 ring-primary shadow-lg" : "",
@@ -73,22 +71,22 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
       )}
     >
       <button
-        className="flex-shrink-0 h-full py-1 px-0.5 text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity duration-200 cursor-grab active:cursor-grabbing" // Changed opacity-0 to opacity-50
+        className="flex-shrink-0 h-full py-1 px-0.5 text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity duration-200 cursor-grab active:cursor-grabbing"
         {...attributes}
         {...listeners}
         aria-label="Drag to reorder section"
         data-no-dnd="true" // Ensure this button is the only drag handle
       >
-        <GripVertical className="h-4 w-4" />
+        <GripVertical className="h-3.5 w-3.5" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
       </button>
-      <div className="flex-1 flex items-center justify-between p-2 pl-0"> {/* Adjusted padding */}
+      <div className="flex-1 flex items-center justify-between py-1.5 pl-0 pr-1"> {/* Changed p-2 pl-0 to py-1.5 pl-0 pr-1 */}
         {editingSectionId === section.id ? (
           <div className="flex items-center w-full gap-2" data-no-dnd="true"> {/* Prevent drag when editing */}
             <Input
               value={editingSectionName}
               onChange={(e) => setNewEditingSectionName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleRenameSection()}
-              className="text-xl font-semibold"
+              className="text-lg font-semibold" /* Changed text-xl to text-lg */
               autoFocus
             />
             <Button size="sm" onClick={handleRenameSection} disabled={!editingSectionName.trim()}>Save</Button>
@@ -99,12 +97,12 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
             className="flex items-center gap-2 flex-1 cursor-pointer" 
             onClick={() => toggleSection(section.id)} // Added onClick to toggle section
           >
-            <h3 className="text-xl font-semibold flex items-center gap-2">
-              <FolderOpen className="h-5 w-5 text-muted-foreground" />
+            <h3 className="text-lg font-semibold flex items-center gap-2"> {/* Changed text-xl to text-lg */}
+              <FolderOpen className="h-4 w-4 text-muted-foreground" /> {/* Changed h-5 w-5 to h-4 w-4 */}
               {section.name} ({sectionTasksCount})
             </h3>
-            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleEditSectionClick(section); }} className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200" data-no-dnd="true">
-              <Edit className="h-4 w-4" />
+            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleEditSectionClick(section); }} className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200" data-no-dnd="true"> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+              <Edit className="h-3.5 w-3.5" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
             </Button>
           </div>
         )}
@@ -113,7 +111,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
             <Tooltip>
               <TooltipTrigger asChild>
                         <Label htmlFor={`focus-mode-toggle-${section.id}`} className="text-xs text-muted-foreground cursor-pointer">
-                          {section.include_in_focus_mode ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                          {section.include_in_focus_mode ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />} {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
                         </Label>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -132,30 +130,30 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="h-6 w-6 p-0"
+                className="h-5 w-5 p-0" /* Changed h-6 w-6 to h-5 w-5 */
               >
                 <span className="sr-only">Open section menu</span>
-                <MoreHorizontal className="h-4 w-4" />
+                <MoreHorizontal className="h-3.5 w-3.5" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" data-no-dnd="true"> {/* Added data-no-dnd */}
               <DropdownMenuItem onClick={() => handleAddTaskToSpecificSection(section.id)}>
-                <Plus className="mr-2 h-4 w-4" /> Add Task to Section
+                <Plus className="mr-2 h-3.5 w-3.5" /> Add Task to Section {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => markAllTasksInSectionCompleted(section.id)}>
-                <CheckCircle2 className="mr-2 h-4 w-4" /> Mark All Completed
+                <CheckCircle2 className="mr-2 h-3.5 w-3.5" /> Mark All Completed {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleEditSectionClick(section)}>
-                <Edit className="mr-2 h-4 w-4" /> Rename Section
+                <Edit className="mr-2 h-3.5 w-3.5" /> Rename Section {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => handleDeleteSectionClick(section.id)} className="text-destructive focus:text-destructive">
-                <Trash2 className="mr-2 h-4 w-4" /> Delete Section
+                <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete Section {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button variant="ghost" size="icon" onClick={() => toggleSection(section.id)} className="h-6 w-6 p-0">
-            <ChevronDown className={cn("h-5 w-5 transition-transform", isExpanded ? "rotate-0" : "-rotate-90")} />
+          <Button variant="ghost" size="icon" onClick={() => toggleSection(section.id)} className="h-5 w-5 p-0"> {/* Changed h-6 w-6 to h-5 w-5 */}
+            <ChevronDown className={cn("h-4 w-4 transition-transform", isExpanded ? "rotate-0" : "-rotate-90")} /> {/* Changed h-5 w-5 to h-4 w-4 */}
           </Button>
         </div>
       </div>

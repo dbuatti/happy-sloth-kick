@@ -115,8 +115,8 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
       <DialogContent className="sm:max-w-[425px] md:max-w-lg lg:max-w-xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <div className={cn("w-4 h-4 rounded-full flex items-center justify-center border", categoryColorProps.backgroundClass, categoryColorProps.dotBorder)}>
-              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: categoryColorProps.dotColor }}></div>
+            <div className={cn("w-3.5 h-3.5 rounded-full flex items-center justify-center border", categoryColorProps.backgroundClass, categoryColorProps.dotBorder)}> {/* Changed w-4 h-4 to w-3.5 h-3.5 */}
+              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: categoryColorProps.dotColor }}></div> {/* Changed w-2 h-2 to w-1.5 h-1.5 */}
             </div>
             <span className="flex-1 truncate">{task.description}</span>
           </DialogTitle>
@@ -124,36 +124,36 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
         <div className="py-4 space-y-4 text-sm text-foreground">
           <div className="grid grid-cols-2 gap-y-2 gap-x-4">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+              <CheckCircle2 className="h-3.5 w-3.5 text-muted-foreground" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
               <span>Status: <span className="font-semibold capitalize">{task.status}</span></span>
             </div>
             <div className="flex items-center gap-2">
-              <span className={cn("h-4 w-4", getPriorityColor(task.priority))}><Edit className="h-4 w-4" /></span>
+              <span className={cn("h-3.5 w-3.5", getPriorityColor(task.priority))}><Edit className="h-3.5 w-3.5" /></span> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
               <span>Priority: <span className={cn("font-semibold capitalize", getPriorityColor(task.priority))}>{task.priority}</span></span>
             </div>
             <div className="flex items-center gap-2">
-              <FolderOpen className="h-4 w-4 text-muted-foreground" />
+              <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
               <span>Section: <span className="font-semibold">{sectionName}</span></span>
             </div>
             <div className="flex items-center gap-2">
-              <Repeat className="h-4 w-4 text-muted-foreground" />
+              <Repeat className="h-3.5 w-3.5 text-muted-foreground" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
               <span>Recurring: <span className="font-semibold capitalize">{task.recurring_type}</span></span>
             </div>
             {task.due_date && (
               <div className="flex items-center gap-2 col-span-2">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <Calendar className="h-3.5 w-3.5 text-muted-foreground" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
                 <span>Due Date: <span className={cn("font-semibold", isOverdue && "text-status-overdue", isDueToday && "text-status-due-today")}>{getDueDateDisplay(task.due_date)}</span></span>
               </div>
             )}
             {task.remind_at && (
               <div className="flex items-center gap-2 col-span-2">
-                <BellRing className="h-4 w-4 text-muted-foreground" />
+                <BellRing className="h-3.5 w-3.5 text-muted-foreground" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
                 <span>Reminder: <span className="font-semibold">{isValid(parseISO(task.remind_at)) ? format(parseISO(task.remind_at), 'MMM d, yyyy HH:mm') : 'Invalid Date'}</span></span>
               </div>
             )}
             {task.link && (
               <div className="flex items-center gap-2 col-span-2">
-                <LinkIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <LinkIcon className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
                 <span className="flex-shrink-0">Link:</span>
                 <a href={task.link} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline flex-1 min-w-0 truncate">
                   {task.link}
@@ -164,13 +164,13 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
 
           {task.notes && (
             <div className="space-y-1">
-              <h4 className="font-semibold flex items-center gap-2"><StickyNote className="h-4 w-4 text-muted-foreground" /> Notes:</h4>
+              <h4 className="font-semibold flex items-center gap-2"><StickyNote className="h-3.5 w-3.5 text-muted-foreground" /> Notes:</h4> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
               <p className="text-muted-foreground whitespace-pre-wrap">{task.notes}</p>
             </div>
           )}
 
           <div className="space-y-2">
-            <h4 className="font-semibold flex items-center gap-2"><ListTodo className="h-4 w-4 text-muted-foreground" /> Sub-tasks ({subtasks.length})</h4>
+            <h4 className="font-semibold flex items-center gap-2"><ListTodo className="h-3.5 w-3.5 text-muted-foreground" /> Sub-tasks ({subtasks.length})</h4> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
             {subtasks.length === 0 ? (
               <p className="text-sm text-muted-foreground">No sub-tasks for this task.</p>
             ) : (
@@ -181,7 +181,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
                       checked={subtask.status === 'completed'}
                       onCheckedChange={(checked: boolean) => handleSubtaskStatusChange(subtask.id, checked ? 'completed' : 'to-do')}
                       id={`subtask-overview-${subtask.id}`}
-                      className="flex-shrink-0 h-4 w-4"
+                      className="flex-shrink-0 h-3.5 w-3.5" /* Changed h-4 w-4 to h-3.5 w-3.5 */
                       disabled={isUpdatingStatus}
                     />
                     <label
@@ -194,7 +194,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
                     >
                       {subtask.description}
                     </label>
-                    {subtask.status === 'completed' && <CheckCircle2 className="h-4 w-4 text-green-500" />}
+                    {subtask.status === 'completed' && <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />} {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
                   </li>
                 ))}
               </ul>
@@ -210,7 +210,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
             onClick={() => onEditClick(task)}
             className="w-full sm:w-auto mt-2 sm:mt-0"
           >
-            <Edit className="mr-2 h-4 w-4" /> Edit
+            <Edit className="mr-2 h-3.5 w-3.5" /> Edit {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
           </Button>
           <div className="flex gap-2 w-full sm:w-auto">
             <Button
@@ -220,13 +220,13 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
               className="flex-1"
             >
               {task.status === 'completed' ? (
-                <><ListTodo className="mr-2 h-4 w-4" /> Mark To-Do</>
+                <><ListTodo className="mr-2 h-3.5 w-3.5" /> Mark To-Do</> /* Changed h-4 w-4 to h-3.5 w-3.5 */
               ) : (
-                <><CheckCircle2 className="mr-2 h-4 w-4" /> Mark Complete</>
+                <><CheckCircle2 className="mr-2 h-3.5 w-3.5" /> Mark Complete</> /* Changed h-4 w-4 to h-3.5 w-3.5 */
               )}
             </Button>
             <Button variant="destructive" onClick={handleDeleteClick} disabled={isUpdatingStatus} className="flex-1">
-              <Trash2 className="mr-2 h-4 w-4" /> Delete
+              <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
             </Button>
           </div>
         </DialogFooter>

@@ -132,8 +132,8 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
 
         <div className="space-y-2 mt-4 border-t pt-3">
           <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">Sub-tasks ({subtasks.length})</h3>
-            <Button variant="outline" size="sm" onClick={() => setIsAddSubtaskOpen(true)}>
+            <h3 className="text-base font-semibold">Sub-tasks ({subtasks.length})</h3> {/* Changed text-lg to text-base */}
+            <Button variant="outline" size="sm" className="h-8" onClick={() => setIsAddSubtaskOpen(true)}> {/* Changed h-9 to h-8 */}
               Add Sub-task
             </Button>
           </div>
@@ -147,7 +147,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
                     checked={subtask.status === 'completed'}
                     onCheckedChange={(checked: boolean) => handleSubtaskStatusChange(subtask.id, checked ? 'completed' : 'to-do')}
                     id={`subtask-${subtask.id}`}
-                    className="flex-shrink-0 h-4 w-4"
+                    className="flex-shrink-0 h-3.5 w-3.5" /* Changed h-4 w-4 to h-3.5 w-3.5 */
                   />
                   <label
                     htmlFor={`subtask-${subtask.id}`}
@@ -159,7 +159,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
                   >
                     {subtask.description}
                   </label>
-                  {subtask.status === 'completed' && <CheckCircle2 className="h-4 w-4 text-green-500" />}
+                  {subtask.status === 'completed' && <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />} {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
                 </li>
               ))}
             </ul>
@@ -174,13 +174,13 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
             className="w-full sm:w-auto mt-2 sm:mt-0"
           >
             {task.status === 'completed' ? (
-              <><ListTodo className="mr-2 h-4 w-4" /> Mark To-Do</>
+              <><ListTodo className="mr-2 h-3.5 w-3.5" /> Mark To-Do</> /* Changed h-4 w-4 to h-3.5 w-3.5 */
             ) : (
-              <><CheckCircle2 className="mr-2 h-4 w-4" /> Mark Complete</>
+              <><CheckCircle2 className="mr-2 h-3.5 w-3.5" /> Mark Complete</> /* Changed h-4 w-4 to h-3.5 w-3.5 */
             )}
           </Button>
           <Button variant="destructive" onClick={handleDeleteClick} disabled={isSaving} className="w-full sm:w-auto mt-2 sm:mt-0">
-            <Trash2 className="mr-2 h-4 w-4" /> Delete Task
+            <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete Task {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -183,10 +183,10 @@ const DailyTasksV2: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col">
-      <main className={cn("flex-grow p-4", isBulkActionsActive ? "pb-[80px]" : "")}> {/* Add conditional padding */}
-        <div className="w-full max-w-4xl mx-auto space-y-4">
-          <Card className="shadow-lg">
-            <CardHeader className="pb-2">
+      <main className={cn("flex-grow p-3", isBulkActionsActive ? "pb-[80px]" : "")}> {/* Changed p-4 to p-3 */}
+        <div className="w-full max-w-4xl mx-auto space-y-3"> {/* Changed space-y-4 to space-y-3 */}
+          <Card className="shadow-lg p-3"> {/* Added p-3 to Card */}
+            <CardHeader className="pb-1"> {/* Changed pb-2 to pb-1 */}
               <div className="flex items-center justify-between">
                 <CardTitle className="text-3xl font-bold">Your Tasks</CardTitle>
                 {dailyTaskCount > 0 && (
@@ -214,7 +214,7 @@ const DailyTasksV2: React.FC = () => {
             </CardHeader>
 
             <CardContent className="pt-0">
-              <div className="mb-3">
+              <div className="mb-2"> {/* Changed mb-3 to mb-2 */}
                 <DateNavigator
                   currentDate={currentDate}
                   onPreviousDay={handlePreviousDay}
@@ -227,12 +227,12 @@ const DailyTasksV2: React.FC = () => {
               {/* Sticky filter + quick add bar */}
               <div
                 className={cn(
-                  "sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border -mx-4 px-4 py-3 transition-shadow",
+                  "sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border -mx-3 px-3 py-2 transition-shadow", /* Changed -mx-4 px-4 py-3 to -mx-3 px-3 py-2 */
                   stuck ? "shadow-sm" : ""
                 )}
               >
                 <div ref={stickyRef} className="h-0 w-full -mt-1" aria-hidden />
-                <form onSubmit={handleQuickAddTask} className="mb-3">
+                <form onSubmit={handleQuickAddTask} className="mb-2"> {/* Changed mb-3 to mb-2 */}
                   <div className="flex items-center gap-2">
                     <Input
                       ref={quickAddInputRef}

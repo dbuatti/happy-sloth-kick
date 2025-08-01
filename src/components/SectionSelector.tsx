@@ -50,7 +50,7 @@ const SectionSelector: React.FC<SectionSelectorProps> = ({ value, onChange, user
           <SelectTrigger className="flex-1">
             <SelectValue placeholder="Select section" />
           </SelectTrigger>
-          <SelectContent className="z-[9999]">
+          <SelectContent className="z-[9999]"> {/* Add z-index here */}
             <SelectItem value="no-section-option">No Section</SelectItem> {/* Explicit 'No Section' option */}
             {sections.length > 0 && (
               sections.map(section => (
@@ -66,7 +66,7 @@ const SectionSelector: React.FC<SectionSelectorProps> = ({ value, onChange, user
       
       {selectedSection && (
         <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-          <FolderOpen className="h-3 w-3" />
+          <FolderOpen className="h-3.5 w-3.5" /> {/* Changed h-3 w-3 to h-3.5 w-3.5 */}
           <span>{selectedSection.name}</span>
         </div>
       )}

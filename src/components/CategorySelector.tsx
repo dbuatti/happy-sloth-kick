@@ -2,14 +2,14 @@ import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, X } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from '@/lib/utils';
-import { categoryColorMap, CategoryColorKey, getCategoryColorProps } from '@/lib/categoryColors'; // Import new color utilities
-import { Category } from '@/hooks/useTasks'; // Import Category interface
+import { categoryColorMap, CategoryColorKey, getCategoryColorProps } from '@/lib/categoryColors';
+import { Category } from '@/hooks/useTasks';
 
 interface CategorySelectorProps {
   value: string; // This is the category ID
@@ -91,8 +91,8 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
           <SelectTrigger className="flex-1 min-w-0">
             <SelectValue placeholder="Select category">
               <div className="flex items-center gap-2 w-full">
-                <div className={cn("w-4 h-4 rounded-full flex items-center justify-center border", selectedCategoryColorProps.backgroundClass, selectedCategoryColorProps.dotBorder)}>
-                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: selectedCategoryColorProps.dotColor }}></div>
+                <div className={cn("w-3.5 h-3.5 rounded-full flex items-center justify-center border", selectedCategoryColorProps.backgroundClass, selectedCategoryColorProps.dotBorder)}>
+                  <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: selectedCategoryColorProps.dotColor }}></div>
                 </div>
                 <span className="flex-1 min-w-0 truncate">
                   {selectedCategory ? selectedCategory.name : 'Select category'}
@@ -101,13 +101,13 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
             </SelectValue>
           </SelectTrigger>
           <SelectContent className="z-[9999]">
-            {categories.map(category => { // Directly map over categories, useTasks ensures 'General' is present once
+            {categories.map(category => {
               const colorProps = getCategoryColorProps(category.color);
               return (
                 <SelectItem key={category.id} value={category.id}>
                   <div className="flex items-center gap-2">
-                    <div className={cn("w-4 h-4 rounded-full flex items-center justify-center border", colorProps.backgroundClass, colorProps.dotBorder)}>
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: colorProps.dotColor }}></div>
+                    <div className={cn("w-3.5 h-3.5 rounded-full flex items-center justify-center border", colorProps.backgroundClass, colorProps.dotBorder)}>
+                      <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: colorProps.dotColor }}></div>
                     </div>
                     {category.name}
                   </div>
@@ -119,7 +119,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
             <Button type="button" size="icon" variant="outline">
-              <Plus className="h-4 w-4" />
+              <Plus className="h-3.5 w-3.5" />
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -137,20 +137,20 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
                       return (
                         <li key={category.id} className="flex items-center justify-between p-2 border rounded-md">
                           <div className="flex items-center gap-2">
-                            <div className={cn("w-4 h-4 rounded-full flex items-center justify-center border", colorProps.backgroundClass, colorProps.dotBorder)}>
-                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: colorProps.dotColor }}></div>
+                            <div className={cn("w-3.5 h-3.5 rounded-full flex items-center justify-center border", colorProps.backgroundClass, colorProps.dotBorder)}>
+                              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: colorProps.dotColor }}></div>
                             </div>
                             <span>{category.name}</span>
                           </div>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-6 w-6"
+                            className="h-5 w-5"
                             onClick={() => deleteCategory(category.id)}
                             aria-label={`Delete ${category.name}`}
-                            disabled={category.name.toLowerCase() === 'general'} // Disable delete for 'General'
+                            disabled={category.name.toLowerCase() === 'general'}
                           >
-                            <X className="h-3 w-3" />
+                            <X className="h-3.5 w-3.5" />
                           </Button>
                         </li>
                       );
@@ -175,13 +175,13 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
                 <div className="mt-4">
                   <Label>Color</Label>
                   <div className="flex flex-wrap gap-2 mt-2">
-                    {Object.keys(categoryColorMap).filter(key => key !== 'general').map((colorKey) => { // Exclude 'general' from selection
+                    {Object.keys(categoryColorMap).filter(key => key !== 'general').map((colorKey) => {
                       const colorProps = getCategoryColorProps(colorKey);
                       return (
                         <button
                           key={colorKey}
                           className={cn(
-                            "w-8 h-8 rounded-full border-2 flex items-center justify-center",
+                            "w-7 h-7 rounded-full border-2 flex items-center justify-center",
                             colorProps.backgroundClass,
                             colorProps.dotBorder,
                             selectedColorKey === colorKey ? 'ring-2 ring-offset-2 ring-primary' : ''
@@ -189,7 +189,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
                           onClick={() => setSelectedColorKey(colorKey as CategoryColorKey)}
                           aria-label={colorProps.name}
                         >
-                          <div className="w-4 h-4 rounded-full" style={{ backgroundColor: colorProps.dotColor }}></div>
+                          <div className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: colorProps.dotColor }}></div>
                         </button>
                       );
                     })}

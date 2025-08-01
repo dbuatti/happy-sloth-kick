@@ -263,10 +263,10 @@ const TaskForm: React.FC<TaskFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-3"> {/* Changed py-4 to py-3 */}
       <div>
         <Label htmlFor="task-description">Task Description</Label>
-        <div className="flex gap-2">
+        <div className="flex gap-1.5"> {/* Changed gap-2 to gap-1.5 */}
           <Input
             id="task-description"
             placeholder="Task description (e.g., 'Buy groceries by tomorrow high priority')"
@@ -285,16 +285,16 @@ const TaskForm: React.FC<TaskFormProps> = ({
             aria-label="Suggest task details"
           >
             {isSuggesting ? (
-              <span className="animate-spin h-4 w-4 border-b-2 border-primary rounded-full" />
+              <span className="animate-spin h-3.5 w-3.5 border-b-2 border-primary rounded-full" /> /* Changed h-4 w-4 to h-3.5 w-3.5 */
             ) : (
-              <Lightbulb className="h-4 w-4" />
+              <Lightbulb className="h-3.5 w-3.5" /> /* Changed h-4 w-4 to h-3.5 w-3.5 */
             )}
           </Button>
         </div>
         {errors.description && <p className="text-destructive text-sm mt-1">{errors.description.message}</p>}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2"> {/* Changed gap-3 to gap-2 */}
         <Controller
           control={control}
           name="category"
@@ -325,7 +325,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
         {errors.sectionId && <p className="text-destructive text-sm mt-1">{errors.sectionId.message}</p>}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2"> {/* Changed gap-3 to gap-2 */}
         <div>
           <Label>Due Date</Label>
           <Controller
@@ -343,7 +343,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
                     disabled={isSaving || isSuggesting}
                     aria-label="Select due date"
                   >
-                    <Calendar className="mr-2 h-4 w-4" />
+                    <Calendar className="mr-2 h-3.5 w-3.5" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
                     {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
                   </Button>
                 </PopoverTrigger>
@@ -402,7 +402,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
                     disabled={isSaving || isSuggesting}
                     aria-label="Set reminder date"
                   >
-                    <BellRing className="mr-2 h-4 w-4" />
+                    <BellRing className="mr-2 h-3.5 w-3.5" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
                     {field.value ? format(field.value, "PPP") : <span>Set reminder date</span>}
                   </Button>
                 </PopoverTrigger>
@@ -452,7 +452,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
         {errors.notes && <p className="text-destructive text-sm mt-1">{errors.notes.message}</p>}
       </div>
 
-      <div className="flex justify-end space-x-2 mt-4">
+      <div className="flex justify-end space-x-1.5 mt-4"> {/* Changed space-x-2 to space-x-1.5 */}
         <Button type="button" variant="outline" onClick={onCancel} disabled={isSaving || isSuggesting}>
           Cancel
         </Button>
