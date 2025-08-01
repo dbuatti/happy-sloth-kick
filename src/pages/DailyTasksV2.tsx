@@ -163,8 +163,6 @@ const DailyTasksV2: React.FC = () => {
                 onEditTask={(task) => {
                   if (task) {
                     handleOpenOverview(task);
-                  } else {
-                    setIsTaskDetailOpen(true);
                   }
                 }}
                 currentDate={currentDate}
