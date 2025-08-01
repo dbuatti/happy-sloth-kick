@@ -848,7 +848,14 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     });
 
     try {
-      await supabase.from('tasks').upsert(updates, { onConflict: 'id' });
+      // Add user_id to each update object for RLS compliance
+      const updatesWithUserId = updates.map(u => ({ ...u, user_id: userId }));
+
+      const { error } = await supabase.from('tasks').upsert(updatesWithUserId, { onConflict: 'id' });
+
+      if (error) {
+        throw error;
+      }
       showSuccess('Task moved successfully!');
     } catch (error: any) {
       console.error('Error moving task:', error);
@@ -968,9 +975,12 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     });
 
     try {
+      // Add user_id to each update object for RLS compliance
+      const updatesWithUserId = updates.map(u => ({ ...u, user_id: userId }));
+
       const { error } = await supabase
         .from('tasks')
-        .upsert(updates, { onConflict: 'id' });
+        .upsert(updatesWithUserId, { onConflict: 'id' });
 
       if (error) {
         throw error;
