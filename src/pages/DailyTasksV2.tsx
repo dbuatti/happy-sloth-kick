@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import DateNavigator from '@/components/DateNavigator';
 import NextTaskCard from '@/components/NextTaskCard';
 import TaskList from '@/components/TaskList';
@@ -123,10 +123,15 @@ const DailyTasksV2: React.FC = () => {
     }
   };
 
+  // Keyboard shortcuts (+ "/" quick focus for quick-add)
   const shortcuts: ShortcutMap = {
     'arrowleft': () => handlePreviousDay(),
     'arrowright': () => handleNextDay(),
     't': () => handleGoToToday(),
+    '/': (e) => {
+      e.preventDefault();
+      quickAddInputRef.current?.focus();
+    },
     'cmd+k': (e) => { e.preventDefault(); setIsCommandPaletteOpen(prev => !prev); },
   };
   useKeyboardShortcuts(shortcuts);
@@ -142,6 +147,35 @@ const DailyTasksV2: React.FC = () => {
     }).length;
     return { totalCount: total, completedCount: completed, overdueCount: overdue };
   }, [filteredTasks, currentDate]);
+
+  // Sticky shadow cue on scroll
+  const stickyRef = useRef<HTMLDivElement>(null);
+  const [stuck, setStuck] = useState(false);
+  useEffect(() => {
+    const el = stickyRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([e]) => setStuck(!e.isIntersecting),
+      { root: null, threshold: 1 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const anyFilterActive =
+    searchFilter !== '' ||
+    statusFilter !== 'all' ||
+    categoryFilter !== 'all' ||
+    priorityFilter !== 'all' ||
+    sectionFilter !== 'all';
+
+  const handleResetFiltersInline = () => {
+    setSearchFilter('');
+    setStatusFilter('all');
+    setCategoryFilter('all');
+    setPriorityFilter('all');
+    setSectionFilter('all');
+  };
 
   return (
     <div className="flex-1 flex flex-col">
@@ -187,12 +221,18 @@ const DailyTasksV2: React.FC = () => {
               </div>
 
               {/* Sticky filter + quick add bar */}
-              <div className="sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border -mx-4 px-4 py-3">
+              <div
+                className={cn(
+                  "sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border -mx-4 px-4 py-3 transition-shadow",
+                  stuck ? "shadow-sm" : ""
+                )}
+              >
+                <div ref={stickyRef} className="h-0 w-full -mt-1" aria-hidden />
                 <form onSubmit={handleQuickAddTask} className="mb-3">
                   <div className="flex items-center gap-2">
                     <Input
                       ref={quickAddInputRef}
-                      placeholder="Quick add a task (press Enter to add)"
+                      placeholder='Quick add a task — press "/" to focus, Enter to add'
                       value={quickAddTaskDescription}
                       onChange={(e) => setQuickAddTaskDescription(e.target.value)}
                       className="flex-1"
@@ -202,6 +242,19 @@ const DailyTasksV2: React.FC = () => {
                     </Button>
                   </div>
                 </form>
+
+                {anyFilterActive && (
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={handleResetFiltersInline}
+                      className="text-xs px-2 py-1 rounded-full border hover:bg-muted transition"
+                      aria-label="Reset filters"
+                    >
+                      Reset filters
+                    </button>
+                  </div>
+                )}
               </div>
 
               <NextTaskCard
