@@ -68,11 +68,15 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
       {...listeners}
       className={cn(
         "relative rounded-lg bg-muted dark:bg-gray-700 text-foreground shadow-sm hover:shadow-md transition-shadow duration-200 group",
-        isDragging ? "ring-2 ring-primary shadow-lg" : ""
+        isDragging ? "ring-2 ring-primary shadow-lg" : "",
+        "flex items-center gap-2" // Use flex to align drag handle
       )}
     >
       <button
-        className="flex-shrink-0 h-full py-1 px-0.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-grab active:cursor-grabbing"
+        className="flex-shrink-0 h-full py-1 px-0.5 text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity duration-200 cursor-grab active:cursor-grabbing" // Changed opacity-0 to opacity-50
+        {...attributes}
+        {...listeners}
+        aria-label="Drag to reorder section"
         data-no-dnd="true" // Ensure this button is the only drag handle
       >
         <GripVertical className="h-4 w-4" />
@@ -134,7 +138,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" data-no-dnd="true"> {/* Ensure dropdown content is not draggable */}
+            <DropdownMenuContent align="end" data-no-dnd="true"> {/* Added data-no-dnd */}
               <DropdownMenuItem onClick={() => handleAddTaskToSpecificSection(section.id)}>
                 <Plus className="mr-2 h-4 w-4" /> Add Task to Section
               </DropdownMenuItem>

@@ -49,7 +49,7 @@ const taskFormSchema = z.object({
     } catch (e) {
       return false;
     }
-  }, { message: 'Must be a valid URL format (e.g., example.com or https://example.com).' }),
+  }, { message: 'Please enter a valid URL (e.g., example.com or https://example.com).' }), // Improved error message
 }).superRefine((data, ctx) => { // Using superRefine for more robust conditional validation
   if (data.remindAtDate) {
     // If remindAtDate is set, remindAtTime is required and must be valid

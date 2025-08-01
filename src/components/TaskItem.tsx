@@ -97,7 +97,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   return (
     <div
       className={cn(
-        "relative flex items-start space-x-3 w-full py-1 px-2 rounded-lg", // Changed p-2 to py-1 px-2
+        "relative flex items-start space-x-3 w-full py-2 px-2 rounded-lg", // Changed py-1 to py-2
         task.status === 'completed' ? "opacity-70 bg-green-50/20 dark:bg-green-900/20" : "",
         isOverdue ? "border-l-4 border-status-overdue" :
         isDueToday ? "border-l-4 border-status-due-today" :
@@ -214,14 +214,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
         </div>
       )}
 
-      <div className="flex-shrink-0 flex items-center space-x-1">
+      <div className="flex-shrink-0 flex items-center space-x-1" data-no-dnd="true"> {/* Added data-no-dnd to this div */}
         {task.status === 'completed' && (
           <Button 
             variant="outline" 
             size="sm" 
             className="h-7 px-2 text-xs"
             onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'to-do'); playSound('success'); }}
-            data-no-dnd="true"
             aria-label="Mark as To-Do"
           >
             <ListTodo className="h-3 w-3 mr-1" /> To-Do
@@ -233,14 +232,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
               variant="ghost" 
               className="h-7 w-7 p-0"
               onClick={(e) => e.stopPropagation()}
-              data-no-dnd="true"
               aria-label="More options"
             >
               <span className="sr-only">Open menu</span>
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" data-no-dnd="true"> {/* Added data-no-dnd */}
             <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onOpenOverview(task); }}> {/* Changed to open overview */}
               <Edit className="mr-2 h-4 w-4" /> View Details
             </DropdownMenuItem>
@@ -267,10 +265,10 @@ const TaskItem: React.FC<TaskItemProps> = ({
             )}
             <DropdownMenuSeparator />
             <DropdownMenuSub>
-              <DropdownMenuSubTrigger onSelect={(e) => e.preventDefault()}>
+              <DropdownMenuSubTrigger onSelect={(e) => e.preventDefault()} data-no-dnd="true"> {/* Added data-no-dnd */}
                 <FolderOpen className="mr-2 h-4 w-4" /> Move to Section
               </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent>
+              <DropdownMenuSubContent data-no-dnd="true"> {/* Added data-no-dnd */}
                 {sections.length === 0 ? (
                   <DropdownMenuItem disabled>No sections available</DropdownMenuItem>
                 ) : (
