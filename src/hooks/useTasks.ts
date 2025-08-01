@@ -163,7 +163,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
       const { data: initialTasksFromDB, error: fetchError } = await supabase
         .from('tasks')
-        .select('*')
+        .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link')
         .eq('user_id', userId);
 
       if (fetchError) throw fetchError;
@@ -273,7 +273,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     const { data, error: insertError } = await supabase
       .from('tasks')
       .insert(newInstanceDataForDb)
-      .select()
+      .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link')
       .single();
 
     if (insertError) {
@@ -294,7 +294,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
     const { data: currentTasksFromDB, error: fetchError } = await supabase
       .from('tasks')
-      .select('*')
+      .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link')
       .eq('user_id', userId);
 
     if (fetchError) {
@@ -441,7 +441,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       const { data, error } = await supabase
         .from('tasks')
         .insert(dbInsertPayload)
-        .select()
+        .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link')
         .single();
 
       if (error) throw error;
@@ -487,7 +487,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         .update(dbUpdates)
         .eq('id', taskId)
         .eq('user_id', userId)
-        .select();
+        .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link');
 
       if (error) throw error;
       showSuccess('Task updated successfully!');
@@ -535,7 +535,8 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         .from('tasks')
         .delete()
         .in('id', idsToDelete)
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .select('id'); // Select only ID for deletion confirmation
 
       if (error) throw error;
       showSuccess('Task(s) deleted successfully!');
@@ -581,7 +582,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         .update(dbUpdates)
         .in('id', ids)
         .eq('user_id', userId)
-        .select();
+        .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link');
 
       if (error) throw error;
       showSuccess(`${ids.length} tasks updated successfully!`);
@@ -631,7 +632,8 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         .from('tasks')
         .update({ status: 'completed' })
         .in('id', taskIdsToComplete)
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .select('id'); // Select only ID for confirmation
 
       if (error) throw error;
       showSuccess(`${taskIdsToComplete.length} tasks in section marked as completed!`);
@@ -653,7 +655,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       const { data, error } = await supabase
         .from('task_sections')
         .insert({ name, user_id: userId, order: newOrder, include_in_focus_mode: true })
-        .select()
+        .select('id, name, user_id, order, include_in_focus_mode')
         .single();
 
       if (error) throw error;
@@ -676,7 +678,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         .update({ name: newName })
         .eq('id', sectionId)
         .eq('user_id', userId)
-        .select()
+        .select('id, name, user_id, order, include_in_focus_mode')
         .single();
 
       if (error) throw error;
@@ -699,7 +701,8 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         .from('task_sections')
         .update({ include_in_focus_mode: include })
         .eq('id', sectionId)
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .select('id'); // Select only ID for confirmation
       if (error) throw error;
       setSections(prev => prev.map(s => (s.id === sectionId ? { ...s, include_in_focus_mode: include } : s)));
       showSuccess(`Section "${sections.find(s => s.id === sectionId)?.name}" focus mode setting updated!`);
@@ -720,13 +723,15 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         .from('tasks')
         .update({ section_id: null })
         .eq('section_id', sectionId)
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .select('id'); // Select only ID for confirmation
 
       const { error } = await supabase
         .from('task_sections')
         .delete()
         .eq('id', sectionId)
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .select('id'); // Select only ID for confirmation
 
       if (error) throw error;
       
@@ -1081,7 +1086,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         const bParent = taskMap.get(b.parent_task_id!);
         if (aParent && bParent) {
           if (aParent.id !== bParent.id) {
-            return (aParent.order || Infinity) - (bParent.order || Infinity);
+            return (aParent.order || Infinity) - (b.order || Infinity);
           }
         }
       }

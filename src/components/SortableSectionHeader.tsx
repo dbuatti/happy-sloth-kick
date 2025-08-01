@@ -110,18 +110,19 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
           <div className="flex items-center space-x-2">
             <Tooltip>
               <TooltipTrigger asChild>
-                {/* Changed Label to span to fix React.Children.only error */}
-                <span className="text-xs text-muted-foreground cursor-pointer">
-                  <Label htmlFor={`focus-mode-toggle-${section.id}`} className="sr-only">
-                    {section.include_in_focus_mode ? 'Included in Focus Mode' : 'Excluded from Focus Mode'}
-                  </Label>
+                {/* TooltipTrigger now wraps only the icon */}
+                <Button variant="ghost" size="icon" className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground">
                   {section.include_in_focus_mode ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                </span>
+                </Button>
               </TooltipTrigger>
               <TooltipContent>
                 {section.include_in_focus_mode ? 'Included in Focus Mode' : 'Excluded from Focus Mode'}
               </TooltipContent>
             </Tooltip>
+            {/* Label is now a sibling to the Tooltip, correctly associated with the Switch */}
+            <Label htmlFor={`focus-mode-toggle-${section.id}`} className="sr-only">
+              {section.include_in_focus_mode ? 'Included in Focus Mode' : 'Excluded from Focus Mode'}
+            </Label>
             <Switch
               id={`focus-mode-toggle-${section.id}`}
               checked={section.include_in_focus_mode}
