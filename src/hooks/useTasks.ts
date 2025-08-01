@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess } from '@/utils/toast';
 import { useReminders } from '@/context/ReminderContext';
 import { v4 as uuidv4 } from 'uuid';
-import { isSameDay, parseISO, isValid } from 'date-fns';
+import { isSameDay, parseISO, isValid, isBefore, format, setHours, setMinutes, getHours, getMinutes } from 'date-fns'; // Added date-fns imports for recurring logic
 import { arrayMove } from '@dnd-kit/sortable';
 
 export interface Task {
@@ -80,7 +80,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
   const userId = user?.id;
   const { addReminder, dismissReminder } = useReminders();
 
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]); // All tasks from DB
   const [sections, setSections] = useState<TaskSection[]>([]);
   const [allCategories, setAllCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -121,10 +121,10 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
         .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link')
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .order('created_at', { ascending: true }); // Order by created_at for consistent processing
       if (tasksError) throw tasksError;
 
-      // Use the categoriesMap from the outer scope, which is correctly memoized
       const mapped = (tasksData || []).map((t: any) => ({
         ...t,
         category_color: categoriesMap.get(t.category) || 'gray',
@@ -137,7 +137,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     } finally {
       setLoading(false);
     }
-  }, [userId]); // Removed categoriesMap from dependencies
+  }, [userId]); // categoriesMap is correctly outside this dependency array
 
   useEffect(() => {
     if (!authLoading && userId) fetchDataAndSections();
@@ -149,6 +149,96 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     }
   }, [authLoading, userId, fetchDataAndSections]);
 
+  // --- Recurring Task Processing Logic ---
+  const processedTasks = useMemo(() => {
+    const today = currentDate || new Date();
+    const todayStart = getUTCStartOfDay(today);
+    const allProcessedTasks: Task[] = [];
+    const processedSeriesIds = new Set<string>(); // To track which recurring series have been handled
+
+    // Group tasks by their original_task_id or their own id if they are templates
+    const taskSeriesMap = new Map<string, Task[]>(); // Key: original_task_id or task.id if it's a template
+    tasks.forEach(task => {
+        const seriesId = task.original_task_id || task.id;
+        if (!taskSeriesMap.has(seriesId)) {
+            taskSeriesMap.set(seriesId, []);
+        }
+        taskSeriesMap.get(seriesId)!.push(task);
+    });
+
+    taskSeriesMap.forEach((seriesInstances, seriesId) => {
+        if (processedSeriesIds.has(seriesId)) return; // Already processed this series
+
+        const templateTask = seriesInstances.find(t => t.id === seriesId); // The task that is the "template" for the series
+        if (!templateTask) return; // Should not happen
+
+        if (templateTask.recurring_type === 'none') {
+            // Non-recurring task: include if created on current day or is a carry-over 'to-do'
+            const taskCreatedAt = getUTCStartOfDay(parseISO(templateTask.created_at));
+            if (isSameDay(taskCreatedAt, todayStart) || (isBefore(taskCreatedAt, todayStart) && templateTask.status === 'to-do')) {
+                allProcessedTasks.push(templateTask);
+            }
+        } else {
+            // This is a recurring series
+            processedSeriesIds.add(seriesId); // Mark this series as processed
+
+            // Sort instances by creation date, most recent first
+            const sortedInstances = [...seriesInstances].sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime());
+
+            let relevantInstanceForToday: Task | null = null;
+
+            // 1. Find an instance created specifically for today
+            const instanceCreatedToday = sortedInstances.find(t =>
+                isSameDay(getUTCStartOfDay(parseISO(t.created_at)), todayStart) && t.status !== 'archived'
+            );
+
+            if (instanceCreatedToday) {
+                relevantInstanceForToday = instanceCreatedToday;
+            } else {
+                // 2. Find the latest incomplete carry-over instance from a previous day
+                const carryOverInstance = sortedInstances.find(t =>
+                    isBefore(getUTCStartOfDay(parseISO(t.created_at)), todayStart) && t.status === 'to-do'
+                );
+                if (carryOverInstance) {
+                    relevantInstanceForToday = carryOverInstance;
+                }
+            }
+
+            if (relevantInstanceForToday) {
+                allProcessedTasks.push(relevantInstanceForToday);
+            } else {
+                // 3. If no existing instance or carry-over, generate a new VIRTUAL instance for today
+                // Check if the recurring type matches the current day
+                const templateCreatedAt = parseISO(templateTask.created_at);
+                const isDailyMatch = templateTask.recurring_type === 'daily';
+                const isWeeklyMatch = templateTask.recurring_type === 'weekly' && todayStart.getUTCDay() === templateCreatedAt.getUTCDay();
+                const isMonthlyMatch = templateTask.recurring_type === 'monthly' && todayStart.getUTCDate() === templateCreatedAt.getUTCDate();
+
+                if (isDailyMatch || isWeeklyMatch || isMonthlyMatch) {
+                    // Only generate if the template itself is not archived
+                    if (templateTask.status !== 'archived') {
+                        const virtualTask: Task = {
+                            ...templateTask,
+                            id: uuidv4(), // Assign a new virtual ID
+                            created_at: todayStart.toISOString(), // Set created_at to today
+                            status: 'to-do', // New instances are always 'to-do'
+                            original_task_id: templateTask.id, // Link to the original template
+                            // Reset or re-calculate specific fields for the new instance
+                            notes: null, // Clear notes for new instance
+                            // Carry over time for remind_at, but set date to today
+                            remind_at: templateTask.remind_at ? format(setHours(setMinutes(todayStart, getMinutes(parseISO(templateTask.remind_at))), getHours(parseISO(templateTask.remind_at))), 'yyyy-MM-ddTHH:mm:ssZ') : null,
+                            // Due date should be today if the template had one, otherwise null
+                            due_date: templateTask.due_date ? todayStart.toISOString() : null,
+                        };
+                        allProcessedTasks.push(virtualTask);
+                    }
+                }
+            }
+        }
+    });
+    return allProcessedTasks;
+  }, [tasks, currentDate]); // Depends on all tasks and current date
+
   const handleAddTask = useCallback(async (newTaskData: NewTaskData) => {
     if (!userId) {
       showError('User not authenticated.');
@@ -156,7 +246,9 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     }
     const categoryColor = categoriesMap.get(newTaskData.category) || 'gray';
     const parentId = newTaskData.parent_task_id || null;
-    const siblings = tasks
+    
+    // Determine order based on processed tasks for the current view
+    const siblings = processedTasks // Use processedTasks for order calculation
       .filter(t =>
         (parentId === null && t.parent_task_id === null && (t.section_id === newTaskData.section_id || (t.section_id === null && newTaskData.section_id === null))) ||
         (parentId !== null && t.parent_task_id === parentId)
@@ -184,7 +276,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       link: newTaskData.link || null,
     };
 
-    // Optimistic update
+    // Optimistic update: add to raw tasks, which will trigger processedTasks re-memoization
     setTasks(prev => [...prev, newTask]);
 
     try {
@@ -212,7 +304,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       setTasks(prev => prev.filter(t => t.id !== newTask.id));
       return false;
     }
-  }, [userId, currentDate, categoriesMap, tasks, addReminder]);
+  }, [userId, currentDate, categoriesMap, processedTasks, addReminder]); // Added processedTasks to dependencies
 
   const updateTask = useCallback(async (taskId: string, updates: TaskUpdate) => {
     if (!userId) {
@@ -696,12 +788,18 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     }
   }, [userId, sections]);
 
-  // Basic filtering and next task
+  // Final filtering and next task selection based on processed tasks
   const { finalFilteredTasks, nextAvailableTask } = useMemo(() => {
-    let relevant: Task[] = [];
-    if (viewMode === 'archive') relevant = tasks.filter(t => t.status === 'archived');
-    else relevant = tasks.filter(t => t.status !== 'archived');
+    let relevant: Task[] = processedTasks; // Start with the processed list
 
+    // Apply viewMode filter (only 'daily' or 'archive' relevant here)
+    if (viewMode === 'daily') {
+        relevant = relevant.filter(t => t.status !== 'archived');
+    } else if (viewMode === 'archive') {
+        relevant = relevant.filter(t => t.status === 'archived');
+    }
+
+    // Apply other filters
     if (searchFilter) {
       relevant = relevant.filter(t =>
         t.description.toLowerCase().includes(searchFilter.toLowerCase()) ||
@@ -727,11 +825,11 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     const nextTask = relevant.find(t => t.status === 'to-do' && t.parent_task_id === null) || null;
 
     return { finalFilteredTasks: relevant, nextAvailableTask: nextTask };
-  }, [tasks, sections, viewMode, searchFilter, statusFilter, categoryFilter, priorityFilter, sectionFilter]);
+  }, [processedTasks, sections, viewMode, searchFilter, statusFilter, categoryFilter, priorityFilter, sectionFilter]);
 
   return {
-    tasks,
-    filteredTasks: finalFilteredTasks,
+    tasks, // Raw tasks from DB
+    filteredTasks: finalFilteredTasks, // Tasks after processing and filtering
     nextAvailableTask,
     loading,
     currentDate,
