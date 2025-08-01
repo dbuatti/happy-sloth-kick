@@ -75,26 +75,26 @@ const SmartSuggestions: React.FC<SmartSuggestionsProps> = ({ tasks, currentDate,
   };
 
   return (
-    <Card className="w-full shadow-sm mb-2">
-      <CardContent className="p-2">
-        <h3 className="text-xl font-bold mb-1.5">Smart Suggestions</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
+    <Card className="w-full shadow-md mb-4"> {/* Stronger shadow, increased margin */}
+      <CardContent className="p-4"> {/* Increased padding */}
+        <h3 className="text-xl font-bold mb-3">Smart Suggestions</h3> {/* Larger, bolder title */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"> {/* Increased gap */}
           {overdueTasksCount > 0 && (
-            <Button variant="outline" size="sm" className="justify-start gap-1.5 h-8">
-              <Clock className="h-4 w-4 text-destructive" />
-              <span className="text-sm">Review {overdueTasksCount} Overdue Task{overdueTasksCount > 1 ? 's' : ''}</span> {/* Adjusted text size */}
+            <Button variant="outline" size="lg" className="justify-start gap-2 h-11 text-base border-destructive text-destructive hover:bg-destructive/10"> {/* Larger, bolder button, destructive styling */}
+              <Clock className="h-5 w-5" /> {/* Larger icon */}
+              <span className="font-semibold">Review {overdueTasksCount} Overdue Task{overdueTasksCount > 1 ? 's' : ''}</span>
             </Button>
           )}
           {completedTasksCountForArchiveSuggestion > 0 && (
-            <Button variant="outline" size="sm" className="justify-start gap-1.5 w-fit h-8" onClick={handleArchiveCompletedClick}>
-              <Archive className="h-4 w-4 text-primary" />
-              <span className="text-sm">Archive All Completed Tasks</span> {/* Adjusted text size */}
+            <Button variant="outline" size="lg" className="justify-start gap-2 w-fit h-11 text-base border-primary text-primary hover:bg-primary/10"> {/* Larger, bolder button, primary styling */}
+              <Archive className="h-5 w-5" /> {/* Larger icon */}
+              <span className="font-semibold">Archive All Completed Tasks</span>
             </Button>
           )}
           {totalTasksToday === 0 && (
-            <Button variant="outline" size="sm" className="justify-start gap-1.5 h-8">
-              <Plus className="h-4 w-4 text-primary" />
-              <span className="text-sm">Add Your First Task Today!</span> {/* Adjusted text size */}
+            <Button variant="outline" size="lg" className="justify-start gap-2 h-11 text-base border-accent text-accent hover:bg-accent/10"> {/* Larger, bolder button, accent styling */}
+              <Plus className="h-5 w-5" /> {/* Larger icon */}
+              <span className="font-semibold">Add Your First Task Today!</span>
             </Button>
           )}
         </div>

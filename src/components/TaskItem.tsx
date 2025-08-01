@@ -109,9 +109,9 @@ const TaskItem: React.FC<TaskItemProps> = ({
       className={cn(
         "relative flex items-start space-x-3 w-full py-2 px-2 rounded-lg",
         task.status === 'completed' ? "opacity-70 bg-green-50/20 dark:bg-green-900/20" : "",
-        isOverdue ? "border-l-2 border-border-status-overdue bg-red-50/10 dark:bg-red-900/10" :
-        isDueToday ? "border-l-2 border-border-status-due-today bg-yellow-50/10 dark:bg-yellow-900/10" :
-        "border-l-2 border-transparent"
+        isOverdue ? "border-l-4 border-border-status-overdue bg-red-50/10 dark:bg-red-900/10" : // Thicker border
+        isDueToday ? "border-l-4 border-border-status-due-today bg-yellow-50/10 dark:bg-yellow-900/10" : // Thicker border
+        "border-l-4 border-transparent"
       )}
     >
       <Checkbox
@@ -120,7 +120,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
         onCheckedChange={handleCheckboxChange}
         id={`task-${task.id}`}
         onClick={(e) => e.stopPropagation()}
-        className="flex-shrink-0 h-4 w-4 mt-0"
+        className="flex-shrink-0 h-5 w-5 mt-0.5" // Larger checkbox
         data-no-dnd="true"
       />
 
@@ -132,7 +132,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           <TooltipTrigger asChild>
             <span
               className={cn(
-                "text-sm font-medium leading-tight line-clamp-2",
+                "text-base font-medium leading-tight line-clamp-2", // Larger text
                 task.status === 'completed' ? 'line-through text-muted-foreground' : 'text-foreground',
                 "block"
               )}
@@ -145,9 +145,9 @@ const TaskItem: React.FC<TaskItemProps> = ({
           </TooltipContent>
         </Tooltip>
 
-        <div className="flex flex-wrap items-center text-xs text-muted-foreground mt-0.5 gap-x-1.5 gap-y-0">
-          <div className={cn("w-5 h-5 rounded-full flex items-center justify-center border", categoryColorProps.backgroundClass, categoryColorProps.dotBorder)}>
-            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: categoryColorProps.dotColor }}></div>
+        <div className="flex flex-wrap items-center text-xs text-muted-foreground mt-1 gap-x-2 gap-y-0.5"> {/* Increased spacing */}
+          <div className={cn("w-4 h-4 rounded-full flex items-center justify-center border", categoryColorProps.backgroundClass, categoryColorProps.dotBorder)}> {/* Slightly larger dot container */}
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: categoryColorProps.dotColor }}></div> {/* Slightly larger dot */}
           </div>
           <Badge className={cn("px-2 py-0.5 text-xs font-semibold", getPriorityColor(task.priority))}>
             {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
@@ -156,7 +156,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
             <Tooltip>
               <TooltipTrigger asChild>
                 <span className="inline-flex items-center">
-                  <Repeat className="h-4.5 w-4.5 text-primary dark:text-primary" />
+                  <Repeat className="h-4 w-4 text-primary dark:text-primary" /> {/* Larger icon */}
                 </span>
               </TooltipTrigger>
               <TooltipContent>
@@ -166,11 +166,11 @@ const TaskItem: React.FC<TaskItemProps> = ({
           )}
           {task.due_date && (
             <span className={cn(
-              "flex items-center gap-1",
+              "flex items-center gap-1 text-sm", // Larger text
               isOverdue && "text-status-overdue font-semibold",
               isDueToday && "text-status-due-today font-semibold"
             )}>
-              <Calendar className="h-4.5 w-4.5" />
+              <Calendar className="h-4 w-4" /> {/* Larger icon */}
               {getDueDateDisplay(task.due_date)}
             </span>
           )}
@@ -178,7 +178,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
             <Tooltip>
               <TooltipTrigger asChild>
                 <span className="inline-flex items-center text-primary dark:text-primary">
-                  <BellRing className="h-4.5 w-4.5" />
+                  <BellRing className="h-4 w-4" /> {/* Larger icon */}
                   <span className="sr-only">Reminder</span>
                 </span>
               </TooltipTrigger>
@@ -191,7 +191,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
             <Tooltip>
               <TooltipTrigger asChild>
                 <span className="inline-flex items-center">
-                  <StickyNote className="h-4.5 w-4.5" />
+                  <StickyNote className="h-4 w-4" /> {/* Larger icon */}
                 </span>
               </TooltipTrigger>
               <TooltipContent className="max-w-xs">
@@ -211,7 +211,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
                   onClick={(e) => e.stopPropagation()}
                   data-no-dnd="true"
                 >
-                  <LinkIcon className="h-4.5 w-4.5" />
+                  <LinkIcon className="h-4 w-4" /> {/* Larger icon */}
                 </a>
               </TooltipTrigger>
               <TooltipContent className="max-w-xs">
@@ -225,24 +225,24 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
       {showCompletionEffect && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-          <CheckCircle2 className="h-12 w-12 text-primary animate-fade-in-out-check" />
+          <CheckCircle2 className="h-14 w-14 text-primary animate-fade-in-out-check" /> {/* Larger icon */}
         </div>
       )}
 
       <div className="flex-shrink-0 flex items-center space-x-1" data-no-dnd="true">
-        <Badge className={cn("px-2 py-0.5 text-xs font-semibold", getStatusBadgeVariant(task.status))}>
+        <Badge className={cn("px-2.5 py-1 text-xs font-semibold rounded-full", getStatusBadgeVariant(task.status))}> {/* Larger badge */}
           {task.status.charAt(0).toUpperCase() + task.status.slice(1)}
         </Badge>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button 
               variant="ghost" 
-              className="h-7 w-7 p-0"
+              className="h-8 w-8 p-0" // Larger button
               onClick={(e) => e.stopPropagation()}
               aria-label="More options"
             >
               <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
+              <MoreHorizontal className="h-4.5 w-4.5" /> {/* Larger icon */}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" data-no-dnd="true">

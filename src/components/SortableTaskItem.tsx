@@ -44,7 +44,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
     zIndex: isDragging ? 10 : 'auto',
     opacity: isDragging ? 0.5 : 1,
     // Apply indentation based on level
-    paddingLeft: `${level * 20}px`, // 20px per level of indentation
+    paddingLeft: `${level * 24}px`, // Increased indentation
   };
 
   const directSubtasks = allTasks.filter(t => t.parent_task_id === task.id)
@@ -58,19 +58,18 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         "relative border rounded-lg transition-all duration-200 ease-in-out group",
         isDragging ? "ring-2 ring-primary shadow-lg" : "hover:shadow-md",
         level > 0 ? "bg-muted/50 dark:bg-gray-800/50 border-l-4 border-l-primary/50" : "", // Visual cue for subtasks
-        "cursor-grab active:cursor-grabbing",
-        "hover:bg-accent/5 dark:hover:bg-accent/10",
-        "flex items-center" // Ensure vertical alignment of drag handle and TaskItem content
+        "flex items-center", // Ensure vertical alignment of drag handle and TaskItem content
+        "cursor-grab active:cursor-grabbing" // Apply cursor to the whole item
       )}
-      {...attributes} // Keep attributes on the main element
-      {...listeners} // Keep listeners on the main element for whole-item drag
     >
       <button
-        className="flex-shrink-0 py-1 px-0.5 text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity duration-200 cursor-grab active:cursor-grabbing"
+        className="flex-shrink-0 py-2 px-1.5 text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity duration-200 cursor-grab active:cursor-grabbing"
         aria-label="Drag to reorder task"
+        {...attributes} // Apply attributes to the drag handle
+        {...listeners} // Apply listeners to the drag handle
         data-no-dnd="true" // Ensure this button is the only drag handle
       >
-        <GripVertical className="h-4 w-4" /> {/* Increased size */}
+        <GripVertical className="h-5 w-5" /> {/* Increased size */}
       </button>
       <div className="flex-1"> {/* Wrap TaskItem to allow it to take remaining space */}
         <TaskItem 
@@ -78,7 +77,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           {...rest} 
         />
         {directSubtasks.length > 0 && (
-          <ul className="list-none mt-1.5 space-y-1.5">
+          <ul className="list-none mt-2 space-y-2"> {/* Increased spacing */}
             {directSubtasks.map(subtask => (
               <SortableTaskItem
                 key={subtask.id}

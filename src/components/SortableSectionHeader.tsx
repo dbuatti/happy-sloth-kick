@@ -69,59 +69,57 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
       className={cn(
         "relative rounded-lg bg-muted dark:bg-gray-700 text-foreground shadow-sm hover:shadow-md transition-shadow duration-200 group",
         isDragging ? "ring-2 ring-primary shadow-lg" : "",
-        "flex items-center gap-2" // Use flex to align drag handle
+        "flex items-center" // Use flex to align drag handle
       )}
     >
       <button
-        className="flex-shrink-0 h-full py-1 px-0.5 text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity duration-200 cursor-grab active:cursor-grabbing"
+        className="flex-shrink-0 h-full py-2 px-1.5 text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity duration-200 cursor-grab active:cursor-grabbing"
         {...attributes}
         {...listeners}
         aria-label="Drag to reorder section"
         data-no-dnd="true" // Ensure this button is the only drag handle
       >
-        <GripVertical className="h-3.5 w-3.5" />
+        <GripVertical className="h-5 w-5" /> {/* Increased size */}
       </button>
-      <div className="flex-1 flex items-center justify-between py-1.5 pl-0 pr-1">
+      <div className="flex-1 flex items-center justify-between py-2 pl-0 pr-2"> {/* Increased padding */}
         {editingSectionId === section.id ? (
           <div className="flex items-center w-full gap-2" data-no-dnd="true">
             <Input
               value={editingSectionName}
               onChange={(e) => setNewEditingSectionName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleRenameSection()}
-              className="text-lg font-semibold h-9"
+              className="text-lg font-semibold h-10" // Taller input
               autoFocus
             />
-            <Button size="sm" onClick={handleRenameSection} disabled={!editingSectionName.trim()} className="h-9">Save</Button>
-            <Button variant="ghost" size="sm" onClick={handleCancelSectionEdit} className="h-9">Cancel</Button>
+            <Button size="sm" onClick={handleRenameSection} disabled={!editingSectionName.trim()} className="h-10">Save</Button> {/* Taller button */}
+            <Button variant="ghost" size="sm" onClick={handleCancelSectionEdit} className="h-10">Cancel</Button> {/* Taller button */}
           </div>
         ) : (
           <div 
             className="flex items-center gap-2 flex-1 cursor-pointer" 
             onClick={() => toggleSection(section.id)}
           >
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <FolderOpen className="h-4 w-4 text-muted-foreground" />
+            <h3 className="text-xl font-semibold flex items-center gap-2"> {/* Larger, bolder text */}
+              <FolderOpen className="h-5 w-5 text-muted-foreground" /> {/* Larger icon */}
               {section.name} ({sectionTasksCount})
             </h3>
-            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleEditSectionClick(section); }} className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200" data-no-dnd="true">
-              <Edit className="h-3.5 w-3.5" />
+            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleEditSectionClick(section); }} className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity duration-200" data-no-dnd="true"> {/* Larger button */}
+              <Edit className="h-4 w-4" /> {/* Larger icon */}
             </Button>
           </div>
         )}
-        <div className="flex items-center space-x-1" data-no-dnd="true">
+        <div className="flex items-center space-x-2" data-no-dnd="true"> {/* Increased spacing */}
           <div className="flex items-center space-x-2">
             <Tooltip>
               <TooltipTrigger asChild>
-                {/* TooltipTrigger now wraps only the icon */}
-                <span className="h-6 w-6 flex items-center justify-center p-0 text-muted-foreground hover:text-foreground cursor-pointer">
-                  {section.include_in_focus_mode ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                <span className="h-8 w-8 flex items-center justify-center p-0 text-muted-foreground hover:text-foreground cursor-pointer"> {/* Larger clickable area */}
+                  {section.include_in_focus_mode ? <Eye className="h-5 w-5" /> : <EyeOff className="h-5 w-5" />} {/* Larger icons */}
                 </span>
               </TooltipTrigger>
               <TooltipContent>
                 {section.include_in_focus_mode ? 'Included in Focus Mode' : 'Excluded from Focus Mode'}
               </TooltipContent>
             </Tooltip>
-            {/* Label is now a sibling to the Tooltip, correctly associated with the Switch */}
             <Label htmlFor={`focus-mode-toggle-${section.id}`} className="sr-only">
               {section.include_in_focus_mode ? 'Included in Focus Mode' : 'Excluded from Focus Mode'}
             </Label>
@@ -137,12 +135,11 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="h-6 w-6 p-0"
+                className="h-8 w-8 p-0" // Larger button
               >
-                {/* This span now correctly wraps both children */}
                 <span>
                   <span className="sr-only">Open section menu</span>
-                  <MoreHorizontal className="h-4 w-4" />
+                  <MoreHorizontal className="h-4.5 w-4.5" /> {/* Larger icon */}
                 </span>
               </Button>
             </DropdownMenuTrigger>
@@ -162,8 +159,8 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button variant="ghost" size="icon" onClick={() => toggleSection(section.id)} className="h-6 w-6 p-0">
-            <ChevronDown className={cn("h-4 w-4 transition-transform", isExpanded ? "rotate-0" : "-rotate-90")} />
+          <Button variant="ghost" size="icon" onClick={() => toggleSection(section.id)} className="h-8 w-8 p-0"> {/* Larger button */}
+            <ChevronDown className={cn("h-5 w-5 transition-transform", isExpanded ? "rotate-0" : "-rotate-90")} /> {/* Larger icon */}
           </Button>
         </div>
       </div>

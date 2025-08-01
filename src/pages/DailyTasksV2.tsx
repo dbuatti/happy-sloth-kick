@@ -13,7 +13,7 @@ import CommandPalette from '@/components/CommandPalette';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from '@/components/ui/input';
-import { Plus, ListTodo } from 'lucide-react';
+import { Plus, ListTodo, CheckCircle2, Clock } from 'lucide-react'; // Added CheckCircle2 and Clock
 import { showError } from '@/utils/toast';
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
 import { cn } from '@/lib/utils';
@@ -60,7 +60,7 @@ const DailyTasksV2: React.FC = () => {
     updateSectionIncludeInFocusMode,
     reorderSections,
     moveTask,
-    updateTaskParentAndOrder,
+    updateTaskParentAndOrder, // Destructured updateTaskParentAndOrder
   } = useTasks({ currentDate, setCurrentDate, viewMode: 'daily' });
 
   const { dailyTaskCount } = useDailyTaskCount();
@@ -186,38 +186,38 @@ const DailyTasksV2: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col">
-      <main className={cn("flex-grow p-2", isBulkActionsActive ? "pb-[80px]" : "")}>
-        <div className="w-full max-w-4xl mx-auto space-y-2">
-          <Card className="shadow-lg p-3">
-            <CardHeader className="pb-1">
+      <main className={cn("flex-grow p-4", isBulkActionsActive ? "pb-[80px]" : "")}> {/* Increased padding */}
+        <div className="w-full max-w-4xl mx-auto space-y-4"> {/* Increased spacing */}
+          <Card className="shadow-lg p-4"> {/* Increased padding and shadow */}
+            <CardHeader className="pb-3"> {/* Increased padding */}
               <div className="flex items-center justify-between">
-                <CardTitle className="text-3xl font-bold">Your Tasks</CardTitle>
+                <CardTitle className="text-4xl font-extrabold">Your Tasks</CardTitle> {/* Larger, bolder title */}
                 {dailyTaskCount > 0 && (
-                  <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
-                    <ListTodo className="h-4 w-4" />
+                  <div className="flex items-center gap-2 text-base text-muted-foreground"> {/* Larger text */}
+                    <ListTodo className="h-5 w-5" /> {/* Larger icon */}
                     <span>{dailyTaskCount} today</span>
                   </div>
                 )}
               </div>
 
-              <div className="mt-2 grid grid-cols-3 gap-2 text-xs sm:text-sm">
-                <div className="rounded-md border bg-muted/30 px-2 py-1.5 text-center">
-                  <span className="text-sm text-muted-foreground block">Total</span> {/* Adjusted text size */}
-                  <div className="font-bold text-4xl">{totalCount}</div>
+              <div className="mt-4 grid grid-cols-3 gap-4"> {/* Increased spacing */}
+                <div className="rounded-lg border bg-card shadow-md p-4 text-center flex flex-col items-center justify-center"> {/* Card styling */}
+                  <span className="text-sm text-muted-foreground block">Total</span>
+                  <div className="font-bold text-5xl text-primary">{totalCount}</div> {/* Larger, primary color */}
                 </div>
-                <div className="rounded-md border bg-muted/30 px-2 py-1.5 text-center">
-                  <span className="text-sm text-muted-foreground block">Completed</span> {/* Adjusted text size */}
-                  <div className="font-bold text-4xl">{completedCount}</div>
+                <div className="rounded-lg border bg-card shadow-md p-4 text-center flex flex-col items-center justify-center">
+                  <span className="text-sm text-muted-foreground block">Completed</span>
+                  <div className="font-bold text-5xl text-green-500">{completedCount}</div> {/* Green for completed */}
                 </div>
-                <div className={cn("rounded-md px-2 py-1.5 text-center border", overdueCount > 0 ? "bg-destructive/10 border-destructive/30" : "bg-muted/30")}>
-                  <span className="text-sm text-muted-foreground block">Overdue</span> {/* Adjusted text size */}
-                  <div className={cn("font-bold text-4xl", overdueCount > 0 ? "text-status-overdue" : "")}>{overdueCount}</div>
+                <div className={cn("rounded-lg border shadow-md p-4 text-center flex flex-col items-center justify-center", overdueCount > 0 ? "bg-destructive/10 border-destructive/30" : "bg-card")}>
+                  <span className="text-sm text-muted-foreground block">Overdue</span>
+                  <div className={cn("font-bold text-5xl", overdueCount > 0 ? "text-destructive" : "text-muted-foreground")}>{overdueCount}</div> {/* Red for overdue */}
                 </div>
               </div>
             </CardHeader>
 
             <CardContent className="pt-0">
-              <div className="mb-1.5">
+              <div className="mb-4"> {/* Increased spacing */}
                 <DateNavigator
                   currentDate={currentDate}
                   onPreviousDay={handlePreviousDay}
@@ -230,22 +230,22 @@ const DailyTasksV2: React.FC = () => {
               {/* Sticky filter + quick add bar */}
               <div
                 className={cn(
-                  "sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border -mx-3 px-3 py-2 transition-shadow",
-                  stuck ? "shadow-sm" : ""
+                  "sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border -mx-4 px-4 py-3 transition-shadow", // Increased padding
+                  stuck ? "shadow-md" : "" // Stronger shadow
                 )}
               >
                 <div ref={stickyRef} className="h-0 w-full -mt-1" aria-hidden />
-                <form onSubmit={handleQuickAddTask} className="mb-1.5">
-                  <div className="flex items-center gap-2">
+                <form onSubmit={handleQuickAddTask} className="mb-2"> {/* Increased spacing */}
+                  <div className="flex items-center gap-3"> {/* Increased gap */}
                     <Input
                       ref={quickAddInputRef}
                       placeholder='Quick add a task — press "/" to focus, Enter to add'
                       value={quickAddTaskDescription}
                       onChange={(e) => setQuickAddTaskDescription(e.target.value)}
-                      className="flex-1 h-9"
+                      className="flex-1 h-10 text-base" // Taller input, larger text
                     />
-                    <Button type="submit" className="whitespace-nowrap h-9">
-                      <Plus className="mr-2 h-4 w-4" /> New Task
+                    <Button type="submit" className="whitespace-nowrap h-10 text-base"> {/* Taller button, larger text */}
+                      <Plus className="mr-2 h-5 w-5" /> New Task {/* Larger icon */}
                     </Button>
                   </div>
                 </form>
@@ -255,7 +255,7 @@ const DailyTasksV2: React.FC = () => {
                     <button
                       type="button"
                       onClick={handleResetFiltersInline}
-                      className="text-xs px-2 py-1 rounded-full border hover:bg-muted transition"
+                      className="text-sm px-3 py-1.5 rounded-full border hover:bg-muted transition" // Larger button
                       aria-label="Reset filters"
                     >
                       Reset filters
