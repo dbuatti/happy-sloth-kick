@@ -65,6 +65,7 @@ export default {
         // New semantic colors for consistency
         'status-overdue': 'hsl(var(--destructive))',
         'status-due-today': 'hsl(var(--accent))',
+        'status-completed': 'hsl(var(--status-completed))', // New color for completed status
         'priority-low': 'hsl(var(--priority-low))',
         'priority-medium': 'hsl(var(--priority-medium))',
         'priority-high': 'hsl(var(--priority-high))',

@@ -102,8 +102,8 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
       </CardHeader>
       <CardContent className="pt-0 space-y-2"> {/* Increased spacing */}
         <div className="flex items-center space-x-3"> {/* Increased spacing */}
-          <div className={cn("w-5 h-5 rounded-full flex items-center justify-center border-2", categoryColorProps.backgroundClass, categoryColorProps.dotBorder)}> {/* Slightly smaller dot container, thicker border */}
-            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: categoryColorProps.dotColor }}></div> {/* Slightly smaller dot */}
+          <div className={cn("w-4 h-4 rounded-full flex items-center justify-center border-2", categoryColorProps.backgroundClass, categoryColorProps.dotBorder)}> {/* Smaller dot container, thicker border */}
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: categoryColorProps.dotColor }}></div> {/* Smaller dot */}
           </div>
           <h3 className="text-xl font-bold flex-1 line-clamp-2">{task.description}</h3> {/* Larger, bolder text */}
         </div>

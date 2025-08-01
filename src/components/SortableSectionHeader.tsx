@@ -67,7 +67,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "relative rounded-lg bg-muted dark:bg-gray-700 text-foreground shadow-sm hover:shadow-md transition-shadow duration-200 group", // Added subtle shadow on hover
+        "relative rounded-lg bg-muted dark:bg-gray-700 text-foreground shadow-sm hover:shadow-md transition-shadow duration-200 group",
         isDragging ? "ring-2 ring-primary shadow-lg" : "",
         "flex items-center" // Use flex to align drag handle
       )}

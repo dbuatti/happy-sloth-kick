@@ -13,7 +13,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.2 47.4% 11.2%;
+    --primary: 270 60% 40%; /* Deep Purple */
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96.1%;
@@ -36,11 +36,14 @@
     --border-status-due-today: 30 80% 60%; /* A softer orange/yellow */
     --border-status-overdue: 0 80% 50%; /* A softer red */
 
+    /* New custom property for completed status */
+    --status-completed: 140 70% 40%; /* Vibrant Green */
+
     /* New custom properties for priority badge colors */
-    --priority-low: 140 60% 40%; /* Greenish */
-    --priority-medium: 40 80% 60%; /* Orangish */
-    --priority-high: 0 80% 60%; /* Reddish */
-    --priority-urgent: 240 80% 50%; /* Bluish-purple */
+    --priority-low: 200 70% 60%; /* Light Blue */
+    --priority-medium: 50 90% 50%; /* Clear Yellow */
+    --priority-high: 0 85% 55%; /* Strong Red */
+    --priority-urgent: 240 80% 50%; /* Bluish-purple (kept as is) */
 
     /* New custom properties for shadows */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
@@ -60,7 +63,7 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 210 40% 98%;
+    --primary: 270 70% 60%; /* Lighter Purple for dark mode */
     --primary-foreground: 222.2 47.4% 11.2%;
 
     --secondary: 217.2 32.6% 17.5%;
@@ -83,11 +86,14 @@
     --border-status-due-today: 40 95% 70%; /* Brighter yellow-orange for dark mode */
     --border-status-overdue: 0 90% 70%; /* Brighter red for dark mode */
 
+    /* New custom property for completed status in dark mode */
+    --status-completed: 140 80% 50%; /* Brighter Green */
+
     /* New custom properties for priority badge colors in dark mode */
-    --priority-low: 140 70% 50%;
-    --priority-medium: 40 90% 70%;
-    --priority-high: 0 90% 70%;
-    --priority-urgent: 240 90% 60%;
+    --priority-low: 200 80% 70%; /* Lighter Blue */
+    --priority-medium: 50 95% 60%; /* Brighter Yellow */
+    --priority-high: 0 90% 65%; /* Brighter Red */
+    --priority-urgent: 240 90% 60%; /* Bluish-purple (kept as is) */
 
     /* New custom properties for shadows in dark mode */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.1);
@@ -97,6 +103,7 @@
     --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.2), 0 8px 10px -6px rgb(0 0 0 / 0.2);
   }
 
+  /* Custom themes - update primary, status-completed, and priority colors */
   .adhd-friendly {
     --background: 25 10% 96%;
     --foreground: 0 0% 20%;
@@ -115,10 +122,9 @@
     --border: 25 10% 90%;
     --input: 25 10% 90%;
     --ring: 0 0% 20%;
-    /* Theme-specific overrides for status borders */
     --border-status-due-today: 15 60% 55%;
     --border-status-overdue: 15 60% 55%;
-    /* Theme-specific overrides for priority badge colors */
+    --status-completed: 180 35% 45%; /* Greenish primary */
     --priority-low: 180 35% 45%;
     --priority-medium: 25 50% 75%;
     --priority-high: 15 60% 55%;
@@ -143,10 +149,9 @@
     --border: 25 20% 30%;
     --input: 25 20% 30%;
     --ring: 0 0% 80%;
-    /* Theme-specific overrides for status borders */
     --border-status-due-today: 15 70% 70%;
     --border-status-overdue: 15 70% 70%;
-    /* Theme-specific overrides for priority badge colors */
+    --status-completed: 180 40% 60%; /* Greenish primary */
     --priority-low: 180 40% 60%;
     --priority-medium: 25 60% 80%;
     --priority-high: 15 70% 70%;
@@ -171,10 +176,9 @@
     --border: 140 10% 90%;
     --input: 140 10% 90%;
     --ring: 0 0% 20%;
-    /* Theme-specific overrides for status borders */
     --border-status-due-today: 30 25% 65%;
     --border-status-overdue: 15 60% 55%;
-    /* Theme-specific overrides for priority badge colors */
+    --status-completed: 140 25% 45%; /* Greenish primary */
     --priority-low: 140 25% 45%;
     --priority-medium: 30 25% 65%;
     --priority-high: 15 60% 55%;
@@ -199,10 +203,9 @@
     --border: 140 20% 30%;
     --input: 140 20% 30%;
     --ring: 0 0% 80%;
-    /* Theme-specific overrides for status borders */
     --border-status-due-today: 30 30% 70%;
     --border-status-overdue: 15 70% 70%;
-    /* Theme-specific overrides for priority badge colors */
+    --status-completed: 140 30% 60%; /* Greenish primary */
     --priority-low: 140 30% 60%;
     --priority-medium: 30 30% 70%;
     --priority-high: 15 70% 70%;
@@ -229,10 +232,9 @@
     --border: 30 10% 92%;
     --input: 30 10% 92%;
     --ring: 0 0% 30%;
-    /* Theme-specific overrides for status borders */
     --border-status-due-today: 15 20% 70%;
     --border-status-overdue: 15 60% 55%;
-    /* Theme-specific overrides for priority badge colors */
+    --status-completed: 140 10% 75%; /* Greenish secondary */
     --priority-low: 140 10% 75%;
     --priority-medium: 15 20% 70%;
     --priority-high: 15 60% 55%;
@@ -259,10 +261,9 @@
     --border: 30 20% 35%;
     --input: 30 20% 35%;
     --ring: 0 0% 85%;
-    /* Theme-specific overrides for status borders */
     --border-status-due-today: 15 25% 75%;
     --border-status-overdue: 15 70% 70%;
-    /* Theme-specific overrides for priority badge colors */
+    --status-completed: 140 15% 85%; /* Greenish secondary */
     --priority-low: 140 15% 85%;
     --priority-medium: 15 25% 75%;
     --priority-high: 15 70% 70%;
@@ -287,10 +288,9 @@
     --border: 220 10% 88%;
     --input: 220 10% 88%;
     --ring: 220 15% 35%;
-    /* Theme-specific overrides for status borders */
     --border-status-due-today: 30 25% 65%;
     --border-status-overdue: 15 60% 55%;
-    /* Theme-specific overrides for priority badge colors */
+    --status-completed: 220 25% 45%; /* Primary color */
     --priority-low: 220 25% 45%;
     --priority-medium: 30 25% 65%;
     --priority-high: 15 60% 55%;
@@ -315,10 +315,9 @@
     --border: 220 20% 35%;
     --input: 220 20% 35%;
     --ring: 220 20% 85%;
-    /* Theme-specific overrides for status borders */
     --border-status-due-today: 30 30% 70%;
     --border-status-overdue: 15 70% 70%;
-    /* Theme-specific overrides for priority badge colors */
+    --status-completed: 220 30% 60%; /* Primary color */
     --priority-low: 220 30% 60%;
     --priority-medium: 30 30% 70%;
     --priority-high: 15 70% 70%;
@@ -345,10 +344,9 @@
     --border: 225 30% 20%;
     --input: 225 30% 20%;
     --ring: 225 20% 85%;
-    /* Theme-specific overrides for status borders */
     --border-status-due-today: 345 55% 70%;
     --border-status-overdue: 25 75% 65%;
-    /* Theme-specific overrides for priority badge colors */
+    --status-completed: 225 45% 55%; /* Primary color */
     --priority-low: 225 45% 55%;
     --priority-medium: 345 55% 70%;
     --priority-high: 25 75% 65%;
@@ -375,10 +373,9 @@
     --border: 225 30% 20%;
     --input: 225 30% 20%;
     --ring: 225 20% 85%;
-    /* Theme-specific overrides for status borders */
     --border-status-due-today: 345 55% 70%;
     --border-status-overdue: 25 75% 65%;
-    /* Theme-specific overrides for priority badge colors */
+    --status-completed: 225 45% 55%; /* Primary color */
     --priority-low: 225 45% 55%;
     --priority-medium: 345 55% 70%;
     --priority-high: 25 75% 65%;
@@ -405,10 +402,9 @@
     --border: 200 15% 90%;
     --input: 200 15% 90%;
     --ring: 200 20% 20%;
-    /* Theme-specific overrides for status borders */
     --border-status-due-today: 60 70% 45%;
     --border-status-overdue: 0 70% 55%;
-    /* Theme-specific overrides for priority badge colors */
+    --status-completed: 200 60% 35%; /* Primary color */
     --priority-low: 200 60% 35%;
     --priority-medium: 60 70% 45%;
     --priority-high: 0 70% 55%;
@@ -435,10 +431,9 @@
     --border: 200 30% 25%;
     --input: 200 30% 25%;
     --ring: 200 25% 85%;
-    /* Theme-specific overrides for status borders */
     --border-status-due-today: 60 75% 55%;
     --border-status-overdue: 0 75% 60%;
-    /* Theme-specific overrides for priority badge colors */
+    --status-completed: 200 65% 45%; /* Primary color */
     --priority-low: 200 65% 45%;
     --priority-medium: 60 75% 55%;
     --priority-high: 0 75% 60%;
@@ -465,10 +460,9 @@
     --border: 240 10% 85%;
     --input: 240 10% 85%;
     --ring: 240 10% 20%;
-    /* Theme-specific overrides for status borders */
     --border-status-due-today: 40 90% 60%;
     --border-status-overdue: 0 80% 60%;
-    /* Theme-specific overrides for priority badge colors */
+    --status-completed: 180 70% 50%; /* Secondary color */
     --priority-low: 180 70% 50%;
     --priority-medium: 40 90% 60%;
     --priority-high: 0 80% 60%;
@@ -495,10 +489,9 @@
     --border: 260 30% 25%;
     --input: 260 30% 25%;
     --ring: 240 10% 85%;
-    /* Theme-specific overrides for status borders */
     --border-status-due-today: 40 95% 70%;
     --border-status-overdue: 0 90% 70%;
-    /* Theme-specific overrides for priority badge colors */
+    --status-completed: 180 80% 60%; /* Secondary color */
     --priority-low: 180 80% 60%;
     --priority-medium: 40 95% 70%;
     --priority-high: 0 90% 70%;
@@ -525,10 +518,9 @@
     --border: 29 48% 81%;
     --input: 29 59% 86%;
     --ring: 270 28% 36%;
-    /* Theme-specific overrides for status borders */
     --border-status-due-today: 99 25% 30%;
     --border-status-overdue: 6 48% 31%;
-    /* Theme-specific overrides for priority badge colors */
+    --status-completed: 99 25% 30%; /* Accent color */
     --priority-low: 99 25% 30%;
     --priority-medium: 29 48% 81%;
     --priority-high: 6 48% 31%;
@@ -555,10 +547,9 @@
     --border: 29 29% 26%;
     --input: 29 29% 21%;
     --ring: 270 28% 54%;
-    /* Theme-specific overrides for status borders */
     --border-status-due-today: 99 34% 38%;
     --border-status-overdue: 6 48% 46%;
-    /* Theme-specific overrides for priority badge colors */
+    --status-completed: 99 34% 38%; /* Accent color */
     --priority-low: 99 34% 38%;
     --priority-medium: 29 29% 21%;
     --priority-high: 6 48% 46%;
@@ -585,10 +576,9 @@
     --border: 210 10% 85%;
     --input: 210 10% 85%;
     --ring: 210 10% 20%;
-    /* Theme-specific overrides for status borders */
     --border-status-due-today: 40 90% 60%;
     --border-status-overdue: 0 80% 60%;
-    /* Theme-specific overrides for priority badge colors */
+    --status-completed: 180 70% 50%; /* Secondary color */
     --priority-low: 180 70% 50%;
     --priority-medium: 40 90% 60%;
     --priority-high: 0 80% 60%;
@@ -615,10 +605,9 @@
     --border: 240 30% 25%;
     --input: 240 30% 25%;
     --ring: 210 10% 85%;
-    /* Theme-specific overrides for status borders */
     --border-status-due-today: 40 95% 70%;
     --border-status-overdue: 0 90% 70%;
-    /* Theme-specific overrides for priority badge colors */
+    --status-completed: 180 80% 60%; /* Secondary color */
     --priority-low: 180 80% 60%;
     --priority-medium: 40 95% 70%;
     --priority-high: 0 90% 70%;

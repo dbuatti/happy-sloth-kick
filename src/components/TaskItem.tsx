@@ -96,7 +96,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
   const getStatusBadgeVariant = (status: Task['status']) => {
     switch (status) {
-      case 'completed': return 'bg-primary text-primary-foreground';
+      case 'completed': return 'bg-status-completed text-primary-foreground'; /* Use new status-completed color */
       case 'skipped': return 'bg-destructive text-destructive-foreground';
       case 'archived': return 'bg-muted text-muted-foreground';
       case 'to-do':
@@ -147,8 +147,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
         </Tooltip>
 
         <div className="flex flex-wrap items-center text-xs text-muted-foreground mt-1 gap-x-2 gap-y-0.5"> {/* Increased spacing */}
-          <div className={cn("w-4 h-4 rounded-full flex items-center justify-center border", categoryColorProps.backgroundClass, categoryColorProps.dotBorder)}> {/* Slightly larger dot container */}
-            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: categoryColorProps.dotColor }}></div> {/* Slightly larger dot */}
+          <div className={cn("w-3.5 h-3.5 rounded-full flex items-center justify-center border", categoryColorProps.backgroundClass, categoryColorProps.dotBorder)}> {/* Slightly smaller dot container */}
+            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: categoryColorProps.dotColor }}></div> {/* Slightly smaller dot */}
           </div>
           <Badge className={cn("px-1.5 py-0.5 text-xs font-semibold rounded-full", getPriorityColor(task.priority))}> {/* More compact badge */}
             {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
