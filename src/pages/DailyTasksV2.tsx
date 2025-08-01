@@ -60,7 +60,7 @@ const DailyTasksV2: React.FC = () => {
     updateSectionIncludeInFocusMode,
     reorderSections,
     moveTask,
-    updateTaskParentAndOrder, // Destructured updateTaskParentAndOrder
+    updateTaskParentAndOrder,
   } = useTasks({ currentDate, setCurrentDate, viewMode: 'daily' });
 
   const { dailyTaskCount } = useDailyTaskCount();
@@ -201,18 +201,18 @@ const DailyTasksV2: React.FC = () => {
               </div>
 
               <div className="mt-4 grid grid-cols-3 gap-4"> {/* Increased spacing */}
-                <div className="rounded-lg border bg-card shadow-md p-4 text-center flex flex-col items-center justify-center"> {/* Card styling */}
+                <Card className="text-center flex flex-col items-center justify-center p-4 shadow-md hover:shadow-lg transition-shadow duration-200"> {/* Card styling, added shadow and hover */}
                   <span className="text-sm text-muted-foreground block">Total</span>
                   <div className="font-bold text-5xl text-primary">{totalCount}</div> {/* Larger, primary color */}
-                </div>
-                <div className="rounded-lg border bg-card shadow-md p-4 text-center flex flex-col items-center justify-center">
+                </Card>
+                <Card className="text-center flex flex-col items-center justify-center p-4 shadow-md hover:shadow-lg transition-shadow duration-200">
                   <span className="text-sm text-muted-foreground block">Completed</span>
                   <div className="font-bold text-5xl text-green-500">{completedCount}</div> {/* Green for completed */}
-                </div>
-                <div className={cn("rounded-lg border shadow-md p-4 text-center flex flex-col items-center justify-center", overdueCount > 0 ? "bg-destructive/10 border-destructive/30" : "bg-card")}>
+                </Card>
+                <Card className={cn("text-center flex flex-col items-center justify-center p-4 shadow-md hover:shadow-lg transition-shadow duration-200", overdueCount > 0 ? "bg-destructive/10 border-destructive/30" : "")}>
                   <span className="text-sm text-muted-foreground block">Overdue</span>
                   <div className={cn("font-bold text-5xl", overdueCount > 0 ? "text-destructive" : "text-muted-foreground")}>{overdueCount}</div> {/* Red for overdue */}
-                </div>
+                </Card>
               </div>
             </CardHeader>
 
@@ -231,7 +231,7 @@ const DailyTasksV2: React.FC = () => {
               <div
                 className={cn(
                   "sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border -mx-4 px-4 py-3 transition-shadow", // Increased padding
-                  stuck ? "shadow-md" : "" // Stronger shadow
+                  stuck ? "shadow-lg" : "" // Stronger shadow
                 )}
               >
                 <div ref={stickyRef} className="h-0 w-full -mt-1" aria-hidden />
@@ -242,9 +242,9 @@ const DailyTasksV2: React.FC = () => {
                       placeholder='Quick add a task — press "/" to focus, Enter to add'
                       value={quickAddTaskDescription}
                       onChange={(e) => setQuickAddTaskDescription(e.target.value)}
-                      className="flex-1 h-10 text-base" // Taller input, larger text
+                      className="flex-1 h-11 text-base" // Taller input, larger text
                     />
-                    <Button type="submit" className="whitespace-nowrap h-10 text-base"> {/* Taller button, larger text */}
+                    <Button type="submit" className="whitespace-nowrap h-11 text-base"> {/* Taller button, larger text */}
                       <Plus className="mr-2 h-5 w-5" /> New Task {/* Larger icon */}
                     </Button>
                   </div>

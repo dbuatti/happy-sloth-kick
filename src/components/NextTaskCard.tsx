@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Edit, Lightbulb, Calendar, BellRing, StickyNote, Link as LinkIcon } from 'lucide-react'; // Added BellRing, StickyNote, LinkIcon
+import { CheckCircle2, Edit, Lightbulb, Calendar, BellRing, StickyNote, Link as LinkIcon } from 'lucide-react';
 import { Task } from '@/hooks/useTasks';
 import { cn } from '@/lib/utils';
 import { getCategoryColorProps } from '@/lib/categoryColors';
@@ -102,14 +102,14 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
       </CardHeader>
       <CardContent className="pt-0 space-y-2"> {/* Increased spacing */}
         <div className="flex items-center space-x-3"> {/* Increased spacing */}
-          <div className={cn("w-6 h-6 rounded-full flex items-center justify-center border-2", categoryColorProps.backgroundClass, categoryColorProps.dotBorder)}> {/* Larger dot container, thicker border */}
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: categoryColorProps.dotColor }}></div> {/* Larger dot */}
+          <div className={cn("w-5 h-5 rounded-full flex items-center justify-center border-2", categoryColorProps.backgroundClass, categoryColorProps.dotBorder)}> {/* Slightly smaller dot container, thicker border */}
+            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: categoryColorProps.dotColor }}></div> {/* Slightly smaller dot */}
           </div>
           <h3 className="text-xl font-bold flex-1 line-clamp-2">{task.description}</h3> {/* Larger, bolder text */}
         </div>
 
         <div className="flex items-center text-sm text-muted-foreground gap-2 flex-wrap">
-          <Badge className={cn("px-2.5 py-1 text-xs font-semibold rounded-full", getPriorityColor(task.priority))}> {/* Larger badge */}
+          <Badge className={cn("px-2 py-0.5 text-xs font-semibold rounded-full", getPriorityColor(task.priority))}> {/* Slightly smaller badge */}
             {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)} Priority
           </Badge>
           {task.due_date && (

@@ -107,11 +107,12 @@ const TaskItem: React.FC<TaskItemProps> = ({
   return (
     <div
       className={cn(
-        "relative flex items-start space-x-3 w-full py-2 px-2 rounded-lg",
+        "relative flex items-start space-x-3 w-full py-2 px-2 rounded-lg group",
         task.status === 'completed' ? "opacity-70 bg-green-50/20 dark:bg-green-900/20" : "",
         isOverdue ? "border-l-4 border-border-status-overdue bg-red-50/10 dark:bg-red-900/10" : // Thicker border
         isDueToday ? "border-l-4 border-border-status-due-today bg-yellow-50/10 dark:bg-yellow-900/10" : // Thicker border
-        "border-l-4 border-transparent"
+        "border-l-4 border-transparent",
+        "hover:shadow-sm transition-shadow duration-200" // Added subtle shadow on hover
       )}
     >
       <Checkbox
@@ -149,7 +150,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           <div className={cn("w-4 h-4 rounded-full flex items-center justify-center border", categoryColorProps.backgroundClass, categoryColorProps.dotBorder)}> {/* Slightly larger dot container */}
             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: categoryColorProps.dotColor }}></div> {/* Slightly larger dot */}
           </div>
-          <Badge className={cn("px-2 py-0.5 text-xs font-semibold", getPriorityColor(task.priority))}>
+          <Badge className={cn("px-1.5 py-0.5 text-xs font-semibold rounded-full", getPriorityColor(task.priority))}> {/* More compact badge */}
             {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
           </Badge>
           {task.recurring_type !== 'none' && (

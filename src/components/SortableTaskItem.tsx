@@ -56,7 +56,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
       style={style}
       className={cn(
         "relative border rounded-lg transition-all duration-200 ease-in-out group",
-        isDragging ? "ring-2 ring-primary shadow-lg" : "hover:shadow-md",
+        isDragging ? "ring-2 ring-primary shadow-lg" : "hover:shadow-md", // Stronger shadow on hover
         level > 0 ? "bg-muted/50 dark:bg-gray-800/50 border-l-4 border-l-primary/50" : "", // Visual cue for subtasks
         "flex items-center", // Ensure vertical alignment of drag handle and TaskItem content
         "cursor-grab active:cursor-grabbing" // Apply cursor to the whole item

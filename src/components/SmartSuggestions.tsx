@@ -80,19 +80,19 @@ const SmartSuggestions: React.FC<SmartSuggestionsProps> = ({ tasks, currentDate,
         <h3 className="text-xl font-bold mb-3">Smart Suggestions</h3> {/* Larger, bolder title */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"> {/* Increased gap */}
           {overdueTasksCount > 0 && (
-            <Button variant="outline" size="lg" className="justify-start gap-2 h-11 text-base border-destructive text-destructive hover:bg-destructive/10"> {/* Larger, bolder button, destructive styling */}
+            <Button variant="outline" size="lg" className="justify-start gap-2 h-11 text-base border-destructive text-destructive hover:bg-destructive/10 shadow-sm hover:shadow-md transition-shadow duration-200"> {/* Larger, bolder button, destructive styling, added shadow */}
               <Clock className="h-5 w-5" /> {/* Larger icon */}
               <span className="font-semibold">Review {overdueTasksCount} Overdue Task{overdueTasksCount > 1 ? 's' : ''}</span>
             </Button>
           )}
           {completedTasksCountForArchiveSuggestion > 0 && (
-            <Button variant="outline" size="lg" className="justify-start gap-2 w-fit h-11 text-base border-primary text-primary hover:bg-primary/10"> {/* Larger, bolder button, primary styling */}
+            <Button variant="outline" size="lg" className="justify-start gap-2 w-fit h-11 text-base border-primary text-primary hover:bg-primary/10 shadow-sm hover:shadow-md transition-shadow duration-200" onClick={handleArchiveCompletedClick}> {/* Larger, bolder button, primary styling, added shadow, added onClick */}
               <Archive className="h-5 w-5" /> {/* Larger icon */}
               <span className="font-semibold">Archive All Completed Tasks</span>
             </Button>
           )}
           {totalTasksToday === 0 && (
-            <Button variant="outline" size="lg" className="justify-start gap-2 h-11 text-base border-accent text-accent hover:bg-accent/10"> {/* Larger, bolder button, accent styling */}
+            <Button variant="outline" size="lg" className="justify-start gap-2 h-11 text-base border-accent text-accent hover:bg-accent/10 shadow-sm hover:shadow-md transition-shadow duration-200"> {/* Larger, bolder button, accent styling, added shadow */}
               <Plus className="h-5 w-5" /> {/* Larger icon */}
               <span className="font-semibold">Add Your First Task Today!</span>
             </Button>
