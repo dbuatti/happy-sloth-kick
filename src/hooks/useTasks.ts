@@ -251,7 +251,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       return null;
     }
 
-    const newInstanceDataForDb = {
+    const newInstanceDataForDb = cleanTaskForDb({ // Apply cleanTaskForDb here
       id: uuidv4(),
       user_id: userId,
       description: templateTask.description,
@@ -261,14 +261,14 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       category: templateTask.category,
       priority: templateTask.priority,
       due_date: templateTask.due_date,
-      notes: templateTask.notes, // Corrected from template.notes
+      notes: templateTask.notes,
       remind_at: templateTask.remind_at,
       section_id: templateTask.section_id,
       order: templateTask.order,
       original_task_id: rootOriginalTaskId,
       parent_task_id: null,
-      link: templateTask.link, // Include link
-    };
+      link: templateTask.link,
+    });
 
     const { data, error: insertError } = await supabase
       .from('tasks')

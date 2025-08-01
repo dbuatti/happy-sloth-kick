@@ -86,11 +86,11 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               value={editingSectionName}
               onChange={(e) => setNewEditingSectionName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleRenameSection()}
-              className="text-lg font-semibold h-9" // Changed h-8 to h-9
+              className="text-lg font-semibold h-9"
               autoFocus
             />
-            <Button size="sm" onClick={handleRenameSection} disabled={!editingSectionName.trim()} className="h-9">Save</Button> {/* Changed h-8 to h-9 */}
-            <Button variant="ghost" size="sm" onClick={handleCancelSectionEdit} className="h-9">Cancel</Button> {/* Changed h-8 to h-9 */}
+            <Button size="sm" onClick={handleRenameSection} disabled={!editingSectionName.trim()} className="h-9">Save</Button>
+            <Button variant="ghost" size="sm" onClick={handleCancelSectionEdit} className="h-9">Cancel</Button>
           </div>
         ) : (
           <div 
@@ -101,7 +101,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               <FolderOpen className="h-4 w-4 text-muted-foreground" />
               {section.name} ({sectionTasksCount})
             </h3>
-            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleEditSectionClick(section); }} className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200" data-no-dnd="true"> {/* Changed h-3.5 w-3.5 to h-4 w-4 */}
+            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleEditSectionClick(section); }} className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200" data-no-dnd="true">
               <Edit className="h-3.5 w-3.5" />
             </Button>
           </div>
@@ -110,6 +110,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
           <div className="flex items-center space-x-2">
             <Tooltip>
               <TooltipTrigger asChild>
+                {/* Changed Label to span to fix React.Children.only error */}
                 <span className="text-xs text-muted-foreground cursor-pointer">
                   <Label htmlFor={`focus-mode-toggle-${section.id}`} className="sr-only">
                     {section.include_in_focus_mode ? 'Included in Focus Mode' : 'Excluded from Focus Mode'}
