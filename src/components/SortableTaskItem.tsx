@@ -58,37 +58,30 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         "relative border rounded-lg p-2 transition-all duration-200 ease-in-out group",
         isDragging ? "ring-2 ring-primary shadow-lg" : "hover:shadow-md",
         level > 0 ? "bg-muted/50 dark:bg-gray-800/50 border-l-4 border-l-primary/50" : "", // Visual cue for subtasks
-        "flex items-start gap-2" // Use flex to align drag handle
+        // New: Drag visual cues
+        "cursor-grab active:cursor-grabbing",
+        "hover:bg-accent/5 dark:hover:bg-accent/10" // Subtle background change on hover
       )}
+      {...attributes} // Keep attributes on the main element
+      {...listeners} // Keep listeners on the main element for whole-item drag
     >
-      <button
-        className="flex-shrink-0 h-full py-1 px-0.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-grab active:cursor-grabbing"
-        {...attributes}
-        {...listeners}
-        aria-label="Drag to reorder task"
-        data-no-dnd="true" // Ensure this button is the only drag handle
-      >
-        <GripVertical className="h-4 w-4" />
-      </button>
-      <div className="flex-1"> {/* Wrap TaskItem to allow it to take remaining space */}
-        <TaskItem 
-          task={task} 
-          {...rest} 
-        />
-        {directSubtasks.length > 0 && (
-          <ul className="list-none mt-2 space-y-2">
-            {directSubtasks.map(subtask => (
-              <SortableTaskItem
-                key={subtask.id}
-                task={subtask}
-                level={level + 1}
-                allTasks={allTasks} // Pass all tasks down
-                {...rest}
-              />
-            ))}
-          </ul>
-        )}
-      </div>
+      <TaskItem 
+        task={task} 
+        {...rest} 
+      />
+      {directSubtasks.length > 0 && (
+        <ul className="list-none mt-2 space-y-2">
+          {directSubtasks.map(subtask => (
+            <SortableTaskItem
+              key={subtask.id}
+              task={subtask}
+              level={level + 1}
+              allTasks={allTasks} // Pass all tasks down
+              {...rest}
+            />
+          ))}
+        </ul>
+      )}
     </li>
   );
 };

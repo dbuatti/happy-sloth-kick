@@ -214,13 +214,14 @@ const TaskItem: React.FC<TaskItemProps> = ({
         </div>
       )}
 
-      <div className="flex-shrink-0 flex items-center space-x-1" data-no-dnd="true"> {/* Added data-no-dnd to this div */}
+      <div className="flex-shrink-0 flex items-center space-x-1">
         {task.status === 'completed' && (
           <Button 
             variant="outline" 
             size="sm" 
             className="h-7 px-2 text-xs"
             onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'to-do'); playSound('success'); }}
+            data-no-dnd="true"
             aria-label="Mark as To-Do"
           >
             <ListTodo className="h-3 w-3 mr-1" /> To-Do
@@ -232,6 +233,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
               variant="ghost" 
               className="h-7 w-7 p-0"
               onClick={(e) => e.stopPropagation()}
+              data-no-dnd="true"
               aria-label="More options"
             >
               <span className="sr-only">Open menu</span>

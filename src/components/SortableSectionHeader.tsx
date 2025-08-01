@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from '@/components/ui/switch';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { Plus, Settings, CheckCircle2, ListTodo, FolderOpen, ChevronDown, Edit, MoreHorizontal, Trash2, Eye, EyeOff, GripVertical } from 'lucide-react'; // Import GripVertical
+import { Plus, Settings, CheckCircle2, ListTodo, FolderOpen, ChevronDown, Edit, MoreHorizontal, Trash2, Eye, EyeOff, GripVertical } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { TaskSection } from '@/hooks/useTasks';
@@ -64,17 +64,15 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
     <div
       ref={setNodeRef}
       style={style}
+      {...attributes}
+      {...listeners}
       className={cn(
         "relative rounded-lg bg-muted dark:bg-gray-700 text-foreground shadow-sm hover:shadow-md transition-shadow duration-200 group",
-        isDragging ? "ring-2 ring-primary shadow-lg" : "",
-        "flex items-center gap-2" // Use flex to align drag handle
+        isDragging ? "ring-2 ring-primary shadow-lg" : ""
       )}
     >
       <button
         className="flex-shrink-0 h-full py-1 px-0.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-grab active:cursor-grabbing"
-        {...attributes}
-        {...listeners}
-        aria-label="Drag to reorder section"
         data-no-dnd="true" // Ensure this button is the only drag handle
       >
         <GripVertical className="h-4 w-4" />
