@@ -15,7 +15,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from '@/lib/utils';
-import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns'; // Import isValid
+import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { getCategoryColorProps } from '@/lib/categoryColors';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -30,7 +30,7 @@ interface TaskOverviewDialogProps {
   onDelete: (taskId: string) => void;
   sections: TaskSection[];
   allCategories: Category[];
-  allTasks: Task[]; // Needed to filter subtasks
+  allTasks: Task[];
 }
 
 const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
@@ -59,7 +59,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
       case 'urgent': return 'text-priority-urgent';
       case 'high': return 'text-priority-high';
       case 'medium': return 'text-priority-medium';
-      case 'low': return 'text-muted-foreground'; // Changed to muted-foreground for low priority
+      case 'low': return 'text-muted-foreground';
       default: return 'text-muted-foreground';
     }
   };
@@ -81,13 +81,9 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
     setIsUpdatingStatus(true);
     const newStatus = task.status === 'completed' ? 'to-do' : 'completed';
     await onUpdate(task.id, { status: newStatus });
-    if (newStatus === 'completed') {
-      playSound('success');
-    } else {
-      playSound('success');
-    }
+    playSound('success');
     setIsUpdatingStatus(false);
-    onClose(); // Close after status change
+    onClose();
   };
 
   const handleSubtaskStatusChange = async (subtaskId: string, newStatus: Task['status']) => {
@@ -132,7 +128,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
               <span>Status: <span className="font-semibold capitalize">{task.status}</span></span>
             </div>
             <div className="flex items-center gap-2">
-              <span className={cn("h-4 w-4", getPriorityColor(task.priority))}><Edit className="h-4 w-4" /></span> {/* Using Edit icon as a placeholder for priority visual */}
+              <span className={cn("h-4 w-4", getPriorityColor(task.priority))}><Edit className="h-4 w-4" /></span>
               <span>Priority: <span className={cn("font-semibold capitalize", getPriorityColor(task.priority))}>{task.priority}</span></span>
             </div>
             <div className="flex items-center gap-2">
@@ -210,20 +206,29 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
 
         <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2 pt-3">
           <Button
-            variant={task.status === 'completed' ? 'outline' : 'default'}
-            onClick={handleToggleMainTaskStatus}
-            disabled={isUpdatingStatus}
+            variant="default"
+            onClick={() => onEditClick(task)}
             className="w-full sm:w-auto mt-2 sm:mt-0"
           >
-            {task.status === 'completed' ? (
-              <><ListTodo className="mr-2 h-4 w-4" /> Mark To-Do</>
-            ) : (
-              <><CheckCircle2 className="mr-2 h-4 w-4" /> Mark Complete</>
-            )}
+            <Edit className="mr-2 h-4 w-4" /> Edit
           </Button>
-          <Button variant="destructive" onClick={handleDeleteClick} disabled={isUpdatingStatus} className="w-full sm:w-auto mt-2 sm:mt-0">
-            <Trash2 className="mr-2 h-4 w-4" /> Delete
-          </Button>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button
+              variant={task.status === 'completed' ? 'outline' : 'default'}
+              onClick={handleToggleMainTaskStatus}
+              disabled={isUpdatingStatus}
+              className="flex-1"
+            >
+              {task.status === 'completed' ? (
+                <><ListTodo className="mr-2 h-4 w-4" /> Mark To-Do</>
+              ) : (
+                <><CheckCircle2 className="mr-2 h-4 w-4" /> Mark Complete</>
+              )}
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteClick} disabled={isUpdatingStatus} className="flex-1">
+              <Trash2 className="mr-2 h-4 w-4" /> Delete
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
 
