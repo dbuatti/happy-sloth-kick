@@ -69,6 +69,9 @@ export default {
         'priority-medium': 'hsl(var(--accent))',
         'priority-high': 'hsl(var(--destructive))',
         'priority-urgent': 'hsl(var(--destructive-foreground))',
+        // New colors for status borders
+        'border-status-due-today': 'hsl(var(--border-status-due-today))',
+        'border-status-overdue': 'hsl(var(--border-status-overdue))',
       },
       borderRadius: {
         lg: "var(--radius)",

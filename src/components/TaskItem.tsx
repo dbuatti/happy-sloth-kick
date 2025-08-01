@@ -108,11 +108,11 @@ const TaskItem: React.FC<TaskItemProps> = ({
   return (
     <div
       className={cn(
-        "relative flex items-center space-x-3 w-full py-1.5 pr-2", // Changed items-start to items-center, removed px-2, added pr-2
+        "relative flex items-start space-x-3 w-full py-1.5 px-2 rounded-lg",
         task.status === 'completed' ? "opacity-70 bg-green-50/20 dark:bg-green-900/20" : "",
-        isOverdue ? "border-l-4 border-status-overdue" :
-        isDueToday ? "border-l-4 border-status-due-today" :
-        "border-l-4 border-transparent" // Default transparent border
+        isOverdue ? "border-l-2 border-border-status-overdue bg-red-50/10 dark:bg-red-900/10" : // Changed border-l-4 to border-l-2 and added background tint
+        isDueToday ? "border-l-2 border-border-status-due-today bg-yellow-50/10 dark:bg-yellow-900/10" : // Changed border-l-4 to border-l-2 and added background tint
+        "border-l-2 border-transparent" // Default transparent border, changed to border-l-2
       )}
     >
       <Checkbox
@@ -121,7 +121,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
         onCheckedChange={handleCheckboxChange}
         id={`task-${task.id}`}
         onClick={(e) => e.stopPropagation()}
-        className="flex-shrink-0 h-4 w-4" // Removed mt-0 as items-center handles alignment
+        className="flex-shrink-0 h-4 w-4 mt-0"
         data-no-dnd="true"
       />
 

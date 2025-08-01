@@ -33,6 +33,10 @@
     --ring: 222.2 84% 4.9%;
 
     --radius: 0.5rem;
+
+    /* New custom properties for softer status borders */
+    --border-status-due-today: 30 80% 60%; /* A softer orange/yellow */
+    --border-status-overdue: 0 80% 50%; /* A softer red */
   }
 
   .dark {
@@ -63,6 +67,10 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
+
+    /* New custom properties for softer status borders in dark mode */
+    --border-status-due-today: 40 95% 70%; /* Brighter yellow-orange for dark mode */
+    --border-status-overdue: 0 90% 70%; /* Brighter red for dark mode */
   }
 
   .adhd-friendly {
@@ -83,6 +91,9 @@
     --border: 25 10% 90%;
     --input: 25 10% 90%;
     --ring: 0 0% 20%;
+    /* Theme-specific overrides for status borders */
+    --border-status-due-today: 15 60% 55%;
+    --border-status-overdue: 15 60% 55%;
   }
 
   .dark .adhd-friendly {
@@ -103,6 +114,9 @@
     --border: 25 20% 30%;
     --input: 25 20% 30%;
     --ring: 0 0% 80%;
+    /* Theme-specific overrides for status borders */
+    --border-status-due-today: 15 70% 70%;
+    --border-status-overdue: 15 70% 70%;
   }
 
   .calm-mist {
@@ -123,6 +137,9 @@
     --border: 140 10% 90%;
     --input: 140 10% 90%;
     --ring: 0 0% 20%;
+    /* Theme-specific overrides for status borders */
+    --border-status-due-today: 30 25% 65%;
+    --border-status-overdue: 15 60% 55%;
   }
 
   .dark .calm-mist {
@@ -143,6 +160,9 @@
     --border: 140 20% 30%;
     --input: 140 20% 30%;
     --ring: 0 0% 80%;
+    /* Theme-specific overrides for status borders */
+    --border-status-due-today: 30 30% 70%;
+    --border-status-overdue: 15 70% 70%;
   }
 
   .warm-dawn {
@@ -165,6 +185,9 @@
     --border: 30 10% 92%;
     --input: 30 10% 92%;
     --ring: 0 0% 30%;
+    /* Theme-specific overrides for status borders */
+    --border-status-due-today: 15 20% 70%;
+    --border-status-overdue: 15 60% 55%;
   }
 
   .dark .warm-dawn {
@@ -187,6 +210,9 @@
     --border: 30 20% 35%;
     --input: 30 20% 35%;
     --ring: 0 0% 85%;
+    /* Theme-specific overrides for status borders */
+    --border-status-due-today: 15 25% 75%;
+    --border-status-overdue: 15 70% 70%;
   }
 
   .gentle-night {
@@ -207,6 +233,9 @@
     --border: 220 10% 88%;
     --input: 220 10% 88%;
     --ring: 220 15% 35%;
+    /* Theme-specific overrides for status borders */
+    --border-status-due-today: 30 25% 65%;
+    --border-status-overdue: 15 60% 55%;
   }
 
   .dark .gentle-night {
@@ -227,6 +256,9 @@
     --border: 220 20% 35%;
     --input: 220 20% 35%;
     --ring: 220 20% 85%;
+    /* Theme-specific overrides for status borders */
+    --border-status-due-today: 30 30% 70%;
+    --border-status-overdue: 15 70% 70%;
   }
 
   .cosmic-dusk {
@@ -249,6 +281,9 @@
     --border: 225 30% 20%;
     --input: 225 30% 20%;
     --ring: 225 20% 85%;
+    /* Theme-specific overrides for status borders */
+    --border-status-due-today: 345 55% 70%;
+    --border-status-overdue: 25 75% 65%;
   }
 
   .dark .cosmic-dusk {
@@ -271,6 +306,9 @@
     --border: 225 30% 20%;
     --input: 225 30% 20%;
     --ring: 225 20% 85%;
+    /* Theme-specific overrides for status borders */
+    --border-status-due-today: 345 55% 70%;
+    --border-status-overdue: 25 75% 65%;
   }
 
   .focus-flow {
@@ -293,6 +331,9 @@
     --border: 200 15% 90%;
     --input: 200 15% 90%;
     --ring: 200 20% 20%;
+    /* Theme-specific overrides for status borders */
+    --border-status-due-today: 60 70% 45%;
+    --border-status-overdue: 0 70% 55%;
   }
 
   .dark .focus-flow {
@@ -315,6 +356,9 @@
     --border: 200 30% 25%;
     --input: 200 30% 25%;
     --ring: 200 25% 85%;
+    /* Theme-specific overrides for status borders */
+    --border-status-due-today: 60 75% 55%;
+    --border-status-overdue: 0 75% 60%;
   }
 
   .retro-wave {
@@ -337,6 +381,9 @@
     --border: 240 10% 85%;
     --input: 240 10% 85%;
     --ring: 240 10% 20%;
+    /* Theme-specific overrides for status borders */
+    --border-status-due-today: 40 90% 60%;
+    --border-status-overdue: 0 80% 60%;
   }
 
   .dark .retro-wave {
@@ -359,6 +406,9 @@
     --border: 260 30% 25%;
     --input: 260 30% 25%;
     --ring: 240 10% 85%;
+    /* Theme-specific overrides for status borders */
+    --border-status-due-today: 40 95% 70%;
+    --border-status-overdue: 0 90% 70%;
   }
 
   .sepia-dusk {
@@ -381,6 +431,9 @@
     --border: 29 48% 81%;
     --input: 29 59% 86%;
     --ring: 270 28% 36%;
+    /* Theme-specific overrides for status borders */
+    --border-status-due-today: 99 25% 30%;
+    --border-status-overdue: 6 48% 31%;
   }
 
   .dark .sepia-dusk {
@@ -403,6 +456,9 @@
     --border: 29 29% 26%;
     --input: 29 29% 21%;
     --ring: 270 28% 54%;
+    /* Theme-specific overrides for status borders */
+    --border-status-due-today: 99 34% 38%;
+    --border-status-overdue: 6 48% 46%;
   }
 
   .vibrant-flow {
@@ -425,6 +481,9 @@
     --border: 210 10% 85%;
     --input: 210 10% 85%;
     --ring: 210 10% 20%;
+    /* Theme-specific overrides for status borders */
+    --border-status-due-today: 40 90% 60%;
+    --border-status-overdue: 0 80% 60%;
   }
 
   .dark .vibrant-flow {
@@ -447,6 +506,9 @@
     --border: 240 30% 25%;
     --input: 240 30% 25%;
     --ring: 210 10% 85%;
+    /* Theme-specific overrides for status borders */
+    --border-status-due-today: 40 95% 70%;
+    --border-status-overdue: 0 90% 70%;
   }
 }
 
