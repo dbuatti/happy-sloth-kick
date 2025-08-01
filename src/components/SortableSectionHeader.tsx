@@ -1,3 +1,5 @@
+"use client";
+
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -110,10 +112,10 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
           <div className="flex items-center space-x-2">
             <Tooltip>
               <TooltipTrigger asChild>
-                {/* TooltipTrigger now wraps only the icon */}
-                <Button variant="ghost" size="icon" className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground">
+                {/* Changed Button to a simple span with styling to ensure single child */}
+                <span className="h-6 w-6 flex items-center justify-center p-0 text-muted-foreground hover:text-foreground cursor-pointer">
                   {section.include_in_focus_mode ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                </Button>
+                </span>
               </TooltipTrigger>
               <TooltipContent>
                 {section.include_in_focus_mode ? 'Included in Focus Mode' : 'Excluded from Focus Mode'}

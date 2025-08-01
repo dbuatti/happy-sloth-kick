@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -1086,7 +1088,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         const bParent = taskMap.get(b.parent_task_id!);
         if (aParent && bParent) {
           if (aParent.id !== bParent.id) {
-            return (aParent.order || Infinity) - (b.order || Infinity);
+            return (aParent.order || Infinity) - (bParent.order || Infinity);
           }
         }
       }
