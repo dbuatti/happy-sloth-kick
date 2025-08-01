@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import DateNavigator from '@/components/DateNavigator';
-import NextTaskCard from '@/components/NextTaskCard';
+import NextTaskSuggestionStrip from '@/components/NextTaskSuggestionStrip'; // Renamed import
 import TaskList from '@/components/TaskList';
 import { MadeWithDyad } from '@/components/made-with-dyad';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
@@ -200,19 +200,9 @@ const DailyTasksV2: React.FC = () => {
                 )}
               </div>
 
-              <div className="mt-4 grid grid-cols-3 gap-4"> {/* Increased spacing */}
-                <Card className="text-center flex flex-col items-center justify-center p-4 shadow-md hover:shadow-lg transition-shadow duration-200"> {/* Card styling, added shadow and hover */}
-                  <span className="text-sm text-muted-foreground block">Total</span>
-                  <div className="font-bold text-4xl text-primary">{totalCount}</div> {/* Reduced number size */}
-                </Card>
-                <Card className="text-center flex flex-col items-center justify-center p-4 shadow-md hover:shadow-lg transition-shadow duration-200">
-                  <span className="text-sm text-muted-foreground block">Completed</span>
-                  <div className="font-bold text-4xl text-status-completed">{completedCount}</div> {/* Reduced number size, used status-completed color */}
-                </Card>
-                <Card className={cn("text-center flex flex-col items-center justify-center p-4 shadow-md hover:shadow-lg transition-shadow duration-200", overdueCount > 0 ? "bg-destructive/10 border-destructive/30" : "")}>
-                  <span className="text-sm text-muted-foreground block">Overdue</span>
-                  <div className={cn("font-bold text-4xl", overdueCount > 0 ? "text-destructive" : "text-muted-foreground")}>{overdueCount}</div> {/* Reduced number size */}
-                </Card>
+              {/* Consolidated Summary Metrics */}
+              <div className="text-center text-xs text-gray-500 mt-2">
+                <p>{totalCount} total, {completedCount} completed, {overdueCount} overdue</p>
               </div>
             </CardHeader>
 
@@ -234,7 +224,6 @@ const DailyTasksV2: React.FC = () => {
                   stuck ? "shadow-lg" : "" // Stronger shadow
                 )}
               >
-                <div ref={stickyRef} className="h-0 w-full -mt-1" aria-hidden />
                 <form onSubmit={handleQuickAddTask} className="mb-2"> {/* Increased spacing */}
                   <div className="flex items-center gap-3"> {/* Increased gap */}
                     <Input
@@ -242,10 +231,10 @@ const DailyTasksV2: React.FC = () => {
                       placeholder='Quick add a task — press "/" to focus, Enter to add'
                       value={quickAddTaskDescription}
                       onChange={(e) => setQuickAddTaskDescription(e.target.value)}
-                      className="flex-1 h-10 text-base" // Taller input, larger text
+                      className="flex-1 h-5 text-xs border-[#B0BEC5]" // h-5 (20px), text-xs (approx 10px), border-[#B0BEC5]
                     />
-                    <Button type="submit" className="whitespace-nowrap h-10 text-base"> {/* Taller button, larger text */}
-                      <Plus className="mr-2 h-5 w-5" /> New Task {/* Larger icon */}
+                    <Button type="submit" className="whitespace-nowrap h-5 text-xs bg-primary" style={{ backgroundColor: '#9575CD' }}> {/* h-5 (20px), text-xs (approx 15px), bg-#9575CD */}
+                      <Plus className="mr-1 h-3 w-3" /> Add {/* Smaller icon */}
                     </Button>
                   </div>
                 </form>
@@ -264,7 +253,7 @@ const DailyTasksV2: React.FC = () => {
                 )}
               </div>
 
-              <NextTaskCard
+              <NextTaskSuggestionStrip // Renamed component
                 task={nextAvailableTask}
                 onMarkComplete={handleMarkTaskComplete}
                 onEditTask={handleOpenOverview}
