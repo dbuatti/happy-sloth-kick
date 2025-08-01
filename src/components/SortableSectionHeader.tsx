@@ -112,7 +112,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
           <div className="flex items-center space-x-2">
             <Tooltip>
               <TooltipTrigger asChild>
-                {/* Changed Button to a simple span with styling to ensure single child */}
+                {/* TooltipTrigger now wraps only the icon */}
                 <span className="h-6 w-6 flex items-center justify-center p-0 text-muted-foreground hover:text-foreground cursor-pointer">
                   {section.include_in_focus_mode ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                 </span>
@@ -139,8 +139,11 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
                 size="icon" 
                 className="h-6 w-6 p-0"
               >
-                <span className="sr-only">Open section menu</span>
-                <MoreHorizontal className="h-4 w-4" />
+                {/* This span now correctly wraps both children */}
+                <span>
+                  <span className="sr-only">Open section menu</span>
+                  <MoreHorizontal className="h-4 w-4" />
+                </span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" data-no-dnd="true">
