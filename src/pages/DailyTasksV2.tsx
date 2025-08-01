@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import DateNavigator from '@/components/DateNavigator';
 import NextTaskCard from '@/components/NextTaskCard';
 import TaskList from '@/components/TaskList';
@@ -7,15 +7,16 @@ import TaskDetailDialog from '@/components/TaskDetailDialog';
 import TaskOverviewDialog from '@/components/TaskOverviewDialog';
 import { useTasks, Task } from '@/hooks/useTasks';
 import { useAuth } from '@/context/AuthContext';
-import { addDays, format } from 'date-fns';
+import { addDays, format, isBefore, isSameDay, parseISO } from 'date-fns';
 import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
 import CommandPalette from '@/components/CommandPalette';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus } from 'lucide-react';
+import { Plus, ListTodo } from 'lucide-react';
 import { showError } from '@/utils/toast';
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
+import { cn } from '@/lib/utils';
 
 const getUTCStartOfDay = (date: Date) => {
   return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -60,7 +61,7 @@ const DailyTasksV2: React.FC = () => {
     updateTaskParentAndOrder,
   } = useTasks({ currentDate, setCurrentDate, viewMode: 'daily' });
 
-  const { dailyTaskCount, loading: dailyCountLoading } = useDailyTaskCount();
+  const { dailyTaskCount } = useDailyTaskCount();
 
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
@@ -126,16 +127,56 @@ const DailyTasksV2: React.FC = () => {
   };
   useKeyboardShortcuts(shortcuts);
 
+  // Small summary row: total, completed, overdue
+  const { totalCount, completedCount, overdueCount } = useMemo(() => {
+    const total = filteredTasks.length;
+    const completed = filteredTasks.filter(t => t.status === 'completed').length;
+    const overdue = filteredTasks.filter(t => {
+      if (!t.due_date) return false;
+      const due = parseISO(t.due_date);
+      const isOver = isBefore(due, currentDate) && !isSameDay(due, currentDate) && t.status !== 'completed';
+      return isOver;
+    }).length;
+    return { totalCount: total, completedCount: completed, overdueCount: overdue };
+  }, [filteredTasks, currentDate]);
+
   return (
     <div className="flex-1 flex flex-col">
       <main className="flex-grow p-4">
         <div className="w-full max-w-4xl mx-auto space-y-4">
           <Card className="shadow-lg">
             <CardHeader className="pb-2">
-              <CardTitle className="text-3xl font-bold">Your Tasks</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-3xl font-bold">Your Tasks</CardTitle>
+                {dailyTaskCount > 0 && (
+                  <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
+                    <ListTodo className="h-4 w-4" />
+                    <span>{dailyTaskCount} today</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Summary row */}
+              <div className="mt-2 grid grid-cols-3 gap-2 text-xs sm:text-sm">
+                <div className="rounded-md border bg-muted/30 px-2 py-1 text-center">
+                  <span className="text-muted-foreground">Total</span>
+                  <div className="font-semibold">{totalCount}</div>
+                </div>
+                <div className="rounded-md border bg-muted/30 px-2 py-1 text-center">
+                  <span className="text-muted-foreground">Completed</span>
+                  <div className="font-semibold">{completedCount}</div>
+                </div>
+                <div className="rounded-md border bg-muted/30 px-2 py-1 text-center">
+                  <span className="text-muted-foreground">Overdue</span>
+                  <div className={cn("font-semibold", overdueCount > 0 ? "text-status-overdue" : "")}>
+                    {overdueCount}
+                  </div>
+                </div>
+              </div>
             </CardHeader>
+
             <CardContent className="pt-0">
-              <div className="mb-4">
+              <div className="mb-3">
                 <DateNavigator
                   currentDate={currentDate}
                   onPreviousDay={handlePreviousDay}
@@ -145,16 +186,20 @@ const DailyTasksV2: React.FC = () => {
                 />
               </div>
 
-              <form onSubmit={handleQuickAddTask} className="flex items-center gap-2 mb-4">
-                <Input
-                  ref={quickAddInputRef}
-                  placeholder="Quick add a task..."
-                  value={quickAddTaskDescription}
-                  onChange={(e) => setQuickAddTaskDescription(e.target.value)}
-                />
-                <Button type="submit">
-                  <Plus className="mr-2 h-4 w-4" /> Add
-                </Button>
+              {/* Quick add lane */}
+              <form onSubmit={handleQuickAddTask} className="mb-4">
+                <div className="flex items-center gap-2 rounded-md border bg-card/60 p-2">
+                  <Input
+                    ref={quickAddInputRef}
+                    placeholder="Quick add a task (e.g., “Email client by 3pm”)"
+                    value={quickAddTaskDescription}
+                    onChange={(e) => setQuickAddTaskDescription(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button type="submit" className="whitespace-nowrap">
+                    <Plus className="mr-2 h-4 w-4" /> Add
+                  </Button>
+                </div>
               </form>
 
               <NextTaskCard
@@ -210,6 +255,7 @@ const DailyTasksV2: React.FC = () => {
           </Card>
         </div>
       </main>
+
       <footer className="p-4">
         <MadeWithDyad />
       </footer>
