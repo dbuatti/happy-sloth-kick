@@ -191,9 +191,9 @@ const DailyTasksV2: React.FC = () => {
           <Card className="shadow-lg p-4"> {/* Increased padding and shadow */}
             <CardHeader className="pb-3"> {/* Increased padding */}
               <div className="flex items-center justify-between">
-                <CardTitle className="text-xl font-bold">Your Tasks</CardTitle> {/* Reduced size, bold */}
+                <CardTitle className="text-3xl font-bold">Your Tasks</CardTitle> {/* Reduced size, bold */}
                 {dailyTaskCount > 0 && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground"> {/* Larger text */}
+                  <div className="flex items-center gap-2 text-base text-muted-foreground"> {/* Larger text */}
                     <ListTodo className="h-4 w-4" /> {/* Adjusted icon size */}
                     <span>{dailyTaskCount} today</span>
                   </div>
@@ -202,16 +202,16 @@ const DailyTasksV2: React.FC = () => {
 
               <div className="mt-4 grid grid-cols-3 gap-4"> {/* Increased spacing */}
                 <Card className="text-center flex flex-col items-center justify-center p-4 shadow-md hover:shadow-lg transition-shadow duration-200"> {/* Card styling, added shadow and hover */}
-                  <span className="text-[10px] text-gray-600 block">Total</span> {/* 10px font, #757575 color */}
-                  <div className="font-bold text-2xl text-primary">{totalCount}</div> {/* Reduced number size */}
+                  <span className="text-sm text-muted-foreground block">Total</span>
+                  <div className="font-bold text-4xl text-primary">{totalCount}</div> {/* Reduced number size */}
                 </Card>
                 <Card className="text-center flex flex-col items-center justify-center p-4 shadow-md hover:shadow-lg transition-shadow duration-200">
-                  <span className="text-[10px] text-gray-600 block">Completed</span> {/* 10px font, #757575 color */}
-                  <div className="font-bold text-2xl text-status-completed">{completedCount}</div> {/* Reduced number size, used status-completed color */}
+                  <span className="text-sm text-muted-foreground block">Completed</span>
+                  <div className="font-bold text-4xl text-status-completed">{completedCount}</div> {/* Reduced number size, used status-completed color */}
                 </Card>
                 <Card className={cn("text-center flex flex-col items-center justify-center p-4 shadow-md hover:shadow-lg transition-shadow duration-200", overdueCount > 0 ? "bg-destructive/10 border-destructive/30" : "")}>
-                  <span className="text-[10px] text-gray-600 block">Overdue</span> {/* 10px font, #757575 color */}
-                  <div className={cn("font-bold text-2xl", overdueCount > 0 ? "text-destructive" : "text-muted-foreground")}>{overdueCount}</div> {/* Reduced number size */}
+                  <span className="text-sm text-muted-foreground block">Overdue</span>
+                  <div className={cn("font-bold text-4xl", overdueCount > 0 ? "text-destructive" : "text-muted-foreground")}>{overdueCount}</div> {/* Reduced number size */}
                 </Card>
               </div>
             </CardHeader>
@@ -242,9 +242,9 @@ const DailyTasksV2: React.FC = () => {
                       placeholder='Quick add a task — press "/" to focus, Enter to add'
                       value={quickAddTaskDescription}
                       onChange={(e) => setQuickAddTaskDescription(e.target.value)}
-                      className="flex-1 h-[20px] text-[12px] w-[150px] border-[#B0BEC5]" // Taller input, larger text
+                      className="flex-1 h-10 text-base" // Taller input, larger text
                     />
-                    <Button type="submit" className="whitespace-nowrap h-[15px] text-[12px] bg-[#9575CD]"> {/* Taller button, larger text */}
+                    <Button type="submit" className="whitespace-nowrap h-10 text-base"> {/* Taller button, larger text */}
                       <Plus className="mr-2 h-5 w-5" /> New Task {/* Larger icon */}
                     </Button>
                   </div>

@@ -371,11 +371,11 @@ const MyHub: React.FC = () => {
                         id="dark-mode-toggle"
                         variant="outline"
                         size="icon"
-                        className="h-4 w-4 p-0" /* Adjusted size to 15px toggle */
+                        className="h-8 w-8"
                         onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                         aria-label="Toggle dark mode"
                       >
-                        {theme === 'dark' ? <Moon className="h-3 w-3" /> : <Sun className="h-3 w-3" />}
+                        {theme === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
                       </Button>
                     </div>
                   </CardContent>
@@ -393,7 +393,7 @@ const MyHub: React.FC = () => {
                     <p className="text-sm text-muted-foreground">Need help? Contact our support team.</p>
                   </CardHeader>
                   <CardContent className="pt-0">
-                    <a href="#" className="text-blue-500 hover:underline text-[10px]">Chat with Support</a> {/* Adjusted font size to 10px */}
+                    <a href="#" className="text-blue-500 hover:underline text-sm">Chat with Support</a>
                   </CardContent>
                 </Card>
               </TabsContent>

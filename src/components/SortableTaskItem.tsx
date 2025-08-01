@@ -55,9 +55,9 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "relative transition-all duration-200 ease-in-out group",
-        isDragging ? "ring-2 ring-primary shadow-lg" : "", // Stronger shadow on hover
-        level > 0 ? "border-l-4 border-l-primary/50" : "", // Visual cue for subtasks
+        "relative border rounded-lg transition-all duration-200 ease-in-out group",
+        isDragging ? "ring-2 ring-primary shadow-lg" : "hover:shadow-md", // Stronger shadow on hover
+        level > 0 ? "bg-muted/50 dark:bg-gray-800/50 border-l-4 border-l-primary/50" : "", // Visual cue for subtasks
         "flex items-center", // Ensure vertical alignment of drag handle and TaskItem content
         "cursor-grab active:cursor-grabbing" // Apply cursor to the whole item
       )}
@@ -69,7 +69,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         {...listeners} // Apply listeners to the drag handle
         data-no-dnd="true" // Ensure this button is the only drag handle
       >
-        <GripVertical className="h-[20px] w-[20px]" /> {/* 20px icon */}
+        <GripVertical className="h-5 w-5" /> {/* Increased size */}
       </button>
       <div className="flex-1"> {/* Wrap TaskItem to allow it to take remaining space */}
         <TaskItem 
@@ -77,7 +77,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           {...rest} 
         />
         {directSubtasks.length > 0 && (
-          <ul className="list-none mt-0 space-y-0"> {/* Removed spacing */}
+          <ul className="list-none mt-2 space-y-2"> {/* Increased spacing */}
             {directSubtasks.map(subtask => (
               <SortableTaskItem
                 key={subtask.id}
