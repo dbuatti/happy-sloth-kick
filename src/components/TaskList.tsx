@@ -4,7 +4,6 @@ import { Plus, Settings, ListTodo } from 'lucide-react';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import TaskDetailDialog from './TaskDetailDialog';
 import TaskOverviewDialog from './TaskOverviewDialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import TaskFilter from './TaskFilter';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -12,7 +11,6 @@ import ManageSectionsDialog from './ManageSectionsDialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Label } from "@/components/ui/label";
 import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
 
 import {
   DndContext,
@@ -62,7 +60,7 @@ interface TaskListProps {
   markAllTasksInSectionCompleted: (sectionId: string | null) => Promise<void>;
   sections: TaskSection[];
   createSection: (name: string) => Promise<void>;
-  updateSection: (name: string, newName: string) => Promise<void>;
+  updateSection: (sectionId: string, newName: string) => Promise<void>;
   deleteSection: (sectionId: string) => Promise<void>;
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
   updateTaskParentAndOrder: (activeId: string, newParentId: string | null, newSectionId: string | null, overId: string | null) => Promise<void>;
@@ -114,6 +112,11 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     searchRef,
   } = props;
 
+  console.log('[Render] TaskList', {
+    filteredCount: filteredTasks.length,
+    sections: sections.length,
+  });
+
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
@@ -128,15 +131,10 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     }
   });
 
-  const [showConfirmBulkDeleteDialog, setShowConfirmBulkDeleteDialog] = useState(false);
-  const [isBulkActionInProgress, setIsBulkActionInProgress] = useState(false);
-
   const [isAddSectionOpen, setIsAddSectionOpen] = useState(false);
   const [newSectionName, setNewSectionName] = useState('');
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [editingSectionName, setNewEditingSectionName] = useState('');
-  const [showConfirmDeleteSectionDialog, setShowConfirmDeleteSectionDialog] = useState(false);
-  const [sectionToDeleteId, setSectionToDeleteId] = useState<string | null>(null);
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
 
   const [isAddTaskOpenLocal, setIsAddTaskOpenLocal] = useState(false);
@@ -184,8 +182,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     return [...sections, noSection];
   }, [sections, userId]);
 
-  const allSortableTaskIds = useMemo(() => filteredTasks.map(t => t.id), [filteredTasks]);
-
   const isSectionHeaderId = (id: UniqueIdentifier | null) => {
     if (!id) return false;
     return id === 'no-section-header' || sections.some(s => s.id === id);
@@ -198,7 +194,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id);
-    // Log snapshot of active
     console.log('[DnD] drag start', {
       activeId: event.active.id,
       activeData: event.active.data?.current,
@@ -230,11 +225,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
       return;
     }
 
-    const draggedTask = getTaskById(active.id);
-    const overTask = getTaskById(over.id);
-    const overIsSection = isSectionHeaderId(over.id);
-
-    // If dragging sections
+    // Section reordering
     if (isSectionHeaderId(active.id) && isSectionHeaderId(over.id)) {
       const a = String(active.id);
       const b = String(over.id);
@@ -248,40 +239,33 @@ const TaskList: React.FC<TaskListProps> = (props) => {
       return;
     }
 
-    // If dragging a task
+    const draggedTask = getTaskById(active.id);
     if (!draggedTask) {
       console.warn('[DnD] drag end: active task not found', { activeId: active.id });
       setActiveId(null);
       return;
     }
 
-    // Compute new parents/sections
+    // Compute new parent/section
     let newParentId: string | null = null;
     let newSectionId: string | null = null;
     let overId: string | null = null;
 
-    if (overIsSection) {
-      // Dropped onto a section header: make top-level in this section
+    if (isSectionHeaderId(over.id)) {
       const sectionId = over.id === 'no-section-header' ? null : String(over.id);
       newParentId = null;
       newSectionId = sectionId;
-      overId = null; // append logic handled in hook
-    } else if (overTask) {
-      // Dropped onto a task item: become sibling or child; we’ll do sibling by default
-      newParentId = overTask.parent_task_id; // sibling under same parent
+      overId = null;
+    } else {
+      const overTask = getTaskById(over.id);
+      if (!overTask) {
+        console.log('[DnD] over not a task or section, abort', over.id);
+        setActiveId(null);
+        return;
+      }
+      newParentId = overTask.parent_task_id;
       newSectionId = overTask.parent_task_id ? draggedTask.section_id : overTask.section_id;
       overId = overTask.id;
-    } else {
-      console.log('[DnD] over is neither section nor task; ignoring', { overId: over.id });
-      setActiveId(null);
-      return;
-    }
-
-    // Guard: cannot drop into itself or its descendants
-    if (newParentId === draggedTask.id) {
-      console.warn('[DnD] cannot drop a task into itself');
-      setActiveId(null);
-      return;
     }
 
     console.log('[DnD] drag end resolved', {
@@ -335,8 +319,8 @@ const TaskList: React.FC<TaskListProps> = (props) => {
           <div className="flex gap-1.5 w-full sm:w-auto">
             <Dialog open={isAddSectionOpen} onOpenChange={setIsAddSectionOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="flex-1 h-9">
-                  <Plus className="mr-2 h-3.5 w-3.5" /> Add Section
+                <Button variant="outline" size="sm" className="flex-1">
+                  <Plus className="mr-2 h-4 w-4" /> Add Section
                 </Button>
               </DialogTrigger>
               <DialogContent>
@@ -370,8 +354,8 @@ const TaskList: React.FC<TaskListProps> = (props) => {
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="sm" className="flex-1 h-9">
-                  <Settings className="mr-2 h-3.5 w-3.5" /> Manage Sections
+                <Button variant="outline" size="sm" className="flex-1">
+                  <Settings className="mr-2 h-4 w-4" /> Manage Sections
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
@@ -399,10 +383,14 @@ const TaskList: React.FC<TaskListProps> = (props) => {
           <SortableContext items={[...allSortableSections.map(s => s.id)]} strategy={verticalListSortingStrategy}>
             {allSortableSections.map((currentSection: TaskSection) => {
               const isExpanded = expandedSections[currentSection.id] !== false;
-              const topLevelTasksInSection = filteredTasks.filter(t => 
-                t.parent_task_id === null && 
-                (t.section_id === currentSection.id || (t.section_id === null && currentSection.id === 'no-section-header'))
-              );
+
+              // Section-local top-level tasks
+              const topLevelTasksInSection = filteredTasks
+                .filter(t => t.parent_task_id === null && (t.section_id === currentSection.id || (t.section_id === null && currentSection.id === 'no-section-header')))
+                .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+              // DnD items for this section only
+              const sectionItemIds = topLevelTasksInSection.map(t => t.id);
 
               return (
                 <div key={currentSection.id} className="mb-1.5">
@@ -429,14 +417,14 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                     handleAddTaskToSpecificSection={(sectionId) => openAddTaskForSection(sectionId)}
                     markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
                     handleDeleteSectionClick={(id) => {
-                      setSectionToDeleteId(id);
-                      setShowConfirmDeleteSectionDialog(true);
+                      setIsManageSectionsOpen(true);
                     }}
                     updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
                   />
+
                   {isExpanded && (
                     <div className="mt-1.5 space-y-1.5 pl-2">
-                      <SortableContext items={[...allSortableTaskIds]} strategy={verticalListSortingStrategy}>
+                      <SortableContext items={sectionItemIds} strategy={verticalListSortingStrategy}>
                         <ul className="list-none space-y-1.5">
                           {topLevelTasksInSection.length === 0 ? (
                             <div className="text-center text-foreground/80 dark:text-foreground/80 py-3 rounded-md border border-dashed border-border bg-muted/30" data-no-dnd="true">
@@ -492,35 +480,9 @@ const TaskList: React.FC<TaskListProps> = (props) => {
             })}
           </SortableContext>
 
-          {filteredTasks.length === 0 && !loading && !anyFilterActive && (
-            <div className="text-center text-foreground/80 dark:text-foreground/80 p-6 flex flex-col items-center gap-2 border border-dashed border-border rounded-md bg-muted/30">
-              <ListTodo className="h-6 w-6" />
-              <p className="text-base font-medium">You're all caught up!</p>
-              <p className="text-sm">No tasks found for today. Time to add some new goals!</p>
-              <Button size="sm" onClick={() => openAddTaskForSection(null)}>
-                <Plus className="mr-2 h-4 w-4" /> Add Your First Task
-              </Button>
-            </div>
-          )}
-
-          {filteredTasks.length === 0 && !loading && anyFilterActive && (
-            <div className="text-center text-foreground/80 dark:text-foreground/80 p-6 flex flex-col items-center gap-2 border border-dashed border-border rounded-md bg-muted/30">
-              <ListTodo className="h-6 w-6" />
-              <p className="text-base font-medium">No tasks match your filters</p>
-              <div className="flex gap-2">
-                <Button size="sm" onClick={() => openAddTaskForSection(null)}>
-                  <Plus className="mr-2 h-4 w-4" /> Add Task
-                </Button>
-                <Button size="sm" variant="outline" onClick={handleResetFilters}>
-                  Reset filters
-                </Button>
-              </div>
-            </div>
-          )}
-
           {createPortal(
             <DragOverlay>
-              {/* Intentionally empty overlay to avoid multi-child issues */}
+              {/* Intentionally empty overlay */}
             </DragOverlay>,
             document.body
           )}
@@ -560,6 +522,34 @@ const TaskList: React.FC<TaskListProps> = (props) => {
         deleteSection={deleteSection}
         updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
       />
+
+      {/* Details & Overview */}
+      {taskToOverview && (
+        <TaskOverviewDialog
+          task={taskToOverview}
+          userId={userId}
+          isOpen={isTaskOverviewOpen}
+          onClose={() => setIsTaskOverviewOpen(false)}
+          onEditClick={handleEditTaskFromOverview}
+          onUpdate={updateTask}
+          onDelete={deleteTask}
+          sections={sections}
+          allCategories={allCategories}
+          allTasks={tasks}
+        />
+      )}
+      {taskToEdit && (
+        <TaskDetailDialog
+          task={taskToEdit}
+          userId={userId}
+          isOpen={isTaskDetailOpen}
+          onClose={() => setIsTaskDetailOpen(false)}
+          onUpdate={updateTask}
+          onDelete={deleteTask}
+          sections={sections}
+          allCategories={allCategories}
+        />
+      )}
     </>
   );
 };
