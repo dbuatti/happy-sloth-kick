@@ -92,10 +92,14 @@ const DailyTasksV2: React.FC = () => {
     setIsTaskOverviewOpen(true);
   };
 
-  const handleEditTaskFromOverview = (task: Task) => {
-    setIsTaskOverviewOpen(false);
+  const handleOpenDetail = (task: Task) => {
     setTaskToEdit(task);
     setIsTaskDetailOpen(true);
+  };
+
+  const handleEditTaskFromOverview = (task: Task) => {
+    setIsTaskOverviewOpen(false);
+    handleOpenDetail(task);
   };
 
   const handleQuickAddTask = async (e: React.FormEvent) => {
@@ -127,7 +131,6 @@ const DailyTasksV2: React.FC = () => {
   };
   useKeyboardShortcuts(shortcuts);
 
-  // Small summary row: total, completed, overdue
   const { totalCount, completedCount, overdueCount } = useMemo(() => {
     const total = filteredTasks.length;
     const completed = filteredTasks.filter(t => t.status === 'completed').length;
@@ -156,7 +159,6 @@ const DailyTasksV2: React.FC = () => {
                 )}
               </div>
 
-              {/* Summary row */}
               <div className="mt-2 grid grid-cols-3 gap-2 text-xs sm:text-sm">
                 <div className="rounded-md border bg-muted/30 px-2 py-1 text-center">
                   <span className="text-muted-foreground">Total</span>
@@ -186,7 +188,6 @@ const DailyTasksV2: React.FC = () => {
                 />
               </div>
 
-              {/* Quick add lane */}
               <form onSubmit={handleQuickAddTask} className="mb-4">
                 <div className="flex items-center gap-2 rounded-md border bg-card/60 p-2">
                   <Input
@@ -205,11 +206,8 @@ const DailyTasksV2: React.FC = () => {
               <NextTaskCard
                 task={nextAvailableTask}
                 onMarkComplete={handleMarkTaskComplete}
-                onEditTask={(task) => {
-                  if (task) {
-                    handleOpenOverview(task);
-                  }
-                }}
+                onEditTask={handleOpenOverview}
+                onOpenDetail={handleOpenDetail}
                 currentDate={currentDate}
                 loading={tasksLoading}
               />

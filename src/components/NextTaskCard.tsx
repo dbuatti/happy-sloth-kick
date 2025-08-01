@@ -13,11 +13,12 @@ interface NextTaskCardProps {
   task: Task | null;
   onMarkComplete: (taskId: string) => Promise<void>;
   onEditTask: (task: Task) => void;
+  onOpenDetail?: (task: Task) => void; // added explicit edit handler
   currentDate: Date;
   loading: boolean;
 }
 
-const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEditTask, currentDate, loading }) => {
+const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEditTask, onOpenDetail, currentDate, loading }) => {
   if (loading) {
     return (
       <Card className="w-full max-w-3xl mx-auto shadow-sm mb-4 border-l-4 border-primary dark:border-primary">
@@ -92,7 +93,7 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
         isDueToday ? "border-l-4 border-status-due-today" :
         "border-l-4 border-primary"
       )}
-      onClick={() => onEditTask(task)}
+      onClick={() => onOpenDetail ? onOpenDetail(task) : onEditTask(task)}
     >
       <CardHeader className="pb-2">
         <CardTitle className="text-lg font-semibold flex items-center gap-2">
@@ -141,7 +142,11 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ task, onMarkComplete, onEdi
           <Button onClick={(e) => { e.stopPropagation(); onMarkComplete(task.id); }} className="flex-1">
             <CheckCircle2 className="mr-2 h-4 w-4" /> Mark Complete
           </Button>
-          <Button variant="outline" onClick={(e) => { e.stopPropagation(); onEditTask(task); }} className="flex-1">
+          <Button
+            variant="outline"
+            onClick={(e) => { e.stopPropagation(); onOpenDetail ? onOpenDetail(task) : onEditTask(task); }}
+            className="flex-1"
+          >
             <Edit className="mr-2 h-4 w-4" /> Edit Task
           </Button>
         </div>
