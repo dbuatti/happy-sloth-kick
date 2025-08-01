@@ -110,15 +110,17 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
           <div className="flex items-center space-x-2">
             <Tooltip>
               <TooltipTrigger asChild>
-                        {/* Replaced Label with span to fix React.Children.only error */}
-                        <span className="text-xs text-muted-foreground cursor-pointer">
-                          {section.include_in_focus_mode ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />} {/* Changed h-3.5 w-3.5 to h-4 w-4 */}
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {section.include_in_focus_mode ? 'Included in Focus Mode' : 'Excluded from Focus Mode'}
-                      </TooltipContent>
-                    </Tooltip>
+                <span className="text-xs text-muted-foreground cursor-pointer">
+                  <Label htmlFor={`focus-mode-toggle-${section.id}`} className="sr-only">
+                    {section.include_in_focus_mode ? 'Included in Focus Mode' : 'Excluded from Focus Mode'}
+                  </Label>
+                  {section.include_in_focus_mode ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                {section.include_in_focus_mode ? 'Included in Focus Mode' : 'Excluded from Focus Mode'}
+              </TooltipContent>
+            </Tooltip>
             <Switch
               id={`focus-mode-toggle-${section.id}`}
               checked={section.include_in_focus_mode}
@@ -131,30 +133,30 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="h-6 w-6 p-0" /* Changed h-5 w-5 to h-6 w-6 */
+                className="h-6 w-6 p-0"
               >
                 <span className="sr-only">Open section menu</span>
-                <MoreHorizontal className="h-4 w-4" /> {/* Changed h-3.5 w-3.5 to h-4 w-4 */}
+                <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" data-no-dnd="true">
               <DropdownMenuItem onSelect={() => handleAddTaskToSpecificSection(section.id)}>
-                <Plus className="mr-2 h-4 w-4" /> Add Task to Section {/* Changed h-3.5 w-3.5 to h-4 w-4 */}
+                <Plus className="mr-2 h-4 w-4" /> Add Task to Section
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => markAllTasksInSectionCompleted(section.id)}>
-                <CheckCircle2 className="mr-2 h-4 w-4" /> Mark All Completed {/* Changed h-3.5 w-3.5 to h-4 w-4 */}
+                <CheckCircle2 className="mr-2 h-4 w-4" /> Mark All Completed
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => handleEditSectionClick(section)}>
-                <Edit className="mr-2 h-4 w-4" /> Rename Section {/* Changed h-3.5 w-3.5 to h-4 w-4 */}
+                <Edit className="mr-2 h-4 w-4" /> Rename Section
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={() => handleDeleteSectionClick(section.id)} className="text-destructive focus:text-destructive">
-                <Trash2 className="mr-2 h-4 w-4" /> Delete Section {/* Changed h-3.5 w-3.5 to h-4 w-4 */}
+                <Trash2 className="mr-2 h-4 w-4" /> Delete Section
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button variant="ghost" size="icon" onClick={() => toggleSection(section.id)} className="h-6 w-6 p-0"> {/* Changed h-5 w-5 to h-6 w-6 */}
-            <ChevronDown className={cn("h-4 w-4 transition-transform", isExpanded ? "rotate-0" : "-rotate-90")} /> {/* Changed h-4 w-4 to h-4 w-4 */}
+          <Button variant="ghost" size="icon" onClick={() => toggleSection(section.id)} className="h-6 w-6 p-0">
+            <ChevronDown className={cn("h-4 w-4 transition-transform", isExpanded ? "rotate-0" : "-rotate-90")} />
           </Button>
         </div>
       </div>

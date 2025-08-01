@@ -72,6 +72,12 @@ const getUTCStartOfDay = (date: Date) => {
   return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
 };
 
+// Helper function to remove client-side only properties before sending to DB
+const cleanTaskForDb = (task: Partial<Task>): Partial<Omit<Task, 'category_color'>> => {
+  const { category_color, ...rest } = task;
+  return rest;
+};
+
 interface UseTasksProps {
   currentDate?: Date;
   setCurrentDate?: React.Dispatch<React.SetStateAction<Date>>;
@@ -195,7 +201,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         parentTasks.forEach((task, index) => {
           if (task.order !== index) { // Only update if order needs correction
             const dbUpdatePayload = {
-              ...task, // Copy all existing fields
+              ...cleanTaskForDb(task), // Use helper to clean before sending
               order: index,
               user_id: userId, // Ensure user_id is present for upsert
             };
@@ -255,7 +261,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       category: templateTask.category,
       priority: templateTask.priority,
       due_date: templateTask.due_date,
-      notes: templateTask.notes,
+      notes: templateTask.notes, // Corrected from template.notes
       remind_at: templateTask.remind_at,
       section_id: templateTask.section_id,
       order: templateTask.order,
@@ -381,8 +387,6 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
   }, [userId, currentDate, syncRecurringTasks, viewMode]);
 
   useEffect(() => {
-    if (!userId) return;
-
     tasks.forEach(task => {
       if (task.remind_at && task.status === 'to-do') {
         const reminderTime = parseISO(task.remind_at);
@@ -432,24 +436,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       };
       setTasks(prev => [...prev, newTask]);
 
-      const dbInsertPayload = {
-        id: newTask.id,
-        user_id: newTask.user_id,
-        created_at: newTask.created_at,
-        status: newTask.status,
-        recurring_type: newTask.recurring_type,
-        category: newTask.category,
-        priority: newTask.priority,
-        due_date: newTask.due_date,
-        notes: newTask.notes,
-        remind_at: newTask.remind_at,
-        section_id: newTask.section_id,
-        order: newTask.order,
-        original_task_id: newTask.original_task_id,
-        parent_task_id: newTask.parent_task_id,
-        description: newTask.description,
-        link: newTask.link,
-      };
+      const dbInsertPayload = cleanTaskForDb(newTask); // Use helper to clean before sending
 
       const { data, error } = await supabase
         .from('tasks')
@@ -493,10 +480,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     ));
 
     try {
-      const dbUpdates = { ...updates };
-      if ('category_color' in dbUpdates) {
-        delete dbUpdates.category_color;
-      }
+      const dbUpdates = cleanTaskForDb(updates); // Use helper to clean before sending
 
       const { error } = await supabase
         .from('tasks')
@@ -590,10 +574,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     ));
 
     try {
-      const dbUpdates = { ...updates };
-      if ('category_color' in dbUpdates) {
-        delete dbUpdates.category_color;
-      }
+      const dbUpdates = cleanTaskForDb(updates); // Use helper to clean before sending
 
       const { data, error } = await supabase
         .from('tasks')
@@ -818,14 +799,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       order: newOrder,
     });
 
-    // 3. Re-index tasks in the new parent (if different from old parent)
-    targetSiblings.forEach((task, index) => {
-      if (task.id !== activeId) { // Only update siblings, active task already handled
-        updates.push({ id: task.id, order: index });
-      }
-    });
-
-    // 4. Handle cascading section_id updates for subtasks of the moved task
+    // 3. Handle cascading section_id updates for subtasks of the moved task
     // If a top-level task becomes a subtask, its own subtasks should inherit the new section_id
     if (activeTask.parent_task_id === null && newParentId !== null) {
       const subtasksOfMovedTask = tasks.filter(t => t.parent_task_id === activeTask.id);
@@ -849,7 +823,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
     try {
       // Add user_id to each update object for RLS compliance
-      const updatesWithUserId = updates.map(u => ({ ...u, user_id: userId }));
+      const updatesWithUserId = updates.map(u => ({ ...cleanTaskForDb(u), user_id: userId }));
 
       const { error } = await supabase.from('tasks').upsert(updatesWithUserId, { onConflict: 'id' });
 
@@ -976,7 +950,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
     try {
       // Add user_id to each update object for RLS compliance
-      const updatesWithUserId = updates.map(u => ({ ...u, user_id: userId }));
+      const updatesWithUserId = updates.map(u => ({ ...cleanTaskForDb(u), user_id: userId }));
 
       const { error } = await supabase
         .from('tasks')

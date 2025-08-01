@@ -131,15 +131,14 @@ const TaskItem: React.FC<TaskItemProps> = ({
       >
         <Tooltip>
           <TooltipTrigger asChild>
-            {/* Replaced label with span to fix React.Children.only error */}
             <span
-              // htmlFor={`task-${task.id}`} // htmlFor is not valid on span
               className={cn(
                 "text-sm font-medium leading-tight line-clamp-2",
                 task.status === 'completed' ? 'line-through text-muted-foreground' : 'text-foreground',
                 "block"
               )}
             >
+              <label htmlFor={`task-${task.id}`} className="sr-only">Task: {task.description}</label>
               {task.description}
             </span>
           </TooltipTrigger>
