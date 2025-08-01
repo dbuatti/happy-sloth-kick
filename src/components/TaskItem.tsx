@@ -110,7 +110,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
         onCheckedChange={handleCheckboxChange}
         id={`task-${task.id}`}
         onClick={(e) => e.stopPropagation()}
-        className="flex-shrink-0 h-5 w-5" // Removed mt-0.5
+        className="flex-shrink-0 h-5 w-5 mt-0.5" // Added mt-0.5 for alignment
         data-no-dnd="true"
       />
 

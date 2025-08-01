@@ -59,7 +59,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         level > 0 ? "bg-muted/50 dark:bg-gray-800/50 border-l-4 border-l-primary/50" : "", // Visual cue for subtasks
         // New: Drag visual cues
         "cursor-grab active:cursor-grabbing",
-        "hover:bg-muted/50 dark:hover:bg-gray-800/50" // Subtle background change on hover
+        "hover:bg-accent/5 dark:hover:bg-accent/10" // Subtle background change on hover
       )}
       {...attributes} // Keep attributes on the main element
       {...listeners} // Keep listeners on the main element for whole-item drag

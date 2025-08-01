@@ -18,6 +18,7 @@ import { showError } from '@/utils/toast';
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
 import { cn } from '@/lib/utils';
 import BulkActions from '@/components/BulkActions'; // Import BulkActions
+import SmartSuggestions from '@/components/SmartSuggestions'; // Import SmartSuggestions
 
 const getUTCStartOfDay = (date: Date) => {
   return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -269,6 +270,14 @@ const DailyTasksV2: React.FC = () => {
                 loading={tasksLoading}
               />
 
+              <SmartSuggestions
+                tasks={filteredTasks}
+                currentDate={currentDate}
+                setCurrentDate={setCurrentDate}
+                bulkUpdateTasks={bulkUpdateTasks}
+                clearSelectedTasks={clearSelectedTasks}
+              />
+
               <TaskList
                 tasks={tasks}
                 filteredTasks={filteredTasks}
@@ -315,7 +324,6 @@ const DailyTasksV2: React.FC = () => {
         <MadeWithDyad />
       </footer>
 
-      {/* Render BulkActions here, outside the main content flow */}
       <BulkActions
         selectedTaskIds={selectedTaskIds}
         onAction={async (action) => {
