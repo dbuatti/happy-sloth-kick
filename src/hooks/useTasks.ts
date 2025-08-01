@@ -124,6 +124,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         .eq('user_id', userId);
       if (tasksError) throw tasksError;
 
+      // Use the categoriesMap from the outer scope, which is correctly memoized
       const mapped = (tasksData || []).map((t: any) => ({
         ...t,
         category_color: categoriesMap.get(t.category) || 'gray',
@@ -136,7 +137,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     } finally {
       setLoading(false);
     }
-  }, [userId, categoriesMap]);
+  }, [userId]); // Removed categoriesMap from dependencies
 
   useEffect(() => {
     if (!authLoading && userId) fetchDataAndSections();
@@ -244,7 +245,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
       if (updates.remind_at) {
         const d = parseISO(updates.remind_at as string);
-        if (isValid(d)) addReminder(taskId, `Reminder: ${originalTask.description}`, d);
+        if (isValid(d) && (updates.status === undefined || updates.status === 'to-do')) addReminder(taskId, `Reminder: ${originalTask.description}`, d);
       }
       if (updates.status === 'completed' || updates.status === 'archived' || updates.remind_at === null) {
         dismissReminder(taskId);
