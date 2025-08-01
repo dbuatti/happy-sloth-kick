@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Label } from "@/components/ui/label";
 import { FolderOpen } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client"; // Keep for fetching initial sections if needed, but will be passed as prop
-import { showError } from "@/utils/toast"; // Keep for error handling if fetching internally
+import { showError } from "@/utils/toast"; // Keep for error handling if internally fetching
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Import Select components
 
 interface TaskSection {
@@ -47,7 +47,7 @@ const SectionSelector: React.FC<SectionSelectorProps> = ({ value, onChange, user
       <Label>Section</Label>
       <div className="flex space-x-2">
         <Select value={value || "no-section-option"} onValueChange={(val) => onChange(val === "no-section-option" ? null : val)}>
-          <SelectTrigger className="flex-1">
+          <SelectTrigger className="flex-1 h-9"> {/* Changed h-10 to h-9 */}
             <SelectValue placeholder="Select section" />
           </SelectTrigger>
           <SelectContent className="z-[9999]"> {/* Add z-index here */}
@@ -66,7 +66,7 @@ const SectionSelector: React.FC<SectionSelectorProps> = ({ value, onChange, user
       
       {selectedSection && (
         <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-          <FolderOpen className="h-3.5 w-3.5" /> {/* Changed h-3 w-3 to h-3.5 w-3.5 */}
+          <FolderOpen className="h-3.5 w-3.5" />
           <span>{selectedSection.name}</span>
         </div>
       )}

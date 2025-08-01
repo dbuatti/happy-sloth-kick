@@ -18,12 +18,12 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({ currentDate, onPreviousDa
   const isToday = isSameDay(currentDate, new Date());
 
   return (
-    <div className="flex items-center justify-between mb-3"> {/* Changed mb-4 to mb-3 */}
-      <Button variant="outline" size="icon" onClick={onPreviousDay} className="h-8 w-8"> {/* Changed h-9 w-9 to h-8 w-8 */}
+    <div className="flex items-center justify-between mb-2"> {/* Changed mb-3 to mb-2 */}
+      <Button variant="outline" size="icon" onClick={onPreviousDay} className="h-7 w-7"> {/* Changed h-8 w-8 to h-7 w-7 */}
         <ChevronLeft className="h-4 w-4" />
       </Button>
       <div className="flex items-center space-x-2">
-        <h3 className="text-lg font-semibold"> {/* Changed text-xl to text-lg */}
+        <h3 className="text-lg font-semibold">
           {isToday ? 'Today' : format(currentDate, 'EEEE, MMMM d, yyyy')}
         </h3>
         <Popover>
@@ -31,11 +31,11 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({ currentDate, onPreviousDa
             <Button
               variant="outline"
               className={cn(
-                "w-auto justify-start text-left font-normal h-8", /* Changed h-9 to h-8 */
+                "w-auto justify-start text-left font-normal h-7", /* Changed h-8 to h-7 */
                 !currentDate && "text-muted-foreground"
               )}
             >
-              <CalendarIcon className="mr-2 h-3.5 w-3.5" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+              <CalendarIcon className="mr-2 h-3.5 w-3.5" />
               {format(currentDate, "MMM d, yyyy")}
             </Button>
           </PopoverTrigger>
@@ -53,12 +53,12 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({ currentDate, onPreviousDa
           </PopoverContent>
         </Popover>
         {!isToday && ( // Only show "Today" button if not currently on today's date
-          <Button variant="outline" size="sm" onClick={onGoToToday} className="ml-2 h-8"> {/* Changed h-9 to h-8 */}
+          <Button variant="outline" size="sm" onClick={onGoToToday} className="ml-2 h-7"> {/* Changed h-8 to h-7 */}
             Today
           </Button>
         )}
       </div>
-      <Button variant="outline" size="icon" onClick={onNextDay} className="h-8 w-8"> {/* Changed h-9 w-9 to h-8 w-8 */}
+      <Button variant="outline" size="icon" onClick={onNextDay} className="h-7 w-7"> {/* Changed h-8 w-8 to h-7 w-7 */}
         <ChevronRight className="h-4 w-4" />
       </Button>
     </div>

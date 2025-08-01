@@ -115,45 +115,45 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
       <DialogContent className="sm:max-w-[425px] md:max-w-lg lg:max-w-xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <div className={cn("w-3.5 h-3.5 rounded-full flex items-center justify-center border", categoryColorProps.backgroundClass, categoryColorProps.dotBorder)}> {/* Changed w-4 h-4 to w-3.5 h-3.5 */}
-              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: categoryColorProps.dotColor }}></div> {/* Changed w-2 h-2 to w-1.5 h-1.5 */}
+            <div className={cn("w-3.5 h-3.5 rounded-full flex items-center justify-center border", categoryColorProps.backgroundClass, categoryColorProps.dotBorder)}>
+              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: categoryColorProps.dotColor }}></div>
             </div>
             <span className="flex-1 truncate">{task.description}</span>
           </DialogTitle>
         </DialogHeader>
-        <div className="py-4 space-y-4 text-sm text-foreground">
-          <div className="grid grid-cols-2 gap-y-2 gap-x-4">
+        <div className="py-3 space-y-3 text-sm text-foreground"> {/* Changed py-4 space-y-4 to py-3 space-y-3 */}
+          <div className="grid grid-cols-2 gap-y-1.5 gap-x-4"> {/* Changed gap-y-2 to gap-y-1.5 */}
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-3.5 w-3.5 text-muted-foreground" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+              <CheckCircle2 className="h-3.5 w-3.5 text-muted-foreground" />
               <span>Status: <span className="font-semibold capitalize">{task.status}</span></span>
             </div>
             <div className="flex items-center gap-2">
-              <span className={cn("h-3.5 w-3.5", getPriorityColor(task.priority))}><Edit className="h-3.5 w-3.5" /></span> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+              <span className={cn("h-3.5 w-3.5", getPriorityColor(task.priority))}><Edit className="h-3.5 w-3.5" /></span>
               <span>Priority: <span className={cn("font-semibold capitalize", getPriorityColor(task.priority))}>{task.priority}</span></span>
             </div>
             <div className="flex items-center gap-2">
-              <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+              <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
               <span>Section: <span className="font-semibold">{sectionName}</span></span>
             </div>
             <div className="flex items-center gap-2">
-              <Repeat className="h-3.5 w-3.5 text-muted-foreground" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+              <Repeat className="h-3.5 w-3.5 text-muted-foreground" />
               <span>Recurring: <span className="font-semibold capitalize">{task.recurring_type}</span></span>
             </div>
             {task.due_date && (
               <div className="flex items-center gap-2 col-span-2">
-                <Calendar className="h-3.5 w-3.5 text-muted-foreground" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+                <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
                 <span>Due Date: <span className={cn("font-semibold", isOverdue && "text-status-overdue", isDueToday && "text-status-due-today")}>{getDueDateDisplay(task.due_date)}</span></span>
               </div>
             )}
             {task.remind_at && (
               <div className="flex items-center gap-2 col-span-2">
-                <BellRing className="h-3.5 w-3.5 text-muted-foreground" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+                <BellRing className="h-3.5 w-3.5 text-muted-foreground" />
                 <span>Reminder: <span className="font-semibold">{isValid(parseISO(task.remind_at)) ? format(parseISO(task.remind_at), 'MMM d, yyyy HH:mm') : 'Invalid Date'}</span></span>
               </div>
             )}
             {task.link && (
               <div className="flex items-center gap-2 col-span-2">
-                <LinkIcon className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+                <LinkIcon className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                 <span className="flex-shrink-0">Link:</span>
                 <a href={task.link} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline flex-1 min-w-0 truncate">
                   {task.link}
@@ -164,24 +164,24 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
 
           {task.notes && (
             <div className="space-y-1">
-              <h4 className="font-semibold flex items-center gap-2"><StickyNote className="h-3.5 w-3.5 text-muted-foreground" /> Notes:</h4> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+              <h4 className="font-semibold flex items-center gap-2"><StickyNote className="h-3.5 w-3.5 text-muted-foreground" /> Notes:</h4>
               <p className="text-muted-foreground whitespace-pre-wrap">{task.notes}</p>
             </div>
           )}
 
-          <div className="space-y-2">
-            <h4 className="font-semibold flex items-center gap-2"><ListTodo className="h-3.5 w-3.5 text-muted-foreground" /> Sub-tasks ({subtasks.length})</h4> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+          <div className="space-y-1.5"> {/* Changed space-y-2 to space-y-1.5 */}
+            <h4 className="font-semibold flex items-center gap-2"><ListTodo className="h-3.5 w-3.5 text-muted-foreground" /> Sub-tasks ({subtasks.length})</h4>
             {subtasks.length === 0 ? (
               <p className="text-sm text-muted-foreground">No sub-tasks for this task.</p>
             ) : (
-              <ul className="space-y-2">
+              <ul className="space-y-1.5"> {/* Changed space-y-2 to space-y-1.5 */}
                 {subtasks.map(subtask => (
-                  <li key={subtask.id} className="flex items-center space-x-2 p-2 border rounded-md bg-background">
+                  <li key={subtask.id} className="flex items-center space-x-2 p-1.5 border rounded-md bg-background"> {/* Changed p-2 to p-1.5 */}
                     <Checkbox
                       checked={subtask.status === 'completed'}
                       onCheckedChange={(checked: boolean) => handleSubtaskStatusChange(subtask.id, checked ? 'completed' : 'to-do')}
                       id={`subtask-overview-${subtask.id}`}
-                      className="flex-shrink-0 h-3.5 w-3.5" /* Changed h-4 w-4 to h-3.5 w-3.5 */
+                      className="flex-shrink-0 h-3.5 w-3.5"
                       disabled={isUpdatingStatus}
                     />
                     <label
@@ -194,7 +194,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
                     >
                       {subtask.description}
                     </label>
-                    {subtask.status === 'completed' && <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />} {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+                    {subtask.status === 'completed' && <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />}
                   </li>
                 ))}
               </ul>
@@ -204,29 +204,29 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
           <p className="text-xs text-muted-foreground text-right">Created: {format(parseISO(task.created_at), 'MMM d, yyyy HH:mm')}</p>
         </div>
 
-        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2 pt-3">
+        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2 pt-2"> {/* Changed pt-3 to pt-2 */}
           <Button
             variant="default"
             onClick={() => onEditClick(task)}
-            className="w-full sm:w-auto mt-2 sm:mt-0"
+            className="w-full sm:w-auto mt-1.5 sm:mt-0 h-9" /* Changed mt-2 h-10 to mt-1.5 h-9 */
           >
-            <Edit className="mr-2 h-3.5 w-3.5" /> Edit {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+            <Edit className="mr-2 h-3.5 w-3.5" /> Edit
           </Button>
           <div className="flex gap-2 w-full sm:w-auto">
             <Button
               variant={task.status === 'completed' ? 'outline' : 'default'}
               onClick={handleToggleMainTaskStatus}
               disabled={isUpdatingStatus}
-              className="flex-1"
+              className="flex-1 h-9" /* Changed h-10 to h-9 */
             >
               {task.status === 'completed' ? (
-                <><ListTodo className="mr-2 h-3.5 w-3.5" /> Mark To-Do</> /* Changed h-4 w-4 to h-3.5 w-3.5 */
+                <><ListTodo className="mr-2 h-3.5 w-3.5" /> Mark To-Do</>
               ) : (
-                <><CheckCircle2 className="mr-2 h-3.5 w-3.5" /> Mark Complete</> /* Changed h-4 w-4 to h-3.5 w-3.5 */
+                <><CheckCircle2 className="mr-2 h-3.5 w-3.5" /> Mark Complete</>
               )}
             </Button>
-            <Button variant="destructive" onClick={handleDeleteClick} disabled={isUpdatingStatus} className="flex-1">
-              <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+            <Button variant="destructive" onClick={handleDeleteClick} disabled={isUpdatingStatus} className="flex-1 h-9"> {/* Changed h-10 to h-9 */}
+              <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete
             </Button>
           </div>
         </DialogFooter>

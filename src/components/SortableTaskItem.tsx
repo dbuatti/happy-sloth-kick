@@ -78,7 +78,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           {...rest} 
         />
         {directSubtasks.length > 0 && (
-          <ul className="list-none mt-2 space-y-2">
+          <ul className="list-none mt-1.5 space-y-1.5"> {/* Changed mt-2 space-y-2 to mt-1.5 space-y-1.5 */}
             {directSubtasks.map(subtask => (
               <SortableTaskItem
                 key={subtask.id}

@@ -88,7 +88,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
       <Label>Category</Label>
       <div className="flex space-x-2">
         <Select value={value} onValueChange={onChange}>
-          <SelectTrigger className="flex-1 min-w-0">
+          <SelectTrigger className="flex-1 min-w-0 h-9"> {/* Changed h-10 to h-9 */}
             <SelectValue placeholder="Select category">
               <div className="flex items-center gap-2 w-full">
                 <div className={cn("w-3.5 h-3.5 rounded-full flex items-center justify-center border", selectedCategoryColorProps.backgroundClass, selectedCategoryColorProps.dotBorder)}>
@@ -118,7 +118,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
         </Select>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
-            <Button type="button" size="icon" variant="outline">
+            <Button type="button" size="icon" variant="outline" className="h-9 w-9"> {/* Changed h-10 w-10 to h-9 w-9 */}
               <Plus className="h-3.5 w-3.5" />
             </Button>
           </DialogTrigger>
@@ -170,6 +170,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
                     onChange={(e) => setNewCategoryName(e.target.value)}
                     placeholder="e.g., Work, Personal, Shopping"
                     autoFocus
+                    className="h-9" /* Changed h-10 to h-9 */
                   />
                 </div>
                 <div className="mt-4">
@@ -196,7 +197,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
                   </div>
                 </div>
                 <DialogFooter className="mt-4">
-                  <Button onClick={createCategory} className="w-full" disabled={!newCategoryName.trim()}>Create Category</Button>
+                  <Button onClick={createCategory} className="w-full h-9" disabled={!newCategoryName.trim()}>Create Category</Button> {/* Changed h-10 to h-9 */}
                 </DialogFooter>
               </div>
             </div>

@@ -15,8 +15,8 @@ const ThemeSelector = () => {
 
   if (!mounted) {
     return (
-      <Button variant="ghost" size="icon" aria-label="Theme selector" className="h-7 w-7"> {/* Changed h-8 w-8 to h-7 w-7 */}
-        <Palette className="h-4 w-4" /> {/* Changed h-5 w-5 to h-4 w-4 */}
+      <Button variant="ghost" size="icon" aria-label="Theme selector" className="h-7 w-7">
+        <Palette className="h-4 w-4" />
       </Button>
     );
   }
@@ -24,23 +24,23 @@ const ThemeSelector = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label="Theme selector" className="h-7 w-7"> {/* Changed h-8 w-8 to h-7 w-7 */}
-          <Palette className="h-4 w-4" /> {/* Changed h-5 w-5 to h-4 w-4 */}
+        <Button variant="ghost" size="icon" aria-label="Theme selector" className="h-7 w-7">
+          <Palette className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={() => setTheme('system')} className={theme === 'system' ? 'font-bold' : ''}>
-          <Monitor className="h-3.5 w-3.5 mr-2" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+          <Monitor className="h-3.5 w-3.5 mr-2" />
           System
         </DropdownMenuItem>
         
         <DropdownMenuItem onClick={() => setTheme('light')} className={theme === 'light' ? 'font-bold' : ''}>
-          <Sun className="h-3.5 w-3.5 mr-2" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+          <Sun className="h-3.5 w-3.5 mr-2" />
           Light
         </DropdownMenuItem>
 
         <DropdownMenuItem onClick={() => setTheme('dark')} className={theme === 'dark' ? 'font-bold' : ''}>
-          <Moon className="h-3.5 w-3.5 mr-2" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+          <Moon className="h-3.5 w-3.5 mr-2" />
           Dark
         </DropdownMenuItem>
 
@@ -52,7 +52,7 @@ const ThemeSelector = () => {
             onClick={() => setTheme(themeName)}
             className={theme === themeName ? 'font-bold' : ''}
           >
-            <Palette className="h-3.5 w-3.5 mr-2" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+            <Palette className="h-3.5 w-3.5 mr-2" />
             {themeData.name}
           </DropdownMenuItem>
         ))}

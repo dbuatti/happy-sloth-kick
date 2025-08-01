@@ -77,10 +77,11 @@ const ManageSectionsDialog: React.FC<ManageSectionsDialogProps> = ({
                         value={editingSectionName}
                         onChange={(e) => setEditingSectionName(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleSaveEdit()}
-                        autoFocus // Auto-focus here
+                        autoFocus
+                        className="h-9" /* Changed h-10 to h-9 */
                       />
-                      <Button size="sm" onClick={handleSaveEdit} disabled={!editingSectionName.trim()}>Save</Button>
-                      <Button variant="ghost" size="sm" onClick={() => setEditingSectionId(null)}>Cancel</Button>
+                      <Button size="sm" onClick={handleSaveEdit} disabled={!editingSectionName.trim()} className="h-9">Save</Button> {/* Changed h-10 to h-9 */}
+                      <Button variant="ghost" size="sm" onClick={() => setEditingSectionId(null)} className="h-9">Cancel</Button> {/* Changed h-10 to h-9 */}
                     </div>
                   ) : (
                     <span className="flex-1 font-medium">{section.name}</span>
@@ -89,7 +90,7 @@ const ManageSectionsDialog: React.FC<ManageSectionsDialogProps> = ({
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Label htmlFor={`focus-mode-toggle-${section.id}`} className="text-xs text-muted-foreground cursor-pointer">
-                          {section.include_in_focus_mode ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />} {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+                          {section.include_in_focus_mode ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
                         </Label>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -104,11 +105,11 @@ const ManageSectionsDialog: React.FC<ManageSectionsDialogProps> = ({
                     />
                     {!editingSectionId && (
                       <>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleEditClick(section)}> {/* Changed h-7 w-7 to h-6 w-6 */}
-                          <Edit className="h-3.5 w-3.5" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleEditClick(section)}>
+                          <Edit className="h-3.5 w-3.5" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => handleDeleteClick(section.id)}> {/* Changed h-7 w-7 to h-6 w-6 */}
-                          <Trash2 className="h-3.5 w-3.5" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => handleDeleteClick(section.id)}>
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </>
                     )}

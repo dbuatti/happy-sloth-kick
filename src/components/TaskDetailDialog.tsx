@@ -130,24 +130,24 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
           autoFocus={false}
         />
 
-        <div className="space-y-2 mt-4 border-t pt-3">
+        <div className="space-y-2 mt-3 border-t pt-2"> {/* Changed mt-4 pt-3 to mt-3 pt-2 */}
           <div className="flex justify-between items-center">
-            <h3 className="text-base font-semibold">Sub-tasks ({subtasks.length})</h3> {/* Changed text-lg to text-base */}
-            <Button variant="outline" size="sm" className="h-8" onClick={() => setIsAddSubtaskOpen(true)}> {/* Changed h-9 to h-8 */}
+            <h3 className="text-base font-semibold">Sub-tasks ({subtasks.length})</h3>
+            <Button variant="outline" size="sm" className="h-8" onClick={() => setIsAddSubtaskOpen(true)}>
               Add Sub-task
             </Button>
           </div>
           {subtasks.length === 0 ? (
             <p className="text-sm text-muted-foreground">No sub-tasks yet. Break down this task into smaller steps!</p>
           ) : (
-            <ul className="space-y-2">
+            <ul className="space-y-1.5"> {/* Changed space-y-2 to space-y-1.5 */}
               {subtasks.map(subtask => (
-                <li key={subtask.id} className="flex items-center space-x-2 p-2 border rounded-md bg-background">
+                <li key={subtask.id} className="flex items-center space-x-2 p-1.5 border rounded-md bg-background"> {/* Changed p-2 to p-1.5 */}
                   <Checkbox
                     checked={subtask.status === 'completed'}
                     onCheckedChange={(checked: boolean) => handleSubtaskStatusChange(subtask.id, checked ? 'completed' : 'to-do')}
                     id={`subtask-${subtask.id}`}
-                    className="flex-shrink-0 h-3.5 w-3.5" /* Changed h-4 w-4 to h-3.5 w-3.5 */
+                    className="flex-shrink-0 h-3.5 w-3.5"
                   />
                   <label
                     htmlFor={`subtask-${subtask.id}`}
@@ -159,28 +159,28 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
                   >
                     {subtask.description}
                   </label>
-                  {subtask.status === 'completed' && <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />} {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+                  {subtask.status === 'completed' && <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />}
                 </li>
               ))}
             </ul>
           )}
         </div>
 
-        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2 pt-3">
+        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2 pt-2"> {/* Changed pt-3 to pt-2 */}
           <Button
             variant={task.status === 'completed' ? 'outline' : 'default'}
             onClick={handleToggleMainTaskStatus}
             disabled={isSaving}
-            className="w-full sm:w-auto mt-2 sm:mt-0"
+            className="w-full sm:w-auto mt-1.5 sm:mt-0 h-9" /* Changed mt-2 h-10 to mt-1.5 h-9 */
           >
             {task.status === 'completed' ? (
-              <><ListTodo className="mr-2 h-3.5 w-3.5" /> Mark To-Do</> /* Changed h-4 w-4 to h-3.5 w-3.5 */
+              <><ListTodo className="mr-2 h-3.5 w-3.5" /> Mark To-Do</>
             ) : (
-              <><CheckCircle2 className="mr-2 h-3.5 w-3.5" /> Mark Complete</> /* Changed h-4 w-4 to h-3.5 w-3.5 */
+              <><CheckCircle2 className="mr-2 h-3.5 w-3.5" /> Mark Complete</>
             )}
           </Button>
-          <Button variant="destructive" onClick={handleDeleteClick} disabled={isSaving} className="w-full sm:w-auto mt-2 sm:mt-0">
-            <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete Task {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+          <Button variant="destructive" onClick={handleDeleteClick} disabled={isSaving} className="w-full sm:w-auto mt-1.5 sm:mt-0 h-9"> {/* Changed mt-2 h-10 to mt-1.5 h-9 */}
+            <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete Task
           </Button>
         </DialogFooter>
       </DialogContent>

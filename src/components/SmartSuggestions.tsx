@@ -75,25 +75,25 @@ const SmartSuggestions: React.FC<SmartSuggestionsProps> = ({ tasks, currentDate,
   };
 
   return (
-    <Card className="w-full shadow-sm mb-3"> {/* Changed mb-4 to mb-3 */}
-      <CardContent className="p-3"> {/* Changed p-4 to p-3 */}
-        <h3 className="text-base font-semibold mb-2">Smart Suggestions</h3> {/* Changed text-lg mb-3 to text-base mb-2 */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2"> {/* Changed gap-3 to gap-2 */}
+    <Card className="w-full shadow-sm mb-3">
+      <CardContent className="p-3">
+        <h3 className="text-base font-semibold mb-2">Smart Suggestions</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
           {overdueTasksCount > 0 && (
-            <Button variant="outline" className="justify-start gap-2 h-9"> {/* Changed h-10 to h-9 */}
-              <Clock className="h-3.5 w-3.5 text-destructive" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+            <Button variant="outline" className="justify-start gap-2 h-8"> {/* Changed h-9 to h-8 */}
+              <Clock className="h-3.5 w-3.5 text-destructive" />
               Review {overdueTasksCount} Overdue Task{overdueTasksCount > 1 ? 's' : ''}
             </Button>
           )}
           {completedTasksCountForArchiveSuggestion > 0 && (
-            <Button variant="outline" className="justify-start gap-2 h-9 w-fit" onClick={handleArchiveCompletedClick}> {/* Changed h-10 to h-9 */}
-              <Archive className="h-3.5 w-3.5 text-primary" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+            <Button variant="outline" className="justify-start gap-2 h-8 w-fit" onClick={handleArchiveCompletedClick}> {/* Changed h-9 to h-8 */}
+              <Archive className="h-3.5 w-3.5 text-primary" />
               Archive All Completed Tasks
             </Button>
           )}
           {totalTasksToday === 0 && (
-            <Button variant="outline" className="justify-start gap-2 h-9"> {/* Changed h-10 to h-9 */}
-              <Plus className="h-3.5 w-3.5 text-primary" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+            <Button variant="outline" className="justify-start gap-2 h-8"> {/* Changed h-9 to h-8 */}
+              <Plus className="h-3.5 w-3.5 text-primary" />
               Add Your First Task Today!
             </Button>
           )}

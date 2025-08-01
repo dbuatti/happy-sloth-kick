@@ -79,14 +79,14 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
       >
         <GripVertical className="h-3.5 w-3.5" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
       </button>
-      <div className="flex-1 flex items-center justify-between py-1.5 pl-0 pr-1"> {/* Changed p-2 pl-0 to py-1.5 pl-0 pr-1 */}
+      <div className="flex-1 flex items-center justify-between py-1.5 pl-0 pr-1">
         {editingSectionId === section.id ? (
-          <div className="flex items-center w-full gap-2" data-no-dnd="true"> {/* Prevent drag when editing */}
+          <div className="flex items-center w-full gap-2" data-no-dnd="true">
             <Input
               value={editingSectionName}
               onChange={(e) => setNewEditingSectionName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleRenameSection()}
-              className="text-lg font-semibold" /* Changed text-xl to text-lg */
+              className="text-lg font-semibold"
               autoFocus
             />
             <Button size="sm" onClick={handleRenameSection} disabled={!editingSectionName.trim()}>Save</Button>
@@ -95,23 +95,23 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
         ) : (
           <div 
             className="flex items-center gap-2 flex-1 cursor-pointer" 
-            onClick={() => toggleSection(section.id)} // Added onClick to toggle section
+            onClick={() => toggleSection(section.id)}
           >
-            <h3 className="text-lg font-semibold flex items-center gap-2"> {/* Changed text-xl to text-lg */}
+            <h3 className="text-lg font-semibold flex items-center gap-2">
               <FolderOpen className="h-4 w-4 text-muted-foreground" /> {/* Changed h-5 w-5 to h-4 w-4 */}
               {section.name} ({sectionTasksCount})
             </h3>
-            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleEditSectionClick(section); }} className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200" data-no-dnd="true"> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
-              <Edit className="h-3.5 w-3.5" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleEditSectionClick(section); }} className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200" data-no-dnd="true">
+              <Edit className="h-3.5 w-3.5" />
             </Button>
           </div>
         )}
-        <div className="flex items-center space-x-1" data-no-dnd="true"> {/* Prevent drag on controls */}
+        <div className="flex items-center space-x-1" data-no-dnd="true">
           <div className="flex items-center space-x-2">
             <Tooltip>
               <TooltipTrigger asChild>
                         <Label htmlFor={`focus-mode-toggle-${section.id}`} className="text-xs text-muted-foreground cursor-pointer">
-                          {section.include_in_focus_mode ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />} {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+                          {section.include_in_focus_mode ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
                         </Label>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -130,30 +130,30 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="h-5 w-5 p-0" /* Changed h-6 w-6 to h-5 w-5 */
+                className="h-5 w-5 p-0"
               >
                 <span className="sr-only">Open section menu</span>
-                <MoreHorizontal className="h-3.5 w-3.5" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+                <MoreHorizontal className="h-3.5 w-3.5" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" data-no-dnd="true"> {/* Added data-no-dnd */}
+            <DropdownMenuContent align="end" data-no-dnd="true">
               <DropdownMenuItem onClick={() => handleAddTaskToSpecificSection(section.id)}>
-                <Plus className="mr-2 h-3.5 w-3.5" /> Add Task to Section {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+                <Plus className="mr-2 h-3.5 w-3.5" /> Add Task to Section
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => markAllTasksInSectionCompleted(section.id)}>
-                <CheckCircle2 className="mr-2 h-3.5 w-3.5" /> Mark All Completed {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+                <CheckCircle2 className="mr-2 h-3.5 w-3.5" /> Mark All Completed
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleEditSectionClick(section)}>
-                <Edit className="mr-2 h-3.5 w-3.5" /> Rename Section {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+                <Edit className="mr-2 h-3.5 w-3.5" /> Rename Section
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => handleDeleteSectionClick(section.id)} className="text-destructive focus:text-destructive">
-                <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete Section {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+                <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete Section
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button variant="ghost" size="icon" onClick={() => toggleSection(section.id)} className="h-5 w-5 p-0"> {/* Changed h-6 w-6 to h-5 w-5 */}
-            <ChevronDown className={cn("h-4 w-4 transition-transform", isExpanded ? "rotate-0" : "-rotate-90")} /> {/* Changed h-5 w-5 to h-4 w-4 */}
+          <Button variant="ghost" size="icon" onClick={() => toggleSection(section.id)} className="h-5 w-5 p-0">
+            <ChevronDown className={cn("h-4 w-4 transition-transform", isExpanded ? "rotate-0" : "-rotate-90")} />
           </Button>
         </div>
       </div>

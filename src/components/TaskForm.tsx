@@ -263,10 +263,10 @@ const TaskForm: React.FC<TaskFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-3"> {/* Changed py-4 to py-3 */}
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 py-3"> {/* Changed space-y-4 py-3 to space-y-3 py-3 */}
       <div>
         <Label htmlFor="task-description">Task Description</Label>
-        <div className="flex gap-1.5"> {/* Changed gap-2 to gap-1.5 */}
+        <div className="flex gap-1.5">
           <Input
             id="task-description"
             placeholder="Task description (e.g., 'Buy groceries by tomorrow high priority')"
@@ -285,16 +285,16 @@ const TaskForm: React.FC<TaskFormProps> = ({
             aria-label="Suggest task details"
           >
             {isSuggesting ? (
-              <span className="animate-spin h-3.5 w-3.5 border-b-2 border-primary rounded-full" /> /* Changed h-4 w-4 to h-3.5 w-3.5 */
+              <span className="animate-spin h-3.5 w-3.5 border-b-2 border-primary rounded-full" />
             ) : (
-              <Lightbulb className="h-3.5 w-3.5" /> /* Changed h-4 w-4 to h-3.5 w-3.5 */
+              <Lightbulb className="h-3.5 w-3.5" />
             )}
           </Button>
         </div>
         {errors.description && <p className="text-destructive text-sm mt-1">{errors.description.message}</p>}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2"> {/* Changed gap-3 to gap-2 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         <Controller
           control={control}
           name="category"
@@ -325,7 +325,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
         {errors.sectionId && <p className="text-destructive text-sm mt-1">{errors.sectionId.message}</p>}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2"> {/* Changed gap-3 to gap-2 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         <div>
           <Label>Due Date</Label>
           <Controller
@@ -337,13 +337,13 @@ const TaskForm: React.FC<TaskFormProps> = ({
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal",
+                      "w-full justify-start text-left font-normal h-9", /* Changed h-10 to h-9 */
                       !field.value && "text-muted-foreground"
                     )}
                     disabled={isSaving || isSuggesting}
                     aria-label="Select due date"
                   >
-                    <Calendar className="mr-2 h-3.5 w-3.5" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+                    <Calendar className="mr-2 h-3.5 w-3.5" />
                     {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
                   </Button>
                 </PopoverTrigger>
@@ -368,7 +368,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
             name="recurringType"
             render={({ field }) => (
               <Select value={field.value} onValueChange={field.onChange} disabled={!!initialData?.parent_task_id || isSaving || isSuggesting}>
-                <SelectTrigger aria-label="Select recurrence type">
+                <SelectTrigger aria-label="Select recurrence type" className="h-9"> {/* Changed h-10 to h-9 */}
                   <SelectValue placeholder="Select recurrence" />
                 </SelectTrigger>
                 <SelectContent>
@@ -396,13 +396,13 @@ const TaskForm: React.FC<TaskFormProps> = ({
                   <Button
                     variant="outline"
                     className={cn(
-                      "flex-1 justify-start text-left font-normal",
+                      "flex-1 justify-start text-left font-normal h-9", /* Changed h-10 to h-9 */
                       !field.value && "text-muted-foreground"
                     )}
                     disabled={isSaving || isSuggesting}
                     aria-label="Set reminder date"
                   >
-                    <BellRing className="mr-2 h-3.5 w-3.5" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+                    <BellRing className="mr-2 h-3.5 w-3.5" />
                     {field.value ? format(field.value, "PPP") : <span>Set reminder date</span>}
                   </Button>
                 </PopoverTrigger>
@@ -420,7 +420,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
           <Input
             type="time"
             {...register('remindAtTime')}
-            className="w-24"
+            className="w-24 h-9" /* Changed h-10 to h-9 */
             disabled={isSaving || isSuggesting || !remindAtDate}
             aria-label="Set reminder time"
           />
@@ -436,6 +436,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
           placeholder="e.g., https://example.com/task-details"
           {...register('link')}
           disabled={isSaving || isSuggesting}
+          className="h-9" /* Changed h-10 to h-9 */
         />
         {errors.link && <p className="text-destructive text-sm mt-1">{errors.link.message}</p>}
       </div>
@@ -452,11 +453,11 @@ const TaskForm: React.FC<TaskFormProps> = ({
         {errors.notes && <p className="text-destructive text-sm mt-1">{errors.notes.message}</p>}
       </div>
 
-      <div className="flex justify-end space-x-1.5 mt-4"> {/* Changed space-x-2 to space-x-1.5 */}
-        <Button type="button" variant="outline" onClick={onCancel} disabled={isSaving || isSuggesting}>
+      <div className="flex justify-end space-x-1.5 mt-3"> {/* Changed mt-4 to mt-3 */}
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isSaving || isSuggesting} className="h-9"> {/* Changed h-10 to h-9 */}
           Cancel
         </Button>
-        <Button type="submit" disabled={isSaving || isSuggesting || !form.formState.isValid && form.formState.isSubmitted}>
+        <Button type="submit" disabled={isSaving || isSuggesting || !form.formState.isValid && form.formState.isSubmitted} className="h-9"> {/* Changed h-10 to h-9 */}
           {isSaving ? 'Saving...' : (initialData ? 'Save Changes' : 'Add Task')}
         </Button>
       </div>

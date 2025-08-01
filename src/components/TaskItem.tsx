@@ -97,7 +97,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   return (
     <div
       className={cn(
-        "relative flex items-start space-x-3 w-full py-1.5 px-2 rounded-lg", /* Changed py-2 to py-1.5 */
+        "relative flex items-start space-x-3 w-full py-1.5 px-2 rounded-lg",
         task.status === 'completed' ? "opacity-70 bg-green-50/20 dark:bg-green-900/20" : "",
         isOverdue ? "border-l-4 border-status-overdue" :
         isDueToday ? "border-l-4 border-status-due-today" :
@@ -110,7 +110,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
         onCheckedChange={handleCheckboxChange}
         id={`task-${task.id}`}
         onClick={(e) => e.stopPropagation()}
-        className="flex-shrink-0 h-4 w-4 mt-0" /* Changed h-5 w-5 mt-0.5 to h-4 w-4 mt-0 */
+        className="flex-shrink-0 h-4 w-4 mt-0"
         data-no-dnd="true"
       />
 
@@ -123,7 +123,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
             <label
               htmlFor={`task-${task.id}`}
               className={cn(
-                "text-sm font-medium leading-tight line-clamp-2", /* Changed text-base to text-sm */
+                "text-sm font-medium leading-tight line-clamp-2",
                 task.status === 'completed' ? 'line-through text-muted-foreground' : 'text-foreground',
                 "block"
               )}
@@ -136,7 +136,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           </TooltipContent>
         </Tooltip>
 
-        <div className="flex flex-wrap items-center text-xs text-muted-foreground mt-0.5 gap-x-1.5 gap-y-0"> {/* Changed gap-x-2 gap-y-0.5 to gap-x-1.5 gap-y-0 */}
+        <div className="flex flex-wrap items-center text-xs text-muted-foreground mt-0.5 gap-x-1.5 gap-y-0">
           <div className={cn("w-3 h-3 rounded-full flex items-center justify-center border", categoryColorProps.backgroundClass, categoryColorProps.dotBorder)}>
             <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: categoryColorProps.dotColor }}></div>
           </div>
@@ -214,12 +214,12 @@ const TaskItem: React.FC<TaskItemProps> = ({
         </div>
       )}
 
-      <div className="flex-shrink-0 flex items-center space-x-1" data-no-dnd="true"> {/* Added data-no-dnd to this div */}
+      <div className="flex-shrink-0 flex items-center space-x-1" data-no-dnd="true">
         {task.status === 'completed' && (
           <Button 
             variant="outline" 
             size="sm" 
-            className="h-6 px-1.5 text-xs" /* Changed h-7 px-2 to h-6 px-1.5 */
+            className="h-6 px-1.5 text-xs"
             onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'to-do'); playSound('success'); }}
             aria-label="Mark as To-Do"
           >
@@ -230,21 +230,21 @@ const TaskItem: React.FC<TaskItemProps> = ({
           <DropdownMenuTrigger asChild>
             <Button 
               variant="ghost" 
-              className="h-6 w-6 p-0" /* Changed h-7 w-7 to h-6 w-6 */
+              className="h-6 w-6 p-0"
               onClick={(e) => e.stopPropagation()}
               aria-label="More options"
             >
               <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-3.5 w-3.5" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+              <MoreHorizontal className="h-3.5 w-3.5" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" data-no-dnd="true"> {/* Added data-no-dnd */}
-            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onOpenOverview(task); }}> {/* Changed to open overview */}
-              <Edit className="mr-2 h-3.5 w-3.5" /> View Details {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+          <DropdownMenuContent align="end" data-no-dnd="true">
+            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onOpenOverview(task); }}>
+              <Edit className="mr-2 h-3.5 w-3.5" /> View Details
             </DropdownMenuItem>
             {task.status === 'archived' && (
               <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onStatusChange(task.id, 'to-do'); playSound('success'); }}>
-                <Undo2 className="mr-2 h-3.5 w-3.5" /> Restore {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+                <Undo2 className="mr-2 h-3.5 w-3.5" /> Restore
               </DropdownMenuItem>
             )}
             {task.status !== 'archived' && (
@@ -259,16 +259,16 @@ const TaskItem: React.FC<TaskItemProps> = ({
                   Mark as Skipped
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onStatusChange(task.id, 'archived'); playSound('success'); }}>
-                  <Archive className="mr-2 h-3.5 w-3.5" /> Archive {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+                  <Archive className="mr-2 h-3.5 w-3.5" /> Archive
                 </DropdownMenuItem>
               </>
             )}
             <DropdownMenuSeparator />
             <DropdownMenuSub>
-              <DropdownMenuSubTrigger onSelect={(e) => e.preventDefault()} data-no-dnd="true"> {/* Added data-no-dnd */}
-                <FolderOpen className="mr-2 h-3.5 w-3.5" /> Move to Section {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+              <DropdownMenuSubTrigger onSelect={(e) => e.preventDefault()} data-no-dnd="true">
+                <FolderOpen className="mr-2 h-3.5 w-3.5" /> Move to Section
               </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent data-no-dnd="true"> {/* Added data-no-dnd */}
+              <DropdownMenuSubContent data-no-dnd="true">
                 {sections.length === 0 ? (
                   <DropdownMenuItem disabled>No sections available</DropdownMenuItem>
                 ) : (
@@ -302,14 +302,14 @@ const TaskItem: React.FC<TaskItemProps> = ({
             </DropdownMenuSub>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleMoveUpClick(); }}>
-              <ArrowUp className="mr-2 h-3.5 w-3.5" /> Move Up {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+              <ArrowUp className="mr-2 h-3.5 w-3.5" /> Move Up
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleMoveDownClick(); }}>
-              <ArrowDown className="mr-2 h-3.5 w-3.5" /> Move Down {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+              <ArrowDown className="mr-2 h-3.5 w-3.5" /> Move Down
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onDelete(task.id); playSound('alert'); }} className="text-destructive focus:text-destructive">
-              <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
+              <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
