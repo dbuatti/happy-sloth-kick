@@ -44,7 +44,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
     zIndex: isDragging ? 10 : 'auto',
     opacity: isDragging ? 0.5 : 1,
     // Apply indentation based on level
-    paddingLeft: `${level * 20}px`, // Adjusted indentation to 20px
+    paddingLeft: `${level * 24}px`, // Increased indentation
   };
 
   const directSubtasks = allTasks.filter(t => t.parent_task_id === task.id)
@@ -55,14 +55,15 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "relative border-b border-border transition-all duration-200 ease-in-out group", // Changed to border-b, removed rounded-lg
-        isDragging ? "ring-2 ring-primary shadow-lg" : "hover:shadow-sm", // Subtle shadow on hover
+        "relative border rounded-lg transition-all duration-200 ease-in-out group",
+        isDragging ? "ring-2 ring-primary shadow-lg" : "hover:shadow-md", // Stronger shadow on hover
         level > 0 ? "bg-muted/50 dark:bg-gray-800/50 border-l-4 border-l-primary/50" : "", // Visual cue for subtasks
-        "flex items-center" // Ensure vertical alignment of drag handle and TaskItem content
+        "flex items-center", // Ensure vertical alignment of drag handle and TaskItem content
+        "cursor-grab active:cursor-grabbing" // Apply cursor to the whole item
       )}
     >
       <button
-        className="flex-shrink-0 h-full py-2 px-1.5 text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity duration-200 cursor-grab active:cursor-grabbing"
+        className="flex-shrink-0 py-2 px-1.5 text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity duration-200 cursor-grab active:cursor-grabbing"
         aria-label="Drag to reorder task"
         {...attributes} // Apply attributes to the drag handle
         {...listeners} // Apply listeners to the drag handle
@@ -76,7 +77,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           {...rest} 
         />
         {directSubtasks.length > 0 && (
-          <ul className="list-none mt-2.5 space-y-2.5"> {/* Increased spacing to 10px */}
+          <ul className="list-none mt-2 space-y-2"> {/* Increased spacing */}
             {directSubtasks.map(subtask => (
               <SortableTaskItem
                 key={subtask.id}
