@@ -33,6 +33,7 @@ import { createPortal } from 'react-dom';
 import { CustomPointerSensor } from '@/lib/CustomPointerSensor';
 import SortableTaskItem from './SortableTaskItem';
 import SortableSectionHeader from './SortableSectionHeader';
+import TaskForm from './TaskForm';
 
 interface TaskListProps {
   tasks: Task[];
@@ -133,6 +134,10 @@ const TaskList: React.FC<TaskListProps> = ({
   const [showConfirmDeleteSectionDialog, setShowConfirmDeleteSectionDialog] = useState(false);
   const [sectionToDeleteId, setSectionToDeleteId] = useState<string | null>(null);
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
+
+  // New: Add Task dialog state
+  const [isAddTaskOpenLocal, setIsAddTaskOpenLocal] = useState(false);
+  const [preselectedSectionId, setPreselectedSectionId] = useState<string | null>(null);
 
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
 
@@ -255,6 +260,12 @@ const TaskList: React.FC<TaskListProps> = ({
   const activeTask = activeId ? tasks.find(t => t.id === activeId) : null;
   const activeSection = activeId ? allSortableSections.find(s => s.id === activeId) : null;
 
+  // New: open Add Task for a specific section
+  const openAddTaskForSection = (sectionId: string | null) => {
+    setPreselectedSectionId(sectionId);
+    setIsAddTaskOpenLocal(true);
+  };
+
   return (
     <>
       <div className="space-y-4 mb-4">
@@ -370,7 +381,7 @@ const TaskList: React.FC<TaskListProps> = ({
                       setEditingSectionId(s.id);
                       setNewEditingSectionName(s.name);
                     }}
-                    handleAddTaskToSpecificSection={() => setIsAddTaskOpen(true)}
+                    handleAddTaskToSpecificSection={(sectionId) => openAddTaskForSection(sectionId)} // FIX: open add task dialog with section
                     markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
                     handleDeleteSectionClick={(id) => {
                       setSectionToDeleteId(id);
@@ -476,7 +487,7 @@ const TaskList: React.FC<TaskListProps> = ({
                     setEditingSectionId(s.id);
                     setNewEditingSectionName(s.name);
                   }}
-                  handleAddTaskToSpecificSection={() => setIsAddTaskOpen(true)}
+                  handleAddTaskToSpecificSection={(sectionId) => openAddTaskForSection(sectionId)}
                   markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
                   handleDeleteSectionClick={(id) => {
                     setSectionToDeleteId(id);
@@ -522,6 +533,32 @@ const TaskList: React.FC<TaskListProps> = ({
           allCategories={allCategories}
         />
       )}
+
+      {/* Add Task Dialog for specific section */}
+      <Dialog open={isAddTaskOpenLocal} onOpenChange={setIsAddTaskOpenLocal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Task</DialogTitle>
+          </DialogHeader>
+          <TaskForm
+            onSave={async (taskData) => {
+              const success = await handleAddTask({
+                ...taskData,
+                section_id: preselectedSectionId ?? null,
+              });
+              if (success) setIsAddTaskOpenLocal(false);
+              return success;
+            }}
+            onCancel={() => setIsAddTaskOpenLocal(false)}
+            userId={userId}
+            sections={sections}
+            allCategories={allCategories}
+            preselectedSectionId={preselectedSectionId ?? undefined}
+            currentDate={currentDate}
+            autoFocus
+          />
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={showConfirmBulkDeleteDialog} onOpenChange={setShowConfirmBulkDeleteDialog}>
         <AlertDialogContent>
