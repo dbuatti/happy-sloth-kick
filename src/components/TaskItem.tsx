@@ -9,6 +9,7 @@ import { Task } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
 import { getCategoryColorProps } from '@/lib/categoryColors';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge"; // Import Badge component
 
 interface TaskItemProps {
   task: Task;
@@ -92,6 +93,16 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const handleMoveDownClick = () => {
     onMoveDown(task.id);
     playSound('success');
+  };
+
+  const getStatusBadgeVariant = (status: Task['status']) => {
+    switch (status) {
+      case 'completed': return 'bg-primary text-primary-foreground';
+      case 'skipped': return 'bg-destructive text-destructive-foreground';
+      case 'archived': return 'bg-muted text-muted-foreground';
+      case 'to-do':
+      default: return 'bg-secondary text-secondary-foreground';
+    }
   };
 
   return (
@@ -215,17 +226,9 @@ const TaskItem: React.FC<TaskItemProps> = ({
       )}
 
       <div className="flex-shrink-0 flex items-center space-x-1" data-no-dnd="true">
-        {task.status === 'completed' && (
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="h-6 px-1.5 text-xs"
-            onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'to-do'); playSound('success'); }}
-            aria-label="Mark as To-Do"
-          >
-            <ListTodo className="h-3 w-3 mr-1" /> To-Do
-          </Button>
-        )}
+        <Badge className={cn("px-2 py-0.5 text-xs font-semibold", getStatusBadgeVariant(task.status))}>
+          {task.status.charAt(0).toUpperCase() + task.status.slice(1)}
+        </Badge>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button 

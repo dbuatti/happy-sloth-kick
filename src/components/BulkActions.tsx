@@ -30,8 +30,8 @@ const BulkActions: React.FC<BulkActionsProps> = ({ selectedTaskIds, onAction, on
       <div className="flex flex-wrap justify-center gap-2"> {/* Changed space-x-2 to flex-wrap gap-2 */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
-              <Flag className="h-4 w-4 mr-2" />
+            <Button variant="outline" size="sm" className="h-8"> {/* Changed h-9 to h-8 */}
+              <Flag className="h-3.5 w-3.5 mr-2" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
               Priority
             </Button>
           </DropdownMenuTrigger>
@@ -55,23 +55,23 @@ const BulkActions: React.FC<BulkActionsProps> = ({ selectedTaskIds, onAction, on
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Button variant="outline" size="sm" onClick={() => onAction('complete')}>
-          <Check className="h-4 w-4 mr-2" />
+        <Button variant="outline" size="sm" onClick={() => onAction('complete')} className="h-8"> {/* Changed h-9 to h-8 */}
+          <Check className="h-3.5 w-3.5 mr-2" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
           Complete
         </Button>
         
-        <Button variant="outline" size="sm" onClick={() => onAction('archive')}>
-          <Archive className="h-4 w-4 mr-2" />
+        <Button variant="outline" size="sm" onClick={() => onAction('archive')} className="h-8"> {/* Changed h-9 to h-8 */}
+          <Archive className="h-3.5 w-3.5 mr-2" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
           Archive
         </Button>
         
-        <Button variant="outline" size="sm" onClick={() => onAction('delete')}>
-          <Trash2 className="h-4 w-4 mr-2" />
+        <Button variant="outline" size="sm" onClick={() => onAction('delete')} className="h-8"> {/* Changed h-9 to h-8 */}
+          <Trash2 className="h-3.5 w-3.5 mr-2" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
           Delete
         </Button>
         
-        <Button variant="ghost" size="sm" onClick={onClearSelection}>
-          <ListRestart className="h-4 w-4" />
+        <Button variant="ghost" size="sm" onClick={onClearSelection} className="h-8 w-8 p-0"> {/* Changed h-9 w-9 to h-8 w-8 */}
+          <ListRestart className="h-3.5 w-3.5" /> {/* Changed h-4 w-4 to h-3.5 w-3.5 */}
         </Button>
       </div>
     </div>
