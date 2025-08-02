@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card"; // Removed Card import
 import { Progress } from "@/components/Progress";
 import { CheckCircle2, ListTodo, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -8,25 +8,23 @@ interface TodayProgressCardProps {
   totalTasks: number;
   completedTasks: number;
   overdueTasks: number;
-  className?: string; // Add className prop
 }
 
 const TodayProgressCard: React.FC<TodayProgressCardProps> = ({
   totalTasks,
   completedTasks,
   overdueTasks,
-  className, // Destructure className
 }) => {
   const progressValue = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
   return (
-    <Card className={cn("w-full border-none shadow-none", className)}> {/* Apply className here, removed p-4 */}
-      <CardHeader className="pb-2">
-        <CardTitle className="text-xl font-bold flex items-center justify-center gap-2">
+    <div className="w-full px-4 py-3"> {/* Replaced Card with div, adjusted padding */}
+      <div className="pb-2"> {/* Replaced CardHeader with div */}
+        <h2 className="text-xl font-bold flex items-center justify-center gap-2"> {/* Replaced CardTitle with h2 */}
           <CheckCircle2 className="h-5 w-5 text-primary" /> Today's Progress
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+        </h2>
+      </div>
+      <div className="space-y-4"> {/* Replaced CardContent with div */}
         <div className="flex justify-between items-center text-sm font-medium">
           <span>Completed: {completedTasks}</span>
           <span>Total: {totalTasks}</span>
@@ -42,8 +40,8 @@ const TodayProgressCard: React.FC<TodayProgressCardProps> = ({
             <span>Overdue: {overdueTasks}</span>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 

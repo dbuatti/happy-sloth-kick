@@ -1,5 +1,4 @@
 import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
-import DateNavigator from '@/components/DateNavigator';
 import TaskList from '@/components/TaskList';
 import { MadeWithDyad } from '@/components/made-with-dyad';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
@@ -9,22 +8,11 @@ import { useAuth } from '@/context/AuthContext';
 import { addDays, format, isBefore, isSameDay, parseISO, isValid, setHours, setMinutes } from 'date-fns';
 import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
 import CommandPalette from '@/components/CommandPalette';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Plus, ListTodo, CheckCircle2, Clock, Brain, Sparkles } from 'lucide-react';
-import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast';
-import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
+import { Card, CardContent } from "@/components/ui/card"; // Removed CardHeader, CardTitle
 import { cn } from '@/lib/utils';
 import BulkActions from '@/components/BulkActions';
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
-import { useIsMobile } from '@/hooks/use-mobile';
 import FocusPanelDrawer from '@/components/FocusPanelDrawer';
-import { Badge } from '@/components/ui/badge';
-import TaskFilter from '@/components/TaskFilter';
-import MoodBoosterButton from '@/components/MoodBoosterButton';
-import TodayProgressCard from '@/components/TodayProgressCard';
-import { suggestTaskDetails } from '@/integrations/supabase/api';
+import DailyTasksHeader from '@/components/DailyTasksHeader'; // Import the new header component
 
 
 const getUTCStartOfDay = (date: Date) => {
@@ -34,9 +22,7 @@ const getUTCStartOfDay = (date: Date) => {
 const DailyTasksV3: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(() => getUTCStartOfDay(new Date()));
   const { user } = useAuth();
-  const isMobile = useIsMobile();
 
-  // Call useTasks first
   const {
     tasks,
     filteredTasks,
@@ -72,30 +58,12 @@ const DailyTasksV3: React.FC = () => {
     setSectionFilter,
   } = useTasks({ currentDate, setCurrentDate, viewMode: 'daily' });
 
-  // Then call useDailyTaskCount
-  const { dailyTaskCount } = useDailyTaskCount();
-
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
-  const [quickAddTaskDescription, setQuickAddTaskDescription] = useState('');
-  const quickAddInputRef = useRef<HTMLInputElement>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
   const [isFocusPanelOpen, setIsFocusPanelOpen] = useState(false);
-
-  const handlePreviousDay = () => {
-    setCurrentDate(prevDate => getUTCStartOfDay(addDays(prevDate, -1)));
-  };
-
-  const handleNextDay = () => {
-    setCurrentDate(prevDate => getUTCStartOfDay(addDays(prevDate, 1)));
-  };
-
-  const handleGoToToday = () => {
-    setCurrentDate(getUTCStartOfDay(new Date()));
-  };
 
   const handleOpenOverview = (task: Task) => {
     setTaskToOverview(task);
@@ -112,185 +80,33 @@ const DailyTasksV3: React.FC = () => {
     handleOpenDetail(task);
   };
 
-  const handleQuickAddTask = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!quickAddTaskDescription.trim()) {
-      showError('Task description cannot be empty.');
-      return;
-    }
-
-    // Call AI for suggestions
-    const loadingToastId = showLoading('Getting AI suggestions...');
-    const categoriesForAI = allCategories.map(cat => ({ id: cat.id, name: cat.name }));
-    const suggestions = await suggestTaskDetails(quickAddTaskDescription.trim(), categoriesForAI, currentDate);
-    dismissToast(loadingToastId);
-
-    if (!suggestions) {
-      showError('Failed to get AI suggestions. Please try again.');
-      return;
-    }
-
-    // Find the actual category ID based on the suggested category name
-    const suggestedCategoryId = allCategories.find(cat => cat.name.toLowerCase() === suggestions.category.toLowerCase())?.id || allCategories.find(cat => cat.name.toLowerCase() === 'general')?.id || allCategories[0]?.id || '';
-
-    // Find the actual section ID based on the suggested section name
-    const suggestedSectionId = sections.find(sec => sec.name.toLowerCase() === suggestions.section?.toLowerCase())?.id || null;
-
-    const success = await handleAddTask({
-      description: suggestions.cleanedDescription,
-      category: suggestedCategoryId,
-      priority: suggestions.priority as Task['priority'],
-      due_date: suggestions.dueDate,
-      notes: suggestions.notes,
-      remind_at: suggestions.remindAt,
-      section_id: suggestedSectionId,
-      recurring_type: 'none', // AI doesn't suggest recurring type, keep as none for quick add
-      parent_task_id: null,
-      link: suggestions.link,
-    });
-
-    if (success) {
-      setQuickAddTaskDescription('');
-      quickAddInputRef.current?.focus();
-    }
-  };
-
-  // Keyboard shortcuts (+ "/" quick focus for quick-add)
+  // Keyboard shortcuts
   const shortcuts: ShortcutMap = {
-    'arrowleft': () => handlePreviousDay(),
-    'arrowright': () => handleNextDay(),
-    't': () => handleGoToToday(),
-    '/': (e) => { e.preventDefault(); searchInputRef.current?.focus(); },
+    'arrowleft': () => setCurrentDate(prevDate => getUTCStartOfDay(addDays(prevDate, -1))),
+    'arrowright': () => setCurrentDate(prevDate => getUTCStartOfDay(addDays(prevDate, 1))),
+    't': () => setCurrentDate(getUTCStartOfDay(new Date())),
+    '/': (e) => { e.preventDefault(); /* Focus handled by TaskFilter's searchRef */ },
     'cmd+k': (e) => { e.preventDefault(); setIsCommandPaletteOpen(prev => !prev); },
   };
   useKeyboardShortcuts(shortcuts);
-
-  const { totalCount, completedCount, overdueCount } = useMemo(() => {
-    const focusModeSectionIds = new Set(sections.filter(s => s.include_in_focus_mode).map(s => s.id));
-
-    const focusTasks = filteredTasks.filter(t =>
-      t.parent_task_id === null && // Only count top-level tasks
-      (t.section_id === null || focusModeSectionIds.has(t.section_id))
-    );
-
-    const total = focusTasks.length;
-    const completed = focusTasks.filter(t => t.status === 'completed').length;
-    const overdue = focusTasks.filter(t => {
-      if (!t.due_date) return false;
-      const due = parseISO(t.due_date);
-      const isOver = isBefore(due, currentDate) && !isSameDay(due, currentDate) && t.status !== 'completed';
-      return isOver;
-    }).length;
-    return { totalCount: total, completedCount: completed, overdueCount: overdue };
-  }, [filteredTasks, currentDate, sections]);
-
-  // Sticky shadow cue on scroll logic
-  const [stuck, setStuck] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      if (scrollRef.current) {
-        setStuck(scrollRef.current.scrollTop > 0);
-      }
-    };
-
-    const currentScrollRef = scrollRef.current;
-    if (currentScrollRef) {
-      currentScrollRef.addEventListener('scroll', handleScroll);
-    }
-
-    return () => {
-      if (currentScrollRef) {
-        currentScrollRef.removeEventListener('scroll', handleScroll);
-      }
-    };
-  }, []);
 
   const isBulkActionsActive = selectedTaskIds.length > 0;
 
   return (
     <div className="flex-1 flex flex-col">
-      <main className={cn("flex-grow p-4", isBulkActionsActive ? "pb-[90px]" : "")}>
-        <div className="w-full max-w-4xl mx-auto flex flex-col space-y-4">
-          {/* Top Header: Task Count, Mood Booster, Focus Button */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ListTodo className="h-6 w-6 text-primary" />
-              <span className="text-2xl font-bold">{dailyTaskCount}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <MoodBoosterButton />
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsFocusPanelOpen(true)}
-                aria-label="Open focus tools"
-                className="h-9 w-9"
-              >
-                <Brain className="h-5 w-5" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Date Navigator */}
-          <DateNavigator
-            currentDate={currentDate}
-            onPreviousDay={handlePreviousDay}
-            onNextDay={handleNextDay}
-            onGoToToday={handleGoToToday}
-            setCurrentDate={setCurrentDate}
-          />
-
-          {/* Status Badges */}
-          <div className="flex justify-center gap-3 mt-2">
-            <Badge variant="outline" className="px-3 py-1 text-sm font-medium bg-primary/10 text-primary">
-              <ListTodo className="h-3.5 w-3.5 mr-1.5" /> {totalCount} Total
-            </Badge>
-            <Badge variant="outline" className="px-3 py-1 text-sm font-medium bg-green-500/10 text-green-600 dark:text-green-400">
-              <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" /> {completedCount} Completed
-            </Badge>
-            <Badge variant="outline" className="px-3 py-1 text-sm font-medium bg-destructive/10 text-destructive">
-              <Clock className="h-3.5 w-3.5 mr-1.5" /> {overdueCount} Overdue
-            </Badge>
-          </div>
-
-          {/* Quick Add Task Bar */}
-          <div
-            className={cn(
-              "quick-add-bar rounded-none shadow-none", // Removed mb-4
-              stuck ? "stuck" : "",
-              "px-4 py-3"
-            )}
-          >
-            <form onSubmit={handleQuickAddTask}>
-              <div className="flex items-center gap-2">
-                <Input
-                  ref={quickAddInputRef}
-                  placeholder='Quick add a task — press "/" to focus, Enter to add'
-                  value={quickAddTaskDescription}
-                  onChange={(e) => setQuickAddTaskDescription(e.target.value)}
-                  className="flex-1 h-9 text-sm"
-                />
-                <Button type="submit" className="whitespace-nowrap h-9 text-sm">
-                  <Plus className="mr-1 h-3 w-3" /> Add
-                </Button>
-              </div>
-            </form>
-          </div>
-
-          {/* Today's Progress Card */}
-          <TodayProgressCard
-            totalTasks={totalCount}
-            completedTasks={completedCount}
-            overdueTasks={overdueCount}
-            className="rounded-none shadow-none" // Removed mb-4
-          />
-
-          {/* Task Filter and Search */}
-          <TaskFilter
+      <main className={cn("flex-grow", isBulkActionsActive ? "pb-[90px]" : "")}>
+        <div className="w-full max-w-4xl mx-auto flex flex-col">
+          {/* New DailyTasksHeader component */}
+          <DailyTasksHeader
             currentDate={currentDate}
             setCurrentDate={setCurrentDate}
+            tasks={tasks}
+            filteredTasks={filteredTasks}
+            sections={sections}
+            allCategories={allCategories}
+            handleAddTask={handleAddTask}
+            userId={userId}
+            setIsFocusPanelOpen={setIsFocusPanelOpen}
             searchFilter={searchFilter}
             setSearchFilter={setSearchFilter}
             statusFilter={statusFilter}
@@ -301,16 +117,12 @@ const DailyTasksV3: React.FC = () => {
             setPriorityFilter={setPriorityFilter}
             sectionFilter={sectionFilter}
             setSectionFilter={setSectionFilter}
-            sections={sections}
-            allCategories={allCategories}
-            searchRef={searchInputRef}
-            className="rounded-none shadow-none" // Removed mb-4
           />
 
           {/* Main Task List Card */}
           <Card className="p-3 flex-1 flex flex-col rounded-none shadow-none">
             <CardContent className="p-4 flex-1 flex flex-col">
-              <div ref={scrollRef} className="flex-1 overflow-y-auto pt-3">
+              <div className="flex-1 overflow-y-auto pt-3"> {/* Removed ref={scrollRef} as it's now in DailyTasksHeader */}
                 <TaskList
                   tasks={tasks}
                   filteredTasks={filteredTasks}

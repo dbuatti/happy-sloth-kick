@@ -6,7 +6,7 @@ import { Search, Filter, X, ListRestart } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
 import { TaskSection, Category } from '@/hooks/useTasks';
-import { cn } from '@/lib/utils'; // Ensure cn is imported
+import { cn } from '@/lib/utils';
 
 interface TaskFilterProps {
   currentDate: Date;
@@ -23,8 +23,7 @@ interface TaskFilterProps {
   setSectionFilter: (value: string) => void;
   sections: TaskSection[];
   allCategories: Category[];
-  searchRef: React.RefObject<HTMLInputElement>; // New prop for search input ref
-  className?: string; // Add className prop
+  searchRef: React.RefObject<HTMLInputElement>;
 }
 
 const TaskFilter: React.FC<TaskFilterProps> = ({
@@ -42,8 +41,7 @@ const TaskFilter: React.FC<TaskFilterProps> = ({
   setSectionFilter,
   sections,
   allCategories,
-  searchRef, // Destructure new prop
-  className, // Destructure className
+  searchRef,
 }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
@@ -77,17 +75,17 @@ const TaskFilter: React.FC<TaskFilterProps> = ({
     setCategoryFilter('all');
     setPriorityFilter('all');
     setSectionFilter('all');
-    setShowAdvanced(false); // Close popover after clearing
+    setShowAdvanced(false);
   };
 
   const isAnyFilterActive = searchFilter !== '' || statusFilter !== 'all' || categoryFilter !== 'all' || priorityFilter !== 'all' || sectionFilter !== 'all';
 
   return (
-    <div className={cn("flex flex-col sm:flex-row gap-3", className)}> {/* Apply className here, removed mb-4, p-4 */}
+    <div className="flex flex-col sm:flex-row gap-3 px-4 py-3"> {/* Removed mb-4, adjusted padding */}
       <div className="relative flex-1">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
         <Input
-          ref={searchRef} // Apply the ref here
+          ref={searchRef}
           placeholder="Search tasks..."
           value={searchFilter}
           onChange={handleSearchChange}

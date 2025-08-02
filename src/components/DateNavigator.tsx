@@ -10,15 +10,15 @@ interface DateNavigatorProps {
   currentDate: Date;
   onPreviousDay: () => void;
   onNextDay: () => void;
-  onGoToToday: () => void; // New prop for "Today" button
-  setCurrentDate: React.Dispatch<React.SetStateAction<Date>>; // Added setCurrentDate prop
+  onGoToToday: () => void;
+  setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
 }
 
 const DateNavigator: React.FC<DateNavigatorProps> = ({ currentDate, onPreviousDay, onNextDay, onGoToToday, setCurrentDate }) => {
   const isToday = isSameDay(currentDate, new Date());
 
   return (
-    <div className="w-full flex items-center justify-between"> {/* Removed p-2 */}
+    <div className="w-full flex items-center justify-between px-4"> {/* Removed p-2, added px-4 */}
       <Button variant="ghost" size="icon" onClick={onPreviousDay} className="h-9 w-9 rounded-full hover:bg-primary/10 text-primary">
         <ChevronLeft className="h-5 w-5" />
       </Button>
