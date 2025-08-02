@@ -9,6 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Plus, CheckCircle2, FolderOpen, ChevronDown, MoreHorizontal, Trash2, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TaskSection } from '@/hooks/useTasks';
+import DragHandleIcon from './DragHandleIcon'; // Import DragHandleIcon
 
 interface SortableSectionHeaderProps {
   section: TaskSection;
@@ -38,6 +39,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
   const sortable = !isOverlay ? useSortable({ id: section.id, data: { type: 'section', section } }) : null;
 
   const attributes = sortable?.attributes;
+  const listeners = sortable?.listeners; // Get listeners here
   const setNodeRef = sortable?.setNodeRef || null;
   const transform = sortable?.transform;
   const transition = sortable?.transition;
@@ -106,6 +108,11 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
       {...(attributes || {})}
       // Removed onClick from here, children will handle all clicks
     >
+      {/* Drag Handle */}
+      <div className="flex-shrink-0 px-1" data-dnd-handle="true" {...listeners}>
+        <DragHandleIcon className="h-5 w-5 text-muted-foreground cursor-grab active:cursor-grabbing" />
+      </div>
+
       <div className="flex-1 flex items-center justify-between">
         <div 
           className="flex items-center flex-1 min-w-0" // This div still expands

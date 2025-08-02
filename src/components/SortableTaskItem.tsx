@@ -71,7 +71,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           task={task}
           {...rest}
           isOverlay={isOverlay}
-          dragListeners={listeners} // Pass listeners to TaskItem
+          dragHandleProps={listeners} // Pass listeners to TaskItem as dragHandleProps
         />
         {directSubtasks.length > 0 && (
           <ul className="list-none mt-1.5 space-y-1.5">

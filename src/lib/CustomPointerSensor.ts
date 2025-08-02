@@ -6,11 +6,11 @@ export class CustomPointerSensor extends PointerSensor {
     {
       eventName: 'onPointerDown' as const,
       handler: ({ nativeEvent: event }: { nativeEvent: PointerEvent }) => {
-        // Reverted to default behavior: allow drag unless explicitly marked with data-no-dnd="true"
-        if (event.target instanceof HTMLElement && event.target.closest('[data-no-dnd="true"]')) {
-          return false; // Do NOT activate drag if it's an interactive element
+        // Only activate drag if the pointer down event occurred on an element with data-dnd-handle="true"
+        if (event.target instanceof HTMLElement && event.target.closest('[data-dnd-handle="true"]')) {
+          return true; // Activate drag
         }
-        return true; // Activate drag otherwise
+        return false; // Do NOT activate drag otherwise
       },
     },
   ];
