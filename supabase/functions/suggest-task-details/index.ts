@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { description, categories, currentDate } = await req.json(); // Destructure currentDate
+    const { description, categories, currentDate } = await req.json();
 
     if (!description) {
       return new Response(JSON.stringify({ error: 'Task description is required.' }), {
@@ -34,7 +34,6 @@ serve(async (req) => {
 
     const categoryNames = categories.map((cat: { name: string }) => cat.name).join(', ');
 
-    // Get day of the week for currentDate
     const today = new Date(currentDate);
     const dayOfWeek = today.toLocaleDateString('en-US', { weekday: 'long' });
 
@@ -110,16 +109,34 @@ serve(async (req) => {
     `;
 
     const result = await model.generateContent(prompt);
-    const response = await result.response;
+    const response = result.response;
     const text = response.text();
 
-    // Attempt to parse the JSON, handling potential markdown code blocks
+    console.log("Raw AI response text:", text); // Log the raw response
+
     let jsonString = text.trim();
-    if (jsonString.startsWith('```json')) {
-      jsonString = jsonString.substring(7, jsonString.lastIndexOf('```')).trim();
+    // Attempt to extract JSON from potential markdown code blocks
+    const jsonMatch = jsonString.match(/```json\n([\s\S]*?)\n```/);
+    if (jsonMatch && jsonMatch[1]) {
+      jsonString = jsonMatch[1].trim();
+    } else {
+      // Fallback for cases where it might just be the JSON without markdown fences
+      // Or if the markdown fence is different (e.g., ```json without newline)
+      // For now, if it doesn't match the specific ```json\n...\n```, we assume it's just the JSON.
     }
 
-    const parsedData = JSON.parse(jsonString);
+    let parsedData;
+    try {
+      parsedData = JSON.parse(jsonString);
+    } catch (parseError) {
+      console.error("Failed to parse AI response as JSON:", parseError);
+      console.error("Problematic JSON string:", jsonString);
+      // If parsing fails, return a 500 with a more specific error message
+      return new Response(JSON.stringify({ error: 'AI response could not be parsed as JSON. Please try again or rephrase your input.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
+    }
 
     // Ensure dates are correctly formatted or null
     const parseDateString = (dateStr: string | null) => {
@@ -146,7 +163,7 @@ serve(async (req) => {
       remindAt: finalRemindAt,
       section: parsedData.section || null,
       cleanedDescription: parsedData.cleanedDescription || description,
-      link: parsedData.link || null, // Include link in the response
+      link: parsedData.link || null,
     };
 
     return new Response(JSON.stringify(responseData), {
@@ -155,8 +172,8 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error("Error in Edge Function:", error);
-    return new Response(JSON.stringify({ error: error.message || 'An unexpected error occurred.' }), {
+    console.error("Error in Edge Function (outer catch):", error);
+    return new Response(JSON.stringify({ error: error.message || 'An unexpected error occurred in the Edge Function.' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
     });
