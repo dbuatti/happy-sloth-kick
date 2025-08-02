@@ -12,7 +12,7 @@ import { Plus, Settings, CheckCircle2, ListTodo, FolderOpen, ChevronDown, Edit, 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from '@/lib/utils';
 import { TaskSection } from '@/hooks/useTasks';
-import DragHandleIcon from './DragHandleIcon'; // Import the new icon
+// Removed DragHandleIcon import
 
 interface SortableSectionHeaderProps {
   section: TaskSection;
@@ -58,7 +58,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
   const transition = sortable?.transition;
   const isDragging = sortable?.isDragging || false;
 
-  const style: React.CSSProperties = { // Explicitly type as React.CSSProperties
+  const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 10 : 'auto', // Original item should be behind overlay
@@ -79,6 +79,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
       )}
       {...(attributes || {})} // Keep attributes here
     >
+      {/* Removed DragHandleIcon button */}
       <button
         className={cn(
           "flex-shrink-0 h-full py-2 px-1.5 text-muted-foreground opacity-100 group-hover:opacity-100 transition-opacity duration-200",
@@ -88,7 +89,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
         disabled={isOverlay}
         {...(sortable?.listeners || {})} // ADD listeners here
       >
-        <DragHandleIcon className="h-4 w-4" /> {/* Use custom DragHandleIcon */}
+        {/* No visible icon here, but the button still acts as the drag handle */}
       </button>
       <div className="flex-1 flex items-center justify-between pl-1"> {/* Adjusted padding */}
         {editingSectionId === section.id && !isOverlay ? (

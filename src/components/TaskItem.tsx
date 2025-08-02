@@ -2,15 +2,15 @@ import React, { useState } from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, ArrowUp, ArrowDown, Undo2 } from 'lucide-react';
-import * as dateFns from 'date-fns';
+import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, ArrowUp, ArrowDown, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon } from 'lucide-react';
+import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns'; // Added isValid
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
 import { getCategoryColorProps } from '@/lib/categoryColors';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import DragHandleIcon from './DragHandleIcon';
-import RecurringIcon from './RecurringIcon';
+// Removed DragHandleIcon import
+// Removed RecurringIcon import
 
 interface TaskItemProps {
   task: Task;
@@ -83,32 +83,45 @@ const TaskItem: React.FC<TaskItemProps> = ({
     playSound('success');
   };
 
+  const getDueDateDisplay = (dueDate: string | null) => {
+    if (!dueDate) return null;
+    const date = parseISO(dueDate);
+    if (!isValid(date)) return null; // Used isValid directly
+
+    if (isSameDay(date, currentDate)) {
+      return 'Today';
+    } else if (isPast(date) && !isSameDay(date, currentDate)) {
+      return format(date, 'MMM d'); // Overdue, just show date
+    } else {
+      return format(date, 'MMM d');
+    }
+  };
+
+  const isOverdue = task.due_date && task.status !== 'completed' && isPast(parseISO(task.due_date)) && !isSameDay(parseISO(task.due_date), currentDate);
+  const isDueToday = task.due_date && task.status !== 'completed' && isSameDay(parseISO(task.due_date), currentDate);
+
   return (
     <div
       className={cn(
-        "relative flex items-center space-x-2 w-full py-1.5 pr-2", // Adjusted padding and spacing
-        task.status === 'completed' ? "text-muted-foreground" : "text-foreground", // Faded text for completed
+        "relative flex items-center space-x-2 w-full py-1.5 pr-2",
+        task.status === 'completed' ? "text-muted-foreground" : "text-foreground",
         "group",
-        isOverlay ? "cursor-grabbing" : "hover:shadow-sm" // Add hover shadow here for the whole item
+        isOverlay ? "cursor-grabbing" : "hover:shadow-sm"
       )}
-      onClick={() => !isOverlay && onOpenOverview(task)} // Click handler for overview
-      style={{ cursor: isOverlay ? 'grabbing' : 'pointer' }} // Change cursor for overlay
-      {...(dragListeners || {})} // Apply drag listeners to the whole div
+      onClick={() => !isOverlay && onOpenOverview(task)}
+      style={{ cursor: isOverlay ? 'grabbing' : 'pointer' }}
+      {...(dragListeners || {})}
     >
-      <div className="flex-shrink-0 h-full py-2 px-1.5 text-muted-foreground opacity-100 group-hover:opacity-100 transition-opacity duration-200"
-           data-no-dnd="true" // This ensures the drag handle itself doesn't prevent drag from the whole item
-      >
-        <DragHandleIcon className="h-4 w-4" />
-      </div>
+      {/* Removed DragHandleIcon */}
 
       <Checkbox
         key={`${task.id}-${task.status}`}
         checked={task.status === 'completed'}
         onCheckedChange={handleCheckboxChange}
         id={`task-${task.id}`}
-        onClick={(e) => e.stopPropagation()} // Stop propagation to prevent opening overview on checkbox click
+        onClick={(e) => e.stopPropagation()}
         className="flex-shrink-0 h-4 w-4"
-        data-no-dnd="true" // Mark as non-draggable
+        data-no-dnd="true"
         aria-label={`Mark task "${task.description}" as ${task.status === 'completed' ? 'to-do' : 'completed'}`}
         disabled={isOverlay}
       />
@@ -121,11 +134,49 @@ const TaskItem: React.FC<TaskItemProps> = ({
           <Tooltip>
             <TooltipTrigger asChild>
               <span className="inline-flex items-center flex-shrink-0" data-no-dnd="true">
-                <RecurringIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                <Repeat className="h-3.5 w-3.5 text-muted-foreground" /> {/* Changed to Repeat icon */}
               </span>
             </TooltipTrigger>
             <TooltipContent>
               <p>Recurring: {task.recurring_type.charAt(0).toUpperCase() + task.recurring_type.slice(1)}</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
+
+        {task.link && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <a 
+                href={task.link} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="inline-flex items-center flex-shrink-0 text-muted-foreground hover:text-primary"
+                onClick={(e) => e.stopPropagation()} // Prevent opening task overview
+                data-no-dnd="true"
+              >
+                <LinkIcon className="h-3.5 w-3.5" />
+              </a>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{task.link}</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
+
+        {task.due_date && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className={cn(
+                "inline-flex items-center flex-shrink-0 text-xs font-medium px-1 py-0.5 rounded-sm",
+                "text-muted-foreground", // Default text color
+                isOverdue && "text-status-overdue",
+                isDueToday && "text-status-due-today"
+              )} data-no-dnd="true">
+                <CalendarIcon className="h-3 w-3 mr-1" /> {getDueDateDisplay(task.due_date)}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Due: {format(parseISO(task.due_date), 'MMM d, yyyy')}</p>
             </TooltipContent>
           </Tooltip>
         )}
@@ -153,7 +204,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
             <Button
               variant="ghost"
               className="h-7 w-7 p-0"
-              onClick={(e) => e.stopPropagation()} // Stop propagation to prevent opening overview on dropdown click
+              onClick={(e) => e.stopPropagation()}
               aria-label="More options"
               data-no-dnd="true"
               disabled={isOverlay}
