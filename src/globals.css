@@ -30,7 +30,7 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 90%; /* Adjusted for better contrast in light mode */
+    --border: 210 20% 80%; /* Adjusted for better contrast in light mode (medium gray) */
     --input: 0 0% 100%; /* Match background for blended look */
     --ring: 222.2 84% 4.9%;
 
@@ -83,7 +83,7 @@
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 20%; /* Adjusted for better contrast in dark mode */
+    --border: 210 20% 30%; /* Adjusted for better contrast in dark mode (darker gray) */
     --input: 220 20% 10%; /* Match background for blended look */
     --ring: 212.7 26.8% 83.9%;
 
