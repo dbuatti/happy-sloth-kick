@@ -186,10 +186,10 @@ const DailyTasksV2: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col">
-      <main className={cn("flex-grow p-4", isBulkActionsActive ? "pb-[80px]" : "")}> {/* Increased padding */}
-        <div className="w-full max-w-4xl mx-auto space-y-4"> {/* Increased spacing */}
+      <main className={cn("flex-grow p-4", isBulkActionsActive ? "pb-[90px]" : "")}> {/* Increased padding */}
+        <div className="w-full max-w-4xl mx-auto space-y-6"> {/* Increased spacing */}
           <Card className="shadow-lg p-4"> {/* Increased padding and shadow */}
-            <CardHeader className="pb-3"> {/* Increased padding */}
+            <CardHeader className="pb-4"> {/* Increased padding */}
               <div className="flex items-center justify-between">
                 <CardTitle className="text-3xl font-bold">Your Tasks</CardTitle> {/* Reduced size, bold */}
                 {dailyTaskCount > 0 && (
@@ -206,8 +206,8 @@ const DailyTasksV2: React.FC = () => {
               </div>
             </CardHeader>
 
-            <CardContent className="pt-0">
-              <div className="mb-4"> {/* Increased spacing */}
+            <CardContent className="pt-2">
+              <div className="mb-6"> {/* Increased spacing */}
                 <DateNavigator
                   currentDate={currentDate}
                   onPreviousDay={handlePreviousDay}
@@ -219,21 +219,22 @@ const DailyTasksV2: React.FC = () => {
 
               {/* Sticky filter + quick add bar */}
               <div
+                ref={stickyRef}
                 className={cn(
-                  "sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border -mx-4 px-4 py-3 transition-shadow", // Increased padding
+                  "sticky top-16 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border -mx-4 px-4 py-4 transition-shadow", // Increased padding
                   stuck ? "shadow-lg" : "" // Stronger shadow
                 )}
               >
-                <form onSubmit={handleQuickAddTask} className="mb-2"> {/* Increased spacing */}
-                  <div className="flex items-center gap-3"> {/* Increased gap */}
+                <form onSubmit={handleQuickAddTask} className="mb-4"> {/* Increased spacing */}
+                  <div className="flex items-center gap-4"> {/* Increased gap */}
                     <Input
                       ref={quickAddInputRef}
                       placeholder='Quick add a task — press "/" to focus, Enter to add'
                       value={quickAddTaskDescription}
                       onChange={(e) => setQuickAddTaskDescription(e.target.value)}
-                      className="flex-1 h-8 text-sm border-[#B0BEC5]" // h-5 (20px), text-xs (approx 10px), border-[#B0BEC5]
+                      className="flex-1 h-10 text-base border-[#B0BEC5]" // h-5 (20px), text-xs (approx 10px), border-[#B0BEC5]
                     />
-                    <Button type="submit" className="whitespace-nowrap h-8 text-sm bg-primary" style={{ backgroundColor: '#9575CD' }}> {/* h-5 (20px), text-xs (approx 15px), bg-#9575CD */}
+                    <Button type="submit" className="whitespace-nowrap h-10 text-base bg-primary" style={{ backgroundColor: '#9575CD' }}> {/* h-5 (20px), text-xs (approx 15px), bg-#9575CD */}
                       <Plus className="mr-1 h-3 w-3" /> Add {/* Smaller icon */}
                     </Button>
                   </div>
