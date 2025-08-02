@@ -137,7 +137,8 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         .from('tasks')
         .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link')
         .eq('user_id', currentUserId)
-        .order('created_at', { ascending: true }); // Order by created_at for consistent processing
+        .order('section_id', { ascending: true, nullsFirst: true }) // Order by section_id, nulls first
+        .order('order', { ascending: true }); // Then by order within section/parent
       if (tasksError) throw tasksError;
 
       // Apply category_color mapping here before setting tasks state
@@ -596,6 +597,23 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       section_id: newParentId ? (tasks.find(t => t.id === newParentId)?.section_id ?? newSectionId ?? null) : newSectionId,
       order: newOrder,
     });
+
+    // Cascade section to descendants when parent/section changes
+    if (activeTask.parent_task_id !== newParentId) {
+      const cascadeSectionId = newParentId ? (tasks.find(t => t.id === newParentId)?.section_id ?? newSectionId ?? null) : newSectionId;
+      const queue = [activeTask.id];
+      const visited = new Set<string>();
+      while (queue.length) {
+        const pid = queue.shift()!;
+        if (visited.has(pid)) continue;
+        visited.add(pid);
+        const children = tasks.filter(t => t.parent_task_id === pid);
+        children.forEach(child => {
+          updates.push({ id: child.id, section_id: cascadeSectionId });
+          queue.push(child.id);
+        });
+      }
+    }
 
     console.log('useTasks: updateTaskParentAndOrder - Updates prepared for optimistic update:', updates);
 
