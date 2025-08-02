@@ -108,7 +108,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
       {/* Removed DragHandleIcon button */}
       <div className="flex-1 flex items-center justify-between">
         <div 
-          className="flex items-center flex-1 min-w-0"
+          className="flex items-center flex-1 min-w-0" // This div still expands
           data-no-dnd="true"
         >
           {isEditingLocal ? (
@@ -125,7 +125,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
                   "p-0",
                   "text-foreground",
                   "appearance-none",
-                  "flex-1 truncate",
+                  "flex-1 truncate", // Keep flex-1 on input so it expands
                   "!h-auto !min-h-0 !py-0"
                 )}
                 style={{ lineHeight: '1.5rem' }}
@@ -136,12 +136,17 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               </span>
             </>
           ) : (
-            <h3 
-              className="text-base font-bold truncate flex-1 cursor-pointer" // Added cursor-pointer
-              onClick={handleStartEdit} // Only h3 click starts edit
-            >
-              {section.name} ({sectionTasksCount})
-            </h3>
+            <>
+              <h3 
+                className="text-base font-bold truncate cursor-pointer" // Removed flex-1 from h3
+                onClick={handleStartEdit} // Only h3 click starts edit
+              >
+                {section.name}
+              </h3>
+              <span className="text-base font-bold text-muted-foreground ml-1 flex-shrink-0">
+                ({sectionTasksCount})
+              </span>
+            </>
           )}
         </div>
         <div className="flex items-center space-x-1" data-no-dnd="true">
