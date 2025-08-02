@@ -2,7 +2,6 @@
 /// <reference lib="deno.unstable" />
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.15.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -24,27 +23,23 @@ serve(async (req) => {
       });
     }
 
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) {
-      return new Response(JSON.stringify({ error: 'GEMINI_API_KEY not set in environment variables.' }), {
+    const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
+    if (!OPENROUTER_API_KEY) {
+      return new Response(JSON.stringify({ error: 'OPENROUTER_API_KEY not set in environment variables.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
       });
     }
-
-    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
     const categoryNames = categories.map((cat: { name: string }) => cat.name).join(', ');
 
     const today = new Date(currentDate);
     const dayOfWeek = today.toLocaleDateString('en-US', { weekday: 'long' });
 
-    const prompt = `Analyze the following task description and extract structured data in JSON format.
-    
+    const systemPrompt = `You are a helpful assistant that extracts structured task data from natural language descriptions.
     Today's date is ${currentDate} (${dayOfWeek}).
     
-    Extract:
+    Extract the following fields in JSON format:
     - 'category': The most relevant category from the provided list. If no clear category, default to 'General'.
     - 'priority': 'low', 'medium', 'high', or 'urgent'. Default to 'medium'.
     - 'dueDate': The due date in 'YYYY-MM-DD' format. If no specific date, leave null.
@@ -61,7 +56,7 @@ serve(async (req) => {
     {
       "category": "Personal",
       "priority": "high",
-      "dueDate": "2024-08-15", // Assuming tomorrow is Aug 15, 2024
+      "dueDate": "2024-08-15",
       "remindAt": "2024-08-15T18:00:00Z",
       "section": "Groceries",
       "cleanedDescription": "Buy groceries for dinner",
@@ -74,7 +69,7 @@ serve(async (req) => {
     {
       "category": "Work",
       "priority": "urgent",
-      "dueDate": "2024-08-16", // Assuming Friday is Aug 16, 2024
+      "dueDate": "2024-08-16",
       "remindAt": null,
       "section": "Work",
       "cleanedDescription": "Finish report",
@@ -100,20 +95,44 @@ serve(async (req) => {
     {
       "category": "Personal",
       "priority": "medium",
-      "dueDate": "2024-08-23", // Assuming next week is Aug 23, 2024
+      "dueDate": "2024-08-23",
       "remindAt": null,
       "section": "Appointments",
       "cleanedDescription": "Schedule dentist appointment",
       "link": "https://dentist.com"
     }
-
-    Task Description: "${description}"
-    Output:
+    
+    Your response MUST be a valid JSON object. Do NOT include any other text or markdown outside the JSON.
     `;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+    const userMessage = `Task Description: "${description}"`;
+
+    const openRouterResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "mistralai/mistral-7b-instruct-v0.2", // You can change this model!
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userMessage },
+        ],
+      }),
+    });
+
+    if (!openRouterResponse.ok) {
+      const errorData = await openRouterResponse.json();
+      console.error("OpenRouter API error:", errorData);
+      return new Response(JSON.stringify({ error: `OpenRouter API error: ${errorData.message || openRouterResponse.statusText}` }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: openRouterResponse.status,
+      });
+    }
+
+    const data = await openRouterResponse.json();
+    const text = data.choices[0].message.content;
 
     console.log("Raw AI response text:", text); // Log the raw response
 
