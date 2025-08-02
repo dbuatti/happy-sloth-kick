@@ -24,11 +24,9 @@ const navItems = [
   { name: 'Project Balance', path: '/projects', icon: LayoutGrid },
   { name: 'Time Blocks', path: '/schedule', icon: CalendarClock },
   { name: 'My Hub', path: '/my-hub', icon: LayoutDashboard },
-  // Analytics and Archive are now accessed via My Hub, so removed from main sidebar
-  // { name: 'Analytics', path: '/analytics', icon: BarChart3 },
-  // { name: 'Archive', path: '/archive', icon: ArchiveIcon },
-  { name: 'Settings', path: '/settings', icon: SettingsIcon },
-  { name: 'Help', path: '/help', icon: HelpCircle },
+  // Settings and Help are now accessed via My Hub, so removed from main sidebar
+  // { name: 'Settings', path: '/settings', icon: SettingsIcon },
+  // { name: 'Help', path: '/help', icon: HelpCircle },
 ];
 
 const NavigationLinks = ({ onLinkClick }: { onLinkClick?: () => void }) => {
