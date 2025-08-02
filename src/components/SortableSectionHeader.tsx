@@ -12,7 +12,7 @@ import { Plus, Settings, CheckCircle2, ListTodo, FolderOpen, ChevronDown, Edit, 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from '@/lib/utils';
 import { TaskSection } from '@/hooks/useTasks';
-import DragHandleIcon from './DragHandleIcon'; // Import the new icon
+// Removed import for DragHandleIcon
 
 interface SortableSectionHeaderProps {
   section: TaskSection;
@@ -96,17 +96,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
       )}
       {...(attributes || {})} // Keep attributes here
     >
-      <button
-        className={cn(
-          "flex-shrink-0 h-full py-2 px-1.5 text-muted-foreground opacity-100 group-hover:opacity-100 transition-opacity duration-200",
-          isOverlay ? "cursor-grabbing" : "cursor-grab active:cursor-grabbing"
-        )}
-        aria-label="Drag to reorder section"
-        disabled={isOverlay}
-        {...(sortable?.listeners || {})} // ADD listeners here
-      >
-        <DragHandleIcon className="h-4 w-4" /> {/* Use custom DragHandleIcon */}
-      </button>
+      {/* Removed DragHandleIcon button */}
       <div className="flex-1 flex items-center justify-between">
         <div 
           className="flex items-center flex-1 cursor-pointer" // Removed relative and gap-2
