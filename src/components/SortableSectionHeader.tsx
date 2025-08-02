@@ -110,17 +110,6 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               <FolderOpen className="h-5 w-5 text-muted-foreground" />
               {section.name} ({sectionTasksCount})
             </h3>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={(e) => { e.stopPropagation(); !isOverlay && handleEditSectionClick(section); }} 
-              className="h-7 w-7" // Removed opacity-0 group-hover:opacity-100
-              data-no-dnd="true" 
-              disabled={isOverlay} 
-              tabIndex={isOverlay ? -1 : 0}
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
           </div>
         )}
         <div className="flex items-center space-x-3" data-no-dnd="true">
