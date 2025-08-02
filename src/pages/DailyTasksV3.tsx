@@ -299,8 +299,8 @@ const DailyTasksV3: React.FC = () => {
 
           {/* Main Task List Card */}
           <Card className="shadow-lg p-4 flex-1 flex flex-col">
-            <CardContent className="p-4 flex-1 flex flex-col"> {/* Adjusted padding here */}
-              <div ref={scrollRef} className="flex-1 overflow-y-auto"> {/* Removed px-4 and -mx-4 */}
+            <CardContent className="p-4 flex-1 flex flex-col">
+              <div ref={scrollRef} className="flex-1 overflow-y-auto pt-3">
                 <TaskList
                   tasks={tasks}
                   filteredTasks={filteredTasks}

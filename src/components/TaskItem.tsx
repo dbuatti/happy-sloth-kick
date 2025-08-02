@@ -102,7 +102,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   return (
     <div
       className={cn(
-        "relative flex items-center space-x-2 w-full py-1.5 pr-2 pl-2", // Default padding-left
+        "relative flex items-center space-x-2 w-full py-1.5 pr-2", // Removed pl-2
         task.status === 'completed' ? "text-muted-foreground bg-task-completed-bg" : "text-foreground",
         "group",
         isOverlay ? "cursor-grabbing" : "hover:shadow-sm",
