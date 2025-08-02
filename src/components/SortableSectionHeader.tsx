@@ -114,7 +114,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               variant="ghost" 
               size="icon" 
               onClick={(e) => { e.stopPropagation(); !isOverlay && handleEditSectionClick(section); }} 
-              className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity duration-200" 
+              className="h-7 w-7" // Removed opacity-0 group-hover:opacity-100
               data-no-dnd="true" 
               disabled={isOverlay} 
               tabIndex={isOverlay ? -1 : 0}

@@ -236,7 +236,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           <DropdownMenuTrigger asChild>
             <Button 
               variant="ghost" 
-              className="h-7 w-7 p-0" // Adjusted button size
+              className="h-8 w-8 p-0" // Adjusted button size to h-8 w-8
               onClick={(e) => e.stopPropagation()}
               aria-label="More options"
               data-no-dnd="true" // Ensure this is marked as non-draggable
