@@ -120,7 +120,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
                 onKeyDown={handleInputKeyDown}
                 onMouseDown={(e) => e.stopPropagation()} // Prevent toggle on input click
                 className={cn(
-                  "!text-lg !font-bold", // Changed from !text-base to !text-lg
+                  "!text-lg !font-bold",
                   "border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0",
                   "p-0",
                   "text-foreground",
@@ -131,21 +131,31 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
                 style={{ lineHeight: '1.5rem' }}
                 autoFocus={true}
               />
-              <span className="text-lg font-bold text-muted-foreground ml-1 flex-shrink-0"> {/* Changed from text-base to text-lg */}
+              <span className="text-lg font-bold text-muted-foreground ml-1 flex-shrink-0">
                 ({sectionTasksCount})
               </span>
             </>
           ) : (
             <>
               <h3 
-                className="text-lg font-bold truncate cursor-pointer flex-1" // Changed from text-base to text-lg
-                onClick={handleStartEdit} // Only h3 click starts edit
+                className="text-lg font-bold truncate flex-1"
               >
                 {section.name}
               </h3>
-              <span className="text-lg font-bold text-muted-foreground ml-1 flex-shrink-0"> {/* Changed from text-base to text-lg */}
+              <span className="text-lg font-bold text-muted-foreground ml-1 flex-shrink-0">
                 ({sectionTasksCount})
               </span>
+              {/* NEW: Explicit Edit button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 p-0 ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                onClick={handleStartEdit} // This button now triggers edit
+                data-no-dnd="true"
+                aria-label={`Edit ${section.name}`}
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
             </>
           )}
         </div>
