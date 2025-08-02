@@ -22,7 +22,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import FocusPanelDrawer from '@/components/FocusPanelDrawer';
 import { Badge } from '@/components/ui/badge';
 import TaskFilter from '@/components/TaskFilter';
-import MoodBoosterButton from '@/components/MoodBoosterButton'; // Re-import MoodBoosterButton
+import MoodBoosterButton from '@/components/MoodBoosterButton';
 import TodayProgressCard from '@/components/TodayProgressCard';
 import { suggestTaskDetails } from '@/integrations/supabase/api';
 
@@ -208,7 +208,7 @@ const DailyTasksV3: React.FC = () => {
         <div className="w-full max-w-4xl mx-auto h-full">
           <Card className="shadow-lg p-4 h-full flex flex-col">
             <CardHeader className="pb-3">
-              <div className="flex items-center justify-between mb-4"> {/* Added margin-bottom */}
+              <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <ListTodo className="h-5 w-5 text-primary" />
                   <span className="text-lg font-semibold">{dailyTaskCount}</span>
