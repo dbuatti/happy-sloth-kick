@@ -2,6 +2,7 @@
 /// <reference lib="deno.unstable" />
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.15.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -23,20 +24,23 @@ serve(async (req) => {
       });
     }
 
-    const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
-    if (!OPENROUTER_API_KEY) {
-      return new Response(JSON.stringify({ error: 'OPENROUTER_API_KEY not set in environment variables.' }), {
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) {
+      return new Response(JSON.stringify({ error: 'GEMINI_API_KEY not set in environment variables.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
       });
     }
+
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
     const categoryNames = categories.map((cat: { name: string }) => cat.name).join(', ');
 
     const today = new Date(currentDate);
     const dayOfWeek = today.toLocaleDateString('en-US', { weekday: 'long' });
 
-    const systemPrompt = `You are a helpful assistant that extracts structured task data from natural language descriptions.
+    const prompt = `You are a helpful assistant that extracts structured task data from natural language descriptions.
     Today's date is ${currentDate} (${dayOfWeek}).
     
     Extract the following fields in JSON format:
@@ -103,36 +107,11 @@ serve(async (req) => {
     }
     
     Your response MUST be a valid JSON object. Do NOT include any other text or markdown outside the JSON.
-    `;
+    Task Description: "${description}"`;
 
-    const userMessage = `Task Description: "${description}"`;
-
-    const openRouterResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "deepseek/deepseek-r1:free", // Changed model to deepseek/deepseek-r1:free
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userMessage },
-        ],
-      }),
-    });
-
-    if (!openRouterResponse.ok) {
-      const errorData = await openRouterResponse.json();
-      console.error("OpenRouter API error:", errorData);
-      return new Response(JSON.stringify({ error: `OpenRouter API error: ${errorData.message || openRouterResponse.statusText}` }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: openRouterResponse.status,
-      });
-    }
-
-    const data = await openRouterResponse.json();
-    const text = data.choices[0].message.content;
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
 
     console.log("Raw AI response text:", text); // Log the raw response
 
