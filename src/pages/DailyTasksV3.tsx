@@ -187,17 +187,6 @@ const DailyTasksV3: React.FC = () => {
                   </Button>
                 </div>
               </div>
-              <div className="flex justify-center gap-3 mt-2"> {/* Changed to flex and gap */}
-                <Badge variant="outline" className="px-3 py-1 text-sm font-medium bg-primary/10 text-primary">
-                  <ListTodo className="h-3.5 w-3.5 mr-1.5" /> {totalCount} Total
-                </Badge>
-                <Badge variant="outline" className="px-3 py-1 text-sm font-medium bg-green-500/10 text-green-600 dark:text-green-400">
-                  <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" /> {completedCount} Completed
-                </Badge>
-                <Badge variant="outline" className="px-3 py-1 text-sm font-medium bg-destructive/10 text-destructive">
-                  <Clock className="h-3.5 w-3.5 mr-1.5" /> {overdueCount} Overdue
-                </Badge>
-              </div>
             </CardHeader>
 
             <CardContent className="pt-3 flex-1 flex flex-col">
@@ -209,6 +198,18 @@ const DailyTasksV3: React.FC = () => {
                   onGoToToday={handleGoToToday}
                   setCurrentDate={setCurrentDate}
                 />
+              </div>
+              {/* Moved task count badges here */}
+              <div className="flex justify-center gap-3 mb-3">
+                <Badge variant="outline" className="px-3 py-1 text-sm font-medium bg-primary/10 text-primary">
+                  <ListTodo className="h-3.5 w-3.5 mr-1.5" /> {totalCount} Total
+                </Badge>
+                <Badge variant="outline" className="px-3 py-1 text-sm font-medium bg-green-500/10 text-green-600 dark:text-green-400">
+                  <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" /> {completedCount} Completed
+                </Badge>
+                <Badge variant="outline" className="px-3 py-1 text-sm font-medium bg-destructive/10 text-destructive">
+                  <Clock className="h-3.5 w-3.5 mr-1.5" /> {overdueCount} Overdue
+                </Badge>
               </div>
 
               {/* Quick Add Task Bar */}
