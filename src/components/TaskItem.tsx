@@ -122,32 +122,15 @@ const TaskItem: React.FC<TaskItemProps> = ({
         className="flex-1 min-w-0 cursor-pointer"
         onClick={() => onOpenOverview(task)}
       >
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span
-              className={cn(
-                "text-base font-medium leading-tight line-clamp-2", // Changed to 16px font-size, medium font-weight
-                task.status === 'completed' ? 'line-through text-muted-foreground' : 'text-foreground',
-                "block"
-              )}
-            >
-              {task.description}
-            </span>
-          </TooltipTrigger>
-          <TooltipContent className="max-w-xs">
-            {task.description}
-          </TooltipContent>
-        </Tooltip>
-
-        <div className="flex flex-wrap items-center text-sm text-muted-foreground mt-1 gap-x-3 gap-y-1"> {/* Increased spacing */}
+        <div className="flex items-center gap-2"> {/* New flex container for inline elements */}
           {/* Priority Dot */}
-          <div className={cn("w-2.5 h-2.5 rounded-full", getPriorityDotColor(task.priority))} /> {/* Increased size */}
+          <div className={cn("w-2.5 h-2.5 rounded-full flex-shrink-0", getPriorityDotColor(task.priority))} />
           
           {task.recurring_type !== 'none' && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className="inline-flex items-center">
-                  <Repeat className="h-4 w-4 text-primary dark:text-primary" /> {/* Adjusted icon size */}
+                <span className="inline-flex items-center flex-shrink-0">
+                  <Repeat className="h-3.5 w-3.5 text-primary dark:text-primary" /> {/* Smaller icon */}
                 </span>
               </TooltipTrigger>
               <TooltipContent>
@@ -155,6 +138,26 @@ const TaskItem: React.FC<TaskItemProps> = ({
               </TooltipContent>
             </Tooltip>
           )}
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span
+                className={cn(
+                  "text-base font-medium leading-tight line-clamp-2 flex-grow", // Added flex-grow
+                  task.status === 'completed' ? 'line-through text-muted-foreground' : 'text-foreground',
+                  "block"
+                )}
+              >
+                {task.description}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs">
+              {task.description}
+            </TooltipContent>
+          </Tooltip>
+        </div>
+
+        <div className="flex flex-wrap items-center text-sm text-muted-foreground mt-0.5 gap-x-3 gap-y-1"> {/* Adjusted margin-top */}
           {task.due_date && (
             <span className={cn(
               "flex items-center gap-1 text-sm", // Larger text
