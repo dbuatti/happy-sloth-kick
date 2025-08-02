@@ -110,9 +110,6 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.56.2
         version: 5.74.4(react@18.3.1)
-      '@types/deno':
-        specifier: ^2.3.0
-        version: 2.3.0
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -189,6 +186,9 @@ importers:
       '@tailwindcss/typography':
         specifier: ^0.5.15
         version: 0.5.16(tailwindcss@3.4.17)
+      '@types/deno':
+        specifier: 2.3.0
+        version: 2.3.0
       '@types/node':
         specifier: ^22.5.5
         version: 22.14.1
