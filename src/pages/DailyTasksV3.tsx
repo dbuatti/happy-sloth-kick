@@ -12,14 +12,14 @@ import CommandPalette from '@/components/CommandPalette';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from '@/components/ui/input';
-import { Plus, ListTodo, CheckCircle2, Clock } from 'lucide-react';
+import { Plus, ListTodo, CheckCircle2, Clock, Brain } from 'lucide-react'; // Added Brain icon
 import { showError } from '@/utils/toast';
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
 import { cn } from '@/lib/utils';
 import BulkActions from '@/components/BulkActions';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { useIsMobile } from '@/hooks/use-mobile';
-import ActiveTaskPanel from '@/components/ActiveTaskPanel'; // Import the new ActiveTaskPanel
+import FocusPanelDrawer from '@/components/FocusPanelDrawer'; // Import the new FocusPanelDrawer
 
 const getUTCStartOfDay = (date: Date) => {
   return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -64,6 +64,7 @@ const DailyTasksV3: React.FC = () => {
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
   const [quickAddTaskDescription, setQuickAddTaskDescription] = useState('');
   const quickAddInputRef = useRef<HTMLInputElement>(null);
+  const [isFocusPanelOpen, setIsFocusPanelOpen] = useState(false); // New state for FocusPanelDrawer
 
   const handlePreviousDay = () => {
     setCurrentDate(prevDate => getUTCStartOfDay(addDays(prevDate, -1)));
@@ -166,106 +167,94 @@ const DailyTasksV3: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col">
       <main className={cn("flex-grow p-4", isBulkActionsActive ? "pb-[90px]" : "")}>
-        <div className="w-full max-w-6xl mx-auto h-full">
-          <ResizablePanelGroup direction={isMobile ? "vertical" : "horizontal"} className="h-full items-stretch">
-            {/* Left Panel: Main Task List */}
-            <ResizablePanel defaultSize={isMobile ? 65 : 70} minSize={isMobile ? 50 : 60}>
-              <Card className="shadow-lg p-4 h-full flex flex-col">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-2xl font-bold">Your Tasks</CardTitle>
-                    <div className="flex items-center gap-2">
-                      <ListTodo className="h-5 w-5 text-primary" />
-                      <span className="text-lg font-semibold">{dailyTaskCount}</span>
-                    </div>
-                  </div>
-                  <div className="text-center text-sm text-muted-foreground mt-2">
-                    <p>{totalCount} total, {completedCount} completed, {overdueCount} overdue</p>
-                  </div>
-                </CardHeader>
-
-                <CardContent className="pt-3 flex-1 flex flex-col">
-                  <div className="mb-3">
-                    <DateNavigator
-                      currentDate={currentDate}
-                      onPreviousDay={handlePreviousDay}
-                      onNextDay={handleNextDay}
-                      onGoToToday={handleGoToToday}
-                      setCurrentDate={setCurrentDate}
-                    />
-                  </div>
-
-                  {/* Quick Add Task Bar */}
-                  <div
-                    className={cn(
-                      "sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border -mx-4 px-4 py-3 transition-shadow",
-                      stuck ? "shadow-lg" : ""
-                    )}
+        <div className="w-full max-w-4xl mx-auto h-full"> {/* Adjusted max-width to remove right panel space */}
+          <Card className="shadow-lg p-4 h-full flex flex-col">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-2xl font-bold">Your Tasks</CardTitle>
+                <div className="flex items-center gap-2">
+                  <ListTodo className="h-5 w-5 text-primary" />
+                  <span className="text-lg font-semibold">{dailyTaskCount}</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsFocusPanelOpen(true)}
+                    aria-label="Open focus tools"
+                    className="ml-2 h-8 w-8"
                   >
-                    <form onSubmit={handleQuickAddTask}>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          ref={quickAddInputRef}
-                          placeholder='Quick add a task — press "/" to focus, Enter to add'
-                          value={quickAddTaskDescription}
-                          onChange={(e) => setQuickAddTaskDescription(e.target.value)}
-                          className="flex-1 h-9 text-sm"
-                        />
-                        <Button type="submit" className="whitespace-nowrap h-9 text-sm">
-                          <Plus className="mr-1 h-3 w-3" /> Add
-                        </Button>
-                      </div>
-                    </form>
-                  </div>
+                    <Brain className="h-5 w-5" />
+                  </Button>
+                </div>
+              </div>
+              <div className="text-center text-sm text-muted-foreground mt-2">
+                <p>{totalCount} total, {completedCount} completed, {overdueCount} overdue</p>
+              </div>
+            </CardHeader>
 
-                  <div ref={scrollRef} className="flex-1 overflow-y-auto pt-3 -mx-4 px-4">
-                    <TaskList
-                      tasks={tasks}
-                      filteredTasks={filteredTasks}
-                      loading={tasksLoading}
-                      userId={userId}
-                      handleAddTask={handleAddTask}
-                      updateTask={updateTask}
-                      deleteTask={deleteTask}
-                      selectedTaskIds={selectedTaskIds}
-                      toggleTaskSelection={toggleTaskSelection}
-                      clearSelectedTasks={clearSelectedTasks}
-                      bulkUpdateTasks={bulkUpdateTasks}
-                      markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
-                      sections={sections}
-                      createSection={createSection}
-                      updateSection={updateSection}
-                      deleteSection={deleteSection}
-                      updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-                      updateTaskParentAndOrder={updateTaskParentAndOrder}
-                      reorderSections={reorderSections}
-                      moveTask={moveTask}
-                      allCategories={allCategories}
-                      setIsAddTaskOpen={() => {}}
-                      currentDate={currentDate}
-                      setCurrentDate={setCurrentDate}
+            <CardContent className="pt-3 flex-1 flex flex-col">
+              <div className="mb-3">
+                <DateNavigator
+                  currentDate={currentDate}
+                  onPreviousDay={handlePreviousDay}
+                  onNextDay={handleNextDay}
+                  onGoToToday={handleGoToToday}
+                  setCurrentDate={setCurrentDate}
+                />
+              </div>
+
+              {/* Quick Add Task Bar */}
+              <div
+                className={cn(
+                  "sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border -mx-4 px-4 py-3 transition-shadow",
+                  stuck ? "shadow-lg" : ""
+                )}
+              >
+                <form onSubmit={handleQuickAddTask}>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      ref={quickAddInputRef}
+                      placeholder='Quick add a task — press "/" to focus, Enter to add'
+                      value={quickAddTaskDescription}
+                      onChange={(e) => setQuickAddTaskDescription(e.target.value)}
+                      className="flex-1 h-9 text-sm"
                     />
+                    <Button type="submit" className="whitespace-nowrap h-9 text-sm">
+                      <Plus className="mr-1 h-3 w-3" /> Add
+                    </Button>
                   </div>
-                </CardContent>
-              </Card>
-            </ResizablePanel>
+                </form>
+              </div>
 
-            <ResizableHandle withHandle />
-            <ResizablePanel defaultSize={isMobile ? 35 : 30} minSize={isMobile ? 20 : 25}>
-              <ActiveTaskPanel
-                nextAvailableTask={nextAvailableTask}
-                tasks={tasks}
-                filteredTasks={filteredTasks}
-                updateTask={updateTask}
-                onOpenDetail={handleOpenDetail}
-                onDeleteTask={deleteTask}
-                sections={sections}
-                allCategories={allCategories}
-                userId={userId}
-                currentDate={currentDate}
-              />
-            </ResizablePanel>
-          </ResizablePanelGroup>
+              <div ref={scrollRef} className="flex-1 overflow-y-auto pt-3 -mx-4 px-4">
+                <TaskList
+                  tasks={tasks}
+                  filteredTasks={filteredTasks}
+                  loading={tasksLoading}
+                  userId={userId}
+                  handleAddTask={handleAddTask}
+                  updateTask={updateTask}
+                  deleteTask={deleteTask}
+                  selectedTaskIds={selectedTaskIds}
+                  toggleTaskSelection={toggleTaskSelection}
+                  clearSelectedTasks={clearSelectedTasks}
+                  bulkUpdateTasks={bulkUpdateTasks}
+                  markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
+                  sections={sections}
+                  createSection={createSection}
+                  updateSection={updateSection}
+                  deleteSection={deleteSection}
+                  updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+                  updateTaskParentAndOrder={updateTaskParentAndOrder}
+                  reorderSections={reorderSections}
+                  moveTask={moveTask}
+                  allCategories={allCategories}
+                  setIsAddTaskOpen={() => {}}
+                  currentDate={currentDate}
+                  setCurrentDate={setCurrentDate}
+                />
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </main>
 
@@ -324,6 +313,21 @@ const DailyTasksV3: React.FC = () => {
           allCategories={allCategories}
         />
       )}
+
+      <FocusPanelDrawer
+        isOpen={isFocusPanelOpen}
+        onClose={() => setIsFocusPanelOpen(false)}
+        nextAvailableTask={nextAvailableTask}
+        tasks={tasks}
+        filteredTasks={filteredTasks}
+        updateTask={updateTask}
+        onOpenDetail={handleOpenDetail}
+        onDeleteTask={deleteTask}
+        sections={sections}
+        allCategories={allCategories}
+        userId={userId}
+        currentDate={currentDate}
+      />
     </div>
   );
 };
