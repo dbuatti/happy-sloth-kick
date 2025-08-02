@@ -120,6 +120,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
       <div 
         className="flex-1 min-w-0 cursor-pointer"
         onClick={() => onOpenOverview(task)}
+        data-no-dnd="true" // Add this to prevent DND interference on click
       >
         <div className="flex items-center gap-2"> {/* New flex container for inline elements */}
           {/* Priority Dot */}
@@ -236,7 +237,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
               <MoreHorizontal className="h-4 w-4" /> {/* Adjusted icon size */}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" data-no-dnd="true">
+          <DropdownMenuContent align="end" data-no-dnd="true"> {/* Add this to prevent DND interference */}
             <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onOpenOverview(task); }}>
               <Edit className="mr-2 h-3.5 w-3.5" /> View Details
             </DropdownMenuItem>
