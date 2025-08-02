@@ -12,23 +12,19 @@ import { Plus, Settings, CheckCircle2, ListTodo, FolderOpen, ChevronDown, Edit, 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from '@/lib/utils';
 import { TaskSection } from '@/hooks/useTasks';
-import DragHandleIcon from './DragHandleIcon'; // Import the new icon
+// Removed import for DragHandleIcon
 
 interface SortableSectionHeaderProps {
   section: TaskSection;
   sectionTasksCount: number;
   isExpanded: boolean;
   toggleSection: (sectionId: string) => void;
-  // Removed: editingSectionId: string | null;
-  // Removed: editingSectionName: string;
-  // Removed: setNewEditingSectionName: (name: string) => void;
-  // Removed: handleEditSectionClick: (section: TaskSection) => void;
   handleAddTaskToSpecificSection: (sectionId: string | null) => void;
   markAllTasksInSectionCompleted: (sectionId: string | null) => Promise<void>;
   handleDeleteSectionClick: (sectionId: string) => void;
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
-  onUpdateSectionName: (sectionId: string, newName: string) => Promise<void>; // New prop for direct update
-  isOverlay?: boolean; // New prop for drag overlay
+  onUpdateSectionName: (sectionId: string, newName: string) => Promise<void>;
+  isOverlay?: boolean;
 }
 
 const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
@@ -36,18 +32,13 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
   sectionTasksCount,
   isExpanded,
   toggleSection,
-  // Removed: editingSectionId,
-  // Removed: editingSectionName,
-  // Removed: setNewEditingSectionName,
-  // Removed: handleEditSectionClick,
   handleAddTaskToSpecificSection,
   markAllTasksInSectionCompleted,
   handleDeleteSectionClick,
   updateSectionIncludeInFocusMode,
-  onUpdateSectionName, // Destructure new prop
-  isOverlay = false, // Default to false
+  onUpdateSectionName,
+  isOverlay = false,
 }) => {
-  // Conditionally use useSortable
   const sortable = !isOverlay ? useSortable({ id: section.id, data: { type: 'section', section } }) : null;
 
   const attributes = sortable?.attributes;
@@ -59,19 +50,16 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
-    zIndex: isDragging ? 10 : 'auto', // Original item should be behind overlay
-    // If it's the original item being dragged, make it invisible
+    zIndex: isDragging ? 10 : 'auto',
     opacity: isDragging && !isOverlay ? 0 : 1,
     visibility: isDragging && !isOverlay ? 'hidden' : 'visible',
   };
 
-  // Local state for inline editing
   const [isEditingLocal, setIsEditingLocal] = useState(false);
   const [localSectionName, setLocalSectionName] = useState(section.name);
 
-  // Sync local state with prop when prop changes (e.g., after successful save)
   useEffect(() => {
-    if (!isEditingLocal) { // Only update if not currently editing to avoid overwriting user input
+    if (!isEditingLocal) {
       setLocalSectionName(section.name);
     }
   }, [section.name, isEditingLocal]);
@@ -79,7 +67,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
   const handleStartEdit = useCallback(() => {
     if (isOverlay) return;
     setIsEditingLocal(true);
-    setLocalSectionName(section.name); // Ensure local state is in sync when starting edit
+    setLocalSectionName(section.name);
   }, [isOverlay, section.name]);
 
   const handleSaveEdit = useCallback(async () => {
@@ -90,13 +78,13 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
   }, [localSectionName, section.name, onUpdateSectionName, section.id]);
 
   const handleCancelEdit = useCallback(() => {
-    setLocalSectionName(section.name); // Revert to original prop value
+    setLocalSectionName(section.name);
     setIsEditingLocal(false);
   }, [section.name]);
 
   const handleInputKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      e.currentTarget.blur(); // Trigger blur to save
+      e.currentTarget.blur();
     } else if (e.key === 'Escape') {
       handleCancelEdit();
     }
@@ -107,47 +95,37 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "relative flex items-center py-2 pl-1 pr-2", // Adjusted padding
+        "relative flex items-center py-2 pl-1 pr-2",
         "group",
-        isDragging && !isOverlay ? "" : "rounded-lg", // Only apply border/rounded-lg if not the invisible original
-        isOverlay ? "shadow-xl ring-2 ring-primary bg-card" : "", // Apply distinct styles for the overlay
-        isOverlay ? "cursor-grabbing" : "hover:shadow-sm", // Add hover shadow
+        isDragging && !isOverlay ? "" : "rounded-lg",
+        isOverlay ? "shadow-xl ring-2 ring-primary bg-card" : "",
+        isOverlay ? "cursor-grabbing" : "hover:shadow-sm",
       )}
-      {...(attributes || {})} // Keep attributes here
+      {...(attributes || {})}
     >
-      <button
-        className={cn(
-          "flex-shrink-0 h-full py-2 px-1.5 text-muted-foreground opacity-100 group-hover:opacity-100 transition-opacity duration-200",
-          isOverlay ? "cursor-grabbing" : "cursor-grab active:cursor-grabbing"
-        )}
-        aria-label="Drag to reorder section"
-        disabled={isOverlay}
-        {...(sortable?.listeners || {})} // ADD listeners here
-      >
-        <DragHandleIcon className="h-4 w-4" /> {/* Use custom DragHandleIcon */}
-      </button>
+      {/* Removed DragHandleIcon button */}
       <div className="flex-1 flex items-center justify-between">
         <div 
-          className="flex items-center flex-1 cursor-pointer" // Removed relative and gap-2
-          onClick={handleStartEdit} // Direct edit on click
-          data-no-dnd="true" // Prevent drag when clicking on text to edit
+          className="flex items-center flex-1 cursor-pointer"
+          onClick={handleStartEdit}
+          data-no-dnd="true"
         >
           {isEditingLocal ? (
             <Input
               value={localSectionName}
               onChange={(e) => setLocalSectionName(e.target.value)}
-              onBlur={handleSaveEdit} // Save on blur
+              onBlur={handleSaveEdit}
               onKeyDown={handleInputKeyDown}
               className={cn(
-                "w-full h-full text-base font-bold", // Match h3 styling
-                "border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0", // Remove default input styling
-                "p-0", // Remove default input padding
-                "text-foreground", // Ensure text color matches
-                "appearance-none", // Remove native input styling
-                "flex-1 truncate" // Ensure it takes space and truncates
+                "w-full h-full text-base font-bold",
+                "border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0",
+                "p-0",
+                "text-foreground",
+                "appearance-none",
+                "flex-1 truncate"
               )}
-              style={{ lineHeight: '1.5rem' }} // Explicitly set line-height to match h3
-              autoFocus={true} // Auto-focus when editing
+              style={{ lineHeight: '1.5rem' }}
+              autoFocus={true}
             />
           ) : (
             <h3 className="text-base font-bold truncate">
@@ -155,7 +133,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
             </h3>
           )}
         </div>
-        <div className="flex items-center space-x-1" data-no-dnd="true"> {/* Reduced space-x */}
+        <div className="flex items-center space-x-1" data-no-dnd="true">
           {!isOverlay && (
             <>
               <DropdownMenu>
@@ -163,7 +141,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="h-7 w-7 p-0" // Adjusted button size
+                    className="h-7 w-7 p-0"
                     data-no-dnd="true" 
                     tabIndex={isOverlay ? -1 : 0}
                   >
