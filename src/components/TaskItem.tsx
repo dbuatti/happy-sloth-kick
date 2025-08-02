@@ -121,18 +121,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
         {/* Priority Dot */}
         <div className={cn("w-2 h-2 rounded-full flex-shrink-0", getPriorityDotColor(task.priority))} />
         
-        {task.recurring_type !== 'none' && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="inline-flex items-center flex-shrink-0">
-                <RecurringIcon className="h-3.5 w-3.5 text-muted-foreground" /> {/* Use custom RecurringIcon */}
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Recurring: {task.recurring_type.charAt(0).toUpperCase() + task.recurring_type.slice(1)}</p>
-            </TooltipContent>
-          </Tooltip>
-        )}
+        {/* Removed RecurringIcon, BellRing, StickyNote, LinkIcon from here */}
 
         <span
           className={cn(

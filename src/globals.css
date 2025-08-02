@@ -651,6 +651,10 @@
   }
 
   /* Custom checkbox styling to match the image */
+  .checkbox-root {
+    @apply rounded-sm; /* Make it square */
+  }
+
   .checkbox-root[data-state="unchecked"] {
     @apply border border-gray-300 dark:border-gray-600;
   }
