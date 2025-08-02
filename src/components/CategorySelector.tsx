@@ -91,7 +91,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, ca
       <Label>Category</Label>
       <div className="flex space-x-2">
         <Select value={value} onValueChange={onChange}>
-          <SelectTrigger className="flex-1 min-w-0 h-9">
+          <SelectTrigger className="flex-1 min-w-0 h-9 text-base">
             <SelectValue placeholder="Select category">
               <div className="flex items-center gap-2 w-full">
                 <div className={cn("w-3.5 h-3.5 rounded-full flex items-center justify-center border", selectedCategoryColorProps.backgroundClass, selectedCategoryColorProps.dotBorder)}>
@@ -169,7 +169,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, ca
                     onChange={(e) => setNewCategoryName(e.target.value)}
                     placeholder="e.g., Work, Personal, Shopping"
                     autoFocus
-                    className="h-9"
+                    className="h-9 text-base"
                   />
                 </div>
                 <div className="mt-4">
@@ -196,7 +196,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, ca
                   </div>
                 </div>
                 <DialogFooter className="mt-4">
-                  <Button onClick={createCategory} className="w-full h-9" disabled={!newCategoryName.trim()}>Create Category</Button>
+                  <Button onClick={createCategory} className="w-full h-9 text-base" disabled={!newCategoryName.trim()}>Create Category</Button>
                 </DialogFooter>
               </div>
             </div>

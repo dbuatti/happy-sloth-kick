@@ -274,7 +274,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
             onKeyDown={handleKeyDown}
             disabled={isSaving || isSuggesting}
             autoFocus={autoFocus}
-            className="flex-1 h-9"
+            className="flex-1 h-9 text-base"
           />
           <Button
             type="button"
@@ -339,7 +339,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal h-9",
+                      "w-full justify-start text-left font-normal h-9 text-base",
                       !field.value && "text-muted-foreground"
                     )}
                     disabled={isSaving || isSuggesting}
@@ -370,7 +370,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
             name="recurringType"
             render={({ field }) => (
               <Select value={field.value} onValueChange={field.onChange} disabled={!!initialData?.parent_task_id || isSaving || isSuggesting}>
-                <SelectTrigger aria-label="Select recurrence type" className="h-9">
+                <SelectTrigger aria-label="Select recurrence type" className="h-9 text-base">
                   <SelectValue placeholder="Select recurrence" />
                 </SelectTrigger>
                 <SelectContent>
@@ -398,7 +398,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
                   <Button
                     variant="outline"
                     className={cn(
-                      "flex-1 justify-start text-left font-normal h-9",
+                      "flex-1 justify-start text-left font-normal h-9 text-base",
                       !field.value && "text-muted-foreground"
                     )}
                     disabled={isSaving || isSuggesting}
@@ -422,7 +422,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
           <Input
             type="time"
             {...register('remindAtTime')}
-            className="w-24 h-9"
+            className="w-24 h-9 text-base"
             disabled={isSaving || isSuggesting || !remindAtDate}
             aria-label="Set reminder time"
           />
@@ -438,7 +438,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
           placeholder="e.g., https://example.com/task-details"
           {...register('link')}
           disabled={isSaving || isSuggesting}
-          className="h-9"
+          className="h-9 text-base"
         />
         {errors.link && <p className="text-destructive text-sm mt-1">{errors.link.message}</p>}
       </div>
@@ -451,16 +451,16 @@ const TaskForm: React.FC<TaskFormProps> = ({
           {...register('notes')}
           rows={2}
           disabled={isSaving || isSuggesting}
-          className="min-h-[60px]"
+          className="min-h-[60px] text-base"
         />
         {errors.notes && <p className="text-destructive text-sm mt-1">{errors.notes.message}</p>}
       </div>
 
       <div className="flex justify-end space-x-1.5 mt-3">
-        <Button type="button" variant="outline" onClick={onCancel} disabled={isSaving || isSuggesting} className="h-9">
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isSaving || isSuggesting} className="h-9 text-base">
           Cancel
         </Button>
-        <Button type="submit" disabled={isSaving || isSuggesting || (!form.formState.isValid && form.formState.isSubmitted)} className="h-9">
+        <Button type="submit" disabled={isSaving || isSuggesting || (!form.formState.isValid && form.formState.isSubmitted)} className="h-9 text-base">
           {isSaving ? 'Saving...' : (initialData ? 'Save Changes' : 'Add Task')}
         </Button>
       </div>

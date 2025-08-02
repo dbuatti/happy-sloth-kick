@@ -77,13 +77,13 @@ const ManageSectionsDialog: React.FC<ManageSectionsDialogProps> = ({
                         onChange={(e) => setEditingSectionName(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleSaveEdit()}
                         autoFocus
-                        className="h-9"
+                        className="h-9 text-base"
                       />
-                      <Button size="sm" onClick={handleSaveEdit} disabled={!editingSectionName.trim()} className="h-9">Save</Button>
-                      <Button variant="ghost" size="sm" onClick={() => setEditingSectionId(null)} className="h-9">Cancel</Button>
+                      <Button size="sm" onClick={handleSaveEdit} disabled={!editingSectionName.trim()} className="h-9 text-base">Save</Button>
+                      <Button variant="ghost" size="sm" onClick={() => setEditingSectionId(null)} className="h-9 text-base">Cancel</Button>
                     </div>
                   ) : (
-                    <span className="flex-1 font-medium">{section.name}</span>
+                    <span className="flex-1 font-medium text-base">{section.name}</span>
                   )}
                   <div className="flex items-center space-x-2 ml-4">
                     <Tooltip>
@@ -119,7 +119,7 @@ const ManageSectionsDialog: React.FC<ManageSectionsDialogProps> = ({
           )}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Close</Button>
+          <Button variant="outline" onClick={onClose} className="h-9 text-base">Close</Button>
         </DialogFooter>
       </DialogContent>
 

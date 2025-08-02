@@ -136,7 +136,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
         <div className="space-y-2 mt-3 border-t pt-2">
           <div className="flex justify-between items-center">
             <h3 className="text-base font-semibold">Sub-tasks ({subtasks.length})</h3>
-            <Button variant="outline" size="sm" className="h-8" onClick={() => setIsAddSubtaskOpen(true)}>
+            <Button variant="outline" size="sm" className="h-8 text-base" onClick={() => setIsAddSubtaskOpen(true)}>
               Add Sub-task
             </Button>
           </div>
@@ -174,7 +174,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
             variant={task.status === 'completed' ? 'outline' : 'default'}
             onClick={handleToggleMainTaskStatus}
             disabled={isSaving}
-            className="w-full sm:w-auto mt-1.5 sm:mt-0 h-9"
+            className="w-full sm:w-auto mt-1.5 sm:mt-0 h-9 text-base"
           >
             {task.status === 'completed' ? (
               <><ListTodo className="mr-2 h-3.5 w-3.5" /> Mark To-Do</>
@@ -182,7 +182,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
               <><ListTodo className="mr-2 h-3.5 w-3.5" /> Mark Complete</>
             )}
           </Button>
-          <Button variant="destructive" onClick={handleDeleteClick} disabled={isSaving} className="w-full sm:w-auto mt-1.5 sm:mt-0 h-9">
+          <Button variant="destructive" onClick={handleDeleteClick} disabled={isSaving} className="w-full sm:w-auto mt-1.5 sm:mt-0 h-9 text-base">
             <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete Task
           </Button>
         </DialogFooter>

@@ -188,14 +188,14 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
               size="sm"
               onClick={isRunning ? pauseTimer : startTimer}
               className={cn(
-                "w-24",
+                "w-24 h-9 text-base",
                 isRunning ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90"
               )}
               disabled={timeRemaining === 0 && isSessionActive}
             >
               {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
             </Button>
-            <Button size="sm" variant="outline" onClick={resetTimer} className="w-24">
+            <Button size="sm" variant="outline" onClick={resetTimer} className="w-24 h-9 text-base">
               <RefreshCcw className="h-4 w-4" /> Reset
             </Button>
           </div>
@@ -217,10 +217,10 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
                 {nextAvailableTask.description}
               </h3>
               <div className="flex space-x-2">
-                <Button size="sm" onClick={handleMarkComplete} className="h-8">
+                <Button size="sm" onClick={handleMarkComplete} className="h-8 text-base">
                   <CheckCircle2 className="mr-2 h-4 w-4" /> Done
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => handleOpenTaskOverview(nextAvailableTask)} className="h-8">
+                <Button size="sm" variant="outline" onClick={() => handleOpenTaskOverview(nextAvailableTask)} className="h-8 text-base">
                   <Edit className="mr-2 h-4 w-4" /> Details
                 </Button>
               </div>

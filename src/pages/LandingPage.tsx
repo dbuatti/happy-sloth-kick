@@ -29,7 +29,7 @@ const LandingPage: React.FC = () => {
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-background to-muted">
       <header className="p-6 flex justify-between items-center">
         <h1 className="text-3xl font-bold text-primary">TaskMaster</h1>
-        <Button onClick={() => navigate('/auth')} variant="default">Sign In / Sign Up</Button>
+        <Button onClick={() => navigate('/auth')} variant="default" className="h-10 text-base">Sign In / Sign Up</Button>
       </header>
 
       <main className="flex-grow flex flex-col items-center justify-center text-center px-4 py-12">
@@ -41,10 +41,10 @@ const LandingPage: React.FC = () => {
             TaskMaster is your intelligent companion for daily productivity, mindful living, and personal growth.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" onClick={() => navigate('/auth')}>
+            <Button size="lg" onClick={() => navigate('/auth')} className="h-12 text-lg">
               <Sparkles className="mr-2 h-5 w-5" /> Get Started - It's Free!
             </Button>
-            <Button size="lg" variant="outline" onClick={() => navigate('/help')}>
+            <Button size="lg" variant="outline" onClick={() => navigate('/help')} className="h-12 text-lg">
               <LayoutDashboard className="mr-2 h-5 w-5" /> Learn More
             </Button>
           </div>

@@ -94,7 +94,7 @@ const SensoryToolPage: React.FC = () => {
                 <Sparkles className="h-16 w-16 text-primary mx-auto animate-bounce" />
                 <p className="text-xl font-semibold">Exercise Complete!</p>
                 <p className="text-muted-foreground">You've successfully grounded yourself.</p>
-                <Button onClick={handleReset} className="h-9">
+                <Button onClick={handleReset} className="h-9 text-base">
                   <RefreshCcw className="mr-2 h-4 w-4" /> Start Over
                 </Button>
               </div>
@@ -106,15 +106,15 @@ const SensoryToolPage: React.FC = () => {
                   <p className="text-lg font-semibold text-center">{currentPrompts[promptIndex].text}</p>
                 </div>
                 <div className="flex justify-center space-x-4">
-                  <Button variant="outline" onClick={handlePrevious} disabled={step === 5 && promptIndex === 0} className="h-9">
+                  <Button variant="outline" onClick={handlePrevious} disabled={step === 5 && promptIndex === 0} className="h-9 text-base">
                     Previous
                   </Button>
-                  <Button onClick={handleNext} className="h-9">
+                  <Button onClick={handleNext} className="h-9 text-base">
                     {step === 1 && promptIndex === currentPrompts.length - 1 ? "Finish" : "Next"}
                   </Button>
                 </div>
-                <Button variant="ghost" onClick={handleReset} className="w-full h-9">
-                  <RefreshCcw className="mr-2 h-4 w-4" /> Reset
+                <Button variant="ghost" onClick={handleReset} className="w-full h-9 text-base">
+                  <RefreshCcw className="mr-2 h-4 w-4" /> Reset Tool
                 </Button>
               </>
             )}

@@ -81,7 +81,7 @@ const ProjectTrackerSettings: React.FC = () => {
         ) : (
           <div className="flex items-center justify-between">
             <p className="text-lg font-medium text-foreground">{sectionTitle}</p>
-            <Button variant="outline" size="sm" onClick={() => setIsEditingTitle(true)} className="h-9">
+            <Button variant="outline" size="sm" onClick={() => setIsEditingTitle(true)} className="h-9 text-base">
               <Edit className="mr-2 h-4 w-4" /> Edit
             </Button>
           </div>

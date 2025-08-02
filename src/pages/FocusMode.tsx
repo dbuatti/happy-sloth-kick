@@ -169,16 +169,16 @@ const FocusMode: React.FC = () => {
                   size="lg"
                   onClick={isRunning ? pauseTimer : startTimer}
                   className={cn(
-                    "w-28 h-9",
+                    "w-28 h-9 text-base",
                     isRunning ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90"
                   )}
                 >
                   {isRunning ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
                 </Button>
-                <Button size="lg" variant="outline" onClick={resetTimer} className="w-28 h-9">
+                <Button size="lg" variant="outline" onClick={resetTimer} className="w-28 h-9 text-base">
                   <RefreshCcw className="h-6 w-6" /> Reset
                 </Button>
-                <Button size="lg" variant="outline" onClick={skipPhase} className="w-28 h-9">
+                <Button size="lg" variant="outline" onClick={skipPhase} className="w-28 h-9 text-base">
                   <SkipForward className="h-6 w-6" /> Skip
                 </Button>
               </div>
@@ -187,7 +187,7 @@ const FocusMode: React.FC = () => {
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">Focus Duration:</p>
                   <Select value={(focusDuration / 60).toString()} onValueChange={(val) => setFocusDuration(parseInt(val) * 60)} disabled={isRunning}>
-                    <SelectTrigger className="w-full h-9">
+                    <SelectTrigger className="w-full h-9 text-base">
                       <SelectValue placeholder="Focus time" />
                     </SelectTrigger>
                     <SelectContent>
@@ -202,7 +202,7 @@ const FocusMode: React.FC = () => {
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">Short Break:</p>
                   <Select value={(breakDuration / 60).toString()} onValueChange={(val) => setBreakDuration(parseInt(val) * 60)} disabled={isRunning}>
-                    <SelectTrigger className="w-full h-9">
+                    <SelectTrigger className="w-full h-9 text-base">
                       <SelectValue placeholder="Short break" />
                     </SelectTrigger>
                     <SelectContent>
@@ -214,7 +214,7 @@ const FocusMode: React.FC = () => {
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">Long Break:</p>
                   <Select value={(longBreakDuration / 60).toString()} onValueChange={(val) => setLongBreakDuration(parseInt(val) * 60)} disabled={isRunning}>
-                    <SelectTrigger className="w-full h-9">
+                    <SelectTrigger className="w-full h-9 text-base">
                       <SelectValue placeholder="Long break" />
                     </SelectTrigger>
                     <SelectContent>
