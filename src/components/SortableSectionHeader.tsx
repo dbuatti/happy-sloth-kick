@@ -115,7 +115,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
         >
           <FolderOpen className="h-4 w-4 text-muted-foreground" /> {/* Adjusted icon size */}
           
-          {/* Static text */}
+          {/* Static text - always visible */}
           <h3 className={cn(
             "text-base font-bold flex-1 truncate", // Adjusted font size and weight for consistency
             isEditing ? "opacity-0 pointer-events-none" : "opacity-100 pointer-events-auto"
@@ -123,7 +123,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
             {section.name} ({sectionTasksCount})
           </h3>
 
-          {/* Editable input, overlaid */}
+          {/* Editable input, overlaid - only visible when editing */}
           <Input
             value={isEditing ? editingSectionName : section.name} // Show current editing name or static name
             onChange={(e) => setNewEditingSectionName(e.target.value)}
@@ -132,6 +132,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
             className={cn(
               "absolute inset-0 w-full h-full text-base font-bold", // Match h3 styling
               "border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0", // Remove default input styling
+              "px-0 py-0", // Remove default input padding
               isEditing ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
             )}
             autoFocus={isEditing} // Auto-focus when editing
