@@ -608,6 +608,10 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       showError('User not authenticated.');
       return;
     }
+    // Optimistic update
+    const originalSections = [...sections];
+    setSections(prev => prev.map(s => s.id === sectionId ? { ...s, name: newName } : s));
+
     try {
       const { error } = await supabase
         .from('task_sections')
@@ -618,8 +622,9 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       showSuccess('Section updated!');
     } catch (e: any) {
       showError('Failed to update section.');
+      setSections(originalSections); // Revert on error
     }
-  }, [userId]);
+  }, [userId, sections]);
 
   const deleteSection = useCallback(async (sectionId: string) => {
     if (!userId) {
@@ -734,7 +739,9 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
     const getGroupSiblings = (parentId: string | null, sectionId: string | null) => {
       return tasks
-        .filter(t => t.parent_task_id === parentId && (t.section_id === sectionId || (t.section_id === null && sectionId === null)))
+        .filter(t =>
+          (t.parent_task_id === parentId && (t.section_id === sectionId || (t.section_id === null && sectionId === null)))
+        )
         .sort((a, b) => (a.order || 0) - (b.order || 0));
     };
 
