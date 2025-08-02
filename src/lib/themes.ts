@@ -533,8 +533,6 @@ export const themes = {
       '--foreground': '120 10% 90%',
       '--card': '120 20% 20%',
       '--card-foreground': '120 10% 90%',
-      '--popover': '120 20% 20%',
-      '--popover-foreground': '120 10% 90%',
       '--primary': '120 35% 55%',
       '--primary-foreground': '0 0% 100%',
       '--secondary': '30 25% 25%',
@@ -604,13 +602,13 @@ export const themes = {
       '--popover-foreground': '0 0% 90%',
       '--primary': '330 90% 75%', /* Brighter Pink */
       '--primary-foreground': '0 0% 100%',
-      '--secondary': '200 90% 70%', /* Brighter Blue */
+      '--secondary': '200 90% 70%',
       '--secondary-foreground': '0 0% 90%',
       '--muted': '240 30% 20%',
       '--muted-foreground': '0 0% 70%',
-      '--accent': '50 95% 75%', /* Brighter Yellow */
+      '--accent': '50 95% 75%',
       '--accent-foreground': '0 0% 90%',
-      '--destructive': '0 90% 70%', /* Brighter Red */
+      '--destructive': '0 90% 70%',
       '--destructive-foreground': '0 0% 100%',
       '--border': '240 15% 30%',
       '--input': '240 20% 20%',

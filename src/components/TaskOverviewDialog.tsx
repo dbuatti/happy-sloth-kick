@@ -60,7 +60,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
       case 'urgent': return 'text-priority-urgent';
       case 'high': return 'text-priority-high';
       case 'medium': return 'text-priority-medium';
-      case 'low': return 'text-muted-foreground';
+      case 'low': return 'text-priority-low';
       default: return 'text-muted-foreground';
     }
   };
