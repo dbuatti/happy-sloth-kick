@@ -92,59 +92,63 @@ const SleepTracker: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="bed-time" className="flex items-center gap-2">
-                    <Bed className="h-4 w-4 text-muted-foreground" /> Go to Bed
-                  </Label>
-                  <Input
-                    id="bed-time"
-                    type="time"
-                    value={bedTime}
-                    onChange={(e) => setBedTime(e.target.value)}
-                    disabled={isSaving}
-                    className="h-9"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="bed-time" className="flex items-center gap-2">
+                      <Bed className="h-4 w-4 text-muted-foreground" /> Go to Bed
+                    </Label>
+                    <Input
+                      id="bed-time"
+                      type="time"
+                      value={bedTime}
+                      onChange={(e) => setBedTime(e.target.value)}
+                      disabled={isSaving}
+                      className="h-10 text-base"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lights-off-time" className="flex items-center gap-2">
+                      <Moon className="h-4 w-4 text-muted-foreground" /> Lights Off
+                    </Label>
+                    <Input
+                      id="lights-off-time"
+                      type="time"
+                      value={lightsOffTime}
+                      onChange={(e) => setLightsOffTime(e.target.value)}
+                      disabled={isSaving}
+                      className="h-10 text-base"
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lights-off-time" className="flex items-center gap-2">
-                    <Moon className="h-4 w-4 text-muted-foreground" /> Lights Off
-                  </Label>
-                  <Input
-                    id="lights-off-time"
-                    type="time"
-                    value={lightsOffTime}
-                    onChange={(e) => setLightsOffTime(e.target.value)}
-                    disabled={isSaving}
-                    className="h-9"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="wake-up-time" className="flex items-center gap-2">
+                      <AlarmClock className="h-4 w-4 text-muted-foreground" /> Wake Up
+                    </Label>
+                    <Input
+                      id="wake-up-time"
+                      type="time"
+                      value={wakeUpTime}
+                      onChange={(e) => setWakeUpTime(e.target.value)}
+                      disabled={isSaving}
+                      className="h-10 text-base"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="get-out-of-bed-time" className="flex items-center gap-2">
+                      <LogOut className="h-4 w-4 text-muted-foreground" /> Get Out of Bed
+                    </Label>
+                    <Input
+                      id="get-out-of-bed-time"
+                      type="time"
+                      value={getOutOfBedTime}
+                      onChange={(e) => setGetOutOfBedTime(e.target.value)}
+                      disabled={isSaving}
+                      className="h-10 text-base"
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="wake-up-time" className="flex items-center gap-2">
-                    <AlarmClock className="h-4 w-4 text-muted-foreground" /> Wake Up
-                  </Label>
-                  <Input
-                    id="wake-up-time"
-                    type="time"
-                    value={wakeUpTime}
-                    onChange={(e) => setWakeUpTime(e.target.value)}
-                    disabled={isSaving}
-                    className="h-9"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="get-out-of-bed-time" className="flex items-center gap-2">
-                    <LogOut className="h-4 w-4 text-muted-foreground" /> Get Out of Bed
-                  </Label>
-                  <Input
-                    id="get-out-of-bed-time"
-                    type="time"
-                    value={getOutOfBedTime}
-                    onChange={(e) => setGetOutOfBedTime(e.target.value)}
-                    disabled={isSaving}
-                    className="h-9"
-                  />
-                </div>
-                <Button onClick={handleSubmit} className="w-full h-9" disabled={isSaving}>
+                <Button onClick={handleSubmit} className="w-full h-10 text-base" disabled={isSaving}>
                   {isSaving ? 'Saving...' : 'Save Sleep Record'}
                 </Button>
               </div>

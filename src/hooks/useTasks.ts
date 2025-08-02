@@ -74,7 +74,7 @@ interface UseTasksProps {
   viewMode?: 'daily' | 'archive' | 'focus';
 }
 
-export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: UseTasksProps = {}) => {
+export const useTasks = ({ viewMode = 'daily' }: UseTasksProps = {}) => { // Removed currentDate: propCurrentDate
   const { user, loading: authLoading } = useAuth();
   const userId = user?.id;
   const { addReminder, dismissReminder } = useReminders();
@@ -94,7 +94,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
 
   // Manage currentDate internally if in 'daily' view and not provided externally
   const [internalCurrentDate, setInternalCurrentDate] = useState(() => getUTCStartOfDay(new Date()));
-  const effectiveCurrentDate = viewMode === 'daily' ? internalCurrentDate : (propCurrentDate || new Date());
+  const effectiveCurrentDate = viewMode === 'daily' ? internalCurrentDate : (new Date()); // Removed propCurrentDate
 
   const categoriesMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -294,7 +294,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
         const sortedInstances = [...seriesInstances].sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime());
 
         // Find the single relevant instance for today's view or for archive view
-        let relevantInstance: Task | null = null;
+        let relevantInstance: Task | undefined = undefined; // Changed to Task | undefined
 
         // Priority 1: An instance created *on* the current date (any status, including archived, for later filtering)
         relevantInstance = sortedInstances.find(t =>
@@ -332,7 +332,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
           }
         } else {
           // If a relevant instance was found, add it (regardless of its status, viewMode will filter later)
-          allProcessedTasks.push({ ...relevantInstance, category_color: categoriesMapLocal.get(relevantInstance.category) || 'gray' });
+          allProcessedTasks.push({ ...relevantInstance as Task, category_color: categoriesMapLocal.get(relevantInstance.category) || 'gray' });
         }
       }
     });
@@ -746,17 +746,17 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       )
       .sort((a, b) => (a.order || 0) - (b.order || 0));
 
-    const currentIndex = siblings.findIndex(t => t.id === taskId);
-    if (currentIndex === -1) return;
+    // const currentTaskIndex = siblings.findIndex(t => t.id === taskId); // Removed as unused
+    let newIndex = siblings.findIndex(t => t.id === taskId); // Initialize newIndex with current index
+    if (newIndex === -1) return; // Task not found in siblings
 
-    let newIndex = currentIndex;
-    if (direction === 'up' && currentIndex > 0) newIndex = currentIndex - 1;
-    if (direction === 'down' && currentIndex < siblings.length - 1) newIndex = currentIndex + 1;
-    if (newIndex === currentIndex) return;
+    if (direction === 'up' && newIndex > 0) newIndex = newIndex - 1;
+    if (direction === 'down' && newIndex < siblings.length - 1) newIndex = newIndex + 1;
+    if (newIndex === siblings.findIndex(t => t.id === taskId)) return; // No actual move
 
     // Optimistic update
     isReorderingRef.current = true; // Set flag before optimistic update
-    const newOrdered = arrayMove(siblings, currentIndex, newIndex);
+    const newOrdered = arrayMove(siblings, siblings.findIndex(t => t.id === taskId), newIndex);
     newOrdered.forEach((t, idx) => { t.order = idx; });
 
     const updatesMap = new Map<string, Task>(); // Store full Task objects
