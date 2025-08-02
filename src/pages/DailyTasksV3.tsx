@@ -22,7 +22,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import FocusPanelDrawer from '@/components/FocusPanelDrawer';
 import { Badge } from '@/components/ui/badge';
 import TaskFilter from '@/components/TaskFilter';
-import MoodBoosterButton from '@/components/MoodBoosterButton'; // Import MoodBoosterButton
+// import MoodBoosterButton from '@/components/MoodBoosterButton'; // Removed MoodBoosterButton
 import TodayProgressCard from '@/components/TodayProgressCard'; // Import the new component
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'; // Import Dialog components
 import TaskForm from '@/components/TaskForm'; // Import TaskForm for the AI parser dialog
@@ -203,7 +203,7 @@ const DailyTasksV3: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <ListTodo className="h-5 w-5 text-primary" />
                   <span className="text-lg font-semibold">{dailyTaskCount}</span>
-                  <MoodBoosterButton /> {/* This is the 'star' icon in your image */}
+                  {/* Removed MoodBoosterButton */}
                   <Button
                     variant="ghost"
                     size="icon"
