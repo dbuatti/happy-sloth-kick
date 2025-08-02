@@ -10,6 +10,8 @@ import { useSound } from '@/context/SoundContext';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { CheckCircle2 } from 'lucide-react'; // Ensure CheckCircle2 is imported for the animation
 import { useAuth } from '@/context/AuthContext'; // Import useAuth
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface TaskItemProps {
   task: Task;
@@ -24,7 +26,6 @@ interface TaskItemProps {
   onMoveUp: (taskId: string) => Promise<void>;
   onMoveDown: (taskId: string) => Promise<void>;
   isOverlay?: boolean;
-  // Removed dragHandleProps
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -37,12 +38,27 @@ const TaskItem: React.FC<TaskItemProps> = ({
   onOpenOverview,
   currentDate,
   isOverlay = false,
-  // Removed dragHandleProps
 }) => {
   // Removed 'user' and 'userId' from useAuth destructuring as they are not directly used here.
   useAuth(); 
   const { playSound } = useSound();
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: task.id, data: { type: 'task', task } });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging && !isOverlay ? 0 : 1,
+    visibility: isDragging && !isOverlay ? 'hidden' : 'visible',
+  };
 
   const getPriorityDotColor = (priority: string) => {
     switch (priority) {
@@ -86,18 +102,22 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
   return (
     <div
+      ref={setNodeRef}
+      style={style}
       className={cn(
         "relative flex items-center space-x-2 w-full py-3 pr-3", // Increased vertical padding
         task.status === 'completed' ? "text-muted-foreground bg-task-completed-bg" : "text-foreground",
         "group",
-        isOverlay ? "cursor-grabbing" : "", // Removed hover effects
+        isOverlay ? "cursor-grabbing" : "cursor-grab", // Changed cursor to indicate draggable
         isOverdue && "border-l-4 border-status-overdue", // Only border, no extra padding
         isDueToday && "border-l-4 border-status-due-today", // Only border, no extra padding
+        isDragging && !isOverlay ? "opacity-0" : "opacity-100" // Hide original item while dragging
       )}
       onClick={() => !isOverlay && onOpenOverview(task)}
-      style={{ cursor: isOverlay ? 'grabbing' : 'pointer' }}
+      {...attributes}
+      {...listeners} // Apply drag listeners to the entire item
     >
-      {/* Removed Drag Handle */}
+      {/* Removed visible drag handle */}
 
       <Checkbox
         key={`${task.id}-${task.status}`}

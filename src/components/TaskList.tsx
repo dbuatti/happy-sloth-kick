@@ -15,7 +15,6 @@ import {
   DragStartEvent,
   DragOverlay,
   UniqueIdentifier,
-  DragOverEvent,
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -29,6 +28,7 @@ import SortableSectionHeader from './SortableSectionHeader';
 import TaskForm from './TaskForm';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
+import TaskItem from './TaskItem';
 
 interface TaskListProps {
   tasks: Task[];
@@ -129,10 +129,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     }
   };
 
-  const handleDragOver = (_event: DragOverEvent) => {
-    // No specific logic needed here for now, but required by DndContext
-  };
-
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
 
@@ -208,7 +204,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={[...allSortableSections.map(s => s.id)]} strategy={verticalListSortingStrategy}>
@@ -325,7 +320,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                     isOverlay={true}
                   />
                 ) : (
-                  <SortableTaskItem
+                  <TaskItem
                     task={activeItemData as Task}
                     onStatusChange={async () => {}}
                     onDelete={() => {}}
@@ -337,8 +332,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                     currentDate={currentDate}
                     onMoveUp={async () => {}}
                     onMoveDown={async () => {}}
-                    level={0}
-                    allTasks={tasks}
                     isOverlay={true}
                   />
                 )
