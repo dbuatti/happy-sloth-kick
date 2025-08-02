@@ -117,6 +117,9 @@ const DailyTasksV3: React.FC = () => {
             setPriorityFilter={setPriorityFilter}
             sectionFilter={sectionFilter}
             setSectionFilter={setSectionFilter}
+            nextAvailableTask={nextAvailableTask}
+            updateTask={updateTask}
+            onOpenOverview={handleOpenOverview}
           />
 
           {/* Main Task List Card */}

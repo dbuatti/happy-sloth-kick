@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, ListTodo, Brain, CheckCircle2, Clock } from 'lucide-react';
+import { Plus, ListTodo, Brain, CheckCircle2, Clock, Target, Edit } from 'lucide-react';
 import DateNavigator from '@/components/DateNavigator';
 import TaskFilter from '@/components/TaskFilter';
 import { cn } from '@/lib/utils';
@@ -10,6 +10,7 @@ import { showError, showLoading, dismissToast } from '@/utils/toast';
 import { suggestTaskDetails } from '@/integrations/supabase/api';
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
 import { isBefore, isSameDay, parseISO } from 'date-fns';
+import { useSound } from '@/context/SoundContext'; // Import useSound
 
 interface DailyTasksHeaderProps {
   currentDate: Date;
@@ -31,6 +32,9 @@ interface DailyTasksHeaderProps {
   setPriorityFilter: (value: string) => void;
   sectionFilter: string;
   setSectionFilter: (value: string) => void;
+  nextAvailableTask: Task | null; // New prop
+  updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>; // New prop
+  onOpenOverview: (task: Task) => void; // New prop
 }
 
 const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
@@ -51,8 +55,12 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   setPriorityFilter,
   sectionFilter,
   setSectionFilter,
+  nextAvailableTask, // Destructure new prop
+  updateTask, // Destructure new prop
+  onOpenOverview, // Destructure new prop
 }) => {
   const { dailyTaskCount } = useDailyTaskCount();
+  const { playSound } = useSound(); // Use useSound hook
   const [quickAddTaskDescription, setQuickAddTaskDescription] = useState('');
   const quickAddInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -141,17 +149,34 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
     };
   }, []);
 
+  const getPriorityDotColor = (priority: string) => {
+    switch (priority) {
+      case 'urgent': return 'bg-priority-urgent';
+      case 'high': return 'bg-priority-high';
+      case 'medium': return 'bg-priority-medium';
+      case 'low': return 'bg-priority-low';
+      default: return 'bg-gray-500';
+    }
+  };
+
+  const handleMarkNextTaskComplete = async () => {
+    if (nextAvailableTask) {
+      await updateTask(nextAvailableTask.id, { status: 'completed' });
+      playSound('success');
+    }
+  };
+
   return (
     <div className="flex flex-col bg-background sticky top-0 z-10 shadow-sm">
       {/* Top Bar: Task Count & Utility Buttons */}
       <div className="flex items-center justify-between px-4 pt-4">
-        {/* Left: Task Count */}
+        {/* Left: Total Task Count */}
         <div className="flex items-center gap-2">
           <ListTodo className="h-6 w-6 text-primary" />
           <span className="text-2xl font-bold">{dailyTaskCount}</span>
         </div>
 
-        {/* Right: Utility Buttons */}
+        {/* Right: Focus Mode Button */}
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
@@ -174,7 +199,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         setCurrentDate={setCurrentDate}
       />
 
-      {/* Today's Summary (replaces Status Badges and TodayProgressCard) */}
+      {/* Today's Summary (Pending, Completed, Overdue) */}
       <div className="flex items-center justify-center gap-4 px-4 pb-3 text-sm text-muted-foreground">
         <div className="flex items-center gap-1">
           <ListTodo className="h-4 w-4 text-foreground" />
@@ -189,6 +214,35 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
             <Clock className="h-4 w-4 text-destructive" />
             <span className="font-semibold text-destructive">{overdueCount} overdue</span>
           </div>
+        )}
+      </div>
+
+      {/* NEW: Next Up Task Display */}
+      <div className="bg-card p-4 mx-4 rounded-lg shadow-md mb-4 flex flex-col items-center text-center">
+        <h3 className="text-lg font-bold text-primary mb-2 flex items-center gap-2">
+          <Target className="h-5 w-5" /> Your Next Task
+        </h3>
+        {nextAvailableTask ? (
+          <div className="w-full space-y-3">
+            <div className="flex items-center justify-center gap-2">
+              <div className={cn("w-3 h-3 rounded-full flex-shrink-0", getPriorityDotColor(nextAvailableTask.priority))} />
+              <p className="text-xl font-semibold text-foreground line-clamp-2">
+                {nextAvailableTask.description}
+              </p>
+            </div>
+            <div className="flex justify-center space-x-2">
+              <Button onClick={handleMarkNextTaskComplete} className="h-9">
+                <CheckCircle2 className="mr-2 h-4 w-4" /> Mark Done
+              </Button>
+              <Button variant="outline" onClick={() => onOpenOverview(nextAvailableTask)} className="h-9">
+                <Edit className="mr-2 h-4 w-4" /> Details
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <p className="text-muted-foreground text-sm">
+            No pending tasks for today. Time to relax or add new ones!
+          </p>
         )}
       </div>
 
