@@ -32,9 +32,7 @@ const DailyTasksV3: React.FC = () => {
   const { user } = useAuth();
   const isMobile = useIsMobile();
 
-  // Moved useDailyTaskCount up to be before useTasks
-  const { dailyTaskCount } = useDailyTaskCount();
-
+  // Call useTasks first
   const {
     tasks,
     filteredTasks,
@@ -69,6 +67,9 @@ const DailyTasksV3: React.FC = () => {
     sectionFilter,
     setSectionFilter,
   } = useTasks({ currentDate, setCurrentDate, viewMode: 'daily' });
+
+  // Then call useDailyTaskCount
+  const { dailyTaskCount } = useDailyTaskCount();
 
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
