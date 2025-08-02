@@ -10,7 +10,7 @@ import { showError, showLoading, dismissToast } from '@/utils/toast';
 import { suggestTaskDetails } from '@/integrations/supabase/api';
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
 import { isBefore, isSameDay, parseISO } from 'date-fns';
-import { useSound } from '@/context/SoundContext'; // Import useSound
+import { useSound } from '@/context/SoundContext';
 
 interface DailyTasksHeaderProps {
   currentDate: Date;
@@ -32,9 +32,9 @@ interface DailyTasksHeaderProps {
   setPriorityFilter: (value: string) => void;
   sectionFilter: string;
   setSectionFilter: (value: string) => void;
-  nextAvailableTask: Task | null; // New prop
-  updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>; // New prop
-  onOpenOverview: (task: Task) => void; // New prop
+  nextAvailableTask: Task | null;
+  updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
+  onOpenOverview: (task: Task) => void;
 }
 
 const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
@@ -55,12 +55,12 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   setPriorityFilter,
   sectionFilter,
   setSectionFilter,
-  nextAvailableTask, // Destructure new prop
-  updateTask, // Destructure new prop
-  onOpenOverview, // Destructure new prop
+  nextAvailableTask,
+  updateTask,
+  onOpenOverview,
 }) => {
   const { dailyTaskCount } = useDailyTaskCount();
-  const { playSound } = useSound(); // Use useSound hook
+  const { playSound } = useSound();
   const [quickAddTaskDescription, setQuickAddTaskDescription] = useState('');
   const quickAddInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -69,7 +69,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
     const focusModeSectionIds = new Set(sections.filter(s => s.include_in_focus_mode).map(s => s.id));
 
     const focusTasks = filteredTasks.filter(t =>
-      t.parent_task_id === null && // Only count top-level tasks
+      t.parent_task_id === null &&
       (t.section_id === null || focusModeSectionIds.has(t.section_id))
     );
 
@@ -218,29 +218,29 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
       </div>
 
       {/* NEW: Next Up Task Display */}
-      <div className="bg-card p-4 mx-4 rounded-lg shadow-md mb-4 flex flex-col items-center text-center">
-        <h3 className="text-lg font-bold text-primary mb-2 flex items-center gap-2">
-          <Target className="h-5 w-5" /> Your Next Task
+      <div className="bg-card p-6 mx-4 rounded-lg shadow-lg mb-4 flex flex-col items-center text-center">
+        <h3 className="text-xl font-bold text-primary mb-3 flex items-center gap-2">
+          <Target className="h-6 w-6" /> Your Next Task
         </h3>
         {nextAvailableTask ? (
-          <div className="w-full space-y-3">
-            <div className="flex items-center justify-center gap-2">
-              <div className={cn("w-3 h-3 rounded-full flex-shrink-0", getPriorityDotColor(nextAvailableTask.priority))} />
-              <p className="text-xl font-semibold text-foreground line-clamp-2">
+          <div className="w-full space-y-4">
+            <div className="flex items-center justify-center gap-3">
+              <div className={cn("w-4 h-4 rounded-full flex-shrink-0", getPriorityDotColor(nextAvailableTask.priority))} />
+              <p className="text-3xl font-extrabold text-foreground leading-tight line-clamp-2">
                 {nextAvailableTask.description}
               </p>
             </div>
-            <div className="flex justify-center space-x-2">
-              <Button onClick={handleMarkNextTaskComplete} className="h-9">
-                <CheckCircle2 className="mr-2 h-4 w-4" /> Mark Done
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button onClick={handleMarkNextTaskComplete} className="h-11 px-6 text-lg">
+                <CheckCircle2 className="mr-2 h-5 w-5" /> Mark Done
               </Button>
-              <Button variant="outline" onClick={() => onOpenOverview(nextAvailableTask)} className="h-9">
-                <Edit className="mr-2 h-4 w-4" /> Details
+              <Button variant="outline" onClick={() => onOpenOverview(nextAvailableTask)} className="h-11 px-6 text-lg">
+                <Edit className="mr-2 h-5 w-5" /> Details
               </Button>
             </div>
           </div>
         ) : (
-          <p className="text-muted-foreground text-sm">
+          <p className="text-muted-foreground text-base py-4">
             No pending tasks for today. Time to relax or add new ones!
           </p>
         )}
@@ -261,10 +261,10 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
               placeholder='Quick add a task — press "/" to focus, Enter to add'
               value={quickAddTaskDescription}
               onChange={(e) => setQuickAddTaskDescription(e.target.value)}
-              className="flex-1 h-9 text-sm"
+              className="flex-1 h-10 text-base"
             />
-            <Button type="submit" className="whitespace-nowrap h-9 text-sm">
-              <Plus className="mr-1 h-3 w-3" /> Add
+            <Button type="submit" className="whitespace-nowrap h-10 text-base">
+              <Plus className="mr-1 h-4 w-4" /> Add
             </Button>
           </div>
         </form>
