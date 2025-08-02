@@ -237,7 +237,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={[...allSortableSections.map(s => s.id)]} strategy={verticalListSortingStrategy}>
-            {allSortableSections.map((currentSection: TaskSection) => {
+            {allSortableSections.map((currentSection: TaskSection, index) => {
               const isExpanded = expandedSections[currentSection.id] !== false;
 
               // Section-local top-level tasks
@@ -249,7 +249,13 @@ const TaskList: React.FC<TaskListProps> = (props) => {
               const sectionItemIds = topLevelTasksInSection.map(t => t.id);
 
               return (
-                <div key={currentSection.id} className="mb-1.5">
+                <div
+                  key={currentSection.id}
+                  className={cn(
+                    "mb-1.5",
+                    index < allSortableSections.length - 1 && "border-b border-border pb-3" // Add border-bottom and padding-bottom
+                  )}
+                >
                   <SortableSectionHeader
                     section={currentSection}
                     sectionTasksCount={topLevelTasksInSection.length}
