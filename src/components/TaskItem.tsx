@@ -120,7 +120,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
       <div 
         className="flex-1 min-w-0 cursor-pointer"
         onClick={() => onOpenOverview(task)}
-        data-no-dnd="true" // Add this to prevent DND interference on click
+        // data-no-dnd="true" // Removed this as it's now on the parent SortableTaskItem
       >
         <div className="flex items-center gap-2"> {/* New flex container for inline elements */}
           {/* Priority Dot */}
@@ -232,12 +232,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
               className="h-7 w-7 p-0" // Adjusted button size
               onClick={(e) => e.stopPropagation()}
               aria-label="More options"
+              data-no-dnd="true" // Ensure this is marked as non-draggable
             >
               <span className="sr-only">Open menu</span>
               <MoreHorizontal className="h-4 w-4" /> {/* Adjusted icon size */}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" data-no-dnd="true"> {/* Add this to prevent DND interference */}
+          <DropdownMenuContent align="end" data-no-dnd="true">
             <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onOpenOverview(task); }}>
               <Edit className="mr-2 h-3.5 w-3.5" /> View Details
             </DropdownMenuItem>

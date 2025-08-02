@@ -61,13 +61,13 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         "flex items-center", // Ensure vertical alignment of drag handle and TaskItem content
         "cursor-grab active:cursor-grabbing" // Apply cursor to the whole item
       )}
+      data-no-dnd="true" // Mark the entire list item as non-draggable for click-to-open
     >
       <button
         className="flex-shrink-0 py-2 px-1.5 text-muted-foreground opacity-100 group-hover:opacity-100 transition-opacity duration-200 cursor-grab active:cursor-grabbing" // Always visible
         aria-label="Drag to reorder task"
         {...attributes} // Apply attributes to the drag handle
         {...listeners} // Apply listeners to the drag handle
-        data-no-dnd="true" // Ensure this button is the only drag handle
       >
         <GripVertical className="h-4 w-4" /> {/* Adjusted size */}
       </button>
