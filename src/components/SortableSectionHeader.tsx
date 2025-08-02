@@ -103,7 +103,8 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
         isOverlay ? "cursor-grabbing" : "hover:shadow-sm",
       )}
       {...(attributes || {})}
-      onClick={() => !isOverlay && toggleSection(section.id)} // Toggle on main div click
+      // Conditionally apply onClick for toggle: only if not in overlay and not in editing mode
+      onClick={!isOverlay && !isEditingLocal ? () => toggleSection(section.id) : undefined}
     >
       {/* Removed DragHandleIcon button */}
       <div className="flex-1 flex items-center justify-between">
@@ -138,24 +139,14 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
           ) : (
             <>
               <h3 
-                className="text-lg font-bold truncate flex-1"
+                className="text-lg font-bold truncate cursor-pointer flex-1"
+                onClick={handleStartEdit} // This h3 click starts edit and stops propagation
               >
                 {section.name}
               </h3>
               <span className="text-lg font-bold text-muted-foreground ml-1 flex-shrink-0">
                 ({sectionTasksCount})
               </span>
-              {/* NEW: Explicit Edit button */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 p-0 ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                onClick={handleStartEdit} // This button now triggers edit
-                data-no-dnd="true"
-                aria-label={`Edit ${section.name}`}
-              >
-                <Edit className="h-4 w-4" />
-              </Button>
             </>
           )}
         </div>
