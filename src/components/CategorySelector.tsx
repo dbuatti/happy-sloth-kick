@@ -106,9 +106,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
               return (
                 <SelectItem key={category.id} value={category.id}>
                   <div className="flex items-center gap-2">
-                    <div className={cn("w-3.5 h-3.5 rounded-full flex items-center justify-center border", colorProps.backgroundClass, colorProps.dotBorder)}>
-                      <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: colorProps.dotColor }}></div>
-                    </div>
+                    <div className="w-3.5 h-3.5 rounded-full flex items-center justify-center border" style={{ backgroundColor: colorProps.dotColor }}></div>
                     {category.name}
                   </div>
                 </SelectItem>
@@ -137,9 +135,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
                       return (
                         <li key={category.id} className="flex items-center justify-between p-2 border rounded-md">
                           <div className="flex items-center gap-2">
-                            <div className={cn("w-3.5 h-3.5 rounded-full flex items-center justify-center border", colorProps.backgroundClass, colorProps.dotBorder)}>
-                              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: colorProps.dotColor }}></div>
-                            </div>
+                            <div className="w-3.5 h-3.5 rounded-full flex items-center justify-center border" style={{ backgroundColor: colorProps.dotColor }}></div>
                             <span>{category.name}</span>
                           </div>
                           <Button

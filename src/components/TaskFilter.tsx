@@ -82,7 +82,7 @@ const TaskFilter: React.FC<TaskFilterProps> = ({
   const isAnyFilterActive = searchFilter !== '' || statusFilter !== 'all' || categoryFilter !== 'all' || priorityFilter !== 'all' || sectionFilter !== 'all';
 
   return (
-    <div className="flex flex-col sm:flex-row gap-3 mb-4"> {/* Adjusted gap and margin-bottom */}
+    <div className="flex flex-col sm:flex-row gap-3 mb-4">
       <div className="relative flex-1">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
         <Input
@@ -90,16 +90,16 @@ const TaskFilter: React.FC<TaskFilterProps> = ({
           placeholder="Search tasks..."
           value={searchFilter}
           onChange={handleSearchChange}
-          className="pl-10 h-9" // Adjusted height
+          className="pl-10 h-9"
         />
         {searchFilter && (
           <Button
             variant="ghost"
             size="sm"
-            className="absolute right-2 top-1/2 h-7 w-7 -translate-y-1/2 p-0" // Adjusted size
+            className="absolute right-2 top-1/2 h-7 w-7 -translate-y-1/2 p-0"
             onClick={handleClearSearch}
           >
-            <X className="h-3.5 w-3.5" /> {/* Adjusted icon size */}
+            <X className="h-3.5 w-3.5" />
           </Button>
         )}
       </div>
@@ -107,20 +107,20 @@ const TaskFilter: React.FC<TaskFilterProps> = ({
       <div className="flex gap-2">
         <Popover open={showAdvanced} onOpenChange={setShowAdvanced}>
           <PopoverTrigger asChild>
-            <Button variant="outline" className="gap-2 h-9"> {/* Adjusted height */}
+            <Button variant="outline" className="gap-2 h-9">
               <Filter className="h-4 w-4" />
               Filter
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-80 p-4"> {/* Adjusted padding */}
+          <PopoverContent className="w-80 p-4">
             <div className="grid gap-4">
               <div className="space-y-2">
                 <Label>Status</Label>
                 <Select value={statusFilter} onValueChange={handleStatusChange}>
-                  <SelectTrigger className="h-9"> {/* Adjusted height */}
+                  <SelectTrigger className="h-9">
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
-                  <SelectContent className="z-[9999]"> {/* Add z-index here */}
+                  <SelectContent className="z-[9999]">
                     <SelectItem value="all">All</SelectItem>
                     <SelectItem value="to-do">To Do</SelectItem>
                     <SelectItem value="completed">Completed</SelectItem>
@@ -133,10 +133,10 @@ const TaskFilter: React.FC<TaskFilterProps> = ({
               <div className="space-y-2">
                 <Label>Category</Label>
                 <Select value={categoryFilter} onValueChange={handleCategoryChange}>
-                  <SelectTrigger className="h-9"> {/* Adjusted height */}
+                  <SelectTrigger className="h-9">
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
-                  <SelectContent className="z-[9999]"> {/* Add z-index here */}
+                  <SelectContent className="z-[9999]">
                     <SelectItem value="all">All</SelectItem>
                     {/* Removed hardcoded "general" as it's now included in allCategories */}
                     {allCategories.map(cat => (
@@ -151,10 +151,10 @@ const TaskFilter: React.FC<TaskFilterProps> = ({
               <div className="space-y-2">
                 <Label>Priority</Label>
                 <Select value={priorityFilter} onValueChange={handlePriorityChange}>
-                  <SelectTrigger className="h-9"> {/* Adjusted height */}
+                  <SelectTrigger className="h-9">
                     <SelectValue placeholder="Select priority" />
                   </SelectTrigger>
-                  <SelectContent className="z-[9999]"> {/* Add z-index here */}
+                  <SelectContent className="z-[9999]">
                     <SelectItem value="all">All</SelectItem>
                     <SelectItem value="low">Low</SelectItem>
                     <SelectItem value="medium">Medium</SelectItem>
@@ -167,10 +167,10 @@ const TaskFilter: React.FC<TaskFilterProps> = ({
               <div className="space-y-2">
                 <Label>Section</Label>
                 <Select value={sectionFilter} onValueChange={handleSectionChange}>
-                  <SelectTrigger className="h-9"> {/* Adjusted height */}
+                  <SelectTrigger className="h-9">
                     <SelectValue placeholder="Select section" />
                   </SelectTrigger>
-                  <SelectContent className="z-[9999]"> {/* Add z-index here */}
+                  <SelectContent className="z-[9999]">
                     <SelectItem value="all">All</SelectItem>
                     <SelectItem value="no-section">No Section</SelectItem>
                     {sections.map(section => (
@@ -185,7 +185,7 @@ const TaskFilter: React.FC<TaskFilterProps> = ({
           </PopoverContent>
         </Popover>
         {isAnyFilterActive && (
-          <Button variant="outline" onClick={clearAllFilters} className="gap-2 h-9"> {/* Adjusted height */}
+          <Button variant="outline" onClick={clearAllFilters} className="gap-2 h-9">
             <ListRestart className="h-4 w-4" />
             Clear Filters
           </Button>

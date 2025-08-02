@@ -326,7 +326,7 @@ const MyHub: React.FC = () => {
                             type="text"
                             value={firstName}
                             onChange={(e) => setFirstName(e.target.value)}
-                            className="mt-1 block w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            className="mt-1 block w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 h-9"
                           />
                         </div>
                         <div>
@@ -336,16 +336,16 @@ const MyHub: React.FC = () => {
                             type="text"
                             value={lastName}
                             onChange={(e) => setLastName(e.target.value)}
-                            className="mt-1 block w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            className="mt-1 block w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 h-9"
                           />
                         </div>
-                        <Button type="submit" className="w-full" disabled={isSavingProfile}>
+                        <Button type="submit" className="w-full h-9" disabled={isSavingProfile}>
                           {isSavingProfile ? 'Saving...' : 'Update Profile'}
                         </Button>
                         <Button
                           type="button"
                           variant="outline"
-                          className="w-full mt-4"
+                          className="w-full mt-4 h-9"
                           onClick={handleSignOut}
                           disabled={isSavingProfile}
                         >
@@ -371,7 +371,7 @@ const MyHub: React.FC = () => {
                         id="dark-mode-toggle"
                         variant="outline"
                         size="icon"
-                        className="h-8 w-8"
+                        className="h-9 w-9"
                         onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                         aria-label="Toggle dark mode"
                       >
@@ -409,7 +409,7 @@ const MyHub: React.FC = () => {
                           id="date"
                           variant={"outline"}
                           className={cn(
-                            "w-full sm:w-[300px] justify-start text-left font-normal", // Adjusted width
+                            "w-full sm:w-[300px] justify-start text-left font-normal h-9",
                             !analyticsDateRange?.from && "text-muted-foreground"
                           )}
                         >

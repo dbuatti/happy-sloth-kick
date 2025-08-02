@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/Progress";
-import { Play, Pause, RefreshCcw, CheckCircle2, SkipForward, Wind, Brain, Settings, ListTodo } from 'lucide-react';
+import { Play, Pause, RefreshCcw, CheckCircle2, Edit, Target, ListTodo, Clock, Brain, SkipForward } from 'lucide-react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useTasks, Task } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
@@ -150,7 +150,7 @@ const FocusMode: React.FC = () => {
                     className="absolute w-full h-full rounded-full bg-muted"
                     indicatorClassName={cn(
                       "transition-all duration-1000 ease-linear",
-                      isFocusPhase ? "bg-green-500" : "bg-blue-500"
+                      isFocusPhase ? "bg-primary" : "bg-accent"
                     )}
                   />
                   <div className="relative z-10 text-6xl font-bold text-primary-foreground">
@@ -167,16 +167,16 @@ const FocusMode: React.FC = () => {
                   size="lg"
                   onClick={isRunning ? pauseTimer : startTimer}
                   className={cn(
-                    "w-28",
-                    isRunning ? "bg-yellow-500 hover:bg-yellow-600" : "bg-green-600 hover:bg-green-700"
+                    "w-28 h-9",
+                    isRunning ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90"
                   )}
                 >
                   {isRunning ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
                 </Button>
-                <Button size="lg" variant="outline" onClick={resetTimer} className="w-28">
+                <Button size="lg" variant="outline" onClick={resetTimer} className="w-28 h-9">
                   <RefreshCcw className="h-6 w-6" /> Reset
                 </Button>
-                <Button size="lg" variant="outline" onClick={skipPhase} className="w-28">
+                <Button size="lg" variant="outline" onClick={skipPhase} className="w-28 h-9">
                   <SkipForward className="h-6 w-6" /> Skip
                 </Button>
               </div>
@@ -185,7 +185,7 @@ const FocusMode: React.FC = () => {
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">Focus Duration:</p>
                   <Select value={(focusDuration / 60).toString()} onValueChange={(val) => setFocusDuration(parseInt(val) * 60)} disabled={isRunning}>
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger className="w-full h-9">
                       <SelectValue placeholder="Focus time" />
                     </SelectTrigger>
                     <SelectContent>
@@ -200,7 +200,7 @@ const FocusMode: React.FC = () => {
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">Short Break:</p>
                   <Select value={(breakDuration / 60).toString()} onValueChange={(val) => setBreakDuration(parseInt(val) * 60)} disabled={isRunning}>
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger className="w-full h-9">
                       <SelectValue placeholder="Short break" />
                     </SelectTrigger>
                     <SelectContent>
@@ -212,7 +212,7 @@ const FocusMode: React.FC = () => {
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">Long Break:</p>
                   <Select value={(longBreakDuration / 60).toString()} onValueChange={(val) => setLongBreakDuration(parseInt(val) * 60)} disabled={isRunning}>
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger className="w-full h-9">
                       <SelectValue placeholder="Long break" />
                     </SelectTrigger>
                     <SelectContent>

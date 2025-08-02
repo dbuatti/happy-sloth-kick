@@ -104,7 +104,7 @@ const Meditation: React.FC = () => {
                 "bg-primary"
               )}
             />
-            <div className="relative z-10 text-5xl font-bold text-primary-foreground"> {/* Changed text-foreground to text-primary-foreground */}
+            <div className="relative z-10 text-5xl font-bold text-primary-foreground">
               {formatTime(timeRemaining)}
             </div>
           </div>
@@ -114,14 +114,14 @@ const Meditation: React.FC = () => {
               size="lg"
               onClick={isRunning ? pauseTimer : startTimer}
               className={cn(
-                "w-28 h-10", // Adjusted size
+                "w-28 h-9",
                 isRunning ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90"
               )}
               disabled={timeRemaining === 0 && isSessionActive}
             >
               {isRunning ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
             </Button>
-            <Button size="lg" variant="outline" onClick={resetTimer} className="w-28 h-10"> {/* Adjusted size */}
+            <Button size="lg" variant="outline" onClick={resetTimer} className="w-28 h-9">
               <RotateCcw className="h-6 w-6" />
             </Button>
           </div>
@@ -129,7 +129,7 @@ const Meditation: React.FC = () => {
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground">Select Duration:</p>
             <Select value={(duration / 60).toString()} onValueChange={handleDurationChange} disabled={isRunning}>
-              <SelectTrigger className="w-full max-w-[180px] mx-auto h-9"> {/* Adjusted height */}
+              <SelectTrigger className="w-full max-w-[180px] mx-auto h-9">
                 <SelectValue placeholder="Select duration" />
               </SelectTrigger>
               <SelectContent>

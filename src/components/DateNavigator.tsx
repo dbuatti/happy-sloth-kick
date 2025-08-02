@@ -19,7 +19,7 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({ currentDate, onPreviousDa
 
   return (
     <div className="rounded-lg p-2 bg-primary/5 border border-border shadow-sm mb-3 flex items-center justify-between">
-      <Button variant="ghost" size="icon" onClick={onPreviousDay} className="h-8 w-8 rounded-full hover:bg-primary/10 text-primary">
+      <Button variant="ghost" size="icon" onClick={onPreviousDay} className="h-9 w-9 rounded-full hover:bg-primary/10 text-primary">
         <ChevronLeft className="h-5 w-5" />
       </Button>
 
@@ -32,7 +32,7 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({ currentDate, onPreviousDa
             <Button
               variant="ghost"
               className={cn(
-                "justify-start text-left font-medium text-primary hover:bg-primary/10 h-8 px-2",
+                "justify-start text-left font-medium text-primary hover:bg-primary/10 h-9 px-2",
                 !currentDate && "text-muted-foreground"
               )}
             >
@@ -54,13 +54,13 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({ currentDate, onPreviousDa
           </PopoverContent>
         </Popover>
         {!isToday && (
-          <Button variant="secondary" size="sm" onClick={onGoToToday} className="h-8 px-3">
+          <Button variant="secondary" size="sm" onClick={onGoToToday} className="h-9 px-3">
             Today
           </Button>
         )}
       </div>
 
-      <Button variant="ghost" size="icon" onClick={onNextDay} className="h-8 w-8 rounded-full hover:bg-primary/10 text-primary">
+      <Button variant="ghost" size="icon" onClick={onNextDay} className="h-9 w-9 rounded-full hover:bg-primary/10 text-primary">
         <ChevronRight className="h-5 w-5" />
       </Button>
     </div>

@@ -354,7 +354,7 @@ const DailyTasksV3: React.FC = () => {
                     size="icon"
                     onClick={() => setIsFocusPanelOpen(true)}
                     aria-label="Open focus tools"
-                    className="ml-2 h-8 w-8"
+                    className="ml-2 h-9 w-9"
                   >
                     <Brain className="h-5 w-5" />
                   </Button>
@@ -387,7 +387,7 @@ const DailyTasksV3: React.FC = () => {
               {/* AI Task Parser Section */}
               <Collapsible open={isAIParserOpen} onOpenChange={setIsAIParserOpen} className="mb-4">
                 <CollapsibleTrigger asChild>
-                  <Button variant="default" className="w-full justify-between h-10">
+                  <Button variant="default" className="w-full justify-between h-9">
                     <span className="flex items-center gap-2 text-base font-semibold">
                       <Sparkles className="h-5 w-5 text-primary-foreground" /> AI Task Parser
                     </span>

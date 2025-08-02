@@ -269,7 +269,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
         <div className="flex gap-1.5">
           <Input
             id="task-description"
-            placeholder="Task description (e.g., 'Buy groceries by tomorrow high priority')"
+            placeholder="Task description (e.g., 'Buy groceries by tomorrow high priority at 6pm personal')"
             {...register('description')}
             onKeyDown={handleKeyDown}
             disabled={isSaving || isSuggesting}
@@ -451,7 +451,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
           {...register('notes')}
           rows={2}
           disabled={isSaving || isSuggesting}
-          className="min-h-[60px]" // Ensure minimum height for textarea
+          className="min-h-[60px]"
         />
         {errors.notes && <p className="text-destructive text-sm mt-1">{errors.notes.message}</p>}
       </div>

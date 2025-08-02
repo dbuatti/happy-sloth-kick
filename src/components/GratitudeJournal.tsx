@@ -144,9 +144,9 @@ const GratitudeJournal: React.FC = () => {
             onChange={(e) => setNewEntry(e.target.value)}
             rows={3}
             disabled={isSaving}
-            className="min-h-[80px]" // Adjusted min-height
+            className="min-h-[80px]"
           />
-          <Button onClick={handleAddEntry} className="w-full h-9" disabled={isSaving || !newEntry.trim()}> {/* Adjusted height */}
+          <Button onClick={handleAddEntry} className="w-full h-9" disabled={isSaving || !newEntry.trim()}>
             <Plus className="mr-2 h-4 w-4" /> {isSaving ? 'Saving...' : 'Add Entry'}
           </Button>
         </div>

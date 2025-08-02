@@ -62,14 +62,14 @@ const ProjectTrackerSettings: React.FC = () => {
                 onKeyDown={(e) => e.key === 'Enter' && handleSaveTitle()}
                 autoFocus
                 disabled={isSavingTitle}
-                className="h-9" // Adjusted height
+                className="h-9"
               />
             </div>
             <div className="flex gap-2">
-              <Button onClick={handleSaveTitle} disabled={isSavingTitle || !tempSectionTitle.trim()} className="h-9"> {/* Adjusted height */}
+              <Button onClick={handleSaveTitle} disabled={isSavingTitle || !tempSectionTitle.trim()} className="h-9">
                 {isSavingTitle ? 'Saving...' : 'Save Title'}
               </Button>
-              <Button variant="outline" onClick={() => setIsEditingTitle(false)} disabled={isSavingTitle} className="h-9"> {/* Adjusted height */}
+              <Button variant="outline" onClick={() => setIsEditingTitle(false)} disabled={isSavingTitle} className="h-9">
                 Cancel
               </Button>
             </div>
@@ -77,7 +77,7 @@ const ProjectTrackerSettings: React.FC = () => {
         ) : (
           <div className="flex items-center justify-between">
             <p className="text-lg font-medium">{sectionTitle}</p>
-            <Button variant="outline" size="sm" onClick={() => setIsEditingTitle(true)} className="h-9"> {/* Adjusted height */}
+            <Button variant="outline" size="sm" onClick={() => setIsEditingTitle(true)} className="h-9">
               <Edit className="mr-2 h-4 w-4" /> Edit
             </Button>
           </div>

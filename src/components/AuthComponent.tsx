@@ -52,7 +52,7 @@ const AuthComponent = () => {
         <Button
           type="button"
           variant="outline"
-          className="w-full h-10" // Adjusted height
+          className="w-full h-9"
           onClick={handleGoogleSignIn}
         >
           <GoogleIcon className="mr-2 h-4 w-4" />
@@ -81,7 +81,7 @@ const AuthComponent = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="h-9" // Adjusted height
+              className="h-9"
             />
           </div>
           <div>
@@ -92,10 +92,10 @@ const AuthComponent = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="h-9" // Adjusted height
+              className="h-9"
             />
           </div>
-          <Button type="submit" className="w-full h-9"> {/* Adjusted height */}
+          <Button type="submit" className="w-full h-9">
             {isSignUp ? 'Sign Up' : 'Sign In'}
           </Button>
         </div>

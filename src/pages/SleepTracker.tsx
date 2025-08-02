@@ -98,7 +98,7 @@ const SleepTracker: React.FC = () => {
                     value={bedTime}
                     onChange={(e) => setBedTime(e.target.value)}
                     disabled={isSaving}
-                    className="h-9" // Adjusted height
+                    className="h-9"
                   />
                 </div>
                 <div className="space-y-2">
@@ -111,7 +111,7 @@ const SleepTracker: React.FC = () => {
                     value={lightsOffTime}
                     onChange={(e) => setLightsOffTime(e.target.value)}
                     disabled={isSaving}
-                    className="h-9" // Adjusted height
+                    className="h-9"
                   />
                 </div>
                 <div className="space-y-2">
@@ -124,7 +124,7 @@ const SleepTracker: React.FC = () => {
                     value={wakeUpTime}
                     onChange={(e) => setWakeUpTime(e.target.value)}
                     disabled={isSaving}
-                    className="h-9" // Adjusted height
+                    className="h-9"
                   />
                 </div>
                 <div className="space-y-2">
@@ -137,10 +137,10 @@ const SleepTracker: React.FC = () => {
                     value={getOutOfBedTime}
                     onChange={(e) => setGetOutOfBedTime(e.target.value)}
                     disabled={isSaving}
-                    className="h-9" // Adjusted height
+                    className="h-9"
                   />
                 </div>
-                <Button onClick={handleSubmit} className="w-full h-9" disabled={isSaving}> {/* Adjusted height */}
+                <Button onClick={handleSubmit} className="w-full h-9" disabled={isSaving}>
                   {isSaving ? 'Saving...' : 'Save Sleep Record'}
                 </Button>
               </div>

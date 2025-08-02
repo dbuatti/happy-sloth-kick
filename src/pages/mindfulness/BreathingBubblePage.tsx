@@ -148,7 +148,7 @@ const BreathingBubblePage: React.FC = () => {
           <CardContent className="space-y-6">
             <div className="space-y-2">
               <Select value={selectedCycleName} onValueChange={setSelectedCycleName} disabled={isRunning}>
-                <SelectTrigger className="w-full max-w-[240px] mx-auto h-9"> {/* Adjusted height */}
+                <SelectTrigger className="w-full max-w-[240px] mx-auto h-9">
                   <SelectValue placeholder="Select breathing cycle" />
                 </SelectTrigger>
                 <SelectContent>
@@ -190,14 +190,14 @@ const BreathingBubblePage: React.FC = () => {
                 size="lg"
                 onClick={handleStartPause} // Corrected to use handleStartPause
                 className={cn(
-                  "w-28 h-10", // Adjusted size
+                  "w-28 h-9",
                   isRunning ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90"
                 )}
                 disabled={cyclePhases.length === 0}
               >
                 {isRunning ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
               </Button>
-              <Button size="lg" variant="outline" onClick={handleReset} className="w-28 h-10"> {/* Adjusted size */}
+              <Button size="lg" variant="outline" onClick={handleReset} className="w-28 h-9">
                 <RefreshCcw className="h-6 w-6" />
               </Button>
             </div>

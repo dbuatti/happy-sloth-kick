@@ -21,7 +21,7 @@ const MindfulnessToolCard: React.FC<MindfulnessToolCardProps> = ({ title, descri
       </CardHeader>
       <CardContent className="flex-grow flex flex-col justify-between">
         <p className="text-muted-foreground text-sm mb-4">{description}</p>
-        <Button asChild className="w-full">
+        <Button asChild className="w-full h-9">
           <Link to={link}>
             Explore <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
