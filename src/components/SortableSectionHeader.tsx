@@ -138,7 +138,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
           ) : (
             <>
               <h3 
-                className="text-base font-bold truncate cursor-pointer" // Removed flex-1 from h3
+                className="text-base font-bold truncate cursor-pointer flex-1" // Added flex-1 here
                 onClick={handleStartEdit} // Only h3 click starts edit
               >
                 {section.name}
