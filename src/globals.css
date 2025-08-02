@@ -30,8 +30,8 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 210 20% 80%; /* Adjusted for better contrast in light mode (medium gray) */
-    --input: 0 0% 100%; /* Match background for blended look */
+    --border: 210 10% 70%; /* Adjusted for better contrast in light mode (medium gray) */
+    --input: 0 0% 98%; /* Slightly off-white for input background */
     --ring: 222.2 84% 4.9%;
 
     /* New custom properties for softer status borders */
@@ -83,8 +83,8 @@
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 210 20% 30%; /* Adjusted for better contrast in dark mode (darker gray) */
-    --input: 220 20% 10%; /* Match background for blended look */
+    --border: 210 10% 40%; /* Adjusted for better contrast in dark mode (darker gray) */
+    --input: 220 20% 15%; /* Slightly lighter dark for input background */
     --ring: 212.7 26.8% 83.9%;
 
     /* New custom properties for softer status borders in dark mode */
@@ -126,12 +126,12 @@
     --destructive: 15 60% 55%;
     --destructive-foreground: 0 0% 100%;
     --border: 25 10% 90%;
-    --input: 25 10% 96%; /* Match background */
+    --input: 25 10% 98%; /* Slightly off-white for input background */
     --ring: 0 0% 20%;
     --border-status-due-today: 15 60% 55%;
     --border-status-overdue: 15 60% 55%;
     --status-completed: 180 35% 45%; /* Greenish primary */
-    --task-completed-bg: 25 10% 98%; /* Lighter background for completed tasks */
+    --task-completed-bg: 25 10% 98%; /* Lighter background for completed task */
     --priority-low: 180 35% 45%;
     --priority-medium: 25 50% 75%;
     --priority-high: 15 60% 55%;
@@ -154,12 +154,12 @@
     --destructive: 15 70% 70%;
     --destructive-foreground: 0 0% 100%;
     --border: 25 20% 30%;
-    --input: 25 20% 15%; /* Match background */
+    --input: 25 20% 20%; /* Slightly lighter dark for input background */
     --ring: 0 0% 80%;
     --border-status-due-today: 15 70% 70%;
     --border-status-overdue: 15 70% 70%;
     --status-completed: 180 40% 60%; /* Greenish primary */
-    --task-completed-bg: 25 20% 25%; /* Slightly darker background for completed tasks */
+    --task-completed-bg: 25 20% 25%; /* Slightly darker background for completed task */
     --priority-low: 180 40% 60%;
     --priority-medium: 25 60% 80%;
     --priority-high: 15 70% 70%;
@@ -182,7 +182,7 @@
     --destructive: 15 60% 55%;
     --destructive-foreground: 0 0% 100%;
     --border: 140 10% 90%;
-    --input: 140 10% 96%; /* Match background */
+    --input: 140 10% 98%; /* Slightly off-white for input background */
     --ring: 0 0% 20%;
     --border-status-due-today: 30 25% 65%;
     --border-status-overdue: 15 60% 55%;
@@ -210,7 +210,7 @@
     --destructive: 15 70% 70%;
     --destructive-foreground: 0 0% 100%;
     --border: 140 20% 30%;
-    --input: 140 20% 15%; /* Match background */
+    --input: 140 20% 20%; /* Slightly lighter dark for input background */
     --ring: 0 0% 80%;
     --border-status-due-today: 30 30% 70%;
     --border-status-overdue: 15 70% 70%;
@@ -240,7 +240,7 @@
     --destructive: 15 60% 55%;
     --destructive-foreground: 0 0% 100%;
     --border: 30 10% 92%;
-    --input: 30 10% 97%; /* Match background */
+    --input: 30 10% 98%; /* Slightly off-white for input background */
     --ring: 0 0% 30%;
     --border-status-due-today: 15 20% 70%;
     --border-status-overdue: 15 60% 55%;
@@ -270,7 +270,7 @@
     --destructive: 15 70% 70%;
     --destructive-foreground: 0 0% 100%;
     --border: 30 20% 35%;
-    --input: 30 20% 18%; /* Match background */
+    --input: 30 20% 23%; /* Slightly lighter dark for input background */
     --ring: 0 0% 85%;
     --border-status-due-today: 15 25% 75%;
     --border-status-overdue: 15 70% 70%;
@@ -298,7 +298,7 @@
     --destructive: 15 60% 55%;
     --destructive-foreground: 0 0% 100%;
     --border: 220 10% 88%;
-    --input: 220 10% 95%; /* Match background */
+    --input: 220 10% 98%; /* Slightly off-white for input background */
     --ring: 220 15% 35%;
     --border-status-due-today: 30 25% 65%;
     --border-status-overdue: 15 60% 55%;
@@ -326,7 +326,7 @@
     --destructive: 15 70% 70%;
     --destructive-foreground: 0 0% 100%;
     --border: 220 20% 35%;
-    --input: 220 20% 18%; /* Match background */
+    --input: 220 20% 23%; /* Slightly lighter dark for input background */
     --ring: 220 20% 85%;
     --border-status-due-today: 30 30% 70%;
     --border-status-overdue: 15 70% 70%;
@@ -356,7 +356,7 @@
     --destructive: 25 75% 65%;
     --destructive-foreground: 0 0% 100%;
     --border: 225 30% 20%;
-    --input: 225 30% 8%; /* Match background */
+    --input: 225 30% 15%; /* Slightly lighter dark for input background */
     --ring: 225 20% 85%;
     --border-status-due-today: 345 55% 70%;
     --border-status-overdue: 25 75% 65%;
@@ -386,7 +386,7 @@
     --destructive: 25 75% 65%;
     --destructive-foreground: 0 0% 100%;
     --border: 225 30% 20%;
-    --input: 225 30% 8%; /* Match background */
+    --input: 225 30% 15%; /* Slightly lighter dark for input background */
     --ring: 225 20% 85%;
     --border-status-due-today: 345 55% 70%;
     --border-status-overdue: 25 75% 65%;
@@ -416,7 +416,7 @@
     --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 100%;
     --border: 200 15% 90%;
-    --input: 200 15% 98%; /* Match background */
+    --input: 200 15% 98%; /* Slightly off-white for input background */
     --ring: 200 20% 20%;
     --border-status-due-today: 60 70% 45%;
     --border-status-overdue: 0 70% 55%;
@@ -446,7 +446,7 @@
     --destructive: 0 75% 60%;
     --destructive-foreground: 0 0% 100%;
     --border: 200 30% 25%;
-    --input: 200 25% 12%; /* Match background */
+    --input: 200 30% 20%; /* Slightly lighter dark for input background */
     --ring: 200 25% 85%;
     --border-status-due-today: 60 75% 55%;
     --border-status-overdue: 0 75% 60%;
@@ -476,7 +476,7 @@
     --destructive: 0 80% 60%;
     --destructive-foreground: 0 0% 100%;
     --border: 240 10% 85%;
-    --input: 240 20% 98%; /* Match background */
+    --input: 240 20% 98%; /* Slightly off-white for input background */
     --ring: 240 10% 20%;
     --border-status-due-today: 40 90% 60%;
     --border-status-overdue: 0 80% 60%;
@@ -506,7 +506,7 @@
     --destructive: 0 90% 70%;
     --destructive-foreground: 0 0% 100%;
     --border: 260 30% 25%;
-    --input: 260 40% 8%; /* Match background */
+    --input: 260 30% 18%; /* Slightly lighter dark for input background */
     --ring: 240 10% 85%;
     --border-status-due-today: 40 95% 70%;
     --border-status-overdue: 0 90% 70%;
@@ -536,7 +536,7 @@
     --destructive: 6 48% 31%;
     --destructive-foreground: 270 100% 98%;
     --border: 29 48% 81%;
-    --input: 29 70% 89%; /* Match background */
+    --input: 29 70% 92%; /* Slightly off-white for input background */
     --ring: 270 28% 36%;
     --border-status-due-today: 99 25% 30%;
     --border-status-overdue: 6 48% 31%;
@@ -566,7 +566,7 @@
     --destructive: 6 48% 46%;
     --destructive-foreground: 270 100% 98%;
     --border: 29 29% 26%;
-    --input: 29 29% 13%; /* Match background */
+    --input: 29 29% 18%; /* Slightly lighter dark for input background */
     --ring: 270 28% 54%;
     --border-status-due-today: 99 34% 38%;
     --border-status-overdue: 6 48% 46%;
@@ -596,7 +596,7 @@
     --destructive: 0 80% 60%;
     --destructive-foreground: 0 0% 100%;
     --border: 210 10% 85%;
-    --input: 210 20% 98%; /* Match background */
+    --input: 210 20% 98%; /* Slightly off-white for input background */
     --ring: 210 10% 20%;
     --border-status-due-today: 40 90% 60%;
     --border-status-overdue: 0 80% 60%;
@@ -626,7 +626,7 @@
     --destructive: 0 90% 70%;
     --destructive-foreground: 0 0% 100%;
     --border: 240 30% 25%;
-    --input: 240 40% 8%; /* Match background */
+    --input: 240 30% 18%; /* Slightly lighter dark for input background */
     --ring: 210 10% 85%;
     --border-status-due-today: 40 95% 70%;
     --border-status-overdue: 0 90% 70%;
