@@ -937,29 +937,45 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
   ]);
 
   const nextAvailableTask = useMemo(() => {
-    // Removed focusModeSectionIds filtering to include ALL tasks
+    // 1. Get all 'to-do', top-level tasks from the already filtered list.
     const relevantTasks = finalFilteredTasks.filter(task =>
       task.status === 'to-do' &&
-      task.parent_task_id === null // Only consider top-level tasks
+      task.parent_task_id === null
     );
 
-    // Sort by priority (urgent > high > medium > low), then by due date (earliest first), then by order
-    const sortedTasks = [...relevantTasks].sort((a, b) => {
-      const priorityOrder = { 'urgent': 0, 'high': 1, 'medium': 2, 'low': 3 };
-      const priorityA = priorityOrder[a.priority as keyof typeof priorityOrder] ?? 99;
-      const priorityB = priorityOrder[b.priority as keyof typeof priorityOrder] ?? 99;
-
-      if (priorityA !== priorityB) return priorityA - priorityB;
-
-      const dueDateA = a.due_date ? parseISO(a.due_date).getTime() : Infinity;
-      const dueDateB = b.due_date ? parseISO(b.due_date).getTime() : Infinity;
-      if (dueDateA !== dueDateB) return dueDateA - dueDateB;
-
-      return (a.order || 0) - (b.order || 0);
+    // 2. Create a map of tasks by section for efficient lookup.
+    const tasksBySection = new Map<string | null, Task[]>();
+    relevantTasks.forEach(task => {
+      const sectionId = task.section_id || null;
+      if (!tasksBySection.has(sectionId)) {
+        tasksBySection.set(sectionId, []);
+      }
+      tasksBySection.get(sectionId)!.push(task);
     });
 
-    return sortedTasks.length > 0 ? sortedTasks[0] : null;
-  }, [finalFilteredTasks]);
+    // 3. Sort tasks within each section by their 'order'.
+    tasksBySection.forEach((tasksInSection) => {
+      tasksInSection.sort((a, b) => (a.order || 0) - (b.order || 0));
+    });
+
+    // 4. Iterate through sorted sections to find the first task.
+    // The `sections` state is already sorted by order.
+    for (const section of sections) {
+      const tasksInSection = tasksBySection.get(section.id);
+      if (tasksInSection && tasksInSection.length > 0) {
+        return tasksInSection[0]; // Return the first task from the first non-empty section.
+      }
+    }
+
+    // 5. If no task was found in any defined section, check the "No Section" group.
+    const tasksInNoSection = tasksBySection.get(null);
+    if (tasksInNoSection && tasksInNoSection.length > 0) {
+      return tasksInNoSection[0];
+    }
+
+    // 6. If no tasks are found anywhere, return null.
+    return null;
+  }, [finalFilteredTasks, sections]);
 
 
   return {
