@@ -32,7 +32,7 @@ const ProjectTrackerSettings: React.FC = () => {
 
   if (projectsLoading) {
     return (
-      <Card className="w-full shadow-lg">
+      <Card className="w-full shadow-lg rounded-xl">
         <CardHeader className="pb-2">
           <CardTitle className="text-2xl font-bold flex items-center gap-2">
             <LayoutGrid className="h-6 w-6 text-primary" /> Project Tracker Title
@@ -47,7 +47,7 @@ const ProjectTrackerSettings: React.FC = () => {
   }
 
   return (
-    <Card className="w-full shadow-lg">
+    <Card className="w-full shadow-lg rounded-xl">
       <CardHeader className="pb-2">
         <CardTitle className="text-2xl font-bold flex items-center gap-2">
           <LayoutGrid className="h-6 w-6 text-primary" /> Project Tracker Title
@@ -58,7 +58,7 @@ const ProjectTrackerSettings: React.FC = () => {
         {isEditingTitle ? (
           <div className="flex flex-col gap-3">
             <div>
-              <Label htmlFor="project-tracker-title">New Title</Label>
+              <Label htmlFor="project-tracker-title" className="text-sm font-medium text-foreground">New Title</Label>
               <Input
                 id="project-tracker-title"
                 value={tempSectionTitle}
@@ -66,21 +66,21 @@ const ProjectTrackerSettings: React.FC = () => {
                 onKeyDown={(e) => e.key === 'Enter' && handleSaveTitle()}
                 autoFocus
                 disabled={isSavingTitle}
-                className="h-9"
+                className="h-10 text-base"
               />
             </div>
             <div className="flex gap-2">
-              <Button onClick={handleSaveTitle} disabled={isSavingTitle || !tempSectionTitle.trim()} className="h-9">
+              <Button onClick={handleSaveTitle} disabled={isSavingTitle || !tempSectionTitle.trim()} className="h-10 text-base">
                 {isSavingTitle ? 'Saving...' : 'Save Title'}
               </Button>
-              <Button variant="outline" onClick={() => setIsEditingTitle(false)} disabled={isSavingTitle} className="h-9">
+              <Button variant="outline" onClick={() => setIsEditingTitle(false)} disabled={isSavingTitle} className="h-10 text-base">
                 Cancel
               </Button>
             </div>
           </div>
         ) : (
           <div className="flex items-center justify-between">
-            <p className="text-lg font-medium">{sectionTitle}</p>
+            <p className="text-lg font-medium text-foreground">{sectionTitle}</p>
             <Button variant="outline" size="sm" onClick={() => setIsEditingTitle(true)} className="h-9">
               <Edit className="mr-2 h-4 w-4" /> Edit
             </Button>

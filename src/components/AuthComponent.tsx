@@ -43,8 +43,8 @@ const AuthComponent = () => {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-6 text-center">
+    <div className="w-full max-w-md mx-auto p-6 bg-card rounded-xl shadow-lg">
+      <h2 className="text-3xl font-bold mb-6 text-center text-primary">
         {isSignUp ? 'Create Account' : 'Sign In'}
       </h2>
       
@@ -52,19 +52,19 @@ const AuthComponent = () => {
         <Button
           type="button"
           variant="outline"
-          className="w-full h-9"
+          className="w-full h-10 text-base"
           onClick={handleGoogleSignIn}
         >
-          <GoogleIcon className="mr-2 h-4 w-4" />
+          <GoogleIcon className="mr-2 h-5 w-5" />
           Continue with Google
         </Button>
       </div>
 
       <div className="relative mb-6">
         <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t" />
+          <span className="w-full border-t border-border" />
         </div>
-        <div className="relative flex justify-center text-xs uppercase">
+        <div className="relative flex justify-center text-sm uppercase">
           <span className="bg-background px-2 text-muted-foreground">
             Or continue with
           </span>
@@ -74,36 +74,36 @@ const AuthComponent = () => {
       <form onSubmit={handleAuth}>
         <div className="space-y-4">
           <div>
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email" className="text-sm font-medium text-foreground">Email</Label>
             <Input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="h-9"
+              className="h-10 text-base"
             />
           </div>
           <div>
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password" className="text-sm font-medium text-foreground">Password</Label>
             <Input
               id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="h-9"
+              className="h-10 text-base"
             />
           </div>
-          <Button type="submit" className="w-full h-9">
+          <Button type="submit" className="w-full h-10 text-base">
             {isSignUp ? 'Sign Up' : 'Sign In'}
           </Button>
         </div>
       </form>
-      <div className="mt-4 text-center">
+      <div className="mt-6 text-center">
         <button
           onClick={() => setIsSignUp(!isSignUp)}
-          className="text-sm text-primary hover:underline"
+          className="text-sm text-primary hover:underline font-medium"
         >
           {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
         </button>

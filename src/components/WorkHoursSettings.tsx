@@ -75,7 +75,7 @@ const WorkHoursSettings: React.FC = () => {
 
   if (loading) {
     return (
-      <Card className="w-full shadow-lg">
+      <Card className="w-full shadow-lg rounded-xl">
         <CardHeader className="pb-2">
           <CardTitle className="text-2xl font-bold flex items-center gap-2">
             <Clock className="h-6 w-6 text-primary" /> Work Hours
@@ -89,7 +89,7 @@ const WorkHoursSettings: React.FC = () => {
   }
 
   return (
-    <Card className="w-full shadow-lg">
+    <Card className="w-full shadow-lg rounded-xl">
       <CardHeader className="pb-2">
         <CardTitle className="text-2xl font-bold flex items-center gap-2">
           <Clock className="h-6 w-6 text-primary" /> Work Hours
@@ -97,8 +97,8 @@ const WorkHoursSettings: React.FC = () => {
         <p className="text-sm text-muted-foreground">Set your daily working hours to help manage your productivity.</p>
       </CardHeader>
       <CardContent className="space-y-4 pt-0">
-        <div className="rounded-md p-3 bg-gray-50 dark:bg-gray-700/50 shadow-sm">
-          <h3 className="text-lg font-semibold mb-3">Apply to All Days</h3>
+        <div className="rounded-xl p-3 bg-muted/50 shadow-sm">
+          <h3 className="text-lg font-semibold mb-3 text-foreground">Apply to All Days</h3>
           <div className="flex flex-col sm:flex-row items-center gap-3">
             <div className="flex-1 w-full">
               <Label htmlFor="all-start-time" className="sr-only">Start Time</Label>
@@ -107,7 +107,7 @@ const WorkHoursSettings: React.FC = () => {
                 type="time"
                 value={allStartTime}
                 onChange={(e) => setAllStartTime(e.target.value)}
-                className="w-full h-9"
+                className="w-full h-10 text-base"
               />
             </div>
             <span className="text-muted-foreground">-</span>
@@ -118,31 +118,32 @@ const WorkHoursSettings: React.FC = () => {
                 type="time"
                 value={allEndTime}
                 onChange={(e) => setAllEndTime(e.target.value)}
-                className="w-full h-9"
+                className="w-full h-10 text-base"
               />
             </div>
-            <Button onClick={handleSetAllHoursAndSave} className="w-full sm:w-auto h-9" disabled={isSaving}>
+            <Button onClick={handleSetAllHoursAndSave} className="w-full sm:w-auto h-10 text-base" disabled={isSaving}>
               Apply to All
             </Button>
           </div>
         </div>
 
         {localWorkHours.map(dayHour => (
-          <div key={dayHour.day_of_week} className="flex items-center space-x-4 p-2 rounded-md shadow-sm">
+          <div key={dayHour.day_of_week} className="flex items-center space-x-4 p-2 rounded-md shadow-sm bg-background">
             <Checkbox
               id={`enable-${dayHour.day_of_week}`}
               checked={dayHour.enabled}
               onCheckedChange={(checked) => handleEnabledChange(dayHour.day_of_week, !!checked)}
               disabled={isSaving}
+              className="h-5 w-5"
             />
-            <Label htmlFor={`enable-${dayHour.day_of_week}`} className="flex-1 font-medium capitalize">
+            <Label htmlFor={`enable-${dayHour.day_of_week}`} className="flex-1 font-medium capitalize text-base">
               {allDaysOfWeek.find(d => d.id === dayHour.day_of_week)?.name}
             </Label>
             <Input
               type="time"
               value={dayHour.start_time}
               onChange={(e) => handleTimeChange(dayHour.day_of_week, 'start_time', e.target.value)}
-              className="w-28 h-9"
+              className="w-28 h-10 text-base"
               disabled={!dayHour.enabled || isSaving}
             />
             <span className="text-muted-foreground">-</span>
@@ -150,12 +151,12 @@ const WorkHoursSettings: React.FC = () => {
               type="time"
               value={dayHour.end_time}
               onChange={(e) => handleTimeChange(dayHour.day_of_week, 'end_time', e.target.value)}
-              className="w-28 h-9"
+              className="w-28 h-10 text-base"
               disabled={!dayHour.enabled || isSaving}
             />
           </div>
         ))}
-        <Button onClick={handleSaveAllWorkHours} className="w-full mt-4 h-9" disabled={isSaving}>
+        <Button onClick={handleSaveAllWorkHours} className="w-full mt-4 h-10 text-base" disabled={isSaving}>
           {isSaving ? 'Saving...' : 'Save Work Hours'}
         </Button>
       </CardContent>
