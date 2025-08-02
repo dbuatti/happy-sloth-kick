@@ -107,8 +107,9 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
         ) : (
           <div 
             className="flex items-center gap-2 flex-1" 
-            onClick={() => !isOverlay && toggleSection(section.id)} 
+            onClick={() => !isOverlay && handleEditSectionClick(section)} // Direct edit on click
             style={{ cursor: isOverlay ? 'grabbing' : 'pointer' }}
+            data-no-dnd="true" // Prevent drag when clicking on text to edit
           >
             <FolderOpen className="h-4 w-4 text-muted-foreground" /> {/* Adjusted icon size */}
             <h3 className="text-base font-bold"> {/* Adjusted font size */}
