@@ -12,7 +12,7 @@ import CommandPalette from '@/components/CommandPalette';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, ListTodo, CheckCircle2, Clock, Brain } from 'lucide-react';
+import { Plus, ListTodo, CheckCircle2, Clock, Brain, Sparkles } from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
 import { cn } from '@/lib/utils';
@@ -24,6 +24,8 @@ import { Badge } from '@/components/ui/badge';
 import TaskFilter from '@/components/TaskFilter';
 import MoodBoosterButton from '@/components/MoodBoosterButton'; // Import MoodBoosterButton
 import TodayProgressCard from '@/components/TodayProgressCard'; // Import the new component
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'; // Import Dialog components
+import TaskForm from '@/components/TaskForm'; // Import TaskForm for the AI parser dialog
 
 
 const getUTCStartOfDay = (date: Date) => {
@@ -83,6 +85,7 @@ const DailyTasksV3: React.FC = () => {
   const quickAddInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [isFocusPanelOpen, setIsFocusPanelOpen] = useState(false);
+  const [isAiParserOpen, setIsAiParserOpen] = useState(false); // State for AI Parser Dialog
 
   const handlePreviousDay = () => {
     setCurrentDate(prevDate => getUTCStartOfDay(addDays(prevDate, -1)));
@@ -273,6 +276,16 @@ const DailyTasksV3: React.FC = () => {
                     <Button type="submit" className="whitespace-nowrap h-9 text-sm">
                       <Plus className="mr-1 h-3 w-3" /> Add
                     </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setIsAiParserOpen(true)}
+                      aria-label="Open AI Task Parser"
+                      className="h-9 w-9"
+                    >
+                      <Sparkles className="h-4 w-4" />
+                    </Button>
                   </div>
                 </form>
               </div>
@@ -384,6 +397,33 @@ const DailyTasksV3: React.FC = () => {
         userId={userId}
         currentDate={currentDate}
       />
+
+      {/* AI Task Parser Dialog */}
+      <Dialog open={isAiParserOpen} onOpenChange={setIsAiParserOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" /> AI Task Parser
+            </DialogTitle>
+            <DialogDescription>
+              Enter a task description and let AI suggest details like category, priority, and due date.
+            </DialogDescription>
+          </DialogHeader>
+          <TaskForm
+            onSave={async (taskData) => {
+              const success = await handleAddTask(taskData);
+              if (success) setIsAiParserOpen(false);
+              return success;
+            }}
+            onCancel={() => setIsAiParserOpen(false)}
+            userId={userId}
+            sections={sections}
+            allCategories={allCategories}
+            currentDate={currentDate}
+            autoFocus
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
