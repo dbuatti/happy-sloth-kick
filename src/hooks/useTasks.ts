@@ -722,25 +722,21 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     const activeTask = tasks.find(t => t.id === activeId);
     if (!activeTask) return;
 
-    // Only consider persisted tasks for siblings and target resolution
     const getGroupSiblings = (parentId: string | null, sectionId: string | null) => {
       return tasks
         .filter(t => t.parent_task_id === parentId && (t.section_id === sectionId || (t.section_id === null && sectionId === null)))
         .sort((a, b) => (a.order || 0) - (b.order || 0));
     };
 
-    // Resolve over target to a persisted sibling in the target group; fallback to end
     const resolveOverIndex = (siblings: Task[], overIdCandidate: string | null): number => {
       if (!overIdCandidate) return siblings.length;
       const idx = siblings.findIndex(s => s.id === overIdCandidate);
       return idx === -1 ? siblings.length : idx;
     };
 
-    // Old group reindex (remove active)
     const oldSiblings = getGroupSiblings(activeTask.parent_task_id, activeTask.section_id).filter(s => s.id !== activeTask.id);
     oldSiblings.forEach((s, i) => { s.order = i; });
 
-    // Target group compute
     const targetParentId = newParentId;
     const targetSectionId = targetParentId ? (tasks.find(t => t.id === targetParentId)?.section_id ?? newSectionId ?? null) : newSectionId;
     const targetSiblings = getGroupSiblings(targetParentId, targetSectionId).filter(s => s.id !== activeTask.id);
@@ -751,12 +747,27 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     reordered.splice(insertIndex, 0, tempActive);
     reordered.forEach((s, i) => { s.order = i; });
 
-    // Consolidate updates (old group + target group + active)
-    const updatesMap = new Map<string, Partial<Task>>();
-    oldSiblings.forEach(s => updatesMap.set(s.id, { id: s.id, order: s.order!, parent_task_id: s.parent_task_id, section_id: s.section_id, user_id: userId }));
-    reordered.forEach(s => updatesMap.set(s.id, { id: s.id, order: s.order!, parent_task_id: s.parent_task_id, section_id: s.section_id, user_id: userId }));
+    const updatesMap = new Map<string, Task>(); // Store full Task objects
+    
+    oldSiblings.forEach(s => {
+      const currentFullTask = tasks.find(t => t.id === s.id);
+      if (currentFullTask) {
+        updatesMap.set(s.id, { ...currentFullTask, order: s.order! });
+      }
+    });
 
-    // Optimistic apply
+    reordered.forEach(s => {
+      const currentFullTask = tasks.find(t => t.id === s.id);
+      if (currentFullTask) {
+        updatesMap.set(s.id, {
+          ...currentFullTask,
+          order: s.order!,
+          parent_task_id: s.parent_task_id,
+          section_id: s.section_id
+        });
+      }
+    });
+
     setTasks(prev => prev.map(t => updatesMap.has(t.id) ? { ...t, ...(updatesMap.get(t.id) as any) } : t));
 
     isReorderingRef.current = true;
@@ -765,7 +776,6 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       const { error } = await supabase.from('tasks').upsert(payload, { onConflict: 'id' });
       if (error) throw error;
       showSuccess('Task moved!');
-      // Reconcile this group from DB
       await refreshGroup(targetParentId, targetSectionId);
       await refreshGroup(activeTask.parent_task_id, activeTask.section_id);
     } catch (e: any) {
@@ -804,15 +814,20 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     const newOrdered = arrayMove(siblings, currentIndex, newIndex);
     newOrdered.forEach((t, idx) => { t.order = idx; });
 
-    const updates = new Map<string, Partial<Task>>();
-    newOrdered.forEach(t => updates.set(t.id, { id: t.id, order: t.order!, parent_task_id: t.parent_task_id, section_id: t.section_id, user_id: userId }));
+    const updatesMap = new Map<string, Task>(); // Store full Task objects
+    newOrdered.forEach(s => {
+      const currentFullTask = tasks.find(t => t.id === s.id);
+      if (currentFullTask) {
+        updatesMap.set(s.id, { ...currentFullTask, order: s.order!, parent_task_id: s.parent_task_id, section_id: s.section_id });
+      }
+    });
 
     const originalTasks = [...tasks];
-    setTasks(prev => prev.map(t => updates.has(t.id) ? { ...t, ...(updates.get(t.id) as any) } : t));
+    setTasks(prev => prev.map(t => updatesMap.has(t.id) ? { ...t, ...(updatesMap.get(t.id) as any) } : t));
 
     isReorderingRef.current = true;
     try {
-      const payload = Array.from(updates.values()).map(u => cleanTaskForDb(u));
+      const payload = Array.from(updatesMap.values()).map(u => cleanTaskForDb(u));
       const { error } = await supabase.from('tasks').upsert(payload, { onConflict: 'id' });
       if (error) throw error;
       showSuccess('Task reordered!');
