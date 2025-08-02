@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import TaskList from '@/components/TaskList';
 import { MadeWithDyad } from '@/components/made-with-dyad';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
@@ -65,6 +65,38 @@ const DailyTasksV3: React.FC = () => {
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
   const [isFocusPanelOpen, setIsFocusPanelOpen] = useState(false);
 
+  // State for section expansion, lifted from TaskList
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem('taskList_expandedSections');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const toggleSection = useCallback((sectionId: string) => {
+    setExpandedSections(prev => {
+      const newState = { ...prev, [sectionId]: !(prev[sectionId] ?? true) };
+      localStorage.setItem('taskList_expandedSections', JSON.stringify(newState));
+      return newState;
+    });
+  }, []);
+
+  const toggleAllSections = useCallback(() => {
+    const allExpanded = Object.values(expandedSections).every(val => val === true);
+    const newExpandedState: Record<string, boolean> = {};
+    sections.forEach(section => {
+      newExpandedState[section.id] = !allExpanded;
+    });
+    // Also handle 'no-section-header'
+    newExpandedState['no-section-header'] = !allExpanded;
+
+    setExpandedSections(newExpandedState);
+    localStorage.setItem('taskList_expandedSections', JSON.stringify(newExpandedState));
+  }, [expandedSections, sections]);
+
+
   const handleOpenOverview = (task: Task) => {
     setTaskToOverview(task);
     setIsTaskOverviewOpen(true);
@@ -120,6 +152,7 @@ const DailyTasksV3: React.FC = () => {
             nextAvailableTask={nextAvailableTask}
             updateTask={updateTask}
             onOpenOverview={handleOpenOverview}
+            toggleAllSections={toggleAllSections} // Pass toggleAllSections
           />
 
           {/* Main Task List Card */}
@@ -150,6 +183,8 @@ const DailyTasksV3: React.FC = () => {
                   onOpenOverview={handleOpenOverview}
                   currentDate={currentDate}
                   setCurrentDate={setCurrentDate}
+                  expandedSections={expandedSections} // Pass expandedSections
+                  toggleSection={toggleSection} // Pass toggleSection
                 />
               </div>
             </CardContent>

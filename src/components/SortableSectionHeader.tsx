@@ -12,9 +12,9 @@ import { TaskSection } from '@/hooks/useTasks';
 
 interface SortableSectionHeaderProps {
   section: TaskSection;
-  sectionTasksCount: number;
+  sectionTasksCount: number; // Now represents remaining tasks
   isExpanded: boolean;
-  toggleSection: (sectionId: string) => void;
+  toggleSection: (sectionId: string) => void; // New prop
   handleAddTaskToSpecificSection: (sectionId: string | null) => void;
   markAllTasksInSectionCompleted: (sectionId: string | null) => Promise<void>;
   handleDeleteSectionClick: (sectionId: string) => void;
@@ -27,7 +27,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
   section,
   sectionTasksCount,
   isExpanded,
-  toggleSection,
+  toggleSection, // Destructure new prop
   handleAddTaskToSpecificSection,
   markAllTasksInSectionCompleted,
   handleDeleteSectionClick,

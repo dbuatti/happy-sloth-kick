@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, ListTodo, Brain, CheckCircle2, Clock, Target, Edit } from 'lucide-react';
+import { Plus, ListTodo, Brain, CheckCircle2, Clock, Target, Edit, ChevronsDownUp } from 'lucide-react';
 import DateNavigator from '@/components/DateNavigator';
 import TaskFilter from '@/components/TaskFilter';
 import { cn } from '@/lib/utils';
@@ -36,6 +36,7 @@ interface DailyTasksHeaderProps {
   nextAvailableTask: Task | null;
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
   onOpenOverview: (task: Task) => void;
+  toggleAllSections: () => void; // New prop
 }
 
 const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
@@ -59,6 +60,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   nextAvailableTask,
   updateTask,
   onOpenOverview,
+  toggleAllSections, // Destructure new prop
 }) => {
   const { dailyTaskCount } = useDailyTaskCount();
   const { playSound } = useSound();
@@ -179,6 +181,15 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
 
         {/* Right: Focus Mode Button */}
         <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleAllSections} // New button for toggling all sections
+            aria-label="Toggle all sections"
+            className="h-10 w-10"
+          >
+            <ChevronsDownUp className="h-6 w-6" />
+          </Button>
           <Button
             variant="ghost"
             size="icon"

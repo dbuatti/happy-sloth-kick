@@ -54,6 +54,8 @@ interface TaskListProps {
   onOpenOverview: (task: Task) => void;
   currentDate: Date;
   setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
+  expandedSections: Record<string, boolean>; // New prop
+  toggleSection: (sectionId: string) => void; // New prop
 }
 
 const TaskList: React.FC<TaskListProps> = (props) => {
@@ -76,6 +78,8 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     allCategories,
     onOpenOverview,
     currentDate,
+    expandedSections, // Destructure new prop
+    toggleSection, // Destructure new prop
   } = props;
 
   const { user } = useAuth();
@@ -91,23 +95,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     useSensor(CustomPointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
-
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() => {
-    try {
-      const saved = localStorage.getItem('taskList_expandedSections');
-      return saved ? JSON.parse(saved) : {};
-    } catch {
-      return {};
-    }
-  });
-
-  const toggleSection = useCallback((sectionId: string) => {
-    setExpandedSections(prev => {
-      const newState = { ...prev, [sectionId]: !(prev[sectionId] ?? true) };
-      localStorage.setItem('taskList_expandedSections', JSON.stringify(newState));
-      return newState;
-    });
-  }, []);
 
   const allSortableSections = useMemo(() => {
     const noSection: TaskSection = {
@@ -230,6 +217,9 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                 .filter(t => t.parent_task_id === null && (t.section_id === currentSection.id || (t.section_id === null && currentSection.id === 'no-section-header')))
                 .sort((a, b) => (a.order || 0) - (b.order || 0));
 
+              // Calculate remaining tasks for the badge
+              const remainingTasksCount = topLevelTasksInSection.filter(t => t.status === 'to-do').length;
+
               // DnD items for this section only
               const sectionItemIds = topLevelTasksInSection.map(t => t.id);
 
@@ -243,7 +233,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                 >
                   <SortableSectionHeader
                     section={currentSection}
-                    sectionTasksCount={topLevelTasksInSection.length}
+                    sectionTasksCount={remainingTasksCount} // Pass remaining tasks count
                     isExpanded={isExpanded}
                     toggleSection={toggleSection}
                     handleAddTaskToSpecificSection={(sectionId) => openAddTaskForSection(sectionId)}
@@ -307,7 +297,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                   <SortableSectionHeader
                     section={activeItemData as TaskSection}
                     sectionTasksCount={
-                      filteredTasks.filter(t => t.parent_task_id === null && (t.section_id === activeItemData.id || (t.section_id === null && activeItemData.id === 'no-section-header'))).length
+                      filteredTasks.filter(t => t.parent_task_id === null && (t.section_id === activeItemData.id || (t.section_id === null && activeItemData.id === 'no-section-header'))).filter(t => t.status === 'to-do').length // Filter for remaining tasks
                     }
                     isExpanded={true}
                     toggleSection={() => {}}
