@@ -5,7 +5,7 @@ import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import TaskDetailDialog from './TaskDetailDialog';
 import TaskOverviewDialog from './TaskOverviewDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
-import TaskFilter from './TaskFilter';
+// Removed TaskFilter import
 import { Skeleton } from '@/components/ui/skeleton';
 import ManageSectionsDialog from './ManageSectionsDialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -43,16 +43,7 @@ interface TaskListProps {
   handleAddTask: (taskData: any) => Promise<any>;
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
   deleteTask: (taskId: string) => void;
-  searchFilter: string;
-  setSearchFilter: (value: string) => void;
-  statusFilter: string;
-  setStatusFilter: (value: string) => void;
-  categoryFilter: string;
-  setCategoryFilter: (value: string) => void;
-  priorityFilter: string;
-  setPriorityFilter: (value: string) => void;
-  sectionFilter: string;
-  setSectionFilter: (value: string) => void;
+  // Removed filter props
   selectedTaskIds: string[];
   toggleTaskSelection: (taskId: string, checked: boolean) => void;
   clearSelectedTasks: () => void;
@@ -82,16 +73,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     handleAddTask,
     updateTask,
     deleteTask,
-    searchFilter,
-    setSearchFilter,
-    statusFilter,
-    setStatusFilter,
-    categoryFilter,
-    setCategoryFilter,
-    priorityFilter,
-    setPriorityFilter,
-    sectionFilter,
-    setSectionFilter,
+    // Removed filter props
     selectedTaskIds,
     toggleTaskSelection,
     clearSelectedTasks,
@@ -147,21 +129,8 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  const anyFilterActive =
-    searchFilter !== '' ||
-    statusFilter !== 'all' ||
-    categoryFilter !== 'all' ||
-    priorityFilter !== 'all' ||
-    sectionFilter !== 'all';
-
-  const handleResetFilters = () => {
-    setSearchFilter('');
-    setStatusFilter('all');
-    setCategoryFilter('all');
-    setPriorityFilter('all');
-    setSectionFilter('all');
-    searchRef.current?.focus();
-  };
+  // Removed anyFilterActive check
+  // Removed handleResetFilters function
 
   const toggleSection = useCallback((sectionId: string) => {
     setExpandedSections(prev => {
@@ -297,23 +266,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
   return (
     <>
       <div className="space-y-1.5 mb-2">
-        <TaskFilter
-          currentDate={currentDate}
-          setCurrentDate={setCurrentDate}
-          searchFilter={searchFilter}
-          setSearchFilter={setSearchFilter}
-          statusFilter={statusFilter}
-          setStatusFilter={setStatusFilter}
-          categoryFilter={categoryFilter}
-          setCategoryFilter={setCategoryFilter}
-          priorityFilter={priorityFilter}
-          setPriorityFilter={setPriorityFilter}
-          sectionFilter={sectionFilter}
-          setSectionFilter={setSectionFilter}
-          sections={sections}
-          allCategories={allCategories}
-          searchRef={searchRef}
-        />
+        {/* Removed TaskFilter component */}
 
         <div className="flex flex-col sm:flex-row justify-between items-center gap-1.5">
           <div className="flex gap-1.5 w-full sm:w-auto">
@@ -431,20 +384,15 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                               <div className="flex items-center justify-center gap-2 mb-1.5">
                                 <ListTodo className="h-4 w-4" />
                                 <p className="text-sm font-medium">
-                                  {anyFilterActive 
-                                    ? "No tasks match your filters in this section." 
-                                    : "No tasks in this section yet."}
+                                  {/* Removed anyFilterActive check */}
+                                  No tasks in this section yet.
                                 </p>
                               </div>
                               <div className="flex items-center justify-center gap-2">
                                 <Button size="sm" onClick={() => openAddTaskForSection(currentSection.id === 'no-section-header' ? null : currentSection.id)}>
                                   <Plus className="mr-2 h-4 w-4" /> Add Task
                                 </Button>
-                                {anyFilterActive && (
-                                  <Button size="sm" variant="outline" onClick={handleResetFilters}>
-                                    Reset filters
-                                  </Button>
-                                )}
+                                {/* Removed filter reset button */}
                               </div>
                             </div>
                           ) : (

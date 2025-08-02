@@ -42,16 +42,7 @@ const DailyTasksV3: React.FC = () => {
     sections,
     allCategories,
     handleAddTask,
-    searchFilter,
-    setSearchFilter,
-    statusFilter,
-    setStatusFilter,
-    categoryFilter,
-    setCategoryFilter,
-    priorityFilter,
-    setPriorityFilter,
-    sectionFilter,
-    setSectionFilter,
+    // Removed filter states and setters
     selectedTaskIds,
     toggleTaskSelection,
     clearSelectedTasks,
@@ -156,34 +147,10 @@ const DailyTasksV3: React.FC = () => {
     return { totalCount: total, completedCount: completed, overdueCount: overdue };
   }, [filteredTasks, currentDate]);
 
-  // Sticky shadow cue on scroll
-  const stickyRef = useRef<HTMLDivElement>(null);
-  const [stuck, setStuck] = useState(false);
-  useEffect(() => {
-    const el = stickyRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([e]) => setStuck(!e.isIntersecting),
-      { root: null, threshold: 1 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
+  // Removed sticky shadow cue on scroll logic
+  const stuck = false; // Always false as sticky logic is removed
 
-  const anyFilterActive =
-    searchFilter !== '' ||
-    statusFilter !== 'all' ||
-    categoryFilter !== 'all' ||
-    priorityFilter !== 'all' ||
-    sectionFilter !== 'all';
-
-  const handleResetFiltersInline = () => {
-    setSearchFilter('');
-    setStatusFilter('all');
-    setCategoryFilter('all');
-    setPriorityFilter('all');
-    setSectionFilter('all');
-  };
+  // Removed filter active check and reset filter function
 
   const isBulkActionsActive = selectedTaskIds.length > 0;
 
@@ -211,7 +178,7 @@ const DailyTasksV3: React.FC = () => {
                 </CardHeader>
 
                 <CardContent className="pt-3 flex-1 flex flex-col">
-                  <div className="mb-4">
+                  <div className="mb-3"> {/* Adjusted spacing */}
                     <DateNavigator
                       currentDate={currentDate}
                       onPreviousDay={handlePreviousDay}
@@ -222,7 +189,7 @@ const DailyTasksV3: React.FC = () => {
                   </div>
 
                   <div
-                    ref={stickyRef}
+                    // Removed ref={stickyRef}
                     className={cn(
                       "sticky top-16 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border -mx-4 px-4 py-3 transition-shadow",
                       stuck ? "shadow-lg" : ""
@@ -243,18 +210,7 @@ const DailyTasksV3: React.FC = () => {
                       </div>
                     </form>
 
-                    {anyFilterActive && (
-                      <div className="flex justify-end">
-                        <button
-                          type="button"
-                          onClick={handleResetFiltersInline}
-                          className="text-sm px-3 py-1.5 rounded-full border hover:bg-muted transition"
-                          aria-label="Reset filters"
-                        >
-                          Reset filters
-                        </button>
-                      </div>
-                    )}
+                    {/* Removed filter reset button */}
                   </div>
 
                   <div className="flex-1 overflow-y-auto pt-3 -mx-4 px-4"> {/* Adjusted padding */}
@@ -266,16 +222,7 @@ const DailyTasksV3: React.FC = () => {
                       handleAddTask={handleAddTask}
                       updateTask={updateTask}
                       deleteTask={deleteTask}
-                      searchFilter={searchFilter}
-                      setSearchFilter={setSearchFilter}
-                      statusFilter={statusFilter}
-                      setStatusFilter={setStatusFilter}
-                      categoryFilter={categoryFilter}
-                      setCategoryFilter={setCategoryFilter}
-                      priorityFilter={priorityFilter}
-                      setPriorityFilter={setPriorityFilter}
-                      sectionFilter={sectionFilter}
-                      setSectionFilter={setSectionFilter}
+                      // Removed filter props
                       selectedTaskIds={selectedTaskIds}
                       toggleTaskSelection={toggleTaskSelection}
                       clearSelectedTasks={clearSelectedTasks}
