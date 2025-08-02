@@ -97,9 +97,10 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
     } else if (count <= 5) {
       return "bg-primary text-primary-foreground";
     } else if (count <= 10) {
-      return "bg-orange-500 text-white"; // Use orange for moderate warning
+      // Use border-status-due-today for moderate warning, and primary-foreground for text contrast
+      return "bg-border-status-due-today text-primary-foreground";
     } else {
-      return "bg-destructive text-destructive-foreground"; // Use destructive for high warning
+      return "bg-destructive text-destructive-foreground";
     }
   };
 
