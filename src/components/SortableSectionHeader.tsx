@@ -123,7 +123,8 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
                   "p-0",
                   "text-foreground",
                   "appearance-none",
-                  "flex-1 truncate"
+                  "flex-1 truncate",
+                  "!h-auto !min-h-0 !py-0" // Added these to remove any default height/padding
                 )}
                 style={{ lineHeight: '1.5rem' }}
                 autoFocus={true}
