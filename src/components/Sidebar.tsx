@@ -64,7 +64,7 @@ const NavigationLinks = ({ onLinkClick }: { onLinkClick?: () => void }) => {
   );
 };
 
-const Sidebar: React.FC<SidebarProps> = ({ children }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ children }) => {
   const isMobile = useIsMobile();
   const { isSoundEnabled, toggleSound } = useSound();
 
@@ -80,7 +80,16 @@ const Sidebar: React.FC<SidebarProps> = ({ children }) => {
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-60 bg-card flex flex-col">
+            <SheetContent
+              side="left"
+              className="w-60 bg-card flex flex-col"
+              onPointerDownOutside={(e) => {
+                // Prevent the sheet from closing if the click target is part of a Radix UI popover/dropdown
+                if (e.target instanceof HTMLElement && e.target.closest('[data-radix-popper-content-wrapper]')) {
+                  e.preventDefault();
+                }
+              }}
+            >
               <div className="p-3 flex justify-between items-center">
                 <h1 className="text-xl font-bold">TaskMaster</h1>
               </div>
@@ -138,5 +147,3 @@ const Sidebar: React.FC<SidebarProps> = ({ children }) => {
     </div>
   );
 };
-
-export default Sidebar;

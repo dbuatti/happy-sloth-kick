@@ -16,7 +16,7 @@ import DailyTasksV3 from "./pages/DailyTasksV3";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { ReminderProvider } from "@/context/ReminderContext";
 import { SoundProvider } from "@/context/SoundContext";
-import Sidebar from "./components/Sidebar";
+import { Sidebar } from "./components/Sidebar"; // Corrected import
 import AuthComponent from "@/components/AuthComponent";
 
 // Import new dedicated mindfulness tool pages
