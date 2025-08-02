@@ -3,14 +3,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, ArrowUp, ArrowDown, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon } from 'lucide-react';
-import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns'; // Added isValid
+import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
 import { getCategoryColorProps } from '@/lib/categoryColors';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-// Removed DragHandleIcon import
-// Removed RecurringIcon import
 
 interface TaskItemProps {
   task: Task;
@@ -26,7 +24,7 @@ interface TaskItemProps {
   onMoveUp: (taskId: string) => Promise<void>;
   onMoveDown: (taskId: string) => Promise<void>;
   isOverlay?: boolean;
-  dragListeners?: any; // New prop for drag listeners
+  dragListeners?: any;
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -43,7 +41,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   onMoveUp,
   onMoveDown,
   isOverlay = false,
-  dragListeners, // Destructure new prop
+  dragListeners,
 }) => {
   const { playSound } = useSound();
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
@@ -86,12 +84,12 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const getDueDateDisplay = (dueDate: string | null) => {
     if (!dueDate) return null;
     const date = parseISO(dueDate);
-    if (!isValid(date)) return null; // Used isValid directly
+    if (!isValid(date)) return null;
 
     if (isSameDay(date, currentDate)) {
       return 'Today';
     } else if (isPast(date) && !isSameDay(date, currentDate)) {
-      return format(date, 'MMM d'); // Overdue, just show date
+      return format(date, 'MMM d');
     } else {
       return format(date, 'MMM d');
     }
@@ -112,8 +110,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
       style={{ cursor: isOverlay ? 'grabbing' : 'pointer' }}
       {...(dragListeners || {})}
     >
-      {/* Removed DragHandleIcon */}
-
       <Checkbox
         key={`${task.id}-${task.status}`}
         checked={task.status === 'completed'}
@@ -126,15 +122,26 @@ const TaskItem: React.FC<TaskItemProps> = ({
         disabled={isOverlay}
       />
 
-      <div className="flex-1 min-w-0 flex items-center gap-2">
-        {/* Priority Dot */}
-        <div className={cn("w-2 h-2 rounded-full flex-shrink-0", getPriorityDotColor(task.priority))} />
-        
+      {/* Priority Dot */}
+      <div className={cn("w-2 h-2 rounded-full flex-shrink-0", getPriorityDotColor(task.priority))} />
+      
+      <span
+        className={cn(
+          "text-base leading-tight line-clamp-2 flex-grow",
+          task.status === 'completed' ? 'line-through' : 'font-medium',
+          "block"
+        )}
+      >
+        {task.description}
+      </span>
+
+      {/* Icons on the right */}
+      <div className="flex-shrink-0 flex items-center space-x-2">
         {task.recurring_type !== 'none' && (
           <Tooltip>
             <TooltipTrigger asChild>
               <span className="inline-flex items-center flex-shrink-0" data-no-dnd="true">
-                <Repeat className="h-3.5 w-3.5 text-muted-foreground" /> {/* Changed to Repeat icon */}
+                <Repeat className="h-3.5 w-3.5 text-muted-foreground" />
               </span>
             </TooltipTrigger>
             <TooltipContent>
@@ -151,7 +158,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
                 target="_blank" 
                 rel="noopener noreferrer" 
                 className="inline-flex items-center flex-shrink-0 text-muted-foreground hover:text-primary"
-                onClick={(e) => e.stopPropagation()} // Prevent opening task overview
+                onClick={(e) => e.stopPropagation()}
                 data-no-dnd="true"
               >
                 <LinkIcon className="h-3.5 w-3.5" />
@@ -168,7 +175,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
             <TooltipTrigger asChild>
               <span className={cn(
                 "inline-flex items-center flex-shrink-0 text-xs font-medium px-1 py-0.5 rounded-sm",
-                "text-muted-foreground", // Default text color
+                "text-muted-foreground",
                 isOverdue && "text-status-overdue",
                 isDueToday && "text-status-due-today"
               )} data-no-dnd="true">
@@ -180,16 +187,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
             </TooltipContent>
           </Tooltip>
         )}
-
-        <span
-          className={cn(
-            "text-base leading-tight line-clamp-2 flex-grow",
-            task.status === 'completed' ? 'line-through' : 'font-medium',
-            "block"
-          )}
-        >
-          {task.description}
-        </span>
       </div>
 
       {showCompletionEffect && (
