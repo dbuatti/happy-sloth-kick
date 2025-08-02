@@ -81,6 +81,8 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
     }
   };
 
+  const isEditing = editingSectionId === section.id && !isOverlay;
+
   return (
     <div
       ref={setNodeRef}
@@ -106,29 +108,36 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
         <DragHandleIcon className="h-4 w-4" /> {/* Use custom DragHandleIcon */}
       </button>
       <div className="flex-1 flex items-center justify-between pl-1"> {/* Adjusted padding */}
-        {editingSectionId === section.id && !isOverlay ? (
-          <div className="flex items-center w-full gap-2" data-no-dnd="true">
-            <Input
-              value={editingSectionName}
-              onChange={(e) => setNewEditingSectionName(e.target.value)}
-              onBlur={handleInputBlur}
-              onKeyDown={handleInputKeyDown}
-              className="text-lg font-semibold h-8" // Adjusted height
-              autoFocus
-            />
-          </div>
-        ) : (
-          <div 
-            className="flex items-center gap-2 flex-1 cursor-pointer" // Added cursor-pointer
-            onClick={() => !isOverlay && handleEditSectionClick(section)} // Direct edit on click
-            data-no-dnd="true" // Prevent drag when clicking on text to edit
-          >
-            <FolderOpen className="h-4 w-4 text-muted-foreground" /> {/* Adjusted icon size */}
-            <h3 className="text-base font-bold"> {/* Adjusted font size */}
-              {section.name} ({sectionTasksCount})
-            </h3>
-          </div>
-        )}
+        <div 
+          className="relative flex items-center gap-2 flex-1 cursor-pointer" // Added relative positioning
+          onClick={() => !isOverlay && handleEditSectionClick(section)} // Direct edit on click
+          data-no-dnd="true" // Prevent drag when clicking on text to edit
+        >
+          <FolderOpen className="h-4 w-4 text-muted-foreground" /> {/* Adjusted icon size */}
+          
+          {/* Static text */}
+          <h3 className={cn(
+            "text-base font-bold flex-1 truncate", // Adjusted font size and weight for consistency
+            isEditing ? "opacity-0 pointer-events-none" : "opacity-100 pointer-events-auto"
+          )}>
+            {section.name} ({sectionTasksCount})
+          </h3>
+
+          {/* Editable input, overlaid */}
+          <Input
+            value={isEditing ? editingSectionName : section.name} // Show current editing name or static name
+            onChange={(e) => setNewEditingSectionName(e.target.value)}
+            onBlur={handleInputBlur}
+            onKeyDown={handleInputKeyDown}
+            className={cn(
+              "absolute inset-0 w-full h-full text-base font-bold", // Match h3 styling
+              "border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0", // Remove default input styling
+              isEditing ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+            )}
+            autoFocus={isEditing} // Auto-focus when editing
+            readOnly={!isEditing} // Make it read-only when not editing
+          />
+        </div>
         <div className="flex items-center space-x-1" data-no-dnd="true"> {/* Reduced space-x */}
           {!isOverlay && (
             <>
