@@ -15,7 +15,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 210 20% 20%;
 
-    --primary: 270 60% 30%; /* Deeper Purple */
+    --primary: 270 70% 55%; /* Playful Purple */
     --primary-foreground: 0 0% 98%; /* Very light gray */
 
     --secondary: 210 40% 96.1%;
@@ -24,7 +24,7 @@
     --muted: 210 40% 96.1%; /* Very light gray, close to background */
     --muted-foreground: 215.4 16.3% 35%; /* Darker for better contrast */
 
-    --accent: 210 40% 96.1%;
+    --accent: 40 90% 60%; /* Glowing Yellow/Orange */
     --accent-foreground: 210 20% 20%;
 
     --destructive: 0 84.2% 60.2%;
@@ -35,7 +35,7 @@
     --ring: 222.2 84% 4.9%;
 
     /* New custom properties for softer status borders */
-    --border-status-due-today: 30 80% 60%; /* A softer orange/yellow */
+    --border-status-due-today: 40 90% 60%; /* Accent color for due today */
     --border-status-overdue: 0 80% 50%; /* A softer red */
 
     /* New custom property for completed status */
@@ -56,10 +56,11 @@
     --shadow-xl: 0 10px 12.5px -2.5px rgb(0 0 0 / 0.02), 0 4px 5px -3px rgb(0 0 0 / 0.02);
 
     /* Gradients for neurodivergent-friendly design */
-    --gradient-start-light: 270 60% 98%; /* Very light purple */
-    --gradient-end-light: 210 20% 98%; /* Very light blue-gray */
-    --gradient-start-dark: 270 40% 15%; /* Darker purple */
-    --gradient-end-dark: 210 20% 15%; /* Darker blue-gray */
+    --gradient-start-light: 270 70% 98%; /* Very light primary */
+    --gradient-end-light: 40 90% 98%; /* Very light accent */
+
+    --gradient-start-dark: 270 80% 15%; /* Darker primary */
+    --gradient-end-dark: 40 95% 15%; /* Darker accent */
 
     --radius: 1rem; /* Increased for a rounder look */
   }
@@ -74,7 +75,7 @@
     --popover: 220 20% 10%;
     --popover-foreground: 0 0% 95%;
 
-    --primary: 270 70% 50%; /* Lighter Purple for dark mode */
+    --primary: 270 80% 65%; /* Brighter Purple for dark mode */
     --primary-foreground: 0 0% 98%; /* Very light gray */
 
     --secondary: 217.2 32.6% 17.5%;
@@ -83,7 +84,7 @@
     --muted: 217.2 32.6% 17.5%; /* Slightly darker gray, close to background */
     --muted-foreground: 215 20.2% 75%; /* Lighter for better contrast */
 
-    --accent: 217.2 32.6% 17.5%;
+    --accent: 40 95% 70%; /* Brighter Yellow-Orange */
     --accent-foreground: 0 0% 95%;
 
     --destructive: 0 62.8% 30.6%;
@@ -94,7 +95,7 @@
     --ring: 212.7 26.8% 83.9%;
 
     /* New custom properties for softer status borders in dark mode */
-    --border-status-due-today: 40 95% 70%; /* Brighter yellow-orange for dark mode */
+    --border-status-due-today: 40 95% 70%; /* Accent color for due today */
     --border-status-overdue: 0 90% 70%; /* Brighter red for dark mode */
 
     /* New custom property for completed status in dark mode */
