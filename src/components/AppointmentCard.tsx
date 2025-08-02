@@ -2,8 +2,8 @@ import React, { useRef } from 'react';
 import { Appointment } from '@/hooks/useAppointments';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
-import { Info } => 'lucide-react';
-import { useSortable } from '@dnd-kit/sortable'; // Corrected syntax
+import { Info } from 'lucide-react'; // Corrected syntax
+import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 

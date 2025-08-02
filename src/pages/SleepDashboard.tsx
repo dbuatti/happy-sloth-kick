@@ -33,7 +33,7 @@ const SleepDashboard: React.FC<SleepDashboardProps> = ({ dateRange, setDateRange
     avgTimeInBed,
     avgTimeToFallAsleep,
     avgSleepEfficiency,
-    mostConsistentSleepDay,
+    // Removed mostConsistentSleepDay,
   } = useMemo(() => {
     if (analyticsData.length === 0) {
       return {
