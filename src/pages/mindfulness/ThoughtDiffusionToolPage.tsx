@@ -128,6 +128,7 @@ const ThoughtDiffusionToolPage: React.FC = () => {
                 onChange={(e) => setOriginalThought(e.target.value)}
                 rows={3}
                 disabled={isRunning}
+                className="min-h-[80px]" // Adjusted min-height
               />
             </div>
 
@@ -136,6 +137,7 @@ const ThoughtDiffusionToolPage: React.FC = () => {
                 variant={activeTechnique === 'funny-voice' ? 'default' : 'outline'}
                 onClick={() => applyTechnique('funny-voice')}
                 disabled={!originalThought.trim() || isRunning}
+                className="h-9" // Adjusted height
               >
                 <Laugh className="mr-2 h-4 w-4" /> Funny Voice
               </Button>
@@ -143,6 +145,7 @@ const ThoughtDiffusionToolPage: React.FC = () => {
                 variant={activeTechnique === 'having-thought' ? 'default' : 'outline'}
                 onClick={() => applyTechnique('having-thought')}
                 disabled={!originalThought.trim() || isRunning}
+                className="h-9" // Adjusted height
               >
                 <MessageSquare className="mr-2 h-4 w-4" /> "I'm having the thought..."
               </Button>
@@ -150,6 +153,7 @@ const ThoughtDiffusionToolPage: React.FC = () => {
                 variant={activeTechnique === 'repeat' ? 'default' : 'outline'}
                 onClick={() => applyTechnique('repeat')}
                 disabled={!originalThought.trim()}
+                className="h-9" // Adjusted height
               >
                 <Repeat className="mr-2 h-4 w-4" /> Repeat
               </Button>
@@ -157,6 +161,7 @@ const ThoughtDiffusionToolPage: React.FC = () => {
                 variant={activeTechnique === 'floating-away' ? 'default' : 'outline'}
                 onClick={() => applyTechnique('floating-away')}
                 disabled={!originalThought.trim() || isRunning}
+                className="h-9" // Adjusted height
               >
                 <Cloud className="mr-2 h-4 w-4" /> Floating Away
               </Button>
@@ -187,14 +192,14 @@ const ThoughtDiffusionToolPage: React.FC = () => {
                     size="lg"
                     onClick={handlePlayPause}
                     className={cn(
-                      "w-24",
+                      "w-28 h-10", // Adjusted size
                       isRunning ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90"
                     )}
                     disabled={isComplete}
                   >
                     {isRunning ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
                   </Button>
-                  <Button size="lg" variant="outline" onClick={() => applyTechnique('repeat')} className="w-24" disabled={isRunning}>
+                  <Button size="lg" variant="outline" onClick={() => applyTechnique('repeat')} className="w-28 h-10" disabled={isRunning}> {/* Adjusted size */}
                     <RefreshCcw className="h-6 w-6" />
                   </Button>
                 </div>
@@ -209,7 +214,7 @@ const ThoughtDiffusionToolPage: React.FC = () => {
               </div>
             )}
 
-            <Button onClick={handleReset} className="w-full" variant="outline">
+            <Button onClick={handleReset} className="w-full h-9" variant="outline"> {/* Adjusted height */}
               <RefreshCcw className="mr-2 h-4 w-4" /> Reset Tool
             </Button>
           </CardContent>

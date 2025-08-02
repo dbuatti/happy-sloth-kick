@@ -19,11 +19,11 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({ currentDate, onPreviousDa
 
   return (
     <div className="flex items-center justify-between mb-1.5">
-      <Button variant="outline" size="icon" onClick={onPreviousDay} className="h-6 w-6">
+      <Button variant="outline" size="icon" onClick={onPreviousDay} className="h-7 w-7"> {/* Adjusted size */}
         <ChevronLeft className="h-4 w-4" />
       </Button>
       <div className="flex items-center space-x-2">
-        <h3 className="text-base font-semibold">
+        <h3 className="text-lg font-semibold"> {/* Adjusted font size */}
           {isToday ? 'Today' : format(currentDate, 'EEEE, MMMM d, yyyy')}
         </h3>
         <Popover>
@@ -31,7 +31,7 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({ currentDate, onPreviousDa
             <Button
               variant="outline"
               className={cn(
-                "w-auto justify-start text-left font-normal h-6",
+                "w-auto justify-start text-left font-normal h-7", // Adjusted height
                 !currentDate && "text-muted-foreground"
               )}
             >
@@ -53,12 +53,12 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({ currentDate, onPreviousDa
           </PopoverContent>
         </Popover>
         {!isToday && ( // Only show "Today" button if not currently on today's date
-          <Button variant="outline" size="sm" onClick={onGoToToday} className="ml-2 h-6">
+          <Button variant="outline" size="sm" onClick={onGoToToday} className="ml-2 h-7"> {/* Adjusted height */}
             Today
           </Button>
         )}
       </div>
-      <Button variant="outline" size="icon" onClick={onNextDay} className="h-6 w-6">
+      <Button variant="outline" size="icon" onClick={onNextDay} className="h-7 w-7"> {/* Adjusted size */}
         <ChevronRight className="h-4 w-4" />
       </Button>
     </div>

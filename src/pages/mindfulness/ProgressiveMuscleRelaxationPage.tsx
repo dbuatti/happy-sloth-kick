@@ -174,7 +174,7 @@ const ProgressiveMuscleRelaxationPage: React.FC = () => {
                 <Armchair className="h-16 w-16 text-primary mx-auto animate-bounce" />
                 <p className="text-xl font-semibold">PMR Complete!</p>
                 <p className="text-muted-foreground">You've completed the relaxation exercise.</p>
-                <Button onClick={resetMeditation}>
+                <Button onClick={resetMeditation} className="h-9"> {/* Adjusted height */}
                   <RefreshCcw className="mr-2 h-4 w-4" /> Start Over
                 </Button>
               </div>
@@ -207,22 +207,22 @@ const ProgressiveMuscleRelaxationPage: React.FC = () => {
                     size="lg"
                     onClick={isRunning ? pauseTimer : startTimer}
                     className={cn(
-                      "w-24",
+                      "w-28 h-10", // Adjusted size
                       isRunning ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90"
                     )}
                   >
                     {isRunning ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
                   </Button>
-                  <Button size="lg" variant="outline" onClick={resetMeditation} className="w-24">
+                  <Button size="lg" variant="outline" onClick={resetMeditation} className="w-28 h-10"> {/* Adjusted size */}
                     <RefreshCcw className="h-6 w-6" />
                   </Button>
                 </div>
 
                 <div className="flex justify-between items-center">
-                  <Button variant="ghost" onClick={goToPreviousStep} disabled={currentStepIndex === 0 && isTensingPhase}>
+                  <Button variant="ghost" onClick={goToPreviousStep} disabled={currentStepIndex === 0 && isTensingPhase} className="h-9"> {/* Adjusted height */}
                     <ChevronLeft className="mr-2 h-4 w-4" /> Previous
                   </Button>
-                  <Button variant="ghost" onClick={goToNextStep} disabled={currentStepIndex === steps.length - 1 && !isTensingPhase}>
+                  <Button variant="ghost" onClick={goToNextStep} disabled={currentStepIndex === steps.length - 1 && !isTensingPhase} className="h-9"> {/* Adjusted height */}
                     Next <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
                 </div>

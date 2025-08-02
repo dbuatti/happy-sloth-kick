@@ -175,7 +175,7 @@ const GuidedImageryPage: React.FC = () => {
           <CardContent className="space-y-6">
             <div className="space-y-2">
               <Select value={selectedThemeName} onValueChange={setSelectedThemeName} disabled={isRunning}>
-                <SelectTrigger className="w-full max-w-[240px] mx-auto">
+                <SelectTrigger className="w-full max-w-[240px] mx-auto h-9"> {/* Adjusted height */}
                   <SelectValue placeholder="Select a theme" />
                 </SelectTrigger>
                 <SelectContent>
@@ -196,7 +196,7 @@ const GuidedImageryPage: React.FC = () => {
                 <Sparkles className="h-16 w-16 text-primary mx-auto animate-bounce" />
                 <p className="text-xl font-semibold">Meditation Complete!</p>
                 <p className="text-muted-foreground">You've completed your guided imagery session.</p>
-                <Button onClick={resetMeditation}>
+                <Button onClick={resetMeditation} className="h-9"> {/* Adjusted height */}
                   <RefreshCcw className="mr-2 h-4 w-4" /> Start Over
                 </Button>
               </div>
@@ -204,7 +204,7 @@ const GuidedImageryPage: React.FC = () => {
               <>
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">Current Instruction:</p>
-                  <p className="text-md text-foreground min-h-[60px] flex items-center justify-center">
+                  <p className="text-md text-foreground min-h-[60px] flex items-center justify-center"> {/* Added min-height */}
                     {currentTheme.script[currentScriptIndex]}
                   </p>
                 </div>
@@ -228,14 +228,14 @@ const GuidedImageryPage: React.FC = () => {
                     size="lg"
                     onClick={isRunning ? pauseTimer : startTimer}
                     className={cn(
-                      "w-24",
+                      "w-28 h-10", // Adjusted size
                       isRunning ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90"
                     )}
                     disabled={timeRemaining === 0 && !isRunning}
                   >
                     {isRunning ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
                   </Button>
-                  <Button size="lg" variant="outline" onClick={resetMeditation} className="w-24">
+                  <Button size="lg" variant="outline" onClick={resetMeditation} className="w-28 h-10"> {/* Adjusted size */}
                     <RefreshCcw className="h-6 w-6" />
                   </Button>
                 </div>

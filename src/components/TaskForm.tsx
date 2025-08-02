@@ -451,6 +451,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
           {...register('notes')}
           rows={2}
           disabled={isSaving || isSuggesting}
+          className="min-h-[60px]" // Ensure minimum height for textarea
         />
         {errors.notes && <p className="text-destructive text-sm mt-1">{errors.notes.message}</p>}
       </div>

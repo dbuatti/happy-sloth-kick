@@ -82,7 +82,7 @@ const TaskFilter: React.FC<TaskFilterProps> = ({
   const isAnyFilterActive = searchFilter !== '' || statusFilter !== 'all' || categoryFilter !== 'all' || priorityFilter !== 'all' || sectionFilter !== 'all';
 
   return (
-    <div className="flex flex-col sm:flex-row gap-4 mb-6">
+    <div className="flex flex-col sm:flex-row gap-3 mb-4"> {/* Adjusted gap and margin-bottom */}
       <div className="relative flex-1">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
         <Input
@@ -90,16 +90,16 @@ const TaskFilter: React.FC<TaskFilterProps> = ({
           placeholder="Search tasks..."
           value={searchFilter}
           onChange={handleSearchChange}
-          className="pl-10"
+          className="pl-10 h-9" // Adjusted height
         />
         {searchFilter && (
           <Button
             variant="ghost"
             size="sm"
-            className="absolute right-2 top-1/2 h-6 w-6 -translate-y-1/2 p-0"
+            className="absolute right-2 top-1/2 h-7 w-7 -translate-y-1/2 p-0" // Adjusted size
             onClick={handleClearSearch}
           >
-            <X className="h-3 w-3" />
+            <X className="h-3.5 w-3.5" /> {/* Adjusted icon size */}
           </Button>
         )}
       </div>
@@ -107,17 +107,17 @@ const TaskFilter: React.FC<TaskFilterProps> = ({
       <div className="flex gap-2">
         <Popover open={showAdvanced} onOpenChange={setShowAdvanced}>
           <PopoverTrigger asChild>
-            <Button variant="outline" className="gap-2">
+            <Button variant="outline" className="gap-2 h-9"> {/* Adjusted height */}
               <Filter className="h-4 w-4" />
               Filter
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-80">
+          <PopoverContent className="w-80 p-4"> {/* Adjusted padding */}
             <div className="grid gap-4">
               <div className="space-y-2">
                 <Label>Status</Label>
                 <Select value={statusFilter} onValueChange={handleStatusChange}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-9"> {/* Adjusted height */}
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent className="z-[9999]"> {/* Add z-index here */}
@@ -133,7 +133,7 @@ const TaskFilter: React.FC<TaskFilterProps> = ({
               <div className="space-y-2">
                 <Label>Category</Label>
                 <Select value={categoryFilter} onValueChange={handleCategoryChange}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-9"> {/* Adjusted height */}
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent className="z-[9999]"> {/* Add z-index here */}
@@ -151,7 +151,7 @@ const TaskFilter: React.FC<TaskFilterProps> = ({
               <div className="space-y-2">
                 <Label>Priority</Label>
                 <Select value={priorityFilter} onValueChange={handlePriorityChange}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-9"> {/* Adjusted height */}
                     <SelectValue placeholder="Select priority" />
                   </SelectTrigger>
                   <SelectContent className="z-[9999]"> {/* Add z-index here */}
@@ -167,7 +167,7 @@ const TaskFilter: React.FC<TaskFilterProps> = ({
               <div className="space-y-2">
                 <Label>Section</Label>
                 <Select value={sectionFilter} onValueChange={handleSectionChange}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-9"> {/* Adjusted height */}
                     <SelectValue placeholder="Select section" />
                   </SelectTrigger>
                   <SelectContent className="z-[9999]"> {/* Add z-index here */}
@@ -185,7 +185,7 @@ const TaskFilter: React.FC<TaskFilterProps> = ({
           </PopoverContent>
         </Popover>
         {isAnyFilterActive && (
-          <Button variant="outline" onClick={clearAllFilters} className="gap-2">
+          <Button variant="outline" onClick={clearAllFilters} className="gap-2 h-9"> {/* Adjusted height */}
             <ListRestart className="h-4 w-4" />
             Clear Filters
           </Button>

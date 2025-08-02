@@ -107,7 +107,7 @@ const WorkHoursSettings: React.FC = () => {
                 type="time"
                 value={allStartTime}
                 onChange={(e) => setAllStartTime(e.target.value)}
-                className="w-full"
+                className="w-full h-9" // Adjusted height
               />
             </div>
             <span className="text-muted-foreground">-</span>
@@ -118,10 +118,10 @@ const WorkHoursSettings: React.FC = () => {
                 type="time"
                 value={allEndTime}
                 onChange={(e) => setAllEndTime(e.target.value)}
-                className="w-full"
+                className="w-full h-9" // Adjusted height
               />
             </div>
-            <Button onClick={handleSetAllHoursAndSave} className="w-full sm:w-auto" disabled={isSaving}>
+            <Button onClick={handleSetAllHoursAndSave} className="w-full sm:w-auto h-9" disabled={isSaving}> {/* Adjusted height */}
               Apply to All
             </Button>
           </div>
@@ -142,7 +142,7 @@ const WorkHoursSettings: React.FC = () => {
               type="time"
               value={dayHour.start_time}
               onChange={(e) => handleTimeChange(dayHour.day_of_week, 'start_time', e.target.value)}
-              className="w-28"
+              className="w-28 h-9" // Adjusted height
               disabled={!dayHour.enabled || isSaving}
             />
             <span className="text-muted-foreground">-</span>
@@ -150,12 +150,12 @@ const WorkHoursSettings: React.FC = () => {
               type="time"
               value={dayHour.end_time}
               onChange={(e) => handleTimeChange(dayHour.day_of_week, 'end_time', e.target.value)}
-              className="w-28"
+              className="w-28 h-9" // Adjusted height
               disabled={!dayHour.enabled || isSaving}
             />
           </div>
         ))}
-        <Button onClick={handleSaveAllWorkHours} className="w-full mt-4" disabled={isSaving}>
+        <Button onClick={handleSaveAllWorkHours} className="w-full mt-4 h-9" disabled={isSaving}> {/* Adjusted height */}
           {isSaving ? 'Saving...' : 'Save Work Hours'}
         </Button>
       </CardContent>
