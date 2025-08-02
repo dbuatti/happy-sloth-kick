@@ -119,7 +119,7 @@ const BodyScanMeditationPage: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col">
       <main className="flex-grow p-4 flex justify-center">
-        <Card className="w-full max-w-md shadow-lg text-center">
+        <Card className="w-full max-w-md shadow-lg rounded-xl text-center">
           <CardHeader>
             <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
               <ScanEye className="h-6 w-6 text-primary" /> Body Scan Meditation

@@ -51,17 +51,17 @@ const LandingPage: React.FC = () => {
         </div>
 
         <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl w-full">
-          <div className="bg-card p-6 rounded-lg shadow-lg flex flex-col items-center text-center">
+          <div className="bg-card p-6 rounded-xl shadow-lg flex flex-col items-center text-center">
             <CalendarDays className="h-12 w-12 text-primary mb-4" />
             <h3 className="text-xl font-semibold mb-2">Intuitive Daily Planning</h3>
             <p className="text-muted-foreground text-sm">Organize tasks, set priorities, and track progress with ease.</p>
           </div>
-          <div className="bg-card p-6 rounded-lg shadow-lg flex flex-col items-center text-center">
+          <div className="bg-card p-6 rounded-xl shadow-lg flex flex-col items-center text-center">
             <CheckCircle2 className="h-12 w-12 text-primary mb-4" />
             <h3 className="text-xl font-semibold mb-2">Smart Productivity Tools</h3>
             <p className="text-muted-foreground text-sm">Focus mode, project balancing, and AI-powered suggestions.</p>
           </div>
-          <div className="bg-card p-6 rounded-lg shadow-lg flex flex-col items-center text-center">
+          <div className="bg-card p-6 rounded-xl shadow-lg flex flex-col items-center text-center">
             <Sparkles className="h-12 w-12 text-primary mb-4" />
             <h3 className="text-xl font-semibold mb-2">Mindful Living Integration</h3>
             <p className="text-muted-foreground text-sm">Journals, meditations, and sensory tools for well-being.</p>

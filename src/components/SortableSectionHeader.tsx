@@ -99,7 +99,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
       className={cn(
         "relative flex items-center py-2 pr-3", // Increased vertical padding
         "group",
-        isDragging && !isOverlay ? "" : "", // Removed rounded-lg
+        isDragging && !isOverlay ? "" : "rounded-xl", // Added rounded-xl here
         isOverlay ? "shadow-xl ring-2 ring-primary bg-card" : "", // Removed hover:shadow-sm
         isOverlay ? "cursor-grabbing" : "",
       )}

@@ -66,7 +66,7 @@ const SleepTracker: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col">
       <main className="flex-grow p-4 flex justify-center">
-        <Card className="w-full max-w-md mx-auto shadow-lg p-4">
+        <Card className="w-full max-w-md mx-auto shadow-lg rounded-xl p-4">
           <CardHeader className="pb-2">
             <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
               <Moon className="h-7 w-7 text-primary" /> Sleep Tracker

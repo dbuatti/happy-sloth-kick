@@ -113,7 +113,7 @@ const MiniBreathingBubble: React.FC = () => {
   };
 
   return (
-    <Card className="w-full shadow-lg text-center">
+    <Card className="w-full shadow-lg rounded-xl text-center">
       <CardHeader className="pb-2">
         <CardTitle className="text-xl font-bold flex items-center justify-center gap-2">
           <Wind className="h-5 w-5 text-primary" /> Breathing Exercise

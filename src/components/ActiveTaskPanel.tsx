@@ -160,7 +160,7 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
   return (
     <div className="h-full flex flex-col space-y-3">
       {/* Focus Timer Card */}
-      <Card className="w-full shadow-lg text-center flex-shrink-0">
+      <Card className="w-full shadow-lg rounded-xl text-center flex-shrink-0">
         <CardHeader className="pb-2">
           <CardTitle className="text-xl font-bold flex items-center justify-center gap-2">
             <Clock className="h-5 w-5 text-primary" /> Focus Timer
@@ -203,7 +203,7 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
       </Card>
 
       {/* Next Up Task Card */}
-      <Card className="w-full shadow-lg flex-grow flex flex-col">
+      <Card className="w-full shadow-lg rounded-xl flex-grow flex flex-col">
         <CardHeader className="pb-2">
           <CardTitle className="text-xl font-bold flex items-center gap-2">
             <Target className="h-5 w-5 text-primary" /> Next Up
@@ -234,7 +234,7 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
       </Card>
 
       {/* Upcoming Tasks Card */}
-      <Card className="w-full shadow-lg flex-shrink-0">
+      <Card className="w-full shadow-lg rounded-xl flex-shrink-0">
         <CardHeader className="pb-2">
           <CardTitle className="text-xl font-bold flex items-center gap-2">
             <ListTodo className="h-5 w-5 text-primary" /> Upcoming

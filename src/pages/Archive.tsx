@@ -51,7 +51,7 @@ const Archive: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col">
       <main className="flex-grow p-4 flex justify-center">
-        <Card className="w-full max-w-4xl mx-auto shadow-lg p-4">
+        <Card className="w-full max-w-4xl mx-auto shadow-lg rounded-xl p-4">
           <CardHeader className="pb-2">
             <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
               <ArchiveIcon className="h-7 w-7 text-primary" /> Archived Tasks
@@ -61,7 +61,7 @@ const Archive: React.FC = () => {
             {archiveLoading ? (
               <div className="space-y-3">
                 {[...Array(5)].map((_, i) => (
-                  <Skeleton key={i} className="h-20 w-full rounded-lg" />
+                  <Skeleton key={i} className="h-20 w-full rounded-xl" />
                 ))}
               </div>
             ) : archivedTasks.length === 0 ? (
@@ -73,7 +73,7 @@ const Archive: React.FC = () => {
             ) : (
               <ul className="space-y-2">
                 {archivedTasks.map((task) => (
-                  <li key={task.id} className="relative rounded-lg p-2 transition-all duration-200 ease-in-out group hover:shadow-md">
+                  <li key={task.id} className="relative rounded-xl p-2 transition-all duration-200 ease-in-out group hover:shadow-md">
                     <TaskItem
                       task={task}
                       onStatusChange={handleTaskStatusChange}

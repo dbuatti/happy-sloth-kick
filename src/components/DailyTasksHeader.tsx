@@ -216,7 +216,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
       </div>
 
       {/* NEW: Next Up Task Display */}
-      <div className="bg-card p-6 mx-4 rounded-lg shadow-lg mb-4 flex flex-col items-center text-center">
+      <div className="bg-card p-6 mx-4 rounded-xl shadow-lg mb-4 flex flex-col items-center text-center">
         <h3 className="text-xl font-bold text-primary mb-3 flex items-center gap-2">
           <Target className="h-6 w-6" /> Your Next Task
         </h3>

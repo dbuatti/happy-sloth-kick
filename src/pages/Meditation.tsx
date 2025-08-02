@@ -89,7 +89,7 @@ const Meditation: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-4">
-      <Card className="w-full max-w-md shadow-lg text-center">
+      <Card className="w-full max-w-md shadow-lg rounded-xl text-center">
         <CardHeader>
           <CardTitle className="text-3xl font-bold flex items-center justify-center gap-2">
             <Leaf className="h-7 w-7 text-primary" /> Meditation Timer

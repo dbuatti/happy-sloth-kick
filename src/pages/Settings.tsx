@@ -96,14 +96,14 @@ const Settings: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col">
       <main className="flex-grow p-4 flex justify-center">
-        <Card className="w-full max-w-4xl mx-auto shadow-lg p-4">
+        <Card className="w-full max-w-4xl mx-auto shadow-lg rounded-xl p-4">
           <CardHeader className="pb-2">
             <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
               <SettingsIcon className="h-7 w-7 text-primary" /> Settings
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0 space-y-6">
-            <Card className="w-full shadow-lg p-4">
+            <Card className="w-full shadow-lg rounded-xl p-4">
               <CardHeader className="pb-2">
                 <CardTitle className="text-2xl font-bold text-center">Profile Settings</CardTitle>
               </CardHeader>
@@ -155,7 +155,7 @@ const Settings: React.FC = () => {
             </Card>
 
             {/* Theme Toggle */}
-            <Card className="w-full shadow-lg">
+            <Card className="w-full shadow-lg rounded-xl">
               <CardHeader className="pb-2">
                 <CardTitle className="text-2xl font-bold flex items-center gap-2">
                   <Sun className="h-6 w-6 text-primary" /> Theme
@@ -183,7 +183,7 @@ const Settings: React.FC = () => {
             <ProjectTrackerSettings />
 
             {/* Chat Link Placeholder */}
-            <Card className="w-full shadow-lg">
+            <Card className="w-full shadow-lg rounded-xl">
               <CardHeader className="pb-2">
                 <CardTitle className="text-2xl font-bold flex items-center gap-2">
                   <MessageSquare className="h-6 w-6 text-primary" /> Support

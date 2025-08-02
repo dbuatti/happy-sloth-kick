@@ -87,7 +87,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   return (
     <div
       className={cn(
-        "relative flex items-center space-x-2 w-full py-2 pr-3", // Increased vertical padding
+        "relative flex items-center space-x-2 w-full py-3 pr-3", // Increased vertical padding
         task.status === 'completed' ? "text-muted-foreground bg-task-completed-bg" : "text-foreground",
         "group",
         isOverlay ? "cursor-grabbing" : "", // Removed hover:shadow-sm

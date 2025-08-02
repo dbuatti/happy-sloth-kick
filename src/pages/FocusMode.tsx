@@ -132,7 +132,7 @@ const FocusMode: React.FC = () => {
     <div className="flex-1 flex flex-col">
       <main className="flex-grow p-4 flex justify-center">
         <div className="w-full max-w-4xl mx-auto space-y-6">
-          <Card className="w-full shadow-lg text-center">
+          <Card className="w-full shadow-lg rounded-xl text-center">
             <CardHeader className="pb-2">
               <CardTitle className="text-3xl font-bold flex items-center justify-center gap-2">
                 <Brain className="h-7 w-7 text-primary" /> Focus Mode

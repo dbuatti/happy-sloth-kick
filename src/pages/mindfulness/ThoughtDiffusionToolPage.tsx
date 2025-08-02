@@ -56,7 +56,9 @@ const ThoughtDiffusionToolPage: React.FC = () => {
     }
 
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
     };
   }, [isRunning, activeTechnique, playSound]);
 
@@ -115,7 +117,7 @@ const ThoughtDiffusionToolPage: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col">
       <main className="flex-grow p-4 flex justify-center">
-        <Card className="w-full max-w-md shadow-lg text-center">
+        <Card className="w-full max-w-md shadow-lg rounded-xl text-center">
           <CardHeader>
             <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
               <Lightbulb className="h-6 w-6 text-primary" /> Thought Diffusion
@@ -171,7 +173,7 @@ const ThoughtDiffusionToolPage: React.FC = () => {
               </Button>
             </div>
 
-            <div className="min-h-[100px] p-4 border rounded-lg bg-muted flex items-center justify-center text-center text-lg font-semibold text-foreground break-words">
+            <div className="min-h-[100px] p-4 border rounded-xl bg-muted flex items-center justify-center text-center text-lg font-semibold text-foreground break-words">
               {isComplete && activeTechnique === 'repeat' ? (
                 <div className="flex flex-col items-center gap-2">
                   <Sparkles className="h-8 w-8 text-primary" />

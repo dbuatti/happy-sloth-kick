@@ -127,7 +127,7 @@ const WorryJournal: React.FC = () => {
   };
 
   return (
-    <Card className="w-full max-w-md shadow-lg">
+    <Card className="w-full max-w-md shadow-lg rounded-xl">
       <CardHeader>
         <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
           <Brain className="h-6 w-6 text-primary" /> Worry Journal
@@ -155,15 +155,19 @@ const WorryJournal: React.FC = () => {
           <h3 className="text-lg font-semibold">Past Entries</h3>
           {loading ? (
             <div className="space-y-2">
-              <Skeleton className="h-16 w-full" />
-              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full rounded-xl" />
+              <Skeleton className="h-16 w-full rounded-xl" />
             </div>
           ) : entries.length === 0 ? (
-            <p className="text-muted-foreground text-sm text-center">No entries yet. Start writing!</p>
+            <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
+              <Brain className="h-12 w-12 text-muted-foreground" />
+              <p className="text-lg font-medium mb-2">No entries yet.</p>
+              <p className="text-sm">Start writing down your thoughts to gain perspective!</p>
+            </div>
           ) : (
             <ul className="space-y-2">
               {entries.map(entry => (
-                <li key={entry.id} className="p-3 rounded-md bg-background flex justify-between items-start gap-2 shadow-sm">
+                <li key={entry.id} className="p-3 rounded-xl bg-background flex justify-between items-start gap-2 shadow-sm">
                   <div className="flex-1">
                     <p className="text-sm text-foreground">{entry.thought}</p>
                     <p className="text-xs text-muted-foreground mt-1">

@@ -182,7 +182,7 @@ const ProjectBalanceTracker: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col">
       <main className="flex-grow p-4">
-        <Card className="w-full max-w-4xl mx-auto shadow-lg p-4">
+        <Card className="w-full max-w-4xl mx-auto shadow-lg rounded-xl p-4">
           <CardHeader className="pb-2">
             <CardTitle className="text-3xl font-bold flex items-center justify-center gap-2">
               <LayoutGrid className="h-7 w-7" /> {sectionTitle}
@@ -262,7 +262,7 @@ const ProjectBalanceTracker: React.FC = () => {
           </CardHeader>
           <CardContent className="pt-0">
             {showCelebration && (
-              <div className="bg-primary/5 dark:bg-primary/10 text-primary p-4 rounded-lg mb-4 text-center flex flex-col items-center gap-2">
+              <div className="bg-primary/5 dark:bg-primary/10 text-primary p-4 rounded-xl mb-4 text-center flex flex-col items-center gap-2">
                 <Sparkles className="h-8 w-8 text-primary animate-bounce" />
                 <p className="text-xl font-semibold">Congratulations! All projects are balanced!</p>
                 <p>Ready to start a new cycle?</p>
@@ -275,7 +275,7 @@ const ProjectBalanceTracker: React.FC = () => {
             {loading ? (
               <div className="space-y-4">
                 {[...Array(3)].map((_, i) => (
-                  <div key={i} className="rounded-lg p-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-card dark:bg-gray-800 shadow-sm">
+                  <div key={i} className="rounded-xl p-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-card dark:bg-gray-800 shadow-sm">
                     <div className="flex-1 min-w-0 space-y-2">
                       <Skeleton className="h-6 w-3/4" />
                       <Skeleton className="h-4 w-1/2" />
@@ -298,7 +298,7 @@ const ProjectBalanceTracker: React.FC = () => {
             ) : (
               <div className="space-y-4">
                 {leastWorkedOnProject && (
-                  <div className="bg-primary/5 dark:bg-primary/10 text-primary p-4 rounded-lg mb-4 text-center flex flex-col items-center gap-2">
+                  <div className="bg-primary/5 dark:bg-primary/10 text-primary p-4 rounded-xl mb-4 text-center flex flex-col items-center gap-2">
                     <Lightbulb className="h-5 w-5 text-primary flex-shrink-0" />
                     <p className="text-sm text-foreground">
                       Consider focusing on: <span className="font-semibold">{leastWorkedOnProject.name}</span> (Current count: {leastWorkedOnProject.current_count})
@@ -311,7 +311,7 @@ const ProjectBalanceTracker: React.FC = () => {
                     <li
                       key={project.id}
                       className={cn(
-                        "rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4",
+                        "rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4",
                         "transition-all duration-200 ease-in-out group",
                         "hover:shadow-md",
                         editingProjectId === project.id ? "bg-accent/5 dark:bg-accent/10 border-accent/30 dark:border-accent/70" : "bg-card dark:bg-gray-800 shadow-sm",

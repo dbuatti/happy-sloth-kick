@@ -13,7 +13,7 @@ interface MindfulnessToolCardProps {
 
 const MindfulnessToolCard: React.FC<MindfulnessToolCardProps> = ({ title, description, icon: Icon, link }) => {
   return (
-    <Card className="w-full shadow-lg hover:shadow-xl transition-shadow duration-200 flex flex-col">
+    <Card className="w-full shadow-lg hover:shadow-xl transition-shadow duration-200 flex flex-col rounded-xl">
       <CardHeader className="pb-2 flex-row items-center justify-between">
         <CardTitle className="text-xl font-bold flex items-center gap-2">
           <Icon className="h-6 w-6 text-primary" /> {title}
