@@ -40,11 +40,13 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   const transition = sortable?.transition;
   const isDragging = sortable?.isDragging || false; // Default to false if not sortable
 
-  const style = {
+  const style: React.CSSProperties = { // Explicitly type as React.CSSProperties
     transform: CSS.Transform.toString(transform),
     transition,
-    zIndex: isDragging ? 10 : 'auto',
-    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : 'auto', // Original item should be behind overlay
+    // If it's the original item being dragged, make it invisible
+    opacity: isDragging && !isOverlay ? 0 : 1,
+    visibility: isDragging && !isOverlay ? 'hidden' : 'visible',
     paddingLeft: `${level * 12}px`,
   };
 

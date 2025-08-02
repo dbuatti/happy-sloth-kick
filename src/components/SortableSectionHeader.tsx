@@ -58,11 +58,13 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
   const transition = sortable?.transition;
   const isDragging = sortable?.isDragging || false;
 
-  const style = {
+  const style: React.CSSProperties = { // Explicitly type as React.CSSProperties
     transform: CSS.Transform.toString(transform),
     transition,
-    zIndex: isDragging ? 20 : 'auto',
-    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : 'auto', // Original item should be behind overlay
+    // If it's the original item being dragged, make it invisible
+    opacity: isDragging && !isOverlay ? 0 : 1,
+    visibility: isDragging && !isOverlay ? 'hidden' : 'visible',
   };
 
   return (
