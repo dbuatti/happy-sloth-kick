@@ -19,7 +19,6 @@ interface ActiveTaskPanelProps {
   onDeleteTask: (taskId: string) => void;
   sections: TaskSection[];
   allCategories: Category[];
-  // Removed currentDate as it's not directly used here
 }
 
 const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
@@ -31,7 +30,6 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
   sections,
   allCategories,
 }) => {
-  // Removed 'user' from useAuth destructuring as it's not directly used here.
   useAuth(); 
 
   const { playSound } = useSound();
@@ -47,9 +45,6 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
   // Removed isTaskDetailOpen, taskToEdit, setTaskToEdit as they are not managed here
-
-  // Removed destructuring of section management functions from useTasks as they are not used here
-  // const { createSection, updateSection, deleteSection, updateSectionIncludeInFocusMode } = useTasks();
 
   useEffect(() => {
     setTimeRemaining(focusDuration);
@@ -126,12 +121,6 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
       playSound('success');
     }
   };
-
-  // Removed handleOpenTaskDetails as it's no longer needed here
-  // const handleOpenTaskDetails = (task: Task) => {
-  //   setTaskToEdit(task);
-  //   setIsTaskDetailOpen(true);
-  // };
 
   const handleOpenTaskOverview = (task: Task) => {
     setTaskToOverview(task);
@@ -289,7 +278,6 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
           allTasks={tasks}
         />
       )}
-      {/* Removed TaskDetailDialog from here */}
     </div>
   );
 };

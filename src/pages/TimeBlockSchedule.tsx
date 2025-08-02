@@ -28,7 +28,6 @@ import {
 import { useAuth } from '@/context/AuthContext'; // Re-introduced useAuth
 
 const TimeBlockSchedule: React.FC = () => {
-  // Removed 'user' from useAuth destructuring as it's not directly used here.
   useAuth(); 
 
   const [currentDate, setCurrentDate] = useState(new Date());

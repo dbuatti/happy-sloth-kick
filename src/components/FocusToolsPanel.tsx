@@ -6,10 +6,8 @@ import { Play, Pause, RefreshCcw, CheckCircle2, Edit, Target, ListTodo, Clock, P
 import { cn } from '@/lib/utils';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
-// Removed TaskDetailDialog import as it's not managed here
 import TaskOverviewDialog from './TaskOverviewDialog'; // For opening overview from panel
 import { useAuth } from '@/context/AuthContext'; // Import useAuth
-// Removed useTasks as it's not directly called in this component
 import { Input } from './ui/input';
 import { suggestTaskDetails } from '@/integrations/supabase/api';
 import { dismissToast, showError, showLoading } from '@/utils/toast';
@@ -26,7 +24,6 @@ interface FocusToolsPanelProps {
   allCategories: Category[];
   currentDate: Date;
   handleAddTask: (taskData: any) => Promise<any>; // Added handleAddTask
-  // Removed section management props as they are not used here
   createSection: (name: string) => Promise<void>; // Added section management props
   updateSection: (sectionId: string, newName: string) => Promise<void>;
   deleteSection: (sectionId: string) => Promise<void>;
@@ -49,7 +46,6 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
   deleteSection,
   updateSectionIncludeInFocusMode,
 }) => {
-  // Removed 'user' from useAuth destructuring as it's not directly used here.
   useAuth(); 
 
   const navigate = useNavigate();
@@ -66,7 +62,6 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
   // Task Detail/Overview Dialog State
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
-  // Removed isTaskDetailOpen, taskToEdit, setTaskToEdit as they are not managed here
 
   // Quick Add Task State
   const [quickAddTaskDescription, setQuickAddTaskDescription] = useState('');
@@ -147,12 +142,6 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
       playSound('success');
     }
   };
-
-  // Removed handleOpenTaskDetails as it's no longer needed
-  // const handleOpenTaskDetails = (task: Task) => {
-  //   setTaskToEdit(task);
-  //   setIsTaskDetailOpen(true);
-  // };
 
   const handleOpenTaskOverview = (task: Task) => {
     setTaskToOverview(task);
@@ -402,7 +391,6 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
           allTasks={tasks}
         />
       )}
-      {/* Removed TaskDetailDialog from here */}
     </div>
   );
 };
