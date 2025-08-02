@@ -5,8 +5,8 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Plus, CheckCircle2, FolderOpen, ChevronDown, MoreHorizontal, Trash2, Eye, EyeOff } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'; // Removed DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger
+import { Plus, CheckCircle2, ChevronDown, MoreHorizontal, Trash2, Eye, EyeOff } from 'lucide-react'; // Removed FolderOpen
 import { cn } from '@/lib/utils';
 import { TaskSection } from '@/hooks/useTasks';
 // Removed DragHandleIcon import
@@ -89,7 +89,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
     }
   }, [handleCancelEdit]);
 
-  const getTaskCountCircleClasses = (count: number) => {
+  const getTaskCountCircleClasses = () => { // Removed unused 'count' parameter
     // Always use primary color for the badge background, and primary-foreground for text
     return "bg-primary text-primary-foreground";
   };
@@ -150,7 +150,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               {/* NEW: Fun colored circle for task count */}
               <div className={cn(
                 "ml-2 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 transition-colors duration-200", // Increased size and font
-                getTaskCountCircleClasses(sectionTasksCount)
+                getTaskCountCircleClasses() // Call without parameter
               )} data-no-dnd="true">
                 {sectionTasksCount}
               </div>

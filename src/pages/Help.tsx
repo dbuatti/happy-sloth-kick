@@ -1,8 +1,7 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { Lightbulb, Keyboard, Palette, Settings, ChevronLeft, ChevronRight, Edit, User, LogOut, BarChart3 } from 'lucide-react';
+import { Lightbulb, Keyboard, Palette, Settings, ChevronLeft, ChevronRight, Edit, User, BarChart3 } from 'lucide-react'; // Removed LogOut
 
 const Help = () => {
   return (

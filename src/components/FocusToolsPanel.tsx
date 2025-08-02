@@ -9,7 +9,7 @@ import { useSound } from '@/context/SoundContext';
 import TaskDetailDialog from './TaskDetailDialog';
 import TaskOverviewDialog from './TaskOverviewDialog'; // For opening overview from panel
 import { useAuth } from '@/context/AuthContext'; // Import useAuth
-import { useTasks } from '@/hooks/useTasks'; // Import useTasks here
+// Removed useTasks as it's not directly called in this component
 import { Input } from './ui/input';
 import { suggestTaskDetails } from '@/integrations/supabase/api';
 import { dismissToast, showError, showLoading } from '@/utils/toast';
@@ -20,7 +20,7 @@ interface FocusToolsPanelProps {
   tasks: Task[];
   filteredTasks: Task[];
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
-  onOpenDetail: (task: Task) => void;
+  onOpenDetail: (task: Task) => void; // This prop is used by handleOpenTaskDetails
   onDeleteTask: (taskId: string) => void;
   sections: TaskSection[];
   allCategories: Category[];
@@ -37,7 +37,7 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
   tasks,
   filteredTasks,
   updateTask,
-  onOpenDetail,
+  onOpenDetail, // Keep this, it's used
   onDeleteTask,
   sections,
   allCategories,
@@ -49,7 +49,7 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
   updateSectionIncludeInFocusMode,
 }) => {
   const { user } = useAuth(); // Use useAuth to get the user
-  const userId = user?.id || null; // Get userId from useAuth
+  // Removed userId as it's not directly used in this component's logic
   const navigate = useNavigate();
 
   const { playSound } = useSound();

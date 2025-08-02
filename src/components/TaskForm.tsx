@@ -18,7 +18,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { suggestTaskDetails } from '@/integrations/supabase/api';
 import { showError } from '@/utils/toast';
-import { useAuth } from '@/context/AuthContext';
+// Removed useAuth as it's not directly used in this component
 
 const taskFormSchema = z.object({
   description: z.string().min(1, { message: 'Task description is required.' }).max(255, { message: 'Description must be 255 characters or less.' }),

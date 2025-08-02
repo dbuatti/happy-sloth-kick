@@ -28,7 +28,7 @@ const DailyTasksV3: React.FC = () => {
     nextAvailableTask,
     updateTask,
     deleteTask,
-    userId,
+    // Removed userId as it's not directly used in this component's logic
     loading: tasksLoading,
     sections,
     allCategories,

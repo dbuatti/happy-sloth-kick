@@ -10,8 +10,9 @@ import { useSound } from '@/context/SoundContext';
 import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 const Meditation: React.FC = () => {
-  const { user } = useAuth(); // Use useAuth to get the user
-  const userId = user?.id; // Get userId from useAuth
+  // Removed userId as it's not directly used in this component's logic
+  // const { user } = useAuth(); 
+  // const userId = user?.id; 
 
   const { playSound } = useSound();
   const [duration, setDuration] = useState(10 * 60); // Default to 10 minutes in seconds
@@ -55,20 +56,20 @@ const Meditation: React.FC = () => {
     if (timeRemaining > 0) {
       setIsRunning(true);
       setIsSessionActive(true);
-      playSound('start'); // Play start sound on start
+      playSound('start');
     }
   }, [timeRemaining, playSound]);
 
   const pauseTimer = useCallback(() => {
     setIsRunning(false);
-    playSound('pause'); // Play pause sound on pause
+    playSound('pause');
   }, [playSound]);
 
   const resetTimer = useCallback(() => {
     pauseTimer();
     setTimeRemaining(duration);
     setIsSessionActive(false);
-    playSound('reset'); // Play reset sound on reset
+    playSound('reset');
   }, [pauseTimer, duration, playSound]);
 
   const handleDurationChange = useCallback((value: string) => {

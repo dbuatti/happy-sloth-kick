@@ -9,7 +9,7 @@ import { TaskSection } from '@/hooks/useTasks';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/context/AuthContext';
-import { showSuccess, showError } from '@/utils/toast';
+import { showSuccess, showError } from '@/utils/toast'; // Keep showSuccess, it is used
 
 interface ManageSectionsDialogProps {
   isOpen: boolean;
@@ -30,8 +30,9 @@ const ManageSectionsDialog: React.FC<ManageSectionsDialogProps> = ({
   deleteSection,
   updateSectionIncludeInFocusMode,
 }) => {
-  const { user } = useAuth();
-  const userId = user?.id;
+  // Removed userId as it's not directly used in this component's logic
+  // const { user } = useAuth(); 
+  // const userId = user?.id; 
 
   const [newSectionName, setNewSectionName] = useState('');
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);

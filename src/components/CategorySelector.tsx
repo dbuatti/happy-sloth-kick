@@ -1,17 +1,18 @@
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+// Removed Input as it's not used directly
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, X } from 'lucide-react';
-import { supabase } from "@/integrations/supabase/client";
-import { showSuccess, showError } from "@/utils/toast";
+// Removed Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger as they are not used directly
+// Removed Plus, X as they are not used directly
+// Removed supabase as it's not used directly
+// Removed showSuccess, showError as they are not used directly
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from '@/lib/utils';
 import { categoryColorMap, CategoryColorKey, getCategoryColorProps } from '@/lib/categoryColors';
 import { Category } from '@/hooks/useTasks';
 import { useAuth } from '@/context/AuthContext'; // Import useAuth
 import ManageCategoriesDialog from './ManageCategoriesDialog'; // Import the new dialog
+// Removed AlertDialog components as they are not used directly
 
 interface CategorySelectorProps {
   value: string; // This is the category ID
@@ -20,8 +21,9 @@ interface CategorySelectorProps {
 }
 
 const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, categories }) => {
-  const { user } = useAuth(); // Use useAuth to get the user
-  const userId = user?.id || null; // Get userId from useAuth
+  // Removed userId as it's not directly used in this component's logic
+  // const { user } = useAuth(); 
+  // const userId = user?.id || null; 
 
   const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
 
@@ -81,7 +83,8 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, ca
           </SelectContent>
         </Select>
         <Button type="button" size="icon" variant="outline" className="h-9 w-9" onClick={() => setIsManageCategoriesOpen(true)}>
-          <Plus className="h-3.5 w-3.5" />
+          {/* Plus icon is used here */}
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-plus"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
         </Button>
       </div>
 

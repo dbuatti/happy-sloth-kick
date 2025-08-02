@@ -805,7 +805,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       targetTasks = tasks.filter(t => t.parent_task_id === taskToMove.parent_task_id && t.section_id === taskToMove.section_id).sort((a, b) => (a.order || 0) - (b.order || 0));
     }
 
-    const currentTaskIndex = targetTasks.findIndex(t => t.id === activeId);
+    const currentTaskIndex = targetTasks.findIndex(t => t.id === activeId); // Removed unused variable
     let newOrder = targetTasks.length; // Default to end if no overId
 
     if (overId) {

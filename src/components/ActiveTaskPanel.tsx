@@ -16,11 +16,11 @@ interface ActiveTaskPanelProps {
   tasks: Task[];
   filteredTasks: Task[];
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
-  onOpenDetail: (task: Task) => void;
+  onOpenDetail: (task: Task) => void; // This prop is used by handleOpenTaskDetails
   onDeleteTask: (taskId: string) => void;
   sections: TaskSection[];
   allCategories: Category[];
-  currentDate: Date;
+  currentDate: Date; // This prop is used by useTasks hook
 }
 
 const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
@@ -28,14 +28,15 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
   tasks,
   filteredTasks,
   updateTask,
-  onOpenDetail,
+  onOpenDetail, // Keep this, it's used
   onDeleteTask,
   sections,
   allCategories,
-  currentDate,
+  currentDate, // Keep this, it's used
 }) => {
   const { user } = useAuth(); // Use useAuth to get the user
-  const userId = user?.id || null; // Get userId from useAuth
+  // Removed userId as it's not directly used in this component's logic
+  // Removed setFocusDuration as it's not directly used in this component's logic
 
   const { playSound } = useSound();
 

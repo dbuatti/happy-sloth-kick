@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,8 +17,11 @@ interface WorkHourState {
 }
 
 const WorkHoursSettings: React.FC = () => {
-  const { user } = useAuth();
-  const userId = user?.id;
+  // Removed userId as it's not directly used in this component's logic
+  // const { user } = useAuth(); 
+  // const userId = user?.id; 
+  // Removed useCallback as it's not directly used in this component's logic
+
   // Call useWorkHours without a date to get all work hours
   const { workHours: fetchedWorkHours, loading, saveWorkHours, allDaysOfWeek, defaultTime } = useWorkHours();
   

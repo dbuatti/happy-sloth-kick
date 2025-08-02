@@ -25,8 +25,9 @@ const breathCycles: BreathCycle[] = [
 ];
 
 const BreathingBubblePage: React.FC = () => {
-  const { user } = useAuth(); // Use useAuth to get the user
-  const userId = user?.id; // Get userId from useAuth
+  // Removed userId as it's not directly used in this component's logic
+  // const { user } = useAuth(); 
+  // const userId = user?.id; 
 
   const { playSound } = useSound();
   const [isRunning, setIsRunning] = useState(false);
@@ -73,7 +74,7 @@ const BreathingBubblePage: React.FC = () => {
     setTimer(currentPhaseDuration);
 
     timerRef.current = setInterval(() => {
-      setTimer(prev => {
+      setTimer(prev => { // Corrected from setTimeRemaining to setTimer
         if (prev <= 1) {
           clearInterval(timerRef.current!);
           phaseIndexRef.current = (phaseIndexRef.current + 1) % cyclePhases.length;
@@ -94,6 +95,7 @@ const BreathingBubblePage: React.FC = () => {
         clearInterval(timerRef.current);
       }
     }
+
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);

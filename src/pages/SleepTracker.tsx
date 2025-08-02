@@ -18,8 +18,9 @@ interface SleepTrackerProps {
 }
 
 const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate }) => {
-  const { user } = useAuth();
-  const userId = user?.id;
+  // Removed userId as it's not directly used in this component's logic
+  // const { user } = useAuth(); 
+  // const userId = user?.id; 
 
   const { playSound } = useSound();
   const { sleepRecord, loading, saveSleepRecord } = useSleepRecords({ selectedDate: currentDate });

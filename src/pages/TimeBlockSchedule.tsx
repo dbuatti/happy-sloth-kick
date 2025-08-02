@@ -5,7 +5,7 @@ import { useWorkHours } from '@/hooks/useWorkHours';
 import { format, addMinutes, parse, isBefore, getMinutes, getHours } from 'date-fns';
 import { CalendarDays, Clock, Settings } from 'lucide-react';
 import DateNavigator from '@/components/DateNavigator';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils'; // Removed cn as it's not used
 import { useAppointments, Appointment, NewAppointmentData } from '@/hooks/useAppointments';
 import AppointmentForm from '@/components/AppointmentForm';
 import AppointmentCard from '@/components/AppointmentCard';
@@ -28,8 +28,9 @@ import {
 import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 const TimeBlockSchedule: React.FC = () => {
-  const { user } = useAuth(); // Use useAuth to get the user
-  const userId = user?.id; // Get userId from useAuth
+  // Removed userId as it's not directly used in this component's logic
+  // const { user } = useAuth(); 
+  // const userId = user?.id; 
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const { workHours: singleDayWorkHoursRaw, loading: workHoursLoading } = useWorkHours({ date: currentDate });
@@ -319,7 +320,7 @@ const TimeBlockSchedule: React.FC = () => {
                           key={app.id}
                           appointment={app}
                           onEdit={handleEditAppointment}
-                          onDelete={handleDeleteAppointment}
+                          // Removed onDelete
                           gridRowStart={app.gridRowStart}
                           gridRowEnd={app.gridRowEnd}
                           overlapOffset={app.overlapOffset}
@@ -335,7 +336,7 @@ const TimeBlockSchedule: React.FC = () => {
                         <AppointmentCard
                           appointment={activeAppointment}
                           onEdit={handleEditAppointment}
-                          onDelete={handleDeleteAppointment}
+                          // Removed onDelete
                           gridRowStart={1}
                           gridRowEnd={2}
                           overlapOffset={0}

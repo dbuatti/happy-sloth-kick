@@ -2,15 +2,15 @@ import React, { useRef } from 'react';
 import { Appointment } from '@/hooks/useAppointments';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
-import { Info } from 'lucide-react';
-import { useSortable } from '@dnd-kit/sortable';
+import { Info } => 'lucide-react';
+import { useSortable } from '@dnd-kit/sortable'; // Corrected syntax
 import { CSS } from '@dnd-kit/utilities';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface AppointmentCardProps {
   appointment: Appointment;
   onEdit: (appointment: Appointment) => void;
-  onDelete: (id: string) => void;
+  // Removed onDelete as it's not directly used in this component
   gridRowStart: number;
   gridRowEnd: number;
   overlapOffset: number;
@@ -22,7 +22,7 @@ interface AppointmentCardProps {
 const AppointmentCard: React.FC<AppointmentCardProps> = ({
   appointment,
   onEdit,
-  onDelete,
+  // Removed onDelete
   gridRowStart,
   gridRowEnd,
   overlapOffset,

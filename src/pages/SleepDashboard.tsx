@@ -4,7 +4,7 @@ import { MadeWithDyad } from "@/components/made-with-dyad";
 import { Moon, BarChart3, CalendarIcon, Clock, Bed, TrendingUp, Target } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, addDays } from 'date-fns';
+import { format, startOfMonth } from 'date-fns'; // Removed endOfMonth, eachDayOfInterval, addDays
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -20,7 +20,8 @@ interface SleepDashboardProps {
 
 const SleepDashboard: React.FC<SleepDashboardProps> = ({ dateRange, setDateRange }) => {
   const { user } = useAuth();
-  const currentUserId = user?.id;
+  // Removed currentUserId as it's not directly used in this component's logic
+  // const currentUserId = user?.id; 
 
   const { analyticsData, loading } = useSleepAnalytics({
     startDate: dateRange?.from || startOfMonth(new Date()),

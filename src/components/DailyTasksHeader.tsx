@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, ListTodo, Brain, CheckCircle2, Clock, Target, Edit, ChevronsDownUp, Sparkles, Settings, FolderOpen, Tag } from 'lucide-react'; // Added Settings, FolderOpen, Tag icons
+import { Plus, ListTodo, Brain, CheckCircle2, Clock, Target, Edit, Sparkles, FolderOpen, Tag } from 'lucide-react'; // Removed ChevronsDownUp, Settings
 import DateNavigator from '@/components/DateNavigator';
 import TaskFilter from '@/components/TaskFilter';
 import { cn } from '@/lib/utils';
@@ -38,7 +38,6 @@ interface DailyTasksHeaderProps {
   nextAvailableTask: Task | null;
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
   onOpenOverview: (task: Task) => void;
-  // Removed toggleAllSections: () => void;
   // New props for section/category management
   createSection: (name: string) => Promise<void>;
   updateSection: (sectionId: string, newName: string) => Promise<void>;
@@ -67,13 +66,13 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   nextAvailableTask,
   updateTask,
   onOpenOverview,
-  // Removed toggleAllSections,
   createSection, // Destructure new props
   updateSection,
   deleteSection,
   updateSectionIncludeInFocusMode,
 }) => {
-  const { dailyTaskCount } = useDailyTaskCount();
+  // Removed dailyTaskCount as it's not directly used in this component's logic
+  // const { dailyTaskCount } = useDailyTaskCount(); 
   const { playSound } = useSound();
   const [quickAddTaskDescription, setQuickAddTaskDescription] = useState('');
   const quickAddInputRef = useRef<HTMLInputElement>(null);

@@ -31,8 +31,9 @@ const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
   allCategories,
   currentDate,
 }) => {
-  const { user } = useAuth(); // Use useAuth to get the user
-  const userId = user?.id || null; // Get userId from useAuth
+  // Removed userId as it's not directly used in this component's logic
+  // const { user } = useAuth(); 
+  // const userId = user?.id || null; 
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>

@@ -7,8 +7,9 @@ import { MadeWithDyad } from '@/components/made-with-dyad';
 import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 const SensoryToolPage: React.FC = () => {
-  const { user } = useAuth(); // Use useAuth to get the user
-  const userId = user?.id; // Get userId from useAuth
+  // Removed userId as it's not directly used in this component's logic
+  // const { user } = useAuth(); 
+  // const userId = user?.id; 
 
   const { playSound } = useSound();
   const [step, setStep] = useState(5);

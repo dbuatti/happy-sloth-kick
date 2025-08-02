@@ -43,8 +43,9 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
   sections,
   allTasks,
 }) => {
-  const { user } = useAuth(); // Use useAuth to get the user
-  const userId = user?.id || null; // Get userId from useAuth
+  // Removed userId as it's not directly used in this component's logic
+  // const { user } = useAuth(); 
+  // const userId = user?.id || null; 
 
   const { playSound } = useSound();
   const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);

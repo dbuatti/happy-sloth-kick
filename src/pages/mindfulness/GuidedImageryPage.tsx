@@ -76,8 +76,9 @@ const imageryThemes: ImageryTheme[] = [
 ];
 
 const GuidedImageryPage: React.FC = () => {
-  const { user } = useAuth(); // Use useAuth to get the user
-  const userId = user?.id; // Get userId from useAuth
+  // Removed userId as it's not directly used in this component's logic
+  // const { user } = useAuth(); 
+  // const userId = user?.id; 
 
   const { playSound } = useSound();
   const [selectedThemeName, setSelectedThemeName] = useState(imageryThemes[0].name);
