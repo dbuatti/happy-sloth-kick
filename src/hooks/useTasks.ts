@@ -567,7 +567,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         return t.parent_task_id === activeTask.parent_task_id;
       }
     }).filter(t => t.id !== activeId).sort((a, b) => (a.order || 0) - (b.order || 0));
-    oldSiblings.forEach((t, i) => updatesPayload.push({ id: t.id, order: i, user_id: userId })); // Added user_id
+    oldSiblings.forEach((t, i) => updatesPayload.push({ ...t, order: i, user_id: userId })); // Include full task object
 
     // Target siblings
     let targetSiblings: Task[] = [];
@@ -589,14 +589,14 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
     const temp = [...targetSiblings];
     temp.splice(newOrder, 0, activeTask);
-    temp.forEach((t, idx) => updatesPayload.push({ id: t.id, order: idx, user_id: userId })); // Added user_id
+    temp.forEach((t, idx) => updatesPayload.push({ ...t, order: idx, user_id: userId })); // Include full task object
 
     updatesPayload.push({
-      id: activeTask.id,
+      ...activeTask, // Include full active task object
       parent_task_id: newParentId,
       section_id: newParentId ? (tasks.find(t => t.id === newParentId)?.section_id ?? newSectionId ?? null) : newSectionId,
       order: newOrder,
-      user_id: userId, // Added user_id here too
+      user_id: userId,
     });
 
     // Cascade section to descendants when parent/section changes
@@ -610,7 +610,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         visited.add(pid);
         const children = tasks.filter(t => t.parent_task_id === pid);
         children.forEach(child => {
-          updatesPayload.push({ id: child.id, section_id: cascadeSectionId, user_id: userId }); // Added user_id here too
+          updatesPayload.push({ ...child, section_id: cascadeSectionId, user_id: userId }); // Include full child object
           queue.push(child.id);
         });
       }
@@ -678,7 +678,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     }
 
     const newOrdered = arrayMove(siblings, currentIndex, newIndex);
-    const updatesPayload = newOrdered.map((t, idx) => ({ id: t.id, order: idx, user_id: userId })); // Added user_id
+    const updatesPayload = newOrdered.map((t, idx) => ({ ...t, order: idx, user_id: userId })); // Include full task object
 
     console.log('useTasks: moveTask - Attempting optimistic reorder for task:', taskId, 'direction:', direction, 'updates:', updatesPayload);
 
