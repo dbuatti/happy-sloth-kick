@@ -16,11 +16,10 @@ interface ActiveTaskPanelProps {
   tasks: Task[];
   filteredTasks: Task[];
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
-  // Removed onOpenDetail as it's not directly used here, handleOpenTaskDetails manages local state
   onDeleteTask: (taskId: string) => void;
   sections: TaskSection[];
   allCategories: Category[];
-  currentDate: Date; // Added this prop
+  currentDate: Date; // Re-added this prop
 }
 
 const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
@@ -28,7 +27,6 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
   tasks,
   filteredTasks,
   updateTask,
-  // Removed onOpenDetail
   onDeleteTask,
   sections,
   allCategories,

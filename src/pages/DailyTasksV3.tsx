@@ -264,7 +264,6 @@ const DailyTasksV3: React.FC = () => {
         tasks={tasks}
         filteredTasks={filteredTasks}
         updateTask={updateTask}
-        onOpenDetail={handleOpenDetail}
         onDeleteTask={deleteTask}
         sections={sections}
         allCategories={allCategories}

@@ -18,8 +18,7 @@ import { cn } from '@/lib/utils';
 import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { getCategoryColorProps } from '@/lib/categoryColors';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Checkbox } from "@/components/ui/checkbox";
-// Removed useAuth as it's not directly used in this component
+import { Checkbox } from "@/components/ui/checkbox"; // Added missing import
 
 interface TaskOverviewDialogProps {
   task: Task | null;

@@ -20,7 +20,7 @@ interface FocusToolsPanelProps {
   tasks: Task[];
   filteredTasks: Task[];
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
-  onOpenDetail: (task: Task) => void; // Added this prop
+  onOpenDetail: (task: Task) => void; // This prop is used by handleOpenTaskDetails
   onDeleteTask: (taskId: string) => void;
   sections: TaskSection[];
   allCategories: Category[];
@@ -37,7 +37,7 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
   tasks,
   filteredTasks,
   updateTask,
-  onOpenDetail,
+  onOpenDetail, // Destructure onOpenDetail
   onDeleteTask,
   sections,
   allCategories,

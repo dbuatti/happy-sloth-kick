@@ -141,7 +141,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
       remindAtTime: '',
       sectionId: preselectedSectionId,
       recurringType: 'none',
-      parentTaskId: parentTaskId,
+      parentTaskId: parentTaskId ?? null, // Explicitly coalesce to null
       link: null, // Explicitly set to null to match the schema's transform output
     },
   });
@@ -178,7 +178,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
         remindAtTime: '',
         sectionId: preselectedSectionId,
         recurringType: 'none',
-        parentTaskId: parentTaskId,
+        parentTaskId: parentTaskId ?? null, // Explicitly coalesce to null
         link: null,
       });
     }

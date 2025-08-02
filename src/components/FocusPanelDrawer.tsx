@@ -11,7 +11,7 @@ interface FocusPanelDrawerProps {
   tasks: Task[];
   filteredTasks: Task[];
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
-  onOpenDetail: (task: Task) => void; // Added this prop
+  // Removed onOpenDetail as it's not directly used in this component's logic
   onDeleteTask: (taskId: string) => void;
   sections: TaskSection[];
   allCategories: Category[];
@@ -25,7 +25,7 @@ const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
   tasks,
   filteredTasks,
   updateTask,
-  onOpenDetail, // This prop is from FocusPanelDrawer, not ActiveTaskPanel
+  // Removed onOpenDetail
   onDeleteTask,
   sections,
   allCategories,
@@ -43,7 +43,6 @@ const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
             tasks={tasks}
             filteredTasks={filteredTasks}
             updateTask={updateTask}
-            // Removed onOpenDetail prop as ActiveTaskPanel handles its own task detail opening
             onDeleteTask={onDeleteTask}
             sections={sections}
             allCategories={allCategories}
