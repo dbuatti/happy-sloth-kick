@@ -173,7 +173,23 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         },
         (payload) => {
           console.log('useTasks: Realtime task change received:', payload.eventType, (payload.new as any)?.id || (payload.old as any)?.id);
-          fetchDataAndSections(userId); // Pass userId to the callback
+          const newOrOldTask = (payload.new || payload.old) as Task;
+          const categoryColor = categoriesMap.get(newOrOldTask.category) || 'gray';
+
+          if (payload.eventType === 'INSERT') {
+            setTasks(prev => [...prev, { ...newOrOldTask, category_color: categoryColor }]);
+          } else if (payload.eventType === 'UPDATE') {
+            setTasks(prev => prev.map(t => t.id === newOrOldTask.id ? { ...newOrOldTask, category_color: categoryColor } : t));
+            if (newOrOldTask.remind_at && newOrOldTask.status === 'to-do') {
+              const d = parseISO(newOrOldTask.remind_at);
+              if (isValid(d)) addReminder(newOrOldTask.id, `Reminder: ${newOrOldTask.description}`, d);
+            } else if (newOrOldTask.status === 'completed' || newOrOldTask.status === 'archived' || newOrOldTask.remind_at === null) {
+              dismissReminder(newOrOldTask.id);
+            }
+          } else if (payload.eventType === 'DELETE') {
+            setTasks(prev => prev.filter(t => t.id !== newOrOldTask.id));
+            dismissReminder(newOrOldTask.id);
+          }
         }
       )
       .subscribe();
@@ -190,7 +206,17 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         },
         (payload) => {
           console.log('useTasks: Realtime section change received:', payload.eventType, (payload.new as any)?.id || (payload.old as any)?.id);
-          fetchDataAndSections(userId); // Pass userId to the callback
+          const newOrOldSection = (payload.new || payload.old) as TaskSection;
+
+          if (payload.eventType === 'INSERT') {
+            setSections(prev => [...prev, newOrOldSection].sort((a, b) => (a.order || 0) - (b.order || 0)));
+          } else if (payload.eventType === 'UPDATE') {
+            setSections(prev => prev.map(s => s.id === newOrOldSection.id ? newOrOldSection : s).sort((a, b) => (a.order || 0) - (b.order || 0)));
+          } else if (payload.eventType === 'DELETE') {
+            setSections(prev => prev.filter(s => s.id !== newOrOldSection.id));
+            // Also update tasks that were in this section to have section_id: null
+            setTasks(prev => prev.map(t => t.section_id === newOrOldSection.id ? { ...t, section_id: null } : t));
+          }
         }
       )
       .subscribe();
@@ -207,7 +233,17 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         },
         (payload) => {
           console.log('useTasks: Realtime category change received:', payload.eventType, (payload.new as any)?.id || (payload.old as any)?.id);
-          fetchDataAndSections(userId); // Pass userId to the callback
+          const newOrOldCategory = (payload.new || payload.old) as Category;
+
+          if (payload.eventType === 'INSERT') {
+            setAllCategories(prev => [...prev, newOrOldCategory]);
+          } else if (payload.eventType === 'UPDATE') {
+            setAllCategories(prev => prev.map(c => c.id === newOrOldCategory.id ? newOrOldCategory : c));
+          } else if (payload.eventType === 'DELETE') {
+            setAllCategories(prev => prev.filter(c => c.id !== newOrOldCategory.id));
+            // If a category is deleted, tasks using it should default to 'general' or first available
+            setTasks(prev => prev.map(t => t.category === newOrOldCategory.id ? { ...t, category: allCategories.find(cat => cat.name.toLowerCase() === 'general')?.id || allCategories[0]?.id || '' } : t));
+          }
         }
       )
       .subscribe();
@@ -218,8 +254,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       supabase.removeChannel(categoriesChannel);
       console.log('useTasks: Unsubscribed from realtime channels.');
     };
-  }, [userId, fetchDataAndSections]);
-
+  }, [userId, categoriesMap, addReminder, dismissReminder, allCategories]); // Added allCategories to dependencies for category channel
 
   // --- Recurring Task Processing Logic ---
   const processedTasks = useMemo(() => {
@@ -370,7 +405,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       if (error) throw error;
       console.log('useTasks: handleAddTask - DB insert successful, received data:', data.id);
       // Update with actual data from DB (e.g., if default values were set by DB)
-      setTasks(prev => prev.map(t => t.id === newTask.id ? { ...data, category_color: allCategories.find(cat => cat.id === data.category)?.color || 'gray' } : t));
+      setTasks(prev => prev.map(t => t.id === newTask.id ? { ...data, category_color: categoriesMap.get(data.category) || 'gray' } : t));
       showSuccess('Task added successfully!');
 
       if (newTask.remind_at) {
@@ -386,7 +421,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       setTasks(prev => prev.filter(t => t.id !== newTask.id));
       return false;
     }
-  }, [userId, currentDate, allCategories, processedTasks, addReminder]); // Updated dependencies
+  }, [userId, currentDate, allCategories, processedTasks, addReminder, categoriesMap]); // Added categoriesMap to dependencies
 
   const updateTask = useCallback(async (taskId: string, updates: TaskUpdate) => {
     if (!userId) {
@@ -421,7 +456,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       console.log('useTasks: updateTask - DB update successful for task:', data.id);
       
       // Ensure local state is fully consistent with DB response
-      setTasks(prev => prev.map(t => t.id === taskId ? { ...data, category_color: allCategories.find(cat => cat.id === data.category)?.color || 'gray' } : t));
+      setTasks(prev => prev.map(t => t.id === taskId ? { ...data, category_color: categoriesMap.get(data.category) || 'gray' } : t));
       showSuccess('Task updated!');
 
       if (updates.remind_at) {
@@ -438,7 +473,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       console.log('useTasks: updateTask - Rolling back optimistic update for task:', taskId);
       setTasks(prev => prev.map(t => t.id === taskId ? originalTask : t));
     }
-  }, [userId, allCategories, tasks, addReminder, dismissReminder]); // Updated dependencies
+  }, [userId, allCategories, tasks, addReminder, dismissReminder, categoriesMap]); // Added categoriesMap to dependencies
 
   const deleteTask = useCallback(async (taskId: string) => {
     if (!userId) {
