@@ -103,10 +103,8 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
         isOverlay ? "cursor-grabbing" : "hover:shadow-sm",
       )}
       {...(attributes || {})}
-      // Conditionally apply onClick for toggle: only if not in overlay and not in editing mode
-      onClick={!isOverlay && !isEditingLocal ? () => toggleSection(section.id) : undefined}
+      // Removed onClick from here, children will handle all clicks
     >
-      {/* Removed DragHandleIcon button */}
       <div className="flex-1 flex items-center justify-between">
         <div 
           className="flex items-center flex-1 min-w-0" // This div still expands
@@ -139,14 +137,21 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
           ) : (
             <>
               <h3 
-                className="text-lg font-bold truncate cursor-pointer flex-1"
+                className="text-lg font-bold truncate cursor-pointer" // Removed flex-1 here
                 onClick={handleStartEdit} // This h3 click starts edit and stops propagation
+                data-no-dnd="true" // Ensure dnd-kit doesn't interfere
               >
                 {section.name}
               </h3>
-              <span className="text-lg font-bold text-muted-foreground ml-1 flex-shrink-0">
+              <span className="text-lg font-bold text-muted-foreground ml-1 flex-shrink-0" data-no-dnd="true">
                 ({sectionTasksCount})
               </span>
+              {/* NEW: This is the toggle area */}
+              <div
+                className="flex-1 h-full min-h-[28px] cursor-pointer" // This takes up remaining space, min-h to ensure clickable area
+                onClick={!isOverlay && !isEditingLocal ? () => toggleSection(section.id) : undefined} // This toggles
+                data-no-dnd="true"
+              ></div>
             </>
           )}
         </div>
