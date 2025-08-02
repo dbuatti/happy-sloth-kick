@@ -98,18 +98,15 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     return map;
   }, [allCategories]);
 
-  const fetchDataAndSections = useCallback(async () => {
-    if (!userId) {
-      console.log('useTasks: No user ID, skipping fetchDataAndSections.');
-      return;
-    }
+  // Modified fetchDataAndSections to accept userId as an argument and have an empty dependency array
+  const fetchDataAndSections = useCallback(async (currentUserId: string) => {
     setLoading(true);
-    console.log('useTasks: Starting fetchDataAndSections for user:', userId);
+    console.log('useTasks: Starting fetchDataAndSections for user:', currentUserId);
     try {
       const { data: sectionsData, error: sectionsError } = await supabase
         .from('task_sections')
         .select('id, name, user_id, order, include_in_focus_mode')
-        .eq('user_id', userId)
+        .eq('user_id', currentUserId)
         .order('order', { ascending: true })
         .order('name', { ascending: true });
       if (sectionsError) throw sectionsError;
@@ -119,7 +116,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       const { data: categoriesData, error: categoriesError } = await supabase
         .from('task_categories')
         .select('id, name, color, user_id, created_at')
-        .eq('user_id', userId);
+        .eq('user_id', currentUserId);
       if (categoriesError) throw categoriesError;
       setAllCategories(categoriesData || []);
       console.log('useTasks: Fetched categories:', categoriesData?.length);
@@ -127,7 +124,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
         .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link')
-        .eq('user_id', userId)
+        .eq('user_id', currentUserId)
         .order('created_at', { ascending: true }); // Order by created_at for consistent processing
       if (tasksError) throw tasksError;
 
@@ -145,10 +142,10 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       setLoading(false);
       console.log('useTasks: Finished fetchDataAndSections.');
     }
-  }, [userId]); // categoriesMap is correctly outside this dependency array
+  }, [categoriesMap]); // categoriesMap is correctly outside this dependency array
 
   useEffect(() => {
-    if (!authLoading && userId) fetchDataAndSections();
+    if (!authLoading && userId) fetchDataAndSections(userId); // Pass userId here
     if (!authLoading && !userId) {
       setTasks([]);
       setSections([]);
@@ -156,7 +153,8 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       setLoading(false);
       console.log('useTasks: User not authenticated, clearing local data.');
     }
-  }, [authLoading, userId, fetchDataAndSections]);
+  }, [authLoading, userId, fetchDataAndSections]); // fetchDataAndSections is now stable
+
 
   // --- Realtime Subscription for Tasks and Sections ---
   useEffect(() => {
@@ -174,7 +172,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         },
         (payload) => {
           console.log('useTasks: Realtime task change received:', payload.eventType, (payload.new as any)?.id || (payload.old as any)?.id);
-          fetchDataAndSections(); // Re-fetch all data on any change
+          fetchDataAndSections(userId); // Pass userId to the callback
         }
       )
       .subscribe();
@@ -191,7 +189,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         },
         (payload) => {
           console.log('useTasks: Realtime section change received:', payload.eventType, (payload.new as any)?.id || (payload.old as any)?.id);
-          fetchDataAndSections(); // Re-fetch all data on any change
+          fetchDataAndSections(userId); // Pass userId to the callback
         }
       )
       .subscribe();
@@ -208,7 +206,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         },
         (payload) => {
           console.log('useTasks: Realtime category change received:', payload.eventType, (payload.new as any)?.id || (payload.old as any)?.id);
-          fetchDataAndSections(); // Re-fetch all data on any change
+          fetchDataAndSections(userId); // Pass userId to the callback
         }
       )
       .subscribe();
@@ -596,7 +594,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     const taskToMove = tasks.find(t => t.id === taskId);
     if (!taskToMove) {
       showError('Task not found.');
-      console.warn('useTasks: moveTask - Task not found for reorder:', taskId);
+      console.warn('useTasks: moveTask - Task not found in its parent list for reorder:', taskId);
       return;
     }
     const isParentSection = taskToMove.parent_task_id === null;
