@@ -556,7 +556,12 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
     console.log('useTasks: updateTaskParentAndOrder - Starting DND update for task:', activeId, 'from:', { parent: activeTask.parent_task_id, section: activeTask.section_id }, 'to:', { newParentId, newSectionId, overId });
 
-    const updatesPayload: Partial<Task>[] = []; // Use a single array for upsert
+    const updatesMap = new Map<string, Partial<Task>>(); // Use a Map to ensure unique updates
+
+    // Helper to add/merge updates to the map
+    const addUpdate = (task: Task, updates: Partial<Task>) => {
+      updatesMap.set(task.id, { ...updatesMap.get(task.id), ...task, ...updates, user_id: userId });
+    };
 
     // Reindex old siblings
     const oldParentIsSection = activeTask.parent_task_id === null;
@@ -567,7 +572,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         return t.parent_task_id === activeTask.parent_task_id;
       }
     }).filter(t => t.id !== activeId).sort((a, b) => (a.order || 0) - (b.order || 0));
-    oldSiblings.forEach((t, i) => updatesPayload.push({ ...t, order: i, user_id: userId })); // Include full task object
+    oldSiblings.forEach((t, i) => addUpdate(t, { order: i }));
 
     // Target siblings
     let targetSiblings: Task[] = [];
@@ -589,14 +594,12 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
     const temp = [...targetSiblings];
     temp.splice(newOrder, 0, activeTask);
-    temp.forEach((t, idx) => updatesPayload.push({ ...t, order: idx, user_id: userId })); // Include full task object
+    temp.forEach((t, idx) => addUpdate(t, { order: idx }));
 
-    updatesPayload.push({
-      ...activeTask, // Include full active task object
+    addUpdate(activeTask, {
       parent_task_id: newParentId,
       section_id: newParentId ? (tasks.find(t => t.id === newParentId)?.section_id ?? newSectionId ?? null) : newSectionId,
       order: newOrder,
-      user_id: userId,
     });
 
     // Cascade section to descendants when parent/section changes
@@ -610,25 +613,26 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         visited.add(pid);
         const children = tasks.filter(t => t.parent_task_id === pid);
         children.forEach(child => {
-          updatesPayload.push({ ...child, section_id: cascadeSectionId, user_id: userId }); // Include full child object
+          addUpdate(child, { section_id: cascadeSectionId });
           queue.push(child.id);
         });
       }
     }
 
-    console.log('useTasks: updateTaskParentAndOrder - Updates prepared for optimistic update:', updatesPayload);
+    const finalPayload = Array.from(updatesMap.values());
+    console.log('useTasks: updateTaskParentAndOrder - Updates prepared for optimistic update:', finalPayload);
 
     // Optimistic update
     setTasks(prev => {
-      const map = new Map(updatesPayload.map(u => [u.id!, u]));
+      const map = new Map(finalPayload.map(u => [u.id!, u]));
       return prev.map(t => map.has(t.id) ? { ...t, ...map.get(t.id)! } : t);
     });
 
     try {
-      console.log('useTasks: updateTaskParentAndOrder - Sending upsert to DB:', updatesPayload.map(u => cleanTaskForDb(u)));
+      console.log('useTasks: updateTaskParentAndOrder - Sending upsert to DB:', finalPayload.map(u => cleanTaskForDb(u)));
       const { error } = await supabase
         .from('tasks')
-        .upsert(updatesPayload.map(u => cleanTaskForDb(u)), { onConflict: 'id' }); // Use upsert
+        .upsert(finalPayload.map(u => cleanTaskForDb(u)), { onConflict: 'id' }); // Use upsert
       if (error) throw error;
       showSuccess('Task moved!');
       console.log('useTasks: updateTaskParentAndOrder - DB upsert successful.');
@@ -678,21 +682,26 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     }
 
     const newOrdered = arrayMove(siblings, currentIndex, newIndex);
-    const updatesPayload = newOrdered.map((t, idx) => ({ ...t, order: idx, user_id: userId })); // Include full task object
+    
+    const updatesMap = new Map<string, Partial<Task>>();
+    newOrdered.forEach((t, idx) => {
+      updatesMap.set(t.id, { ...updatesMap.get(t.id), ...t, order: idx, user_id: userId });
+    });
+    const finalPayload = Array.from(updatesMap.values());
 
-    console.log('useTasks: moveTask - Attempting optimistic reorder for task:', taskId, 'direction:', direction, 'updates:', updatesPayload);
+    console.log('useTasks: moveTask - Attempting optimistic reorder for task:', taskId, 'direction:', direction, 'updates:', finalPayload);
 
     // Optimistic update
     setTasks(prev => {
-      const map = new Map(updatesPayload.map(u => [u.id, u]));
+      const map = new Map(finalPayload.map(u => [u.id, u]));
       return prev.map(t => map.has(t.id) ? { ...t, ...map.get(t.id)! } : t);
     });
 
     try {
-      console.log('useTasks: moveTask - Sending upsert to DB:', updatesPayload.map(u => cleanTaskForDb(u)));
+      console.log('useTasks: moveTask - Sending upsert to DB:', finalPayload.map(u => cleanTaskForDb(u)));
       const { error } = await supabase
         .from('tasks')
-        .upsert(updatesPayload.map(u => cleanTaskForDb(u)), { onConflict: 'id' }); // Use upsert
+        .upsert(finalPayload.map(u => cleanTaskForDb(u)), { onConflict: 'id' }); // Use upsert
       if (error) throw error;
       showSuccess('Task reordered!');
       console.log('useTasks: moveTask - DB upsert successful.');
