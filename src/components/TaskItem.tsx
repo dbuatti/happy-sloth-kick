@@ -56,10 +56,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
   const handleCheckboxChange = (checked: boolean) => {
     if (isOverlay) return;
-    const newStatus = checked ? 'completed' : 'to-do';
-    console.log(`TaskItem: Checkbox changed for task ID: ${task.id}, Original ID: ${task.original_task_id}, Recurring Type: ${task.recurring_type}. New status: ${newStatus}`);
     onToggleSelect(task.id, checked);
-    onStatusChange(task.id, newStatus);
+    onStatusChange(task.id, checked ? 'completed' : 'to-do');
     if (checked) {
       playSound('success');
       setShowCompletionEffect(true);
