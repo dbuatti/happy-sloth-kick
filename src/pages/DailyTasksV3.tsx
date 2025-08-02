@@ -300,7 +300,7 @@ const DailyTasksV3: React.FC = () => {
           {/* Main Task List Card */}
           <Card className="shadow-lg p-4 flex-1 flex flex-col">
             <CardContent className="pt-3 flex-1 flex flex-col">
-              <div ref={scrollRef} className="flex-1 overflow-y-auto pt-3 -mx-4 px-4">
+              <div ref={scrollRef} className="flex-1 overflow-y-auto pt-3 px-4">
                 <TaskList
                   tasks={tasks}
                   filteredTasks={filteredTasks}
