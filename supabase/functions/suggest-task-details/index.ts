@@ -26,7 +26,6 @@ serve(async (req) => {
     const { description, categories, currentDate } = await req.json();
 
     if (!description) {
-      console.error("Error: Task description is required.");
       return new Response(JSON.stringify({ error: 'Task description is required.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
@@ -35,8 +34,7 @@ serve(async (req) => {
 
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) {
-      console.error("Error: GEMINI_API_KEY not set in environment variables.");
-      return new Response(JSON.stringify({ error: 'GEMINI_API_KEY not set in environment variables. Please configure it in your Supabase project settings.' }), {
+      return new Response(JSON.stringify({ error: 'GEMINI_API_KEY not set in environment variables.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
       });
@@ -124,62 +122,34 @@ serve(async (req) => {
     Your response MUST be a valid JSON object. Do NOT include any other text or markdown outside the JSON.
     Task Description: "${description}"`;
 
-    console.log("Sending prompt to AI model...");
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
 
     console.log("Raw AI response text:", text); // Log the raw response
 
-    let parsedData;
     let jsonString = text.trim();
+    // Attempt to extract JSON from potential markdown code blocks
+    const jsonMatch = jsonString.match(/```json\n([\s\S]*?)\n```/);
+    if (jsonMatch && jsonMatch[1]) {
+      jsonString = jsonMatch[1].trim();
+    } else {
+      // Fallback for cases where it might just be the JSON without markdown fences
+      // Or if the markdown fence is different (e.g., ```json without newline)
+      // For now, if it doesn't match the specific ```json\n...\n```, we assume it's just the JSON.
+    }
 
+    let parsedData;
     try {
-      // Attempt to parse directly first (if AI returns pure JSON)
       parsedData = JSON.parse(jsonString);
-    } catch (directParseError) {
-      console.log("Direct JSON parse failed, attempting markdown extraction...");
-      // If direct parse fails, try to extract from markdown
-      const jsonMatch = jsonString.match(/```json\n([\s\S]*?)\n```/);
-      if (jsonMatch && jsonMatch[1]) {
-        jsonString = jsonMatch[1].trim();
-        try {
-          parsedData = JSON.parse(jsonString);
-          console.log("Successfully parsed JSON from markdown block.");
-        } catch (markdownParseError) {
-          console.error("Failed to parse JSON from markdown block:", markdownParseError);
-          console.error("Problematic markdown JSON string:", jsonString);
-          return new Response(JSON.stringify({ error: 'AI response contained JSON in markdown but it was invalid. Please try again or rephrase your input.' }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 500,
-          });
-        }
-      } else {
-        console.log("No markdown block found, attempting loose JSON extraction...");
-        // If no markdown block, try to find the first JSON object
-        const looseJsonMatch = jsonString.match(/\{[\s\S]*\}/);
-        if (looseJsonMatch && looseJsonMatch[0]) {
-          jsonString = looseJsonMatch[0].trim();
-          try {
-            parsedData = JSON.parse(jsonString);
-            console.log("Successfully parsed loose JSON string.");
-          } catch (looseParseError) {
-            console.error("Failed to parse loose JSON string:", looseParseError);
-            console.error("Problematic loose JSON string:", jsonString);
-            return new Response(JSON.stringify({ error: 'AI response contained text that could not be parsed as JSON. Please try again or rephrase your input.' }), {
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              status: 500,
-            });
-          }
-        } else {
-          // If all attempts fail
-          console.error("AI response did not contain a recognizable JSON object:", text);
-          return new Response(JSON.stringify({ error: 'AI response did not return a valid JSON object. Please try again or rephrase your input.' }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 500,
-          });
-        }
-      }
+    } catch (parseError) {
+      console.error("Failed to parse AI response as JSON:", parseError);
+      console.error("Problematic JSON string:", jsonString);
+      // If parsing fails, return a 500 with a more specific error message
+      return new Response(JSON.stringify({ error: 'AI response could not be parsed as JSON. Please try again or rephrase your input.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
     }
 
     // Ensure dates are correctly formatted or null
@@ -216,7 +186,7 @@ serve(async (req) => {
       status: 200,
     });
 
-  } catch (error: any) { // Catch any other errors during function execution
+  } catch (error) {
     console.error("Error in Edge Function (outer catch):", error);
     return new Response(JSON.stringify({ error: error.message || 'An unexpected error occurred in the Edge Function.' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
