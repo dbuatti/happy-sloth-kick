@@ -42,8 +42,6 @@ const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
         </SheetHeader>
         <div className="flex-1 overflow-y-auto py-4">
           <ActiveTaskPanel
-            isOpen={isOpen} // Pass isOpen
-            onClose={onClose} // Pass onClose
             nextAvailableTask={nextAvailableTask}
             tasks={tasks}
             filteredTasks={filteredTasks}

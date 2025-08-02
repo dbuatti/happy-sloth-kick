@@ -12,8 +12,6 @@ import { useAuth } from '@/context/AuthContext'; // Import useAuth
 import { useTasks } from '@/hooks/useTasks'; // Import useTasks here
 
 interface ActiveTaskPanelProps {
-  isOpen: boolean;
-  onClose: () => void;
   nextAvailableTask: Task | null;
   tasks: Task[];
   filteredTasks: Task[];
