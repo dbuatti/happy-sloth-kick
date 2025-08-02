@@ -859,12 +859,10 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
   ]);
 
   const nextAvailableTask = useMemo(() => {
-    const focusModeSectionIds = new Set(sections.filter(s => s.include_in_focus_mode).map(s => s.id));
-
+    // Removed focusModeSectionIds filtering to include ALL tasks
     const relevantTasks = finalFilteredTasks.filter(task =>
       task.status === 'to-do' &&
-      task.parent_task_id === null && // Only consider top-level tasks
-      (task.section_id === null || focusModeSectionIds.has(task.section_id))
+      task.parent_task_id === null // Only consider top-level tasks
     );
 
     // Sort by priority (urgent > high > medium > low), then by due date (earliest first), then by order
@@ -883,7 +881,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     });
 
     return sortedTasks.length > 0 ? sortedTasks[0] : null;
-  }, [finalFilteredTasks, sections]);
+  }, [finalFilteredTasks]);
 
 
   return {
