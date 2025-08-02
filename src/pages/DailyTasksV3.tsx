@@ -12,7 +12,7 @@ import CommandPalette from '@/components/CommandPalette';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from '@/components/ui/input';
-import { Plus, ListTodo, CheckCircle2, Clock, Brain } from 'lucide-react'; // Added Brain icon
+import { Plus, ListTodo, CheckCircle2, Clock, Brain } from 'lucide-react';
 import { showError } from '@/utils/toast';
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
 import { cn } from '@/lib/utils';
