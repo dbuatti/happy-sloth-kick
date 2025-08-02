@@ -97,7 +97,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   return (
     <div
       className={cn(
-        "relative flex items-start space-x-3 w-full py-2 px-3", // Increased horizontal padding
+        "relative flex items-start space-x-3 w-full py-2 px-4", // Increased horizontal padding
         task.status === 'completed' ? "bg-task-completed-bg opacity-80" : "bg-card", // Apply completed background
         "hover:shadow-sm transition-shadow duration-200", // Added subtle shadow on hover
         // Conditional left border for status
@@ -105,7 +105,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
         isDueToday && "border-l-4 border-status-due-today",
         !isOverdue && !isDueToday && "border-l-4 border-transparent" // Ensure consistent border width
       )}
-      style={{ paddingLeft: '4px', paddingRight: '4px' }} // Apply 4px gutter
     >
       <Checkbox
         key={`${task.id}-${task.status}`}
