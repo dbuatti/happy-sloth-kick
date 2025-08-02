@@ -22,7 +22,8 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
         "sepia-dusk",
         "vibrant-flow",
         "honeycomb",
-        "forest-calm" // Added the new theme
+        "forest-calm",
+        "rainbow-whimsy" // Added the new theme
       ]}
       {...props}
     >

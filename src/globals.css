@@ -710,7 +710,7 @@
     --priority-low: 90 60% 40%;
     --priority-medium: 40 90% 50%;
     --priority-high: 30 80% 60%;
-    --priority-urgent: 0 80% 60%;
+    --priority-urgent': '0 80% 60%',
     /* Gradients for neurodivergent-friendly design */
     --gradient-start-light: 40 100% 95%;
     --gradient-end-light: 30 50% 95%;
@@ -730,9 +730,9 @@
     --muted: 30 30% 20%;      /* Darker muted brown */
     --muted-foreground: 40 50% 70%;
     --accent: 30 80% 75%;     /* Brighter warm orange/amber */
-    --accent-foreground: 40 100% 90%;
+    --accent-foreground': '40 100% 90%',
     --destructive: 0 90% 70%; /* Brighter red */
-    --destructive-foreground: 0 0% 100%;
+    --destructive-foreground': '0 0% 100%',
     --border: 30 20% 30%;     /* Medium dark brown border */
     --input: 30 20% 20%;      /* Darker input background */
     --ring: 40 90% 70%;
@@ -744,7 +744,7 @@
     --priority-low: 90 70% 50%;
     --priority-medium: 40 90% 70%;
     --priority-high: 30 80% 75%;
-    --priority-urgent: 0 90% 70%;
+    --priority-urgent': '0 90% 70%',
     /* Gradients for neurodivergent-friendly design */
     --gradient-start-dark: 30 25% 18%;
     --gradient-end-dark: 40 20% 18%;
@@ -775,12 +775,12 @@
     --border-status-overdue: 15 60% 55%;
     --status-completed: 120 30% 40%;
     --task-completed-bg: 120 10% 98%;
-    --priority-low: 120 30% 40%;
-    --priority-medium: 200 30% 60%;
-    --priority-high: 15 60% 55%;
-    --priority-urgent: 120 15% 20%;
-    --gradient-start-light: 120 30% 98%;
-    --gradient-end-light: 30 20% 98%;
+    --priority-low': '120 30% 40%',
+    --priority-medium': '200 30% 60%',
+    --priority-high': '15 60% 55%',
+    --priority-urgent': '120 15% 20%',
+    --gradient-start-light': '120 30% 98%',
+    --gradient-end-light': '30 20% 98%',
   }
 
   .dark .forest-calm {
@@ -805,12 +805,77 @@
     --border-status-overdue: 15 70% 70%;
     --status-completed: 120 35% 55%;
     --task-completed-bg: 120 20% 25%;
-    --priority-low: 120 35% 55%;
-    --priority-medium: 200 35% 70%;
-    --priority-high: 15 70% 70%;
-    --priority-urgent: 120 10% 90%;
-    --gradient-start-dark: 120 25% 20%;
-    --gradient-end-dark: 30 25% 20%;
+    --priority-low': '120 35% 55%',
+    --priority-medium': '200 35% 70%',
+    --priority-high': '15 70% 70%',
+    --priority-urgent': '120 10% 90%',
+    --gradient-start-dark': '120 25% 20%',
+    --gradient-end-dark': '30 25% 20%',
+  }
+
+  .rainbow-whimsy {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 15%;
+    --primary: 330 80% 65%; /* Vibrant Pink */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 200 80% 60%; /* Bright Blue */
+    --secondary-foreground: 0 0% 15%;
+    --muted: 0 0% 95%;
+    --muted-foreground: 0 0% 40%;
+    --accent: 50 90% 60%; /* Bright Yellow */
+    --accent-foreground: 0 0% 15%;
+    --destructive: 0 80% 60%; /* Standard Red */
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 90%;
+    --input: 0 0% 98%;
+    --ring: 330 80% 65%;
+    --radius: 1rem;
+    --border-status-due-today: 50 90% 60%;
+    --border-status-overdue: 0 80% 60%;
+    --status-completed: 200 80% 60%;
+    --task-completed-bg: 0 0% 98%;
+    --priority-low: 200 80% 60%;
+    --priority-medium: 50 90% 60%;
+    --priority-high: 330 80% 65%;
+    --priority-urgent: 0 80% 60%;
+    --gradient-start-light: 330 80% 95%;
+    --gradient-end-light: 200 80% 95%;
+  }
+
+  .dark .rainbow-whimsy {
+    --background: 240 20% 10%;
+    --foreground: 0 0% 90%;
+    --card: 240 25% 15%;
+    --card-foreground: 0 0% 90%;
+    --popover: 240 25% 15%;
+    --popover-foreground: 0 0% 90%;
+    --primary: 330 90% 75%; /* Brighter Pink */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 200 90% 70%; /* Brighter Blue */
+    --secondary-foreground: 0 0% 90%;
+    --muted: 240 30% 20%;
+    --muted-foreground: 0 0% 70%;
+    --accent: 50 95% 75%; /* Brighter Yellow */
+    --accent-foreground: 0 0% 90%;
+    --destructive: 0 90% 70%; /* Brighter Red */
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 15% 30%;
+    --input: 240 20% 20%;
+    --ring: 330 90% 75%;
+    --border-status-due-today: 50 95% 75%;
+    --border-status-overdue: 0 90% 70%;
+    --status-completed: 200 90% 70%;
+    --task-completed-bg: 240 25% 20%;
+    --priority-low: 200 90% 70%;
+    --priority-medium: 50 95% 75%;
+    --priority-high: 330 90% 75%;
+    --priority-urgent: 0 90% 70%;
+    --gradient-start-dark: 330 80% 20%;
+    --gradient-end-dark: 200 80% 20%;
   }
 }
 

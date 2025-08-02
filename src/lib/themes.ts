@@ -413,9 +413,9 @@ export const themes = {
       '--secondary-foreground': '210 10% 95%',
       '--muted': '240 30% 18%',
       '--muted-foreground': '210 10% 70%',
-      '--accent': '40 95% 70%', /* Brighter Yellow-Orange */
+      '--accent': '40 95% 70%',
       '--accent-foreground': '210 10% 95%',
-      '--destructive': '0 90% 70%', /* Brighter Red */
+      '--destructive': '0 90% 70%',
       '--destructive-foreground': '0 0% 100%',
       '--border': '240 30% 25%',
       '--input': '240 30% 25%',
@@ -558,6 +558,73 @@ export const themes = {
       '--priority-urgent': '120 10% 90%',
       '--gradient-start-dark': '120 25% 20%',
       '--gradient-end-dark': '30 25% 20%',
+    }
+  },
+  'rainbow-whimsy': {
+    name: 'Rainbow Whimsy',
+    description: 'Vibrant and playful colors inspired by a magical doll.',
+    light: {
+      '--background': '0 0% 100%',
+      '--foreground': '0 0% 15%',
+      '--card': '0 0% 100%',
+      '--card-foreground': '0 0% 15%',
+      '--popover': '0 0% 100%',
+      '--popover-foreground': '0 0% 15%',
+      '--primary': '330 80% 65%', /* Vibrant Pink */
+      '--primary-foreground': '0 0% 100%',
+      '--secondary': '200 80% 60%', /* Bright Blue */
+      '--secondary-foreground': '0 0% 15%',
+      '--muted': '0 0% 95%',
+      '--muted-foreground': '0 0% 40%',
+      '--accent': '50 90% 60%', /* Bright Yellow */
+      '--accent-foreground': '0 0% 15%',
+      '--destructive': '0 80% 60%', /* Standard Red */
+      '--destructive-foreground': '0 0% 100%',
+      '--border': '0 0% 90%',
+      '--input': '0 0% 98%',
+      '--ring': '330 80% 65%',
+      '--radius': '1rem',
+      '--border-status-due-today': '50 90% 60%',
+      '--border-status-overdue': '0 80% 60%',
+      '--status-completed': '200 80% 60%',
+      '--task-completed-bg': '0 0% 98%',
+      '--priority-low': '200 80% 60%',
+      '--priority-medium': '50 90% 60%',
+      '--priority-high': '330 80% 65%',
+      '--priority-urgent': '0 80% 60%',
+      '--gradient-start-light': '330 80% 95%',
+      '--gradient-end-light': '200 80% 95%',
+    },
+    dark: {
+      '--background': '240 20% 10%', /* Deep Blue-Purple */
+      '--foreground': '0 0% 90%',
+      '--card': '240 25% 15%',
+      '--card-foreground': '0 0% 90%',
+      '--popover': '240 25% 15%',
+      '--popover-foreground': '0 0% 90%',
+      '--primary': '330 90% 75%', /* Brighter Pink */
+      '--primary-foreground': '0 0% 100%',
+      '--secondary': '200 90% 70%', /* Brighter Blue */
+      '--secondary-foreground': '0 0% 90%',
+      '--muted': '240 30% 20%',
+      '--muted-foreground': '0 0% 70%',
+      '--accent': '50 95% 75%', /* Brighter Yellow */
+      '--accent-foreground': '0 0% 90%',
+      '--destructive': '0 90% 70%', /* Brighter Red */
+      '--destructive-foreground': '0 0% 100%',
+      '--border': '240 15% 30%',
+      '--input': '240 20% 20%',
+      '--ring': '330 90% 75%',
+      '--border-status-due-today': '50 95% 75%',
+      '--border-status-overdue': '0 90% 70%',
+      '--status-completed': '200 90% 70%',
+      '--task-completed-bg': '240 25% 20%',
+      '--priority-low': '200 90% 70%',
+      '--priority-medium': '50 95% 75%',
+      '--priority-high': '330 90% 75%',
+      '--priority-urgent': '0 90% 70%',
+      '--gradient-start-dark': '330 80% 20%',
+      '--gradient-end-dark': '200 80% 20%',
     }
   }
 };
