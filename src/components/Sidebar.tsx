@@ -21,7 +21,6 @@ const navItems = [
   { name: 'Sleep Tracker', path: '/sleep', icon: Moon },
   { name: 'Project Balance', path: '/projects', icon: LayoutGrid },
   { name: 'Time Blocks', path: '/schedule', icon: CalendarClock },
-  { name: 'AI Task Parser', path: '/ai-parser', icon: Sparkles }, // New item for AI Text Parser
   { name: 'My Hub', path: '/my-hub', icon: LayoutDashboard },
   { name: 'Help', path: '/help', icon: HelpCircle },
 ];
@@ -50,7 +49,7 @@ const NavigationLinks = ({ onLinkClick }: { onLinkClick?: () => void }) => {
             <Icon className="h-4 w-4" />
             <span className="font-medium text-sm">{item.name}</span>
             {item.showCount && !countLoading && dailyTaskCount > 0 && (
-              <Badge className="ml-auto px-2 py-0.5 text-xs rounded-full bg-primary-foreground text-primary flex-shrink-0"> {/* Adjusted padding and added flex-shrink-0 */}
+              <Badge className="ml-auto px-2 py-0.5 text-xs rounded-full bg-primary-foreground text-primary flex-shrink-0">
                 {dailyTaskCount}
               </Badge>
             )}
@@ -87,7 +86,6 @@ const Sidebar: React.FC<SidebarProps> = ({ children }) => {
                   &copy; {new Date().getFullYear()} TaskMaster
                 </p>
                 <div className="flex items-center space-x-1">
-                  {/* ThemeSelector removed from here */}
                   <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"} className="h-7 w-7">
                     {isSoundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
                   </Button>
@@ -97,7 +95,6 @@ const Sidebar: React.FC<SidebarProps> = ({ children }) => {
           </Sheet>
           <h1 className="text-xl font-bold">TaskMaster</h1>
           <div className="flex items-center space-x-1">
-            {/* ThemeSelector removed from here */}
             <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"} className="h-7 w-7">
               {isSoundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
             </Button>
@@ -122,7 +119,6 @@ const Sidebar: React.FC<SidebarProps> = ({ children }) => {
             &copy; {new Date().getFullYear()} TaskMaster
           </p>
           <div className="flex items-center space-x-1">
-            {/* ThemeSelector removed from here */}
             <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"} className="h-7 w-7">
               {isSoundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
             </Button>

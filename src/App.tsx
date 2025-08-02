@@ -12,7 +12,7 @@ import SleepTracker from "./pages/SleepTracker";
 import MindfulnessTools from "./pages/MindfulnessTools";
 import FocusMode from "./pages/FocusMode";
 import LandingPage from "./pages/LandingPage";
-import DailyTasksV3 from "./pages/DailyTasksV3"; // Import the new V3 page
+import DailyTasksV3 from "./pages/DailyTasksV3";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { ReminderProvider } from "@/context/ReminderContext";
 import { SoundProvider } from "@/context/SoundContext";
@@ -27,7 +27,6 @@ import GuidedImageryPage from "./pages/mindfulness/GuidedImageryPage";
 import ThoughtDiffusionToolPage from "./pages/mindfulness/ThoughtDiffusionToolPage";
 import SensoryToolPage from "./pages/mindfulness/SensoryToolPage";
 import BreathingBubblePage from "./pages/mindfulness/BreathingBubblePage";
-import AITextParser from "./pages/AITextParser"; // Import the new AI Text Parser page
 
 
 const queryClient = new QueryClient();
@@ -58,8 +57,8 @@ const AppContent = () => {
       {user ? (
         <Sidebar>
           <Routes>
-            <Route path="/" element={<DailyTasksV3 />} /> {/* Default to V3 */}
-            <Route path="/daily-tasks" element={<DailyTasksV3 />} /> {/* Explicit route for V3 */}
+            <Route path="/" element={<DailyTasksV3 />} />
+            <Route path="/daily-tasks" element={<DailyTasksV3 />} />
             <Route path="/my-hub" element={<MyHub />} />
             <Route path="/help" element={<Help />} />
             <Route path="/projects" element={<ProjectBalanceTracker />} />
@@ -68,9 +67,6 @@ const AppContent = () => {
             <Route path="/sleep" element={<SleepTracker />} />
             <Route path="/mindfulness" element={<MindfulnessTools />} />
             <Route path="/focus" element={<FocusMode />} />
-            {/* <Route path="/daily-flow-prototype" element={<DailyFlowPrototype />} /> Removed */}
-            <Route path="/auth" element={<AuthComponent />} />
-            <Route path="/ai-parser" element={<AITextParser />} /> {/* New route for AI Text Parser */}
             
             {/* New routes for dedicated mindfulness tools */}
             <Route path="/mindfulness/body-scan" element={<BodyScanMeditationPage />} />
