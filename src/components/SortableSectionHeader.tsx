@@ -136,24 +136,12 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               </span>
             </>
           ) : (
-            <>
-              <h3 className="text-base font-bold truncate flex-1"> {/* Removed cursor-pointer and onClick */}
-                {section.name}
-              </h3>
-              <span className="text-base font-bold text-muted-foreground ml-1 flex-shrink-0">
-                ({sectionTasksCount})
-              </span>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 p-0 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" // Make it appear on hover
-                onClick={handleStartEdit} // This button now triggers edit
-                data-no-dnd="true"
-                aria-label="Edit section name"
-              >
-                <Edit className="h-3.5 w-3.5" />
-              </Button>
-            </>
+            <h3 
+              className="text-base font-bold truncate flex-1 cursor-pointer" // Added cursor-pointer
+              onClick={handleStartEdit} // Only h3 click starts edit
+            >
+              {section.name} ({sectionTasksCount})
+            </h3>
           )}
         </div>
         <div className="flex items-center space-x-1" data-no-dnd="true">
