@@ -120,7 +120,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
                 onKeyDown={handleInputKeyDown}
                 onMouseDown={(e) => e.stopPropagation()} // Prevent toggle on input click
                 className={cn(
-                  "!text-base !font-bold",
+                  "!text-lg !font-bold", // Changed from !text-base to !text-lg
                   "border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0",
                   "p-0",
                   "text-foreground",
@@ -131,19 +131,19 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
                 style={{ lineHeight: '1.5rem' }}
                 autoFocus={true}
               />
-              <span className="text-base font-bold text-muted-foreground ml-1 flex-shrink-0">
+              <span className="text-lg font-bold text-muted-foreground ml-1 flex-shrink-0"> {/* Changed from text-base to text-lg */}
                 ({sectionTasksCount})
               </span>
             </>
           ) : (
             <>
               <h3 
-                className="text-base font-bold truncate cursor-pointer flex-1" // Added flex-1 here
+                className="text-lg font-bold truncate cursor-pointer flex-1" // Changed from text-base to text-lg
                 onClick={handleStartEdit} // Only h3 click starts edit
               >
                 {section.name}
               </h3>
-              <span className="text-base font-bold text-muted-foreground ml-1 flex-shrink-0">
+              <span className="text-lg font-bold text-muted-foreground ml-1 flex-shrink-0"> {/* Changed from text-base to text-lg */}
                 ({sectionTasksCount})
               </span>
             </>
