@@ -15,7 +15,7 @@ import {
   DragStartEvent,
   DragOverlay,
   UniqueIdentifier,
-  DragOverEvent, // Imported DragOverEvent
+  DragOverEvent,
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -28,7 +28,7 @@ import SortableTaskItem from './SortableTaskItem';
 import SortableSectionHeader from './SortableSectionHeader';
 import TaskForm from './TaskForm';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/context/AuthContext'; // Import useAuth
+import { useAuth } from '@/context/AuthContext';
 
 interface TaskListProps {
   tasks: Task[];
@@ -51,7 +51,7 @@ interface TaskListProps {
   reorderSections: (activeId: string, overId: string) => Promise<void>;
   allCategories: Category[];
   setIsAddTaskOpen: (open: boolean) => void;
-  onOpenOverview: (task: Task) => void; // Added this prop
+  onOpenOverview: (task: Task) => void;
   currentDate: Date;
   setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
 }
@@ -74,32 +74,23 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     updateTaskParentAndOrder,
     reorderSections,
     allCategories,
-    onOpenOverview, // Destructure the new prop
+    onOpenOverview,
     currentDate,
   } = props;
 
-  const { user } = useAuth(); // Use useAuth to get the user
-  const userId = user?.id || null; // Get userId from useAuth
+  const { user } = useAuth();
+  const userId = user?.id || null;
 
   const [isAddTaskOpenLocal, setIsAddTaskOpenLocal] = useState(false);
   const [preselectedSectionId, setPreselectedSectionId] = useState<string | null>(null);
 
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
-  const [activeItemData, setActiveItemData] = useState<Task | TaskSection | null>(null); // To store data for DragOverlay
+  const [activeItemData, setActiveItemData] = useState<Task | TaskSection | null>(null);
 
   const sensors = useSensors(
     useSensor(CustomPointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
-
-  const toggleSection = useCallback((sectionId: string) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (prev: any) => {
-      const newState = { ...prev, [sectionId]: !(prev[sectionId] ?? true) };
-      localStorage.setItem('taskList_expandedSections', JSON.stringify(newState));
-      return newState;
-    };
-  }, []);
 
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() => {
     try {
@@ -109,6 +100,14 @@ const TaskList: React.FC<TaskListProps> = (props) => {
       return {};
     }
   });
+
+  const toggleSection = useCallback((sectionId: string) => {
+    setExpandedSections(prev => {
+      const newState = { ...prev, [sectionId]: !(prev[sectionId] ?? true) };
+      localStorage.setItem('taskList_expandedSections', JSON.stringify(newState));
+      return newState;
+    });
+  }, []);
 
   const allSortableSections = useMemo(() => {
     const noSection: TaskSection = {
@@ -238,8 +237,8 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                 <div
                   key={currentSection.id}
                   className={cn(
-                    "mb-0.5", // Changed mb-1.5 to mb-0.5
-                    index < allSortableSections.length - 1 && "border-b border-border pb-0.5" // Changed pb-1 to pb-0.5
+                    "mb-0.5",
+                    index < allSortableSections.length - 1 && "border-b border-border pb-0.5"
                   )}
                 >
                   <SortableSectionHeader
@@ -251,16 +250,16 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                     markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
                     handleDeleteSectionClick={deleteSection}
                     updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-                    onUpdateSectionName={updateSection} // Pass the update function directly
-                    isOverlay={false} // Not an overlay
+                    onUpdateSectionName={updateSection}
+                    isOverlay={false}
                   />
 
                   {isExpanded && (
-                    <div className="mt-0.5 space-y-0.5 pl-2"> {/* Changed mt-1.5 to mt-0.5 and space-y-1.5 to space-y-0.5 */}
+                    <div className="mt-0.5 space-y-0.5 pl-2">
                       <SortableContext items={sectionItemIds} strategy={verticalListSortingStrategy}>
-                        <ul className="list-none space-y-0.5"> {/* Changed space-y-1.5 to space-y-0.5 */}
+                        <ul className="list-none space-y-0.5">
                           {topLevelTasksInSection.length === 0 ? (
-                            <div className="text-center text-foreground/80 dark:text-foreground/80 py-1.5 rounded-md border-dashed border-border bg-muted/30" data-no-dnd="true"> {/* Changed py-3 to py-1.5 */}
+                            <div className="text-center text-foreground/80 dark:text-foreground/80 py-1.5 rounded-md border-dashed border-border bg-muted/30" data-no-dnd="true">
                               <div className="flex items-center justify-center gap-2 mb-1.5">
                                 <ListTodo className="h-4 w-4" />
                                 <p className="text-sm font-medium">No tasks in this section yet.</p>
@@ -282,13 +281,13 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                                 isSelected={selectedTaskIds.includes(task.id)}
                                 onToggleSelect={toggleTaskSelection}
                                 sections={sections}
-                                onOpenOverview={onOpenOverview} // Pass the prop down
+                                onOpenOverview={onOpenOverview}
                                 currentDate={currentDate}
-                                onMoveUp={async () => {}} // Dummy function for now
-                                onMoveDown={async () => {}} // Dummy function for now
+                                onMoveUp={async () => {}}
+                                onMoveDown={async () => {}}
                                 level={0}
                                 allTasks={tasks}
-                                isOverlay={false} // Not an overlay
+                                isOverlay={false}
                               />
                             ))
                           )}
@@ -310,14 +309,14 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                     sectionTasksCount={
                       filteredTasks.filter(t => t.parent_task_id === null && (t.section_id === activeItemData.id || (t.section_id === null && activeItemData.id === 'no-section-header'))).length
                     }
-                    isExpanded={true} // Always expanded in overlay
+                    isExpanded={true}
                     toggleSection={() => {}}
                     handleAddTaskToSpecificSection={() => {}}
                     markAllTasksInSectionCompleted={async () => {}}
                     handleDeleteSectionClick={() => {}}
                     updateSectionIncludeInFocusMode={async () => {}}
-                    onUpdateSectionName={async () => {}} // Dummy for overlay
-                    isOverlay={true} // Mark as overlay
+                    onUpdateSectionName={async () => {}}
+                    isOverlay={true}
                   />
                 ) : (
                   <SortableTaskItem
@@ -334,7 +333,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                     onMoveDown={async () => {}}
                     level={0}
                     allTasks={tasks}
-                    isOverlay={true} // Mark as overlay
+                    isOverlay={true}
                   />
                 )
               )}
