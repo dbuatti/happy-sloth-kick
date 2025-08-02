@@ -203,13 +203,13 @@ const DailyTasksV3: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <ListTodo className="h-5 w-5 text-primary" />
                   <span className="text-lg font-semibold">{dailyTaskCount}</span>
-                  <MoodBoosterButton /> {/* Added MoodBoosterButton here */}
+                  <MoodBoosterButton /> {/* This is the 'star' icon in your image */}
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => setIsFocusPanelOpen(true)}
                     aria-label="Open focus tools"
-                    className="ml-2 h-9 w-9"
+                    className="h-9 w-9"
                   >
                     <Brain className="h-5 w-5" />
                   </Button>
