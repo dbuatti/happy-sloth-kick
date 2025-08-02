@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, ListTodo, CheckCircle2, Clock, Brain, Sparkles, Search, Filter, X, ListRestart } from 'lucide-react';
+import { Plus, ListTodo, CheckCircle2, Clock, Brain, Sparkles, Search, Filter, X, ListRestart, CalendarIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import DateNavigator from '@/components/DateNavigator';
 import MoodBoosterButton from '@/components/MoodBoosterButton';
@@ -11,7 +11,7 @@ import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast';
 import { suggestTaskDetails } from '@/integrations/supabase/api';
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
-import { isBefore, isSameDay, parseISO } from 'date-fns';
+import { isBefore, isSameDay, parseISO, format } from 'date-fns';
 
 interface DailyTasksHeaderProps {
   currentDate: Date;
@@ -146,13 +146,25 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   }, []);
 
   return (
-    <div className="flex flex-col space-y-4">
-      {/* Top Row: Task Count & Utility Buttons */}
-      <div className="flex items-center justify-between px-4 pt-4">
+    <div className="flex flex-col bg-background sticky top-0 z-10 shadow-sm">
+      {/* Top Bar: Task Count, Date Navigator, Utility Buttons */}
+      <div className="flex items-center justify-between px-4 py-3">
+        {/* Left: Task Count */}
         <div className="flex items-center gap-2">
           <ListTodo className="h-6 w-6 text-primary" />
           <span className="text-2xl font-bold">{dailyTaskCount}</span>
         </div>
+
+        {/* Center: Date Navigator */}
+        <DateNavigator
+          currentDate={currentDate}
+          onPreviousDay={() => setCurrentDate(prevDate => new Date(prevDate.setDate(prevDate.getDate() - 1)))}
+          onNextDay={() => setCurrentDate(prevDate => new Date(prevDate.setDate(prevDate.getDate() + 1)))}
+          onGoToToday={() => setCurrentDate(new Date())}
+          setCurrentDate={setCurrentDate}
+        />
+
+        {/* Right: Utility Buttons */}
         <div className="flex items-center gap-2">
           <MoodBoosterButton />
           <Button
@@ -167,22 +179,22 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         </div>
       </div>
 
-      {/* Date Navigator */}
-      <DateNavigator
-        currentDate={currentDate}
-        onPreviousDay={() => setCurrentDate(prevDate => new Date(prevDate.setDate(prevDate.getDate() - 1)))}
-        onNextDay={() => setCurrentDate(prevDate => new Date(prevDate.setDate(prevDate.getDate() + 1)))}
-        onGoToToday={() => setCurrentDate(new Date())}
-        setCurrentDate={setCurrentDate}
-      />
-
-      {/* Today's Summary (replaces Status Badges and TodayProgressCard) */}
-      <div className="px-4 text-center text-sm text-muted-foreground">
-        <p>You have <span className="font-semibold text-foreground">{totalCount - completedCount} pending</span> tasks today.</p>
+      {/* Condensed Today's Summary */}
+      <div className="flex items-center justify-center gap-4 px-4 pb-3 text-sm text-muted-foreground">
+        <div className="flex items-center gap-1">
+          <ListTodo className="h-4 w-4 text-foreground" />
+          <span className="font-semibold text-foreground">{totalCount - completedCount} pending</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <CheckCircle2 className="h-4 w-4 text-primary" />
+          <span className="font-semibold text-primary">{completedCount} completed</span>
+        </div>
         {overdueCount > 0 && (
-          <p className="text-destructive">({overdueCount} overdue)</p>
+          <div className="flex items-center gap-1">
+            <Clock className="h-4 w-4 text-destructive" />
+            <span className="font-semibold text-destructive">{overdueCount} overdue</span>
+          </div>
         )}
-        <p>You've completed <span className="font-semibold text-primary">{completedCount}</span> of <span className="font-semibold text-foreground">{totalCount}</span> tasks.</p>
       </div>
 
       {/* Quick Add Task Bar */}
