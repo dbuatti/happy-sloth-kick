@@ -114,7 +114,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "mistralai/mistral-7b-instruct-v0.2", // You can change this model!
+        model: "deepseek/deepseek-r1:free", // Changed model to deepseek/deepseek-r1:free
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage },
