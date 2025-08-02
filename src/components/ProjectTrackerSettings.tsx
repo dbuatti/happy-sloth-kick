@@ -9,8 +9,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 const ProjectTrackerSettings: React.FC = () => {
-  // const { user } = useAuth(); // Use useAuth to get the user
-  // const userId = user?.id; // Get userId from useAuth - Removed as unused
+  const { user } = useAuth(); // Use useAuth to get the user
+  const userId = user?.id; // Get userId from useAuth
 
   const { sectionTitle, updateProjectTrackerTitle, loading: projectsLoading } = useProjects();
   const [isEditingTitle, setIsEditingTitle] = useState(false);

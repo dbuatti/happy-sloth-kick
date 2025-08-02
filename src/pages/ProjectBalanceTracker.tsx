@@ -26,7 +26,7 @@ import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 const ProjectBalanceTracker: React.FC = () => {
   const { user } = useAuth(); // Use useAuth to get the user
-  // const userId = user?.id; // Get userId from useAuth - Removed as unused
+  const userId = user?.id; // Get userId from useAuth
 
   const {
     projects,
@@ -51,7 +51,8 @@ const ProjectBalanceTracker: React.FC = () => {
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [editingProjectName, setEditingProjectName] = useState('');
   const [editingProjectDescription, setEditingProjectDescription] = useState('');
-  const [editingProjectLink, setNewProjectLink] = useState(''); // Corrected to setNewProjectLink
+  const [editingProjectLink, setEditingProjectLink] = useState('');
+
   const [showCelebration, setShowCelebration] = useState(false);
 
   const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
@@ -189,8 +190,8 @@ const ProjectBalanceTracker: React.FC = () => {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-4">
               <Dialog open={isAddProjectOpen} onOpenChange={setIsAddProjectOpen}>
                 <DialogTrigger asChild>
-                  <Button disabled={isSavingProject} className="w-full sm:w-auto h-10 text-base">
-                    <Plus className="mr-2 h-5 w-5" /> Add Project
+                  <Button disabled={isSavingProject} className="w-full sm:w-auto h-9">
+                    <Plus className="mr-2 h-4 w-4" /> Add Project
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
@@ -207,7 +208,7 @@ const ProjectBalanceTracker: React.FC = () => {
                         placeholder="e.g., Learn Rust, Garden Design"
                         autoFocus
                         disabled={isSavingProject}
-                        className="h-10 text-base"
+                        className="h-9"
                       />
                     </div>
                     <div>
@@ -230,13 +231,13 @@ const ProjectBalanceTracker: React.FC = () => {
                         onChange={(e) => setNewProjectLink(e.target.value)}
                         placeholder="e.g., https://github.com/my-project"
                         disabled={isSavingProject}
-                        className="h-10 text-base"
+                        className="h-9"
                       />
                     </div>
                   </div>
                   <DialogFooter>
-                    <Button variant="outline" onClick={() => setIsAddProjectOpen(false)} disabled={isSavingProject} className="h-10 text-base">Cancel</Button>
-                    <Button onClick={handleAddProject} disabled={isSavingProject || !newProjectName.trim()} className="h-10 text-base">
+                    <Button variant="outline" onClick={() => setIsAddProjectOpen(false)} disabled={isSavingProject} className="h-9">Cancel</Button>
+                    <Button onClick={handleAddProject} disabled={isSavingProject || !newProjectName.trim()} className="h-9">
                       {isSavingProject ? 'Adding...' : 'Add Project'}
                     </Button>
                   </DialogFooter>
@@ -245,7 +246,7 @@ const ProjectBalanceTracker: React.FC = () => {
               <div className="flex items-center gap-2 w-full sm:w-auto">
                 <Label htmlFor="sort-by">Sort by:</Label>
                 <Select value={sortOption} onValueChange={(value: 'name_asc' | 'count_asc' | 'count_desc' | 'created_at_asc' | 'created_at_desc') => setSortOption(value)}>
-                  <SelectTrigger className="w-full sm:w-[180px] h-10 text-base">
+                  <SelectTrigger className="w-full sm:w-[180px] h-9">
                     <SelectValue placeholder="Sort projects" />
                   </SelectTrigger>
                   <SelectContent>
@@ -265,8 +266,8 @@ const ProjectBalanceTracker: React.FC = () => {
                 <Sparkles className="h-8 w-8 text-primary animate-bounce" />
                 <p className="text-xl font-semibold">Congratulations! All projects are balanced!</p>
                 <p>Ready to start a new cycle?</p>
-                <Button onClick={handleResetAllClick} className="mt-2 h-10 text-base" disabled={isResettingAll}>
-                  {isResettingAll ? 'Resetting...' : <><RefreshCcw className="mr-2 h-5 w-5" /> Reset All Counters</>}
+                <Button onClick={handleResetAllClick} className="mt-2 h-9" disabled={isResettingAll}>
+                  {isResettingAll ? 'Resetting...' : <><RefreshCcw className="mr-2 h-4 w-4" /> Reset All Counters</>}
                 </Button>
               </div>
             )}
@@ -324,24 +325,24 @@ const ProjectBalanceTracker: React.FC = () => {
                               value={editingProjectName}
                               onChange={(e) => setEditingProjectName(e.target.value)}
                               onKeyDown={(e) => e.key === 'Enter' && handleSaveProjectEdit()}
-                              className="text-lg font-semibold h-10 text-base"
+                              className="text-lg font-semibold h-9"
                               autoFocus
                               disabled={isSavingProject}
                             />
                             <Textarea
                               value={editingProjectDescription}
-                              onChange={(e) => setEditingProjectDescription(e.target.value)} // Corrected to setEditingProjectDescription
+                              onChange={(e) => setNewProjectDescription(e.target.value)}
                               placeholder="Description..."
                               rows={2}
                               disabled={isSavingProject}
                             />
                             <Input
                               type="url"
-                              value={editingProjectLink} // Use editingProjectLink here
-                              onChange={(e) => setEditingProjectLink(e.target.value)} // Corrected to setEditingProjectLink
+                              value={newProjectLink} // Use newProjectLink here
+                              onChange={(e) => setNewProjectLink(e.target.value)}
                               placeholder="e.g., https://github.com/my-project"
                               disabled={isSavingProject}
-                              className="h-10 text-base"
+                              className="h-9"
                             />
                           </div>
                         ) : (
@@ -373,10 +374,10 @@ const ProjectBalanceTracker: React.FC = () => {
                       <div className="flex flex-col sm:flex-row items-center gap-3 flex-shrink-0 w-full sm:w-64 md:w-80 lg:w-96">
                         {editingProjectId === project.id ? (
                           <div className="flex gap-2 w-full">
-                            <Button size="sm" onClick={(e) => { e.stopPropagation(); handleSaveProjectEdit(); }} disabled={isSavingProject || !editingProjectName.trim()} className="flex-1 h-10 text-base">
+                            <Button size="sm" onClick={(e) => { e.stopPropagation(); handleSaveProjectEdit(); }} disabled={isSavingProject || !editingProjectName.trim()} className="flex-1 h-9">
                               {isSavingProject ? 'Saving...' : 'Save'}
                             </Button>
-                            <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setEditingProjectId(null); }} disabled={isSavingProject} className="flex-1 h-10 text-base">Cancel</Button>
+                            <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setEditingProjectId(null); }} disabled={isSavingProject} className="flex-1 h-9">Cancel</Button>
                           </div>
                         ) : (
                           <>
@@ -384,7 +385,7 @@ const ProjectBalanceTracker: React.FC = () => {
                               <Button
                                 variant="outline"
                                 size="icon"
-                                className="h-10 w-10"
+                                className="h-9 w-9"
                                 onClick={(e) => { e.stopPropagation(); handleDecrement(project.id); }}
                                 disabled={project.current_count <= 0}
                               >
@@ -397,7 +398,7 @@ const ProjectBalanceTracker: React.FC = () => {
                               <Button
                                 variant="outline"
                                 size="icon"
-                                className="h-10 w-10"
+                                className="h-9 w-9"
                                 onClick={(e) => { e.stopPropagation(); handleIncrement(project.id); }}
                                 disabled={project.current_count >= 10}
                               >
@@ -408,7 +409,7 @@ const ProjectBalanceTracker: React.FC = () => {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-10 w-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                                 onClick={(e) => { e.stopPropagation(); handleEditProject(project); }}
                                 aria-label={`Edit ${project.name}`}
                                 disabled={isSavingProject}
@@ -418,7 +419,7 @@ const ProjectBalanceTracker: React.FC = () => {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-10 w-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                                 onClick={(e) => { e.stopPropagation(); handleResetIndividualProjectClick(project.id); }}
                                 aria-label={`Reset ${project.name}`}
                                 disabled={isSavingProject}
@@ -428,7 +429,7 @@ const ProjectBalanceTracker: React.FC = () => {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-10 w-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-destructive"
+                                className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-destructive"
                                 onClick={(e) => { e.stopPropagation(); handleDeleteProjectClick(project.id); }}
                                 aria-label={`Delete ${project.name}`}
                                 disabled={isSavingProject}
@@ -498,7 +499,7 @@ const ProjectBalanceTracker: React.FC = () => {
             <AlertDialogAction onClick={confirmResetAll} disabled={isResettingAll}>
               {isResettingAll ? 'Resetting...' : 'Reset All'}
             </AlertDialogAction>
-          </DialogFooter>
+          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>
