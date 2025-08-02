@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from '@/components/ui/switch';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from '@/components/ui/dropdown-menu';
 import { Plus, Settings, CheckCircle2, ListTodo, FolderOpen, ChevronDown, Edit, MoreHorizontal, Trash2, Eye, EyeOff } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from '@/lib/utils';
@@ -108,9 +108,9 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
       className={cn(
         "relative flex items-center py-0 pr-2",
         "group",
-        isDragging && !isOverlay ? "" : "rounded-lg",
-        isOverlay ? "shadow-xl ring-2 ring-primary bg-card" : "",
-        isOverlay ? "cursor-grabbing" : "hover:shadow-sm",
+        isDragging && !isOverlay ? "" : "", // Removed rounded-lg
+        isOverlay ? "shadow-xl ring-2 ring-primary bg-card" : "", // Removed hover:shadow-sm
+        isOverlay ? "cursor-grabbing" : "",
       )}
       {...(attributes || {})}
       // Removed onClick from here, children will handle all clicks

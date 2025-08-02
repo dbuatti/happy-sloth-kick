@@ -212,9 +212,9 @@ const DailyTasksV3: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col">
       <main className={cn("flex-grow p-4", isBulkActionsActive ? "pb-[90px]" : "")}>
-        <div className="w-full max-w-4xl mx-auto h-full flex flex-col space-y-4">
+        <div className="w-full max-w-4xl mx-auto flex flex-col space-y-4">
           {/* Top Header Card */}
-          <Card className="shadow-lg p-4 flex flex-col">
+          <Card className="p-4 flex flex-col">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
@@ -305,7 +305,7 @@ const DailyTasksV3: React.FC = () => {
           />
 
           {/* Main Task List Card */}
-          <Card className="shadow-lg p-3 flex-1 flex flex-col"> {/* Changed p-4 to p-3 */}
+          <Card className="p-3 flex-1 flex flex-col"> {/* Changed p-4 to p-3 */}
             <CardContent className="p-4 flex-1 flex flex-col">
               <div ref={scrollRef} className="flex-1 overflow-y-auto pt-3">
                 <TaskList
