@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from '@/lib/utils';
-import { categoryColorMap, CategoryColorKey, getCategoryColorProps } from '@/lib/categoryColors';
+import { getCategoryColorProps } from '@/lib/categoryColors';
 import { Category } from '@/hooks/useTasks';
 // Removed useAuth as it's not directly used in this component
 import ManageCategoriesDialog from './ManageCategoriesDialog'; // Import the new dialog

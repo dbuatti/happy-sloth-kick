@@ -16,11 +16,11 @@ interface ActiveTaskPanelProps {
   tasks: Task[];
   filteredTasks: Task[];
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
-  onOpenDetail: (task: Task) => void; // This prop is used by handleOpenTaskDetails
+  // Removed onOpenDetail as it's not directly used here, handleOpenTaskDetails manages local state
   onDeleteTask: (taskId: string) => void;
   sections: TaskSection[];
   allCategories: Category[];
-  currentDate: Date; // This prop is used by useTasks hook
+  currentDate: Date; // Added this prop
 }
 
 const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
@@ -28,11 +28,11 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
   tasks,
   filteredTasks,
   updateTask,
-  onOpenDetail, // Keep this, it's used
+  // Removed onOpenDetail
   onDeleteTask,
   sections,
   allCategories,
-  currentDate, // Keep this, it's used
+  currentDate, // Destructure new prop
 }) => {
   // Removed 'user' from useAuth destructuring as it's not directly used here.
   useAuth(); 
@@ -40,7 +40,7 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
   const { playSound } = useSound();
 
   // Focus Timer State
-  const [focusDuration, setFocusDuration] = useState(25 * 60); // 25 minutes
+  const [focusDuration] = useState(25 * 60); // 25 minutes
   const [timeRemaining, setTimeRemaining] = useState(focusDuration);
   const [isRunning, setIsRunning] = useState(false);
   const [isSessionActive, setIsSessionActive] = useState(false); // To track if a session has started

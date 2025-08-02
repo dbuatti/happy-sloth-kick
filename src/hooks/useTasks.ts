@@ -263,7 +263,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       if (processedSeriesKeys.has(seriesKey)) return;
       processedSeriesKeys.add(seriesKey);
 
-      const templateTask = tasks.find(t => t.id === seriesKey); // Find the actual template task from ALL tasks
+      const templateTask: Task | undefined = tasks.find(t => t.id === seriesKey); // Explicitly type as Task | undefined
 
       // Handle orphaned instances (tasks with original_task_id but no matching template)
       if (!templateTask) {
@@ -299,13 +299,13 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
         // Priority 1: An instance created *on* the current date (any status, including archived, for later filtering)
         relevantInstance = sortedInstances.find(t =>
           isSameDay(getUTCStartOfDay(parseISO(t.created_at)), todayStart)
-        );
+        ) || null; // Ensure null if not found
 
         // Priority 2: If no instance created today, look for a 'to-do' instance from a previous day (carry-over)
         if (!relevantInstance) {
           relevantInstance = sortedInstances.find(t =>
             isBefore(getUTCStartOfDay(parseISO(t.created_at)), todayStart) && t.status === 'to-do'
-          );
+          ) || null; // Ensure null if not found
         }
 
         // Priority 3: If no real instance found, and the template is set to recur today, create a virtual one
@@ -338,60 +338,6 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     });
     return allProcessedTasks;
   }, [tasks, effectiveCurrentDate, allCategories]); // Depend on effectiveCurrentDate
-
-  const { finalFilteredTasks, nextAvailableTask } = useMemo(() => {
-    let relevant: Task[] = processedTasks;
-
-    // Apply viewMode filter FIRST and strictly
-    if (viewMode === 'daily') {
-      relevant = relevant.filter(t => t.status !== 'archived');
-    } else if (viewMode === 'archive') {
-      relevant = relevant.filter(t => t.status === 'archived');
-    }
-    // For 'focus' mode, no initial status filter here, it's handled by section.include_in_focus_mode later.
-
-    // Apply search filter
-    if (searchFilter) {
-      relevant = relevant.filter(t =>
-        t.description.toLowerCase().includes(searchFilter.toLowerCase()) ||
-        (t.notes || '').toLowerCase().includes(searchFilter.toLowerCase())
-      );
-    }
-
-    // Apply status filter (only if not 'all' and not in archive view where status is fixed)
-    if (statusFilter !== 'all' && viewMode !== 'archive') {
-      relevant = relevant.filter(t => t.status === statusFilter);
-    }
-
-    // Apply category filter
-    if (categoryFilter !== 'all') relevant = relevant.filter(t => t.category === categoryFilter);
-
-    // Apply priority filter
-    if (priorityFilter !== 'all') relevant = relevant.filter(t => t.priority === priorityFilter);
-
-    // Apply section filter
-    if (sectionFilter !== 'all') {
-      if (sectionFilter === 'no-section') relevant = relevant.filter(t => t.section_id === null);
-      else relevant = relevant.filter(t => t.section_id === sectionFilter);
-    }
-
-    // Apply focus mode specific filter (only for 'focus' viewMode)
-    if (viewMode === 'focus') {
-      const focusModeSectionIds = new Set(sections.filter(s => s.include_in_focus_mode).map(s => s.id));
-      relevant = relevant.filter(t => t.parent_task_id === null && (t.section_id === null || focusModeSectionIds.has(t.section_id)));
-    }
-
-    // Sort tasks
-    relevant.sort((a, b) => {
-      const aSec = sections.find(s => s.id === a.section_id)?.order ?? 1e9;
-      const bSec = sections.find(s => s.id === b.section_id)?.order ?? 1e9;
-      if (aSec !== bSec) return aSec - bSec;
-      return (a.order || 0) - (b.order || 0);
-    });
-
-    const nextTask = relevant.find(t => t.status === 'to-do' && t.parent_task_id === null) || null;
-    return { finalFilteredTasks: relevant, nextAvailableTask: nextTask };
-  }, [processedTasks, sections, viewMode, searchFilter, statusFilter, categoryFilter, priorityFilter, sectionFilter]);
 
   const handleAddTask = useCallback(async (newTaskData: NewTaskData) => {
     if (!userId) {
@@ -462,7 +408,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     let color: string | undefined;
     if (updates.category) color = allCategoriesRef.current.find(cat => cat.id === updates.category)?.color || 'gray';
 
-    const originalTask = tasks.find(t => t.id === taskId);
+    const originalTask: Task | undefined = tasks.find(t => t.id === taskId); // Explicitly type as Task | undefined
     if (!originalTask) return;
 
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates, ...(color && { category_color: color }) } : t));
@@ -499,7 +445,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       showError('User not authenticated.');
       return;
     }
-    const taskToDelete = tasks.find(t => t.id === taskId);
+    const taskToDelete: Task | undefined = tasks.find(t => t.id === taskId); // Explicitly type as Task | undefined
     if (!taskToDelete) return;
 
     let idsToDelete = [taskId];
@@ -805,7 +751,6 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       targetTasks = tasks.filter(t => t.parent_task_id === taskToMove.parent_task_id && t.section_id === taskToMove.section_id).sort((a, b) => (a.order || 0) - (b.order || 0));
     }
 
-    const currentTaskIndex = targetTasks.findIndex(t => t.id === activeId); // Removed unused variable
     let newOrder = targetTasks.length; // Default to end if no overId
 
     if (overId) {
@@ -845,6 +790,100 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       isReorderingRef.current = false;
     }
   }, [userId, tasks, sections, refetchAllTasks]);
+
+  const finalFilteredTasks = useMemo(() => {
+    let filtered = processedTasks;
+
+    // Apply search filter
+    if (searchFilter) {
+      filtered = filtered.filter(task =>
+        task.description.toLowerCase().includes(searchFilter.toLowerCase()) ||
+        task.notes?.toLowerCase().includes(searchFilter.toLowerCase()) ||
+        task.link?.toLowerCase().includes(searchFilter.toLowerCase())
+      );
+    }
+
+    // Apply status filter
+    if (viewMode === 'archive') {
+      filtered = filtered.filter(task => task.status === 'archived');
+    } else { // 'daily' or 'focus' view
+      if (statusFilter !== 'all') {
+        filtered = filtered.filter(task => task.status === statusFilter);
+      } else {
+        // In daily/focus view, by default, don't show archived tasks unless explicitly filtered for
+        filtered = filtered.filter(task => task.status !== 'archived');
+      }
+    }
+
+    // Apply category filter
+    if (categoryFilter !== 'all') {
+      filtered = filtered.filter(task => task.category === categoryFilter);
+    }
+
+    // Apply priority filter
+    if (priorityFilter !== 'all') {
+      filtered = filtered.filter(task => task.priority === priorityFilter);
+    }
+
+    // Apply section filter
+    if (sectionFilter !== 'all') {
+      if (sectionFilter === 'no-section') {
+        filtered = filtered.filter(task => task.section_id === null);
+      } else {
+        filtered = filtered.filter(task => task.section_id === sectionFilter);
+      }
+    }
+
+    // For 'daily' and 'focus' view, filter by date relevance
+    if (viewMode === 'daily' || viewMode === 'focus') {
+      filtered = filtered.filter(task => {
+        const taskCreatedAt = getUTCStartOfDay(parseISO(task.created_at));
+        const isTaskCreatedOnCurrentDate = isSameDay(taskCreatedAt, effectiveCurrentDate);
+        const isCarryOverTodo = isBefore(taskCreatedAt, effectiveCurrentDate) && task.status === 'to-do';
+
+        // Include tasks created today (any status) or carry-over 'to-do' tasks
+        return isTaskCreatedOnCurrentDate || isCarryOverTodo;
+      });
+    }
+
+    return filtered;
+  }, [
+    processedTasks,
+    searchFilter,
+    statusFilter,
+    categoryFilter,
+    priorityFilter,
+    sectionFilter,
+    viewMode,
+    effectiveCurrentDate,
+  ]);
+
+  const nextAvailableTask = useMemo(() => {
+    const focusModeSectionIds = new Set(sections.filter(s => s.include_in_focus_mode).map(s => s.id));
+
+    const relevantTasks = finalFilteredTasks.filter(task =>
+      task.status === 'to-do' &&
+      task.parent_task_id === null && // Only consider top-level tasks
+      (task.section_id === null || focusModeSectionIds.has(task.section_id))
+    );
+
+    // Sort by priority (urgent > high > medium > low), then by due date (earliest first), then by order
+    const sortedTasks = [...relevantTasks].sort((a, b) => {
+      const priorityOrder = { 'urgent': 0, 'high': 1, 'medium': 2, 'low': 3 };
+      const priorityA = priorityOrder[a.priority as keyof typeof priorityOrder] ?? 99;
+      const priorityB = priorityOrder[b.priority as keyof typeof priorityOrder] ?? 99;
+
+      if (priorityA !== priorityB) return priorityA - priorityB;
+
+      const dueDateA = a.due_date ? parseISO(a.due_date).getTime() : Infinity;
+      const dueDateB = b.due_date ? parseISO(b.due_date).getTime() : Infinity;
+      if (dueDateA !== dueDateB) return dueDateA - dueDateB;
+
+      return (a.order || 0) - (b.order || 0);
+    });
+
+    return sortedTasks.length > 0 ? sortedTasks[0] : null;
+  }, [finalFilteredTasks, sections]);
 
 
   return {

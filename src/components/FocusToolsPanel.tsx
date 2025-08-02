@@ -20,7 +20,7 @@ interface FocusToolsPanelProps {
   tasks: Task[];
   filteredTasks: Task[];
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
-  onOpenDetail: (task: Task) => void; // This prop is used by handleOpenTaskDetails
+  onOpenDetail: (task: Task) => void; // Added this prop
   onDeleteTask: (taskId: string) => void;
   sections: TaskSection[];
   allCategories: Category[];
@@ -37,7 +37,7 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
   tasks,
   filteredTasks,
   updateTask,
-  onOpenDetail, // Keep this, it's used
+  onOpenDetail,
   onDeleteTask,
   sections,
   allCategories,
@@ -56,7 +56,7 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
   const { playSound } = useSound();
 
   // Focus Timer State
-  const [focusDuration, setFocusDuration] = useState(25 * 60); // 25 minutes
+  const [focusDuration] = useState(25 * 60); // 25 minutes
   const [timeRemaining, setTimeRemaining] = useState(focusDuration);
   const [isRunning, setIsRunning] = useState(false);
   const [isSessionActive, setIsSessionActive] = useState(false); // To track if a session has started

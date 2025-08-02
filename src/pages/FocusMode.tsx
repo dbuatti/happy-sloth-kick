@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 // Removed Button, Progress, Play, Pause, RefreshCcw, Brain, SkipForward, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, cn as they are not directly used here
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useTasks, Task } from '@/hooks/useTasks';
@@ -41,7 +40,7 @@ const FocusMode: React.FC = () => {
             tasks={tasks}
             filteredTasks={filteredTasks}
             updateTask={updateTask}
-            onOpenDetail={handleOpenDetail}
+            onOpenDetail={handleOpenDetail} // This prop is correctly defined in FocusToolsPanelProps
             onDeleteTask={() => { /* Delete not typically in focus mode */ }}
             sections={sections}
             allCategories={allCategories}
