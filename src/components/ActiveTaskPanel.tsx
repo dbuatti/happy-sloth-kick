@@ -6,10 +6,8 @@ import { Play, Pause, RefreshCcw, CheckCircle2, Edit, Target, ListTodo, Clock } 
 import { cn } from '@/lib/utils';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
-// Removed TaskDetailDialog import as it's not managed here
 import TaskOverviewDialog from './TaskOverviewDialog'; // For opening overview from panel
 import { useAuth } from '@/context/AuthContext'; // Import useAuth
-// Removed useTasks import as its destructured elements are no longer needed here
 
 interface ActiveTaskPanelProps {
   nextAvailableTask: Task | null;
@@ -44,7 +42,6 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
   // Task Detail/Overview Dialog State
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
-  // Removed isTaskDetailOpen, taskToEdit, setTaskToEdit as they are not managed here
 
   useEffect(() => {
     setTimeRemaining(focusDuration);
@@ -122,12 +119,12 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
     }
   };
 
-  const handleOpenTaskOverview = (task: Task) => {
+  const handleOpenTaskOverview = useCallback((task: Task) => {
     setTaskToOverview(task);
     setIsTaskOverviewOpen(true);
-  };
+  }, []);
 
-  const handleEditTaskFromOverview = (task: Task) => {
+  const handleEditTaskFromOverview = useCallback((task: Task) => {
     setIsTaskOverviewOpen(false);
     // This function is now responsible for opening the detail dialog via the parent's prop
     // Since ActiveTaskPanel doesn't manage TaskDetailDialog directly, it can't call setTaskToEdit here.
@@ -140,7 +137,7 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
     // Re-evaluating: FocusToolsPanel has onOpenDetail, and it passes it to ActiveTaskPanel.
     // So, ActiveTaskPanel needs onOpenDetail as a prop.
     // Let's add it back to ActiveTaskPanelProps.
-  };
+  }, []);
 
   const upcomingTasks = useMemo(() => {
     if (!nextAvailableTask) return [];

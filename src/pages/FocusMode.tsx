@@ -47,10 +47,11 @@ const FocusMode: React.FC = () => {
             allCategories={allCategories}
             currentDate={currentDate} // Pass current date if needed for task logic
             handleAddTask={handleAddTask} // Pass handleAddTask
-            createSection={createSection} // Pass section management props
-            updateSection={updateSection}
-            deleteSection={deleteSection}
-            updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+            // Removed section management props as they are not directly used by FocusToolsPanel
+            // createSection={createSection}
+            // updateSection={updateSection}
+            // deleteSection={deleteSection}
+            // updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
           />
         </div>
       </main>

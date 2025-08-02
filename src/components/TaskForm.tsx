@@ -30,11 +30,9 @@ const taskFormSchema = z.object({
   sectionId: z.string().nullable().optional(),
   recurringType: z.enum(['none', 'daily', 'weekly', 'monthly']),
   parentTaskId: z.string().nullable().optional(),
-  link: z.string().nullable().transform((val) => { // Changed from .optional() to .nullable()
-    if (!val) return null;
+  link: z.string().transform((val) => { // Changed from .nullable() to direct transform
+    if (val === null || val === undefined || val.trim() === '') return null;
     let processedVal = val.trim();
-    if (processedVal === '') return null;
-
     // If it doesn't start with http:// or https://, prepend https://
     if (!/^https?:\/\//i.test(processedVal)) {
       processedVal = `https://${processedVal}`;
@@ -49,7 +47,7 @@ const taskFormSchema = z.object({
     } catch (e) {
       return false;
     }
-  }, { message: 'Please enter a valid URL (e.g., example.com or https://example.com).' }), // Improved error message
+  }, { message: 'Please enter a valid URL (e.g., example.com or https://example.com).' }).nullable(), // Added .nullable() at the end
 }).superRefine((data, ctx) => { // Using superRefine for more robust conditional validation
   if (data.remindAtDate) {
     // If remindAtDate is set, remindAtTime is required and must be valid
@@ -249,7 +247,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
       section_id: data.sectionId || null, // Ensure sectionId is null if undefined
       recurring_type: data.recurringType,
       parent_task_id: data.parentTaskId || null, // Ensure parentTaskId is null if undefined
-      link: data.link || null, // Include link
+      link: data.link ?? null, // Use nullish coalescing for consistency
     });
     setIsSaving(false);
     if (success) {

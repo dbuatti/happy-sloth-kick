@@ -24,10 +24,6 @@ interface FocusToolsPanelProps {
   allCategories: Category[];
   currentDate: Date;
   handleAddTask: (taskData: any) => Promise<any>; // Added handleAddTask
-  createSection: (name: string) => Promise<void>; // Added section management props
-  updateSection: (sectionId: string, newName: string) => Promise<void>;
-  deleteSection: (sectionId: string) => Promise<void>;
-  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
 }
 
 const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
@@ -41,10 +37,6 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
   allCategories,
   currentDate,
   handleAddTask, // Destructure handleAddTask
-  createSection, // Destructure section management props
-  updateSection,
-  deleteSection,
-  updateSectionIncludeInFocusMode,
 }) => {
   useAuth(); 
 
