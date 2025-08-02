@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'; // Import useRef
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess } from '@/utils/toast';
@@ -98,6 +98,18 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     return map;
   }, [allCategories]);
 
+  // Refs for latest state in stable callbacks
+  const allCategoriesRef = useRef(allCategories);
+  useEffect(() => {
+    allCategoriesRef.current = allCategories;
+  }, [allCategories]);
+
+  const categoriesMapRef = useRef(categoriesMap);
+  useEffect(() => {
+    categoriesMapRef.current = categoriesMap;
+  }, [categoriesMap]);
+
+
   // Modified fetchDataAndSections to accept userId as an argument and have an empty dependency array
   const fetchDataAndSections = useCallback(async (currentUserId: string) => {
     setLoading(true);
@@ -131,7 +143,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       // Apply category_color mapping here before setting tasks state
       const mappedTasks = (tasksData || []).map((t: any) => ({
         ...t,
-        category_color: categoriesMap.get(t.category) || 'gray',
+        category_color: categoriesMapRef.current.get(t.category) || 'gray', // Use ref here
       })) as Task[];
 
       setTasks(mappedTasks);
@@ -143,7 +155,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       setLoading(false);
       console.log('useTasks: Finished fetchDataAndSections.');
     }
-  }, [categoriesMap]); // categoriesMap is correctly outside this dependency array
+  }, [categoriesMapRef]); // categoriesMapRef is now the dependency
 
   useEffect(() => {
     if (!authLoading && userId) fetchDataAndSections(userId); // Pass userId here
@@ -174,7 +186,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         (payload) => {
           console.log('useTasks: Realtime task change received:', payload.eventType, (payload.new as any)?.id || (payload.old as any)?.id);
           const newOrOldTask = (payload.new || payload.old) as Task;
-          const categoryColor = categoriesMap.get(newOrOldTask.category) || 'gray';
+          const categoryColor = categoriesMapRef.current.get(newOrOldTask.category) || 'gray'; // Use ref here
 
           if (payload.eventType === 'INSERT') {
             setTasks(prev => [...prev, { ...newOrOldTask, category_color: categoryColor }]);
@@ -242,7 +254,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
           } else if (payload.eventType === 'DELETE') {
             setAllCategories(prev => prev.filter(c => c.id !== newOrOldCategory.id));
             // If a category is deleted, tasks using it should default to 'general' or first available
-            setTasks(prev => prev.map(t => t.category === newOrOldCategory.id ? { ...t, category: allCategories.find(cat => cat.name.toLowerCase() === 'general')?.id || allCategories[0]?.id || '' } : t));
+            setTasks(prev => prev.map(t => t.category === newOrOldCategory.id ? { ...t, category: allCategoriesRef.current.find(cat => cat.name.toLowerCase() === 'general')?.id || allCategoriesRef.current[0]?.id || '' } : t)); // Use ref here
           }
         }
       )
@@ -254,7 +266,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       supabase.removeChannel(categoriesChannel);
       console.log('useTasks: Unsubscribed from realtime channels.');
     };
-  }, [userId, categoriesMap, addReminder, dismissReminder, allCategories]); // Added allCategories to dependencies for category channel
+  }, [userId, addReminder, dismissReminder]); // Removed categoriesMap and allCategories from dependencies
 
   // --- Recurring Task Processing Logic ---
   const processedTasks = useMemo(() => {
@@ -264,8 +276,8 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     const processedSeriesIds = new Set<string>(); // To track which recurring series have been handled
 
     // Create categoriesMap here, as it's a dependency of this memo
-    const categoriesMap = new Map<string, string>();
-    allCategories.forEach(c => categoriesMap.set(c.id, c.color));
+    const categoriesMapLocal = new Map<string, string>(); // Use a local map
+    allCategories.forEach(c => categoriesMapLocal.set(c.id, c.color));
 
     // Group tasks by their original_task_id or their own id if they are templates
     const taskSeriesMap = new Map<string, Task[]>(); // Key: original_task_id or task.id if it's a template
@@ -287,7 +299,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
             // Non-recurring task: include if created on current day or is a carry-over 'to-do'
             const taskCreatedAt = getUTCStartOfDay(parseISO(templateTask.created_at));
             if (isSameDay(taskCreatedAt, todayStart) || (isBefore(taskCreatedAt, todayStart) && templateTask.status === 'to-do')) {
-                allProcessedTasks.push({ ...templateTask, category_color: categoriesMap.get(templateTask.category) || 'gray' });
+                allProcessedTasks.push({ ...templateTask, category_color: categoriesMapLocal.get(templateTask.category) || 'gray' });
             }
         } else {
             // This is a recurring series
@@ -316,7 +328,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
             }
 
             if (relevantInstanceForToday) {
-                allProcessedTasks.push({ ...relevantInstanceForToday, category_color: categoriesMap.get(relevantInstanceForToday.category) || 'gray' });
+                allProcessedTasks.push({ ...relevantInstanceForToday, category_color: categoriesMapLocal.get(relevantInstanceForToday.category) || 'gray' });
             } else {
                 // 3. If no existing instance or carry-over, generate a new VIRTUAL instance for today
                 // Check if the recurring type matches the current day
@@ -340,7 +352,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
                             remind_at: templateTask.remind_at ? format(setHours(setMinutes(todayStart, getMinutes(parseISO(templateTask.remind_at))), getHours(parseISO(templateTask.remind_at))), 'yyyy-MM-ddTHH:mm:ssZ') : null,
                             // Due date should be today if the template had one, otherwise null
                             due_date: templateTask.due_date ? todayStart.toISOString() : null,
-                            category_color: categoriesMap.get(templateTask.category) || 'gray', // Apply color here
+                            category_color: categoriesMapLocal.get(templateTask.category) || 'gray', // Apply color here
                         };
                         allProcessedTasks.push(virtualTask);
                     }
@@ -358,7 +370,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       return false;
     }
     // Get category color from allCategories directly
-    const categoryColor = allCategories.find(cat => cat.id === newTaskData.category)?.color || 'gray';
+    const categoryColor = allCategoriesRef.current.find(cat => cat.id === newTaskData.category)?.color || 'gray'; // Use ref here
     const parentId = newTaskData.parent_task_id || null;
     
     // Determine order based on processed tasks for the current view
@@ -405,7 +417,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       if (error) throw error;
       console.log('useTasks: handleAddTask - DB insert successful, received data:', data.id);
       // Update with actual data from DB (e.g., if default values were set by DB)
-      setTasks(prev => prev.map(t => t.id === newTask.id ? { ...data, category_color: categoriesMap.get(data.category) || 'gray' } : t));
+      setTasks(prev => prev.map(t => t.id === newTask.id ? { ...data, category_color: allCategoriesRef.current.find(cat => cat.id === data.category)?.color || 'gray' } : t)); // Use ref here
       showSuccess('Task added successfully!');
 
       if (newTask.remind_at) {
@@ -421,7 +433,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       setTasks(prev => prev.filter(t => t.id !== newTask.id));
       return false;
     }
-  }, [userId, currentDate, allCategories, processedTasks, addReminder, categoriesMap]); // Added categoriesMap to dependencies
+  }, [userId, currentDate, allCategoriesRef, processedTasks, addReminder]); // Updated dependencies
 
   const updateTask = useCallback(async (taskId: string, updates: TaskUpdate) => {
     if (!userId) {
@@ -430,7 +442,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       return;
     }
     let color: string | undefined;
-    if (updates.category) color = allCategories.find(cat => cat.id === updates.category)?.color || 'gray';
+    if (updates.category) color = allCategoriesRef.current.find(cat => cat.id === updates.category)?.color || 'gray'; // Use ref here
 
     const originalTask = tasks.find(t => t.id === taskId);
     if (!originalTask) {
@@ -456,7 +468,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       console.log('useTasks: updateTask - DB update successful for task:', data.id);
       
       // Ensure local state is fully consistent with DB response
-      setTasks(prev => prev.map(t => t.id === taskId ? { ...data, category_color: categoriesMap.get(data.category) || 'gray' } : t));
+      setTasks(prev => prev.map(t => t.id === taskId ? { ...data, category_color: allCategoriesRef.current.find(cat => cat.id === data.category)?.color || 'gray' } : t)); // Use ref here
       showSuccess('Task updated!');
 
       if (updates.remind_at) {
@@ -473,7 +485,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       console.log('useTasks: updateTask - Rolling back optimistic update for task:', taskId);
       setTasks(prev => prev.map(t => t.id === taskId ? originalTask : t));
     }
-  }, [userId, allCategories, tasks, addReminder, dismissReminder, categoriesMap]); // Added categoriesMap to dependencies
+  }, [userId, allCategoriesRef, tasks, addReminder, dismissReminder]); // Updated dependencies
 
   const deleteTask = useCallback(async (taskId: string) => {
     if (!userId) {
@@ -709,7 +721,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
     let updatedCategoryColor: string | undefined;
     if (updates.category) {
-      updatedCategoryColor = allCategories.find(cat => cat.id === updates.category)?.color || 'gray';
+      updatedCategoryColor = allCategoriesRef.current.find(cat => cat.id === updates.category)?.color || 'gray'; // Use ref here
     }
 
     const originalTasks = [...tasks]; // For rollback
@@ -754,7 +766,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       console.log('useTasks: bulkUpdateTasks - Rolling back optimistic bulk update.');
       setTasks(originalTasks);
     }
-  }, [userId, selectedTaskIds, clearSelectedTasks, allCategories, tasks, addReminder, dismissReminder]); // Updated dependencies
+  }, [userId, selectedTaskIds, clearSelectedTasks, allCategoriesRef, tasks, addReminder, dismissReminder]); // Updated dependencies
 
   const markAllTasksInSectionCompleted = useCallback(async (sectionId: string | null) => {
     if (!userId) {
