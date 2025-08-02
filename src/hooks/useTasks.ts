@@ -128,13 +128,14 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         .order('created_at', { ascending: true }); // Order by created_at for consistent processing
       if (tasksError) throw tasksError;
 
-      const mapped = (tasksData || []).map((t: any) => ({
+      // Apply category_color mapping here before setting tasks state
+      const mappedTasks = (tasksData || []).map((t: any) => ({
         ...t,
         category_color: categoriesMap.get(t.category) || 'gray',
       })) as Task[];
 
-      setTasks(mapped);
-      console.log('useTasks: Fetched tasks:', mapped.length);
+      setTasks(mappedTasks);
+      console.log('useTasks: Fetched tasks:', mappedTasks.length);
     } catch (e: any) {
       console.error('useTasks: Error in fetchDataAndSections:', e.message);
       showError('Failed to load data.');
@@ -227,6 +228,10 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     const allProcessedTasks: Task[] = [];
     const processedSeriesIds = new Set<string>(); // To track which recurring series have been handled
 
+    // Create categoriesMap here, as it's a dependency of this memo
+    const categoriesMap = new Map<string, string>();
+    allCategories.forEach(c => categoriesMap.set(c.id, c.color));
+
     // Group tasks by their original_task_id or their own id if they are templates
     const taskSeriesMap = new Map<string, Task[]>(); // Key: original_task_id or task.id if it's a template
     tasks.forEach(task => {
@@ -247,7 +252,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
             // Non-recurring task: include if created on current day or is a carry-over 'to-do'
             const taskCreatedAt = getUTCStartOfDay(parseISO(templateTask.created_at));
             if (isSameDay(taskCreatedAt, todayStart) || (isBefore(taskCreatedAt, todayStart) && templateTask.status === 'to-do')) {
-                allProcessedTasks.push(templateTask);
+                allProcessedTasks.push({ ...templateTask, category_color: categoriesMap.get(templateTask.category) || 'gray' });
             }
         } else {
             // This is a recurring series
@@ -276,7 +281,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
             }
 
             if (relevantInstanceForToday) {
-                allProcessedTasks.push(relevantInstanceForToday);
+                allProcessedTasks.push({ ...relevantInstanceForToday, category_color: categoriesMap.get(relevantInstanceForToday.category) || 'gray' });
             } else {
                 // 3. If no existing instance or carry-over, generate a new VIRTUAL instance for today
                 // Check if the recurring type matches the current day
@@ -300,6 +305,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
                             remind_at: templateTask.remind_at ? format(setHours(setMinutes(todayStart, getMinutes(parseISO(templateTask.remind_at))), getHours(parseISO(templateTask.remind_at))), 'yyyy-MM-ddTHH:mm:ssZ') : null,
                             // Due date should be today if the template had one, otherwise null
                             due_date: templateTask.due_date ? todayStart.toISOString() : null,
+                            category_color: categoriesMap.get(templateTask.category) || 'gray', // Apply color here
                         };
                         allProcessedTasks.push(virtualTask);
                     }
@@ -308,7 +314,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         }
     });
     return allProcessedTasks;
-  }, [tasks, currentDate]); // Depends on all tasks and current date
+  }, [tasks, currentDate, allCategories]); // Added allCategories to dependencies
 
   const handleAddTask = useCallback(async (newTaskData: NewTaskData) => {
     if (!userId) {
@@ -316,7 +322,8 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       console.error('useTasks: handleAddTask - User not authenticated.');
       return false;
     }
-    const categoryColor = categoriesMap.get(newTaskData.category) || 'gray';
+    // Get category color from allCategories directly, not categoriesMap
+    const categoryColor = allCategories.find(cat => cat.id === newTaskData.category)?.color || 'gray';
     const parentId = newTaskData.parent_task_id || null;
     
     // Determine order based on processed tasks for the current view
@@ -363,7 +370,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       if (error) throw error;
       console.log('useTasks: handleAddTask - DB insert successful, received data:', data.id);
       // Update with actual data from DB (e.g., if default values were set by DB)
-      setTasks(prev => prev.map(t => t.id === newTask.id ? { ...data, category_color: categoriesMap.get(data.category) || 'gray' } : t));
+      setTasks(prev => prev.map(t => t.id === newTask.id ? { ...data, category_color: allCategories.find(cat => cat.id === data.category)?.color || 'gray' } : t));
       showSuccess('Task added successfully!');
 
       if (newTask.remind_at) {
@@ -379,7 +386,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       setTasks(prev => prev.filter(t => t.id !== newTask.id));
       return false;
     }
-  }, [userId, currentDate, categoriesMap, processedTasks, addReminder]); // Added processedTasks to dependencies
+  }, [userId, currentDate, allCategories, processedTasks, addReminder]); // Updated dependencies
 
   const updateTask = useCallback(async (taskId: string, updates: TaskUpdate) => {
     if (!userId) {
@@ -388,7 +395,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       return;
     }
     let color: string | undefined;
-    if (updates.category) color = categoriesMap.get(updates.category) || 'gray';
+    if (updates.category) color = allCategories.find(cat => cat.id === updates.category)?.color || 'gray';
 
     const originalTask = tasks.find(t => t.id === taskId);
     if (!originalTask) {
@@ -414,7 +421,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       console.log('useTasks: updateTask - DB update successful for task:', data.id);
       
       // Ensure local state is fully consistent with DB response
-      setTasks(prev => prev.map(t => t.id === taskId ? { ...data, category_color: categoriesMap.get(data.category) || 'gray' } : t));
+      setTasks(prev => prev.map(t => t.id === taskId ? { ...data, category_color: allCategories.find(cat => cat.id === data.category)?.color || 'gray' } : t));
       showSuccess('Task updated!');
 
       if (updates.remind_at) {
@@ -431,7 +438,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       console.log('useTasks: updateTask - Rolling back optimistic update for task:', taskId);
       setTasks(prev => prev.map(t => t.id === taskId ? originalTask : t));
     }
-  }, [userId, categoriesMap, tasks, addReminder, dismissReminder]);
+  }, [userId, allCategories, tasks, addReminder, dismissReminder]); // Updated dependencies
 
   const deleteTask = useCallback(async (taskId: string) => {
     if (!userId) {
@@ -667,7 +674,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
     let updatedCategoryColor: string | undefined;
     if (updates.category) {
-      updatedCategoryColor = categoriesMap.get(updates.category) || 'gray';
+      updatedCategoryColor = allCategories.find(cat => cat.id === updates.category)?.color || 'gray';
     }
 
     const originalTasks = [...tasks]; // For rollback
@@ -712,7 +719,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       console.log('useTasks: bulkUpdateTasks - Rolling back optimistic bulk update.');
       setTasks(originalTasks);
     }
-  }, [userId, selectedTaskIds, clearSelectedTasks, categoriesMap, tasks, addReminder, dismissReminder]);
+  }, [userId, selectedTaskIds, clearSelectedTasks, allCategories, tasks, addReminder, dismissReminder]); // Updated dependencies
 
   const markAllTasksInSectionCompleted = useCallback(async (sectionId: string | null) => {
     if (!userId) {
