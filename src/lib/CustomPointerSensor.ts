@@ -1,16 +1,24 @@
 import { PointerSensor } from '@dnd-kit/core';
 
-// Custom PointerSensor to only activate drag on elements with data-dnd-handle="true"
+// Custom PointerSensor to activate drag on any part of the draggable element
 export class CustomPointerSensor extends PointerSensor {
   static activators = [
     {
       eventName: 'onPointerDown' as const,
       handler: ({ nativeEvent: event }: { nativeEvent: PointerEvent }) => {
-        // Only activate drag if the pointer down event occurred on an element with data-dnd-handle="true"
-        if (event.target instanceof HTMLElement && event.target.closest('[data-dnd-handle="true"]')) {
-          return true; // Activate drag
+        // Activate drag if the pointer down event occurred on any element that is part of a draggable item,
+        // but not on interactive elements like buttons, inputs, checkboxes, etc.
+        const target = event.target as HTMLElement;
+        const isInteractiveElement = ['BUTTON', 'INPUT', 'TEXTAREA', 'SELECT', 'A', 'LABEL'].includes(target.tagName) ||
+                                     target.closest('[role="button"], [role="checkbox"], [role="option"]');
+        
+        // Also, allow dragging if the target has a specific data-dnd-handle attribute (if we ever re-introduce it)
+        // For now, we'll allow dragging unless it's an interactive element.
+        if (isInteractiveElement) {
+          return false; // Do NOT activate drag if it's an interactive element
         }
-        return false; // Do NOT activate drag otherwise
+        
+        return true; // Activate drag otherwise
       },
     },
   ];

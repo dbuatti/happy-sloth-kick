@@ -10,7 +10,7 @@ import { useSound } from '@/context/SoundContext';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { CheckCircle2 } from 'lucide-react'; // Ensure CheckCircle2 is imported for the animation
 import { useAuth } from '@/context/AuthContext'; // Import useAuth
-import DragHandleIcon from './DragHandleIcon'; // Import the DragHandleIcon
+// Removed DragHandleIcon import
 
 interface TaskItemProps {
   task: Task;
@@ -25,7 +25,7 @@ interface TaskItemProps {
   onMoveUp: (taskId: string) => Promise<void>;
   onMoveDown: (taskId: string) => Promise<void>;
   isOverlay?: boolean;
-  dragHandleProps?: any; // New prop for drag handle listeners
+  // Removed dragHandleProps
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -38,7 +38,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   onOpenOverview,
   currentDate,
   isOverlay = false,
-  dragHandleProps, // Destructure new prop
+  // Removed dragHandleProps
 }) => {
   const { user } = useAuth(); // Use useAuth to get the user
   const userId = user?.id || null; // Get userId from useAuth
@@ -98,10 +98,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
       onClick={() => !isOverlay && onOpenOverview(task)}
       style={{ cursor: isOverlay ? 'grabbing' : 'pointer' }}
     >
-      {/* Drag Handle */}
-      <div className="flex-shrink-0 px-1" data-dnd-handle="true" {...dragHandleProps}>
-        <DragHandleIcon className="h-5 w-5 text-muted-foreground cursor-grab active:cursor-grabbing" />
-      </div>
+      {/* Removed Drag Handle */}
 
       <Checkbox
         key={`${task.id}-${task.status}`}

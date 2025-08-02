@@ -65,13 +65,14 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         isOverlay ? "cursor-grabbing" : ""
       )}
       {...(attributes || {})} // Apply attributes to the li
+      {...(listeners || {})} // Apply listeners to the li for dragging the whole item
     >
       <div className="flex-1"> {/* This div now contains the TaskItem and subtasks */}
         <TaskItem
           task={task}
           {...rest}
           isOverlay={isOverlay}
-          dragHandleProps={listeners} // Pass listeners to TaskItem as dragHandleProps
+          // Removed dragHandleProps
         />
         {directSubtasks.length > 0 && (
           <ul className="list-none mt-1.5 space-y-1.5">

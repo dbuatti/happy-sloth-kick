@@ -9,7 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Plus, CheckCircle2, FolderOpen, ChevronDown, MoreHorizontal, Trash2, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TaskSection } from '@/hooks/useTasks';
-import DragHandleIcon from './DragHandleIcon'; // Import DragHandleIcon
+// Removed DragHandleIcon import
 
 interface SortableSectionHeaderProps {
   section: TaskSection;
@@ -106,12 +106,10 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
         isOverlay ? "cursor-grabbing" : "",
       )}
       {...(attributes || {})}
+      {...(listeners || {})} // Apply listeners to the main div for dragging the whole section
       // Removed onClick from here, children will handle all clicks
     >
-      {/* Drag Handle */}
-      <div className="flex-shrink-0 px-1" data-dnd-handle="true" {...listeners}>
-        <DragHandleIcon className="h-5 w-5 text-muted-foreground cursor-grab active:cursor-grabbing" />
-      </div>
+      {/* Removed Drag Handle */}
 
       <div className="flex-1 flex items-center justify-between">
         <div 
