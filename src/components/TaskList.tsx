@@ -61,7 +61,7 @@ interface TaskListProps {
   setIsAddTaskOpen: (open: boolean) => void;
   currentDate: Date;
   setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
-  searchRef: React.RefObject<HTMLInputElement>;
+  // Removed searchRef: React.RefObject<HTMLInputElement>;
 }
 
 const TaskList: React.FC<TaskListProps> = (props) => {
@@ -91,7 +91,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     setIsAddTaskOpen,
     currentDate,
     setCurrentDate,
-    searchRef,
+    // Removed searchRef,
   } = props;
 
   console.log('[Render] TaskList', {

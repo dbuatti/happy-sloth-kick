@@ -57,15 +57,15 @@ const DailyTasksV3: React.FC = () => {
     updateTaskParentAndOrder,
   } = useTasks({ currentDate, setCurrentDate, viewMode: 'daily' });
 
-  const { dailyTaskCount } = useDailyTaskCount();
+  // Removed useDailyTaskCount as DailyOverviewCard is removed
+  // const { dailyTaskCount } = useDailyTaskCount();
 
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
-  const [quickAddTaskDescription, setQuickAddTaskDescription] = useState('');
-  const quickAddInputRef = useRef<HTMLInputElement>(null);
+  // Removed quickAddTaskDescription and quickAddInputRef
 
   const handlePreviousDay = () => {
     setCurrentDate(prevDate => getUTCStartOfDay(addDays(prevDate, -1)));
@@ -98,39 +98,14 @@ const DailyTasksV3: React.FC = () => {
     handleOpenDetail(task);
   };
 
-  const handleQuickAddTask = async (e?: React.FormEvent) => {
-    e?.preventDefault?.();
-    if (!quickAddTaskDescription.trim()) {
-      showError('Task description cannot be empty.');
-      return;
-    }
-    const generalCategory = allCategories.find(cat => cat.name.toLowerCase() === 'general');
-    const defaultCategoryId = generalCategory?.id || allCategories[0]?.id || '';
-
-    const success = await handleAddTask({
-      description: quickAddTaskDescription.trim(),
-      category: defaultCategoryId,
-      priority: 'medium',
-      section_id: null,
-      recurring_type: 'none',
-      parent_task_id: null,
-      due_date: format(currentDate, 'yyyy-MM-dd'),
-    });
-    if (success) {
-      setQuickAddTaskDescription('');
-      quickAddInputRef.current?.focus();
-    }
-  };
+  // Removed handleQuickAddTask
 
   // Keyboard shortcuts (+ "/" quick focus for quick-add)
   const shortcuts: ShortcutMap = {
     'arrowleft': () => handlePreviousDay(),
     'arrowright': () => handleNextDay(),
     't': () => handleGoToToday(),
-    '/': (e) => {
-      e.preventDefault();
-      quickAddInputRef.current?.focus();
-    },
+    // Removed '/' shortcut as quick add input is removed
     'cmd+k': (e) => { e.preventDefault(); setIsCommandPaletteOpen(prev => !prev); },
   };
   useKeyboardShortcuts(shortcuts);
@@ -160,17 +135,12 @@ const DailyTasksV3: React.FC = () => {
         <div className="w-full max-w-6xl mx-auto h-full"> {/* Increased max-width for larger screens */}
           <ResizablePanelGroup direction={isMobile ? "vertical" : "horizontal"} className="h-full items-stretch">
             {/* Left Panel: Main Task List */}
-            <ResizablePanel defaultSize={isMobile ? 65 : 70} minSize={isMobile ? 40 : 50}>
+            <ResizablePanel defaultSize={100} minSize={100}> {/* Takes full width */}
               <Card className="shadow-lg p-4 h-full flex flex-col">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-2xl font-bold">Your Tasks</CardTitle>
-                    {dailyTaskCount > 0 && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <ListTodo className="h-4 w-4" />
-                        <span>{dailyTaskCount} today</span>
-                      </div>
-                    )}
+                    {/* Removed dailyTaskCount display */}
                   </div>
                   <div className="text-center text-sm text-muted-foreground mt-2">
                     <p>{totalCount} total, {completedCount} completed, {overdueCount} overdue</p>
@@ -188,8 +158,9 @@ const DailyTasksV3: React.FC = () => {
                     />
                   </div>
 
+                  {/* Removed sticky quick add bar */}
+                  {/*
                   <div
-                    // Removed ref={stickyRef}
                     className={cn(
                       "sticky top-16 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border -mx-4 px-4 py-3 transition-shadow",
                       stuck ? "shadow-lg" : ""
@@ -209,9 +180,8 @@ const DailyTasksV3: React.FC = () => {
                         </Button>
                       </div>
                     </form>
-
-                    {/* Removed filter reset button */}
                   </div>
+                  */}
 
                   <div className="flex-1 overflow-y-auto pt-3 -mx-4 px-4"> {/* Adjusted padding */}
                     <TaskList
@@ -240,20 +210,20 @@ const DailyTasksV3: React.FC = () => {
                       setIsAddTaskOpen={() => {}}
                       currentDate={currentDate}
                       setCurrentDate={setCurrentDate}
-                      searchRef={quickAddInputRef}
+                      // Removed searchRef
                     />
                   </div>
                 </CardContent>
               </Card>
             </ResizablePanel>
 
+            {/* Removed ResizableHandle and Right Panel */}
+            {/*
             <ResizableHandle withHandle />
-
-            {/* Right Panel: Daily Overview & Smart Suggestions */}
             <ResizablePanel defaultSize={isMobile ? 35 : 30} minSize={isMobile ? 20 : 25}>
-              <div className="h-full flex flex-col space-y-3 p-4"> {/* Adjusted spacing */}
+              <div className="h-full flex flex-col space-y-3 p-4">
                 <DailyOverviewCard
-                  tasks={filteredTasks} // Pass filtered tasks for progress calculation
+                  tasks={filteredTasks}
                   nextAvailableTask={nextAvailableTask}
                   currentDate={currentDate}
                   loading={tasksLoading}
@@ -270,6 +240,7 @@ const DailyTasksV3: React.FC = () => {
                 />
               </div>
             </ResizablePanel>
+            */}
           </ResizablePanelGroup>
         </div>
       </main>
