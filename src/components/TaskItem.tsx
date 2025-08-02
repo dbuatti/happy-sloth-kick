@@ -90,7 +90,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
         "relative flex items-center space-x-2 w-full py-3 pr-3", // Increased vertical padding
         task.status === 'completed' ? "text-muted-foreground bg-task-completed-bg" : "text-foreground",
         "group",
-        isOverlay ? "cursor-grabbing" : "hover:scale-[1.01] hover:shadow-lg", // Added hover effects
+        isOverlay ? "cursor-grabbing" : "", // Removed hover effects
         isOverdue && "border-l-4 border-status-overdue", // Only border, no extra padding
         isDueToday && "border-l-4 border-status-due-today", // Only border, no extra padding
       )}
