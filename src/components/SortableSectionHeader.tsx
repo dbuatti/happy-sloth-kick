@@ -88,6 +88,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
         aria-label="Drag to reorder section"
         disabled={isOverlay}
         {...(sortable?.listeners || {})} // ADD listeners here
+        // REMOVED data-no-dnd="true" from here
       >
         <DragHandleIcon className="h-4 w-4" /> {/* Use custom DragHandleIcon */}
       </button>
