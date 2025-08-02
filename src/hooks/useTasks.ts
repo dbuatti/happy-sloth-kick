@@ -58,6 +58,8 @@ interface NewTaskData {
   remind_at?: string | null;
   section_id?: string | null;
   parent_task_id?: string | null;
+  original_task_id?: string | null; // Added for new instance creation
+  created_at?: string; // Added for new instance creation
   link?: string | null;
 }
 
@@ -430,11 +432,72 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     let color: string | undefined;
     if (updates.category) color = allCategoriesRef.current.find(cat => cat.id === updates.category)?.color || 'gray';
 
-    const originalTask: Task | undefined = tasks.find(t => t.id === taskId); // Explicitly type as Task | undefined
+    const originalTask: Task | undefined = tasks.find(t => t.id === taskId); // This is a task directly from DB
+    
     if (!originalTask) {
-      console.warn(`useTasks: Task with ID ${taskId} not found for update.`);
-      return;
+      // This is likely a virtual task (e.g., a recurring task instance generated for today)
+      const virtualTask = processedTasks.find(t => t.id === taskId);
+      if (!virtualTask || !virtualTask.original_task_id) {
+          console.warn(`useTasks: Virtual task with ID ${taskId} not found in processedTasks or missing original_task_id for update. Cannot proceed.`);
+          return;
+      }
+
+      // If the update is to 'completed' for a virtual recurring task
+      if (updates.status === 'completed') {
+          const tempId = uuidv4(); // Use a temporary ID for optimistic update
+          const newCompletedInstance: Task = {
+              id: tempId, // Temporary ID for optimistic update
+              user_id: userId,
+              description: virtualTask.description,
+              status: 'completed', // Explicitly set to 'completed'
+              recurring_type: 'none', // This instance is not recurring
+              created_at: effectiveCurrentDate.toISOString(), // Created today
+              category: virtualTask.category,
+              category_color: allCategoriesRef.current.find(cat => cat.id === virtualTask.category)?.color || 'gray',
+              priority: virtualTask.priority,
+              due_date: virtualTask.due_date, // Keep original due date
+              notes: virtualTask.notes,
+              remind_at: null, // Completed tasks don't need reminders
+              section_id: virtualTask.section_id,
+              order: null, // Assign null for order for new tasks, will be reordered later if needed
+              original_task_id: virtualTask.original_task_id || virtualTask.id, // Link to the template task
+              parent_task_id: virtualTask.parent_task_id,
+              link: virtualTask.link,
+          };
+
+          // Optimistically add this new completed instance to the tasks state
+          setTasks(prev => [...prev, newCompletedInstance]);
+          console.log(`useTasks: Optimistically added new completed instance for virtual task ${taskId} with temp ID ${tempId}.`);
+
+          try {
+              const { data, error } = await supabase
+                  .from('tasks')
+                  .insert(cleanTaskForDb(newCompletedInstance)) // Use the fully formed Task object
+                  .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link')
+                  .single();
+
+              if (error) throw error;
+
+              // Replace the temporary optimistic task with the real one from DB
+              setTasks(prev => prev.map(t => t.id === tempId ? { ...data, category_color: allCategoriesRef.current.find(cat => cat.id === data.category)?.color || 'gray' } : t));
+              showSuccess('Task completed!');
+              dismissReminder(virtualTask.id); // Dismiss reminder for the virtual task ID
+              console.log(`useTasks: New completed instance for virtual task ${taskId} inserted into DB with real ID ${data.id}.`);
+              return; // Exit, as we handled the update
+          } catch (e: any) {
+              showError('Failed to complete task.');
+              console.error(`useTasks: Error inserting new completed instance for virtual task ${taskId}:`, e.message);
+              setTasks(prev => prev.filter(t => t.id !== tempId)); // Revert optimistic add
+              return;
+          }
+      } else {
+          // If it's a virtual task and not being marked 'completed', we can't update it directly.
+          console.warn(`useTasks: Attempted to update non-status property or un-complete a virtual task ${taskId}. This operation is not supported directly.`);
+          return;
+      }
     }
+
+    // If we reach here, it's a real task from the database
     console.log('useTasks: Original task before optimistic update:', originalTask);
 
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates, ...(color && { category_color: color }) } : t));
@@ -471,7 +534,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       console.error(`useTasks: Error updating task ${taskId} in DB:`, e.message);
       setTasks(prev => prev.map(t => t.id === taskId ? originalTask : t)); // Revert optimistic update
     }
-  }, [userId, tasks, addReminder, dismissReminder]);
+  }, [userId, tasks, processedTasks, effectiveCurrentDate, addReminder, dismissReminder]);
 
   const deleteTask = useCallback(async (taskId: string) => {
     if (!userId) {
@@ -642,7 +705,8 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       if (error) throw error;
       showSuccess('Section deleted!');
       console.log(`useTasks: Section ${sectionId} deleted from DB successfully.`);
-    } catch (e: any) {
+    }
+    catch (e: any) {
       showError('Failed to delete section.');
       console.error(`useTasks: Error deleting section ${sectionId}:`, e.message);
     }
