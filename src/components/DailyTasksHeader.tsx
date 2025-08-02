@@ -5,7 +5,6 @@ import { Plus, ListTodo, CheckCircle2, Clock, Brain, Sparkles, Search, Filter, X
 import { Badge } from '@/components/ui/badge';
 import DateNavigator from '@/components/DateNavigator';
 import MoodBoosterButton from '@/components/MoodBoosterButton';
-import TodayProgressCard from '@/components/TodayProgressCard';
 import TaskFilter from '@/components/TaskFilter';
 import { cn } from '@/lib/utils';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
@@ -177,17 +176,13 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         setCurrentDate={setCurrentDate}
       />
 
-      {/* Status Badges */}
-      <div className="flex justify-center gap-3">
-        <Badge variant="outline" className="px-3 py-1 text-sm font-medium bg-primary/10 text-primary">
-          <ListTodo className="h-3.5 w-3.5 mr-1.5" /> {totalCount} Total
-        </Badge>
-        <Badge variant="outline" className="px-3 py-1 text-sm font-medium bg-green-500/10 text-green-600 dark:text-green-400">
-          <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" /> {completedCount} Completed
-        </Badge>
-        <Badge variant="outline" className="px-3 py-1 text-sm font-medium bg-destructive/10 text-destructive">
-          <Clock className="h-3.5 w-3.5 mr-1.5" /> {overdueCount} Overdue
-        </Badge>
+      {/* Today's Summary (replaces Status Badges and TodayProgressCard) */}
+      <div className="px-4 text-center text-sm text-muted-foreground">
+        <p>You have <span className="font-semibold text-foreground">{totalCount - completedCount} pending</span> tasks today.</p>
+        {overdueCount > 0 && (
+          <p className="text-destructive">({overdueCount} overdue)</p>
+        )}
+        <p>You've completed <span className="font-semibold text-primary">{completedCount}</span> of <span className="font-semibold text-foreground">{totalCount}</span> tasks.</p>
       </div>
 
       {/* Quick Add Task Bar */}
@@ -213,13 +208,6 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
           </div>
         </form>
       </div>
-
-      {/* Today's Progress Card */}
-      <TodayProgressCard
-        totalTasks={totalCount}
-        completedTasks={completedCount}
-        overdueTasks={overdueCount}
-      />
 
       {/* Task Filter and Search */}
       <TaskFilter
