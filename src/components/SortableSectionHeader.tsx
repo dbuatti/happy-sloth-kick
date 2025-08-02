@@ -96,11 +96,8 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
       return "bg-muted text-muted-foreground";
     } else if (count <= 5) {
       return "bg-primary text-primary-foreground";
-    } else if (count <= 10) {
-      // Use border-status-due-today for moderate warning, and primary-foreground for text contrast
-      return "bg-border-status-due-today text-primary-foreground";
-    } else {
-      return "bg-destructive text-destructive-foreground";
+    } else { // For counts > 5
+      return "bg-accent text-accent-foreground";
     }
   };
 
