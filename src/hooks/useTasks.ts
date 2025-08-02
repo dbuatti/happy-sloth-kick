@@ -556,7 +556,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
     console.log('useTasks: updateTaskParentAndOrder - Starting DND update for task:', activeId, 'from:', { parent: activeTask.parent_task_id, section: activeTask.section_id }, 'to:', { newParentId, newSectionId, overId });
 
-    const updates: Partial<Task>[] = [];
+    const updatesPayload: Partial<Task>[] = []; // Use a single array for upsert
 
     // Reindex old siblings
     const oldParentIsSection = activeTask.parent_task_id === null;
@@ -567,7 +567,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         return t.parent_task_id === activeTask.parent_task_id;
       }
     }).filter(t => t.id !== activeId).sort((a, b) => (a.order || 0) - (b.order || 0));
-    oldSiblings.forEach((t, i) => updates.push({ id: t.id, order: i }));
+    oldSiblings.forEach((t, i) => updatesPayload.push({ id: t.id, order: i }));
 
     // Target siblings
     let targetSiblings: Task[] = [];
@@ -589,9 +589,9 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
     const temp = [...targetSiblings];
     temp.splice(newOrder, 0, activeTask);
-    temp.forEach((t, idx) => updates.push({ id: t.id, order: idx }));
+    temp.forEach((t, idx) => updatesPayload.push({ id: t.id, order: idx }));
 
-    updates.push({
+    updatesPayload.push({
       id: activeTask.id,
       parent_task_id: newParentId,
       section_id: newParentId ? (tasks.find(t => t.id === newParentId)?.section_id ?? newSectionId ?? null) : newSectionId,
@@ -609,38 +609,28 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         visited.add(pid);
         const children = tasks.filter(t => t.parent_task_id === pid);
         children.forEach(child => {
-          updates.push({ id: child.id, section_id: cascadeSectionId });
+          updatesPayload.push({ id: child.id, section_id: cascadeSectionId });
           queue.push(child.id);
         });
       }
     }
 
-    console.log('useTasks: updateTaskParentAndOrder - Updates prepared for optimistic update:', updates);
+    console.log('useTasks: updateTaskParentAndOrder - Updates prepared for optimistic update:', updatesPayload);
 
     // Optimistic update
     setTasks(prev => {
-      const map = new Map(updates.map(u => [u.id!, u]));
+      const map = new Map(updatesPayload.map(u => [u.id!, u]));
       return prev.map(t => map.has(t.id) ? { ...t, ...map.get(t.id)! } : t);
     });
 
     try {
-      console.log('useTasks: updateTaskParentAndOrder - Sending individual updates to DB:');
-      // Execute updates individually using .update()
-      for (const update of updates) {
-        const { id, ...rest } = update;
-        if (id) { // Ensure id exists for update operation
-          console.log(`  Updating task ${id}:`, cleanTaskForDb(rest));
-          const { error } = await supabase
-            .from('tasks')
-            .update(cleanTaskForDb(rest)) // Only send the fields to update
-            .eq('id', id)
-            .eq('user_id', userId); // Ensure RLS is respected
-          if (error) throw error;
-          console.log(`  Task ${id} updated successfully.`);
-        }
-      }
+      console.log('useTasks: updateTaskParentAndOrder - Sending upsert to DB:', updatesPayload.map(u => cleanTaskForDb(u)));
+      const { error } = await supabase
+        .from('tasks')
+        .upsert(updatesPayload.map(u => cleanTaskForDb(u)), { onConflict: 'id' }); // Use upsert
+      if (error) throw error;
       showSuccess('Task moved!');
-      console.log('useTasks: updateTaskParentAndOrder - All DB updates successful.');
+      console.log('useTasks: updateTaskParentAndOrder - DB upsert successful.');
     } catch (e: any) {
       console.error('useTasks: updateTaskParentAndOrder - Update failed:', e.message);
       showError('Failed to move task.');
@@ -687,34 +677,24 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     }
 
     const newOrdered = arrayMove(siblings, currentIndex, newIndex);
-    const updates = newOrdered.map((t, idx) => ({ id: t.id, order: idx }));
+    const updatesPayload = newOrdered.map((t, idx) => ({ id: t.id, order: idx })); // Use a single array for upsert
 
-    console.log('useTasks: moveTask - Attempting optimistic reorder for task:', taskId, 'direction:', direction, 'updates:', updates);
+    console.log('useTasks: moveTask - Attempting optimistic reorder for task:', taskId, 'direction:', direction, 'updates:', updatesPayload);
 
     // Optimistic update
     setTasks(prev => {
-      const map = new Map(updates.map(u => [u.id, u]));
+      const map = new Map(updatesPayload.map(u => [u.id, u]));
       return prev.map(t => map.has(t.id) ? { ...t, ...map.get(t.id)! } : t);
     });
 
     try {
-      console.log('useTasks: moveTask - Sending individual updates to DB:');
-      // Execute updates individually using .update()
-      for (const update of updates) {
-        const { id, ...rest } = update;
-        if (id) { // Ensure id exists for update operation
-          console.log(`  Updating task ${id}:`, cleanTaskForDb(rest));
-          const { error } = await supabase
-            .from('tasks')
-            .update(cleanTaskForDb(rest)) // Only send the fields to update
-            .eq('id', id)
-            .eq('user_id', userId); // Ensure RLS is respected
-          if (error) throw error;
-          console.log(`  Task ${id} updated successfully.`);
-        }
-      }
+      console.log('useTasks: moveTask - Sending upsert to DB:', updatesPayload.map(u => cleanTaskForDb(u)));
+      const { error } = await supabase
+        .from('tasks')
+        .upsert(updatesPayload.map(u => cleanTaskForDb(u)), { onConflict: 'id' }); // Use upsert
+      if (error) throw error;
       showSuccess('Task reordered!');
-      console.log('useTasks: moveTask - All DB updates successful.');
+      console.log('useTasks: moveTask - DB upsert successful.');
     } catch (e: any) {
       console.error('useTasks: moveTask - Update failed:', e.message);
       showError('Failed to reorder task.');
