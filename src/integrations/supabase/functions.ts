@@ -8,6 +8,7 @@ interface SuggestTaskDetailsResponse {
   remindAt: string | null; // ISO string
   section: string | null;
   cleanedDescription: string;
+  link: string | null; // Added link
 }
 
 export const suggestTaskDetails = async (description: string, categories: { id: string; name: string }[], currentDate: Date): Promise<SuggestTaskDetailsResponse | null> => {

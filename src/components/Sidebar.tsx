@@ -21,6 +21,7 @@ const navItems = [
   { name: 'Sleep Tracker', path: '/sleep', icon: Moon },
   { name: 'Project Balance', path: '/projects', icon: LayoutGrid },
   { name: 'Time Blocks', path: '/schedule', icon: CalendarClock },
+  { name: 'AI Task Parser', path: '/ai-parser', icon: Sparkles }, // New item for AI Text Parser
   { name: 'My Hub', path: '/my-hub', icon: LayoutDashboard },
   { name: 'Help', path: '/help', icon: HelpCircle },
 ];

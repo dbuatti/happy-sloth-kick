@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "lib": ["deno.ns", "deno.window"],
+    "strict": true,
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "target": "es2020"
+  },
+  "include": ["**/*.ts"]
+}

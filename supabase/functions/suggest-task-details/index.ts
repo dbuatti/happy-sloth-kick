@@ -49,6 +49,7 @@ serve(async (req) => {
     - 'remindAt': The reminder date and time in 'YYYY-MM-DDTHH:MM:SSZ' (ISO 8601 UTC) format. If no specific reminder, leave null.
     - 'section': A suggested section name (e.g., 'Work', 'Personal', 'Groceries'). If no clear section, leave null.
     - 'cleanedDescription': The original description with extracted keywords removed.
+    - 'link': A URL link if mentioned in the description (e.g., 'through the link', 'check this website'). If no link, leave null.
 
     Categories available: ${categoryNames}
 
@@ -61,11 +62,12 @@ serve(async (req) => {
       "dueDate": "2024-08-15", // Assuming tomorrow is Aug 15, 2024
       "remindAt": "2024-08-15T18:00:00Z",
       "section": "Groceries",
-      "cleanedDescription": "Buy groceries for dinner"
+      "cleanedDescription": "Buy groceries for dinner",
+      "link": null
     }
 
     Example 2:
-    Description: "Finish report for work urgent due Friday"
+    Description: "Finish report for work urgent due Friday, see details at https://example.com/report"
     Output:
     {
       "category": "Work",
@@ -73,7 +75,8 @@ serve(async (req) => {
       "dueDate": "2024-08-16", // Assuming Friday is Aug 16, 2024
       "remindAt": null,
       "section": "Work",
-      "cleanedDescription": "Finish report"
+      "cleanedDescription": "Finish report",
+      "link": "https://example.com/report"
     }
 
     Example 3:
@@ -85,11 +88,12 @@ serve(async (req) => {
       "dueDate": null,
       "remindAt": null,
       "section": null,
-      "cleanedDescription": "Call mom"
+      "cleanedDescription": "Call mom",
+      "link": null
     }
 
     Example 4:
-    Description: "Schedule dentist appointment next week"
+    Description: "Schedule dentist appointment next week, check this site: dentist.com"
     Output:
     {
       "category": "Personal",
@@ -97,7 +101,8 @@ serve(async (req) => {
       "dueDate": "2024-08-23", // Assuming next week is Aug 23, 2024
       "remindAt": null,
       "section": "Appointments",
-      "cleanedDescription": "Schedule dentist appointment"
+      "cleanedDescription": "Schedule dentist appointment",
+      "link": "https://dentist.com"
     }
 
     Task Description: "${description}"
@@ -141,6 +146,7 @@ serve(async (req) => {
       remindAt: finalRemindAt,
       section: parsedData.section || null,
       cleanedDescription: parsedData.cleanedDescription || description,
+      link: parsedData.link || null, // Include link in the response
     };
 
     return new Response(JSON.stringify(responseData), {
