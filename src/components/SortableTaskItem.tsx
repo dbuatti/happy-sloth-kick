@@ -29,21 +29,18 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   isOverlay = false, // Default to false
   ...rest
 }) => {
-  // Conditionally use useSortable
-  const sortable = !isOverlay ? useSortable({ id: task.id, data: { type: 'task', task } }) : null;
-
-  const attributes = sortable?.attributes;
-  const listeners = sortable?.listeners; // Get listeners here
-  const setNodeRef = sortable?.setNodeRef || null; // Use null if not sortable
-  const transform = sortable?.transform;
-  const transition = sortable?.transition;
-  const isDragging = sortable?.isDragging || false; // Default to false if not sortable
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: task.id, data: { type: 'task', task } });
 
   const style: React.CSSProperties = { // Explicitly type as React.CSSProperties
-    transform: CSS.Transform.toString(transform || null), // Ensure transform is Transform | null
+    transform: CSS.Transform.toString(transform),
     transition,
-    zIndex: isDragging ? 10 : 'auto', // Original item should be behind overlay
-    // If it's the original item being dragged, make it invisible
     opacity: isDragging && !isOverlay ? 0 : 1,
     visibility: isDragging && !isOverlay ? 'hidden' : 'visible',
     paddingLeft: `${level * 12}px`,
@@ -62,17 +59,16 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         isOverlay ? "shadow-xl ring-2 ring-primary bg-card" : "", // Apply distinct styles for the overlay
         level > 0 ? "border-l border-l-primary/50" : "",
         "flex items-center",
-        isOverlay ? "cursor-grabbing" : ""
+        isOverlay ? "cursor-grabbing" : "cursor-grab"
       )}
-      {...(attributes || {})} // Apply attributes to the li
-      {...(listeners || {})} // Apply listeners to the li for dragging the whole item
+      {...attributes}
+      {...listeners}
     >
       <div className="flex-1"> {/* This div now contains the TaskItem and subtasks */}
         <TaskItem
           task={task}
           {...rest}
           isOverlay={isOverlay}
-          // Removed dragHandleProps
         />
         {directSubtasks.length > 0 && (
           <ul className="list-none mt-1.5 space-y-1.5">
