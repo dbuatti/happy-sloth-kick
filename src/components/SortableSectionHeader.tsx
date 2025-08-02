@@ -75,16 +75,16 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
         "flex items-center", // Use flex to align drag handle
         isOverlay ? "cursor-grabbing" : "" // Only apply cursor-grabbing when dragging
       )}
+      {...(attributes || {})} // Conditionally spread attributes
+      {...(listeners || {})} // Conditionally spread listeners
     >
       <button
         className={cn(
           "flex-shrink-0 h-full py-2 px-1.5 text-muted-foreground opacity-100 group-hover:opacity-100 transition-opacity duration-200",
           isOverlay ? "cursor-grabbing" : "cursor-grab active:cursor-grabbing" // Apply cursor to the drag handle
         )}
-        {...(attributes || {})} // Conditionally spread attributes
-        {...(listeners || {})} // Conditionally spread listeners
         aria-label="Drag to reorder section"
-        data-dnd-handle="true" // Mark as the drag handle
+        data-no-dnd="true" // Mark as non-draggable, as the whole div is now draggable
         disabled={isOverlay} // Disable on overlay
       >
         <GripVertical className="h-4 w-4" /> {/* Adjusted size */}

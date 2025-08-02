@@ -64,7 +64,8 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         "flex items-center", // Ensure vertical alignment of drag handle and TaskItem content
         isOverlay ? "cursor-grabbing" : "" // Only apply cursor-grabbing when dragging
       )}
-      // data-no-dnd="true" // Removed from here, applied to interactive elements in TaskItem
+      {...(attributes || {})} // Conditionally spread attributes
+      {...(listeners || {})} // Conditionally spread listeners
     >
       <button
         className={cn(
@@ -72,9 +73,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           isOverlay ? "cursor-grabbing" : "cursor-grab active:cursor-grabbing" // Apply cursor to the drag handle
         )}
         aria-label="Drag to reorder task"
-        {...(attributes || {})} // Conditionally spread attributes
-        {...(listeners || {})} // Conditionally spread listeners
-        data-dnd-handle="true" // Mark as the drag handle
+        data-no-dnd="true" // Mark as non-draggable, as the whole li is now draggable
       >
         <GripVertical className="h-4 w-4" /> {/* Adjusted size */}
       </button>
