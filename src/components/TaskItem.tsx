@@ -24,6 +24,7 @@ interface TaskItemProps {
   currentDate: Date;
   onMoveUp: (taskId: string) => Promise<void>;
   onMoveDown: (taskId: string) => Promise<void>;
+  isOverlay?: boolean; // New prop
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -39,6 +40,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   currentDate,
   onMoveUp,
   onMoveDown,
+  isOverlay = false, // Default to false
 }) => {
   const { playSound } = useSound();
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
@@ -73,6 +75,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const categoryColorProps = getCategoryColorProps(task.category_color);
 
   const handleCheckboxChange = (checked: boolean) => {
+    if (isOverlay) return; // Prevent interaction on overlay
     onToggleSelect(task.id, checked);
     onStatusChange(task.id, checked ? 'completed' : 'to-do');
     if (checked) {
@@ -85,11 +88,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
   };
 
   const handleMoveUpClick = () => {
+    if (isOverlay) return; // Prevent interaction on overlay
     onMoveUp(task.id);
     playSound('success');
   };
 
   const handleMoveDownClick = () => {
+    if (isOverlay) return; // Prevent interaction on overlay
     onMoveDown(task.id);
     playSound('success');
   };
@@ -113,14 +118,15 @@ const TaskItem: React.FC<TaskItemProps> = ({
         id={`task-${task.id}`}
         onClick={(e) => e.stopPropagation()}
         className="flex-shrink-0 h-4 w-4 mt-1" // Corrected size to h-4 w-4
-        data-no-dnd="true"
+        data-no-dnd="true" // Mark as non-draggable
         aria-label={`Mark task "${task.description}" as ${task.status === 'completed' ? 'to-do' : 'completed'}`}
+        disabled={isOverlay} // Disable on overlay
       />
 
       <div 
-        className="flex-1 min-w-0 cursor-pointer"
-        onClick={() => onOpenOverview(task)}
-        // data-no-dnd="true" // Removed this as it's now on the parent SortableTaskItem
+        className="flex-1 min-w-0"
+        onClick={() => !isOverlay && onOpenOverview(task)} // Prevent interaction on overlay
+        style={{ cursor: isOverlay ? 'grabbing' : 'pointer' }} // Change cursor for overlay
       >
         <div className="flex items-center gap-2"> {/* New flex container for inline elements */}
           {/* Priority Dot */}
@@ -203,7 +209,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
                   rel="noopener noreferrer" 
                   className="flex items-center gap-1 text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-500"
                   onClick={(e) => e.stopPropagation()}
-                  data-no-dnd="true"
+                  data-no-dnd="true" // Mark as non-draggable
+                  tabIndex={isOverlay ? -1 : 0} // Disable tabbing on overlay
                 >
                   <LinkIcon className="h-4 w-4" /> {/* Adjusted icon size */}
                 </a>
@@ -233,6 +240,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
               onClick={(e) => e.stopPropagation()}
               aria-label="More options"
               data-no-dnd="true" // Ensure this is marked as non-draggable
+              disabled={isOverlay} // Disable on overlay
             >
               <span className="sr-only">Open menu</span>
               <MoreHorizontal className="h-4 w-4" /> {/* Adjusted icon size */}

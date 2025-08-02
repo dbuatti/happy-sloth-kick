@@ -28,6 +28,7 @@ interface SortableSectionHeaderProps {
   markAllTasksInSectionCompleted: (sectionId: string | null) => Promise<void>;
   handleDeleteSectionClick: (sectionId: string) => void;
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
+  isOverlay?: boolean; // New prop for drag overlay
 }
 
 const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
@@ -45,15 +46,17 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
   markAllTasksInSectionCompleted,
   handleDeleteSectionClick,
   updateSectionIncludeInFocusMode,
+  isOverlay = false, // Default to false
 }) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: section.id, data: { type: 'section', section } });
+  // Conditionally use useSortable
+  const sortable = !isOverlay ? useSortable({ id: section.id, data: { type: 'section', section } }) : null;
+
+  const attributes = sortable?.attributes;
+  const listeners = sortable?.listeners;
+  const setNodeRef = sortable?.setNodeRef || null; // Use null if not sortable
+  const transform = sortable?.transform;
+  const transition = sortable?.transition;
+  const isDragging = sortable?.isDragging || false; // Default to false if not sortable
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -69,20 +72,25 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
       className={cn(
         "relative rounded-lg bg-muted dark:bg-gray-700 text-foreground shadow-sm hover:shadow-md transition-shadow duration-200 group",
         isDragging ? "ring-2 ring-primary shadow-lg" : "",
-        "flex items-center" // Use flex to align drag handle
+        "flex items-center", // Use flex to align drag handle
+        isOverlay ? "cursor-grabbing" : "" // Only apply cursor-grabbing when dragging
       )}
     >
       <button
-        className="flex-shrink-0 h-full py-2 px-1.5 text-muted-foreground opacity-100 group-hover:opacity-100 transition-opacity duration-200 cursor-grab active:cursor-grabbing" // Always visible
-        {...attributes}
-        {...listeners}
+        className={cn(
+          "flex-shrink-0 h-full py-2 px-1.5 text-muted-foreground opacity-100 group-hover:opacity-100 transition-opacity duration-200",
+          isOverlay ? "cursor-grabbing" : "cursor-grab active:cursor-grabbing" // Apply cursor to the drag handle
+        )}
+        {...(attributes || {})} // Conditionally spread attributes
+        {...(listeners || {})} // Conditionally spread listeners
         aria-label="Drag to reorder section"
         data-no-dnd="true" // Ensure this button is the only drag handle
+        disabled={isOverlay} // Disable on overlay
       >
         <GripVertical className="h-4 w-4" /> {/* Adjusted size */}
       </button>
       <div className="flex-1 flex items-center justify-between py-2 pl-0 pr-3"> {/* Increased padding */}
-        {editingSectionId === section.id ? (
+        {editingSectionId === section.id && !isOverlay ? ( // Only allow editing if not overlay
           <div className="flex items-center w-full gap-2" data-no-dnd="true">
             <Input
               value={editingSectionName}
@@ -96,14 +104,23 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
           </div>
         ) : (
           <div 
-            className="flex items-center gap-2 flex-1 cursor-pointer" 
-            onClick={() => toggleSection(section.id)}
+            className="flex items-center gap-2 flex-1" 
+            onClick={() => !isOverlay && toggleSection(section.id)} // Prevent interaction on overlay
+            style={{ cursor: isOverlay ? 'grabbing' : 'pointer' }} // Change cursor for overlay
           >
             <h3 className="text-xl font-bold flex items-center gap-2"> {/* Adjusted font size */}
               <FolderOpen className="h-5 w-5 text-muted-foreground" /> {/* Adjusted icon size */}
               {section.name} ({sectionTasksCount})
             </h3>
-            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleEditSectionClick(section); }} className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity duration-200" data-no-dnd="true"> {/* Adjusted button size */}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={(e) => { e.stopPropagation(); !isOverlay && handleEditSectionClick(section); }} // Prevent interaction on overlay
+              className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity duration-200" 
+              data-no-dnd="true" // Mark as non-draggable
+              disabled={isOverlay} // Disable on overlay
+              tabIndex={isOverlay ? -1 : 0} // Disable tabbing on overlay
+            >
               <Edit className="h-4 w-4" /> {/* Adjusted icon size */}
             </Button>
           </div>
@@ -126,42 +143,56 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
             <Switch
               id={`focus-mode-toggle-${section.id}`}
               checked={section.include_in_focus_mode}
-              onCheckedChange={(checked) => updateSectionIncludeInFocusMode(section.id, checked)}
+              onCheckedChange={(checked) => !isOverlay && updateSectionIncludeInFocusMode(section.id, checked)} // Prevent interaction on overlay
               aria-label={`Include ${section.name} in Focus Mode`}
+              disabled={isOverlay} // Disable on overlay
             />
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+          {!isOverlay && ( // Hide dropdown and chevron on overlay
+            <>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-7 w-7 p-0" // Adjusted button size
+                    data-no-dnd="true" // Mark as non-draggable
+                    tabIndex={isOverlay ? -1 : 0} // Disable tabbing on overlay
+                  >
+                    <span>
+                      <span className="sr-only">Open section menu</span>
+                      <MoreHorizontal className="h-4 w-4" /> {/* Adjusted icon size */}
+                    </span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" data-no-dnd="true">
+                  <DropdownMenuItem onSelect={() => handleAddTaskToSpecificSection(section.id)}>
+                    <Plus className="mr-2 h-3.5 w-3.5" /> Add Task to Section
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => markAllTasksInSectionCompleted(section.id)}>
+                    <CheckCircle2 className="mr-2 h-3.5 w-3.5" /> Mark All Completed
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => handleEditSectionClick(section)}>
+                    <Edit className="mr-2 h-3.5 w-3.5" /> Rename Section
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={() => handleDeleteSectionClick(section.id)} className="text-destructive focus:text-destructive">
+                    <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete Section
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Button 
                 variant="ghost" 
                 size="icon" 
+                onClick={() => toggleSection(section.id)} 
                 className="h-7 w-7 p-0" // Adjusted button size
+                data-no-dnd="true" // Mark as non-draggable
+                tabIndex={isOverlay ? -1 : 0} // Disable tabbing on overlay
               >
-                <span>
-                  <span className="sr-only">Open section menu</span>
-                  <MoreHorizontal className="h-4 w-4" /> {/* Adjusted icon size */}
-                </span>
+                <ChevronDown className={cn("h-4 w-4 transition-transform", isExpanded ? "rotate-0" : "-rotate-90")} /> {/* Adjusted icon size */}
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" data-no-dnd="true">
-              <DropdownMenuItem onSelect={() => handleAddTaskToSpecificSection(section.id)}>
-                <Plus className="mr-2 h-3.5 w-3.5" /> Add Task to Section
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => markAllTasksInSectionCompleted(section.id)}>
-                <CheckCircle2 className="mr-2 h-3.5 w-3.5" /> Mark All Completed
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => handleEditSectionClick(section)}>
-                <Edit className="mr-2 h-3.5 w-3.5" /> Rename Section
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={() => handleDeleteSectionClick(section.id)} className="text-destructive focus:text-destructive">
-                <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete Section
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Button variant="ghost" size="icon" onClick={() => toggleSection(section.id)} className="h-7 w-7 p-0"> {/* Adjusted button size */}
-            <ChevronDown className={cn("h-4 w-4 transition-transform", isExpanded ? "rotate-0" : "-rotate-90")} /> {/* Adjusted icon size */}
-          </Button>
+            </>
+          )}
         </div>
       </div>
     </div>

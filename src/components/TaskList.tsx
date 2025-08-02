@@ -104,6 +104,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
   const [preselectedSectionId, setPreselectedSectionId] = useState<string | null>(null);
 
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
+  const [activeItemData, setActiveItemData] = useState<Task | TaskSection | null>(null); // To store data for DragOverlay
 
   const sensors = useSensors(
     useSensor(CustomPointerSensor, { activationConstraint: { distance: 5 } }),
@@ -141,6 +142,11 @@ const TaskList: React.FC<TaskListProps> = (props) => {
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id);
+    if (isSectionHeaderId(event.active.id)) {
+      setActiveItemData(allSortableSections.find(s => s.id === event.active.id) || null);
+    } else {
+      setActiveItemData(tasks.find(t => t.id === event.active.id) || null);
+    }
   };
 
   const handleDragOver = (event: DragOverEvent) => {
@@ -153,6 +159,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
 
     if (!over || active.id === over.id) {
       setActiveId(null);
+      setActiveItemData(null);
       return;
     }
 
@@ -164,12 +171,14 @@ const TaskList: React.FC<TaskListProps> = (props) => {
         await reorderSections(a, b);
       }
       setActiveId(null);
+      setActiveItemData(null);
       return;
     }
 
     const draggedTask = getTaskById(active.id);
     if (!draggedTask) {
       setActiveId(null);
+      setActiveItemData(null);
       return;
     }
 
@@ -187,6 +196,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
       const overTask = getTaskById(over.id);
       if (!overTask) {
         setActiveId(null);
+        setActiveItemData(null);
         return;
       }
       newParentId = overTask.parent_task_id;
@@ -196,6 +206,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
 
     await updateTaskParentAndOrder(draggedTask.id, newParentId, newSectionId, overId);
     setActiveId(null);
+    setActiveItemData(null);
   };
 
   const openAddTaskForSection = (sectionId: string | null) => {
@@ -250,6 +261,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                     markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
                     handleDeleteSectionClick={() => {}}
                     updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+                    isOverlay={false} // Not an overlay
                   />
 
                   {isExpanded && (
@@ -286,6 +298,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                                 onMoveDown={(taskId) => moveTask(taskId, 'down')}
                                 level={0}
                                 allTasks={tasks}
+                                isOverlay={false} // Not an overlay
                               />
                             ))
                           )}
@@ -300,7 +313,47 @@ const TaskList: React.FC<TaskListProps> = (props) => {
 
           {createPortal(
             <DragOverlay>
-              {/* Intentionally empty overlay */}
+              {activeId && activeItemData && (
+                isSectionHeaderId(activeId) ? (
+                  <SortableSectionHeader
+                    section={activeItemData as TaskSection}
+                    sectionTasksCount={
+                      filteredTasks.filter(t => t.parent_task_id === null && (t.section_id === activeItemData.id || (t.section_id === null && activeItemData.id === 'no-section-header'))).length
+                    }
+                    isExpanded={true} // Always expanded in overlay
+                    toggleSection={() => {}}
+                    editingSectionId={null}
+                    editingSectionName=""
+                    setNewEditingSectionName={() => {}}
+                    handleRenameSection={async () => {}}
+                    handleCancelSectionEdit={() => {}}
+                    handleEditSectionClick={() => {}}
+                    handleAddTaskToSpecificSection={() => {}}
+                    markAllTasksInSectionCompleted={async () => {}}
+                    handleDeleteSectionClick={() => {}}
+                    updateSectionIncludeInFocusMode={async () => {}}
+                    isOverlay={true} // Mark as overlay
+                  />
+                ) : (
+                  <SortableTaskItem
+                    task={activeItemData as Task}
+                    userId={userId}
+                    onStatusChange={async () => {}}
+                    onDelete={() => {}}
+                    onUpdate={() => {}}
+                    isSelected={false}
+                    onToggleSelect={() => {}}
+                    sections={sections}
+                    onOpenOverview={() => {}}
+                    currentDate={currentDate}
+                    onMoveUp={async () => {}}
+                    onMoveDown={async () => {}}
+                    level={0}
+                    allTasks={tasks}
+                    isOverlay={true} // Mark as overlay
+                  />
+                )
+              )}
             </DragOverlay>,
             document.body
           )}

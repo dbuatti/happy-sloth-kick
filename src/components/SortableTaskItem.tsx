@@ -21,22 +21,25 @@ interface SortableTaskItemProps {
   onMoveDown: (taskId: string) => Promise<void>;
   level: number; // New prop for indentation level
   allTasks: Task[]; // Pass all tasks to filter subtasks
+  isOverlay?: boolean; // New prop for drag overlay
 }
 
 const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   task,
   level,
   allTasks,
+  isOverlay = false, // Default to false
   ...rest
 }) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: task.id, data: { type: 'task', task } });
+  // Conditionally use useSortable
+  const sortable = !isOverlay ? useSortable({ id: task.id, data: { type: 'task', task } }) : null;
+
+  const attributes = sortable?.attributes;
+  const listeners = sortable?.listeners;
+  const setNodeRef = sortable?.setNodeRef || null; // Use null if not sortable
+  const transform = sortable?.transform;
+  const transition = sortable?.transition;
+  const isDragging = sortable?.isDragging || false; // Default to false if not sortable
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -59,15 +62,19 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         isDragging ? "ring-2 ring-primary shadow-lg" : "hover:shadow-md", // Stronger shadow on hover
         level > 0 ? "bg-background border-l border-l-primary/50" : "", // Visual cue for subtasks, thinner border
         "flex items-center", // Ensure vertical alignment of drag handle and TaskItem content
-        "cursor-grab active:cursor-grabbing" // Apply cursor to the whole item
+        isOverlay ? "cursor-grabbing" : "" // Only apply cursor-grabbing when dragging
       )}
-      data-no-dnd="true" // Mark the entire list item as non-draggable for click-to-open
+      // data-no-dnd="true" // Removed from here, applied to interactive elements in TaskItem
     >
       <button
-        className="flex-shrink-0 py-2 px-1.5 text-muted-foreground opacity-100 group-hover:opacity-100 transition-opacity duration-200 cursor-grab active:cursor-grabbing" // Always visible
+        className={cn(
+          "flex-shrink-0 py-2 px-1.5 text-muted-foreground opacity-100 group-hover:opacity-100 transition-opacity duration-200",
+          isOverlay ? "cursor-grabbing" : "cursor-grab active:cursor-grabbing" // Apply cursor to the drag handle
+        )}
         aria-label="Drag to reorder task"
-        {...attributes} // Apply attributes to the drag handle
-        {...listeners} // Apply listeners to the drag handle
+        {...(attributes || {})} // Conditionally spread attributes
+        {...(listeners || {})} // Conditionally spread listeners
+        data-no-dnd="true" // Ensure this button is the only drag handle
       >
         <GripVertical className="h-4 w-4" /> {/* Adjusted size */}
       </button>
@@ -75,6 +82,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         <TaskItem 
           task={task} 
           {...rest} 
+          isOverlay={isOverlay} // Pass isOverlay prop
         />
         {directSubtasks.length > 0 && (
           <ul className="list-none mt-1.5 space-y-1.5"> {/* Adjusted spacing */}
@@ -85,6 +93,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
                 level={level + 1}
                 allTasks={allTasks} // Pass all tasks down
                 {...rest}
+                isOverlay={isOverlay} // Pass isOverlay prop
               />
             ))}
           </ul>
