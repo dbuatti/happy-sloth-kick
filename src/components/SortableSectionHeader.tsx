@@ -139,7 +139,39 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
         <div className="flex items-center space-x-1" data-no-dnd="true"> {/* Reduced space-x */}
           {!isOverlay && (
             <>
-              {/* Removed DropdownMenu and MoreHorizontal icon */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-7 w-7 p-0" // Adjusted button size
+                    data-no-dnd="true" 
+                    tabIndex={isOverlay ? -1 : 0}
+                  >
+                    <span>
+                      <span className="sr-only">Open section menu</span>
+                      <MoreHorizontal className="h-4 w-4" />
+                    </span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" data-no-dnd="true">
+                  <DropdownMenuItem onSelect={() => handleAddTaskToSpecificSection(section.id)}>
+                    <Plus className="mr-2 h-3.5 w-3.5" /> Add Task to Section
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => markAllTasksInSectionCompleted(section.id)}>
+                    <CheckCircle2 className="mr-2 h-3.5 w-3.5" /> Mark All Completed
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={() => updateSectionIncludeInFocusMode(section.id, !section.include_in_focus_mode)}>
+                    {section.include_in_focus_mode ? <EyeOff className="mr-2 h-3.5 w-3.5" /> : <Eye className="mr-2 h-3.5 w-3.5" />}
+                    {section.include_in_focus_mode ? 'Exclude from Focus Mode' : 'Include in Focus Mode'}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={() => handleDeleteSectionClick(section.id)} className="text-destructive focus:text-destructive">
+                    <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete Section
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Button 
                 variant="ghost" 
                 size="icon" 
