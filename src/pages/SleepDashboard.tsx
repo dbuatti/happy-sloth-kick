@@ -13,14 +13,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/context/AuthContext';
 import { useSleepAnalytics } from '@/hooks/useSleepAnalytics';
 
-const SleepDashboard: React.FC = () => {
+interface SleepDashboardProps {
+  dateRange: DateRange | undefined;
+  setDateRange: React.Dispatch<React.SetStateAction<DateRange | undefined>>;
+}
+
+const SleepDashboard: React.FC<SleepDashboardProps> = ({ dateRange, setDateRange }) => {
   const { user } = useAuth();
   const currentUserId = user?.id;
-
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: startOfMonth(new Date()),
-    to: new Date(),
-  });
 
   const { analyticsData, loading } = useSleepAnalytics({
     startDate: dateRange?.from || startOfMonth(new Date()),
@@ -74,7 +74,7 @@ const SleepDashboard: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col">
-      <main className="flex-grow p-4 flex justify-center">
+      <main className="flex-grow flex justify-center">
         <Card className="w-full max-w-4xl mx-auto shadow-lg rounded-xl p-4">
           <CardHeader className="pb-2">
             <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">

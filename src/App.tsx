@@ -8,7 +8,6 @@ import Help from "./pages/Help";
 import ProjectBalanceTracker from "./pages/ProjectBalanceTracker";
 import TimeBlockSchedule from "./pages/TimeBlockSchedule";
 import Meditation from "./pages/Meditation";
-import SleepTracker from "./pages/SleepTracker";
 import MindfulnessTools from "./pages/MindfulnessTools";
 import FocusMode from "./pages/FocusMode";
 import LandingPage from "./pages/LandingPage";
@@ -16,7 +15,7 @@ import DailyTasksV3 from "./pages/DailyTasksV3";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { ReminderProvider } from "@/context/ReminderContext";
 import { SoundProvider } from "@/context/SoundContext";
-import { Sidebar } from "./components/Sidebar"; // Corrected import
+import { Sidebar } from "./components/Sidebar";
 import AuthComponent from "@/components/AuthComponent";
 
 // Import new dedicated mindfulness tool pages
@@ -32,7 +31,7 @@ import BreathingBubblePage from "./pages/mindfulness/BreathingBubblePage";
 import Settings from "./pages/Settings";
 import Analytics from "./pages/Analytics";
 import Archive from "./pages/Archive";
-import SleepDashboard from "./pages/SleepDashboard"; // Import new SleepDashboard
+import SleepPage from "./pages/SleepPage"; // Import the new combined SleepPage
 
 const queryClient = new QueryClient();
 
@@ -69,7 +68,7 @@ const AppContent = () => {
             <Route path="/projects" element={<ProjectBalanceTracker />} />
             <Route path="/schedule" element={<TimeBlockSchedule />} />
             <Route path="/meditation" element={<Meditation />} />
-            <Route path="/sleep" element={<SleepTracker />} />
+            <Route path="/sleep" element={<SleepPage />} /> {/* Use the new combined SleepPage */}
             <Route path="/mindfulness" element={<MindfulnessTools />} />
             <Route path="/focus" element={<FocusMode />} />
             
@@ -86,7 +85,6 @@ const AppContent = () => {
             <Route path="/settings" element={<Settings />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/archive" element={<Archive />} />
-            <Route path="/sleep-dashboard" element={<SleepDashboard />} /> {/* New Sleep Dashboard Route */}
 
             <Route path="*" element={<NotFound />} />
           </Routes>

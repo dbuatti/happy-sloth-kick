@@ -7,28 +7,32 @@ import { MadeWithDyad } from "@/components/made-with-dyad";
 import DateNavigator from '@/components/DateNavigator';
 import { useSleepRecords, NewSleepRecordData } from '@/hooks/useSleepRecords';
 import { format, addDays } from 'date-fns';
-import { Moon, Bed, AlarmClock, LogOut, Hourglass, ListX, Clock, Goal } from 'lucide-react'; // Added new icons
+import { Moon, Bed, AlarmClock, LogOut, Hourglass, ListX, Clock, Goal } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSound } from '@/context/SoundContext';
-import { useAuth } from '@/context/AuthContext'; // Import useAuth
+import { useAuth } from '@/context/AuthContext';
 
-const SleepTracker: React.FC = () => {
-  const { user } = useAuth(); // Use useAuth to get the user
-  const userId = user?.id; // Get userId from useAuth
+interface SleepTrackerProps {
+  currentDate: Date;
+  setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
+}
+
+const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate }) => {
+  const { user } = useAuth();
+  const userId = user?.id;
 
   const { playSound } = useSound();
-  const [currentDate, setCurrentDate] = useState(new Date());
   const { sleepRecord, loading, saveSleepRecord } = useSleepRecords({ selectedDate: currentDate });
 
   const [bedTime, setBedTime] = useState<string>('');
   const [lightsOffTime, setLightsOffTime] = useState<string>('');
   const [wakeUpTime, setWakeUpTime] = useState<string>('');
   const [getOutOfBedTime, setGetOutOfBedTime] = useState<string>('');
-  const [timeToFallAsleepMinutes, setTimeToFallAsleepMinutes] = useState<number | ''>(''); // New state
-  const [sleepInterruptionsCount, setSleepInterruptionsCount] = useState<number | ''>(''); // New state
-  const [sleepInterruptionsDurationMinutes, setSleepInterruptionsDurationMinutes] = useState<number | ''>(''); // New state
-  const [timesLeftBedCount, setTimesLeftBedCount] = useState<number | ''>(''); // New state
-  const [plannedWakeUpTime, setPlannedWakeUpTime] = useState<string>(''); // New state
+  const [timeToFallAsleepMinutes, setTimeToFallAsleepMinutes] = useState<number | ''>('');
+  const [sleepInterruptionsCount, setSleepInterruptionsCount] = useState<number | ''>('');
+  const [sleepInterruptionsDurationMinutes, setSleepInterruptionsDurationMinutes] = useState<number | ''>('');
+  const [timesLeftBedCount, setTimesLeftBedCount] = useState<number | ''>('');
+  const [plannedWakeUpTime, setPlannedWakeUpTime] = useState<string>('');
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -38,7 +42,7 @@ const SleepTracker: React.FC = () => {
       setLightsOffTime(sleepRecord?.lights_off_time ? sleepRecord.lights_off_time.substring(0, 5) : '');
       setWakeUpTime(sleepRecord?.wake_up_time ? sleepRecord.wake_up_time.substring(0, 5) : '');
       setGetOutOfBedTime(sleepRecord?.get_out_of_bed_time ? sleepRecord.get_out_of_bed_time.substring(0, 5) : '');
-      setTimeToFallAsleepMinutes(sleepRecord?.time_to_fall_asleep_minutes ?? ''); // Populate new fields
+      setTimeToFallAsleepMinutes(sleepRecord?.time_to_fall_asleep_minutes ?? '');
       setSleepInterruptionsCount(sleepRecord?.sleep_interruptions_count ?? '');
       setSleepInterruptionsDurationMinutes(sleepRecord?.sleep_interruptions_duration_minutes ?? '');
       setTimesLeftBedCount(sleepRecord?.times_left_bed_count ?? '');
@@ -66,7 +70,7 @@ const SleepTracker: React.FC = () => {
       lights_off_time: lightsOffTime || null,
       wake_up_time: wakeUpTime || null,
       get_out_of_bed_time: getOutOfBedTime || null,
-      time_to_fall_asleep_minutes: timeToFallAsleepMinutes === '' ? null : Number(timeToFallAsleepMinutes), // Save as number or null
+      time_to_fall_asleep_minutes: timeToFallAsleepMinutes === '' ? null : Number(timeToFallAsleepMinutes),
       sleep_interruptions_count: sleepInterruptionsCount === '' ? null : Number(sleepInterruptionsCount),
       sleep_interruptions_duration_minutes: sleepInterruptionsDurationMinutes === '' ? null : Number(sleepInterruptionsDurationMinutes),
       times_left_bed_count: timesLeftBedCount === '' ? null : Number(timesLeftBedCount),
@@ -74,14 +78,14 @@ const SleepTracker: React.FC = () => {
     };
     const success = await saveSleepRecord(dataToSave);
     if (success) {
-      playSound('success'); // Play success sound on save
+      playSound('success');
     }
     setIsSaving(false);
   };
 
   return (
     <div className="flex-1 flex flex-col">
-      <main className="flex-grow p-4 flex justify-center">
+      <main className="flex-grow flex justify-center">
         <Card className="w-full max-w-md mx-auto shadow-lg rounded-xl p-4">
           <CardHeader className="pb-2">
             <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">

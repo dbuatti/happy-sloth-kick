@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
 import { Badge } from '@/components/ui/badge';
 import { useSound } from '@/context/SoundContext';
-import ThemeSelector from './ThemeSelector'; // Import ThemeSelector
+import ThemeSelector from './ThemeSelector';
 
 interface SidebarProps {
   children: React.ReactNode;
@@ -19,14 +19,14 @@ const navItems = [
   { name: 'Focus Mode', path: '/focus', icon: Target },
   { name: 'Mindfulness', path: '/mindfulness', icon: Brain },
   { name: 'Meditation', path: '/meditation', icon: Leaf },
-  { name: 'Sleep Tracker', path: '/sleep', icon: Moon },
-  { name: 'Sleep Dashboard', path: '/sleep-dashboard', icon: BarChart3 }, // New: Sleep Dashboard
+  // Combined Sleep Tracker and Dashboard
+  { name: 'Sleep', path: '/sleep', icon: Moon },
   { name: 'Project Balance', path: '/projects', icon: LayoutGrid },
   { name: 'Time Blocks', path: '/schedule', icon: CalendarClock },
   { name: 'My Hub', path: '/my-hub', icon: LayoutDashboard },
-  { name: 'Analytics', path: '/analytics', icon: BarChart3 }, // New direct link
-  { name: 'Archive', path: '/archive', icon: ArchiveIcon }, // New direct link
-  { name: 'Settings', path: '/settings', icon: SettingsIcon }, // New direct link
+  { name: 'Analytics', path: '/analytics', icon: BarChart3 },
+  { name: 'Archive', path: '/archive', icon: ArchiveIcon },
+  { name: 'Settings', path: '/settings', icon: SettingsIcon },
   { name: 'Help', path: '/help', icon: HelpCircle },
 ];
 
@@ -103,7 +103,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ children }) => {
                   <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"} className="h-7 w-7">
                     {isSoundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
                   </Button>
-                  <ThemeSelector /> {/* Reinstated ThemeSelector */}
+                  <ThemeSelector />
                 </div>
               </div>
             </SheetContent>
@@ -113,7 +113,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ children }) => {
             <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"} className="h-7 w-7">
               {isSoundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
             </Button>
-            <ThemeSelector /> {/* Reinstated ThemeSelector */}
+            <ThemeSelector />
           </div>
         </header>
         <div className="flex-1 overflow-auto">
@@ -138,7 +138,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ children }) => {
             <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"} className="h-7 w-7">
               {isSoundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
             </Button>
-            <ThemeSelector /> {/* Reinstated ThemeSelector */}
+            <ThemeSelector />
           </div>
         </div>
       </div>
