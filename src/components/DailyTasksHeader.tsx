@@ -38,7 +38,7 @@ interface DailyTasksHeaderProps {
   nextAvailableTask: Task | null;
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
   onOpenOverview: (task: Task) => void;
-  toggleAllSections: () => void;
+  // Removed toggleAllSections: () => void;
   // New props for section/category management
   createSection: (name: string) => Promise<void>;
   updateSection: (sectionId: string, newName: string) => Promise<void>;
@@ -67,7 +67,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   nextAvailableTask,
   updateTask,
   onOpenOverview,
-  toggleAllSections,
+  // Removed toggleAllSections,
   createSection, // Destructure new props
   updateSection,
   deleteSection,

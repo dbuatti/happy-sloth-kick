@@ -152,7 +152,6 @@ const DailyTasksV3: React.FC = () => {
             nextAvailableTask={nextAvailableTask}
             updateTask={updateTask}
             onOpenOverview={handleOpenOverview}
-            toggleAllSections={toggleAllSections}
             createSection={createSection} // Pass new props
             updateSection={updateSection}
             deleteSection={deleteSection}
