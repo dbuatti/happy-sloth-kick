@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, ListTodo, Brain, CheckCircle2, Clock, Target, Edit, ChevronsDownUp } from 'lucide-react';
+import { Plus, ListTodo, Brain, CheckCircle2, Clock, Target, Edit, ChevronsDownUp, Sparkles } from 'lucide-react';
 import DateNavigator from '@/components/DateNavigator';
 import TaskFilter from '@/components/TaskFilter';
 import { cn } from '@/lib/utils';
@@ -256,13 +256,13 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
           <div className="flex items-center gap-2">
             <Input
               ref={quickAddInputRef}
-              placeholder='Quick add a task — press "/" to focus, Enter to add'
+              placeholder='Quick add a task (AI-powered) — press "/" to focus, Enter to add'
               value={quickAddTaskDescription}
               onChange={(e) => setQuickAddTaskDescription(e.target.value)}
               className="flex-1 h-10 text-base"
             />
             <Button type="submit" className="whitespace-nowrap h-10 text-base">
-              <Plus className="mr-1 h-4 w-4" /> Add
+              <Plus className="mr-1 h-4 w-4" /> Add <Sparkles className="ml-1 h-4 w-4" />
             </Button>
           </div>
         </form>
