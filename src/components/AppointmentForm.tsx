@@ -297,7 +297,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isSaving}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDeleteAppointment}>Continue</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

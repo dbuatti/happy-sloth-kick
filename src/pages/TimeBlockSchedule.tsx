@@ -58,7 +58,7 @@ const TimeBlockSchedule: React.FC = () => {
     setCurrentDate(prevDate => {
       const newDate = new Date(prevDate);
       newDate.setDate(prevDate.getDate() + 1);
-      return newDate;
+      return new Date();
     });
   };
 
@@ -296,7 +296,7 @@ const TimeBlockSchedule: React.FC = () => {
                       <div
                         key={format(block.start, 'HH:mm')}
                         id={`time-block-${format(block.start, 'HH:mm')}`}
-                        className="relative flex items-center justify-center h-10 bg-card dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-dashed border-border/50 hover:border-primary/50 transition-colors duration-150 cursor-pointer hover:scale-[1.01] hover:shadow-md"
+                        className="relative flex items-center justify-center h-10 bg-card dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border-dashed border-border/50 hover:border-primary/50 transition-colors duration-150 cursor-pointer hover:scale-[1.01] hover:shadow-md"
                         style={{ gridRow: `${index + 1}` }}
                         onClick={() => handleTimeBlockClick(block.start, block.end)}
                       >

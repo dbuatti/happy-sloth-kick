@@ -97,7 +97,7 @@ const WorkHoursSettings: React.FC = () => {
         <p className="text-sm text-muted-foreground">Set your daily working hours to help manage your productivity.</p>
       </CardHeader>
       <CardContent className="space-y-4 pt-0">
-        <div className="border rounded-md p-3 bg-gray-50 dark:bg-gray-700/50">
+        <div className="rounded-md p-3 bg-gray-50 dark:bg-gray-700/50 shadow-sm">
           <h3 className="text-lg font-semibold mb-3">Apply to All Days</h3>
           <div className="flex flex-col sm:flex-row items-center gap-3">
             <div className="flex-1 w-full">
@@ -128,7 +128,7 @@ const WorkHoursSettings: React.FC = () => {
         </div>
 
         {localWorkHours.map(dayHour => (
-          <div key={dayHour.day_of_week} className="flex items-center space-x-4 p-2 border rounded-md">
+          <div key={dayHour.day_of_week} className="flex items-center space-x-4 p-2 rounded-md shadow-sm">
             <Checkbox
               id={`enable-${dayHour.day_of_week}`}
               checked={dayHour.enabled}

@@ -163,7 +163,7 @@ const WorryJournal: React.FC = () => {
           ) : (
             <ul className="space-y-2">
               {entries.map(entry => (
-                <li key={entry.id} className="p-3 border rounded-md bg-background flex justify-between items-start gap-2">
+                <li key={entry.id} className="p-3 rounded-md bg-background flex justify-between items-start gap-2 shadow-sm">
                   <div className="flex-1">
                     <p className="text-sm text-foreground">{entry.thought}</p>
                     <p className="text-xs text-muted-foreground mt-1">

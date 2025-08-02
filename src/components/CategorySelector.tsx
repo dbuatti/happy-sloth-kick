@@ -133,7 +133,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, us
                     {categories.map(category => {
                       const colorProps = getCategoryColorProps(category.color);
                       return (
-                        <li key={category.id} className="flex items-center justify-between p-2 border rounded-md">
+                        <li key={category.id} className="flex items-center justify-between p-2 rounded-md">
                           <div className="flex items-center gap-2">
                             <div className="w-3.5 h-3.5 rounded-full flex items-center justify-center border" style={{ backgroundColor: colorProps.dotColor }}></div>
                             <span>{category.name}</span>

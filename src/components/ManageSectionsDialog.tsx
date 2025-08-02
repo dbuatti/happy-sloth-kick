@@ -70,7 +70,7 @@ const ManageSectionsDialog: React.FC<ManageSectionsDialogProps> = ({
           ) : (
             <ul className="space-y-2">
               {sections.map(section => (
-                <li key={section.id} className="flex items-center justify-between p-2 border rounded-md">
+                <li key={section.id} className="flex items-center justify-between p-2 rounded-md shadow-sm">
                   {editingSectionId === section.id ? (
                     <div className="flex-1 flex items-center gap-2">
                       <Input

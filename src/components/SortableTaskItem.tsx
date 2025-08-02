@@ -59,7 +59,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
       style={style}
       className={cn(
         "relative last:border-b-0 transition-all duration-200 ease-in-out group",
-        isDragging && !isOverlay ? "" : "border rounded-lg", // Only apply border/rounded-lg if not the invisible original
+        isDragging && !isOverlay ? "" : "rounded-lg", // Only apply border/rounded-lg if not the invisible original
         isOverlay ? "shadow-xl ring-2 ring-primary bg-card" : "", // Apply distinct styles for the overlay
         level > 0 ? "border-l border-l-primary/50" : "",
         "flex items-center",

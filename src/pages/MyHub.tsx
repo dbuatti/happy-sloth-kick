@@ -603,7 +603,7 @@ const MyHub: React.FC = () => {
                 ) : (
                   <ul className="space-y-2">
                     {archivedTasks.map((task) => (
-                      <li key={task.id} className="relative border rounded-lg p-2 transition-all duration-200 ease-in-out group hover:shadow-md">
+                      <li key={task.id} className="relative rounded-lg p-2 transition-all duration-200 ease-in-out group hover:shadow-md">
                         <TaskItem
                           task={task}
                           userId={archiveUserId}

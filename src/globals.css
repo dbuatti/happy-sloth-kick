@@ -30,8 +30,8 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%; /* #E0E0E0 equivalent */
-    --input: 214.3 31.8% 91.4%;
+    --border: 214.3 31.8% 95%; /* Very light gray for subtle borders */
+    --input: 0 0% 100%; /* Match background for blended look */
     --ring: 222.2 84% 4.9%;
 
     /* New custom properties for softer status borders */
@@ -54,6 +54,8 @@
     --shadow-md: 0 2px 3px -0.5px rgb(0 0 0 / 0.03), 0 1px 2px -1px rgb(0 0 0 / 0.03);
     --shadow-lg: 0 5px 7.5px -1.5px rgb(0 0 0 / 0.03), 0 2px 3px -2px rgb(0 0 0 / 0.03);
     --shadow-xl: 0 10px 12.5px -2.5px rgb(0 0 0 / 0.03), 0 4px 5px -3px rgb(0 0 0 / 0.03);
+
+    --radius: 1rem; /* Increased for a rounder look */
   }
 
   .dark {
@@ -81,8 +83,8 @@
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
+    --border: 217.2 32.6% 15%; /* Slightly darker for subtle borders in dark mode */
+    --input: 220 20% 10%; /* Match background for blended look */
     --ring: 212.7 26.8% 83.9%;
 
     /* New custom properties for softer status borders in dark mode */
@@ -124,7 +126,7 @@
     --destructive: 15 60% 55%;
     --destructive-foreground: 0 0% 100%;
     --border: 25 10% 90%;
-    --input: 25 10% 90%;
+    --input: 25 10% 96%; /* Match background */
     --ring: 0 0% 20%;
     --border-status-due-today: 15 60% 55%;
     --border-status-overdue: 15 60% 55%;
@@ -152,7 +154,7 @@
     --destructive: 15 70% 70%;
     --destructive-foreground: 0 0% 100%;
     --border: 25 20% 30%;
-    --input: 25 20% 30%;
+    --input: 25 20% 15%; /* Match background */
     --ring: 0 0% 80%;
     --border-status-due-today: 15 70% 70%;
     --border-status-overdue: 15 70% 70%;
@@ -180,7 +182,7 @@
     --destructive: 15 60% 55%;
     --destructive-foreground: 0 0% 100%;
     --border: 140 10% 90%;
-    --input: 140 10% 90%;
+    --input: 140 10% 96%; /* Match background */
     --ring: 0 0% 20%;
     --border-status-due-today: 30 25% 65%;
     --border-status-overdue: 15 60% 55%;
@@ -208,7 +210,7 @@
     --destructive: 15 70% 70%;
     --destructive-foreground: 0 0% 100%;
     --border: 140 20% 30%;
-    --input: 140 20% 30%;
+    --input: 140 20% 15%; /* Match background */
     --ring: 0 0% 80%;
     --border-status-due-today: 30 30% 70%;
     --border-status-overdue: 15 70% 70%;
@@ -238,7 +240,7 @@
     --destructive: 15 60% 55%;
     --destructive-foreground: 0 0% 100%;
     --border: 30 10% 92%;
-    --input: 30 10% 92%;
+    --input: 30 10% 97%; /* Match background */
     --ring: 0 0% 30%;
     --border-status-due-today: 15 20% 70%;
     --border-status-overdue: 15 60% 55%;
@@ -268,7 +270,7 @@
     --destructive: 15 70% 70%;
     --destructive-foreground: 0 0% 100%;
     --border: 30 20% 35%;
-    --input: 30 20% 35%;
+    --input: 30 20% 18%; /* Match background */
     --ring: 0 0% 85%;
     --border-status-due-today: 15 25% 75%;
     --border-status-overdue: 15 70% 70%;
@@ -296,7 +298,7 @@
     --destructive: 15 60% 55%;
     --destructive-foreground: 0 0% 100%;
     --border: 220 10% 88%;
-    --input: 220 10% 88%;
+    --input: 220 10% 95%; /* Match background */
     --ring: 220 15% 35%;
     --border-status-due-today: 30 25% 65%;
     --border-status-overdue: 15 60% 55%;
@@ -324,7 +326,7 @@
     --destructive: 15 70% 70%;
     --destructive-foreground: 0 0% 100%;
     --border: 220 20% 35%;
-    --input: 220 20% 35%;
+    --input: 220 20% 18%; /* Match background */
     --ring: 220 20% 85%;
     --border-status-due-today: 30 30% 70%;
     --border-status-overdue: 15 70% 70%;
@@ -354,7 +356,7 @@
     --destructive: 25 75% 65%;
     --destructive-foreground: 0 0% 100%;
     --border: 225 30% 20%;
-    --input: 225 30% 20%;
+    --input: 225 30% 8%; /* Match background */
     --ring: 225 20% 85%;
     --border-status-due-today: 345 55% 70%;
     --border-status-overdue: 25 75% 65%;
@@ -384,7 +386,7 @@
     --destructive: 25 75% 65%;
     --destructive-foreground: 0 0% 100%;
     --border: 225 30% 20%;
-    --input: 225 30% 20%;
+    --input: 225 30% 8%; /* Match background */
     --ring: 225 20% 85%;
     --border-status-due-today: 345 55% 70%;
     --border-status-overdue: 25 75% 65%;
@@ -414,7 +416,7 @@
     --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 100%;
     --border: 200 15% 90%;
-    --input: 200 15% 90%;
+    --input: 200 15% 98%; /* Match background */
     --ring: 200 20% 20%;
     --border-status-due-today: 60 70% 45%;
     --border-status-overdue: 0 70% 55%;
@@ -444,7 +446,7 @@
     --destructive: 0 75% 60%;
     --destructive-foreground: 0 0% 100%;
     --border: 200 30% 25%;
-    --input: 200 30% 25%;
+    --input: 200 25% 12%; /* Match background */
     --ring: 200 25% 85%;
     --border-status-due-today: 60 75% 55%;
     --border-status-overdue: 0 75% 60%;
@@ -474,7 +476,7 @@
     --destructive: 0 80% 60%;
     --destructive-foreground: 0 0% 100%;
     --border: 240 10% 85%;
-    --input: 240 10% 85%;
+    --input: 240 20% 98%; /* Match background */
     --ring: 240 10% 20%;
     --border-status-due-today: 40 90% 60%;
     --border-status-overdue: 0 80% 60%;
@@ -504,7 +506,7 @@
     --destructive: 0 90% 70%;
     --destructive-foreground: 0 0% 100%;
     --border: 260 30% 25%;
-    --input: 260 30% 25%;
+    --input: 260 40% 8%; /* Match background */
     --ring: 240 10% 85%;
     --border-status-due-today: 40 95% 70%;
     --border-status-overdue: 0 90% 70%;
@@ -534,7 +536,7 @@
     --destructive: 6 48% 31%;
     --destructive-foreground: 270 100% 98%;
     --border: 29 48% 81%;
-    --input: 29 59% 86%;
+    --input: 29 70% 89%; /* Match background */
     --ring: 270 28% 36%;
     --border-status-due-today: 99 25% 30%;
     --border-status-overdue: 6 48% 31%;
@@ -564,7 +566,7 @@
     --destructive: 6 48% 46%;
     --destructive-foreground: 270 100% 98%;
     --border: 29 29% 26%;
-    --input: 29 29% 21%;
+    --input: 29 29% 13%; /* Match background */
     --ring: 270 28% 54%;
     --border-status-due-today: 99 34% 38%;
     --border-status-overdue: 6 48% 46%;
@@ -594,7 +596,7 @@
     --destructive: 0 80% 60%;
     --destructive-foreground: 0 0% 100%;
     --border: 210 10% 85%;
-    --input: 210 10% 85%;
+    --input: 210 20% 98%; /* Match background */
     --ring: 210 10% 20%;
     --border-status-due-today: 40 90% 60%;
     --border-status-overdue: 0 80% 60%;
@@ -624,7 +626,7 @@
     --destructive: 0 90% 70%;
     --destructive-foreground: 0 0% 100%;
     --border: 240 30% 25%;
-    --input: 240 30% 25%;
+    --input: 240 40% 8%; /* Match background */
     --ring: 210 10% 85%;
     --border-status-due-today: 40 95% 70%;
     --border-status-overdue: 0 90% 70%;

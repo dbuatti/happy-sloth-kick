@@ -74,7 +74,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
       className={cn(
         "relative flex items-center py-2 pl-1 pr-2", // Adjusted padding
         "group",
-        isDragging && !isOverlay ? "" : "border rounded-lg", // Only apply border/rounded-lg if not the invisible original
+        isDragging && !isOverlay ? "" : "rounded-lg", // Only apply border/rounded-lg if not the invisible original
         isOverlay ? "shadow-xl ring-2 ring-primary bg-card" : "", // Apply distinct styles for the overlay
         isOverlay ? "cursor-grabbing" : "hover:shadow-sm", // Add hover shadow
       )}

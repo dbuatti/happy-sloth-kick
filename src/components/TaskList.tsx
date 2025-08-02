@@ -269,7 +269,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                       <SortableContext items={sectionItemIds} strategy={verticalListSortingStrategy}>
                         <ul className="list-none space-y-1.5">
                           {topLevelTasksInSection.length === 0 ? (
-                            <div className="text-center text-foreground/80 dark:text-foreground/80 py-3 rounded-md border border-dashed border-border bg-muted/30" data-no-dnd="true">
+                            <div className="text-center text-foreground/80 dark:text-foreground/80 py-3 rounded-md border-dashed border-border bg-muted/30" data-no-dnd="true">
                               <div className="flex items-center justify-center gap-2 mb-1.5">
                                 <ListTodo className="h-4 w-4" />
                                 <p className="text-sm font-medium">No tasks in this section yet.</p>

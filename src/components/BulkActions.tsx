@@ -15,7 +15,7 @@ const BulkActions: React.FC<BulkActionsProps> = ({ selectedTaskIds, onAction, on
   return (
     <div
       className={cn(
-        "flex flex-col sm:flex-row items-center justify-between bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700",
+        "flex flex-col sm:flex-row items-center justify-between bg-gray-50 dark:bg-gray-800",
         "py-2 px-3",
         "transition-all duration-300 ease-in-out",
         isActive ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",

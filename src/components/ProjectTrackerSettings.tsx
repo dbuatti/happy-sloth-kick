@@ -21,8 +21,8 @@ const ProjectTrackerSettings: React.FC = () => {
     if (tempSectionTitle.trim()) {
       setIsSavingTitle(true);
       await updateProjectTrackerTitle(tempSectionTitle.trim());
-      setIsEditingTitle(false);
       setIsSavingTitle(false);
+      setIsEditingTitle(false);
     }
   };
 

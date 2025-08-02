@@ -144,7 +144,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
           ) : (
             <ul className="space-y-1.5">
               {subtasks.map(subtask => (
-                <li key={subtask.id} className="flex items-center space-x-2 p-1.5 border rounded-md bg-background">
+                <li key={subtask.id} className="flex items-center space-x-2 p-1.5 rounded-md bg-background shadow-sm">
                   <Checkbox
                     checked={subtask.status === 'completed'}
                     onCheckedChange={(checked: boolean) => handleSubtaskStatusChange(subtask.id, checked ? 'completed' : 'to-do')}
@@ -186,27 +186,6 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
           </Button>
         </DialogFooter>
       </DialogContent>
-
-      <Dialog open={isAddSubtaskOpen} onOpenChange={setIsAddSubtaskOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add Sub-task for "{task.description}"</DialogTitle>
-            <DialogDescription className="sr-only">
-              Fill in the details to add a new sub-task for this task.
-            </DialogDescription>
-          </DialogHeader>
-          <TaskForm
-            onSave={handleAddSubtask}
-            onCancel={() => setIsAddSubtaskOpen(false)}
-            userId={userId}
-            sections={sections}
-            allCategories={allCategories}
-            autoFocus={true}
-            parentTaskId={task.id}
-            preselectedSectionId={task.section_id}
-          />
-        </DialogContent>
-      </Dialog>
 
       <AlertDialog open={showConfirmDeleteDialog} onOpenChange={setShowConfirmDeleteDialog}>
         <AlertDialogContent>

@@ -183,7 +183,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
             ) : (
               <ul className="space-y-1.5">
                 {subtasks.map(subtask => (
-                  <li key={subtask.id} className="flex items-center space-x-2 p-1.5 border rounded-md bg-background">
+                  <li key={subtask.id} className="flex items-center space-x-2 p-1.5 rounded-md bg-background shadow-sm">
                     <Checkbox
                       checked={subtask.status === 'completed'}
                       onCheckedChange={(checked: boolean) => handleSubtaskStatusChange(subtask.id, checked ? 'completed' : 'to-do')}
