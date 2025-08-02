@@ -91,6 +91,18 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
     }
   }, [handleCancelEdit]);
 
+  const getTaskCountCircleClasses = (count: number) => {
+    if (count === 0) {
+      return "bg-muted text-muted-foreground";
+    } else if (count <= 5) {
+      return "bg-primary text-primary-foreground";
+    } else if (count <= 10) {
+      return "bg-accent text-accent-foreground";
+    } else {
+      return "bg-destructive text-destructive-foreground";
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -142,11 +154,12 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
                 {section.name}
               </h3>
               {/* NEW: Fun colored circle for task count */}
-              {sectionTasksCount > 0 && (
-                <div className="ml-2 w-6 h-6 rounded-full bg-accent text-accent-foreground flex items-center justify-center text-xs font-bold flex-shrink-0" data-no-dnd="true">
-                  {sectionTasksCount}
-                </div>
-              )}
+              <div className={cn(
+                "ml-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 transition-colors duration-200",
+                getTaskCountCircleClasses(sectionTasksCount)
+              )} data-no-dnd="true">
+                {sectionTasksCount}
+              </div>
             </>
           )}
           {/* NEW: This is the toggle area */}
