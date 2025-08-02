@@ -31,6 +31,7 @@ import PrioritySelector from '@/components/PrioritySelector';
 import SectionSelector from '@/components/SectionSelector';
 import { suggestTaskDetails } from '@/integrations/supabase/functions';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import MoodBoosterButton from '@/components/MoodBoosterButton'; // Import MoodBoosterButton
 
 
 const getUTCStartOfDay = (date: Date) => {
@@ -349,6 +350,7 @@ const DailyTasksV3: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <ListTodo className="h-5 w-5 text-primary" />
                   <span className="text-lg font-semibold">{dailyTaskCount}</span>
+                  <MoodBoosterButton /> {/* Added MoodBoosterButton here */}
                   <Button
                     variant="ghost"
                     size="icon"
