@@ -106,9 +106,8 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
           </div>
         ) : (
           <div 
-            className="flex items-center gap-2 flex-1" 
+            className="flex items-center gap-2 flex-1 cursor-pointer" // Added cursor-pointer
             onClick={() => !isOverlay && handleEditSectionClick(section)} // Direct edit on click
-            style={{ cursor: isOverlay ? 'grabbing' : 'pointer' }}
             data-no-dnd="true" // Prevent drag when clicking on text to edit
           >
             <FolderOpen className="h-4 w-4 text-muted-foreground" /> {/* Adjusted icon size */}
@@ -142,9 +141,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
                   <DropdownMenuItem onSelect={() => markAllTasksInSectionCompleted(section.id)}>
                     <CheckCircle2 className="mr-2 h-3.5 w-3.5" /> Mark All Completed
                   </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => handleEditSectionClick(section)}>
-                    <Edit className="mr-2 h-3.5 w-3.5" /> Rename Section
-                  </DropdownMenuItem>
+                  {/* Removed "Rename Section" as direct edit is enabled */}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onSelect={() => updateSectionIncludeInFocusMode(section.id, !section.include_in_focus_mode)}>
                     {section.include_in_focus_mode ? <EyeOff className="mr-2 h-3.5 w-3.5" /> : <Eye className="mr-2 h-3.5 w-3.5" />}
