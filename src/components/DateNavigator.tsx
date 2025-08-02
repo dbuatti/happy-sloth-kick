@@ -18,24 +18,25 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({ currentDate, onPreviousDa
   const isToday = isSameDay(currentDate, new Date());
 
   return (
-    <div className="flex items-center justify-between mb-1.5">
-      <Button variant="outline" size="icon" onClick={onPreviousDay} className="h-7 w-7"> {/* Adjusted size */}
-        <ChevronLeft className="h-4 w-4" />
+    <div className="rounded-lg p-2 bg-gradient-to-r from-primary/5 to-accent/5 border border-border shadow-sm mb-3 flex items-center justify-between">
+      <Button variant="ghost" size="icon" onClick={onPreviousDay} className="h-8 w-8 rounded-full hover:bg-primary/10 text-primary">
+        <ChevronLeft className="h-5 w-5" />
       </Button>
+
       <div className="flex items-center space-x-2">
-        <h3 className="text-lg font-semibold"> {/* Adjusted font size */}
-          {isToday ? 'Today' : format(currentDate, 'EEEE, MMMM d, yyyy')}
+        <h3 className="text-lg font-semibold text-foreground">
+          {isToday ? 'Today' : format(currentDate, 'EEEE')}
         </h3>
         <Popover>
           <PopoverTrigger asChild>
             <Button
-              variant="outline"
+              variant="ghost"
               className={cn(
-                "w-auto justify-start text-left font-normal h-7", // Adjusted height
+                "justify-start text-left font-medium text-primary hover:bg-primary/10 h-8 px-2",
                 !currentDate && "text-muted-foreground"
               )}
             >
-              <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+              <CalendarIcon className="mr-1 h-4 w-4" />
               {format(currentDate, "MMM d, yyyy")}
             </Button>
           </PopoverTrigger>
@@ -52,14 +53,15 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({ currentDate, onPreviousDa
             />
           </PopoverContent>
         </Popover>
-        {!isToday && ( // Only show "Today" button if not currently on today's date
-          <Button variant="outline" size="sm" onClick={onGoToToday} className="ml-2 h-7"> {/* Adjusted height */}
+        {!isToday && (
+          <Button variant="secondary" size="sm" onClick={onGoToToday} className="h-8 px-3">
             Today
           </Button>
         )}
       </div>
-      <Button variant="outline" size="icon" onClick={onNextDay} className="h-7 w-7"> {/* Adjusted size */}
-        <ChevronRight className="h-4 w-4" />
+
+      <Button variant="ghost" size="icon" onClick={onNextDay} className="h-8 w-8 rounded-full hover:bg-primary/10 text-primary">
+        <ChevronRight className="h-5 w-5" />
       </Button>
     </div>
   );
