@@ -57,20 +57,9 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
   const currentRefDate = new Date(currentDate);
 
-  const getDueDateDisplay = (dueDate: string | null) => {
-    if (!dueDate) return null;
-    const date = dateFns.parseISO(dueDate);
-    if (dateFns.isSameDay(date as Date, currentRefDate as Date)) {
-      return 'Today';
-    } else if (dateFns.isAfter(date as Date, currentRefDate as Date)) {
-      return `Due ${dateFns.format(date, 'MMM d')}`;
-    } else {
-      return `Overdue ${dateFns.format(date, 'MMM d')}`;
-    }
-  };
+  // Removed getDueDateDisplay as due date is no longer displayed directly
 
-  const isOverdue = task.due_date && task.status !== 'completed' && dateFns.isBefore(dateFns.parseISO(task.due_date) as Date, currentRefDate as Date) && !dateFns.isSameDay(dateFns.parseISO(task.due_date) as Date, currentRefDate as Date);
-  const isDueToday = task.due_date && task.status !== 'completed' && dateFns.isSameDay(dateFns.parseISO(task.due_date) as Date, currentRefDate as Date);
+  // Removed isOverdue and isDueToday as borders are removed
 
   const categoryColorProps = getCategoryColorProps(task.category_color);
 
@@ -105,10 +94,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
         "relative flex items-start space-x-3 w-full py-2 px-4", // Increased horizontal padding
         task.status === 'completed' ? "bg-task-completed-bg opacity-80" : "bg-card", // Apply completed background
         "hover:shadow-sm transition-shadow duration-200", // Added subtle shadow on hover
-        // Conditional left border for status
-        isOverdue && "border-l-4 border-status-overdue",
-        isDueToday && "border-l-4 border-status-due-today",
-        !isOverdue && !isDueToday && "border-l-4 border-transparent" // Ensure consistent border width
+        "border-l-4 border-transparent" // Ensure consistent border width, but transparent
       )}
     >
       <Checkbox
@@ -144,41 +130,11 @@ const TaskItem: React.FC<TaskItemProps> = ({
               </TooltipContent>
             </Tooltip>
           )}
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span
-                className={cn(
-                  "text-base font-medium leading-tight line-clamp-2 flex-grow", // Added flex-grow
-                  task.status === 'completed' ? 'line-through text-muted-foreground' : 'text-foreground',
-                  "block"
-                )}
-              >
-                {task.description}
-              </span>
-            </TooltipTrigger>
-            <TooltipContent className="max-w-xs">
-              {task.description}
-            </TooltipContent>
-          </Tooltip>
-        </div>
-
-        <div className="flex flex-wrap items-center text-sm text-muted-foreground mt-0.5 gap-x-3 gap-y-1"> {/* Adjusted margin-top */}
-          {task.due_date && (
-            <span className={cn(
-              "flex items-center gap-1 text-sm", // Larger text
-              isOverdue && "text-status-overdue font-semibold",
-              isDueToday && "text-status-due-today font-semibold"
-            )}>
-              <Calendar className="h-4 w-4" /> {/* Adjusted icon size */}
-              {getDueDateDisplay(task.due_date)}
-            </span>
-          )}
           {task.remind_at && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <span className="inline-flex items-center text-primary dark:text-primary">
-                  <BellRing className="h-4 w-4" /> {/* Adjusted icon size */}
+                  <BellRing className="h-3.5 w-3.5" />
                   <span className="sr-only">Reminder</span>
                 </span>
               </TooltipTrigger>
@@ -191,7 +147,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
             <Tooltip>
               <TooltipTrigger asChild>
                 <span className="inline-flex items-center">
-                  <StickyNote className="h-4 w-4" /> {/* Adjusted icon size */}
+                  <StickyNote className="h-3.5 w-3.5" />
                 </span>
               </TooltipTrigger>
               <TooltipContent className="max-w-xs">
@@ -212,7 +168,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
                   data-no-dnd="true" // Mark as non-draggable
                   tabIndex={isOverlay ? -1 : 0} // Disable tabbing on overlay
                 >
-                  <LinkIcon className="h-4 w-4" /> {/* Adjusted icon size */}
+                  <LinkIcon className="h-3.5 w-3.5" />
                 </a>
               </TooltipTrigger>
               <TooltipContent className="max-w-xs">
@@ -221,7 +177,26 @@ const TaskItem: React.FC<TaskItemProps> = ({
               </TooltipContent>
             </Tooltip>
           )}
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span
+                className={cn(
+                  "text-base font-medium leading-tight line-clamp-2 flex-grow", // Added flex-grow
+                  task.status === 'completed' ? 'line-through text-muted-foreground' : 'text-foreground',
+                  "block"
+                )}
+              >
+                {task.description}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs">
+              {task.description}
+            </TooltipContent>
+          </Tooltip>
         </div>
+
+        {/* Removed the entire div containing due_date, remind_at, notes, link */}
       </div>
 
       {showCompletionEffect && (

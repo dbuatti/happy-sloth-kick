@@ -69,7 +69,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "relative rounded-lg bg-muted dark:bg-gray-700 text-foreground shadow-sm hover:shadow-md transition-shadow duration-200 group",
+        "relative rounded-lg bg-card text-foreground shadow-sm hover:shadow-md transition-shadow duration-200 group", // Changed bg-muted to bg-card for consistency
         isDragging ? "ring-2 ring-primary shadow-lg" : "",
         "flex items-center",
         isOverlay ? "cursor-grabbing" : ""

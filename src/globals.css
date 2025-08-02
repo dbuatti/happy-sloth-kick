@@ -9,7 +9,7 @@
     --background: 0 0% 100%; /* White */
     --foreground: 210 40% 5%; /* Darker #212121 equivalent */
 
-    --card: 0 0% 100%;
+    --card: 0 0% 100%; /* Same as background for seamless look */
     --card-foreground: 210 40% 5%;
 
     --popover: 0 0% 100%;
@@ -21,7 +21,7 @@
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
 
-    --muted: 210 40% 96.1%;
+    --muted: 210 40% 96.1%; /* Very light gray, close to background */
     --muted-foreground: 215.4 16.3% 35%; /* Darker for better contrast */
 
     --accent: 210 40% 96.1%;
@@ -48,19 +48,19 @@
     --priority-high: 0 85% 55%; /* Strong Red */
     --priority-urgent: 240 80% 50%; /* Bluish-purple (kept as is) */
 
-    /* New custom properties for shadows */
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.03); /* Softer */
-    --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px -1px rgb(0 0 0 / 0.05); /* Softer */
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05); /* Softer */
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05); /* Softer */
-    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.05), 0 8px 10px -6px rgb(0 0 0 / 0.05); /* Softer */
+    /* New custom properties for shadows - made even more subtle */
+    --shadow-sm: 0 0.5px 1px 0 rgb(0 0 0 / 0.02);
+    --shadow: 0 0.5px 1.5px 0 rgb(0 0 0 / 0.03), 0 0.5px 1px -0.5px rgb(0 0 0 / 0.03);
+    --shadow-md: 0 2px 3px -0.5px rgb(0 0 0 / 0.03), 0 1px 2px -1px rgb(0 0 0 / 0.03);
+    --shadow-lg: 0 5px 7.5px -1.5px rgb(0 0 0 / 0.03), 0 2px 3px -2px rgb(0 0 0 / 0.03);
+    --shadow-xl: 0 10px 12.5px -2.5px rgb(0 0 0 / 0.03), 0 4px 5px -3px rgb(0 0 0 / 0.03);
   }
 
   .dark {
     --background: 220 20% 10%; /* #1F1F1F equivalent */
     --foreground: 0 0% 95%; /* Lighter #D3D3D3 equivalent for better contrast */
 
-    --card: 220 20% 10%;
+    --card: 220 20% 10%; /* Same as background for seamless look */
     --card-foreground: 0 0% 95%;
 
     --popover: 220 20% 10%;
@@ -72,7 +72,7 @@
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 217.2 32.6% 17.5%;
+    --muted: 217.2 32.6% 17.5%; /* Slightly darker gray, close to background */
     --muted-foreground: 215 20.2% 75%; /* Lighter for better contrast */
 
     --accent: 217.2 32.6% 17.5%;
@@ -99,12 +99,12 @@
     --priority-high: 0 90% 65%; /* Brighter Red */
     --priority-urgent: 240 90% 60%; /* Bluish-purple (kept as is) */
 
-    /* New custom properties for shadows in dark mode */
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.1);
-    --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.15), 0 1px 2px -1px rgb(0 0 0 / 0.15);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.15), 0 2px 4px -2px rgb(0 0 0 / 0.15);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.15), 0 4px 6px -4px rgb(0 0 0 / 0.15);
-    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.15), 0 8px 10px -6px rgb(0 0 0 / 0.15);
+    /* New custom properties for shadows in dark mode - made even more subtle */
+    --shadow-sm: 0 0.5px 1px 0 rgb(0 0 0 / 0.05);
+    --shadow: 0 0.5px 1.5px 0 rgb(0 0 0 / 0.07), 0 0.5px 1px -0.5px rgb(0 0 0 / 0.07);
+    --shadow-md: 0 2px 3px -0.5px rgb(0 0 0 / 0.07), 0 1px 2px -1px rgb(0 0 0 / 0.07);
+    --shadow-lg: 0 5px 7.5px -1.5px rgb(0 0 0 / 0.07), 0 2px 3px -2px rgb(0 0 0 / 0.07);
+    --shadow-xl: 0 10px 12.5px -2.5px rgb(0 0 0 / 0.07), 0 4px 5px -3px rgb(0 0 0 / 0.07);
   }
 
   /* Custom themes - update primary, status-completed, and priority colors */
@@ -139,7 +139,7 @@
   .dark .adhd-friendly {
     --background: 25 20% 15%;
     --foreground: 25 10% 90%;
-    --card: 25 20% 20%;
+    --card: 25 20% 15%; /* Same as background */
     --card-foreground: 25 10% 90%;
     --primary: 180 40% 60%;
     --primary-foreground: 0 0% 100%;
@@ -167,7 +167,7 @@
   .calm-mist {
     --background: 140 10% 96%;
     --foreground: 0 0% 20%;
-    --card: 140 10% 96%;
+    --card: 140 10% 96%; /* Same as background */
     --card-foreground: 0 0% 20%;
     --primary: 140 25% 45%;
     --primary-foreground: 0 0% 100%;
@@ -195,7 +195,7 @@
   .dark .calm-mist {
     --background: 140 20% 15%;
     --foreground: 140 10% 90%;
-    --card: 140 20% 20%;
+    --card: 140 20% 15%; /* Same as background */
     --card-foreground: 140 10% 90%;
     --primary: 140 30% 60%;
     --primary-foreground: 0 0% 100%;
@@ -223,7 +223,7 @@
   .warm-dawn {
     --background: 30 10% 97%;
     --foreground: 0 0% 30%;
-    --card: 30 10% 97%;
+    --card: 30 10% 97%; /* Same as background */
     --card-foreground: 0 0% 30%;
     --popover: 30 10% 97%;
     --popover-foreground: 0 0% 30%;
@@ -253,7 +253,7 @@
   .dark .warm-dawn {
     --background: 30 20% 18%;
     --foreground: 30 10% 92%;
-    --card: 30 20% 23%;
+    --card: 30 20% 18%; /* Same as background */
     --card-foreground: 30 10% 92%;
     --popover: 30 20% 23%;
     --popover-foreground: 30 10% 92%;
@@ -283,7 +283,7 @@
   .gentle-night {
     --background: 220 10% 95%;
     --foreground: 220 15% 25%;
-    --card: 220 10% 95%;
+    --card: 220 10% 95%; /* Same as background */
     --card-foreground: 220 15% 25%;
     --primary: 220 25% 45%;
     --primary-foreground: 0 0% 100%;
@@ -311,7 +311,7 @@
   .dark .gentle-night {
     --background: 220 20% 18%;
     --foreground: 220 15% 92%;
-    --card: 220 20% 23%;
+    --card: 220 20% 18%; /* Same as background */
     --card-foreground: 220 15% 92%;
     --primary: 220 30% 60%;
     --primary-foreground: 0 0% 100%;
@@ -339,7 +339,7 @@
   .cosmic-dusk {
     --background: 225 30% 8%;
     --foreground: 225 15% 92%;
-    --card: 225 35% 12%;
+    --card: 225 30% 8%; /* Same as background */
     --card-foreground: 225 15% 92%;
     --popover: 225 35% 12%;
     --popover-foreground: 225 15% 92%;
@@ -369,7 +369,7 @@
   .dark .cosmic-dusk {
     --background: 225 30% 8%;
     --foreground: 225 15% 92%;
-    --card: 225 35% 12%;
+    --card: 225 30% 8%; /* Same as background */
     --card-foreground: 225 15% 92%;
     --popover: 225 35% 12%;
     --popover-foreground: 225 15% 92%;
@@ -399,7 +399,7 @@
   .focus-flow {
     --background: 200 15% 98%;
     --foreground: 200 20% 15%;
-    --card: 200 15% 98%;
+    --card: 200 15% 98%; /* Same as background */
     --card-foreground: 200 20% 15%;
     --popover: 200 15% 98%;
     --popover-foreground: 200 20% 15%;
@@ -429,7 +429,7 @@
   .dark .focus-flow {
     --background: 200 25% 12%;
     --foreground: 200 15% 92%;
-    --card: 200 30% 16%;
+    --card: 200 25% 12%; /* Same as background */
     --card-foreground: 200 15% 92%;
     --popover: 200 30% 16%;
     --popover-foreground: 200 15% 92%;
@@ -459,7 +459,7 @@
   .retro-wave {
     --background: 240 20% 98%;
     --foreground: 240 10% 20%;
-    --card: 240 20% 98%;
+    --card: 240 20% 98%; /* Same as background */
     --card-foreground: 240 10% 20%;
     --popover: 240 20% 98%;
     --popover-foreground: 240 10% 20%;
@@ -489,7 +489,7 @@
   .dark .retro-wave {
     --background: 260 40% 8%;
     --foreground: 240 10% 95%;
-    --card: 260 35% 12%;
+    --card: 260 40% 8%; /* Same as background */
     --card-foreground: 240 10% 95%;
     --popover: 260 35% 12%;
     --popover-foreground: 240 10% 95%;
@@ -519,7 +519,7 @@
   .sepia-dusk {
     --background: 29 70% 89%;
     --foreground: 22 29% 7%;
-    --card: 29 59% 86%;
+    --card: 29 70% 89%; /* Same as background */
     --card-foreground: 22 29% 7%;
     --popover: 29 59% 86%;
     --popover-foreground: 22 29% 7%;
@@ -549,7 +549,7 @@
   .dark .sepia-dusk {
     --background: 29 29% 13%;
     --foreground: 29 25% 69%;
-    --card: 22 29% 7%;
+    --card: 29 29% 13%; /* Same as background */
     --card-foreground: 29 25% 69%;
     --popover: 22 29% 7%;
     --popover-foreground: 29 25% 69%;
@@ -579,7 +579,7 @@
   .vibrant-flow {
     --background: 210 20% 98%;
     --foreground: 210 10% 20%;
-    --card: 210 20% 98%;
+    --card: 210 20% 98%; /* Same as background */
     --card-foreground: 210 10% 20%;
     --popover: 210 20% 98%;
     --popover-foreground: 210 10% 20%;
@@ -609,7 +609,7 @@
   .dark .vibrant-flow {
     --background: 240 40% 8%;
     --foreground: 210 10% 95%;
-    --card: 240 35% 12%;
+    --card: 240 40% 8%; /* Same as background */
     --card-foreground: 210 10% 95%;
     --popover: 240 35% 12%;
     --popover-foreground: 210 10% 95%;
