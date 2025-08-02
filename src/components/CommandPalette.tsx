@@ -3,7 +3,7 @@ import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, C
 import { useTasks } from '@/hooks/useTasks';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Settings, BarChart3, Home, FolderOpen, ChevronLeft, ChevronRight, LogOut, LayoutGrid, CalendarClock, CalendarDays, Target } from 'lucide-react';
+import { Plus, Settings, BarChart3, Home, FolderOpen, ChevronLeft, ChevronRight, LogOut, LayoutGrid, CalendarClock, CalendarDays, Target, Archive as ArchiveIcon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from "@/utils/toast";
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -103,9 +103,13 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
                     <CalendarClock className="mr-2 h-3.5 w-3.5" />
                     <span>Go to Time Blocks</span>
                   </CommandItem>
-                  <CommandItem onSelect={() => handleSelect(() => navigate('/my-hub'))}>
+                  <CommandItem onSelect={() => handleSelect(() => navigate('/analytics'))}>
                     <BarChart3 className="mr-2 h-3.5 w-3.5" />
-                    <span>Go to My Hub</span>
+                    <span>Go to Analytics</span>
+                  </CommandItem>
+                  <CommandItem onSelect={() => handleSelect(() => navigate('/archive'))}>
+                    <ArchiveIcon className="mr-2 h-3.5 w-3.5" />
+                    <span>Go to Archive</span>
                   </CommandItem>
                   <CommandItem onSelect={() => handleSelect(() => navigate('/settings'))}>
                     <Settings className="mr-2 h-3.5 w-3.5" />
@@ -177,9 +181,13 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
                 <CalendarClock className="mr-2 h-3.5 w-3.5" />
                 <span>Go to Time Blocks</span>
               </CommandItem>
-              <CommandItem onSelect={() => handleSelect(() => navigate('/my-hub'))}>
+              <CommandItem onSelect={() => handleSelect(() => navigate('/analytics'))}>
                 <BarChart3 className="mr-2 h-3.5 w-3.5" />
-                <span>Go to My Hub</span>
+                <span>Go to Analytics</span>
+              </CommandItem>
+              <CommandItem onSelect={() => handleSelect(() => navigate('/archive'))}>
+                <ArchiveIcon className="mr-2 h-3.5 w-3.5" />
+                <span>Go to Archive</span>
               </CommandItem>
               <CommandItem onSelect={() => handleSelect(() => navigate('/settings'))}>
                 <Settings className="mr-2 h-3.5 w-3.5" />

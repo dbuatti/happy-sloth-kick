@@ -28,6 +28,11 @@ import ThoughtDiffusionToolPage from "./pages/mindfulness/ThoughtDiffusionToolPa
 import SensoryToolPage from "./pages/mindfulness/SensoryToolPage";
 import BreathingBubblePage from "./pages/mindfulness/BreathingBubblePage";
 
+// Import new dedicated pages for MyHub sections
+import Settings from "./pages/Settings";
+import Analytics from "./pages/Analytics";
+import Archive from "./pages/Archive";
+
 
 const queryClient = new QueryClient();
 
@@ -76,6 +81,11 @@ const AppContent = () => {
             <Route path="/mindfulness/thought-diffusion" element={<ThoughtDiffusionToolPage />} />
             <Route path="/mindfulness/sensory-tool" element={<SensoryToolPage />} />
             <Route path="/mindfulness/breathing-bubble" element={<BreathingBubblePage />} />
+
+            {/* New routes for MyHub sections */}
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/analytics" element={<Analytics />} />
+            <Route path="/archive" element={<Archive />} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, HelpCircle, Target, LayoutGrid, CalendarClock, Menu, Leaf, Moon, Volume2, VolumeX, Brain, LayoutDashboard } from 'lucide-react';
+import { Home, HelpCircle, Target, LayoutGrid, CalendarClock, Menu, Leaf, Moon, Volume2, VolumeX, Brain, LayoutDashboard, BarChart3, Archive as ArchiveIcon, Settings as SettingsIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -22,6 +22,9 @@ const navItems = [
   { name: 'Project Balance', path: '/projects', icon: LayoutGrid },
   { name: 'Time Blocks', path: '/schedule', icon: CalendarClock },
   { name: 'My Hub', path: '/my-hub', icon: LayoutDashboard },
+  { name: 'Analytics', path: '/analytics', icon: BarChart3 }, // New direct link
+  { name: 'Archive', path: '/archive', icon: ArchiveIcon }, // New direct link
+  { name: 'Settings', path: '/settings', icon: SettingsIcon }, // New direct link
   { name: 'Help', path: '/help', icon: HelpCircle },
 ];
 
