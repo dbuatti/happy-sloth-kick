@@ -107,13 +107,13 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
       >
         <DragHandleIcon className="h-4 w-4" /> {/* Use custom DragHandleIcon */}
       </button>
-      <div className="flex-1 flex items-center justify-between pl-1"> {/* Adjusted padding */}
+      <div className="flex-1 flex items-center justify-between"> {/* Removed pl-1 here */}
         <div 
-          className="relative flex items-center gap-2 flex-1 cursor-pointer" // Added relative positioning
+          className="relative flex items-center flex-1 cursor-pointer" // Removed gap-2 here
           onClick={() => !isOverlay && handleEditSectionClick(section)} // Direct edit on click
           data-no-dnd="true" // Prevent drag when clicking on text to edit
         >
-          <FolderOpen className="h-4 w-4 text-muted-foreground" /> {/* Adjusted icon size */}
+          {/* Removed FolderOpen icon */}
           
           {/* Static text - always visible, but hidden when editing */}
           <h3 className={cn(
