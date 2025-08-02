@@ -92,6 +92,7 @@ const DailyTasksV3: React.FC = () => {
   };
 
   const handleOpenOverview = (task: Task) => {
+    console.log('DailyTasksV3: handleOpenOverview called with task:', task.id);
     setTaskToOverview(task);
     setIsTaskOverviewOpen(true);
   };
@@ -289,6 +290,7 @@ const DailyTasksV3: React.FC = () => {
                   moveTask={moveTask}
                   allCategories={allCategories}
                   setIsAddTaskOpen={() => {}}
+                  onOpenOverview={handleOpenOverview} // Pass the handler down
                   currentDate={currentDate}
                   setCurrentDate={setCurrentDate}
                 />
@@ -331,7 +333,11 @@ const DailyTasksV3: React.FC = () => {
           task={taskToOverview}
           userId={userId}
           isOpen={isTaskOverviewOpen}
-          onClose={() => setIsTaskOverviewOpen(false)}
+          onClose={() => {
+            console.log('DailyTasksV3: TaskOverviewDialog onClose called');
+            setIsTaskOverviewOpen(false);
+            setTaskToOverview(null);
+          }}
           onEditClick={handleEditTaskFromOverview}
           onUpdate={updateTask}
           onDelete={deleteTask}

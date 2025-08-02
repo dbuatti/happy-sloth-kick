@@ -239,7 +239,11 @@ const TaskItem: React.FC<TaskItemProps> = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" data-no-dnd="true">
-            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onOpenOverview(task); }}>
+            <DropdownMenuItem onSelect={(e) => { 
+              e.preventDefault(); 
+              console.log('TaskItem: View Details clicked for task:', task.id);
+              onOpenOverview(task); 
+            }}>
               <Edit className="mr-2 h-3.5 w-3.5" /> View Details
             </DropdownMenuItem>
             {task.status === 'archived' && (

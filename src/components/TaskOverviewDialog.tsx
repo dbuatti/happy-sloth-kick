@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Trash2, CheckCircle2, ListTodo, Edit, Calendar, Clock, StickyNote, BellRing, FolderOpen, Repeat, Link as LinkIcon } from 'lucide-react';
@@ -49,6 +49,10 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
   const { playSound } = useSound();
   const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+
+  useEffect(() => {
+    console.log('TaskOverviewDialog: isOpen prop changed to', isOpen);
+  }, [isOpen]);
 
   const subtasks = useMemo(() => {
     return allTasks.filter(t => t.parent_task_id === task?.id)

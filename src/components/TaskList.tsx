@@ -52,6 +52,7 @@ interface TaskListProps {
   moveTask: (taskId: string, direction: 'up' | 'down') => Promise<void>;
   allCategories: Category[];
   setIsAddTaskOpen: (open: boolean) => void;
+  onOpenOverview: (task: Task) => void; // Added this prop
   currentDate: Date;
   setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
 }
@@ -80,6 +81,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     moveTask,
     allCategories,
     setIsAddTaskOpen,
+    onOpenOverview, // Destructure the new prop
     currentDate,
     setCurrentDate,
   } = props;
@@ -278,10 +280,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                                 isSelected={selectedTaskIds.includes(task.id)}
                                 onToggleSelect={toggleTaskSelection}
                                 sections={sections}
-                                onOpenOverview={(t) => {
-                                  setTaskToOverview(t);
-                                  setIsTaskOverviewOpen(true);
-                                }}
+                                onOpenOverview={onOpenOverview} // Pass the prop down
                                 currentDate={currentDate}
                                 onMoveUp={(taskId) => moveTask(taskId, 'up')}
                                 onMoveDown={(taskId) => moveTask(taskId, 'down')}
