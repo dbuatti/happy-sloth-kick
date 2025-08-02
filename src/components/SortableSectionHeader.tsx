@@ -8,10 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from '@/components/ui/switch';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { Plus, Settings, CheckCircle2, ListTodo, FolderOpen, ChevronDown, Edit, MoreHorizontal, Trash2, Eye, EyeOff, GripVertical } from 'lucide-react';
+import { Plus, Settings, CheckCircle2, ListTodo, FolderOpen, ChevronDown, Edit, MoreHorizontal, Trash2, Eye, EyeOff } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from '@/lib/utils';
 import { TaskSection } from '@/hooks/useTasks';
+import DragHandleIcon from './DragHandleIcon'; // Import the new icon
 
 interface SortableSectionHeaderProps {
   section: TaskSection;
@@ -69,9 +70,9 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "relative rounded-lg bg-card text-foreground shadow-sm hover:shadow-md transition-shadow duration-200 group", // Changed bg-muted to bg-card for consistency
-        isDragging ? "ring-2 ring-primary shadow-lg" : "",
-        "flex items-center",
+        "relative flex items-center py-2 pl-1 pr-2", // Adjusted padding
+        "group",
+        isDragging ? "ring-2 ring-primary" : "", // Keep ring for dragging
         isOverlay ? "cursor-grabbing" : ""
       )}
       {...(attributes || {})} // Keep attributes here
@@ -85,20 +86,20 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
         disabled={isOverlay}
         {...(sortable?.listeners || {})} // ADD listeners here
       >
-        <GripVertical className="h-4 w-4" />
+        <DragHandleIcon className="h-4 w-4" /> {/* Use custom DragHandleIcon */}
       </button>
-      <div className="flex-1 flex items-center justify-between py-2 pl-0 pr-3">
+      <div className="flex-1 flex items-center justify-between pl-1"> {/* Adjusted padding */}
         {editingSectionId === section.id && !isOverlay ? (
           <div className="flex items-center w-full gap-2" data-no-dnd="true">
             <Input
               value={editingSectionName}
               onChange={(e) => setNewEditingSectionName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleRenameSection()}
-              className="text-lg font-semibold h-9"
+              className="text-lg font-semibold h-8" // Adjusted height
               autoFocus
             />
-            <Button size="sm" onClick={handleRenameSection} disabled={!editingSectionName.trim()} className="h-9">Save</Button>
-            <Button variant="ghost" size="sm" onClick={handleCancelSectionEdit} className="h-9">Cancel</Button>
+            <Button size="sm" onClick={handleRenameSection} disabled={!editingSectionName.trim()} className="h-8">Save</Button> {/* Adjusted height */}
+            <Button variant="ghost" size="sm" onClick={handleCancelSectionEdit} className="h-8">Cancel</Button> {/* Adjusted height */}
           </div>
         ) : (
           <div 
@@ -106,35 +107,13 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
             onClick={() => !isOverlay && toggleSection(section.id)} 
             style={{ cursor: isOverlay ? 'grabbing' : 'pointer' }}
           >
-            <h3 className="text-xl font-bold flex items-center gap-2">
-              <FolderOpen className="h-5 w-5 text-muted-foreground" />
+            <FolderOpen className="h-4 w-4 text-muted-foreground" /> {/* Adjusted icon size */}
+            <h3 className="text-base font-bold"> {/* Adjusted font size */}
               {section.name} ({sectionTasksCount})
             </h3>
           </div>
         )}
-        <div className="flex items-center space-x-3" data-no-dnd="true">
-          <div className="flex items-center space-x-2">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="h-7 w-7 flex items-center justify-center p-0 text-muted-foreground hover:text-foreground cursor-pointer">
-                  {section.include_in_focus_mode ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>
-                {section.include_in_focus_mode ? 'Included in Focus Mode' : 'Excluded from Focus Mode'}
-              </TooltipContent>
-            </Tooltip>
-            <Label htmlFor={`focus-mode-toggle-${section.id}`} className="sr-only">
-              {section.include_in_focus_mode ? 'Included in Focus Mode' : 'Excluded from Focus Mode'}
-            </Label>
-            <Switch
-              id={`focus-mode-toggle-${section.id}`}
-              checked={section.include_in_focus_mode}
-              onCheckedChange={(checked) => !isOverlay && updateSectionIncludeInFocusMode(section.id, checked)}
-              aria-label={`Include ${section.name} in Focus Mode`}
-              disabled={isOverlay}
-            />
-          </div>
+        <div className="flex items-center space-x-1" data-no-dnd="true"> {/* Reduced space-x */}
           {!isOverlay && (
             <>
               <DropdownMenu>
@@ -142,7 +121,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="h-7 w-7 p-0" 
+                    className="h-7 w-7 p-0" // Adjusted button size
                     data-no-dnd="true" 
                     tabIndex={isOverlay ? -1 : 0}
                   >
@@ -161,6 +140,11 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
                   </DropdownMenuItem>
                   <DropdownMenuItem onSelect={() => handleEditSectionClick(section)}>
                     <Edit className="mr-2 h-3.5 w-3.5" /> Rename Section
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={() => updateSectionIncludeInFocusMode(section.id, !section.include_in_focus_mode)}>
+                    {section.include_in_focus_mode ? <EyeOff className="mr-2 h-3.5 w-3.5" /> : <Eye className="mr-2 h-3.5 w-3.5" />}
+                    {section.include_in_focus_mode ? 'Exclude from Focus Mode' : 'Include in Focus Mode'}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onSelect={() => handleDeleteSectionClick(section.id)} className="text-destructive focus:text-destructive">

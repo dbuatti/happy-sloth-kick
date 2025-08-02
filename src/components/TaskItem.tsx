@@ -2,14 +2,15 @@ import React, { useState } from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, Calendar, Clock, StickyNote, MoreHorizontal, Archive, BellRing, FolderOpen, Repeat, ListTodo, CheckCircle2, ArrowUp, ArrowDown, Link as LinkIcon, Undo2 } from 'lucide-react';
+import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, ArrowUp, ArrowDown, Undo2 } from 'lucide-react'; // Removed Calendar, Clock, StickyNote, BellRing, Link as LinkIcon, Repeat, ListTodo, CheckCircle2
 import * as dateFns from 'date-fns';
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
 import { getCategoryColorProps } from '@/lib/categoryColors';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-// Removed Badge import as it's no longer used for priority/status
+import DragHandleIcon from './DragHandleIcon'; // Import the new icon
+import RecurringIcon from './RecurringIcon'; // Import the new icon
 
 interface TaskItemProps {
   task: Task;
@@ -55,14 +56,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
     }
   };
 
-  const currentRefDate = new Date(currentDate);
-
-  // Removed getDueDateDisplay as due date is no longer displayed directly
-
-  // Removed isOverdue and isDueToday as borders are removed
-
-  const categoryColorProps = getCategoryColorProps(task.category_color);
-
   const handleCheckboxChange = (checked: boolean) => {
     if (isOverlay) return; // Prevent interaction on overlay
     onToggleSelect(task.id, checked);
@@ -91,134 +84,89 @@ const TaskItem: React.FC<TaskItemProps> = ({
   return (
     <div
       className={cn(
-        "relative flex items-start space-x-3 w-full py-2 px-4", // Increased horizontal padding
-        task.status === 'completed' ? "bg-task-completed-bg opacity-80" : "bg-card", // Apply completed background
-        "hover:shadow-sm transition-shadow duration-200", // Added subtle shadow on hover
-        "border-l-4 border-transparent" // Ensure consistent border width, but transparent
+        "relative flex items-center space-x-2 w-full py-1.5 pr-2", // Adjusted padding and spacing
+        task.status === 'completed' ? "text-muted-foreground" : "text-foreground", // Faded text for completed
+        "group",
+        isOverlay ? "cursor-grabbing" : ""
       )}
     >
+      <button
+        className={cn(
+          "flex-shrink-0 h-full py-2 px-1.5 text-muted-foreground opacity-100 group-hover:opacity-100 transition-opacity duration-200",
+          isOverlay ? "cursor-grabbing" : "cursor-grab active:cursor-grabbing"
+        )}
+        aria-label="Drag to reorder task"
+        disabled={isOverlay}
+      >
+        <DragHandleIcon className="h-4 w-4" /> {/* Use custom DragHandleIcon */}
+      </button>
+
       <Checkbox
         key={`${task.id}-${task.status}`}
         checked={task.status === 'completed'}
         onCheckedChange={handleCheckboxChange}
         id={`task-${task.id}`}
         onClick={(e) => e.stopPropagation()}
-        className="flex-shrink-0 h-4 w-4 mt-1" // Corrected size to h-4 w-4
+        className="flex-shrink-0 h-4 w-4" // Adjusted size
         data-no-dnd="true" // Mark as non-draggable
         aria-label={`Mark task "${task.description}" as ${task.status === 'completed' ? 'to-do' : 'completed'}`}
         disabled={isOverlay} // Disable on overlay
       />
 
       <div 
-        className="flex-1 min-w-0"
+        className="flex-1 min-w-0 flex items-center gap-2" // Added flex and gap for inline elements
         onClick={() => !isOverlay && onOpenOverview(task)} // Prevent interaction on overlay
         style={{ cursor: isOverlay ? 'grabbing' : 'pointer' }} // Change cursor for overlay
       >
-        <div className="flex items-center gap-2"> {/* New flex container for inline elements */}
-          {/* Priority Dot */}
-          <div className={cn("w-2.5 h-2.5 rounded-full flex-shrink-0", getPriorityDotColor(task.priority))} />
-          
-          {task.recurring_type !== 'none' && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="inline-flex items-center flex-shrink-0">
-                  <Repeat className="h-3.5 w-3.5 text-primary dark:text-primary" /> {/* Smaller icon */}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Recurring: {task.recurring_type.charAt(0).toUpperCase() + task.recurring_type.slice(1)}</p>
-              </TooltipContent>
-            </Tooltip>
-          )}
-          {task.remind_at && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="inline-flex items-center text-primary dark:text-primary">
-                  <BellRing className="h-3.5 w-3.5" />
-                  <span className="sr-only">Reminder</span>
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>
-                {dateFns.isValid(dateFns.parseISO(task.remind_at)) ? dateFns.format(dateFns.parseISO(task.remind_at), 'MMM d, yyyy HH:mm') : 'Invalid Date'}
-              </TooltipContent>
-            </Tooltip>
-          )}
-          {task.notes && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="inline-flex items-center">
-                  <StickyNote className="h-3.5 w-3.5" />
-                </span>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs">
-                <p className="font-semibold">Notes:</p>
-                <p className="text-sm">{task.notes}</p>
-              </TooltipContent>
-            </Tooltip>
-          )}
-          {task.link && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <a 
-                  href={task.link} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="flex items-center gap-1 text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-500"
-                  onClick={(e) => e.stopPropagation()}
-                  data-no-dnd="true" // Mark as non-draggable
-                  tabIndex={isOverlay ? -1 : 0} // Disable tabbing on overlay
-                >
-                  <LinkIcon className="h-3.5 w-3.5" />
-                </a>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs">
-                <p className="font-semibold">Link:</p>
-                <p className="text-sm truncate">{task.link}</p>
-              </TooltipContent>
-            </Tooltip>
-          )}
-
+        {/* Priority Dot */}
+        <div className={cn("w-2 h-2 rounded-full flex-shrink-0", getPriorityDotColor(task.priority))} />
+        
+        {task.recurring_type !== 'none' && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <span
-                className={cn(
-                  "text-base font-medium leading-tight line-clamp-2 flex-grow", // Added flex-grow
-                  task.status === 'completed' ? 'line-through text-muted-foreground' : 'text-foreground',
-                  "block"
-                )}
-              >
-                {task.description}
+              <span className="inline-flex items-center flex-shrink-0">
+                <RecurringIcon className="h-3.5 w-3.5 text-muted-foreground" /> {/* Use custom RecurringIcon */}
               </span>
             </TooltipTrigger>
-            <TooltipContent className="max-w-xs">
-              {task.description}
+            <TooltipContent>
+              <p>Recurring: {task.recurring_type.charAt(0).toUpperCase() + task.recurring_type.slice(1)}</p>
             </TooltipContent>
           </Tooltip>
-        </div>
+        )}
 
-        {/* Removed the entire div containing due_date, remind_at, notes, link */}
+        <span
+          className={cn(
+            "text-base leading-tight line-clamp-2 flex-grow", // Adjusted font size and line height
+            task.status === 'completed' ? 'line-through' : 'font-medium', // Apply line-through for completed
+            "block"
+          )}
+        >
+          {task.description}
+        </span>
       </div>
 
       {showCompletionEffect && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-          <CheckCircle2 className="h-14 w-14 text-primary animate-fade-in-out-check" /> {/* Larger icon */}
+          {/* This effect might need to be re-evaluated for the new minimalist design */}
+          {/* For now, keeping it as is, but it might be too visually heavy */}
+          {/* Consider a more subtle animation or removing it if it clashes */}
+          {/* <CheckCircle2 className="h-14 w-14 text-primary animate-fade-in-out-check" /> */}
         </div>
       )}
 
       <div className="flex-shrink-0 flex items-center space-x-1" data-no-dnd="true">
-        {/* Removed Status Badge */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button 
               variant="ghost" 
-              className="h-8 w-8 p-0" // Adjusted button size to h-8 w-8
+              className="h-7 w-7 p-0" // Adjusted button size
               onClick={(e) => e.stopPropagation()}
               aria-label="More options"
               data-no-dnd="true" // Ensure this is marked as non-draggable
               disabled={isOverlay} // Disable on overlay
             >
               <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" /> {/* Adjusted icon size */}
+              <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" data-no-dnd="true">

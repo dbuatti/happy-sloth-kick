@@ -369,7 +369,7 @@
   .dark .cosmic-dusk {
     --background: 225 30% 8%;
     --foreground: 225 15% 92%;
-    --card: 225 30% 8%; /* Same as background */
+    --card: 225 35% 12%;
     --card-foreground: 225 15% 92%;
     --popover: 225 35% 12%;
     --popover-foreground: 225 15% 92%;
@@ -489,7 +489,7 @@
   .dark .retro-wave {
     --background: 260 40% 8%;
     --foreground: 240 10% 95%;
-    --card: 260 40% 8%; /* Same as background */
+    --card: 260 35% 12%;
     --card-foreground: 240 10% 95%;
     --popover: 260 35% 12%;
     --popover-foreground: 240 10% 95%;
@@ -519,7 +519,7 @@
   .sepia-dusk {
     --background: 29 70% 89%;
     --foreground: 22 29% 7%;
-    --card: 29 70% 89%; /* Same as background */
+    --card: 29 59% 86%;
     --card-foreground: 22 29% 7%;
     --popover: 29 59% 86%;
     --popover-foreground: 22 29% 7%;
@@ -549,7 +549,7 @@
   .dark .sepia-dusk {
     --background: 29 29% 13%;
     --foreground: 29 25% 69%;
-    --card: 29 29% 13%; /* Same as background */
+    --card: 22 29% 7%;
     --card-foreground: 29 25% 69%;
     --popover: 22 29% 7%;
     --popover-foreground: 29 25% 69%;
@@ -579,7 +579,7 @@
   .vibrant-flow {
     --background: 210 20% 98%;
     --foreground: 210 10% 20%;
-    --card: 210 20% 98%; /* Same as background */
+    --card: 210 20% 98%;
     --card-foreground: 210 10% 20%;
     --popover: 210 20% 98%;
     --popover-foreground: 210 10% 20%;
@@ -609,7 +609,7 @@
   .dark .vibrant-flow {
     --background: 240 40% 8%;
     --foreground: 210 10% 95%;
-    --card: 240 40% 8%; /* Same as background */
+    --card: 240 35% 12%;
     --card-foreground: 210 10% 95%;
     --popover: 240 35% 12%;
     --popover-foreground: 210 10% 95%;
@@ -648,6 +648,20 @@
     font-size: 15px; /* Increased base font size slightly */
     line-height: 1.6; /* Adjusted line height for better spacing */
     touch-action: none; /* Disable pinch-to-zoom */
+  }
+
+  /* Custom checkbox styling to match the image */
+  .checkbox-root[data-state="unchecked"] {
+    @apply border border-gray-300 dark:border-gray-600;
+  }
+
+  .checkbox-root[data-state="checked"] {
+    background-color: hsl(var(--primary)); /* Use primary color for checked background */
+    border-color: hsl(var(--primary)); /* Use primary color for checked border */
+  }
+
+  .checkbox-root[data-state="checked"] svg {
+    color: hsl(var(--primary-foreground)); /* Use primary-foreground for checkmark color */
   }
 }
 
