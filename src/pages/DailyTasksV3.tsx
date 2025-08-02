@@ -92,7 +92,6 @@ const DailyTasksV3: React.FC = () => {
   };
 
   const handleOpenOverview = (task: Task) => {
-    console.log('DailyTasksV3: handleOpenOverview called with task:', task.id);
     setTaskToOverview(task);
     setIsTaskOverviewOpen(true);
   };
@@ -334,7 +333,6 @@ const DailyTasksV3: React.FC = () => {
           userId={userId}
           isOpen={isTaskOverviewOpen}
           onClose={() => {
-            console.log('DailyTasksV3: TaskOverviewDialog onClose called');
             setIsTaskOverviewOpen(false);
             setTaskToOverview(null);
           }}

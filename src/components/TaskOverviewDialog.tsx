@@ -45,13 +45,12 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
   allCategories,
   allTasks,
 }) => {
-  console.log('TaskOverviewDialog rendering. isOpen:', isOpen, 'task:', task?.id);
   const { playSound } = useSound();
   const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   useEffect(() => {
-    console.log('TaskOverviewDialog: isOpen prop changed to', isOpen);
+    // console.log('TaskOverviewDialog: isOpen prop changed to', isOpen); // Removed log
   }, [isOpen]);
 
   const subtasks = useMemo(() => {
