@@ -421,6 +421,77 @@ export const themes = {
       '--input': '240 30% 25%',
       '--ring': '210 10% 85%',
     }
+  },
+  'honeycomb': {
+    name: 'Honeycomb',
+    description: 'Warm, golden tones inspired by honey and bees, for a cozy and inviting feel.',
+    light: {
+      '--background': '40 100% 98%', /* Very light creamy yellow */
+      '--foreground': '30 20% 15%',  /* Dark warm brown */
+      '--card': '40 100% 98%',
+      '--card-foreground': '30 20% 15%',
+      '--popover': '40 100% 98%',
+      '--popover-foreground': '30 20% 15%',
+      '--primary': '40 90% 50%',    /* Golden yellow */
+      '--primary-foreground': '30 20% 10%', /* Very dark brown */
+      '--secondary': '40 50% 90%',   /* Muted light yellow */
+      '--secondary-foreground': '30 20% 20%',
+      '--muted': '40 50% 95%',      /* Even lighter muted yellow */
+      '--muted-foreground': '30 10% 40%',
+      '--accent': '30 80% 60%',     /* Warm orange/amber */
+      '--accent-foreground': '30 20% 15%',
+      '--destructive': '0 80% 60%', /* Soft red */
+      '--destructive-foreground': '0 0% 100%',
+      '--border': '40 30% 85%',     /* Light brown border */
+      '--input': '40 100% 95%',     /* Creamy input background */
+      '--ring': '40 90% 50%',
+      '--radius': '1rem',
+      /* Status and Priority colors adjusted for theme */
+      '--border-status-due-today': '30 80% 60%',
+      '--border-status-overdue': '0 80% 60%',
+      '--status-completed': '90 60% 40%', /* Earthy green */
+      '--task-completed-bg': '40 100% 95%',
+      '--priority-low': '90 60% 40%',
+      '--priority-medium': '40 90% 50%',
+      '--priority-high': '30 80% 60%',
+      '--priority-urgent': '0 80% 60%',
+      /* Gradients for neurodivergent-friendly design */
+      '--gradient-start-light': '40 100% 95%',
+      '--gradient-end-light': '30 50% 95%',
+    },
+    dark: {
+      '--background': '30 20% 10%', /* Deep warm brown */
+      '--foreground': '40 100% 90%', /* Light creamy yellow */
+      '--card': '30 25% 15%',
+      '--card-foreground': '40 100% 90%',
+      '--popover': '30 25% 15%',
+      '--popover-foreground': '40 100% 90%',
+      '--primary': '40 90% 70%',    /* Brighter golden yellow */
+      '--primary-foreground': '30 20% 10%',
+      '--secondary': '30 30% 25%',   /* Muted dark brown */
+      '--secondary-foreground': '40 100% 90%',
+      '--muted': '30 30% 20%',      /* Darker muted brown */
+      '--muted-foreground': '40 50% 70%',
+      '--accent': '30 80% 75%',     /* Brighter warm orange/amber */
+      '--accent-foreground': '40 100% 90%',
+      '--destructive': '0 90% 70%', /* Brighter red */
+      '--destructive-foreground': '0 0% 100%',
+      '--border': '30 20% 30%',     /* Medium dark brown border */
+      '--input': '30 20% 20%',      /* Darker input background */
+      '--ring': '40 90% 70%',
+      /* Status and Priority colors adjusted for theme */
+      '--border-status-due-today': '30 80% 75%',
+      '--border-status-overdue': '0 90% 70%',
+      '--status-completed': '90 70% 50%', /* Brighter earthy green */
+      '--task-completed-bg': '30 25% 20%',
+      '--priority-low': '90 70% 50%',
+      '--priority-medium': '40 90% 70%',
+      '--priority-high': '30 80% 75%',
+      '--priority-urgent': '0 90% 70%',
+      /* Gradients for neurodivergent-friendly design */
+      '--gradient-start-dark': '30 25% 18%',
+      '--gradient-end-dark': '40 20% 18%',
+    }
   }
 };
 
