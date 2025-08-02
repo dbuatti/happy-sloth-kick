@@ -160,7 +160,7 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
 
   const handleEditTaskFromOverview = (task: Task) => {
     setIsTaskOverviewOpen(false);
-    handleOpenTaskDetails(task);
+    onOpenDetail(task); // This is where onOpenDetail is used
   };
 
   const upcomingTasks = useMemo(() => {

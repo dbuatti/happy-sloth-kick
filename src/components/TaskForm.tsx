@@ -30,7 +30,7 @@ const taskFormSchema = z.object({
   sectionId: z.string().nullable().optional(),
   recurringType: z.enum(['none', 'daily', 'weekly', 'monthly']),
   parentTaskId: z.string().nullable().optional(),
-  link: z.string().nullable().optional().transform((val) => {
+  link: z.string().nullable().transform((val) => { // Changed from .optional() to .nullable()
     if (!val) return null;
     let processedVal = val.trim();
     if (processedVal === '') return null;
