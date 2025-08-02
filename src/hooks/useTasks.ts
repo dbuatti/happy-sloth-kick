@@ -145,6 +145,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       })) as Task[];
 
       setTasks(mappedTasks);
+      console.log('useTasks: Fetched tasks and sections successfully.');
     } catch (e: any) {
       console.error('useTasks: Error in fetchDataAndSections:', e.message);
       showError('Failed to load data.');
@@ -175,6 +176,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
           if (isReorderingRef.current) return; // Ignore real-time updates during reordering
           const newOrOldTask = (payload.new || payload.old) as Task;
           const categoryColor = categoriesMapRef.current.get(newOrOldTask.category) || 'gray';
+          console.log('useTasks: Realtime task change received:', payload.eventType, newOrOldTask.id);
 
           if (payload.eventType === 'INSERT') {
             setTasks(prev => [...prev, { ...newOrOldTask, category_color: categoryColor }]);
@@ -202,6 +204,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
         (payload) => {
           if (isReorderingRef.current) return; // Ignore real-time updates during reordering
           const newOrOldSection = (payload.new || payload.old) as TaskSection;
+          console.log('useTasks: Realtime section change received:', payload.eventType, newOrOldSection.id);
           if (payload.eventType === 'INSERT') {
             setSections(prev => [...prev, newOrOldSection].sort((a, b) => (a.order || 0) - (b.order || 0)));
           } else if (payload.eventType === 'UPDATE') {
@@ -222,7 +225,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
         (payload) => {
           if (isReorderingRef.current) return; // Ignore real-time updates during reordering
           const newOrOldCategory = (payload.new || payload.old) as Category;
-
+          console.log('useTasks: Realtime category change received:', payload.eventType, newOrOldCategory.id);
           if (payload.eventType === 'INSERT') {
             setAllCategories(prev => [...prev, newOrOldCategory]);
           } else if (payload.eventType === 'UPDATE') {
@@ -376,6 +379,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     };
 
     setTasks(prev => [...prev, newTask]);
+    console.log('useTasks: Optimistically added new task:', newTask.id);
 
     try {
       const { data, error } = await supabase
@@ -387,6 +391,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       if (error) throw error;
       setTasks(prev => prev.map(t => t.id === newTask.id ? { ...data, category_color: allCategoriesRef.current.find(cat => cat.id === data.category)?.color || 'gray' } : t));
       showSuccess('Task added successfully!');
+      console.log('useTasks: Task added to DB successfully:', data.id);
 
       if (newTask.remind_at) {
         const d = parseISO(newTask.remind_at);
@@ -395,6 +400,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       return true;
     } catch (e: any) {
       showError('Failed to add task.');
+      console.error('useTasks: Error adding task to DB:', e.message);
       setTasks(prev => prev.filter(t => t.id !== newTask.id));
       return false;
     }
@@ -405,13 +411,18 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       showError('User not authenticated.');
       return;
     }
+    console.log(`useTasks: Attempting to update task ${taskId} with updates:`, updates);
     let color: string | undefined;
     if (updates.category) color = allCategoriesRef.current.find(cat => cat.id === updates.category)?.color || 'gray';
 
     const originalTask: Task | undefined = tasks.find(t => t.id === taskId); // Explicitly type as Task | undefined
-    if (!originalTask) return;
+    if (!originalTask) {
+      console.warn(`useTasks: Task with ID ${taskId} not found for update.`);
+      return;
+    }
 
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates, ...(color && { category_color: color }) } : t));
+    console.log(`useTasks: Optimistically updated task ${taskId} in state.`);
 
     try {
       const { data, error } = await supabase
@@ -426,6 +437,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
 
       setTasks(prev => prev.map(t => t.id === taskId ? { ...data, category_color: allCategoriesRef.current.find(cat => cat.id === data.category)?.color || 'gray' } : t));
       showSuccess('Task updated!');
+      console.log(`useTasks: Task ${taskId} updated in DB successfully.`);
 
       if (updates.remind_at) {
         const d = parseISO(updates.remind_at as string);
@@ -436,7 +448,8 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       }
     } catch (e: any) {
       showError('Failed to update task.');
-      setTasks(prev => prev.map(t => t.id === taskId ? originalTask : t));
+      console.error(`useTasks: Error updating task ${taskId} in DB:`, e.message);
+      setTasks(prev => prev.map(t => t.id === taskId ? originalTask : t)); // Revert optimistic update
     }
   }, [userId, tasks, addReminder, dismissReminder]);
 
@@ -458,14 +471,17 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
 
     const originalTasks = [...tasks];
     setTasks(prev => prev.filter(t => !idsToDelete.includes(t.id)));
+    console.log(`useTasks: Optimistically deleted task(s): ${idsToDelete.join(', ')}`);
 
     try {
       const { error } = await supabase.from('tasks').delete().in('id', idsToDelete).eq('user_id', userId).select('id');
       if (error) throw error;
       showSuccess('Task(s) deleted!');
+      console.log(`useTasks: Task(s) ${idsToDelete.join(', ')} deleted from DB successfully.`);
       idsToDelete.forEach(dismissReminder);
     } catch (e: any) {
       showError('Failed to delete task.');
+      console.error(`useTasks: Error deleting task(s) ${idsToDelete.join(', ')} from DB:`, e.message);
       setTasks(originalTasks);
     }
   }, [userId, tasks, dismissReminder]);
@@ -491,11 +507,13 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     if (targetIds.length === 0) {
       return;
     }
+    console.log(`useTasks: Attempting bulk update for tasks: ${targetIds.join(', ')} with updates:`, updates);
 
     const original = [...tasks];
     setTasks(prev =>
       prev.map(t => (targetIds.includes(t.id) ? { ...t, ...updates } : t))
     );
+    console.log(`useTasks: Optimistically applied bulk update to state.`);
 
     try {
       const { error } = await supabase
@@ -506,9 +524,11 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
 
       if (error) throw error;
       showSuccess('Tasks updated!');
+      console.log(`useTasks: Bulk update for tasks ${targetIds.join(', ')} successful in DB.`);
       clearSelectedTasks();
     } catch (e: any) {
       showError('Failed to update tasks.');
+      console.error(`useTasks: Error during bulk update for tasks ${targetIds.join(', ')}:`, e.message);
       setTasks(original);
     }
   }, [tasks, userId, selectedTaskIds, clearSelectedTasks]);
@@ -546,8 +566,10 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
         .single();
       if (error) throw error;
       showSuccess('Section created!');
+      console.log('useTasks: Section created successfully.');
     } catch (e: any) {
       showError('Failed to create section.');
+      console.error('useTasks: Error creating section:', e.message);
     }
   }, [userId, sections.length]);
 
@@ -559,6 +581,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     // Optimistic update
     const originalSections = [...sections];
     setSections(prev => prev.map(s => s.id === sectionId ? { ...s, name: newName } : s));
+    console.log(`useTasks: Optimistically updated section ${sectionId} name to ${newName}.`);
 
     try {
       const { error } = await supabase
@@ -568,8 +591,10 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
         .eq('user_id', userId);
       if (error) throw error;
       showSuccess('Section updated!');
+      console.log(`useTasks: Section ${sectionId} updated in DB successfully.`);
     } catch (e: any) {
       showError('Failed to update section.');
+      console.error(`useTasks: Error updating section ${sectionId}:`, e.message);
       setSections(originalSections); // Revert on error
     }
   }, [userId, sections]);
@@ -586,6 +611,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
         .update({ section_id: null })
         .eq('section_id', sectionId)
         .eq('user_id', userId);
+      console.log(`useTasks: Tasks in section ${sectionId} reassigned to null.`);
 
       // Then delete the section
       const { error } = await supabase
@@ -595,8 +621,10 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
         .eq('user_id', userId);
       if (error) throw error;
       showSuccess('Section deleted!');
+      console.log(`useTasks: Section ${sectionId} deleted from DB successfully.`);
     } catch (e: any) {
       showError('Failed to delete section.');
+      console.error(`useTasks: Error deleting section ${sectionId}:`, e.message);
     }
   }, [userId]);
 
@@ -613,8 +641,10 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
         .eq('user_id', userId);
       if (error) throw error;
       showSuccess('Focus mode setting updated!');
+      console.log(`useTasks: Section ${sectionId} focus mode updated to ${include}.`);
     } catch (e: any) {
       showError('Failed to update focus mode setting.');
+      console.error(`useTasks: Error updating focus mode for section ${sectionId}:`, e.message);
     }
   }, [userId]);
 
@@ -636,14 +666,17 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     }));
 
     setSections(newOrderedSections); // Optimistic update
+    console.log(`useTasks: Optimistically reordered sections.`);
 
     isReorderingRef.current = true;
     try {
       const { error } = await supabase.from('task_sections').upsert(updates, { onConflict: 'id' });
       if (error) throw error;
       showSuccess('Sections reordered!');
+      console.log('useTasks: Sections reordered in DB successfully.');
     } catch (e: any) {
       showError('Failed to reorder sections.');
+      console.error('useTasks: Error reordering sections:', e.message);
       setSections(sections); // Revert optimistic update
     } finally {
       isReorderingRef.current = false;
@@ -654,6 +687,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
   const refetchAllTasks = useCallback(async () => {
     if (!userId) return;
     setLoading(true); // Set loading true during refetch
+    console.log('useTasks: Refetching all tasks...');
     try {
       const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
@@ -668,6 +702,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
         category_color: categoriesMapRef.current.get(t.category) || 'gray',
       })) as Task[];
       setTasks(mappedTasks);
+      console.log('useTasks: All tasks refetched successfully.');
     } catch (e: any) {
       console.error('Error refetching all tasks:', e.message);
       showError('Failed to refresh tasks.');
@@ -715,15 +750,18 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
 
     const originalTasks = [...tasks];
     setTasks(prev => prev.map(t => updatesMap.has(t.id) ? { ...t, ...(updatesMap.get(t.id) as any) } : t));
+    console.log(`useTasks: Optimistically moved task ${taskId}.`);
 
     try {
       const payload = Array.from(updatesMap.values()).map(u => cleanTaskForDb(u));
       const { error } = await supabase.from('tasks').upsert(payload, { onConflict: 'id' });
       if (error) throw error;
       showSuccess('Task reordered!');
+      console.log(`useTasks: Task ${taskId} reordered in DB successfully.`);
       await refetchAllTasks(); // Full refresh after successful move
     } catch (e: any) {
       showError('Failed to reorder task.');
+      console.error(`useTasks: Error reordering task ${taskId}:`, e.message);
       setTasks(originalTasks); // Revert optimistic update on error
     } finally {
       isReorderingRef.current = false;
@@ -777,14 +815,17 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       const update = updatesToApply.find(u => u.id === t.id);
       return update ? { ...t, order: update.order, parent_task_id: update.parent_task_id, section_id: update.section_id } : t;
     }));
+    console.log(`useTasks: Optimistically updated task parent/order for ${activeId}.`);
 
     try {
       const { error } = await supabase.from('tasks').upsert(updatesToApply, { onConflict: 'id' });
       if (error) throw error;
       showSuccess('Task reordered!');
+      console.log(`useTasks: Task ${activeId} parent/order updated in DB successfully.`);
       await refetchAllTasks(); // Full refresh to ensure consistency
     } catch (e: any) {
       showError('Failed to reorder task.');
+      console.error(`useTasks: Error updating task parent/order for ${activeId}:`, e.message);
       await refetchAllTasks(); // Revert by fetching fresh data
     } finally {
       isReorderingRef.current = false;
