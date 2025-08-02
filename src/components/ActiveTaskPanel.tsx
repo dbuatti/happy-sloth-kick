@@ -34,9 +34,8 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
   allCategories,
   currentDate, // Keep this, it's used
 }) => {
-  const { user } = useAuth(); // Use useAuth to get the user
-  // userId is used by useTasks hook internally, no need to declare here if not directly used
-  // Removed setFocusDuration as it's not directly used in this component's logic
+  // Removed 'user' from useAuth destructuring as it's not directly used here.
+  useAuth(); 
 
   const { playSound } = useSound();
 
@@ -208,7 +207,7 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
       {/* Next Up Task Card */}
       <Card className="w-full shadow-lg rounded-xl flex-grow flex flex-col">
         <CardHeader className="pb-2">
-          <CardTitle className="text-xl font-bold flex items-center gap-2">
+          <CardTitle className="text-xl font-bold flex items-center justify-center gap-2">
             <Target className="h-5 w-5 text-primary" /> Next Up
           </CardTitle>
         </CardHeader>
@@ -239,7 +238,7 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
       {/* Upcoming Tasks Card */}
       <Card className="w-full shadow-lg rounded-xl flex-shrink-0">
         <CardHeader className="pb-2">
-          <CardTitle className="text-xl font-bold flex items-center gap-2">
+          <CardTitle className="text-xl font-bold flex items-center justify-center gap-2">
             <ListTodo className="h-5 w-5 text-primary" /> Upcoming
           </CardTitle>
         </CardHeader>

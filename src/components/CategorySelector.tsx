@@ -15,10 +15,6 @@ interface CategorySelectorProps {
 }
 
 const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, categories }) => {
-  // Removed userId as it's not directly used in this component's logic
-  // const { user } = useAuth(); 
-  // const userId = user?.id || null; 
-
   const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
 
   const selectedCategory = categories.find(cat => cat.id === value);

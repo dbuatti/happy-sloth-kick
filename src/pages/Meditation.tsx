@@ -10,8 +10,8 @@ import { useSound } from '@/context/SoundContext';
 import { useAuth } from '@/context/AuthContext'; // Re-introduced useAuth
 
 const Meditation: React.FC = () => {
-  const { user } = useAuth(); // Re-introduced user as it's used
-  // userId is used by useAuth hook internally, no need to declare here if not directly used
+  // Removed 'user' from useAuth destructuring as it's not directly used here.
+  useAuth(); 
 
   const { playSound } = useSound();
   const [duration, setDuration] = useState(10 * 60); // Default to 10 minutes in seconds

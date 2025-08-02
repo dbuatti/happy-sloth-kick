@@ -76,8 +76,8 @@ const imageryThemes: ImageryTheme[] = [
 ];
 
 const GuidedImageryPage: React.FC = () => {
-  const { user } = useAuth(); // Re-introduced user as it's used
-  // userId is used by useAuth hook internally, no need to declare here if not directly used
+  // Removed 'user' from useAuth destructuring as it's not directly used here.
+  useAuth(); 
 
   const { playSound } = useSound();
   const [selectedThemeName, setSelectedThemeName] = useState(imageryThemes[0].name);

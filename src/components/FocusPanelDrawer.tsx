@@ -31,10 +31,6 @@ const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
   allCategories,
   currentDate,
 }) => {
-  // Removed userId as it's not directly used in this component's logic
-  // const { user } = useAuth(); 
-  // const userId = user?.id || null; 
-
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent side="right" className="w-full sm:max-w-md flex flex-col">

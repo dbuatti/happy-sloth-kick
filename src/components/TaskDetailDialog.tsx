@@ -48,16 +48,14 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   deleteSection,
   updateSectionIncludeInFocusMode,
 }) => {
-  const { user } = useAuth(); // Use useAuth to get the user
-  const userId = user?.id || null; // Re-introduced userId as it's used in handleAddSubtask (commented out but good to keep)
+  // Removed 'user' and 'userId' from useAuth destructuring as they are not directly used here.
+  useAuth(); 
 
   // Only use useTasks for actions that require it, not for fetching global state
-  const { tasks: allTasks, handleAddTask, updateTask: updateSubtask } = useTasks(); 
+  const { tasks: allTasks, updateTask: updateSubtask } = useTasks(); 
   const { playSound } = useSound();
   const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  // Removed isAddSubtaskOpen as it's not directly used to control a dialog here
-  // Removed handleAddSubtask as it's not directly used here
 
   type TaskFormData = Parameters<typeof TaskForm>['0']['onSave'] extends ((taskData: infer T) => any) ? T : never;
 
@@ -80,27 +78,6 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
       onClose();
     }
   };
-
-  // This function is not directly used in this component, but passed to TaskForm
-  // const handleAddSubtask = async (subtaskData: TaskFormData) => {
-  //   if (!task || !userId) return false;
-
-  //   const convertedSubtaskData = {
-  //     ...subtaskData,
-  //     due_date: subtaskData.due_date || null,
-  //     remind_at: subtaskData.remind_at || null,
-  //   };
-
-  //   const success = await handleAddTask({
-  //     ...convertedSubtaskData,
-  //     parent_task_id: task.id,
-  //     section_id: task.section_id,
-  //   });
-  //   if (success) {
-  //     setIsAddSubtaskOpen(false);
-  //   }
-  //   return success;
-  // };
 
   const handleSubtaskStatusChange = async (subtaskId: string, newStatus: Task['status']) => {
     await updateSubtask(subtaskId, { status: newStatus });

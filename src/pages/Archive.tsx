@@ -7,7 +7,7 @@ import { useTasks, Task } from '@/hooks/useTasks';
 import TaskItem from '@/components/TaskItem';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import TaskOverviewDialog from '@/components/TaskOverviewDialog';
-import { useAuth } from '@/context/AuthContext';
+// Removed useAuth as it's not directly used in this component
 
 const Archive: React.FC = () => {
   const {

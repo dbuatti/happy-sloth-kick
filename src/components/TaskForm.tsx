@@ -18,7 +18,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { suggestTaskDetails } from '@/integrations/supabase/api';
 import { showError } from '@/utils/toast';
-// Removed useAuth as it's not directly used in this component
 
 const taskFormSchema = z.object({
   description: z.string().min(1, { message: 'Task description is required.' }).max(255, { message: 'Description must be 255 characters or less.' }),
@@ -143,7 +142,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
       sectionId: preselectedSectionId,
       recurringType: 'none',
       parentTaskId: parentTaskId,
-      link: '',
+      link: null, // Explicitly set to null to match the schema's transform output
     },
   });
 
@@ -165,7 +164,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
         sectionId: initialData.section_id,
         recurringType: initialData.recurring_type,
         parentTaskId: initialData.parent_task_id,
-        link: initialData.link || '',
+        link: initialData.link || null, // Ensure it's null if undefined
       });
     } else {
       const generalCategory = allCategories.find(cat => cat.name.toLowerCase() === 'general');
@@ -180,7 +179,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
         sectionId: preselectedSectionId,
         recurringType: 'none',
         parentTaskId: parentTaskId,
-        link: '',
+        link: null,
       });
     }
   }, [initialData, preselectedSectionId, parentTaskId, allCategories, reset]);

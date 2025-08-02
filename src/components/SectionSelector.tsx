@@ -33,10 +33,6 @@ const SectionSelector: React.FC<SectionSelectorProps> = ({
   deleteSection,
   updateSectionIncludeInFocusMode,
 }) => {
-  // Removed userId as it's not directly used in this component's logic
-  // const { user } = useAuth(); 
-  // const userId = user?.id || null; 
-
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
 
   const selectedSection = sections.find(sec => sec.id === value);

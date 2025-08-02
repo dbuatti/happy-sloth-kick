@@ -9,10 +9,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 // Removed useAuth as it's not directly used in this component
 
 const ProjectTrackerSettings: React.FC = () => {
-  // Removed userId as it's not directly used in this component's logic
-  // const { user } = useAuth(); 
-  // const userId = user?.id; 
-
   const { sectionTitle, updateProjectTrackerTitle, loading: projectsLoading } = useProjects();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [tempSectionTitle, setTempSectionTitle] = useState(sectionTitle);

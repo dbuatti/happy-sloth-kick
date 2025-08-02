@@ -1,21 +1,14 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/Progress";
-import { Play, Pause, RefreshCcw, Brain, SkipForward } from 'lucide-react';
+// Removed Button, Progress, Play, Pause, RefreshCcw, Brain, SkipForward, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, cn as they are not directly used here
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useTasks, Task } from '@/hooks/useTasks';
-import { useSound } from '@/context/SoundContext'; // Re-introduced useSound
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { cn } from '@/lib/utils';
+// Removed useSound as it's not directly used here
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import FocusToolsPanel from '@/components/FocusToolsPanel'; // Import FocusToolsPanel
-import { useAuth } from '@/context/AuthContext'; // Re-introduced useAuth
+// Removed useAuth as it's not directly used here
 
 const FocusMode: React.FC = () => {
-  const { user } = useAuth(); // Re-introduced user as it's used
-  const userId = user?.id; // Re-introduced userId as it's used
-
   const {
     filteredTasks,
     updateTask,

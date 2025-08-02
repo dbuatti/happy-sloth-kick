@@ -8,7 +8,7 @@ import { Edit, Trash2, Eye, EyeOff, Plus } from 'lucide-react';
 import { TaskSection } from '@/hooks/useTasks';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { showSuccess, showError } from '@/utils/toast';
+import { showError } from '@/utils/toast'; // Removed showSuccess, it is not used here
 
 interface ManageSectionsDialogProps {
   isOpen: boolean;

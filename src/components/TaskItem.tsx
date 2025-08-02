@@ -10,7 +10,6 @@ import { useSound } from '@/context/SoundContext';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { CheckCircle2 } from 'lucide-react'; // Ensure CheckCircle2 is imported for the animation
 import { useAuth } from '@/context/AuthContext'; // Import useAuth
-// Removed DragHandleIcon import
 
 interface TaskItemProps {
   task: Task;
@@ -40,8 +39,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
   isOverlay = false,
   // Removed dragHandleProps
 }) => {
-  const { user } = useAuth(); // Use useAuth to get the user
-  const userId = user?.id || null; // Re-introduced userId as it's used
+  // Removed 'user' and 'userId' from useAuth destructuring as they are not directly used here.
+  useAuth(); 
   const { playSound } = useSound();
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
 

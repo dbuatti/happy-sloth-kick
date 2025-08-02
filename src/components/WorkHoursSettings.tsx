@@ -17,11 +17,6 @@ interface WorkHourState {
 }
 
 const WorkHoursSettings: React.FC = () => {
-  // Removed userId as it's not directly used in this component's logic
-  // const { user } = useAuth(); 
-  // const userId = user?.id; 
-  // Removed useCallback as it's not directly used in this component's logic
-
   // Call useWorkHours without a date to get all work hours
   const { workHours: fetchedWorkHours, loading, saveWorkHours, allDaysOfWeek, defaultTime } = useWorkHours();
   

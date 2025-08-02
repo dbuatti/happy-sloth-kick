@@ -28,8 +28,8 @@ import {
 import { useAuth } from '@/context/AuthContext'; // Re-introduced useAuth
 
 const TimeBlockSchedule: React.FC = () => {
-  const { user } = useAuth(); // Re-introduced user as it's used
-  // userId is used by useAuth hook internally, no need to declare here if not directly used
+  // Removed 'user' from useAuth destructuring as it's not directly used here.
+  useAuth(); 
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const { workHours: singleDayWorkHoursRaw, loading: workHoursLoading } = useWorkHours({ date: currentDate });

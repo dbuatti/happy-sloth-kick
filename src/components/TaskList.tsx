@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Plus, ListTodo, ChevronsDownUp } from 'lucide-react';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';

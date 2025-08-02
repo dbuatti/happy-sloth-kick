@@ -11,8 +11,8 @@ import { useAuth } from '@/context/AuthContext'; // Re-introduced useAuth
 type DiffusionTechnique = 'none' | 'funny-voice' | 'having-thought' | 'repeat' | 'floating-away';
 
 const ThoughtDiffusionToolPage: React.FC = () => {
-  const { user } = useAuth(); // Re-introduced user as it's used
-  // userId is used by useAuth hook internally, no need to declare here if not directly used
+  // Removed 'user' from useAuth destructuring as it's not directly used here.
+  useAuth(); 
 
   const { playSound } = useSound();
   const [originalThought, setOriginalThought] = useState('');

@@ -48,8 +48,8 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
   deleteSection,
   updateSectionIncludeInFocusMode,
 }) => {
-  const { user } = useAuth(); // Re-introduced user as it's used by useAuth hook
-  // Removed userId as it's not directly used in this component's logic
+  // Removed 'user' from useAuth destructuring as it's not directly used here.
+  useAuth(); 
 
   const navigate = useNavigate();
 
@@ -300,7 +300,7 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
       {/* Next Up Task Card */}
       <Card className="w-full shadow-lg rounded-xl flex-grow flex flex-col">
         <CardHeader className="pb-2">
-          <CardTitle className="text-xl font-bold flex items-center gap-2">
+          <CardTitle className="text-xl font-bold flex items-center justify-center gap-2">
             <Target className="h-5 w-5 text-primary" /> Next Up
           </CardTitle>
         </CardHeader>
@@ -331,7 +331,7 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
       {/* Upcoming Tasks Card */}
       <Card className="w-full shadow-lg rounded-xl flex-shrink-0">
         <CardHeader className="pb-2">
-          <CardTitle className="text-xl font-bold flex items-center gap-2">
+          <CardTitle className="text-xl font-bold flex items-center justify-center gap-2">
             <ListTodo className="h-5 w-5 text-primary" /> Upcoming
           </CardTitle>
         </CardHeader>
@@ -365,7 +365,7 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
       {/* Quick Access Mindfulness Tools */}
       <Card className="w-full shadow-lg rounded-xl flex-shrink-0">
         <CardHeader className="pb-2">
-          <CardTitle className="text-xl font-bold flex items-center gap-2">
+          <CardTitle className="text-xl font-bold flex items-center justify-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" /> Quick Tools
           </CardTitle>
         </CardHeader>
