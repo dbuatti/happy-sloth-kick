@@ -20,6 +20,7 @@ import BulkActions from '@/components/BulkActions';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { useIsMobile } from '@/hooks/use-mobile';
 import FocusPanelDrawer from '@/components/FocusPanelDrawer'; // Import the new FocusPanelDrawer
+import { Badge } from '@/components/ui/badge'; // Import Badge
 
 const getUTCStartOfDay = (date: Date) => {
   return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -186,8 +187,16 @@ const DailyTasksV3: React.FC = () => {
                   </Button>
                 </div>
               </div>
-              <div className="text-center text-sm text-muted-foreground mt-2">
-                <p>{totalCount} total, {completedCount} completed, {overdueCount} overdue</p>
+              <div className="flex justify-center gap-3 mt-2"> {/* Changed to flex and gap */}
+                <Badge variant="outline" className="px-3 py-1 text-sm font-medium bg-primary/10 text-primary">
+                  <ListTodo className="h-3.5 w-3.5 mr-1.5" /> {totalCount} Total
+                </Badge>
+                <Badge variant="outline" className="px-3 py-1 text-sm font-medium bg-green-500/10 text-green-600 dark:text-green-400">
+                  <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" /> {completedCount} Completed
+                </Badge>
+                <Badge variant="outline" className="px-3 py-1 text-sm font-medium bg-destructive/10 text-destructive">
+                  <Clock className="h-3.5 w-3.5 mr-1.5" /> {overdueCount} Overdue
+                </Badge>
               </div>
             </CardHeader>
 
