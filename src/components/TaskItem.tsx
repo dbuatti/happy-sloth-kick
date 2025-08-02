@@ -56,7 +56,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
   const handleCheckboxChange = (checked: boolean) => {
     if (isOverlay) return;
-    console.log(`TaskItem: Checkbox changed for task ${task.id}. New checked state: ${checked}`);
     onToggleSelect(task.id, checked);
     onStatusChange(task.id, checked ? 'completed' : 'to-do');
     if (checked) {
