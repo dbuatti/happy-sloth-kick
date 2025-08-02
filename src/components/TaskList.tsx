@@ -59,6 +59,7 @@ interface TaskListProps {
   bulkUpdateTasks: (updates: Partial<Task>, ids?: string[]) => Promise<void>;
   markAllTasksInSectionCompleted: (sectionId: string | null) => Promise<void>;
   sections: TaskSection[];
+  createSection: (name: string) => Promise<void>;
   updateSection: (sectionId: string, newName: string) => Promise<void>;
   deleteSection: (sectionId: string) => Promise<void>;
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
@@ -66,21 +67,10 @@ interface TaskListProps {
   reorderSections: (activeId: string, overId: string) => Promise<void>;
   moveTask: (taskId: string, direction: 'up' | 'down') => Promise<void>;
   allCategories: Category[];
+  setIsAddTaskOpen: (open: boolean) => void;
   currentDate: Date;
   setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
   searchRef: React.RefObject<HTMLInputElement>;
-  // New props for section management dialogs, now managed by DailyTasksV2
-  isAddSectionOpen: boolean;
-  setIsAddSectionOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  newSectionName: string;
-  setNewSectionName: React.Dispatch<React.SetStateAction<string>>;
-  editingSectionId: string | null;
-  setEditingSectionId: React.Dispatch<React.SetStateAction<string | null>>;
-  editingSectionName: string;
-  setNewEditingSectionName: React.Dispatch<React.SetStateAction<string>>;
-  isManageSectionsOpen: boolean;
-  setIsManageSectionsOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  openAddTaskForSection: (sectionId: string | null) => void; // Passed down from DailyTasksV2
 }
 
 const TaskList: React.FC<TaskListProps> = (props) => {
@@ -108,6 +98,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     bulkUpdateTasks,
     markAllTasksInSectionCompleted,
     sections,
+    createSection,
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode,
@@ -115,21 +106,10 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     reorderSections,
     moveTask,
     allCategories,
+    setIsAddTaskOpen,
     currentDate,
     setCurrentDate,
     searchRef,
-    // Destructure new props for section management
-    isAddSectionOpen,
-    setIsAddSectionOpen,
-    newSectionName,
-    setNewSectionName,
-    editingSectionId,
-    setEditingSectionId,
-    editingSectionName,
-    setNewEditingSectionName,
-    isManageSectionsOpen,
-    setIsManageSectionsOpen,
-    openAddTaskForSection,
   } = props;
 
   console.log('[Render] TaskList', {
@@ -150,6 +130,12 @@ const TaskList: React.FC<TaskListProps> = (props) => {
       return {};
     }
   });
+
+  const [isAddSectionOpen, setIsAddSectionOpen] = useState(false);
+  const [newSectionName, setNewSectionName] = useState('');
+  const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
+  const [editingSectionName, setNewEditingSectionName] = useState('');
+  const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
 
   const [isAddTaskOpenLocal, setIsAddTaskOpenLocal] = useState(false);
   const [preselectedSectionId, setPreselectedSectionId] = useState<string | null>(null);
@@ -303,7 +289,10 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     setIsTaskDetailOpen(true);
   };
 
-  // Removed local openAddTaskForSection, now passed as prop
+  const openAddTaskForSection = (sectionId: string | null) => {
+    setPreselectedSectionId(sectionId);
+    setIsAddTaskOpenLocal(true);
+  };
 
   return (
     <>
@@ -326,7 +315,55 @@ const TaskList: React.FC<TaskListProps> = (props) => {
           searchRef={searchRef}
         />
 
-        {/* Removed Add Section and Manage Sections buttons from here */}
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-1.5">
+          <div className="flex gap-1.5 w-full sm:w-auto">
+            <Dialog open={isAddSectionOpen} onOpenChange={setIsAddSectionOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="flex-1">
+                  <Plus className="mr-2 h-4 w-4" /> Add Section
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New Section</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div>
+                    <Label htmlFor="new-section-name">Section Name</Label>
+                    <Input
+                      id="new-section-name"
+                      value={newSectionName}
+                      onChange={(e) => setNewSectionName(e.target.value)}
+                      placeholder="e.g., Work, Personal, Groceries"
+                      autoFocus
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsAddSectionOpen(false)}>Cancel</Button>
+                  <Button onClick={() => {
+                    if (newSectionName.trim()) {
+                      createSection(newSectionName.trim());
+                      setNewSectionName('');
+                      setIsAddSectionOpen(false);
+                    }
+                  }} disabled={!newSectionName.trim()}>Add Section</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="sm" className="flex-1">
+                  <Settings className="mr-2 h-4 w-4" /> Manage Sections
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                Manage, rename, delete, and reorder your task sections.
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        </div>
       </div>
 
       {loading ? (
@@ -380,7 +417,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                     handleAddTaskToSpecificSection={(sectionId) => openAddTaskForSection(sectionId)}
                     markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
                     handleDeleteSectionClick={(id) => {
-                      setIsManageSectionsOpen(true); // Still opens manage dialog for delete confirmation
+                      setIsManageSectionsOpen(true);
                     }}
                     updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
                   />
@@ -477,7 +514,14 @@ const TaskList: React.FC<TaskListProps> = (props) => {
         </DialogContent>
       </Dialog>
 
-      {/* ManageSectionsDialog is now rendered in DailyTasksV2 */}
+      <ManageSectionsDialog
+        isOpen={isManageSectionsOpen}
+        onClose={() => setIsManageSectionsOpen(false)}
+        sections={sections}
+        updateSection={updateSection}
+        deleteSection={deleteSection}
+        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+      />
 
       {/* Details & Overview */}
       {taskToOverview && (
