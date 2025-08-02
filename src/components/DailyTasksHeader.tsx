@@ -1,9 +1,8 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, ListTodo, Brain, CheckCircle2, Clock } from 'lucide-react'; // Imported CheckCircle2 and Clock
+import { Plus, ListTodo, Brain, CheckCircle2, Clock } from 'lucide-react';
 import DateNavigator from '@/components/DateNavigator';
-import MoodBoosterButton from '@/components/MoodBoosterButton';
 import TaskFilter from '@/components/TaskFilter';
 import { cn } from '@/lib/utils';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
@@ -154,7 +153,6 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
 
         {/* Right: Utility Buttons */}
         <div className="flex items-center gap-2">
-          <MoodBoosterButton />
           <Button
             variant="ghost"
             size="icon"
