@@ -64,7 +64,8 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
     }
   }, [section.name, isEditingLocal]);
 
-  const handleStartEdit = useCallback(() => {
+  const handleStartEdit = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent toggle from firing when starting edit
     if (isOverlay) return;
     setIsEditingLocal(true);
     setLocalSectionName(section.name);
@@ -95,19 +96,19 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "relative flex items-center py-0 pr-2", // Removed pl-2
+        "relative flex items-center py-0 pr-2",
         "group",
         isDragging && !isOverlay ? "" : "rounded-lg",
         isOverlay ? "shadow-xl ring-2 ring-primary bg-card" : "",
         isOverlay ? "cursor-grabbing" : "hover:shadow-sm",
       )}
       {...(attributes || {})}
+      onClick={() => !isOverlay && toggleSection(section.id)} // Toggle on main div click
     >
       {/* Removed DragHandleIcon button */}
       <div className="flex-1 flex items-center justify-between">
         <div 
-          className="flex items-center flex-1 cursor-pointer min-w-0"
-          onClick={handleStartEdit}
+          className="flex items-center flex-1 min-w-0"
           data-no-dnd="true"
         >
           {isEditingLocal ? (
@@ -117,6 +118,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
                 onChange={(e) => setLocalSectionName(e.target.value)}
                 onBlur={handleSaveEdit}
                 onKeyDown={handleInputKeyDown}
+                onMouseDown={(e) => e.stopPropagation()} // Prevent toggle on input click
                 className={cn(
                   "!text-base !font-bold",
                   "border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0",
@@ -134,7 +136,10 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               </span>
             </>
           ) : (
-            <h3 className="text-base font-bold truncate flex-1">
+            <h3 
+              className="text-base font-bold truncate flex-1 cursor-pointer" // Added cursor-pointer
+              onClick={handleStartEdit} // Only h3 click starts edit
+            >
               {section.name} ({sectionTasksCount})
             </h3>
           )}
@@ -150,6 +155,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
                     className="h-7 w-7 p-0"
                     data-no-dnd="true" 
                     tabIndex={isOverlay ? -1 : 0}
+                    onClick={(e) => e.stopPropagation()} // Prevent toggle on button click
                   >
                     <span>
                       <span className="sr-only">Open section menu</span>
@@ -178,7 +184,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               <Button 
                 variant="ghost" 
                 size="icon" 
-                onClick={() => toggleSection(section.id)} 
+                onClick={(e) => { e.stopPropagation(); toggleSection(section.id); }} // Prevent toggle on button click
                 className="h-7 w-7 p-0" 
                 data-no-dnd="true" 
                 tabIndex={isOverlay ? -1 : 0}
