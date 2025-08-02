@@ -52,16 +52,15 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
   const sortable = !isOverlay ? useSortable({ id: section.id, data: { type: 'section', section } }) : null;
 
   const attributes = sortable?.attributes;
-  const listeners = sortable?.listeners;
-  const setNodeRef = sortable?.setNodeRef || null; // Use null if not sortable
+  const setNodeRef = sortable?.setNodeRef || null;
   const transform = sortable?.transform;
   const transition = sortable?.transition;
-  const isDragging = sortable?.isDragging || false; // Default to false if not sortable
+  const isDragging = sortable?.isDragging || false;
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    zIndex: isDragging ? 20 : 'auto', // Higher z-index for dragging sections
+    zIndex: isDragging ? 20 : 'auto',
     opacity: isDragging ? 0.5 : 1,
   };
 
@@ -72,65 +71,64 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
       className={cn(
         "relative rounded-lg bg-muted dark:bg-gray-700 text-foreground shadow-sm hover:shadow-md transition-shadow duration-200 group",
         isDragging ? "ring-2 ring-primary shadow-lg" : "",
-        "flex items-center", // Use flex to align drag handle
-        isOverlay ? "cursor-grabbing" : "" // Only apply cursor-grabbing when dragging
+        "flex items-center",
+        isOverlay ? "cursor-grabbing" : ""
       )}
-      {...(attributes || {})} // Conditionally spread attributes
-      {...(listeners || {})} // Conditionally spread listeners
+      {...(attributes || {})} // Keep attributes here
     >
       <button
         className={cn(
           "flex-shrink-0 h-full py-2 px-1.5 text-muted-foreground opacity-100 group-hover:opacity-100 transition-opacity duration-200",
-          isOverlay ? "cursor-grabbing" : "cursor-grab active:cursor-grabbing" // Apply cursor to the drag handle
+          isOverlay ? "cursor-grabbing" : "cursor-grab active:cursor-grabbing"
         )}
         aria-label="Drag to reorder section"
-        data-no-dnd="true" // Mark as non-draggable, as the whole div is now draggable
-        disabled={isOverlay} // Disable on overlay
+        disabled={isOverlay}
+        {...(sortable?.listeners || {})} // ADD listeners here
       >
-        <GripVertical className="h-4 w-4" /> {/* Adjusted size */}
+        <GripVertical className="h-4 w-4" />
       </button>
-      <div className="flex-1 flex items-center justify-between py-2 pl-0 pr-3"> {/* Increased padding */}
-        {editingSectionId === section.id && !isOverlay ? ( // Only allow editing if not overlay
+      <div className="flex-1 flex items-center justify-between py-2 pl-0 pr-3">
+        {editingSectionId === section.id && !isOverlay ? (
           <div className="flex items-center w-full gap-2" data-no-dnd="true">
             <Input
               value={editingSectionName}
               onChange={(e) => setNewEditingSectionName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleRenameSection()}
-              className="text-lg font-semibold h-9" // Adjusted height
+              className="text-lg font-semibold h-9"
               autoFocus
             />
-            <Button size="sm" onClick={handleRenameSection} disabled={!editingSectionName.trim()} className="h-9">Save</Button> {/* Adjusted height */}
-            <Button variant="ghost" size="sm" onClick={handleCancelSectionEdit} className="h-9">Cancel</Button> {/* Adjusted height */}
+            <Button size="sm" onClick={handleRenameSection} disabled={!editingSectionName.trim()} className="h-9">Save</Button>
+            <Button variant="ghost" size="sm" onClick={handleCancelSectionEdit} className="h-9">Cancel</Button>
           </div>
         ) : (
           <div 
             className="flex items-center gap-2 flex-1" 
-            onClick={() => !isOverlay && toggleSection(section.id)} // Prevent interaction on overlay
-            style={{ cursor: isOverlay ? 'grabbing' : 'pointer' }} // Change cursor for overlay
+            onClick={() => !isOverlay && toggleSection(section.id)} 
+            style={{ cursor: isOverlay ? 'grabbing' : 'pointer' }}
           >
-            <h3 className="text-xl font-bold flex items-center gap-2"> {/* Adjusted font size */}
-              <FolderOpen className="h-5 w-5 text-muted-foreground" /> {/* Adjusted icon size */}
+            <h3 className="text-xl font-bold flex items-center gap-2">
+              <FolderOpen className="h-5 w-5 text-muted-foreground" />
               {section.name} ({sectionTasksCount})
             </h3>
             <Button 
               variant="ghost" 
               size="icon" 
-              onClick={(e) => { e.stopPropagation(); !isOverlay && handleEditSectionClick(section); }} // Prevent interaction on overlay
+              onClick={(e) => { e.stopPropagation(); !isOverlay && handleEditSectionClick(section); }} 
               className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity duration-200" 
-              data-no-dnd="true" // Mark as non-draggable
-              disabled={isOverlay} // Disable on overlay
-              tabIndex={isOverlay ? -1 : 0} // Disable tabbing on overlay
+              data-no-dnd="true" 
+              disabled={isOverlay} 
+              tabIndex={isOverlay ? -1 : 0}
             >
-              <Edit className="h-4 w-4" /> {/* Adjusted icon size */}
+              <Edit className="h-4 w-4" />
             </Button>
           </div>
         )}
-        <div className="flex items-center space-x-3" data-no-dnd="true"> {/* Increased spacing */}
+        <div className="flex items-center space-x-3" data-no-dnd="true">
           <div className="flex items-center space-x-2">
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className="h-7 w-7 flex items-center justify-center p-0 text-muted-foreground hover:text-foreground cursor-pointer"> {/* Adjusted clickable area */}
-                  {section.include_in_focus_mode ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />} {/* Adjusted icon size */}
+                <span className="h-7 w-7 flex items-center justify-center p-0 text-muted-foreground hover:text-foreground cursor-pointer">
+                  {section.include_in_focus_mode ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                 </span>
               </TooltipTrigger>
               <TooltipContent>
@@ -143,25 +141,25 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
             <Switch
               id={`focus-mode-toggle-${section.id}`}
               checked={section.include_in_focus_mode}
-              onCheckedChange={(checked) => !isOverlay && updateSectionIncludeInFocusMode(section.id, checked)} // Prevent interaction on overlay
+              onCheckedChange={(checked) => !isOverlay && updateSectionIncludeInFocusMode(section.id, checked)}
               aria-label={`Include ${section.name} in Focus Mode`}
-              disabled={isOverlay} // Disable on overlay
+              disabled={isOverlay}
             />
           </div>
-          {!isOverlay && ( // Hide dropdown and chevron on overlay
+          {!isOverlay && (
             <>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="h-7 w-7 p-0" // Adjusted button size
-                    data-no-dnd="true" // Mark as non-draggable
-                    tabIndex={isOverlay ? -1 : 0} // Disable tabbing on overlay
+                    className="h-7 w-7 p-0" 
+                    data-no-dnd="true" 
+                    tabIndex={isOverlay ? -1 : 0}
                   >
                     <span>
                       <span className="sr-only">Open section menu</span>
-                      <MoreHorizontal className="h-4 w-4" /> {/* Adjusted icon size */}
+                      <MoreHorizontal className="h-4 w-4" />
                     </span>
                   </Button>
                 </DropdownMenuTrigger>
@@ -185,11 +183,11 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
                 variant="ghost" 
                 size="icon" 
                 onClick={() => toggleSection(section.id)} 
-                className="h-7 w-7 p-0" // Adjusted button size
-                data-no-dnd="true" // Mark as non-draggable
-                tabIndex={isOverlay ? -1 : 0} // Disable tabbing on overlay
+                className="h-7 w-7 p-0" 
+                data-no-dnd="true" 
+                tabIndex={isOverlay ? -1 : 0}
               >
-                <ChevronDown className={cn("h-4 w-4 transition-transform", isExpanded ? "rotate-0" : "-rotate-90")} /> {/* Adjusted icon size */}
+                <ChevronDown className={cn("h-4 w-4 transition-transform", isExpanded ? "rotate-0" : "-rotate-90")} />
               </Button>
             </>
           )}
