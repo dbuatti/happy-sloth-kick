@@ -106,29 +106,34 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
       {/* Removed DragHandleIcon button */}
       <div className="flex-1 flex items-center justify-between">
         <div 
-          className="flex items-center flex-1 cursor-pointer"
+          className="flex items-center flex-1 cursor-pointer min-w-0"
           onClick={handleStartEdit}
           data-no-dnd="true"
         >
           {isEditingLocal ? (
-            <Input
-              value={localSectionName}
-              onChange={(e) => setLocalSectionName(e.target.value)}
-              onBlur={handleSaveEdit}
-              onKeyDown={handleInputKeyDown}
-              className={cn(
-                "!text-base !font-bold",
-                "border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0",
-                "p-0",
-                "text-foreground",
-                "appearance-none",
-                "flex-1 truncate"
-              )}
-              style={{ lineHeight: '1.5rem' }}
-              autoFocus={true}
-            />
+            <>
+              <Input
+                value={localSectionName}
+                onChange={(e) => setLocalSectionName(e.target.value)}
+                onBlur={handleSaveEdit}
+                onKeyDown={handleInputKeyDown}
+                className={cn(
+                  "!text-base !font-bold",
+                  "border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0",
+                  "p-0",
+                  "text-foreground",
+                  "appearance-none",
+                  "flex-1 truncate"
+                )}
+                style={{ lineHeight: '1.5rem' }}
+                autoFocus={true}
+              />
+              <span className="text-base font-bold text-muted-foreground ml-1 flex-shrink-0">
+                ({sectionTasksCount})
+              </span>
+            </>
           ) : (
-            <h3 className="text-base font-bold truncate">
+            <h3 className="text-base font-bold truncate flex-1">
               {section.name} ({sectionTasksCount})
             </h3>
           )}
