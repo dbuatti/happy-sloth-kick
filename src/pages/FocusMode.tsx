@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 // Removed Button, Progress, Play, Pause, RefreshCcw, Brain, SkipForward, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, cn as they are not directly used here
-import { MadeWithDyad } from "@/components/made-with-dyad";
+import { MadeWithDyad } from '@/components/made-with-dyad';
 import { useTasks, Task } from '@/hooks/useTasks';
 // Removed useSound as it's not directly used here
 import TaskDetailDialog from '@/components/TaskDetailDialog';

@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
 import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { getCategoryColorProps } from '@/lib/categoryColors';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Checkbox } from "@/components/ui/checkbox"; 
+// Removed Checkbox import as it's not used here
 
 interface TaskOverviewDialogProps {
   task: Task | null;
@@ -177,9 +177,10 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
               <ul className="space-y-1.5">
                 {subtasks.map(subtask => (
                   <li key={subtask.id} className="flex items-center space-x-2 p-1.5 rounded-md bg-background shadow-sm">
-                    <Checkbox
+                    <input // Changed from Checkbox to input type="checkbox"
+                      type="checkbox"
                       checked={subtask.status === 'completed'}
-                      onCheckedChange={(checked: boolean) => handleSubtaskStatusChange(subtask.id, checked ? 'completed' : 'to-do')}
+                      onChange={(e) => handleSubtaskStatusChange(subtask.id, e.target.checked ? 'completed' : 'to-do')}
                       id={`subtask-overview-${subtask.id}`}
                       className="flex-shrink-0 h-3.5 w-3.5"
                       disabled={isUpdatingStatus}

@@ -19,7 +19,7 @@ interface ActiveTaskPanelProps {
   onDeleteTask: (taskId: string) => void;
   sections: TaskSection[];
   allCategories: Category[];
-  currentDate: Date; // Re-added this prop
+  // Removed currentDate as it's not directly used here
 }
 
 const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
@@ -30,7 +30,6 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
   onDeleteTask,
   sections,
   allCategories,
-  currentDate, // Destructure new prop
 }) => {
   // Removed 'user' from useAuth destructuring as it's not directly used here.
   useAuth(); 
@@ -280,7 +279,6 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
           allTasks={tasks}
         />
       )}
-
       {/* Removed TaskDetailDialog from here */}
     </div>
   );

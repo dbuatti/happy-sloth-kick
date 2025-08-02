@@ -6,7 +6,7 @@ import { Play, Pause, RefreshCcw, CheckCircle2, Edit, Target, ListTodo, Clock, P
 import { cn } from '@/lib/utils';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
-import TaskDetailDialog from './TaskDetailDialog';
+// Removed TaskDetailDialog import as it's not managed here
 import TaskOverviewDialog from './TaskOverviewDialog'; // For opening overview from panel
 import { useAuth } from '@/context/AuthContext'; // Import useAuth
 // Removed useTasks as it's not directly called in this component
@@ -65,7 +65,7 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
   // Task Detail/Overview Dialog State
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
-  // Removed isTaskDetailOpen, taskToEdit, setTaskToEdit
+  // Removed isTaskDetailOpen, taskToEdit, setTaskToEdit as they are not managed here
 
   // Quick Add Task State
   const [quickAddTaskDescription, setQuickAddTaskDescription] = useState('');
