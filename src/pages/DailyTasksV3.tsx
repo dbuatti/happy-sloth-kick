@@ -257,7 +257,7 @@ const DailyTasksV3: React.FC = () => {
                     )}
                   </div>
 
-                  <div className="flex-1 overflow-y-auto pt-4 -mx-4 px-4"> {/* Added overflow-y-auto */}
+                  <div className="flex-1 overflow-y-auto pt-3 -mx-4 px-4"> {/* Adjusted padding */}
                     <TaskList
                       tasks={tasks}
                       filteredTasks={filteredTasks}
@@ -304,7 +304,7 @@ const DailyTasksV3: React.FC = () => {
 
             {/* Right Panel: Daily Overview & Smart Suggestions */}
             <ResizablePanel defaultSize={isMobile ? 35 : 30} minSize={isMobile ? 20 : 25}>
-              <div className="h-full flex flex-col space-y-4 p-4"> {/* Added padding */}
+              <div className="h-full flex flex-col space-y-3 p-4"> {/* Adjusted spacing */}
                 <DailyOverviewCard
                   tasks={filteredTasks} // Pass filtered tasks for progress calculation
                   nextAvailableTask={nextAvailableTask}

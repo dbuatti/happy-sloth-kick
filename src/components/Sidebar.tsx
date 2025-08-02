@@ -49,7 +49,7 @@ const NavigationLinks = ({ onLinkClick }: { onLinkClick?: () => void }) => {
             <Icon className="h-4 w-4" />
             <span className="font-medium text-sm">{item.name}</span>
             {item.showCount && !countLoading && dailyTaskCount > 0 && (
-              <Badge className="ml-auto px-1.5 py-0.5 text-xs rounded-full bg-primary-foreground text-primary">
+              <Badge className="ml-auto px-2 py-0.5 text-xs rounded-full bg-primary-foreground text-primary flex-shrink-0"> {/* Adjusted padding and added flex-shrink-0 */}
                 {dailyTaskCount}
               </Badge>
             )}

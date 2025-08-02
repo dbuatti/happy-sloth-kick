@@ -44,7 +44,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
     zIndex: isDragging ? 10 : 'auto',
     opacity: isDragging ? 0.5 : 1,
     // Apply indentation based on level
-    paddingLeft: `${level * 16}px`, // Adjusted indentation
+    paddingLeft: `${level * 12}px`, // Adjusted indentation
   };
 
   const directSubtasks = allTasks.filter(t => t.parent_task_id === task.id)
@@ -69,7 +69,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         {...listeners} // Apply listeners to the drag handle
         data-no-dnd="true" // Ensure this button is the only drag handle
       >
-        <GripVertical className="h-4 w-4" /> {/* Increased size */}
+        <GripVertical className="h-4 w-4" /> {/* Adjusted size */}
       </button>
       <div className="flex-1"> {/* Wrap TaskItem to allow it to take remaining space */}
         <TaskItem 

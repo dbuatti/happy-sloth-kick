@@ -109,7 +109,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
         onCheckedChange={handleCheckboxChange}
         id={`task-${task.id}`}
         onClick={(e) => e.stopPropagation()}
-        className="flex-shrink-0 h-4.5 w-4.5 mt-1" // Adjusted size and margin-top
+        className="flex-shrink-0 h-4 w-4 mt-1" // Corrected size to h-4 w-4
         data-no-dnd="true"
         aria-label={`Mark task "${task.description}" as ${task.status === 'completed' ? 'to-do' : 'completed'}`}
       />
@@ -222,7 +222,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           <DropdownMenuTrigger asChild>
             <Button 
               variant="ghost" 
-              className="h-6 w-6 p-1" // Adjusted button size
+              className="h-7 w-7 p-0" // Adjusted button size
               onClick={(e) => e.stopPropagation()}
               aria-label="More options"
             >

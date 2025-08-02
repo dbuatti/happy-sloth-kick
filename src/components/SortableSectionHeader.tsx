@@ -79,7 +79,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
         aria-label="Drag to reorder section"
         data-no-dnd="true" // Ensure this button is the only drag handle
       >
-        <GripVertical className="h-4 w-4" /> {/* Increased size */}
+        <GripVertical className="h-4 w-4" /> {/* Adjusted size */}
       </button>
       <div className="flex-1 flex items-center justify-between py-2 pl-0 pr-3"> {/* Increased padding */}
         {editingSectionId === section.id ? (
@@ -88,23 +88,23 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               value={editingSectionName}
               onChange={(e) => setNewEditingSectionName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleRenameSection()}
-              className="text-lg font-semibold h-9" // Taller input
+              className="text-lg font-semibold h-9" // Adjusted height
               autoFocus
             />
-            <Button size="sm" onClick={handleRenameSection} disabled={!editingSectionName.trim()} className="h-9">Save</Button> {/* Taller button */}
-            <Button variant="ghost" size="sm" onClick={handleCancelSectionEdit} className="h-9">Cancel</Button> {/* Taller button */}
+            <Button size="sm" onClick={handleRenameSection} disabled={!editingSectionName.trim()} className="h-9">Save</Button> {/* Adjusted height */}
+            <Button variant="ghost" size="sm" onClick={handleCancelSectionEdit} className="h-9">Cancel</Button> {/* Adjusted height */}
           </div>
         ) : (
           <div 
             className="flex items-center gap-2 flex-1 cursor-pointer" 
             onClick={() => toggleSection(section.id)}
           >
-            <h3 className="text-xl font-bold flex items-center gap-2"> {/* Larger, bolder text */}
-              <FolderOpen className="h-5 w-5 text-muted-foreground" /> {/* Larger icon */}
+            <h3 className="text-xl font-bold flex items-center gap-2"> {/* Adjusted font size */}
+              <FolderOpen className="h-5 w-5 text-muted-foreground" /> {/* Adjusted icon size */}
               {section.name} ({sectionTasksCount})
             </h3>
-            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleEditSectionClick(section); }} className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity duration-200" data-no-dnd="true"> {/* Larger button */}
-              <Edit className="h-4 w-4" /> {/* Larger icon */}
+            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleEditSectionClick(section); }} className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity duration-200" data-no-dnd="true"> {/* Adjusted button size */}
+              <Edit className="h-4 w-4" /> {/* Adjusted icon size */}
             </Button>
           </div>
         )}
@@ -112,8 +112,8 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
           <div className="flex items-center space-x-2">
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className="h-8 w-8 flex items-center justify-center p-0 text-muted-foreground hover:text-foreground cursor-pointer"> {/* Larger clickable area */}
-                  {section.include_in_focus_mode ? <Eye className="h-5 w-5" /> : <EyeOff className="h-5 w-5" />} {/* Larger icons */}
+                <span className="h-7 w-7 flex items-center justify-center p-0 text-muted-foreground hover:text-foreground cursor-pointer"> {/* Adjusted clickable area */}
+                  {section.include_in_focus_mode ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />} {/* Adjusted icon size */}
                 </span>
               </TooltipTrigger>
               <TooltipContent>
@@ -135,11 +135,11 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="h-8 w-8 p-0" // Larger button
+                className="h-7 w-7 p-0" // Adjusted button size
               >
                 <span>
                   <span className="sr-only">Open section menu</span>
-                  <MoreHorizontal className="h-4 w-4" /> {/* Larger icon */}
+                  <MoreHorizontal className="h-4 w-4" /> {/* Adjusted icon size */}
                 </span>
               </Button>
             </DropdownMenuTrigger>
@@ -159,8 +159,8 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button variant="ghost" size="icon" onClick={() => toggleSection(section.id)} className="h-8 w-8 p-0"> {/* Larger button */}
-            <ChevronDown className={cn("h-5 w-5 transition-transform", isExpanded ? "rotate-0" : "-rotate-90")} /> {/* Larger icon */}
+          <Button variant="ghost" size="icon" onClick={() => toggleSection(section.id)} className="h-7 w-7 p-0"> {/* Adjusted button size */}
+            <ChevronDown className={cn("h-4 w-4 transition-transform", isExpanded ? "rotate-0" : "-rotate-90")} /> {/* Adjusted icon size */}
           </Button>
         </div>
       </div>
