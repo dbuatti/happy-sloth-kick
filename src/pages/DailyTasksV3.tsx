@@ -32,6 +32,7 @@ import SectionSelector from '@/components/SectionSelector';
 import { suggestTaskDetails } from '@/integrations/supabase/functions';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import MoodBoosterButton from '@/components/MoodBoosterButton'; // Import MoodBoosterButton
+import TodayProgressCard from '@/components/TodayProgressCard'; // Import the new component
 
 
 const getUTCStartOfDay = (date: Date) => {
@@ -209,7 +210,7 @@ const DailyTasksV3: React.FC = () => {
     setSuggestedTask(null); // Clear previous suggestion
 
     try {
-      const suggestions = await suggestTaskDetails(aiInputText.trim(), allCategories, currentDate);
+      const suggestions = await suggestTaskDetails(aiInputText.trim(), allCategories.map(cat => ({ id: cat.id, name: cat.name })), currentDate);
 
       if (suggestions) {
         const parsedDueDate = suggestions.dueDate ? parseISO(suggestions.dueDate) : null;
@@ -386,6 +387,15 @@ const DailyTasksV3: React.FC = () => {
                 />
               </div>
 
+              {/* Today's Progress Card */}
+              <div className="mb-4">
+                <TodayProgressCard
+                  totalTasks={totalCount}
+                  completedTasks={completedCount}
+                  overdueTasks={overdueCount}
+                />
+              </div>
+
               {/* AI Task Parser Section */}
               <Collapsible open={isAIParserOpen} onOpenChange={setIsAIParserOpen} className="mb-4">
                 <CollapsibleTrigger asChild>
@@ -555,8 +565,8 @@ const DailyTasksV3: React.FC = () => {
               {/* Quick Add Task Bar */}
               <div
                 className={cn(
-                  "sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border -mx-4 px-4 py-3 transition-shadow",
-                  stuck ? "shadow-lg" : ""
+                  "quick-add-bar", // Apply the new base class
+                  stuck ? "stuck" : "" // Apply stuck class conditionally
                 )}
               >
                 <form onSubmit={handleQuickAddTask}>

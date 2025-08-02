@@ -702,4 +702,13 @@
   to { transform: scale(0.7); }
 }
 
+/* Quick Add Bar specific styling */
+.quick-add-bar {
+  @apply bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border -mx-4 px-4 py-3 transition-shadow;
+}
+
+.quick-add-bar.stuck {
+  @apply shadow-lg;
+}
+
 /* Removed animate-flash as it can be distracting */

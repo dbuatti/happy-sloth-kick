@@ -101,10 +101,12 @@ const TaskItem: React.FC<TaskItemProps> = ({
   return (
     <div
       className={cn(
-        "relative flex items-center space-x-2 w-full py-1.5 pr-2",
-        task.status === 'completed' ? "text-muted-foreground" : "text-foreground",
+        "relative flex items-center space-x-2 w-full py-1.5 pr-2 pl-2", // Default padding-left
+        task.status === 'completed' ? "text-muted-foreground bg-task-completed-bg" : "text-foreground",
         "group",
-        isOverlay ? "cursor-grabbing" : "hover:shadow-sm"
+        isOverlay ? "cursor-grabbing" : "hover:shadow-sm",
+        isOverdue && "border-l-4 border-status-overdue", // Only border, no extra padding
+        isDueToday && "border-l-4 border-status-due-today", // Only border, no extra padding
       )}
       onClick={() => !isOverlay && onOpenOverview(task)}
       style={{ cursor: isOverlay ? 'grabbing' : 'pointer' }}
