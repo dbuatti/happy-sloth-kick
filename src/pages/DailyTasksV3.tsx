@@ -166,16 +166,23 @@ const DailyTasksV3: React.FC = () => {
   useKeyboardShortcuts(shortcuts);
 
   const { totalCount, completedCount, overdueCount } = useMemo(() => {
-    const total = filteredTasks.length;
-    const completed = filteredTasks.filter(t => t.status === 'completed').length;
-    const overdue = filteredTasks.filter(t => {
+    const focusModeSectionIds = new Set(sections.filter(s => s.include_in_focus_mode).map(s => s.id));
+
+    const focusTasks = filteredTasks.filter(t =>
+      t.parent_task_id === null && // Only count top-level tasks
+      (t.section_id === null || focusModeSectionIds.has(t.section_id))
+    );
+
+    const total = focusTasks.length;
+    const completed = focusTasks.filter(t => t.status === 'completed').length;
+    const overdue = focusTasks.filter(t => {
       if (!t.due_date) return false;
       const due = parseISO(t.due_date);
       const isOver = isBefore(due, currentDate) && !isSameDay(due, currentDate) && t.status !== 'completed';
       return isOver;
     }).length;
     return { totalCount: total, completedCount: completed, overdueCount: overdue };
-  }, [filteredTasks, currentDate]);
+  }, [filteredTasks, currentDate, sections]);
 
   // Sticky shadow cue on scroll logic
   const [stuck, setStuck] = useState(false);
