@@ -237,7 +237,6 @@ const FocusMode: React.FC = () => {
       {taskToEdit && (
         <TaskDetailDialog
           task={taskToEdit}
-          userId={userId}
           isOpen={isTaskDetailOpen}
           onClose={() => setIsTaskDetailOpen(false)}
           onUpdate={updateTask}

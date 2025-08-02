@@ -111,7 +111,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, ca
                   <div className="flex items-center gap-2">
                     <div className="w-3.5 h-3.5 rounded-full flex items-center justify-center border" style={{ backgroundColor: colorProps.dotColor }}></div>
                     {category.name}
-                  </div>
+                  </div >
                 </SelectItem>
               );
             })}

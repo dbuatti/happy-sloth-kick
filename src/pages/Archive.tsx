@@ -76,7 +76,6 @@ const Archive: React.FC = () => {
                   <li key={task.id} className="relative rounded-lg p-2 transition-all duration-200 ease-in-out group hover:shadow-md">
                     <TaskItem
                       task={task}
-                      userId={userId}
                       onStatusChange={handleTaskStatusChange}
                       onDelete={deleteTask}
                       onUpdate={updateTask}
@@ -101,7 +100,6 @@ const Archive: React.FC = () => {
       {taskToOverview && (
         <TaskOverviewDialog
           task={taskToOverview}
-          userId={userId}
           isOpen={isTaskOverviewOpen}
           onClose={() => {
             setIsTaskOverviewOpen(false);
@@ -118,7 +116,6 @@ const Archive: React.FC = () => {
       {taskToEdit && (
         <TaskDetailDialog
           task={taskToEdit}
-          userId={userId}
           isOpen={isTaskDetailOpen}
           onClose={() => setIsTaskDetailOpen(false)}
           onUpdate={updateTask}

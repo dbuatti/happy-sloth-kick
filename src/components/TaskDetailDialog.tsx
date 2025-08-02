@@ -128,7 +128,6 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
           initialData={task}
           onSave={handleSaveMainTask}
           onCancel={onClose}
-          userId={userId}
           sections={sections}
           allCategories={allCategories}
           autoFocus={false}

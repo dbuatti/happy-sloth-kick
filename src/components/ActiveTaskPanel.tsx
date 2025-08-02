@@ -270,7 +270,6 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
       {taskToOverview && (
         <TaskOverviewDialog
           task={taskToOverview}
-          userId={userId}
           isOpen={isTaskOverviewOpen}
           onClose={() => setIsTaskOverviewOpen(false)}
           onEditClick={handleEditTaskFromOverview}
@@ -285,7 +284,6 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
       {taskToEdit && (
         <TaskDetailDialog
           task={taskToEdit}
-          userId={userId}
           isOpen={isTaskDetailOpen}
           onClose={() => setIsTaskDetailOpen(false)}
           onUpdate={updateTask}

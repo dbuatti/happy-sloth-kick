@@ -49,7 +49,6 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({
     <TaskForm
       onSave={handleSave}
       onCancel={onTaskAdded || (() => {})} // If onTaskAdded is not provided, use a no-op
-      userId={userId}
       sections={sections}
       allCategories={allCategories}
       autoFocus={autoFocus}

@@ -7,7 +7,6 @@ import { cn } from '@/lib/utils';
 
 interface SortableTaskItemProps {
   task: Task;
-  userId: string | null;
   onStatusChange: (taskId: string, newStatus: Task['status']) => Promise<void>;
   onDelete: (taskId: string) => void;
   onUpdate: (taskId: string, updates: Partial<Task>) => void;

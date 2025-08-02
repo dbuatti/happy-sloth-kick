@@ -276,7 +276,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                               <SortableTaskItem
                                 key={task.id}
                                 task={task}
-                                userId={userId}
                                 onStatusChange={async (taskId, newStatus) => updateTask(taskId, { status: newStatus })}
                                 onDelete={deleteTask}
                                 onUpdate={updateTask}
@@ -323,7 +322,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                 ) : (
                   <SortableTaskItem
                     task={activeItemData as Task}
-                    userId={userId}
                     onStatusChange={async () => {}}
                     onDelete={() => {}}
                     onUpdate={() => {}}
@@ -364,7 +362,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
               return success;
             }}
             onCancel={() => setIsAddTaskOpenLocal(false)}
-            userId={userId}
             sections={sections}
             allCategories={allCategories}
             preselectedSectionId={preselectedSectionId ?? undefined}

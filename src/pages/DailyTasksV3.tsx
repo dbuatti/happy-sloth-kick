@@ -127,7 +127,6 @@ const DailyTasksV3: React.FC = () => {
                   tasks={tasks}
                   filteredTasks={filteredTasks}
                   loading={tasksLoading}
-                  userId={userId}
                   handleAddTask={handleAddTask}
                   updateTask={updateTask}
                   deleteTask={deleteTask}
@@ -186,7 +185,6 @@ const DailyTasksV3: React.FC = () => {
       {taskToOverview && (
         <TaskOverviewDialog
           task={taskToOverview}
-          userId={userId}
           isOpen={isTaskOverviewOpen}
           onClose={() => {
             setIsTaskOverviewOpen(false);
@@ -204,7 +202,6 @@ const DailyTasksV3: React.FC = () => {
       {taskToEdit && (
         <TaskDetailDialog
           task={taskToEdit}
-          userId={userId}
           isOpen={isTaskDetailOpen}
           onClose={() => setIsTaskDetailOpen(false)}
           onUpdate={updateTask}
@@ -225,7 +222,6 @@ const DailyTasksV3: React.FC = () => {
         onDeleteTask={deleteTask}
         sections={sections}
         allCategories={allCategories}
-        userId={userId}
         currentDate={currentDate}
       />
     </div>

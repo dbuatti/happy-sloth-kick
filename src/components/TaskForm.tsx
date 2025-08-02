@@ -99,7 +99,6 @@ interface TaskFormProps {
     link: string | null;
   }) => Promise<any>;
   onCancel: () => void;
-  userId: string | null; // Keep userId prop for now, as it's used in CategorySelector and SectionSelector
   sections: TaskSection[];
   allCategories: Category[];
   autoFocus?: boolean;
@@ -112,7 +111,6 @@ const TaskForm: React.FC<TaskFormProps> = ({
   initialData,
   onSave,
   onCancel,
-  userId, // Destructure userId
   sections,
   allCategories,
   autoFocus = false,
@@ -303,7 +301,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
           control={control}
           name="category"
           render={({ field }) => (
-            <CategorySelector value={field.value} onChange={field.onChange} userId={userId} categories={allCategories} />
+            <CategorySelector value={field.value} onChange={field.onChange} categories={allCategories} />
           )}
         />
         {errors.category && <p className="text-destructive text-sm mt-1">{errors.category.message}</p>}
@@ -323,7 +321,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
           control={control}
           name="sectionId"
           render={({ field }) => (
-            <SectionSelector value={field.value} onChange={field.onChange} userId={userId} sections={sections} />
+            <SectionSelector value={field.value} onChange={field.onChange} sections={sections} />
           )}
         />
         {errors.sectionId && <p className="text-destructive text-sm mt-1">{errors.sectionId.message}</p>}

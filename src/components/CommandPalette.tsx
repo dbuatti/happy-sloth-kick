@@ -22,7 +22,7 @@ interface CommandPaletteProps {
 const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, setIsCommandPaletteOpen, currentDate, setCurrentDate }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { handleAddTask, sections, allCategories } = useTasks({ currentDate, setCurrentDate });
+  const { handleAddTask, sections, allCategories } = useTasks({ currentDate }); // Removed setCurrentDate from props
   const isMobile = useIsMobile();
   const { playSound } = useSound();
 
@@ -237,7 +237,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
                 Fill in the details to add a new task from the command palette.
               </DialogDescription>
             </SheetHeader>
-            <AddTaskForm onAddTask={handleNewTaskSubmit} userId={user?.id || null} onTaskAdded={() => setIsAddTaskDialogOpen(false)} sections={sections} allCategories={allCategories} currentDate={currentDate} />
+            <AddTaskForm onAddTask={handleNewTaskSubmit} onTaskAdded={() => setIsAddTaskDialogOpen(false)} sections={sections} allCategories={allCategories} currentDate={currentDate} />
           </SheetContent>
         </Sheet>
       ) : (
@@ -249,7 +249,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
                 Fill in the details to add a new task from the command palette.
               </DialogDescription>
             </DialogHeader>
-            <AddTaskForm onAddTask={handleNewTaskSubmit} userId={user?.id || null} onTaskAdded={() => setIsAddTaskDialogOpen(false)} sections={sections} allCategories={allCategories} currentDate={currentDate} />
+            <AddTaskForm onAddTask={handleNewTaskSubmit} onTaskAdded={() => setIsAddTaskDialogOpen(false)} sections={sections} allCategories={allCategories} currentDate={currentDate} />
           </DialogContent>
         </Dialog>
       )}
