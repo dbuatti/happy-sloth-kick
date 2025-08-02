@@ -95,9 +95,9 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
     if (count === 0) {
       return "bg-muted text-muted-foreground";
     } else if (count >= 1 && count <= 5) {
-      return "bg-primary text-primary-foreground";
+      return "bg-muted text-foreground"; // Muted background, darker text for lower counts
     } else { // For counts 6 and above
-      return "bg-muted text-foreground"; // Lighter background, darker text
+      return "bg-primary text-primary-foreground"; // Primary color for higher counts
     }
   };
 
