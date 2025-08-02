@@ -12,6 +12,11 @@ export interface SleepRecord {
   lights_off_time: string | null; // HH:MM:SS
   wake_up_time: string | null; // HH:MM:SS
   get_out_of_bed_time: string | null; // HH:MM:SS
+  time_to_fall_asleep_minutes: number | null; // New: How many minutes to fall asleep
+  sleep_interruptions_count: number | null; // New: Number of interruptions
+  sleep_interruptions_duration_minutes: number | null; // New: Duration of interruptions
+  times_left_bed_count: number | null; // New: Times left bed
+  planned_wake_up_time: string | null; // New: Planned wake up time (HH:MM:SS)
   created_at: string;
   updated_at: string;
 }

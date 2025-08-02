@@ -7,7 +7,7 @@ import { MadeWithDyad } from "@/components/made-with-dyad";
 import DateNavigator from '@/components/DateNavigator';
 import { useSleepRecords, NewSleepRecordData } from '@/hooks/useSleepRecords';
 import { format, addDays } from 'date-fns';
-import { Moon, Bed, AlarmClock, LogOut } from 'lucide-react';
+import { Moon, Bed, AlarmClock, LogOut, Hourglass, ListX, Clock, Goal } from 'lucide-react'; // Added new icons
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSound } from '@/context/SoundContext';
 import { useAuth } from '@/context/AuthContext'; // Import useAuth
@@ -24,6 +24,12 @@ const SleepTracker: React.FC = () => {
   const [lightsOffTime, setLightsOffTime] = useState<string>('');
   const [wakeUpTime, setWakeUpTime] = useState<string>('');
   const [getOutOfBedTime, setGetOutOfBedTime] = useState<string>('');
+  const [timeToFallAsleepMinutes, setTimeToFallAsleepMinutes] = useState<number | ''>(''); // New state
+  const [sleepInterruptionsCount, setSleepInterruptionsCount] = useState<number | ''>(''); // New state
+  const [sleepInterruptionsDurationMinutes, setSleepInterruptionsDurationMinutes] = useState<number | ''>(''); // New state
+  const [timesLeftBedCount, setTimesLeftBedCount] = useState<number | ''>(''); // New state
+  const [plannedWakeUpTime, setPlannedWakeUpTime] = useState<string>(''); // New state
+
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -32,6 +38,11 @@ const SleepTracker: React.FC = () => {
       setLightsOffTime(sleepRecord?.lights_off_time ? sleepRecord.lights_off_time.substring(0, 5) : '');
       setWakeUpTime(sleepRecord?.wake_up_time ? sleepRecord.wake_up_time.substring(0, 5) : '');
       setGetOutOfBedTime(sleepRecord?.get_out_of_bed_time ? sleepRecord.get_out_of_bed_time.substring(0, 5) : '');
+      setTimeToFallAsleepMinutes(sleepRecord?.time_to_fall_asleep_minutes ?? ''); // Populate new fields
+      setSleepInterruptionsCount(sleepRecord?.sleep_interruptions_count ?? '');
+      setSleepInterruptionsDurationMinutes(sleepRecord?.sleep_interruptions_duration_minutes ?? '');
+      setTimesLeftBedCount(sleepRecord?.times_left_bed_count ?? '');
+      setPlannedWakeUpTime(sleepRecord?.planned_wake_up_time ? sleepRecord.planned_wake_up_time.substring(0, 5) : '');
     }
   }, [sleepRecord, loading]);
 
@@ -55,6 +66,11 @@ const SleepTracker: React.FC = () => {
       lights_off_time: lightsOffTime || null,
       wake_up_time: wakeUpTime || null,
       get_out_of_bed_time: getOutOfBedTime || null,
+      time_to_fall_asleep_minutes: timeToFallAsleepMinutes === '' ? null : Number(timeToFallAsleepMinutes), // Save as number or null
+      sleep_interruptions_count: sleepInterruptionsCount === '' ? null : Number(sleepInterruptionsCount),
+      sleep_interruptions_duration_minutes: sleepInterruptionsDurationMinutes === '' ? null : Number(sleepInterruptionsDurationMinutes),
+      times_left_bed_count: timesLeftBedCount === '' ? null : Number(timesLeftBedCount),
+      planned_wake_up_time: plannedWakeUpTime || null,
     };
     const success = await saveSleepRecord(dataToSave);
     if (success) {
@@ -71,7 +87,7 @@ const SleepTracker: React.FC = () => {
             <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
               <Moon className="h-7 w-7 text-primary" /> Sleep Tracker
             </CardTitle>
-            <p className="text-sm text-muted-foreground text-center">Log your sleep times for better insights.</p>
+            <p className="text-sm text-muted-foreground text-center">Log your sleep times and details for better insights.</p>
           </CardHeader>
           <CardContent className="pt-0">
             <DateNavigator
@@ -84,6 +100,10 @@ const SleepTracker: React.FC = () => {
 
             {loading ? (
               <div className="space-y-4">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
                 <Skeleton className="h-10 w-full" />
                 <Skeleton className="h-10 w-full" />
                 <Skeleton className="h-10 w-full" />
@@ -119,14 +139,87 @@ const SleepTracker: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="time-to-fall-asleep" className="flex items-center gap-2">
+                    <Hourglass className="h-4 w-4 text-muted-foreground" /> Minutes to Fall Asleep
+                  </Label>
+                  <Input
+                    id="time-to-fall-asleep"
+                    type="number"
+                    value={timeToFallAsleepMinutes}
+                    onChange={(e) => setTimeToFallAsleepMinutes(e.target.value === '' ? '' : Number(e.target.value))}
+                    placeholder="e.g., 15"
+                    min="0"
+                    disabled={isSaving}
+                    className="h-9 text-base"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="sleep-interruptions-count" className="flex items-center gap-2">
+                    <ListX className="h-4 w-4 text-muted-foreground" /> Sleep Interruptions (Count)
+                  </Label>
+                  <Input
+                    id="sleep-interruptions-count"
+                    type="number"
+                    value={sleepInterruptionsCount}
+                    onChange={(e) => setSleepInterruptionsCount(e.target.value === '' ? '' : Number(e.target.value))}
+                    placeholder="e.g., 2"
+                    min="0"
+                    disabled={isSaving}
+                    className="h-9 text-base"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="sleep-interruptions-duration" className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" /> Sleep Interruptions (Minutes)
+                  </Label>
+                  <Input
+                    id="sleep-interruptions-duration"
+                    type="number"
+                    value={sleepInterruptionsDurationMinutes}
+                    onChange={(e) => setSleepInterruptionsDurationMinutes(e.target.value === '' ? '' : Number(e.target.value))}
+                    placeholder="e.g., 30"
+                    min="0"
+                    disabled={isSaving}
+                    className="h-9 text-base"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="times-left-bed-count" className="flex items-center gap-2">
+                    <LogOut className="h-4 w-4 text-muted-foreground" /> Times Left Bed
+                  </Label>
+                  <Input
+                    id="times-left-bed-count"
+                    type="number"
+                    value={timesLeftBedCount}
+                    onChange={(e) => setTimesLeftBedCount(e.target.value === '' ? '' : Number(e.target.value))}
+                    placeholder="e.g., 1"
+                    min="0"
+                    disabled={isSaving}
+                    className="h-9 text-base"
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="wake-up-time" className="flex items-center gap-2">
-                    <AlarmClock className="h-4 w-4 text-muted-foreground" /> Wake Up
+                    <AlarmClock className="h-4 w-4 text-muted-foreground" /> Final Awakening
                   </Label>
                   <Input
                     id="wake-up-time"
                     type="time"
                     value={wakeUpTime}
                     onChange={(e) => setWakeUpTime(e.target.value)}
+                    disabled={isSaving}
+                    className="h-9 text-base"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="planned-wake-up-time" className="flex items-center gap-2">
+                    <Goal className="h-4 w-4 text-muted-foreground" /> Planned Wake Up
+                  </Label>
+                  <Input
+                    id="planned-wake-up-time"
+                    type="time"
+                    value={plannedWakeUpTime}
+                    onChange={(e) => setPlannedWakeUpTime(e.target.value)}
                     disabled={isSaving}
                     className="h-9 text-base"
                   />
