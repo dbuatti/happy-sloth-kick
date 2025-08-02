@@ -9,6 +9,7 @@ import { Task } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
 import { getCategoryColorProps } from '@/lib/categoryColors';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { CheckCircle2 } from 'lucide-react'; // Ensure CheckCircle2 is imported for the animation
 
 interface TaskItemProps {
   task: Task;
@@ -193,7 +194,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
       {showCompletionEffect && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-          {/* <CheckCircle2 className="h-14 w-14 text-primary animate-fade-in-out-check" /> */}
+          <CheckCircle2 className="h-14 w-14 text-primary animate-fade-in-out-check" />
         </div>
       )}
 
