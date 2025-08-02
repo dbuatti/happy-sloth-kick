@@ -50,10 +50,10 @@ interface TaskListProps {
   bulkUpdateTasks: (updates: Partial<Task>, ids?: string[]) => Promise<void>;
   markAllTasksInSectionCompleted: (sectionId: string | null) => Promise<void>;
   sections: TaskSection[];
-  createSection: (name: string) => Promise<void>;
-  updateSection: (sectionId: string, newName: string) => Promise<void>;
-  deleteSection: (sectionId: string) => Promise<void>;
-  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
+  createSection: (name: string) => Promise<void>; // Keep for now, might be used by TaskForm or other internal logic
+  updateSection: (sectionId: string, newName: string) => Promise<void>; // Keep for now
+  deleteSection: (sectionId: string) => Promise<void>; // Keep for now
+  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>; // Keep for now
   updateTaskParentAndOrder: (activeId: string, newParentId: string | null, newSectionId: string | null, overId: string | null) => Promise<void>;
   reorderSections: (activeId: string, overId: string) => Promise<void>;
   moveTask: (taskId: string, direction: 'up' | 'down') => Promise<void>;
@@ -80,10 +80,10 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     bulkUpdateTasks,
     markAllTasksInSectionCompleted,
     sections,
-    createSection,
-    updateSection,
-    deleteSection,
-    updateSectionIncludeInFocusMode,
+    createSection, // Kept
+    updateSection, // Kept
+    deleteSection, // Kept
+    updateSectionIncludeInFocusMode, // Kept
     updateTaskParentAndOrder,
     reorderSections,
     moveTask,
@@ -113,11 +113,12 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     }
   });
 
-  const [isAddSectionOpen, setIsAddSectionOpen] = useState(false);
-  const [newSectionName, setNewSectionName] = useState('');
-  const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
-  const [editingSectionName, setNewEditingSectionName] = useState('');
-  const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
+  // Removed state for Add Section and Manage Sections dialogs
+  // const [isAddSectionOpen, setIsAddSectionOpen] = useState(false);
+  // const [newSectionName, setNewSectionName] = useState('');
+  // const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
+  // const [editingSectionName, setNewEditingSectionName] = useState('');
+  // const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
 
   const [isAddTaskOpenLocal, setIsAddTaskOpenLocal] = useState(false);
   const [preselectedSectionId, setPreselectedSectionId] = useState<string | null>(null);
@@ -270,6 +271,8 @@ const TaskList: React.FC<TaskListProps> = (props) => {
 
         <div className="flex flex-col sm:flex-row justify-between items-center gap-1.5">
           <div className="flex gap-1.5 w-full sm:w-auto">
+            {/* Removed Add Section Button and Dialog */}
+            {/*
             <Dialog open={isAddSectionOpen} onOpenChange={setIsAddSectionOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm" className="flex-1">
@@ -304,7 +307,10 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+            */}
 
+            {/* Removed Manage Sections Button and Tooltip */}
+            {/*
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="outline" size="sm" className="flex-1">
@@ -315,6 +321,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                 Manage, rename, delete, and reorder your task sections.
               </TooltipContent>
             </Tooltip>
+            */}
           </div>
         </div>
       </div>
@@ -352,25 +359,17 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                     sectionTasksCount={topLevelTasksInSection.length}
                     isExpanded={isExpanded}
                     toggleSection={toggleSection}
-                    editingSectionId={editingSectionId}
-                    editingSectionName={editingSectionName}
-                    setNewEditingSectionName={setNewEditingSectionName}
-                    handleRenameSection={async () => {
-                      if (editingSectionId && editingSectionName.trim()) {
-                        await updateSection(editingSectionId, editingSectionName.trim());
-                        setEditingSectionId(null);
-                        setNewEditingSectionName('');
-                      }
-                    }}
-                    handleCancelSectionEdit={() => setEditingSectionId(null)}
-                    handleEditSectionClick={(s) => {
-                      setEditingSectionId(s.id);
-                      setNewEditingSectionName(s.name);
-                    }}
+                    // Removed editingSectionId, editingSectionName, setNewEditingSectionName, handleRenameSection, handleCancelSectionEdit, handleEditSectionClick props
+                    editingSectionId={null} // Pass null as editing is no longer handled here
+                    editingSectionName="" // Pass empty string
+                    setNewEditingSectionName={() => {}} // No-op
+                    handleRenameSection={async () => {}} // No-op
+                    handleCancelSectionEdit={() => {}} // No-op
+                    handleEditSectionClick={() => {}} // No-op
                     handleAddTaskToSpecificSection={(sectionId) => openAddTaskForSection(sectionId)}
                     markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
                     handleDeleteSectionClick={(id) => {
-                      setIsManageSectionsOpen(true);
+                      // setIsManageSectionsOpen(true); // Removed this
                     }}
                     updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
                   />
@@ -462,6 +461,8 @@ const TaskList: React.FC<TaskListProps> = (props) => {
         </DialogContent>
       </Dialog>
 
+      {/* Removed ManageSectionsDialog */}
+      {/*
       <ManageSectionsDialog
         isOpen={isManageSectionsOpen}
         onClose={() => setIsManageSectionsOpen(false)}
@@ -470,6 +471,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
         deleteSection={deleteSection}
         updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
       />
+      */}
 
       {/* Details & Overview */}
       {taskToOverview && (
