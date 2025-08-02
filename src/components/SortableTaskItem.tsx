@@ -4,7 +4,6 @@ import { CSS } from '@dnd-kit/utilities';
 import { Task } from '@/hooks/useTasks';
 import TaskItem from './TaskItem';
 import { cn } from '@/lib/utils';
-import { GripVertical } from 'lucide-react'; // Import GripVertical icon
 
 interface SortableTaskItemProps {
   task: Task;
@@ -35,6 +34,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   const sortable = !isOverlay ? useSortable({ id: task.id, data: { type: 'task', task } }) : null;
 
   const attributes = sortable?.attributes;
+  const listeners = sortable?.listeners; // Get listeners here
   const setNodeRef = sortable?.setNodeRef || null; // Use null if not sortable
   const transform = sortable?.transform;
   const transition = sortable?.transition;
@@ -57,28 +57,19 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
       style={style}
       className={cn(
         "relative last:border-b-0 transition-all duration-200 ease-in-out group",
-        isDragging ? "ring-2 ring-primary shadow-lg" : "hover:shadow-md",
+        isDragging ? "ring-2 ring-primary shadow-lg" : "",
         level > 0 ? "bg-background border-l border-l-primary/50" : "",
         "flex items-center",
         isOverlay ? "cursor-grabbing" : ""
       )}
-      {...(attributes || {})} // Keep attributes here
+      {...(attributes || {})} // Apply attributes to the li
     >
-      <button
-        className={cn(
-          "flex-shrink-0 py-2 px-1.5 text-muted-foreground opacity-100 group-hover:opacity-100 transition-opacity duration-200",
-          isOverlay ? "cursor-grabbing" : "cursor-grab active:cursor-grabbing"
-        )}
-        aria-label="Drag to reorder task"
-        {...(sortable?.listeners || {})} // ADD listeners here
-      >
-        <GripVertical className="h-4 w-4" />
-      </button>
-      <div className="flex-1">
-        <TaskItem 
-          task={task} 
-          {...rest} 
-          isOverlay={isOverlay} // Pass isOverlay prop
+      <div className="flex-1"> {/* This div now contains the TaskItem and subtasks */}
+        <TaskItem
+          task={task}
+          {...rest}
+          isOverlay={isOverlay}
+          dragListeners={listeners} // Pass listeners to TaskItem
         />
         {directSubtasks.length > 0 && (
           <ul className="list-none mt-1.5 space-y-1.5">
