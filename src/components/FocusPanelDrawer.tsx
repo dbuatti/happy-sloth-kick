@@ -15,7 +15,7 @@ interface FocusPanelDrawerProps {
   onDeleteTask: (taskId: string) => void;
   sections: TaskSection[];
   allCategories: Category[];
-  currentDate: Date; // Keep this prop as it's passed from parent
+  // Removed currentDate as it's not directly used here
 }
 
 const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
@@ -29,7 +29,7 @@ const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
   onDeleteTask,
   sections,
   allCategories,
-  currentDate, // Destructure new prop
+  // Removed currentDate from destructuring
 }) => {
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>

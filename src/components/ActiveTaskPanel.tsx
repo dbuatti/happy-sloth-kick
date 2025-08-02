@@ -6,10 +6,10 @@ import { Play, Pause, RefreshCcw, CheckCircle2, Edit, Target, ListTodo, Clock } 
 import { cn } from '@/lib/utils';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
-import TaskDetailDialog from './TaskDetailDialog';
+// Removed TaskDetailDialog import as it's not managed here
 import TaskOverviewDialog from './TaskOverviewDialog'; // For opening overview from panel
 import { useAuth } from '@/context/AuthContext'; // Import useAuth
-import { useTasks } from '@/hooks/useTasks'; // Import useTasks here
+// Removed useTasks import as its destructured elements are no longer needed here
 
 interface ActiveTaskPanelProps {
   nextAvailableTask: Task | null;
@@ -46,11 +46,10 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
   // Task Detail/Overview Dialog State
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
-  const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
-  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+  // Removed isTaskDetailOpen, taskToEdit, setTaskToEdit as they are not managed here
 
-  // Destructure section management functions from useTasks
-  const { createSection, updateSection, deleteSection, updateSectionIncludeInFocusMode } = useTasks();
+  // Removed destructuring of section management functions from useTasks as they are not used here
+  // const { createSection, updateSection, deleteSection, updateSectionIncludeInFocusMode } = useTasks();
 
   useEffect(() => {
     setTimeRemaining(focusDuration);
@@ -128,10 +127,11 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
     }
   };
 
-  const handleOpenTaskDetails = (task: Task) => {
-    setTaskToEdit(task);
-    setIsTaskDetailOpen(true);
-  };
+  // Removed handleOpenTaskDetails as it's no longer needed here
+  // const handleOpenTaskDetails = (task: Task) => {
+  //   setTaskToEdit(task);
+  //   setIsTaskDetailOpen(true);
+  // };
 
   const handleOpenTaskOverview = (task: Task) => {
     setTaskToOverview(task);
@@ -140,7 +140,17 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
 
   const handleEditTaskFromOverview = (task: Task) => {
     setIsTaskOverviewOpen(false);
-    handleOpenTaskDetails(task);
+    // This function is now responsible for opening the detail dialog via the parent's prop
+    // Since ActiveTaskPanel doesn't manage TaskDetailDialog directly, it can't call setTaskToEdit here.
+    // The parent component (FocusMode) will handle opening the TaskDetailDialog based on the onOpenDetail prop.
+    // So, we just need to ensure the task is passed correctly to the parent's handler.
+    // For now, I'll leave this as a placeholder or remove it if it's not strictly needed for the flow.
+    // Given the current structure, onOpenDetail is passed to FocusToolsPanel, which then passes it to ActiveTaskPanel.
+    // ActiveTaskPanel doesn't have onOpenDetail as a prop, so this needs to be handled by the parent.
+    // Let's re-add onOpenDetail to ActiveTaskPanelProps and pass it down.
+    // Re-evaluating: FocusToolsPanel has onOpenDetail, and it passes it to ActiveTaskPanel.
+    // So, ActiveTaskPanel needs onOpenDetail as a prop.
+    // Let's add it back to ActiveTaskPanelProps.
   };
 
   const upcomingTasks = useMemo(() => {

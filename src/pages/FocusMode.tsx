@@ -20,6 +20,7 @@ const FocusMode: React.FC = () => {
     deleteSection,
     updateSectionIncludeInFocusMode,
     handleAddTask, // Destructure handleAddTask
+    currentDate, // Destructure currentDate
   } = useTasks({ viewMode: 'focus' });
 
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
@@ -44,7 +45,7 @@ const FocusMode: React.FC = () => {
             onDeleteTask={() => { /* Delete not typically in focus mode */ }}
             sections={sections}
             allCategories={allCategories}
-            currentDate={new Date()} // Pass current date if needed for task logic
+            currentDate={currentDate} // Pass current date if needed for task logic
             handleAddTask={handleAddTask} // Pass handleAddTask
             createSection={createSection} // Pass section management props
             updateSection={updateSection}

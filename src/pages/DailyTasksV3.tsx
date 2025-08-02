@@ -250,7 +250,7 @@ const DailyTasksV3: React.FC = () => {
           onDelete={deleteTask}
           sections={sections}
           allCategories={allCategories}
-          createSection={createSection} // Pass new props
+          createSection={createSection}
           updateSection={updateSection}
           deleteSection={deleteSection}
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
@@ -267,7 +267,7 @@ const DailyTasksV3: React.FC = () => {
         onDeleteTask={deleteTask}
         sections={sections}
         allCategories={allCategories}
-        currentDate={currentDate}
+        // Removed currentDate={currentDate}
       />
     </div>
   );

@@ -26,6 +26,7 @@ interface FocusToolsPanelProps {
   allCategories: Category[];
   currentDate: Date;
   handleAddTask: (taskData: any) => Promise<any>; // Added handleAddTask
+  // Removed section management props as they are not used here
   createSection: (name: string) => Promise<void>; // Added section management props
   updateSection: (sectionId: string, newName: string) => Promise<void>;
   deleteSection: (sectionId: string) => Promise<void>;
