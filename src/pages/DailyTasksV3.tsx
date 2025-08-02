@@ -21,6 +21,7 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/componen
 import { useIsMobile } from '@/hooks/use-mobile';
 import FocusPanelDrawer from '@/components/FocusPanelDrawer'; // Import the new FocusPanelDrawer
 import { Badge } from '@/components/ui/badge'; // Import Badge
+import TaskFilter from '@/components/TaskFilter'; // Import TaskFilter
 
 const getUTCStartOfDay = (date: Date) => {
   return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -54,6 +55,16 @@ const DailyTasksV3: React.FC = () => {
     reorderSections,
     moveTask,
     updateTaskParentAndOrder,
+    searchFilter, // New filter state
+    setSearchFilter, // New filter setter
+    statusFilter,
+    setStatusFilter,
+    categoryFilter,
+    setCategoryFilter,
+    priorityFilter,
+    setPriorityFilter,
+    sectionFilter,
+    setSectionFilter,
   } = useTasks({ currentDate, setCurrentDate, viewMode: 'daily' });
 
   const { dailyTaskCount } = useDailyTaskCount();
@@ -65,6 +76,7 @@ const DailyTasksV3: React.FC = () => {
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
   const [quickAddTaskDescription, setQuickAddTaskDescription] = useState('');
   const quickAddInputRef = useRef<HTMLInputElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null); // Ref for the search input in TaskFilter
   const [isFocusPanelOpen, setIsFocusPanelOpen] = useState(false); // New state for FocusPanelDrawer
 
   const handlePreviousDay = () => {
@@ -123,7 +135,7 @@ const DailyTasksV3: React.FC = () => {
     'arrowleft': () => handlePreviousDay(),
     'arrowright': () => handleNextDay(),
     't': () => handleGoToToday(),
-    '/': (e) => { e.preventDefault(); quickAddInputRef.current?.focus(); },
+    '/': (e) => { e.preventDefault(); searchInputRef.current?.focus(); }, // Focus search input
     'cmd+k': (e) => { e.preventDefault(); setIsCommandPaletteOpen(prev => !prev); },
   };
   useKeyboardShortcuts(shortcuts);
@@ -187,6 +199,17 @@ const DailyTasksV3: React.FC = () => {
                   </Button>
                 </div>
               </div>
+              <div className="flex justify-center gap-3 mt-2"> {/* Changed to flex and gap */}
+                <Badge variant="outline" className="px-3 py-1 text-sm font-medium bg-primary/10 text-primary">
+                  <ListTodo className="h-3.5 w-3.5 mr-1.5" /> {totalCount} Total
+                </Badge>
+                <Badge variant="outline" className="px-3 py-1 text-sm font-medium bg-green-500/10 text-green-600 dark:text-green-400">
+                  <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" /> {completedCount} Completed
+                </Badge>
+                <Badge variant="outline" className="px-3 py-1 text-sm font-medium bg-destructive/10 text-destructive">
+                  <Clock className="h-3.5 w-3.5 mr-1.5" /> {overdueCount} Overdue
+                </Badge>
+              </div>
             </CardHeader>
 
             <CardContent className="pt-3 flex-1 flex flex-col">
@@ -199,18 +222,25 @@ const DailyTasksV3: React.FC = () => {
                   setCurrentDate={setCurrentDate}
                 />
               </div>
-              {/* Moved task count badges here */}
-              <div className="flex justify-center gap-3 mb-3">
-                <Badge variant="outline" className="px-3 py-1 text-sm font-medium bg-primary/10 text-primary">
-                  <ListTodo className="h-3.5 w-3.5 mr-1.5" /> {totalCount} Total
-                </Badge>
-                <Badge variant="outline" className="px-3 py-1 text-sm font-medium bg-green-500/10 text-green-600 dark:text-green-400">
-                  <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" /> {completedCount} Completed
-                </Badge>
-                <Badge variant="outline" className="px-3 py-1 text-sm font-medium bg-destructive/10 text-destructive">
-                  <Clock className="h-3.5 w-3.5 mr-1.5" /> {overdueCount} Overdue
-                </Badge>
-              </div>
+
+              {/* Task Filter and Search */}
+              <TaskFilter
+                currentDate={currentDate}
+                setCurrentDate={setCurrentDate}
+                searchFilter={searchFilter}
+                setSearchFilter={setSearchFilter}
+                statusFilter={statusFilter}
+                setStatusFilter={setStatusFilter}
+                categoryFilter={categoryFilter}
+                setCategoryFilter={setCategoryFilter}
+                priorityFilter={priorityFilter}
+                setPriorityFilter={setPriorityFilter}
+                sectionFilter={sectionFilter}
+                setSectionFilter={setSectionFilter}
+                sections={sections}
+                allCategories={allCategories}
+                searchRef={searchInputRef}
+              />
 
               {/* Quick Add Task Bar */}
               <div
