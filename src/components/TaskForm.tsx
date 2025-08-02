@@ -122,7 +122,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
 
-  console.log('TaskForm: Rendered. initialData:', initialData?.id, initialData?.description);
+  // Removed console.log('TaskForm: Rendered. initialData:', initialData?.id, initialData?.description);
 
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskFormSchema),
@@ -148,9 +148,9 @@ const TaskForm: React.FC<TaskFormProps> = ({
   const recurringType = watch('recurringType');
 
   useEffect(() => {
-    console.log('TaskForm useEffect: initialData changed. initialData:', initialData?.id, initialData?.description);
+    // Removed console.log('TaskForm useEffect: initialData changed. initialData:', initialData?.id, initialData?.description);
     if (initialData) {
-      console.log('TaskForm useEffect: Setting form values from initialData.');
+      // Removed console.log('TaskForm useEffect: Setting form values from initialData.');
       reset({
         description: initialData.description,
         category: initialData.category,
@@ -164,9 +164,9 @@ const TaskForm: React.FC<TaskFormProps> = ({
         parentTaskId: initialData.parent_task_id,
         link: initialData.link || '',
       });
-      console.log('TaskForm useEffect: Form description after reset:', form.getValues('description'));
+      // Removed console.log('TaskForm useEffect: Form description after reset:', form.getValues('description'));
     } else {
-      console.log('TaskForm useEffect: Setting default values for new task.');
+      // Removed console.log('TaskForm useEffect: Setting default values for new task.');
       const generalCategory = allCategories.find(cat => cat.name.toLowerCase() === 'general');
       reset({
         description: '',

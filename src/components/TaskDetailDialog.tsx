@@ -41,7 +41,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   sections, // Destructure from props
   allCategories, // Destructure from props
 }) => {
-  console.log('TaskDetailDialog: Rendered. isOpen:', isOpen, 'task:', task?.id, task?.description);
+  // Removed console.log('TaskDetailDialog: Rendered. isOpen:', isOpen, 'task:', task?.id, task?.description);
   // Only use useTasks for actions that require it, not for fetching global state
   const { tasks: allTasks, handleAddTask, updateTask: updateSubtask } = useTasks(); 
   const { playSound } = useSound();
