@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from "@/components/ui/button";
@@ -12,17 +12,17 @@ import { Plus, Settings, CheckCircle2, ListTodo, FolderOpen, ChevronDown, Edit, 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from '@/lib/utils';
 import { TaskSection } from '@/hooks/useTasks';
-// Removed import for DragHandleIcon
+import DragHandleIcon from './DragHandleIcon'; // Import the new icon
 
 interface SortableSectionHeaderProps {
   section: TaskSection;
   sectionTasksCount: number;
   isExpanded: boolean;
   toggleSection: (sectionId: string) => void;
-  editingSectionId: string | null;
-  editingSectionName: string;
-  setNewEditingSectionName: (name: string) => void;
-  handleEditSectionClick: (section: TaskSection) => void;
+  // Removed: editingSectionId: string | null;
+  // Removed: editingSectionName: string;
+  // Removed: setNewEditingSectionName: (name: string) => void;
+  // Removed: handleEditSectionClick: (section: TaskSection) => void;
   handleAddTaskToSpecificSection: (sectionId: string | null) => void;
   markAllTasksInSectionCompleted: (sectionId: string | null) => Promise<void>;
   handleDeleteSectionClick: (sectionId: string) => void;
@@ -36,10 +36,10 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
   sectionTasksCount,
   isExpanded,
   toggleSection,
-  editingSectionId,
-  editingSectionName,
-  setNewEditingSectionName,
-  handleEditSectionClick,
+  // Removed: editingSectionId,
+  // Removed: editingSectionName,
+  // Removed: setNewEditingSectionName,
+  // Removed: handleEditSectionClick,
   handleAddTaskToSpecificSection,
   markAllTasksInSectionCompleted,
   handleDeleteSectionClick,
@@ -65,23 +65,42 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
     visibility: isDragging && !isOverlay ? 'hidden' : 'visible',
   };
 
-  const handleInputBlur = async () => {
-    if (editingSectionId && editingSectionName.trim() !== section.name) {
-      await onUpdateSectionName(editingSectionId, editingSectionName.trim());
-    }
-    handleEditSectionClick(section); // Call to exit editing mode (sets editingSectionId to null)
-  };
+  // Local state for inline editing
+  const [isEditingLocal, setIsEditingLocal] = useState(false);
+  const [localSectionName, setLocalSectionName] = useState(section.name);
 
-  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  // Sync local state with prop when prop changes (e.g., after successful save)
+  useEffect(() => {
+    if (!isEditingLocal) { // Only update if not currently editing to avoid overwriting user input
+      setLocalSectionName(section.name);
+    }
+  }, [section.name, isEditingLocal]);
+
+  const handleStartEdit = useCallback(() => {
+    if (isOverlay) return;
+    setIsEditingLocal(true);
+    setLocalSectionName(section.name); // Ensure local state is in sync when starting edit
+  }, [isOverlay, section.name]);
+
+  const handleSaveEdit = useCallback(async () => {
+    if (localSectionName.trim() !== section.name) {
+      await onUpdateSectionName(section.id, localSectionName.trim());
+    }
+    setIsEditingLocal(false);
+  }, [localSectionName, section.name, onUpdateSectionName, section.id]);
+
+  const handleCancelEdit = useCallback(() => {
+    setLocalSectionName(section.name); // Revert to original prop value
+    setIsEditingLocal(false);
+  }, [section.name]);
+
+  const handleInputKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.currentTarget.blur(); // Trigger blur to save
     } else if (e.key === 'Escape') {
-      setNewEditingSectionName(section.name); // Revert to original name
-      handleEditSectionClick(section); // Call to exit editing mode (sets editingSectionId to null)
+      handleCancelEdit();
     }
-  };
-
-  const isEditing = editingSectionId === section.id && !isOverlay;
+  }, [handleCancelEdit]);
 
   return (
     <div
@@ -96,18 +115,28 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
       )}
       {...(attributes || {})} // Keep attributes here
     >
-      {/* Removed DragHandleIcon button */}
+      <button
+        className={cn(
+          "flex-shrink-0 h-full py-2 px-1.5 text-muted-foreground opacity-100 group-hover:opacity-100 transition-opacity duration-200",
+          isOverlay ? "cursor-grabbing" : "cursor-grab active:cursor-grabbing"
+        )}
+        aria-label="Drag to reorder section"
+        disabled={isOverlay}
+        {...(sortable?.listeners || {})} // ADD listeners here
+      >
+        <DragHandleIcon className="h-4 w-4" /> {/* Use custom DragHandleIcon */}
+      </button>
       <div className="flex-1 flex items-center justify-between">
         <div 
           className="flex items-center flex-1 cursor-pointer" // Removed relative and gap-2
-          onClick={() => !isOverlay && handleEditSectionClick(section)} // Direct edit on click
+          onClick={handleStartEdit} // Direct edit on click
           data-no-dnd="true" // Prevent drag when clicking on text to edit
         >
-          {isEditing ? (
+          {isEditingLocal ? (
             <Input
-              value={editingSectionName}
-              onChange={(e) => setNewEditingSectionName(e.target.value)}
-              onBlur={handleInputBlur}
+              value={localSectionName}
+              onChange={(e) => setLocalSectionName(e.target.value)}
+              onBlur={handleSaveEdit} // Save on blur
               onKeyDown={handleInputKeyDown}
               className={cn(
                 "w-full h-full text-base font-bold", // Match h3 styling

@@ -214,16 +214,9 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     setIsAddTaskOpenLocal(true);
   };
 
-  const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
-  const [editingSectionName, setEditingSectionName] = useState('');
+  // Removed: editingSectionId, setEditingSectionId, editingSectionName, setNewEditingSectionName
 
-  const handleEditSectionClickCorrected = useCallback((section: TaskSection) => {
-    console.log('TaskList: handleEditSectionClickCorrected called for section:', section.id);
-    setEditingSectionId(section.id);
-    setEditingSectionName(section.name);
-  }, [setEditingSectionId, setEditingSectionName]);
-
-  // Removed handleSaveSectionEdit and handleCancelSectionEdit as they are now handled inline in SortableSectionHeader
+  // Removed: handleEditSectionClickCorrected as it's now internal to SortableSectionHeader
 
   return (
     <>
@@ -262,10 +255,10 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                     sectionTasksCount={topLevelTasksInSection.length}
                     isExpanded={isExpanded}
                     toggleSection={toggleSection}
-                    editingSectionId={editingSectionId} // Pass state
-                    editingSectionName={editingSectionName} // Pass state
-                    setNewEditingSectionName={setEditingSectionName} // Pass setter
-                    handleEditSectionClick={handleEditSectionClickCorrected} // Pass corrected handler
+                    // Removed: editingSectionId={editingSectionId}
+                    // Removed: editingSectionName={editingSectionName}
+                    // Removed: setNewEditingSectionName={setEditingSectionName}
+                    // Removed: handleEditSectionClick={handleEditSectionClickCorrected}
                     handleAddTaskToSpecificSection={(sectionId) => openAddTaskForSection(sectionId)}
                     markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
                     handleDeleteSectionClick={deleteSection}
@@ -332,10 +325,10 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                     }
                     isExpanded={true} // Always expanded in overlay
                     toggleSection={() => {}}
-                    editingSectionId={null}
-                    editingSectionName=""
-                    setNewEditingSectionName={() => {}}
-                    handleEditSectionClick={() => {}}
+                    // Removed: editingSectionId={null}
+                    // Removed: editingSectionName=""
+                    // Removed: setNewEditingSectionName={() => {}}
+                    // Removed: handleEditSectionClick={() => {}}
                     handleAddTaskToSpecificSection={() => {}}
                     markAllTasksInSectionCompleted={async () => {}}
                     handleDeleteSectionClick={() => {}}
