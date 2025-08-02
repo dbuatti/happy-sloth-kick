@@ -142,9 +142,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
                   <DropdownMenuItem onSelect={() => markAllTasksInSectionCompleted(section.id)}>
                     <CheckCircle2 className="mr-2 h-3.5 w-3.5" /> Mark All Completed
                   </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => handleEditSectionClick(section)}>
-                    <Edit className="mr-2 h-3.5 w-3.5" /> Rename Section
-                  </DropdownMenuItem>
+                  {/* Removed Rename Section button */}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onSelect={() => updateSectionIncludeInFocusMode(section.id, !section.include_in_focus_mode)}>
                     {section.include_in_focus_mode ? <EyeOff className="mr-2 h-3.5 w-3.5" /> : <Eye className="mr-2 h-3.5 w-3.5" />}
