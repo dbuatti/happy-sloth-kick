@@ -20,6 +20,7 @@ const navItems = [
   { name: 'Mindfulness', path: '/mindfulness', icon: Brain },
   { name: 'Meditation', path: '/meditation', icon: Leaf },
   { name: 'Sleep Tracker', path: '/sleep', icon: Moon },
+  { name: 'Sleep Dashboard', path: '/sleep-dashboard', icon: BarChart3 }, // New: Sleep Dashboard
   { name: 'Project Balance', path: '/projects', icon: LayoutGrid },
   { name: 'Time Blocks', path: '/schedule', icon: CalendarClock },
   { name: 'My Hub', path: '/my-hub', icon: LayoutDashboard },

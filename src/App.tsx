@@ -32,7 +32,7 @@ import BreathingBubblePage from "./pages/mindfulness/BreathingBubblePage";
 import Settings from "./pages/Settings";
 import Analytics from "./pages/Analytics";
 import Archive from "./pages/Archive";
-
+import SleepDashboard from "./pages/SleepDashboard"; // Import new SleepDashboard
 
 const queryClient = new QueryClient();
 
@@ -86,6 +86,7 @@ const AppContent = () => {
             <Route path="/settings" element={<Settings />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/archive" element={<Archive />} />
+            <Route path="/sleep-dashboard" element={<SleepDashboard />} /> {/* New Sleep Dashboard Route */}
 
             <Route path="*" element={<NotFound />} />
           </Routes>
