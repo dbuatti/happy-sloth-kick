@@ -83,7 +83,7 @@ const TaskFilter: React.FC<TaskFilterProps> = ({
   const isAnyFilterActive = searchFilter !== '' || statusFilter !== 'all' || categoryFilter !== 'all' || priorityFilter !== 'all' || sectionFilter !== 'all';
 
   return (
-    <div className={cn("flex flex-col sm:flex-row gap-3 mb-4", className)}> {/* Apply className here */}
+    <div className={cn("flex flex-col sm:flex-row gap-3", className)}> {/* Apply className here, removed mb-4, p-4 */}
       <div className="relative flex-1">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
         <Input
