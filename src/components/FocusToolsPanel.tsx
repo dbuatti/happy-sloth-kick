@@ -65,8 +65,7 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
   // Task Detail/Overview Dialog State
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
-  const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
-  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+  // Removed isTaskDetailOpen, taskToEdit, setTaskToEdit
 
   // Quick Add Task State
   const [quickAddTaskDescription, setQuickAddTaskDescription] = useState('');
@@ -402,22 +401,7 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
           allTasks={tasks}
         />
       )}
-
-      {taskToEdit && (
-        <TaskDetailDialog
-          task={taskToEdit}
-          isOpen={isTaskDetailOpen}
-          onClose={() => setIsTaskDetailOpen(false)}
-          onUpdate={updateTask}
-          onDelete={onDeleteTask}
-          sections={sections}
-          allCategories={allCategories}
-          createSection={createSection}
-          updateSection={updateSection}
-          deleteSection={deleteSection}
-          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-        />
-      )}
+      {/* Removed TaskDetailDialog from here */}
     </div>
   );
 };

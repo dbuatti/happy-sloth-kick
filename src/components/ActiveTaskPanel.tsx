@@ -281,21 +281,7 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
         />
       )}
 
-      {taskToEdit && (
-        <TaskDetailDialog
-          task={taskToEdit}
-          isOpen={isTaskDetailOpen}
-          onClose={() => setIsTaskDetailOpen(false)}
-          onUpdate={updateTask}
-          onDelete={onDeleteTask}
-          sections={sections}
-          allCategories={allCategories}
-          createSection={createSection}
-          updateSection={updateSection}
-          deleteSection={deleteSection}
-          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-        />
-      )}
+      {/* Removed TaskDetailDialog from here */}
     </div>
   );
 };
