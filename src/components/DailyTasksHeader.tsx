@@ -11,6 +11,7 @@ import { suggestTaskDetails } from '@/integrations/supabase/api';
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
 import { isBefore, isSameDay, parseISO } from 'date-fns';
 import { useSound } from '@/context/SoundContext';
+import { Progress } from '@/components/Progress'; // Import Progress component
 
 interface DailyTasksHeaderProps {
   currentDate: Date;
@@ -69,7 +70,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
     const focusModeSectionIds = new Set(sections.filter(s => s.include_in_focus_mode).map(s => s.id));
 
     const focusTasks = filteredTasks.filter(t =>
-      t.parent_task_id === null &&
+      t.parent_task_id === null && // Only count top-level tasks
       (t.section_id === null || focusModeSectionIds.has(t.section_id))
     );
 
@@ -172,8 +173,8 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
       <div className="flex items-center justify-between px-4 pt-4">
         {/* Left: Total Task Count */}
         <div className="flex items-center gap-2">
-          <ListTodo className="h-6 w-6 text-primary" />
-          <span className="text-2xl font-bold">{dailyTaskCount}</span>
+          <ListTodo className="h-8 w-8 text-primary" />
+          <span className="text-5xl font-bold">{dailyTaskCount}</span>
         </div>
 
         {/* Right: Focus Mode Button */}
@@ -183,9 +184,9 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
             size="icon"
             onClick={() => setIsFocusPanelOpen(true)}
             aria-label="Open focus tools"
-            className="h-9 w-9"
+            className="h-10 w-10"
           >
-            <Brain className="h-5 w-5" />
+            <Brain className="h-6 w-6" />
           </Button>
         </div>
       </div>
@@ -199,21 +200,27 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         setCurrentDate={setCurrentDate}
       />
 
-      {/* Today's Summary (Pending, Completed, Overdue) */}
-      <div className="flex items-center justify-center gap-4 px-4 pb-3 text-sm text-muted-foreground">
-        <div className="flex items-center gap-1">
-          <ListTodo className="h-4 w-4 text-foreground" />
-          <span className="font-semibold text-foreground">{totalCount - completedCount} pending</span>
+      {/* Today's Summary (Pending, Completed, Overdue) - Now with Progress Bar */}
+      <div className="px-4 pb-3">
+        <div className="flex items-center justify-between text-sm text-muted-foreground mb-1">
+          <span className="flex items-center gap-1">
+            <ListTodo className="h-3.5 w-3.5 text-foreground" />
+            <span className="font-semibold text-foreground">{totalCount - completedCount} pending</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+            <span className="font-semibold text-primary">{completedCount} completed</span>
+          </span>
         </div>
-        <div className="flex items-center gap-1">
-          <CheckCircle2 className="h-4 w-4 text-primary" />
-          <span className="font-semibold text-primary">{completedCount} completed</span>
-        </div>
+        <Progress
+          value={totalCount > 0 ? (completedCount / totalCount) * 100 : 0}
+          className="h-2.5"
+          indicatorClassName="bg-primary"
+        />
         {overdueCount > 0 && (
-          <div className="flex items-center gap-1">
-            <Clock className="h-4 w-4 text-destructive" />
-            <span className="font-semibold text-destructive">{overdueCount} overdue</span>
-          </div>
+          <p className="text-sm text-destructive mt-2 flex items-center gap-1">
+            <Clock className="h-4 w-4" /> {overdueCount} overdue
+          </p>
         )}
       </div>
 
@@ -225,16 +232,16 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         {nextAvailableTask ? (
           <div className="w-full space-y-4">
             <div className="flex items-center justify-center gap-3">
-              <div className={cn("w-4 h-4 rounded-full flex-shrink-0", getPriorityDotColor(nextAvailableTask.priority))} />
-              <p className="text-3xl font-extrabold text-foreground leading-tight line-clamp-2">
+              <div className={cn("w-5 h-5 rounded-full flex-shrink-0", getPriorityDotColor(nextAvailableTask.priority))} />
+              <p className="text-4xl md:text-5xl font-extrabold text-foreground leading-tight line-clamp-2">
                 {nextAvailableTask.description}
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button onClick={handleMarkNextTaskComplete} className="h-11 px-6 text-lg">
+              <Button onClick={handleMarkNextTaskComplete} className="h-12 px-8 text-lg">
                 <CheckCircle2 className="mr-2 h-5 w-5" /> Mark Done
               </Button>
-              <Button variant="outline" onClick={() => onOpenOverview(nextAvailableTask)} className="h-11 px-6 text-lg">
+              <Button variant="outline" onClick={() => onOpenOverview(nextAvailableTask)} className="h-12 px-8 text-lg">
                 <Edit className="mr-2 h-5 w-5" /> Details
               </Button>
             </div>
