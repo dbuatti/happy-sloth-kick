@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Plus, ListTodo } from 'lucide-react';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
@@ -108,9 +108,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  // Keep a ref per section to scroll/focus
-  const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
-
   const toggleSection = useCallback((sectionId: string) => {
     setExpandedSections(prev => {
       const newState = { ...prev, [sectionId]: !(prev[sectionId] ?? true) };
@@ -129,38 +126,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     };
     return [...sections, noSection];
   }, [sections, userId]);
-
-  // Compute counts of top-level tasks per section for the overview bar
-  const sectionCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    allSortableSections.forEach(s => { counts[s.id] = 0; });
-    filteredTasks.forEach(t => {
-      if (t.parent_task_id === null) {
-        const key = t.section_id ?? 'no-section-header';
-        if (counts[key] === undefined) counts[key] = 0;
-        counts[key] += 1;
-      }
-    });
-    return counts;
-  }, [filteredTasks, allSortableSections]);
-
-  const focusSection = (sectionId: string) => {
-    // Ensure section expanded
-    setExpandedSections(prev => ({ ...prev, [sectionId]: true }));
-    // Scroll to it
-    requestAnimationFrame(() => {
-      const el = sectionRefs.current[sectionId];
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-  };
-
-  const openAddTaskForSection = (sectionId: string | null) => {
-    setPreselectedSectionId(sectionId);
-    setIsAddTaskOpenLocal(true);
-    // Expand and focus section
-    const key = sectionId ?? 'no-section-header';
-    focusSection(key);
-  };
 
   const isSectionHeaderId = (id: UniqueIdentifier | null) => {
     if (!id) return false;
@@ -231,43 +196,14 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     setActiveId(null);
   };
 
+  const openAddTaskForSection = (sectionId: string | null) => {
+    setPreselectedSectionId(sectionId);
+    setIsAddTaskOpenLocal(true);
+  };
+
   return (
     <>
-      {/* Compact Section Overview Bar */}
-      <div className="mb-2">
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
-          {allSortableSections.map((sec) => {
-            const count = sectionCounts[sec.id] ?? 0;
-            const isNoSection = sec.id === 'no-section-header';
-            return (
-              <div
-                key={sec.id}
-                className={cn(
-                  "flex items-center gap-2 rounded-md border px-2 py-1 bg-card shadow-sm flex-shrink-0",
-                )}
-              >
-                <button
-                  className="text-sm font-medium hover:underline"
-                  onClick={() => focusSection(sec.id)}
-                  aria-label={`Go to ${isNoSection ? 'No Section' : sec.name}`}
-                >
-                  {isNoSection ? 'No Section' : sec.name}
-                </button>
-                <span className="text-xs text-muted-foreground">• {count}</span>
-                <Button
-                  size="icon"
-                  variant="outline"
-                  className="h-6 w-6"
-                  onClick={() => openAddTaskForSection(isNoSection ? null : sec.id)}
-                  aria-label={`Add task to ${isNoSection ? 'No Section' : sec.name}`}
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      {/* Removed compact section overview bar */}
 
       {loading ? (
         <div className="space-y-3">
@@ -296,11 +232,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
               const sectionItemIds = topLevelTasksInSection.map(t => t.id);
 
               return (
-                <div
-                  key={currentSection.id}
-                  className="mb-1.5"
-                  ref={(el) => { sectionRefs.current[currentSection.id] = el; }}
-                >
+                <div key={currentSection.id} className="mb-1.5">
                   <SortableSectionHeader
                     section={currentSection}
                     sectionTasksCount={topLevelTasksInSection.length}
@@ -381,7 +313,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
           <DialogHeader>
             <DialogTitle>Add Task</DialogTitle>
           </DialogHeader>
-        <TaskForm
+          <TaskForm
             onSave={async (taskData) => {
               const success = await handleAddTask({
                 ...taskData,
