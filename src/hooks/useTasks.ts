@@ -169,7 +169,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         'postgres_changes',
         { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${userId}` },
         (payload) => {
-          if (isReorderingRef.current) return;
+          if (isReorderingRef.current) return; // Ignore real-time updates during reordering
           const newOrOldTask = (payload.new || payload.old) as Task;
           const categoryColor = categoriesMapRef.current.get(newOrOldTask.category) || 'gray';
 
@@ -197,7 +197,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         'postgres_changes',
         { event: '*', schema: 'public', table: 'task_sections', filter: `user_id=eq.${userId}` },
         (payload) => {
-          if (isReorderingRef.current) return;
+          if (isReorderingRef.current) return; // Ignore real-time updates during reordering
           const newOrOldSection = (payload.new || payload.old) as TaskSection;
           if (payload.eventType === 'INSERT') {
             setSections(prev => [...prev, newOrOldSection].sort((a, b) => (a.order || 0) - (b.order || 0)));
@@ -217,7 +217,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         'postgres_changes',
         { event: '*', schema: 'public', table: 'task_categories', filter: `user_id=eq.${userId}` },
         (payload) => {
-          if (isReorderingRef.current) return;
+          if (isReorderingRef.current) return; // Ignore real-time updates during reordering
           const newOrOldCategory = (payload.new || payload.old) as Category;
 
           if (payload.eventType === 'INSERT') {
@@ -697,42 +697,30 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     }
   }, [userId, sections]);
 
-  const refreshGroup = useCallback(async (groupParentId: string | null, groupSectionId: string | null) => {
+  // Renamed from refreshGroup to refetchAllTasks for clarity and broader scope
+  const refetchAllTasks = useCallback(async () => {
     if (!userId) return;
-    
-    let query = supabase
-      .from('tasks')
-      .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link')
-      .eq('user_id', userId);
+    setLoading(true); // Set loading true during refetch
+    try {
+      const { data: tasksData, error: tasksError } = await supabase
+        .from('tasks')
+        .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link')
+        .eq('user_id', userId)
+        .order('section_id', { ascending: true, nullsFirst: true })
+        .order('order', { ascending: true });
+      if (tasksError) throw tasksError;
 
-    if (groupParentId === null) {
-      query = query.is('parent_task_id', null);
-    } else {
-      query = query.eq('parent_task_id', groupParentId);
+      const mappedTasks = (tasksData || []).map((t: any) => ({
+        ...t,
+        category_color: categoriesMapRef.current.get(t.category) || 'gray',
+      })) as Task[];
+      setTasks(mappedTasks);
+    } catch (e: any) {
+      console.error('Error refetching all tasks:', e.message);
+      showError('Failed to refresh tasks.');
+    } finally {
+      setLoading(false); // Set loading false after refetch
     }
-
-    if (groupSectionId === null) {
-      query = query.is('section_id', null);
-    } else {
-      query = query.eq('section_id', groupSectionId);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      console.error('Error refreshing group:', error);
-      return;
-    }
-    setTasks(prev => {
-      const ids = new Set((data || []).map(t => t.id));
-      const updated = (data || []).map((t: any) => ({ ...t, category_color: categoriesMapRef.current.get(t.category) || 'gray' }));
-      // Filter out tasks that are no longer in this group (e.g., moved to another section/parent)
-      // And update existing tasks, add new ones
-      const remainingTasks = prev.filter(t => 
-        !(t.parent_task_id === groupParentId && (t.section_id === groupSectionId || (t.section_id === null && groupSectionId === null)))
-      );
-      return [...remainingTasks, ...updated];
-    });
   }, [userId]);
 
   const updateTaskParentAndOrder = useCallback(async (activeId: string, newParentId: string | null, newSectionId: string | null, overId: string | null) => {
@@ -756,6 +744,8 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       return idx === -1 ? siblings.length : idx;
     };
 
+    // Optimistic update
+    isReorderingRef.current = true; // Set flag before optimistic update
     const oldSiblings = getGroupSiblings(activeTask.parent_task_id, activeTask.section_id).filter(s => s.id !== activeTask.id);
     oldSiblings.forEach((s, i) => { s.order = i; });
 
@@ -792,24 +782,21 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
     setTasks(prev => prev.map(t => updatesMap.has(t.id) ? { ...t, ...(updatesMap.get(t.id) as any) } : t));
 
-    isReorderingRef.current = true;
     try {
       const payload = Array.from(updatesMap.values()).map(u => cleanTaskForDb(u));
       const { error } = await supabase.from('tasks').upsert(payload, { onConflict: 'id' });
       if (error) throw error;
       showSuccess('Task moved!');
-      await refreshGroup(targetParentId, targetSectionId);
-      await refreshGroup(activeTask.parent_task_id, activeTask.section_id);
+      await refetchAllTasks(); // Full refresh after successful move
     } catch (e: any) {
       showError('Failed to move task.');
-      setTasks(originalTasks);
+      setTasks(originalTasks); // Revert optimistic update on error
     } finally {
-      isReorderingRef.current = false;
+      isReorderingRef.current = false; // Reset flag
     }
-  }, [userId, tasks, refreshGroup]);
+  }, [userId, tasks, refetchAllTasks]);
 
   const moveTask = useCallback(async (taskId: string, direction: 'up' | 'down') => {
-    if (isReorderingRef.current) return;
     if (!userId) {
       showError('User not authenticated.');
       return;
@@ -833,6 +820,8 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     if (direction === 'down' && currentIndex < siblings.length - 1) newIndex = currentIndex + 1;
     if (newIndex === currentIndex) return;
 
+    // Optimistic update
+    isReorderingRef.current = true; // Set flag before optimistic update
     const newOrdered = arrayMove(siblings, currentIndex, newIndex);
     newOrdered.forEach((t, idx) => { t.order = idx; });
 
@@ -847,20 +836,19 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     const originalTasks = [...tasks];
     setTasks(prev => prev.map(t => updatesMap.has(t.id) ? { ...t, ...(updatesMap.get(t.id) as any) } : t));
 
-    isReorderingRef.current = true;
     try {
       const payload = Array.from(updatesMap.values()).map(u => cleanTaskForDb(u));
       const { error } = await supabase.from('tasks').upsert(payload, { onConflict: 'id' });
       if (error) throw error;
       showSuccess('Task reordered!');
-      await refreshGroup(taskToMove.parent_task_id, taskToMove.section_id);
+      await refetchAllTasks(); // Full refresh after successful move
     } catch (e: any) {
       showError('Failed to reorder task.');
-      setTasks(originalTasks);
+      setTasks(originalTasks); // Revert optimistic update on error
     } finally {
-      isReorderingRef.current = false;
+      isReorderingRef.current = false; // Reset flag
     }
-  }, [userId, tasks, refreshGroup]);
+  }, [userId, tasks, refetchAllTasks]);
 
   return {
     tasks,
