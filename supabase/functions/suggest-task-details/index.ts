@@ -1,6 +1,3 @@
-/// <reference lib="deno.ns" />
-/// <reference lib="deno.unstable" />
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.15.0";
 
@@ -8,6 +5,17 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+interface SuggestTaskDetailsResponse {
+  category: string;
+  priority: string;
+  dueDate: string | null; // ISO string
+  remindAt: string | null; // ISO string
+  section: string | null;
+  cleanedDescription: string;
+  link: string | null;
+  notes: string | null;
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -51,6 +59,7 @@ serve(async (req) => {
     - 'section': A suggested section name (e.g., 'Work', 'Personal', 'Groceries'). If no clear section, leave null.
     - 'cleanedDescription': The original description with extracted keywords removed.
     - 'link': A URL link if mentioned in the description (e.g., 'through the link', 'check this website'). If no link, leave null.
+    - 'notes': Any additional notes or details that should be extracted, or null if none.
 
     Categories available: ${categoryNames}
 
@@ -64,7 +73,8 @@ serve(async (req) => {
       "remindAt": "2024-08-15T18:00:00Z",
       "section": "Groceries",
       "cleanedDescription": "Buy groceries for dinner",
-      "link": null
+      "link": null,
+      "notes": null
     }
 
     Example 2:
@@ -77,7 +87,8 @@ serve(async (req) => {
       "remindAt": null,
       "section": "Work",
       "cleanedDescription": "Finish report",
-      "link": "https://example.com/report"
+      "link": "https://example.com/report",
+      "notes": null
     }
 
     Example 3:
@@ -90,11 +101,12 @@ serve(async (req) => {
       "remindAt": null,
       "section": null,
       "cleanedDescription": "Call mom",
-      "link": null
+      "link": null,
+      "notes": null
     }
 
     Example 4:
-    Description: "Schedule dentist appointment next week, check this site: dentist.com"
+    Description: "Schedule dentist appointment next week, check this site: dentist.com. Remember to ask about the new insurance."
     Output:
     {
       "category": "Personal",
@@ -103,7 +115,8 @@ serve(async (req) => {
       "remindAt": null,
       "section": "Appointments",
       "cleanedDescription": "Schedule dentist appointment",
-      "link": "https://dentist.com"
+      "link": "https://dentist.com",
+      "notes": "Remember to ask about the new insurance."
     }
     
     Your response MUST be a valid JSON object. Do NOT include any other text or markdown outside the JSON.
@@ -165,6 +178,7 @@ serve(async (req) => {
       section: parsedData.section || null,
       cleanedDescription: parsedData.cleanedDescription || description,
       link: parsedData.link || null,
+      notes: parsedData.notes || null, // Ensure notes is included
     };
 
     return new Response(JSON.stringify(responseData), {

@@ -16,7 +16,7 @@ import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { suggestTaskDetails } from '@/integrations/supabase/functions'; // Import the new function
+import { suggestTaskDetails } from '@/integrations/supabase/api'; // Updated import path
 import { showError } from '@/utils/toast'; // Import showError
 
 const taskFormSchema = z.object({
