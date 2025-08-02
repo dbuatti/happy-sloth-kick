@@ -17,10 +17,9 @@ import { showError } from '@/utils/toast';
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
 import { cn } from '@/lib/utils';
 import BulkActions from '@/components/BulkActions';
-import SmartSuggestions from '@/components/SmartSuggestions';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { useIsMobile } from '@/hooks/use-mobile';
-import DailyOverviewCard from '@/components/DailyOverviewCard'; // Import the new component
+import ActiveTaskPanel from '@/components/ActiveTaskPanel'; // Import the new ActiveTaskPanel
 
 const getUTCStartOfDay = (date: Date) => {
   return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -42,7 +41,6 @@ const DailyTasksV3: React.FC = () => {
     sections,
     allCategories,
     handleAddTask,
-    // Removed filter states and setters
     selectedTaskIds,
     toggleTaskSelection,
     clearSelectedTasks,
@@ -57,15 +55,15 @@ const DailyTasksV3: React.FC = () => {
     updateTaskParentAndOrder,
   } = useTasks({ currentDate, setCurrentDate, viewMode: 'daily' });
 
-  const { dailyTaskCount } = useDailyTaskCount(); // Re-added useDailyTaskCount
+  const { dailyTaskCount } = useDailyTaskCount();
 
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
-  const [quickAddTaskDescription, setQuickAddTaskDescription] = useState(''); // Re-added quick add state
-  const quickAddInputRef = useRef<HTMLInputElement>(null); // Re-added quick add ref
+  const [quickAddTaskDescription, setQuickAddTaskDescription] = useState('');
+  const quickAddInputRef = useRef<HTMLInputElement>(null);
 
   const handlePreviousDay = () => {
     setCurrentDate(prevDate => getUTCStartOfDay(addDays(prevDate, -1)));
@@ -77,10 +75,6 @@ const DailyTasksV3: React.FC = () => {
 
   const handleGoToToday = () => {
     setCurrentDate(getUTCStartOfDay(new Date()));
-  };
-
-  const handleMarkTaskComplete = async (taskId: string) => {
-    await updateTask(taskId, { status: 'completed' });
   };
 
   const handleOpenOverview = (task: Task) => {
@@ -127,7 +121,7 @@ const DailyTasksV3: React.FC = () => {
     'arrowleft': () => handlePreviousDay(),
     'arrowright': () => handleNextDay(),
     't': () => handleGoToToday(),
-    '/': (e) => { e.preventDefault(); quickAddInputRef.current?.focus(); }, // Re-added '/' shortcut
+    '/': (e) => { e.preventDefault(); quickAddInputRef.current?.focus(); },
     'cmd+k': (e) => { e.preventDefault(); setIsCommandPaletteOpen(prev => !prev); },
   };
   useKeyboardShortcuts(shortcuts);
@@ -172,10 +166,10 @@ const DailyTasksV3: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col">
       <main className={cn("flex-grow p-4", isBulkActionsActive ? "pb-[90px]" : "")}>
-        <div className="w-full max-w-6xl mx-auto h-full"> {/* Increased max-width for larger screens */}
+        <div className="w-full max-w-6xl mx-auto h-full">
           <ResizablePanelGroup direction={isMobile ? "vertical" : "horizontal"} className="h-full items-stretch">
             {/* Left Panel: Main Task List */}
-            <ResizablePanel defaultSize={isMobile ? 65 : 70} minSize={isMobile ? 50 : 60}> {/* Takes full width */}
+            <ResizablePanel defaultSize={isMobile ? 65 : 70} minSize={isMobile ? 50 : 60}>
               <Card className="shadow-lg p-4 h-full flex flex-col">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
@@ -191,7 +185,7 @@ const DailyTasksV3: React.FC = () => {
                 </CardHeader>
 
                 <CardContent className="pt-3 flex-1 flex flex-col">
-                  <div className="mb-3"> {/* Adjusted spacing */}
+                  <div className="mb-3">
                     <DateNavigator
                       currentDate={currentDate}
                       onPreviousDay={handlePreviousDay}
@@ -224,7 +218,7 @@ const DailyTasksV3: React.FC = () => {
                     </form>
                   </div>
 
-                  <div ref={scrollRef} className="flex-1 overflow-y-auto pt-3 -mx-4 px-4"> {/* Adjusted padding */}
+                  <div ref={scrollRef} className="flex-1 overflow-y-auto pt-3 -mx-4 px-4">
                     <TaskList
                       tasks={tasks}
                       filteredTasks={filteredTasks}
@@ -233,7 +227,6 @@ const DailyTasksV3: React.FC = () => {
                       handleAddTask={handleAddTask}
                       updateTask={updateTask}
                       deleteTask={deleteTask}
-                      // Removed filter props
                       selectedTaskIds={selectedTaskIds}
                       toggleTaskSelection={toggleTaskSelection}
                       clearSelectedTasks={clearSelectedTasks}
@@ -251,7 +244,6 @@ const DailyTasksV3: React.FC = () => {
                       setIsAddTaskOpen={() => {}}
                       currentDate={currentDate}
                       setCurrentDate={setCurrentDate}
-                      // Removed searchRef
                     />
                   </div>
                 </CardContent>
@@ -260,24 +252,18 @@ const DailyTasksV3: React.FC = () => {
 
             <ResizableHandle withHandle />
             <ResizablePanel defaultSize={isMobile ? 35 : 30} minSize={isMobile ? 20 : 25}>
-              <div className="h-full flex flex-col space-y-3 p-4">
-                <DailyOverviewCard
-                  tasks={filteredTasks}
-                  nextAvailableTask={nextAvailableTask}
-                  currentDate={currentDate}
-                  loading={tasksLoading}
-                  onMarkComplete={handleMarkTaskComplete}
-                  onEditTask={handleOpenOverview}
-                  onOpenDetail={handleOpenDetail}
-                />
-                <SmartSuggestions
-                  tasks={filteredTasks}
-                  currentDate={currentDate}
-                  setCurrentDate={setCurrentDate}
-                  bulkUpdateTasks={bulkUpdateTasks}
-                  clearSelectedTasks={clearSelectedTasks}
-                />
-              </div>
+              <ActiveTaskPanel
+                nextAvailableTask={nextAvailableTask}
+                tasks={tasks}
+                filteredTasks={filteredTasks}
+                updateTask={updateTask}
+                onOpenDetail={handleOpenDetail}
+                onDeleteTask={deleteTask}
+                sections={sections}
+                allCategories={allCategories}
+                userId={userId}
+                currentDate={currentDate}
+              />
             </ResizablePanel>
           </ResizablePanelGroup>
         </div>
