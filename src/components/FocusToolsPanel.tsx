@@ -17,7 +17,7 @@ interface FocusToolsPanelProps {
   nextAvailableTask: Task | null;
   tasks: Task[];
   filteredTasks: Task[];
-  updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
+  updateTask: (task: Task, updates: Partial<Task>) => Promise<void>; // Changed from taskId: string
   onOpenDetail: (task: Task) => void; // This prop is used by handleOpenTaskDetails
   onDeleteTask: (taskId: string) => void;
   sections: TaskSection[];
@@ -130,7 +130,7 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
 
   const handleMarkComplete = async () => {
     if (nextAvailableTask) {
-      await updateTask(nextAvailableTask.id, { status: 'completed' });
+      await updateTask(nextAvailableTask, { status: 'completed' });
       playSound('success');
     }
   };

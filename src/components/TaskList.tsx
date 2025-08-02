@@ -35,7 +35,7 @@ interface TaskListProps {
   filteredTasks: Task[];
   loading: boolean;
   handleAddTask: (taskData: any) => Promise<any>;
-  updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
+  updateTask: (task: Task, updates: Partial<Task>) => Promise<void>;
   deleteTask: (taskId: string) => void;
   selectedTaskIds: string[];
   toggleTaskSelection: (taskId: string, checked: boolean) => void;
@@ -64,7 +64,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     tasks,
     filteredTasks,
     loading,
-    handleAddTask,
     updateTask,
     deleteTask,
     selectedTaskIds,
@@ -281,9 +280,9 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                               <SortableTaskItem
                                 key={task.id}
                                 task={task}
-                                onStatusChange={async (taskId, newStatus) => updateTask(taskId, { status: newStatus })}
+                                onStatusChange={updateTask} // Pass updateTask directly
                                 onDelete={deleteTask}
-                                onUpdate={updateTask}
+                                onUpdate={updateTask} // Pass updateTask directly
                                 isSelected={selectedTaskIds.includes(task.id)}
                                 onToggleSelect={toggleTaskSelection}
                                 sections={sections}
@@ -329,7 +328,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                     task={activeItemData as Task}
                     onStatusChange={async () => {}}
                     onDelete={() => {}}
-                    onUpdate={() => {}}
+                    onUpdate={async () => {}}
                     isSelected={false}
                     onToggleSelect={() => {}}
                     sections={sections}
@@ -359,7 +358,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
           </DialogHeader>
           <TaskForm
             onSave={async (taskData) => {
-              const success = await handleAddTask({
+              const success = await props.handleAddTask({ // Use props.handleAddTask
                 ...taskData,
                 section_id: preselectedSectionId ?? null,
               });

@@ -1,3 +1,5 @@
+"use client";
+
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -7,9 +9,9 @@ import { cn } from '@/lib/utils';
 
 interface SortableTaskItemProps {
   task: Task;
-  onStatusChange: (taskId: string, newStatus: Task['status']) => Promise<void>;
+  onStatusChange: (task: Task, newStatus: Task['status']) => Promise<void>; // Changed from taskId: string
   onDelete: (taskId: string) => void;
-  onUpdate: (taskId: string, updates: Partial<Task>) => void;
+  onUpdate: (task: Task, updates: Partial<Task>) => void; // Changed from taskId: string
   isSelected: boolean;
   onToggleSelect: (taskId: string, checked: boolean) => void;
   sections: { id: string; name: string }[];
