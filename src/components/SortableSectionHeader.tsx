@@ -88,13 +88,8 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
   }, [handleCancelEdit]);
 
   const getTaskCountCircleClasses = (count: number) => {
-    if (count === 0) {
-      return "bg-muted text-muted-foreground";
-    } else if (count >= 1 && count <= 5) {
-      return "bg-muted text-foreground"; // Muted background, darker text for lower counts
-    } else { // For counts 6 and above
-      return "bg-primary text-primary-foreground"; // Primary color for higher counts
-    }
+    // Always use primary color for the badge background, and primary-foreground for text
+    return "bg-primary text-primary-foreground";
   };
 
   return (
