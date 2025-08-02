@@ -122,6 +122,8 @@ const TaskForm: React.FC<TaskFormProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
 
+  console.log('TaskForm: Rendered. initialData:', initialData?.id, initialData?.description);
+
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskFormSchema),
     defaultValues: {
@@ -146,7 +148,9 @@ const TaskForm: React.FC<TaskFormProps> = ({
   const recurringType = watch('recurringType');
 
   useEffect(() => {
+    console.log('TaskForm useEffect: initialData changed. initialData:', initialData?.id, initialData?.description);
     if (initialData) {
+      console.log('TaskForm useEffect: Setting form values from initialData.');
       reset({
         description: initialData.description,
         category: initialData.category,
@@ -160,7 +164,9 @@ const TaskForm: React.FC<TaskFormProps> = ({
         parentTaskId: initialData.parent_task_id,
         link: initialData.link || '',
       });
+      console.log('TaskForm useEffect: Form description after reset:', form.getValues('description'));
     } else {
+      console.log('TaskForm useEffect: Setting default values for new task.');
       const generalCategory = allCategories.find(cat => cat.name.toLowerCase() === 'general');
       reset({
         description: '',
@@ -176,7 +182,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
         link: '',
       });
     }
-  }, [initialData, preselectedSectionId, parentTaskId, allCategories, reset]);
+  }, [initialData, preselectedSectionId, parentTaskId, allCategories, reset, form]);
 
   const handleSuggest = useCallback(async () => {
     if (!description.trim()) {
@@ -185,7 +191,8 @@ const TaskForm: React.FC<TaskFormProps> = ({
     }
     setIsSuggesting(true);
     try {
-      const suggestions = await suggestTaskDetails(description, allCategories.map(cat => ({ id: cat.id, name: cat.name })), currentDate);
+      const categoriesForAI = allCategories.map(cat => ({ id: cat.id, name: cat.name }));
+      const suggestions = await suggestTaskDetails(description, categoriesForAI, currentDate);
 
       if (suggestions) {
         setValue('description', suggestions.cleanedDescription);
@@ -273,7 +280,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
             onKeyDown={handleKeyDown}
             disabled={isSaving || isSuggesting}
             autoFocus={autoFocus}
-            className="h-9"
+            className="flex-1 h-9"
           />
           <Button
             type="button"
