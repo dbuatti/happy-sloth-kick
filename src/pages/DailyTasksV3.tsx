@@ -387,11 +387,11 @@ const DailyTasksV3: React.FC = () => {
               {/* AI Task Parser Section */}
               <Collapsible open={isAIParserOpen} onOpenChange={setIsAIParserOpen} className="mb-4">
                 <CollapsibleTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between h-10">
+                  <Button variant="default" className="w-full justify-between h-10">
                     <span className="flex items-center gap-2 text-base font-semibold">
-                      <Sparkles className="h-5 w-5 text-primary" /> AI Task Parser
+                      <Sparkles className="h-5 w-5 text-primary-foreground" /> AI Task Parser
                     </span>
-                    <ChevronDown className={cn("h-5 w-5 transition-transform", isAIParserOpen ? "rotate-0" : "-rotate-90")} />
+                    <ChevronDown className={cn("h-5 w-5 transition-transform text-primary-foreground", isAIParserOpen ? "rotate-0" : "-rotate-90")} />
                   </Button>
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pt-4 space-y-4">

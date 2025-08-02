@@ -18,13 +18,13 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({ currentDate, onPreviousDa
   const isToday = isSameDay(currentDate, new Date());
 
   return (
-    <div className="rounded-lg p-2 bg-gradient-to-r from-primary/5 to-accent/5 border border-border shadow-sm mb-3 flex items-center justify-between">
+    <div className="rounded-lg p-2 bg-primary/5 border border-border shadow-sm mb-3 flex items-center justify-between">
       <Button variant="ghost" size="icon" onClick={onPreviousDay} className="h-8 w-8 rounded-full hover:bg-primary/10 text-primary">
         <ChevronLeft className="h-5 w-5" />
       </Button>
 
       <div className="flex items-center space-x-2">
-        <h3 className="text-lg font-semibold text-foreground">
+        <h3 className="text-lg font-semibold text-primary">
           {isToday ? 'Today' : format(currentDate, 'EEEE')}
         </h3>
         <Popover>
