@@ -95,7 +95,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "relative flex items-center py-1 pl-1 pr-2", // Changed py-2 to py-1
+        "relative flex items-center py-0 pl-1 pr-2", // Changed py-1 to py-0
         "group",
         isDragging && !isOverlay ? "" : "rounded-lg",
         isOverlay ? "shadow-xl ring-2 ring-primary bg-card" : "",

@@ -252,8 +252,8 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                 <div
                   key={currentSection.id}
                   className={cn(
-                    "mb-1.5",
-                    index < allSortableSections.length - 1 && "border-b border-border pb-1" // Changed pb-3 to pb-1
+                    "mb-0.5", // Changed mb-1.5 to mb-0.5
+                    index < allSortableSections.length - 1 && "border-b border-border pb-0.5" // Changed pb-1 to pb-0.5
                   )}
                 >
                   <SortableSectionHeader
@@ -274,11 +274,11 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                   />
 
                   {isExpanded && (
-                    <div className="mt-1.5 space-y-1.5 pl-2">
+                    <div className="mt-0.5 space-y-0.5 pl-2"> {/* Changed mt-1.5 to mt-0.5 and space-y-1.5 to space-y-0.5 */}
                       <SortableContext items={sectionItemIds} strategy={verticalListSortingStrategy}>
-                        <ul className="list-none space-y-1.5">
+                        <ul className="list-none space-y-0.5"> {/* Changed space-y-1.5 to space-y-0.5 */}
                           {topLevelTasksInSection.length === 0 ? (
-                            <div className="text-center text-foreground/80 dark:text-foreground/80 py-3 rounded-md border-dashed border-border bg-muted/30" data-no-dnd="true">
+                            <div className="text-center text-foreground/80 dark:text-foreground/80 py-1.5 rounded-md border-dashed border-border bg-muted/30" data-no-dnd="true"> {/* Changed py-3 to py-1.5 */}
                               <div className="flex items-center justify-center gap-2 mb-1.5">
                                 <ListTodo className="h-4 w-4" />
                                 <p className="text-sm font-medium">No tasks in this section yet.</p>
