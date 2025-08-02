@@ -597,23 +597,6 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       order: newOrder,
     });
 
-    // Cascade section to descendants when parent/section changes
-    if (activeTask.parent_task_id !== newParentId) {
-      const cascadeSectionId = newParentId ? (tasks.find(t => t.id === newParentId)?.section_id ?? newSectionId ?? null) : newSectionId;
-      const queue = [activeTask.id];
-      const visited = new Set<string>();
-      while (queue.length) {
-        const pid = queue.shift()!;
-        if (visited.has(pid)) continue;
-        visited.add(pid);
-        const children = tasks.filter(t => t.parent_task_id === pid);
-        children.forEach(child => {
-          updates.push({ id: child.id, section_id: cascadeSectionId });
-          queue.push(child.id);
-        });
-      }
-    }
-
     console.log('useTasks: updateTaskParentAndOrder - Updates prepared for optimistic update:', updates);
 
     // Optimistic update
@@ -623,14 +606,21 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     });
 
     try {
-      const updatesWithUser = updates.map(u => ({ ...(cleanTaskForDb(u) as any), user_id: userId }));
-      console.log('useTasks: updateTaskParentAndOrder - Upserting changes to DB:', updatesWithUser);
-      const { error } = await supabase.from('tasks').upsert(updatesWithUser, { onConflict: 'id' });
-      if (error) throw error;
+      // Execute updates individually using .update()
+      for (const update of updates) {
+        const { id, ...rest } = update;
+        if (id) { // Ensure id exists for update operation
+          await supabase
+            .from('tasks')
+            .update(cleanTaskForDb(rest)) // Only send the fields to update
+            .eq('id', id)
+            .eq('user_id', userId); // Ensure RLS is respected
+        }
+      }
       showSuccess('Task moved!');
-      console.log('useTasks: updateTaskParentAndOrder - DB upsert successful.');
+      console.log('useTasks: updateTaskParentAndOrder - DB updates successful.');
     } catch (e: any) {
-      console.error('useTasks: updateTaskParentAndOrder - Upsert failed:', e.message);
+      console.error('useTasks: updateTaskParentAndOrder - Update failed:', e.message);
       showError('Failed to move task.');
       // Rollback optimistic update
       console.log('useTasks: updateTaskParentAndOrder - Rolling back optimistic update.');
@@ -686,14 +676,21 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     });
 
     try {
-      const updatesWithUser = updates.map(u => ({ ...(cleanTaskForDb(u) as any), user_id: userId }));
-      console.log('useTasks: moveTask - Upserting reorder changes to DB:', updatesWithUser);
-      const { error } = await supabase.from('tasks').upsert(updatesWithUser, { onConflict: 'id' });
-      if (error) throw error;
+      // Execute updates individually using .update()
+      for (const update of updates) {
+        const { id, ...rest } = update;
+        if (id) { // Ensure id exists for update operation
+          await supabase
+            .from('tasks')
+            .update(cleanTaskForDb(rest)) // Only send the fields to update
+            .eq('id', id)
+            .eq('user_id', userId); // Ensure RLS is respected
+        }
+      }
       showSuccess('Task reordered!');
-      console.log('useTasks: moveTask - DB upsert successful.');
+      console.log('useTasks: moveTask - DB updates successful.');
     } catch (e: any) {
-      console.error('useTasks: moveTask - Upsert failed:', e.message);
+      console.error('useTasks: moveTask - Update failed:', e.message);
       showError('Failed to reorder task.');
       // Rollback optimistic update
       console.log('useTasks: moveTask - Rolling back optimistic reorder.');
