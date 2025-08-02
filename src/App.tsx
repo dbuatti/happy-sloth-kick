@@ -81,7 +81,7 @@ const AppContent = () => {
             <Route path="/mindfulness/sensory-tool" element={<SensoryToolPage />} />
             <Route path="/mindfulness/breathing-bubble" element={<BreathingBubblePage />} />
 
-            {/* New routes for MyHub sections */}
+            {/* New routes for MyHub sections - these are now accessed via /my-hub */}
             <Route path="/settings" element={<Settings />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/archive" element={<Archive />} />
