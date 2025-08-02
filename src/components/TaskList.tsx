@@ -214,6 +214,32 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     setIsAddTaskOpenLocal(true);
   };
 
+  // First, I need to add `editingSectionId` and `editingSectionName` states to `TaskList.tsx`
+  // and pass their setters down to `SortableSectionHeader`.
+
+  const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
+  const [editingSectionName, setEditingSectionName] = useState('');
+
+  const handleEditSectionClickCorrected = useCallback((section: TaskSection) => {
+    console.log('TaskList: handleEditSectionClickCorrected called for section:', section.id);
+    setEditingSectionId(section.id);
+    setEditingSectionName(section.name);
+  }, [setEditingSectionId, setEditingSectionName]); // Added setters to dependency array
+
+  const handleSaveSectionEdit = useCallback(async () => {
+    if (editingSectionId && editingSectionName.trim()) {
+      await updateSection(editingSectionId, editingSectionName.trim());
+      setEditingSectionId(null);
+      setEditingSectionName('');
+    }
+  }, [editingSectionId, editingSectionName, updateSection]);
+
+  const handleCancelSectionEdit = useCallback(() => {
+    setEditingSectionId(null);
+    setEditingSectionName('');
+  }, []);
+
+
   return (
     <>
       {/* Removed compact section overview bar */}
@@ -251,15 +277,15 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                     sectionTasksCount={topLevelTasksInSection.length}
                     isExpanded={isExpanded}
                     toggleSection={toggleSection}
-                    editingSectionId={null}
-                    editingSectionName=""
-                    setNewEditingSectionName={() => {}}
-                    handleRenameSection={async () => {}}
-                    handleCancelSectionEdit={() => {}}
-                    handleEditSectionClick={() => {}}
+                    editingSectionId={editingSectionId} // Pass state
+                    editingSectionName={editingSectionName} // Pass state
+                    setNewEditingSectionName={setEditingSectionName} // Pass setter
+                    handleRenameSection={handleSaveSectionEdit} // Pass handler
+                    handleCancelSectionEdit={handleCancelSectionEdit} // Pass handler
+                    handleEditSectionClick={handleEditSectionClickCorrected} // Pass corrected handler
                     handleAddTaskToSpecificSection={(sectionId) => openAddTaskForSection(sectionId)}
                     markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
-                    handleDeleteSectionClick={() => {}}
+                    handleDeleteSectionClick={deleteSection}
                     updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
                     isOverlay={false} // Not an overlay
                   />

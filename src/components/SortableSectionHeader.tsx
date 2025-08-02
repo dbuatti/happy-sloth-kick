@@ -88,7 +88,6 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
         aria-label="Drag to reorder section"
         disabled={isOverlay}
         {...(sortable?.listeners || {})} // ADD listeners here
-        // REMOVED data-no-dnd="true" from here
       >
         <DragHandleIcon className="h-4 w-4" /> {/* Use custom DragHandleIcon */}
       </button>
@@ -108,7 +107,12 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
         ) : (
           <div 
             className="flex items-center gap-2 flex-1 cursor-pointer" // Added cursor-pointer
-            onClick={() => !isOverlay && handleEditSectionClick(section)} // Direct edit on click
+            onClick={() => {
+              console.log('SortableSectionHeader: Section header div clicked for section:', section.id);
+              if (!isOverlay) {
+                handleEditSectionClick(section);
+              }
+            }} // Direct edit on click
             data-no-dnd="true" // Prevent drag when clicking on text to edit
           >
             <FolderOpen className="h-4 w-4 text-muted-foreground" /> {/* Adjusted icon size */}
@@ -142,7 +146,6 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
                   <DropdownMenuItem onSelect={() => markAllTasksInSectionCompleted(section.id)}>
                     <CheckCircle2 className="mr-2 h-3.5 w-3.5" /> Mark All Completed
                   </DropdownMenuItem>
-                  {/* Removed "Rename Section" as direct edit is enabled */}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onSelect={() => updateSectionIncludeInFocusMode(section.id, !section.include_in_focus_mode)}>
                     {section.include_in_focus_mode ? <EyeOff className="mr-2 h-3.5 w-3.5" /> : <Eye className="mr-2 h-3.5 w-3.5" />}
