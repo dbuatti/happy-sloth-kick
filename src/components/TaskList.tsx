@@ -1,16 +1,9 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Plus, Settings, ListTodo } from 'lucide-react';
+import { Plus, ListTodo } from 'lucide-react';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
-import TaskDetailDialog from './TaskDetailDialog';
-import TaskOverviewDialog from './TaskOverviewDialog';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
-// Removed TaskFilter import
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import ManageSectionsDialog from './ManageSectionsDialog';
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Label } from "@/components/ui/label";
-import { Input } from '@/components/ui/input';
 
 import {
   DndContext,
@@ -34,6 +27,7 @@ import { CustomPointerSensor } from '@/lib/CustomPointerSensor';
 import SortableTaskItem from './SortableTaskItem';
 import SortableSectionHeader from './SortableSectionHeader';
 import TaskForm from './TaskForm';
+import { cn } from '@/lib/utils';
 
 interface TaskListProps {
   tasks: Task[];
@@ -43,17 +37,16 @@ interface TaskListProps {
   handleAddTask: (taskData: any) => Promise<any>;
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
   deleteTask: (taskId: string) => void;
-  // Removed filter props
   selectedTaskIds: string[];
   toggleTaskSelection: (taskId: string, checked: boolean) => void;
   clearSelectedTasks: () => void;
   bulkUpdateTasks: (updates: Partial<Task>, ids?: string[]) => Promise<void>;
   markAllTasksInSectionCompleted: (sectionId: string | null) => Promise<void>;
   sections: TaskSection[];
-  createSection: (name: string) => Promise<void>; // Keep for now, might be used by TaskForm or other internal logic
-  updateSection: (sectionId: string, newName: string) => Promise<void>; // Keep for now
-  deleteSection: (sectionId: string) => Promise<void>; // Keep for now
-  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>; // Keep for now
+  createSection: (name: string) => Promise<void>;
+  updateSection: (sectionId: string, newName: string) => Promise<void>;
+  deleteSection: (sectionId: string) => Promise<void>;
+  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
   updateTaskParentAndOrder: (activeId: string, newParentId: string | null, newSectionId: string | null, overId: string | null) => Promise<void>;
   reorderSections: (activeId: string, overId: string) => Promise<void>;
   moveTask: (taskId: string, direction: 'up' | 'down') => Promise<void>;
@@ -61,7 +54,6 @@ interface TaskListProps {
   setIsAddTaskOpen: (open: boolean) => void;
   currentDate: Date;
   setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
-  // Removed searchRef: React.RefObject<HTMLInputElement>;
 }
 
 const TaskList: React.FC<TaskListProps> = (props) => {
@@ -73,17 +65,16 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     handleAddTask,
     updateTask,
     deleteTask,
-    // Removed filter props
     selectedTaskIds,
     toggleTaskSelection,
     clearSelectedTasks,
     bulkUpdateTasks,
     markAllTasksInSectionCompleted,
     sections,
-    createSection, // Kept
-    updateSection, // Kept
-    deleteSection, // Kept
-    updateSectionIncludeInFocusMode, // Kept
+    createSection,
+    updateSection,
+    deleteSection,
+    updateSectionIncludeInFocusMode,
     updateTaskParentAndOrder,
     reorderSections,
     moveTask,
@@ -91,13 +82,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     setIsAddTaskOpen,
     currentDate,
     setCurrentDate,
-    // Removed searchRef,
   } = props;
-
-  console.log('[Render] TaskList', {
-    filteredCount: filteredTasks.length,
-    sections: sections.length,
-  });
 
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
@@ -113,13 +98,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     }
   });
 
-  // Removed state for Add Section and Manage Sections dialogs
-  // const [isAddSectionOpen, setIsAddSectionOpen] = useState(false);
-  // const [newSectionName, setNewSectionName] = useState('');
-  // const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
-  // const [editingSectionName, setNewEditingSectionName] = useState('');
-  // const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
-
   const [isAddTaskOpenLocal, setIsAddTaskOpenLocal] = useState(false);
   const [preselectedSectionId, setPreselectedSectionId] = useState<string | null>(null);
 
@@ -130,8 +108,8 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  // Removed anyFilterActive check
-  // Removed handleResetFilters function
+  // Keep a ref per section to scroll/focus
+  const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const toggleSection = useCallback((sectionId: string) => {
     setExpandedSections(prev => {
@@ -152,6 +130,38 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     return [...sections, noSection];
   }, [sections, userId]);
 
+  // Compute counts of top-level tasks per section for the overview bar
+  const sectionCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    allSortableSections.forEach(s => { counts[s.id] = 0; });
+    filteredTasks.forEach(t => {
+      if (t.parent_task_id === null) {
+        const key = t.section_id ?? 'no-section-header';
+        if (counts[key] === undefined) counts[key] = 0;
+        counts[key] += 1;
+      }
+    });
+    return counts;
+  }, [filteredTasks, allSortableSections]);
+
+  const focusSection = (sectionId: string) => {
+    // Ensure section expanded
+    setExpandedSections(prev => ({ ...prev, [sectionId]: true }));
+    // Scroll to it
+    requestAnimationFrame(() => {
+      const el = sectionRefs.current[sectionId];
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
+
+  const openAddTaskForSection = (sectionId: string | null) => {
+    setPreselectedSectionId(sectionId);
+    setIsAddTaskOpenLocal(true);
+    // Expand and focus section
+    const key = sectionId ?? 'no-section-header';
+    focusSection(key);
+  };
+
   const isSectionHeaderId = (id: UniqueIdentifier | null) => {
     if (!id) return false;
     return id === 'no-section-header' || sections.some(s => s.id === id);
@@ -164,33 +174,17 @@ const TaskList: React.FC<TaskListProps> = (props) => {
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id);
-    console.log('[DnD] drag start', {
-      activeId: event.active.id,
-      activeData: event.active.data?.current,
-    });
   };
 
   const handleDragOver = (event: DragOverEvent) => {
     const { active, over } = event;
     if (!over) return;
-    console.log('[DnD] drag over', {
-      activeId: active.id,
-      overId: over.id,
-      overData: over.data?.current,
-    });
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
 
-    if (!over) {
-      console.log('[DnD] drag end: no over, abort');
-      setActiveId(null);
-      return;
-    }
-
-    if (active.id === over.id) {
-      console.log('[DnD] drag end: same id, abort');
+    if (!over || active.id === over.id) {
       setActiveId(null);
       return;
     }
@@ -200,10 +194,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
       const a = String(active.id);
       const b = String(over.id);
       if (a !== 'no-section-header' && b !== 'no-section-header') {
-        console.log('[DnD] reordering sections', { from: a, to: b });
         await reorderSections(a, b);
-      } else {
-        console.log('[DnD] ignore reorder with no-section-header');
       }
       setActiveId(null);
       return;
@@ -211,7 +202,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
 
     const draggedTask = getTaskById(active.id);
     if (!draggedTask) {
-      console.warn('[DnD] drag end: active task not found', { activeId: active.id });
       setActiveId(null);
       return;
     }
@@ -229,7 +219,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     } else {
       const overTask = getTaskById(over.id);
       if (!overTask) {
-        console.log('[DnD] over not a task or section, abort', over.id);
         setActiveId(null);
         return;
       }
@@ -238,91 +227,45 @@ const TaskList: React.FC<TaskListProps> = (props) => {
       overId = overTask.id;
     }
 
-    console.log('[DnD] drag end resolved', {
-      draggedId: draggedTask.id,
-      from: { parent: draggedTask.parent_task_id, section: draggedTask.section_id },
-      to: { newParentId, newSectionId, overId },
-    });
-
     await updateTaskParentAndOrder(draggedTask.id, newParentId, newSectionId, overId);
     setActiveId(null);
   };
 
-  const handleOpenOverview = (task: Task) => {
-    setTaskToOverview(task);
-    setIsTaskOverviewOpen(true);
-  };
-
-  const handleEditTaskFromOverview = (task: Task) => {
-    setIsTaskOverviewOpen(false);
-    setTaskToEdit(task);
-    setIsTaskDetailOpen(true);
-  };
-
-  const openAddTaskForSection = (sectionId: string | null) => {
-    setPreselectedSectionId(sectionId);
-    setIsAddTaskOpenLocal(true);
-  };
-
   return (
     <>
-      <div className="space-y-1.5 mb-2">
-        {/* Removed TaskFilter component */}
-
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-1.5">
-          <div className="flex gap-1.5 w-full sm:w-auto">
-            {/* Removed Add Section Button and Dialog */}
-            {/*
-            <Dialog open={isAddSectionOpen} onOpenChange={setIsAddSectionOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="flex-1">
-                  <Plus className="mr-2 h-4 w-4" /> Add Section
+      {/* Compact Section Overview Bar */}
+      <div className="mb-2">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+          {allSortableSections.map((sec) => {
+            const count = sectionCounts[sec.id] ?? 0;
+            const isNoSection = sec.id === 'no-section-header';
+            return (
+              <div
+                key={sec.id}
+                className={cn(
+                  "flex items-center gap-2 rounded-md border px-2 py-1 bg-card shadow-sm flex-shrink-0",
+                )}
+              >
+                <button
+                  className="text-sm font-medium hover:underline"
+                  onClick={() => focusSection(sec.id)}
+                  aria-label={`Go to ${isNoSection ? 'No Section' : sec.name}`}
+                >
+                  {isNoSection ? 'No Section' : sec.name}
+                </button>
+                <span className="text-xs text-muted-foreground">• {count}</span>
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="h-6 w-6"
+                  onClick={() => openAddTaskForSection(isNoSection ? null : sec.id)}
+                  aria-label={`Add task to ${isNoSection ? 'No Section' : sec.name}`}
+                >
+                  <Plus className="h-3.5 w-3.5" />
                 </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add New Section</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div>
-                    <Label htmlFor="new-section-name">Section Name</Label>
-                    <Input
-                      id="new-section-name"
-                      value={newSectionName}
-                      onChange={(e) => setNewSectionName(e.target.value)}
-                      placeholder="e.g., Work, Personal, Groceries"
-                      autoFocus
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsAddSectionOpen(false)}>Cancel</Button>
-                  <Button onClick={() => {
-                    if (newSectionName.trim()) {
-                      createSection(newSectionName.trim());
-                      setNewSectionName('');
-                      setIsAddSectionOpen(false);
-                    }
-                  }} disabled={!newSectionName.trim()}>Add Section</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-            */}
-
-            {/* Removed Manage Sections Button and Tooltip */}
-            {/*
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" size="sm" className="flex-1">
-                  <Settings className="mr-2 h-4 w-4" /> Manage Sections
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                Manage, rename, delete, and reorder your task sections.
-              </TooltipContent>
-            </Tooltip>
-            */}
-          </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -353,24 +296,25 @@ const TaskList: React.FC<TaskListProps> = (props) => {
               const sectionItemIds = topLevelTasksInSection.map(t => t.id);
 
               return (
-                <div key={currentSection.id} className="mb-1.5">
+                <div
+                  key={currentSection.id}
+                  className="mb-1.5"
+                  ref={(el) => { sectionRefs.current[currentSection.id] = el; }}
+                >
                   <SortableSectionHeader
                     section={currentSection}
                     sectionTasksCount={topLevelTasksInSection.length}
                     isExpanded={isExpanded}
                     toggleSection={toggleSection}
-                    // Removed editingSectionId, editingSectionName, setNewEditingSectionName, handleRenameSection, handleCancelSectionEdit, handleEditSectionClick props
-                    editingSectionId={null} // Pass null as editing is no longer handled here
-                    editingSectionName="" // Pass empty string
-                    setNewEditingSectionName={() => {}} // No-op
-                    handleRenameSection={async () => {}} // No-op
-                    handleCancelSectionEdit={() => {}} // No-op
-                    handleEditSectionClick={() => {}} // No-op
+                    editingSectionId={null}
+                    editingSectionName=""
+                    setNewEditingSectionName={() => {}}
+                    handleRenameSection={async () => {}}
+                    handleCancelSectionEdit={() => {}}
+                    handleEditSectionClick={() => {}}
                     handleAddTaskToSpecificSection={(sectionId) => openAddTaskForSection(sectionId)}
                     markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
-                    handleDeleteSectionClick={(id) => {
-                      // setIsManageSectionsOpen(true); // Removed this
-                    }}
+                    handleDeleteSectionClick={() => {}}
                     updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
                   />
 
@@ -382,16 +326,12 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                             <div className="text-center text-foreground/80 dark:text-foreground/80 py-3 rounded-md border border-dashed border-border bg-muted/30" data-no-dnd="true">
                               <div className="flex items-center justify-center gap-2 mb-1.5">
                                 <ListTodo className="h-4 w-4" />
-                                <p className="text-sm font-medium">
-                                  {/* Removed anyFilterActive check */}
-                                  No tasks in this section yet.
-                                </p>
+                                <p className="text-sm font-medium">No tasks in this section yet.</p>
                               </div>
                               <div className="flex items-center justify-center gap-2">
                                 <Button size="sm" onClick={() => openAddTaskForSection(currentSection.id === 'no-section-header' ? null : currentSection.id)}>
                                   <Plus className="mr-2 h-4 w-4" /> Add Task
                                 </Button>
-                                {/* Removed filter reset button */}
                               </div>
                             </div>
                           ) : (
@@ -441,7 +381,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
           <DialogHeader>
             <DialogTitle>Add Task</DialogTitle>
           </DialogHeader>
-          <TaskForm
+        <TaskForm
             onSave={async (taskData) => {
               const success = await handleAddTask({
                 ...taskData,
@@ -460,46 +400,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
           />
         </DialogContent>
       </Dialog>
-
-      {/* Removed ManageSectionsDialog */}
-      {/*
-      <ManageSectionsDialog
-        isOpen={isManageSectionsOpen}
-        onClose={() => setIsManageSectionsOpen(false)}
-        sections={sections}
-        updateSection={updateSection}
-        deleteSection={deleteSection}
-        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-      />
-      */}
-
-      {/* Details & Overview */}
-      {taskToOverview && (
-        <TaskOverviewDialog
-          task={taskToOverview}
-          userId={userId}
-          isOpen={isTaskOverviewOpen}
-          onClose={() => setIsTaskOverviewOpen(false)}
-          onEditClick={handleEditTaskFromOverview}
-          onUpdate={updateTask}
-          onDelete={deleteTask}
-          sections={sections}
-          allCategories={allCategories}
-          allTasks={tasks}
-        />
-      )}
-      {taskToEdit && (
-        <TaskDetailDialog
-          task={taskToEdit}
-          userId={userId}
-          isOpen={isTaskDetailOpen}
-          onClose={() => setIsTaskDetailOpen(false)}
-          onUpdate={updateTask}
-          onDelete={deleteTask}
-          sections={sections}
-          allCategories={allCategories}
-        />
-      )}
     </>
   );
 };
