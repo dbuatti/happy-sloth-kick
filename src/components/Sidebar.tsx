@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
 import { Badge } from '@/components/ui/badge';
 import { useSound } from '@/context/SoundContext';
+import ThemeSelector from './ThemeSelector'; // Import ThemeSelector
 
 interface SidebarProps {
   children: React.ReactNode;
@@ -92,6 +93,7 @@ const Sidebar: React.FC<SidebarProps> = ({ children }) => {
                   <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"} className="h-7 w-7">
                     {isSoundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
                   </Button>
+                  <ThemeSelector /> {/* Reinstated ThemeSelector */}
                 </div>
               </div>
             </SheetContent>
@@ -101,6 +103,7 @@ const Sidebar: React.FC<SidebarProps> = ({ children }) => {
             <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"} className="h-7 w-7">
               {isSoundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
             </Button>
+            <ThemeSelector /> {/* Reinstated ThemeSelector */}
           </div>
         </header>
         <div className="flex-1 overflow-auto">
@@ -125,6 +128,7 @@ const Sidebar: React.FC<SidebarProps> = ({ children }) => {
             <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"} className="h-7 w-7">
               {isSoundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
             </Button>
+            <ThemeSelector /> {/* Reinstated ThemeSelector */}
           </div>
         </div>
       </div>
