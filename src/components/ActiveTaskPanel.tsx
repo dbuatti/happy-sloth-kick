@@ -6,7 +6,6 @@ import { Play, Pause, RefreshCcw, CheckCircle2, Edit, Target, ListTodo, Clock } 
 import { cn } from '@/lib/utils';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
-import { getCategoryColorProps } from '@/lib/categoryColors';
 import TaskDetailDialog from './TaskDetailDialog';
 import TaskOverviewDialog from './TaskOverviewDialog'; // For opening overview from panel
 
@@ -242,7 +241,7 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
             <ul className="space-y-2 max-h-40 overflow-y-auto pr-2">
               {upcomingTasks.map(task => (
                 <li key={task.id} className="flex items-center space-x-2">
-                  <div className={cn("w-2 h-2 rounded-full flex-shrink-0", getPriorityDotColor(task.priority))} />
+                  <div className={cn("w-2 h-2 rounded-full", getPriorityDotColor(task.priority))} />
                   <span className="text-sm text-foreground truncate flex-grow">{task.description}</span>
                   <Button
                     variant="ghost"

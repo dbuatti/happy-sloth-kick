@@ -2,8 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { Lightbulb, Keyboard, Palette, Settings, FolderOpen, Calendar, BellRing, StickyNote, CheckCircle2, BarChart3, User, LogOut, Search, Plus, ChevronLeft, ChevronRight, Edit } from 'lucide-react';
-import { themes } from '@/lib/themes';
+import { Lightbulb, Keyboard, Palette, Settings, ChevronLeft, ChevronRight, Edit, User, LogOut, BarChart3 } from 'lucide-react';
 
 const Help = () => {
   return (

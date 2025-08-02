@@ -1,18 +1,18 @@
-import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import TaskList from '@/components/TaskList';
 import { MadeWithDyad } from '@/components/made-with-dyad';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import TaskOverviewDialog from '@/components/TaskOverviewDialog';
 import { useTasks, Task } from '@/hooks/useTasks';
 import { useAuth } from '@/context/AuthContext';
-import { addDays, format, isBefore, isSameDay, parseISO, isValid, setHours, setMinutes } from 'date-fns';
+import { addDays } from 'date-fns';
 import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
 import CommandPalette from '@/components/CommandPalette';
-import { Card, CardContent } from "@/components/ui/card"; // Removed CardHeader, CardTitle
+import { Card, CardContent } from "@/components/ui/card";
 import { cn } from '@/lib/utils';
 import BulkActions from '@/components/BulkActions';
 import FocusPanelDrawer from '@/components/FocusPanelDrawer';
-import DailyTasksHeader from '@/components/DailyTasksHeader'; // Import the new header component
+import DailyTasksHeader from '@/components/DailyTasksHeader';
 
 
 const getUTCStartOfDay = (date: Date) => {
@@ -44,7 +44,6 @@ const DailyTasksV3: React.FC = () => {
     deleteSection,
     updateSectionIncludeInFocusMode,
     reorderSections,
-    moveTask,
     updateTaskParentAndOrder,
     searchFilter,
     setSearchFilter,
@@ -105,7 +104,7 @@ const DailyTasksV3: React.FC = () => {
             sections={sections}
             allCategories={allCategories}
             handleAddTask={handleAddTask}
-            userId={userId}
+            userId={user?.id || null}
             setIsFocusPanelOpen={setIsFocusPanelOpen}
             searchFilter={searchFilter}
             setSearchFilter={setSearchFilter}
@@ -143,7 +142,7 @@ const DailyTasksV3: React.FC = () => {
                   updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
                   updateTaskParentAndOrder={updateTaskParentAndOrder}
                   reorderSections={reorderSections}
-                  moveTask={moveTask}
+                  _moveTask={async () => {}} // Dummy function for now
                   allCategories={allCategories}
                   setIsAddTaskOpen={() => {}}
                   onOpenOverview={handleOpenOverview}

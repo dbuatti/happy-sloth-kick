@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { showReminder, dismissToast } from '@/utils/toast';
-import { addMinutes, isPast, isValid } from 'date-fns'; // Import isValid
-import { v4 as uuidv4 } from 'uuid';
+import { addMinutes, isValid } from 'date-fns';
 
 interface Reminder {
   id: string; // Task ID
@@ -84,7 +83,7 @@ export const ReminderProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }, delay);
       reminderQueueRef.current.push(timeoutId);
     }
-  }, [dismissReminder, snoozeReminder]); // Added dismissReminder, snoozeReminder to dependencies
+  }, [dismissReminder, snoozeReminder]);
 
   const addReminder = useCallback((taskId: string, message: string, remindAt: Date) => {
     if (!isValid(remindAt)) { // Add isValid check here too, at the entry point

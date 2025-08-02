@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess } from '@/utils/toast';
-import { v4 as uuidv4 } from 'uuid';
 
 export interface Project {
   id: string;
@@ -140,7 +139,7 @@ export const useProjects = () => {
       return false;
     }
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('projects')
         .insert({ user_id: userId, name, description, current_count: 0, link: normalizeUrl(link) })
         .select()
@@ -169,7 +168,7 @@ export const useProjects = () => {
         updatesToSend.link = normalizeUrl(updatesToSend.link);
       }
 
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('projects')
         .update(updatesToSend)
         .eq('id', projectId)

@@ -56,7 +56,7 @@ const WorkHoursSettings: React.FC = () => {
 
   const handleSaveAllWorkHours = async () => {
     setIsSaving(true);
-    const success = await saveWorkHours(localWorkHours);
+    await saveWorkHours(localWorkHours);
     setIsSaving(false);
   };
 
@@ -69,7 +69,7 @@ const WorkHoursSettings: React.FC = () => {
     }));
     setLocalWorkHours(updatedHours); // Update local state first
     setIsSaving(true);
-    const success = await saveWorkHours(updatedHours); // Then pass the updated state to save
+    await saveWorkHours(updatedHours); // Then pass the updated state to save
     setIsSaving(false);
   };
 

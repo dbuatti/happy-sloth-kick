@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess } from '@/utils/toast';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 
 export interface SleepRecord {
   id: string;

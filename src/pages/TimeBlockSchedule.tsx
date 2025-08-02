@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useWorkHours } from '@/hooks/useWorkHours';
-import { format, addMinutes, parse, isBefore, isSameHour, isSameMinute, setHours, setMinutes, getMinutes, getHours, isSameDay } from 'date-fns';
+import { format, addMinutes, parse, isBefore, getMinutes, getHours } from 'date-fns';
 import { CalendarDays, Clock, Settings } from 'lucide-react';
 import DateNavigator from '@/components/DateNavigator';
 import { cn } from '@/lib/utils';

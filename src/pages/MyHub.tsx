@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings as SettingsIcon, BarChart3, Archive as ArchiveIcon, LayoutGrid, CalendarIcon, Clock, CheckCircle2, ListTodo, Target, Sun, Moon, MessageSquare } from 'lucide-react';
+import { Settings as SettingsIcon, BarChart3, Archive as ArchiveIcon, CalendarIcon, Clock, CheckCircle2, ListTodo, Target, Sun, Moon, MessageSquare } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { format, eachDayOfInterval, startOfMonth } from 'date-fns';
@@ -133,7 +133,6 @@ const MyHub: React.FC = () => {
 
   // State for Settings Tab
   const [profileLoading, setProfileLoading] = useState(true);
-  const [profile, setProfile] = useState<Profile | null>(null);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
@@ -205,7 +204,6 @@ const MyHub: React.FC = () => {
         }
 
         if (data) {
-          setProfile(data);
           setFirstName(data.first_name || '');
           setLastName(data.last_name || '');
         }

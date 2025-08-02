@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Trash2, ListTodo } from 'lucide-react';
@@ -17,7 +17,6 @@ import {
 import { useSound } from '@/context/SoundContext';
 import TaskForm from './TaskForm';
 import { cn } from '@/lib/utils';
-import { parseISO } from 'date-fns';
 import { Checkbox } from "@/components/ui/checkbox";
 
 interface TaskDetailDialogProps {
@@ -41,7 +40,6 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   sections, // Destructure from props
   allCategories, // Destructure from props
 }) => {
-  // Removed console.log('TaskDetailDialog: Rendered. isOpen:', isOpen, 'task:', task?.id, task?.description);
   // Only use useTasks for actions that require it, not for fetching global state
   const { tasks: allTasks, handleAddTask, updateTask: updateSubtask } = useTasks(); 
   const { playSound } = useSound();

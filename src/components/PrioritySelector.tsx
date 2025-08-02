@@ -13,8 +13,6 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({ value, onChange }) 
     { value: 'urgent', label: 'Urgent', color: 'text-priority-urgent' },
   ];
 
-  const selectedPriority = priorities.find(p => p.value === value);
-
   return (
     <div className="space-y-2">
       <label className="text-sm font-medium">Priority</label>

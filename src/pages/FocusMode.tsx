@@ -2,19 +2,18 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/Progress";
-import { Play, Pause, RefreshCcw, CheckCircle2, Edit, Target, ListTodo, Clock, Brain, SkipForward } from 'lucide-react';
+import { Play, Pause, RefreshCcw, Brain, SkipForward } from 'lucide-react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useTasks, Task } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from '@/lib/utils';
-import { getCategoryColorProps } from '@/lib/categoryColors';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import MiniBreathingBubble from '@/components/MiniBreathingBubble'; // Import MiniBreathingBubble
 
 const FocusMode: React.FC = () => {
   const { playSound } = useSound();
-  const { filteredTasks, loading, updateTask, userId, sections, nextAvailableTask, allCategories } = useTasks({ viewMode: 'focus' });
+  const { filteredTasks, updateTask, userId, sections, allCategories } = useTasks({ viewMode: 'focus' });
 
   const [focusDuration, setFocusDuration] = useState(25 * 60); // 25 minutes
   const [breakDuration, setBreakDuration] = useState(5 * 60); // 5 minutes
@@ -106,14 +105,6 @@ const FocusMode: React.FC = () => {
     }
   }, [pauseTimer, isFocusPhase, sessionsCompleted, focusDuration, breakDuration, longBreakDuration, playSound]);
 
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
-
-  const progressValue = (timeRemaining / (isFocusPhase ? focusDuration : (sessionsCompleted % 4 === 0 && sessionsCompleted > 0 ? longBreakDuration : breakDuration))) * 100;
-
   const handleMarkTaskComplete = async (taskId: string) => {
     await updateTask(taskId, { status: 'completed' });
     playSound('success');
@@ -124,7 +115,14 @@ const FocusMode: React.FC = () => {
     setIsTaskDetailOpen(true);
   };
 
-  const focusModeSections = sections.filter(s => s.include_in_focus_mode);
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  const progressValue = (timeRemaining / (isFocusPhase ? focusDuration : (sessionsCompleted % 4 === 0 && sessionsCompleted > 0 ? longBreakDuration : breakDuration))) * 100;
+
 
   return (
     <div className="flex-1 flex flex-col">

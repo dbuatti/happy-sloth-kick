@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import DateNavigator from '@/components/DateNavigator';
 import { useSleepRecords, NewSleepRecordData } from '@/hooks/useSleepRecords';
-import { format, addDays, parseISO } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import { Moon, Bed, AlarmClock, LogOut } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSound } from '@/context/SoundContext';

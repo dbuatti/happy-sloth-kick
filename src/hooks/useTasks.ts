@@ -591,7 +591,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     }
     const newOrder = sections.length;
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('task_sections')
         .insert({ name, user_id: userId, order: newOrder, include_in_focus_mode: true })
         .select()
@@ -728,81 +728,6 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     }
   }, [userId]);
 
-  const updateTaskParentAndOrder = useCallback(async (activeId: string, newParentId: string | null, newSectionId: string | null, overId: string | null) => {
-    if (!userId) {
-      showError('User not authenticated.');
-      return;
-    }
-    const originalTasks = [...tasks];
-    const activeTask = tasks.find(t => t.id === activeId);
-    if (!activeTask) return;
-
-    const getGroupSiblings = (parentId: string | null, sectionId: string | null) => {
-      return tasks
-        .filter(t =>
-          (t.parent_task_id === parentId && (t.section_id === sectionId || (t.section_id === null && sectionId === null)))
-        )
-        .sort((a, b) => (a.order || 0) - (b.order || 0));
-    };
-
-    const resolveOverIndex = (siblings: Task[], overIdCandidate: string | null): number => {
-      if (!overIdCandidate) return siblings.length;
-      const idx = siblings.findIndex(s => s.id === overIdCandidate);
-      return idx === -1 ? siblings.length : idx;
-    };
-
-    // Optimistic update
-    isReorderingRef.current = true; // Set flag before optimistic update
-    const oldSiblings = getGroupSiblings(activeTask.parent_task_id, activeTask.section_id).filter(s => s.id !== activeTask.id);
-    oldSiblings.forEach((s, i) => { s.order = i; });
-
-    const targetParentId = newParentId;
-    const targetSectionId = targetParentId ? (tasks.find(t => t.id === targetParentId)?.section_id ?? newSectionId ?? null) : newSectionId;
-    const targetSiblings = getGroupSiblings(targetParentId, targetSectionId).filter(s => s.id !== activeTask.id);
-
-    const insertIndex = resolveOverIndex(targetSiblings, overId);
-    const reordered = [...targetSiblings];
-    const tempActive = { ...activeTask, parent_task_id: targetParentId, section_id: targetSectionId };
-    reordered.splice(insertIndex, 0, tempActive);
-    reordered.forEach((s, i) => { s.order = i; });
-
-    const updatesMap = new Map<string, Task>(); // Store full Task objects
-    
-    oldSiblings.forEach(s => {
-      const currentFullTask = tasks.find(t => t.id === s.id);
-      if (currentFullTask) {
-        updatesMap.set(s.id, { ...currentFullTask, order: s.order! });
-      }
-    });
-
-    reordered.forEach(s => {
-      const currentFullTask = tasks.find(t => t.id === s.id);
-      if (currentFullTask) {
-        updatesMap.set(s.id, {
-          ...currentFullTask,
-          order: s.order!,
-          parent_task_id: s.parent_task_id,
-          section_id: s.section_id
-        });
-      }
-    });
-
-    setTasks(prev => prev.map(t => updatesMap.has(t.id) ? { ...t, ...(updatesMap.get(t.id) as any) } : t));
-
-    try {
-      const payload = Array.from(updatesMap.values()).map(u => cleanTaskForDb(u));
-      const { error } = await supabase.from('tasks').upsert(payload, { onConflict: 'id' });
-      if (error) throw error;
-      showSuccess('Task moved!');
-      await refetchAllTasks(); // Full refresh after successful move
-    } catch (e: any) {
-      showError('Failed to move task.');
-      setTasks(originalTasks); // Revert optimistic update on error
-    } finally {
-      isReorderingRef.current = false; // Reset flag
-    }
-  }, [userId, tasks, refetchAllTasks]);
-
   const moveTask = useCallback(async (taskId: string, direction: 'up' | 'down') => {
     if (!userId) {
       showError('User not authenticated.');
@@ -853,9 +778,72 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       showError('Failed to reorder task.');
       setTasks(originalTasks); // Revert optimistic update on error
     } finally {
-      isReorderingRef.current = false; // Reset flag
+      isReorderingRef.current = false;
     }
   }, [userId, tasks, refetchAllTasks]);
+
+  const updateTaskParentAndOrder = useCallback(async (activeId: string, newParentId: string | null, newSectionId: string | null, overId: string | null) => {
+    if (!userId) {
+      showError('User not authenticated.');
+      return;
+    }
+
+    const taskToMove = tasks.find(t => t.id === activeId);
+    if (!taskToMove) return;
+
+    let targetTasks: Task[] = [];
+    if (newParentId) {
+      // Moving to be a subtask of newParentId
+      targetTasks = tasks.filter(t => t.parent_task_id === newParentId).sort((a, b) => (a.order || 0) - (b.order || 0));
+    } else if (newSectionId !== undefined) {
+      // Moving to a new section (top-level task)
+      targetTasks = tasks.filter(t => t.parent_task_id === null && t.section_id === newSectionId).sort((a, b) => (a.order || 0) - (b.order || 0));
+    } else {
+      // Moving within its current parent/section (top-level task)
+      targetTasks = tasks.filter(t => t.parent_task_id === taskToMove.parent_task_id && t.section_id === taskToMove.section_id).sort((a, b) => (a.order || 0) - (b.order || 0));
+    }
+
+    const currentTaskIndex = targetTasks.findIndex(t => t.id === activeId);
+    let newOrder = targetTasks.length; // Default to end if no overId
+
+    if (overId) {
+      const overTaskIndex = targetTasks.findIndex(t => t.id === overId);
+      if (overTaskIndex !== -1) {
+        newOrder = overTaskIndex;
+      }
+    }
+
+    const updatedTasksInGroup = [...targetTasks.filter(t => t.id !== activeId)];
+    updatedTasksInGroup.splice(newOrder, 0, { ...taskToMove, parent_task_id: newParentId, section_id: newSectionId });
+
+    const updatesToApply = updatedTasksInGroup.map((t, index) => ({
+      id: t.id,
+      order: index,
+      parent_task_id: t.parent_task_id,
+      section_id: t.section_id,
+      user_id: userId,
+    }));
+
+    // Optimistic update
+    isReorderingRef.current = true;
+    setTasks(prev => prev.map(t => {
+      const update = updatesToApply.find(u => u.id === t.id);
+      return update ? { ...t, order: update.order, parent_task_id: update.parent_task_id, section_id: update.section_id } : t;
+    }));
+
+    try {
+      const { error } = await supabase.from('tasks').upsert(updatesToApply, { onConflict: 'id' });
+      if (error) throw error;
+      showSuccess('Task reordered!');
+      await refetchAllTasks(); // Full refresh to ensure consistency
+    } catch (e: any) {
+      showError('Failed to reorder task.');
+      await refetchAllTasks(); // Revert by fetching fresh data
+    } finally {
+      isReorderingRef.current = false;
+    }
+  }, [userId, tasks, sections, refetchAllTasks]);
+
 
   return {
     tasks,

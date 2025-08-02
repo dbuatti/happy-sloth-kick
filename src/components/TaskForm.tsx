@@ -5,12 +5,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar, BellRing, Lightbulb, Link } from 'lucide-react';
+import { Calendar, BellRing, Lightbulb } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import CategorySelector from "./CategorySelector";
 import PrioritySelector from "./PrioritySelector";
 import SectionSelector from "./SectionSelector";
-import { format, setHours, setMinutes, parse, addDays, addWeeks, addMonths, startOfDay, parseISO, isValid } from 'date-fns';
+import { format, setHours, setMinutes, parseISO, isValid } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import { useForm, Controller } from 'react-hook-form';
@@ -122,8 +122,6 @@ const TaskForm: React.FC<TaskFormProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
 
-  // Removed console.log('TaskForm: Rendered. initialData:', initialData?.id, initialData?.description);
-
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskFormSchema),
     defaultValues: {
@@ -145,12 +143,9 @@ const TaskForm: React.FC<TaskFormProps> = ({
 
   const description = watch('description');
   const remindAtDate = watch('remindAtDate');
-  const recurringType = watch('recurringType');
 
   useEffect(() => {
-    // Removed console.log('TaskForm useEffect: initialData changed. initialData:', initialData?.id, initialData?.description);
     if (initialData) {
-      // Removed console.log('TaskForm useEffect: Setting form values from initialData.');
       reset({
         description: initialData.description,
         category: initialData.category,
@@ -164,9 +159,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
         parentTaskId: initialData.parent_task_id,
         link: initialData.link || '',
       });
-      // Removed console.log('TaskForm useEffect: Form description after reset:', form.getValues('description'));
     } else {
-      // Removed console.log('TaskForm useEffect: Setting default values for new task.');
       const generalCategory = allCategories.find(cat => cat.name.toLowerCase() === 'general');
       reset({
         description: '',
@@ -182,7 +175,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
         link: '',
       });
     }
-  }, [initialData, preselectedSectionId, parentTaskId, allCategories, reset, form]);
+  }, [initialData, preselectedSectionId, parentTaskId, allCategories, reset]);
 
   const handleSuggest = useCallback(async () => {
     if (!description.trim()) {
@@ -220,6 +213,8 @@ const TaskForm: React.FC<TaskFormProps> = ({
         } else {
           setValue('sectionId', null); // Default to no section if not found
         }
+        setValue('link', suggestions.link || null); // Ensure link is set
+        setValue('notes', suggestions.notes || null); // Ensure notes is set
       }
     } catch (error) {
       console.error('Error getting AI suggestions:', error);
@@ -244,9 +239,9 @@ const TaskForm: React.FC<TaskFormProps> = ({
       due_date: data.dueDate instanceof Date ? data.dueDate.toISOString() : null,
       notes: data.notes || null,
       remind_at: finalRemindAt instanceof Date ? finalRemindAt.toISOString() : null,
-      section_id: data.sectionId,
+      section_id: data.sectionId || null, // Ensure sectionId is null if undefined
       recurring_type: data.recurringType,
-      parent_task_id: data.parentTaskId,
+      parent_task_id: data.parentTaskId || null, // Ensure parentTaskId is null if undefined
       link: data.link || null, // Include link
     });
     setIsSaving(false);
@@ -466,7 +461,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
         <Button type="button" variant="outline" onClick={onCancel} disabled={isSaving || isSuggesting} className="h-9">
           Cancel
         </Button>
-        <Button type="submit" disabled={isSaving || isSuggesting || !form.formState.isValid && form.formState.isSubmitted} className="h-9">
+        <Button type="submit" disabled={isSaving || isSuggesting || (!form.formState.isValid && form.formState.isSubmitted)} className="h-9">
           {isSaving ? 'Saving...' : (initialData ? 'Save Changes' : 'Add Task')}
         </Button>
       </div>

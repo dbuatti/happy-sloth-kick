@@ -6,9 +6,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Clock, Palette, Trash2 } from 'lucide-react'; // Added Trash2 icon
+import { CalendarIcon, Trash2 } from 'lucide-react'; // Added Trash2 icon
 import { cn } from "@/lib/utils";
-import { format, parse, setHours, setMinutes, isValid, parseISO, addMinutes } from 'date-fns';
+import { format, parse, setHours, setMinutes, parseISO, addMinutes } from 'date-fns';
 import { Appointment, NewAppointmentData } from '@/hooks/useAppointments';
 import {
   AlertDialog,

@@ -34,7 +34,6 @@ const ProjectBalanceTracker: React.FC = () => {
     incrementProjectCount,
     decrementProjectCount,
     resetAllProjectCounts,
-    userId,
     sortOption,
     setSortOption,
   } = useProjects();
@@ -337,7 +336,7 @@ const ProjectBalanceTracker: React.FC = () => {
                               type="url"
                               value={editingProjectLink}
                               onChange={(e) => setNewProjectLink(e.target.value)}
-                              placeholder="Project link (optional)"
+                              placeholder="e.g., https://github.com/my-project"
                               disabled={isSavingProject}
                               className="h-9"
                             />

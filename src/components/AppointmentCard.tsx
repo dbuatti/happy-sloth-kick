@@ -2,10 +2,9 @@ import React, { useRef } from 'react';
 import { Appointment } from '@/hooks/useAppointments';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
-import { Edit, Trash2, Info } from 'lucide-react';
+import { Info } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface AppointmentCardProps {
@@ -50,7 +49,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
   const calculatedWidth = `calc(100% - ${calculatedLeft}px)`;
 
   const style = {
-    transform: CSS.Transform.toString(transform),
+    transform: CSS.Transform.toString(transform || null), // Ensure transform is Transform | null
     transition,
     zIndex: isDragging ? 100 : 'auto',
     opacity: isDragging ? 0.8 : 1,

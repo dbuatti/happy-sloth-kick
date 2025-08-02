@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { startOfDay, endOfDay, parseISO, isSameDay, isBefore } from 'date-fns';
+import { startOfDay, parseISO, isSameDay, isBefore } from 'date-fns';
 
 // Define a minimal Task type for this hook, including necessary fields for filtering
 interface DailyCountTask {

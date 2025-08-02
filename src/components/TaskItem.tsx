@@ -2,12 +2,11 @@ import React, { useState } from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, ArrowUp, ArrowDown, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon } from 'lucide-react';
+import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon } from 'lucide-react';
 import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
-import { getCategoryColorProps } from '@/lib/categoryColors';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { CheckCircle2 } from 'lucide-react'; // Ensure CheckCircle2 is imported for the animation
 
@@ -30,17 +29,13 @@ interface TaskItemProps {
 
 const TaskItem: React.FC<TaskItemProps> = ({
   task,
-  userId,
   onStatusChange,
   onDelete,
   onUpdate,
-  isSelected,
   onToggleSelect,
   sections,
   onOpenOverview,
   currentDate,
-  onMoveUp,
-  onMoveDown,
   isOverlay = false,
   dragListeners,
 }) => {
@@ -68,18 +63,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
         setShowCompletionEffect(false);
       }, 600);
     }
-  };
-
-  const handleMoveUpClick = () => {
-    if (isOverlay) return;
-    onMoveUp(task.id);
-    playSound('success');
-  };
-
-  const handleMoveDownClick = () => {
-    if (isOverlay) return;
-    onMoveDown(task.id);
-    playSound('success');
   };
 
   const getDueDateDisplay = (dueDate: string | null) => {

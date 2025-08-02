@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,6 @@ import { Search, Filter, X, ListRestart } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
 import { TaskSection, Category } from '@/hooks/useTasks';
-import { cn } from '@/lib/utils';
 
 interface TaskFilterProps {
   currentDate: Date;
@@ -27,8 +26,6 @@ interface TaskFilterProps {
 }
 
 const TaskFilter: React.FC<TaskFilterProps> = ({
-  currentDate,
-  setCurrentDate,
   searchFilter,
   setSearchFilter,
   statusFilter,

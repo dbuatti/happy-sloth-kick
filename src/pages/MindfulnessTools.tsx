@@ -1,6 +1,5 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { Eye, Wind, Sparkles, Brain, UtensilsCrossed, ScanEye, MessageSquare, Armchair } from 'lucide-react';
 import MindfulnessToolCard from '@/components/MindfulnessToolCard'; // Import the new card component

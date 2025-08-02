@@ -27,7 +27,7 @@ const defaultSteps: BodyScanStep[] = [
 
 const BodyScanMeditationPage: React.FC = () => {
   const { playSound } = useSound();
-  const [steps, setSteps] = useState<BodyScanStep[]>(defaultSteps);
+  const [steps] = useState<BodyScanStep[]>(defaultSteps);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [timeRemainingInStep, setTimeRemainingInStep] = useState(steps[0].duration);
   const [isRunning, setIsRunning] = useState(false);

@@ -30,13 +30,13 @@ const defaultPMRSteps: PMRStep[] = [
 
 const ProgressiveMuscleRelaxationPage: React.FC = () => {
   const { playSound } = useSound();
-  const [steps, setSteps] = useState<PMRStep[]>(defaultPMRSteps);
+  const [steps] = useState<PMRStep[]>(defaultPMRSteps);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isTensingPhase, setIsTensingPhase] = useState(true); // true for tense, false for relax
   const [timeRemainingInPhase, setTimeRemainingInPhase] = useState(steps[0].tenseDuration);
   const [isRunning, setIsRunning] = useState(false);
   const [isMeditationComplete, setIsMeditationComplete] = useState(false);
-  const timerRef = useRef<NodeJS.Timeout | null>(null); // Corrected initialization
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const currentStep = steps[currentStepIndex];
   const currentPhaseDuration = isTensingPhase ? currentStep.tenseDuration : currentStep.relaxDuration;
@@ -219,10 +219,10 @@ const ProgressiveMuscleRelaxationPage: React.FC = () => {
                 </div>
 
                 <div className="flex justify-between items-center">
-                  <Button variant="ghost" onClick={goToPreviousStep} disabled={currentStepIndex === 0 && isTensingPhase} className="h-9">
+                  <Button variant="ghost" onClick={goToPreviousStep} disabled={currentStepIndex === 0} className="h-9">
                     <ChevronLeft className="mr-2 h-4 w-4" /> Previous
                   </Button>
-                  <Button variant="ghost" onClick={goToNextStep} disabled={currentStepIndex === steps.length - 1 && !isTensingPhase} className="h-9">
+                  <Button variant="ghost" onClick={goToNextStep} disabled={currentStepIndex === steps.length - 1} className="h-9">
                     Next <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
                 </div>

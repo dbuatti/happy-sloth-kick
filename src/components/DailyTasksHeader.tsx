@@ -1,17 +1,16 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, ListTodo, CheckCircle2, Clock, Brain, Sparkles, Search, Filter, X, ListRestart, CalendarIcon } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { Plus, ListTodo, Brain, CheckCircle2, Clock } from 'lucide-react'; // Imported CheckCircle2 and Clock
 import DateNavigator from '@/components/DateNavigator';
 import MoodBoosterButton from '@/components/MoodBoosterButton';
 import TaskFilter from '@/components/TaskFilter';
 import { cn } from '@/lib/utils';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
-import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast';
+import { showError, showLoading, dismissToast } from '@/utils/toast';
 import { suggestTaskDetails } from '@/integrations/supabase/api';
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
-import { isBefore, isSameDay, parseISO, format } from 'date-fns';
+import { isBefore, isSameDay, parseISO } from 'date-fns';
 
 interface DailyTasksHeaderProps {
   currentDate: Date;
@@ -38,12 +37,10 @@ interface DailyTasksHeaderProps {
 const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   currentDate,
   setCurrentDate,
-  tasks,
   filteredTasks,
   sections,
   allCategories,
   handleAddTask,
-  userId,
   setIsFocusPanelOpen,
   searchFilter,
   setSearchFilter,
@@ -147,22 +144,13 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
 
   return (
     <div className="flex flex-col bg-background sticky top-0 z-10 shadow-sm">
-      {/* Top Bar: Task Count, Date Navigator, Utility Buttons */}
-      <div className="flex items-center justify-between px-4 py-3">
+      {/* Top Bar: Task Count & Utility Buttons */}
+      <div className="flex items-center justify-between px-4 pt-4">
         {/* Left: Task Count */}
         <div className="flex items-center gap-2">
           <ListTodo className="h-6 w-6 text-primary" />
           <span className="text-2xl font-bold">{dailyTaskCount}</span>
         </div>
-
-        {/* Center: Date Navigator */}
-        <DateNavigator
-          currentDate={currentDate}
-          onPreviousDay={() => setCurrentDate(prevDate => new Date(prevDate.setDate(prevDate.getDate() - 1)))}
-          onNextDay={() => setCurrentDate(prevDate => new Date(prevDate.setDate(prevDate.getDate() + 1)))}
-          onGoToToday={() => setCurrentDate(new Date())}
-          setCurrentDate={setCurrentDate}
-        />
 
         {/* Right: Utility Buttons */}
         <div className="flex items-center gap-2">
@@ -179,7 +167,16 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         </div>
       </div>
 
-      {/* Condensed Today's Summary */}
+      {/* Date Navigator */}
+      <DateNavigator
+        currentDate={currentDate}
+        onPreviousDay={() => setCurrentDate(prevDate => new Date(prevDate.setDate(prevDate.getDate() - 1)))}
+        onNextDay={() => setCurrentDate(prevDate => new Date(prevDate.setDate(prevDate.getDate() + 1)))}
+        onGoToToday={() => setCurrentDate(new Date())}
+        setCurrentDate={setCurrentDate}
+      />
+
+      {/* Today's Summary (replaces Status Badges and TodayProgressCard) */}
       <div className="flex items-center justify-center gap-4 px-4 pb-3 text-sm text-muted-foreground">
         <div className="flex items-center gap-1">
           <ListTodo className="h-4 w-4 text-foreground" />
