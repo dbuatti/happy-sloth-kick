@@ -12,7 +12,7 @@ import { Plus, Settings, CheckCircle2, ListTodo, FolderOpen, ChevronDown, Edit, 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from '@/lib/utils';
 import { TaskSection } from '@/hooks/useTasks';
-// Removed DragHandleIcon import
+import DragHandleIcon from './DragHandleIcon'; // Import the new icon
 
 interface SortableSectionHeaderProps {
   section: TaskSection;
@@ -79,9 +79,18 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
         isOverlay ? "cursor-grabbing" : "hover:shadow-sm", // Add hover shadow
       )}
       {...(attributes || {})} // Keep attributes here
-      {...(sortable?.listeners || {})} // Apply listeners to the whole div for dragging
     >
-      {/* Removed drag handle button */}
+      <button
+        className={cn(
+          "flex-shrink-0 h-full py-2 px-1.5 text-muted-foreground opacity-100 group-hover:opacity-100 transition-opacity duration-200",
+          isOverlay ? "cursor-grabbing" : "cursor-grab active:cursor-grabbing"
+        )}
+        aria-label="Drag to reorder section"
+        disabled={isOverlay}
+        {...(sortable?.listeners || {})} // ADD listeners here
+      >
+        <DragHandleIcon className="h-4 w-4" /> {/* Use custom DragHandleIcon */}
+      </button>
       <div className="flex-1 flex items-center justify-between pl-1"> {/* Adjusted padding */}
         {editingSectionId === section.id && !isOverlay ? (
           <div className="flex items-center w-full gap-2" data-no-dnd="true">
@@ -133,7 +142,9 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
                   <DropdownMenuItem onSelect={() => markAllTasksInSectionCompleted(section.id)}>
                     <CheckCircle2 className="mr-2 h-3.5 w-3.5" /> Mark All Completed
                   </DropdownMenuItem>
-                  {/* Removed Rename Section button */}
+                  <DropdownMenuItem onSelect={() => handleEditSectionClick(section)}>
+                    <Edit className="mr-2 h-3.5 w-3.5" /> Rename Section
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onSelect={() => updateSectionIncludeInFocusMode(section.id, !section.include_in_focus_mode)}>
                     {section.include_in_focus_mode ? <EyeOff className="mr-2 h-3.5 w-3.5" /> : <Eye className="mr-2 h-3.5 w-3.5" />}
@@ -158,6 +169,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
             </>
           )}
         </div>
+      </div>
     </div>
   );
 };
