@@ -107,41 +107,34 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
       >
         <DragHandleIcon className="h-4 w-4" /> {/* Use custom DragHandleIcon */}
       </button>
-      <div className="flex-1 flex items-center justify-between"> {/* Removed pl-1 here */}
+      <div className="flex-1 flex items-center justify-between">
         <div 
-          className="relative flex items-center flex-1 cursor-pointer" // Removed gap-2 here
+          className="flex items-center flex-1 cursor-pointer" // Removed relative and gap-2
           onClick={() => !isOverlay && handleEditSectionClick(section)} // Direct edit on click
           data-no-dnd="true" // Prevent drag when clicking on text to edit
         >
-          {/* Removed FolderOpen icon */}
-          
-          {/* Static text - always visible, but hidden when editing */}
-          <h3 className={cn(
-            "text-base font-bold truncate", // Adjusted font size and weight for consistency
-            "absolute inset-0 flex items-center", // Make it absolute to align with input
-            isEditing ? "opacity-0" : "opacity-100" // Only hide opacity, keep it in flow
-          )}>
-            {section.name} ({sectionTasksCount})
-          </h3>
-
-          {/* Editable input, overlaid - only visible when editing */}
-          <Input
-            value={isEditing ? editingSectionName : section.name} // Show current editing name or static name
-            onChange={(e) => setNewEditingSectionName(e.target.value)}
-            onBlur={handleInputBlur}
-            onKeyDown={handleInputKeyDown}
-            className={cn(
-              "absolute inset-0 w-full h-full text-base font-bold", // Match h3 styling
-              "border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0", // Remove default input styling
-              "p-0", // Remove default input padding
-              "text-foreground", // Ensure text color matches
-              "appearance-none", // Remove native input styling
-              isEditing ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-            )}
-            style={{ lineHeight: '1.5rem' }} // Explicitly set line-height to match h3
-            autoFocus={isEditing} // Auto-focus when editing
-            readOnly={!isEditing} // Make it read-only when not editing
-          />
+          {isEditing ? (
+            <Input
+              value={editingSectionName}
+              onChange={(e) => setNewEditingSectionName(e.target.value)}
+              onBlur={handleInputBlur}
+              onKeyDown={handleInputKeyDown}
+              className={cn(
+                "w-full h-full text-base font-bold", // Match h3 styling
+                "border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0", // Remove default input styling
+                "p-0", // Remove default input padding
+                "text-foreground", // Ensure text color matches
+                "appearance-none", // Remove native input styling
+                "flex-1 truncate" // Ensure it takes space and truncates
+              )}
+              style={{ lineHeight: '1.5rem' }} // Explicitly set line-height to match h3
+              autoFocus={true} // Auto-focus when editing
+            />
+          ) : (
+            <h3 className="text-base font-bold truncate">
+              {section.name} ({sectionTasksCount})
+            </h3>
+          )}
         </div>
         <div className="flex items-center space-x-1" data-no-dnd="true"> {/* Reduced space-x */}
           {!isOverlay && (
