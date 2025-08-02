@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Trash2, CheckCircle2, ListTodo } from 'lucide-react';
 import { Task, TaskSection, Category } from '@/hooks/useTasks'; // Import Task, TaskSection, Category types
 import { useTasks } from '@/hooks/useTasks'; // Keep useTasks for subtask updates and handleAddTask
@@ -119,6 +119,9 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
       <DialogContent className="sm:max-w-[425px] md:max-w-lg lg:max-w-xl">
         <DialogHeader>
           <DialogTitle>Edit Task</DialogTitle>
+          <DialogDescription className="sr-only">
+            Edit the details of your task, including sub-tasks.
+          </DialogDescription>
         </DialogHeader>
         <TaskForm
           initialData={task}
@@ -189,6 +192,9 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add Sub-task for "{task.description}"</DialogTitle>
+            <DialogDescription className="sr-only">
+              Fill in the details to add a new sub-task for this task.
+            </DialogDescription>
           </DialogHeader>
           <TaskForm
             onSave={handleAddSubtask}

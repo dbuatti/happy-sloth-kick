@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from "@/utils/toast";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import AddTaskForm from './AddTaskForm';
 import { useSound } from '@/context/SoundContext';
 import { Task } from '@/hooks/useTasks';
@@ -226,6 +226,9 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
           <SheetContent className="h-full sm:max-w-md">
             <SheetHeader>
               <SheetTitle>Add New Task</SheetTitle>
+              <DialogDescription className="sr-only">
+                Fill in the details to add a new task from the command palette.
+              </DialogDescription>
             </SheetHeader>
             <AddTaskForm onAddTask={handleNewTaskSubmit} userId={user?.id || null} onTaskAdded={() => setIsAddTaskDialogOpen(false)} sections={sections} allCategories={allCategories} currentDate={currentDate} />
           </SheetContent>
@@ -235,6 +238,9 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Add New Task</DialogTitle>
+              <DialogDescription className="sr-only">
+                Fill in the details to add a new task from the command palette.
+              </DialogDescription>
             </DialogHeader>
             <AddTaskForm onAddTask={handleNewTaskSubmit} userId={user?.id || null} onTaskAdded={() => setIsAddTaskDialogOpen(false)} sections={sections} allCategories={allCategories} currentDate={currentDate} />
           </DialogContent>

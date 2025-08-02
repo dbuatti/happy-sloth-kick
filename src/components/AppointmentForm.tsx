@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, Clock, Palette, Trash2 } from 'lucide-react'; // Added Trash2 icon
@@ -152,6 +152,9 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
       <DialogContent className="sm:max-w-[425px] md:max-w-lg">
         <DialogHeader>
           <DialogTitle>{initialData ? 'Edit Appointment' : 'Add New Appointment'}</DialogTitle>
+          <DialogDescription className="sr-only">
+            {initialData ? 'Edit the details of your appointment.' : 'Fill in the details to add a new appointment.'}
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-4">
           <div className="space-y-2">

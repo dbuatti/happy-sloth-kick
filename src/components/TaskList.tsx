@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Plus, ListTodo } from 'lucide-react';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 
 import {
@@ -311,6 +311,9 @@ const TaskList: React.FC<TaskListProps> = (props) => {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Add Task</DialogTitle>
+            <DialogDescription className="sr-only">
+              Fill in the details to add a new task.
+            </DialogDescription>
           </DialogHeader>
           <TaskForm
             onSave={async (taskData) => {

@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Trash2, CheckCircle2, ListTodo, Edit, Calendar, Clock, StickyNote, BellRing, FolderOpen, Repeat, Link as LinkIcon } from 'lucide-react';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
@@ -124,6 +124,9 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
             </div>
             <span className="flex-1 truncate">{task.description}</span>
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            View and manage the details of this task.
+          </DialogDescription>
         </DialogHeader>
         <div className="py-3 space-y-3 text-sm text-foreground">
           <div className="grid grid-cols-2 gap-y-1.5 gap-x-4">
