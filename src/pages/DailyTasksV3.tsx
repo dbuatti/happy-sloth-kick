@@ -205,8 +205,9 @@ const DailyTasksV3: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col">
       <main className={cn("flex-grow p-4", isBulkActionsActive ? "pb-[90px]" : "")}>
-        <div className="w-full max-w-4xl mx-auto h-full">
-          <Card className="shadow-lg p-4 h-full flex flex-col">
+        <div className="w-full max-w-4xl mx-auto h-full flex flex-col space-y-4"> {/* Added flex-col and space-y-4 */}
+          {/* Top Header Card */}
+          <Card className="shadow-lg p-4 flex flex-col">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
@@ -226,7 +227,6 @@ const DailyTasksV3: React.FC = () => {
                   </Button>
                 </div>
               </div>
-              {/* Date Navigator now takes full width */}
               <DateNavigator
                 currentDate={currentDate}
                 onPreviousDay={handlePreviousDay}
@@ -246,59 +246,60 @@ const DailyTasksV3: React.FC = () => {
                 </Badge>
               </div>
             </CardHeader>
+          </Card>
 
-            <CardContent className="pt-3 flex-1 flex flex-col">
-              {/* Today's Progress Card */}
-              <div className="mb-4">
-                <TodayProgressCard
-                  totalTasks={totalCount}
-                  completedTasks={completedCount}
-                  overdueTasks={overdueCount}
+          {/* Today's Progress Card (separate) */}
+          <TodayProgressCard
+            totalTasks={totalCount}
+            completedTasks={completedCount}
+            overdueTasks={overdueCount}
+          />
+
+          {/* Task Filter and Search (separate) */}
+          <TaskFilter
+            currentDate={currentDate}
+            setCurrentDate={setCurrentDate}
+            searchFilter={searchFilter}
+            setSearchFilter={setSearchFilter}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+            categoryFilter={categoryFilter}
+            setCategoryFilter={setCategoryFilter}
+            priorityFilter={priorityFilter}
+            setPriorityFilter={setPriorityFilter}
+            sectionFilter={sectionFilter}
+            setSectionFilter={setSectionFilter}
+            sections={sections}
+            allCategories={allCategories}
+            searchRef={searchInputRef}
+          />
+
+          {/* Quick Add Task Bar (separate) */}
+          <div
+            className={cn(
+              "quick-add-bar rounded-lg", // Added rounded-lg
+              stuck ? "stuck" : ""
+            )}
+          >
+            <form onSubmit={handleQuickAddTask}>
+              <div className="flex items-center gap-2">
+                <Input
+                  ref={quickAddInputRef}
+                  placeholder='Quick add a task — press "/" to focus, Enter to add'
+                  value={quickAddTaskDescription}
+                  onChange={(e) => setQuickAddTaskDescription(e.target.value)}
+                  className="flex-1 h-9 text-sm"
                 />
+                <Button type="submit" className="whitespace-nowrap h-9 text-sm">
+                  <Plus className="mr-1 h-3 w-3" /> Add
+                </Button>
               </div>
+            </form>
+          </div>
 
-              {/* Task Filter and Search */}
-              <TaskFilter
-                currentDate={currentDate}
-                setCurrentDate={setCurrentDate}
-                searchFilter={searchFilter}
-                setSearchFilter={setSearchFilter}
-                statusFilter={statusFilter}
-                setStatusFilter={setStatusFilter}
-                categoryFilter={categoryFilter}
-                setCategoryFilter={setCategoryFilter}
-                priorityFilter={priorityFilter}
-                setPriorityFilter={setPriorityFilter}
-                sectionFilter={sectionFilter}
-                setSectionFilter={setSectionFilter}
-                sections={sections}
-                allCategories={allCategories}
-                searchRef={searchInputRef}
-              />
-
-              {/* Quick Add Task Bar */}
-              <div
-                className={cn(
-                  "quick-add-bar", // Apply the new base class
-                  stuck ? "stuck" : "" // Apply stuck class conditionally
-                )}
-              >
-                <form onSubmit={handleQuickAddTask}>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      ref={quickAddInputRef}
-                      placeholder='Quick add a task — press "/" to focus, Enter to add'
-                      value={quickAddTaskDescription}
-                      onChange={(e) => setQuickAddTaskDescription(e.target.value)}
-                      className="flex-1 h-9 text-sm"
-                    />
-                    <Button type="submit" className="whitespace-nowrap h-9 text-sm">
-                      <Plus className="mr-1 h-3 w-3" /> Add
-                    </Button>
-                  </div>
-                </form>
-              </div>
-
+          {/* Main Task List Card */}
+          <Card className="shadow-lg p-4 flex-1 flex flex-col">
+            <CardContent className="pt-3 flex-1 flex flex-col">
               <div ref={scrollRef} className="flex-1 overflow-y-auto pt-3 -mx-4 px-4">
                 <TaskList
                   tasks={tasks}
