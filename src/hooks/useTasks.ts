@@ -276,6 +276,9 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     const allProcessedTasks: Task[] = [];
     const processedSeriesIds = new Set<string>(); // To track which recurring series have been handled
 
+    console.log('useTasks: processedTasks memo - Starting processing for date:', format(todayStart, 'yyyy-MM-dd'));
+    console.log('useTasks: processedTasks memo - Total raw tasks:', tasks.length);
+
     // Create categoriesMap here, as it's a dependency of this memo
     const categoriesMapLocal = new Map<string, string>(); // Use a local map
     allCategories.forEach(c => categoriesMapLocal.set(c.id, c.color));
@@ -299,12 +302,17 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         if (templateTask.recurring_type === 'none') {
             // Non-recurring task: include if created on current day or is a carry-over 'to-do'
             const taskCreatedAt = getUTCStartOfDay(parseISO(templateTask.created_at));
-            if (isSameDay(taskCreatedAt, todayStart) || (isBefore(taskCreatedAt, todayStart) && templateTask.status === 'to-do')) {
+            const isRelevant = isSameDay(taskCreatedAt, todayStart) || (isBefore(taskCreatedAt, todayStart) && templateTask.status === 'to-do');
+            if (isRelevant) {
                 allProcessedTasks.push({ ...templateTask, category_color: categoriesMapLocal.get(templateTask.category) || 'gray' });
+                console.log(`  - Including non-recurring task: ${templateTask.description} (ID: ${templateTask.id}, Status: ${templateTask.status}, Created: ${format(taskCreatedAt, 'yyyy-MM-dd')})`);
+            } else {
+                console.log(`  - Excluding non-recurring task: ${templateTask.description} (ID: ${templateTask.id}, Status: ${templateTask.status}, Created: ${format(taskCreatedAt, 'yyyy-MM-dd')}) - Not relevant for today.`);
             }
         } else {
             // This is a recurring series
             processedSeriesIds.add(seriesId); // Mark this series as processed
+            console.log(`  - Processing recurring series for template: ${templateTask.description} (ID: ${templateTask.id}, Type: ${templateTask.recurring_type})`);
 
             // Sort instances by creation date, most recent first
             const sortedInstances = [...seriesInstances].sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime());
@@ -318,6 +326,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
             if (instanceCreatedToday) {
                 relevantInstanceForToday = instanceCreatedToday;
+                console.log(`    - Found instance created today: ${instanceCreatedToday.description} (ID: ${instanceCreatedToday.id}, Status: ${instanceCreatedToday.status})`);
             } else {
                 // 2. Find the latest incomplete carry-over instance from a previous day
                 const carryOverInstance = sortedInstances.find(t =>
@@ -325,6 +334,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
                 );
                 if (carryOverInstance) {
                     relevantInstanceForToday = carryOverInstance;
+                    console.log(`    - Found carry-over instance: ${carryOverInstance.description} (ID: ${carryOverInstance.id}, Status: ${carryOverInstance.status})`);
                 }
             }
 
@@ -356,11 +366,17 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
                             category_color: categoriesMapLocal.get(templateTask.category) || 'gray', // Apply color here
                         };
                         allProcessedTasks.push(virtualTask);
+                        console.log(`    - Generated virtual instance for today: ${virtualTask.description} (ID: ${virtualTask.id})`);
+                    } else {
+                        console.log(`    - Template task is archived, not generating virtual instance.`);
                     }
+                } else {
+                    console.log(`    - No existing instance or carry-over, and recurring type (${templateTask.recurring_type}) does not match today.`);
                 }
             }
         }
     });
+    console.log('useTasks: processedTasks memo - Finished processing. Total processed tasks:', allProcessedTasks.length);
     return allProcessedTasks;
   }, [tasks, currentDate, allCategories]); // Added allCategories to dependencies
 
@@ -572,6 +588,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         return t.parent_task_id === activeTask.parent_task_id;
       }
     }).filter(t => t.id !== activeId).sort((a, b) => (a.order || 0) - (b.order || 0));
+    console.log('useTasks: updateTaskParentAndOrder - Old siblings before re-indexing:', oldSiblings.map(t => ({ id: t.id, order: t.order, description: t.description })));
     oldSiblings.forEach((t, i) => addUpdate(t, { order: i }));
 
     // Target siblings
@@ -585,15 +602,20 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         .filter(t => t.id !== activeId)
         .sort((a, b) => (a.order || 0) - (b.order || 0));
     }
+    console.log('useTasks: updateTaskParentAndOrder - Target siblings before inserting active task:', targetSiblings.map(t => ({ id: t.id, order: t.order, description: t.description })));
+
 
     let newOrder = targetSiblings.length;
     if (overId) {
       const overIndex = targetSiblings.findIndex(t => t.id === overId);
       if (overIndex !== -1) newOrder = overIndex;
     }
+    console.log('useTasks: updateTaskParentAndOrder - Calculated new order index:', newOrder, 'based on overId:', overId);
+
 
     const temp = [...targetSiblings];
     temp.splice(newOrder, 0, activeTask);
+    console.log('useTasks: updateTaskParentAndOrder - New ordered list of target siblings (including active task):', temp.map(t => ({ id: t.id, description: t.description })));
     temp.forEach((t, idx) => addUpdate(t, { order: idx }));
 
     addUpdate(activeTask, {
@@ -601,12 +623,15 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       section_id: newParentId ? (tasks.find(t => t.id === newParentId)?.section_id ?? newSectionId ?? null) : newSectionId,
       order: newOrder,
     });
+    console.log('useTasks: updateTaskParentAndOrder - Active task final update payload:', updatesMap.get(activeTask.id));
+
 
     // Cascade section to descendants when parent/section changes
     if (activeTask.parent_task_id !== newParentId) {
       const cascadeSectionId = newParentId ? (tasks.find(t => t.id === newParentId)?.section_id ?? newSectionId ?? null) : newSectionId;
       const queue = [activeTask.id];
       const visited = new Set<string>();
+      console.log('useTasks: updateTaskParentAndOrder - Cascading section to descendants. New section ID:', cascadeSectionId);
       while (queue.length) {
         const pid = queue.shift()!;
         if (visited.has(pid)) continue;
@@ -614,22 +639,24 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
         const children = tasks.filter(t => t.parent_task_id === pid);
         children.forEach(child => {
           addUpdate(child, { section_id: cascadeSectionId });
+          console.log(`  - Cascading section to subtask: ${child.description} (ID: ${child.id}) to section: ${cascadeSectionId}`);
           queue.push(child.id);
         });
       }
     }
 
     const finalPayload = Array.from(updatesMap.values());
-    console.log('useTasks: updateTaskParentAndOrder - Updates prepared for optimistic update:', finalPayload);
+    console.log('useTasks: updateTaskParentAndOrder - Final consolidated updates prepared for DB (payload size:', finalPayload.length, '):', finalPayload.map(t => ({ id: t.id, order: t.order, parent_task_id: t.parent_task_id, section_id: t.section_id, user_id: t.user_id })));
 
     // Optimistic update
     setTasks(prev => {
       const map = new Map(finalPayload.map(u => [u.id!, u]));
       return prev.map(t => map.has(t.id) ? { ...t, ...map.get(t.id)! } : t);
     });
+    console.log('useTasks: updateTaskParentAndOrder - Optimistic update applied to local state.');
 
     try {
-      console.log('useTasks: updateTaskParentAndOrder - Sending upsert to DB:', finalPayload.map(u => cleanTaskForDb(u)));
+      console.log('useTasks: updateTaskParentAndOrder - Sending upsert to DB...');
       const { error } = await supabase
         .from('tasks')
         .upsert(finalPayload.map(u => cleanTaskForDb(u)), { onConflict: 'id' }); // Use upsert
@@ -666,6 +693,8 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       )
       .sort((a, b) => (a.order || 0) - (b.order || 0));
 
+    console.log('useTasks: moveTask - Siblings before reorder:', siblings.map(t => ({ id: t.id, order: t.order, description: t.description })));
+
     const currentIndex = siblings.findIndex(t => t.id === taskId);
     if (currentIndex === -1) {
       showError('Internal error: Task not found in its parent list.');
@@ -682,23 +711,25 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     }
 
     const newOrdered = arrayMove(siblings, currentIndex, newIndex);
-    
+    console.log('useTasks: moveTask - Siblings after arrayMove:', newOrdered.map(t => ({ id: t.id, description: t.description })));
+
     const updatesMap = new Map<string, Partial<Task>>();
     newOrdered.forEach((t, idx) => {
       updatesMap.set(t.id, { ...updatesMap.get(t.id), ...t, order: idx, user_id: userId });
     });
     const finalPayload = Array.from(updatesMap.values());
 
-    console.log('useTasks: moveTask - Attempting optimistic reorder for task:', taskId, 'direction:', direction, 'updates:', finalPayload);
+    console.log('useTasks: moveTask - Attempting optimistic reorder for task:', taskId, 'direction:', direction, 'updates:', finalPayload.map(t => ({ id: t.id, order: t.order, user_id: t.user_id })));
 
     // Optimistic update
     setTasks(prev => {
       const map = new Map(finalPayload.map(u => [u.id, u]));
       return prev.map(t => map.has(t.id) ? { ...t, ...map.get(t.id)! } : t);
     });
+    console.log('useTasks: moveTask - Optimistic update applied to local state.');
 
     try {
-      console.log('useTasks: moveTask - Sending upsert to DB:', finalPayload.map(u => cleanTaskForDb(u)));
+      console.log('useTasks: moveTask - Sending upsert to DB...');
       const { error } = await supabase
         .from('tasks')
         .upsert(finalPayload.map(u => cleanTaskForDb(u)), { onConflict: 'id' }); // Use upsert
@@ -1009,30 +1040,60 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
   // Final filtering and next task selection based on processed tasks
   const { finalFilteredTasks, nextAvailableTask } = useMemo(() => {
+    console.log('useTasks: finalFilteredTasks memo - Starting filtering. Initial processed tasks count:', processedTasks.length);
     let relevant: Task[] = processedTasks; // Start with the processed list
 
+    console.log('useTasks: finalFilteredTasks memo - View Mode:', viewMode);
     // Apply viewMode filter (only 'daily' or 'archive' relevant here)
     if (viewMode === 'daily') {
+        const beforeFilterCount = relevant.length;
         relevant = relevant.filter(t => t.status !== 'archived');
+        console.log(`useTasks: finalFilteredTasks memo - After viewMode 'daily' filter (status !== 'archived'): ${relevant.length} tasks (removed ${beforeFilterCount - relevant.length} archived tasks)`);
     } else if (viewMode === 'archive') {
+        const beforeFilterCount = relevant.length;
         relevant = relevant.filter(t => t.status === 'archived');
+        console.log(`useTasks: finalFilteredTasks memo - After viewMode 'archive' filter (status === 'archived'): ${relevant.length} tasks (kept ${relevant.length} archived tasks)`);
     }
+
+    console.log('useTasks: finalFilteredTasks memo - Current filters:', { searchFilter, statusFilter, categoryFilter, priorityFilter, sectionFilter });
 
     // Apply other filters
     if (searchFilter) {
+      const beforeFilterCount = relevant.length;
       relevant = relevant.filter(t =>
         t.description.toLowerCase().includes(searchFilter.toLowerCase()) ||
         (t.notes || '').toLowerCase().includes(searchFilter.toLowerCase())
       );
+      console.log(`useTasks: finalFilteredTasks memo - After search filter ('${searchFilter}'): ${relevant.length} tasks`);
     }
-    if (statusFilter !== 'all') relevant = relevant.filter(t => t.status === statusFilter);
-    if (categoryFilter !== 'all') relevant = relevant.filter(t => t.category === categoryFilter);
-    if (priorityFilter !== 'all') relevant = relevant.filter(t => t.priority === priorityFilter);
+    if (statusFilter !== 'all') {
+      const beforeFilterCount = relevant.length;
+      relevant = relevant.filter(t => t.status === statusFilter);
+      console.log(`useTasks: finalFilteredTasks memo - After status filter ('${statusFilter}'): ${relevant.length} tasks`);
+    }
+    if (categoryFilter !== 'all') {
+      const beforeFilterCount = relevant.length;
+      relevant = relevant.filter(t => t.category === categoryFilter);
+      console.log(`useTasks: finalFilteredTasks memo - After category filter ('${categoryFilter}'): ${relevant.length} tasks`);
+    }
+    if (priorityFilter !== 'all') {
+      const beforeFilterCount = relevant.length;
+      relevant = relevant.filter(t => t.priority === priorityFilter);
+      console.log(`useTasks: finalFilteredTasks memo - After priority filter ('${priorityFilter}'): ${relevant.length} tasks`);
+    }
     if (sectionFilter !== 'all') {
-      if (sectionFilter === 'no-section') relevant = relevant.filter(t => t.section_id === null);
-      else relevant = relevant.filter(t => t.section_id === sectionFilter);
+      const beforeFilterCount = relevant.length;
+      if (sectionFilter === 'no-section') {
+        relevant = relevant.filter(t => t.section_id === null);
+        console.log(`useTasks: finalFilteredTasks memo - After section filter ('no-section'): ${relevant.length} tasks`);
+      }
+      else {
+        relevant = relevant.filter(t => t.section_id === sectionFilter);
+        console.log(`useTasks: finalFilteredTasks memo - After section filter ('${sectionFilter}'): ${relevant.length} tasks`);
+      }
     }
 
+    console.log('useTasks: finalFilteredTasks memo - Tasks before final sort:', relevant.map(t => ({ id: t.id, description: t.description, section_id: t.section_id, order: t.order, status: t.status })));
     // Sort by section then order
     relevant.sort((a, b) => {
       const aSec = sections.find(s => s.id === a.section_id)?.order ?? 1e9;
@@ -1040,8 +1101,11 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       if (aSec !== bSec) return aSec - bSec;
       return (a.order || 0) - (b.order || 0);
     });
+    console.log('useTasks: finalFilteredTasks memo - Tasks after final sort:', relevant.map(t => ({ id: t.id, description: t.description, section_id: t.section_id, order: t.order, status: t.status })));
+
 
     const nextTask = relevant.find(t => t.status === 'to-do' && t.parent_task_id === null) || null;
+    console.log('useTasks: finalFilteredTasks memo - Next available task:', nextTask ? `${nextTask.description} (ID: ${nextTask.id})` : 'None');
 
     return { finalFilteredTasks: relevant, nextAvailableTask: nextTask };
   }, [processedTasks, sections, viewMode, searchFilter, statusFilter, categoryFilter, priorityFilter, sectionFilter]);
