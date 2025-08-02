@@ -12,7 +12,7 @@ import SleepTracker from "./pages/SleepTracker";
 import MindfulnessTools from "./pages/MindfulnessTools";
 import FocusMode from "./pages/FocusMode";
 import LandingPage from "./pages/LandingPage";
-import DailyTasksV2 from "./pages/DailyTasksV2"; // Import the new V2 page
+import DailyTasksV3 from "./pages/DailyTasksV3"; // Import the new V3 page
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { ReminderProvider } from "@/context/ReminderContext";
 import { SoundProvider } from "@/context/SoundContext";
@@ -57,8 +57,8 @@ const AppContent = () => {
       {user ? (
         <Sidebar>
           <Routes>
-            <Route path="/" element={<DailyTasksV2 />} /> {/* Default to V2 */}
-            <Route path="/daily-tasks" element={<DailyTasksV2 />} /> {/* Explicit route for V2 */}
+            <Route path="/" element={<DailyTasksV3 />} /> {/* Default to V3 */}
+            <Route path="/daily-tasks" element={<DailyTasksV3 />} /> {/* Explicit route for V3 */}
             <Route path="/my-hub" element={<MyHub />} />
             <Route path="/help" element={<Help />} />
             <Route path="/projects" element={<ProjectBalanceTracker />} />
