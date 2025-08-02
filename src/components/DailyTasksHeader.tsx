@@ -36,7 +36,7 @@ interface DailyTasksHeaderProps {
   sectionFilter: string;
   setSectionFilter: (value: string) => void;
   nextAvailableTask: Task | null;
-  updateTask: (task: Task, updates: Partial<Task>) => Promise<void>; // Changed from taskId: string
+  updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
   onOpenOverview: (task: Task) => void;
   // New props for section/category management
   createSection: (name: string) => Promise<void>;
@@ -177,7 +177,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
 
   const handleMarkNextTaskComplete = async () => {
     if (nextAvailableTask) {
-      await updateTask(nextAvailableTask, { status: 'completed' });
+      await updateTask(nextAvailableTask.id, { status: 'completed' });
       playSound('success');
     }
   };

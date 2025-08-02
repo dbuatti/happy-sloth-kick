@@ -13,9 +13,9 @@ import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 interface TaskItemProps {
   task: Task;
-  onStatusChange: (task: Task, newStatus: Task['status']) => Promise<void>;
+  onStatusChange: (taskId: string, newStatus: Task['status']) => Promise<void>;
   onDelete: (taskId: string) => void;
-  onUpdate: (task: Task, updates: Partial<Task>) => Promise<void>; // Changed from void to Promise<void>
+  onUpdate: (taskId: string, updates: Partial<Task>) => void;
   isSelected: boolean;
   onToggleSelect: (taskId: string, checked: boolean) => void;
   sections: { id: string; name: string }[];
@@ -58,7 +58,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
     if (isOverlay) return;
     console.log(`TaskItem: Checkbox changed for task ${task.id}. New checked state: ${checked}`);
     onToggleSelect(task.id, checked);
-    onStatusChange(task, checked ? 'completed' : 'to-do');
+    onStatusChange(task.id, checked ? 'completed' : 'to-do');
     if (checked) {
       playSound('success');
       setShowCompletionEffect(true);
@@ -208,22 +208,22 @@ const TaskItem: React.FC<TaskItemProps> = ({
               <Edit className="mr-2 h-4 w-4" /> View Details {/* Increased icon size */}
             </DropdownMenuItem>
             {task.status === 'archived' && (
-              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onStatusChange(task, 'to-do'); playSound('success'); }}>
+              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onStatusChange(task.id, 'to-do'); playSound('success'); }}>
                 <Undo2 className="mr-2 h-4 w-4" /> Restore {/* Increased icon size */}
               </DropdownMenuItem>
             )}
             {task.status !== 'archived' && (
               <>
-                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onStatusChange(task, 'to-do'); playSound('success'); }}>
+                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onStatusChange(task.id, 'to-do'); playSound('success'); }}>
                   Mark as To-Do
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onStatusChange(task, 'completed'); playSound('success'); }}>
+                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onStatusChange(task.id, 'completed'); playSound('success'); }}>
                   Mark as Completed
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onStatusChange(task, 'skipped'); playSound('success'); }}>
+                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onStatusChange(task.id, 'skipped'); playSound('success'); }}>
                   Mark as Skipped
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onStatusChange(task, 'archived'); playSound('success'); }}>
+                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onStatusChange(task.id, 'archived'); playSound('success'); }}>
                   <Archive className="mr-2 h-4 w-4" /> Archive {/* Increased icon size */}
                 </DropdownMenuItem>
               </>
@@ -241,7 +241,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
                     <DropdownMenuItem
                       onSelect={(e) => {
                         e.preventDefault();
-                        onUpdate(task, { section_id: null });
+                        onUpdate(task.id, { section_id: null });
                         playSound('success');
                       }}
                       disabled={task.section_id === null}
@@ -253,7 +253,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
                         key={section.id}
                         onSelect={(e) => {
                           e.preventDefault();
-                          onUpdate(task, { section_id: section.id });
+                          onUpdate(task.id, { section_id: section.id });
                           playSound('success');
                         }}
                         disabled={task.section_id === section.id}

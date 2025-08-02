@@ -13,15 +13,13 @@ interface ActiveTaskPanelProps {
   nextAvailableTask: Task | null;
   tasks: Task[];
   filteredTasks: Task[];
-  updateTask: (task: Task, updates: Partial<Task>) => Promise<void>;
+  updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
   onDeleteTask: (taskId: string) => void;
   sections: TaskSection[];
   allCategories: Category[];
 }
 
 const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
-  isOpen,
-  onClose,
   nextAvailableTask,
   tasks,
   filteredTasks,
@@ -116,7 +114,7 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
 
   const handleMarkComplete = async () => {
     if (nextAvailableTask) {
-      await updateTask(nextAvailableTask, { status: 'completed' });
+      await updateTask(nextAvailableTask.id, { status: 'completed' });
       playSound('success');
     }
   };

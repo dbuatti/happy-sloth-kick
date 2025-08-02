@@ -406,119 +406,53 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     }
   }, [userId, effectiveCurrentDate, tasks, addReminder]); // Depend on effectiveCurrentDate
 
-  const updateTask = useCallback(async (taskToUpdate: Task, updates: TaskUpdate) => {
+  const updateTask = useCallback(async (taskId: string, updates: TaskUpdate) => {
     if (!userId) {
       showError('User not authenticated.');
       return;
     }
-    console.log(`useTasks: Attempting to update task ${taskToUpdate.id} with updates:`, updates);
-    let categoryColor: string | undefined;
-    if (updates.category) categoryColor = allCategoriesRef.current.find(cat => cat.id === updates.category)?.color || 'gray';
+    console.log(`useTasks: Attempting to update task ${taskId} with updates:`, updates);
+    let color: string | undefined;
+    if (updates.category) color = allCategoriesRef.current.find(cat => cat.id === updates.category)?.color || 'gray';
 
-    const isRealTaskInState = tasks.some(t => t.id === taskToUpdate.id);
-
-    if (isRealTaskInState) {
-      // This is a real task from the DB, proceed with update
-      const originalTask: Task | undefined = tasks.find(t => t.id === taskToUpdate.id);
-      if (!originalTask) { // Should not happen if isRealTaskInState is true, but for safety
-        console.warn(`useTasks: Real task with ID ${taskToUpdate.id} not found for update.`);
-        return;
-      }
-
-      setTasks(prev => prev.map(t => t.id === taskToUpdate.id ? { ...t, ...updates, ...(categoryColor && { category_color: categoryColor }) } : t));
-      console.log(`useTasks: Optimistically updated real task ${taskToUpdate.id} in state.`);
-
-      try {
-        const { data, error } = await supabase
-          .from('tasks')
-          .update(cleanTaskForDb(updates))
-          .eq('id', taskToUpdate.id)
-          .eq('user_id', userId)
-          .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link')
-          .single();
-
-        if (error) throw error;
-
-        setTasks(prev => prev.map(t => t.id === taskToUpdate.id ? { ...data, category_color: allCategoriesRef.current.find(cat => cat.id === data.category)?.color || 'gray' } : t));
-        showSuccess('Task updated!');
-        console.log(`useTasks: Real task ${taskToUpdate.id} updated in DB successfully.`);
-
-        if (updates.remind_at) {
-          const d = parseISO(updates.remind_at as string);
-          if (isValid(d) && (updates.status === undefined || updates.status === 'to-do')) addReminder(taskToUpdate.id, `Reminder: ${originalTask.description}`, d);
-        }
-        if (updates.status === 'completed' || updates.status === 'archived' || updates.remind_at === null) {
-          dismissReminder(taskToUpdate.id);
-        }
-      } catch (e: any) {
-        showError('Failed to update task.');
-        console.error(`useTasks: Error updating real task ${taskToUpdate.id} in DB:`, e.message);
-        setTasks(prev => prev.map(t => t.id === taskToUpdate.id ? originalTask : t)); // Revert optimistic update
-      }
-    } else {
-      // This is a virtual task (or a task not yet in the main 'tasks' state)
-      // If it has an original_task_id, it's a recurring task instance.
-      // We need to create a new concrete instance in the DB.
-      if (taskToUpdate.original_task_id) {
-        console.log(`useTasks: Task ${taskToUpdate.id} is a virtual instance of recurring task ${taskToUpdate.original_task_id}. Creating new instance.`);
-
-        const newInstance: Task = {
-          ...taskToUpdate, // Copy all properties from the virtual task
-          id: uuidv4(), // Assign a new real ID
-          created_at: effectiveCurrentDate.toISOString(), // Ensure created_at is for the current day
-          status: updates.status || taskToUpdate.status, // Apply the new status
-          original_task_id: taskToUpdate.original_task_id, // Keep the original_task_id
-          user_id: userId, // Ensure user_id is set
-          order: taskToUpdate.order, // Keep the order from the virtual task
-          section_id: taskToUpdate.section_id, // Keep the section_id
-          remind_at: updates.remind_at || taskToUpdate.remind_at, // Apply new remind_at if present
-          due_date: updates.due_date || taskToUpdate.due_date, // Apply new due_date if present
-          // Ensure other fields are copied or defaulted if not in updates
-          description: updates.description || taskToUpdate.description,
-          category: updates.category || taskToUpdate.category,
-          priority: updates.priority || taskToUpdate.priority,
-          notes: updates.notes || taskToUpdate.notes,
-          link: updates.link || taskToUpdate.link,
-          recurring_type: 'none', // New instance is not recurring itself, it's an instance of a recurring task
-        };
-
-        // Optimistically add the new instance to the state
-        setTasks(prev => [...prev, newInstance]);
-        console.log(`useTasks: Optimistically added new instance ${newInstance.id} to state.`);
-
-        try {
-          const { data, error } = await supabase
-            .from('tasks')
-            .insert(cleanTaskForDb(newInstance))
-            .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link')
-            .single();
-
-          if (error) throw error;
-
-          setTasks(prev => prev.map(t => t.id === newInstance.id ? { ...data, category_color: allCategoriesRef.current.find(cat => cat.id === data.category)?.color || 'gray' } : t));
-          showSuccess('Task updated!');
-          console.log(`useTasks: New instance ${data.id} created in DB successfully.`);
-
-          if (newInstance.remind_at) {
-            const d = parseISO(newInstance.remind_at as string);
-            if (isValid(d) && (newInstance.status === undefined || newInstance.status === 'to-do')) addReminder(newInstance.id, `Reminder: ${newInstance.description}`, d);
-          }
-          if (newInstance.status === 'completed' || newInstance.status === 'archived' || newInstance.remind_at === null) {
-            dismissReminder(newInstance.id);
-          }
-        } catch (e: any) {
-          showError('Failed to update task.');
-          console.error(`useTasks: Error creating new instance for virtual task ${taskToUpdate.id} in DB:`, e.message);
-          setTasks(prev => prev.filter(t => t.id !== newInstance.id)); // Revert optimistic add
-        }
-      } else {
-        // This case should ideally not happen if all tasks are either real or virtual recurring instances.
-        // It means a task ID was passed that is neither a real DB task nor a virtual recurring instance.
-        console.error(`useTasks: Attempted to update unknown task ID: ${taskToUpdate.id}. Not found in state and not a virtual recurring instance.`);
-        showError('Failed to update task: Task not found.');
-      }
+    const originalTask: Task | undefined = tasks.find(t => t.id === taskId); // Explicitly type as Task | undefined
+    if (!originalTask) {
+      console.warn(`useTasks: Task with ID ${taskId} not found for update.`);
+      return;
     }
-  }, [userId, tasks, addReminder, dismissReminder, effectiveCurrentDate]); // Added effectiveCurrentDate to dependencies
+
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates, ...(color && { category_color: color }) } : t));
+    console.log(`useTasks: Optimistically updated task ${taskId} in state.`);
+
+    try {
+      const { data, error } = await supabase
+        .from('tasks')
+        .update(cleanTaskForDb(updates))
+        .eq('id', taskId)
+        .eq('user_id', userId)
+        .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link')
+        .single();
+
+      if (error) throw error;
+
+      setTasks(prev => prev.map(t => t.id === taskId ? { ...data, category_color: allCategoriesRef.current.find(cat => cat.id === data.category)?.color || 'gray' } : t));
+      showSuccess('Task updated!');
+      console.log(`useTasks: Task ${taskId} updated in DB successfully.`);
+
+      if (updates.remind_at) {
+        const d = parseISO(updates.remind_at as string);
+        if (isValid(d) && (updates.status === undefined || updates.status === 'to-do')) addReminder(taskId, `Reminder: ${originalTask.description}`, d);
+      }
+      if (updates.status === 'completed' || updates.status === 'archived' || updates.remind_at === null) {
+        dismissReminder(taskId);
+      }
+    } catch (e: any) {
+      showError('Failed to update task.');
+      console.error(`useTasks: Error updating task ${taskId} in DB:`, e.message);
+      setTasks(prev => prev.map(t => t.id === taskId ? originalTask : t)); // Revert optimistic update
+    }
+  }, [userId, tasks, addReminder, dismissReminder]);
+
   const deleteTask = useCallback(async (taskId: string) => {
     if (!userId) {
       showError('User not authenticated.');

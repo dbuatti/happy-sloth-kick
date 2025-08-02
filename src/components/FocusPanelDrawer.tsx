@@ -10,7 +10,8 @@ interface FocusPanelDrawerProps {
   nextAvailableTask: Task | null;
   tasks: Task[];
   filteredTasks: Task[];
-  updateTask: (task: Task, updates: Partial<Task>) => Promise<void>;
+  updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
+  // Removed onOpenDetail as it's not directly used in this component's logic
   onDeleteTask: (taskId: string) => void;
   sections: TaskSection[];
   allCategories: Category[];

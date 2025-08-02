@@ -34,8 +34,8 @@ const Archive: React.FC = () => {
     setStatusFilter('archived');
   }, [setStatusFilter]);
 
-  const handleTaskStatusChange = async (taskToUpdate: Task, newStatus: Task['status']) => {
-    await updateTask(taskToUpdate, { status: newStatus });
+  const handleTaskStatusChange = async (taskId: string, newStatus: Task['status']) => {
+    await updateTask(taskId, { status: newStatus });
   };
 
   const handleOpenOverview = (task: Task) => {

@@ -24,7 +24,7 @@ interface TaskOverviewDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onEditClick: (task: Task) => void; // To open the full edit dialog
-  onUpdate: (task: Task, updates: Partial<Task>) => Promise<void>; // Changed from taskId: string
+  onUpdate: (taskId: string, updates: Partial<Task>) => Promise<void>;
   onDelete: (taskId: string) => void;
   sections: TaskSection[];
   allCategories: Category[]; // This prop is no longer used directly in this component
@@ -64,8 +64,6 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
   const getDueDateDisplay = (dueDate: string | null) => {
     if (!dueDate) return null;
     const date = parseISO(dueDate);
-    if (!isValid(date)) return null;
-
     if (isSameDay(date, new Date())) {
       return 'Today';
     } else if (isPast(date) && !isSameDay(date, new Date())) {
@@ -79,14 +77,14 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
     if (!task) return;
     setIsUpdatingStatus(true);
     const newStatus = task.status === 'completed' ? 'to-do' : 'completed';
-    await onUpdate(task, { status: newStatus });
+    await onUpdate(task.id, { status: newStatus });
     playSound('success');
     setIsUpdatingStatus(false);
     onClose();
   };
 
-  const handleSubtaskStatusChange = async (subtask: Task, newStatus: Task['status']) => {
-    await onUpdate(subtask, { status: newStatus });
+  const handleSubtaskStatusChange = async (subtaskId: string, newStatus: Task['status']) => {
+    await onUpdate(subtaskId, { status: newStatus });
   };
 
   const handleDeleteClick = () => {
@@ -182,7 +180,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
                     <input // Changed from Checkbox to input type="checkbox"
                       type="checkbox"
                       checked={subtask.status === 'completed'}
-                      onChange={(e) => handleSubtaskStatusChange(subtask, e.target.checked ? 'completed' : 'to-do')}
+                      onChange={(e) => handleSubtaskStatusChange(subtask.id, e.target.checked ? 'completed' : 'to-do')}
                       id={`subtask-overview-${subtask.id}`}
                       className="flex-shrink-0 h-3.5 w-3.5"
                       disabled={isUpdatingStatus}

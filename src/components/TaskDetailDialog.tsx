@@ -24,7 +24,7 @@ interface TaskDetailDialogProps {
   task: Task | null;
   isOpen: boolean;
   onClose: () => void;
-  onUpdate: (task: Task, updates: Partial<Task>) => Promise<void>; // Changed from taskId: string
+  onUpdate: (taskId: string, updates: Partial<Task>) => Promise<void>;
   onDelete: (taskId: string) => void;
   sections: TaskSection[]; // Passed as prop
   allCategories: Category[]; // Passed as prop
@@ -62,7 +62,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   const handleSaveMainTask = async (taskData: TaskFormData) => {
     if (!task) return false;
     setIsSaving(true);
-    await onUpdate(task, taskData);
+    await onUpdate(task.id, taskData);
     setIsSaving(false);
     return true;
   };
@@ -79,15 +79,15 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
     }
   };
 
-  const handleSubtaskStatusChange = async (subtask: Task, newStatus: Task['status']) => {
-    await updateSubtask(subtask, { status: newStatus });
+  const handleSubtaskStatusChange = async (subtaskId: string, newStatus: Task['status']) => {
+    await updateSubtask(subtaskId, { status: newStatus });
   };
 
   const handleToggleMainTaskStatus = async () => {
     if (!task) return;
     setIsSaving(true);
     const newStatus = task.status === 'completed' ? 'to-do' : 'completed';
-    await onUpdate(task, { status: newStatus });
+    await onUpdate(task.id, { status: newStatus });
     if (newStatus === 'completed') {
       playSound('success');
     } else {
@@ -139,7 +139,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
                 <li key={subtask.id} className="flex items-center space-x-2 p-1.5 rounded-md bg-background shadow-sm">
                   <Checkbox
                     checked={subtask.status === 'completed'}
-                    onCheckedChange={(checked: boolean) => handleSubtaskStatusChange(subtask, checked ? 'completed' : 'to-do')}
+                    onCheckedChange={(checked: boolean) => handleSubtaskStatusChange(subtask.id, checked ? 'completed' : 'to-do')}
                     id={`subtask-${subtask.id}`}
                     className="flex-shrink-0 h-3.5 w-3.5"
                   />
