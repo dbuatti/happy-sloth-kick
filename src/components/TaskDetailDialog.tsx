@@ -28,6 +28,11 @@ interface TaskDetailDialogProps {
   onDelete: (taskId: string) => void;
   sections: TaskSection[]; // Passed as prop
   allCategories: Category[]; // Passed as prop
+  // New props for section management
+  createSection: (name: string) => Promise<void>;
+  updateSection: (sectionId: string, newName: string) => Promise<void>;
+  deleteSection: (sectionId: string) => Promise<void>;
+  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
 }
 
 const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
@@ -38,6 +43,10 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   onDelete,
   sections, // Destructure from props
   allCategories, // Destructure from props
+  createSection, // Destructure new props
+  updateSection,
+  deleteSection,
+  updateSectionIncludeInFocusMode,
 }) => {
   const { user } = useAuth(); // Use useAuth to get the user
   const userId = user?.id || null; // Get userId from useAuth
@@ -131,6 +140,10 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
           sections={sections}
           allCategories={allCategories}
           autoFocus={false}
+          createSection={createSection} // Pass new props
+          updateSection={updateSection}
+          deleteSection={deleteSection}
+          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
         />
 
         <div className="space-y-2 mt-3 border-t pt-2">

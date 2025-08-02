@@ -22,6 +22,10 @@ const Archive: React.FC = () => {
     sections,
     allCategories,
     setStatusFilter, // To ensure only archived tasks are fetched
+    createSection, // Destructure new props
+    updateSection,
+    deleteSection,
+    updateSectionIncludeInFocusMode,
   } = useTasks({ viewMode: 'archive' });
 
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
@@ -122,6 +126,10 @@ const Archive: React.FC = () => {
           onDelete={deleteTask}
           sections={sections}
           allCategories={allCategories}
+          createSection={createSection}
+          updateSection={updateSection}
+          deleteSection={deleteSection}
+          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
         />
       )}
     </div>

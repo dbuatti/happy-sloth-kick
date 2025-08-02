@@ -22,6 +22,11 @@ interface AddTaskFormProps {
   preselectedSectionId?: string | null;
   parentTaskId?: string | null; // For sub-tasks
   currentDate: Date; // Added currentDate prop
+  // New props for section management
+  createSection: (name: string) => Promise<void>;
+  updateSection: (sectionId: string, newName: string) => Promise<void>;
+  deleteSection: (sectionId: string) => Promise<void>;
+  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
 }
 
 const AddTaskForm: React.FC<AddTaskFormProps> = ({
@@ -32,7 +37,11 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({
   autoFocus,
   preselectedSectionId,
   parentTaskId,
-  currentDate, // Destructure currentDate
+  currentDate,
+  createSection, // Destructure new props
+  updateSection,
+  deleteSection,
+  updateSectionIncludeInFocusMode,
 }) => {
   const { user } = useAuth(); // Use useAuth to get the user
   const userId = user?.id || null; // Get userId from useAuth
@@ -54,7 +63,11 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({
       autoFocus={autoFocus}
       preselectedSectionId={preselectedSectionId}
       parentTaskId={parentTaskId}
-      currentDate={currentDate} // Pass currentDate to TaskForm
+      currentDate={currentDate}
+      createSection={createSection} // Pass new props
+      updateSection={updateSection}
+      deleteSection={deleteSection}
+      updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
     />
   );
 };

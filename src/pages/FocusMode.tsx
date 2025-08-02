@@ -17,7 +17,7 @@ const FocusMode: React.FC = () => {
   const userId = user?.id; // Get userId from useAuth
 
   const { playSound } = useSound();
-  const { filteredTasks, updateTask, sections, allCategories } = useTasks({ viewMode: 'focus' });
+  const { filteredTasks, updateTask, sections, allCategories, createSection, updateSection, deleteSection, updateSectionIncludeInFocusMode } = useTasks({ viewMode: 'focus' });
 
   const [focusDuration, setFocusDuration] = useState(25 * 60); // 25 minutes
   const [breakDuration, setBreakDuration] = useState(5 * 60); // 5 minutes
@@ -36,6 +36,10 @@ const FocusMode: React.FC = () => {
     // Find the first 'to-do' task that is not a sub-task
     return filteredTasks.find(task => task.status === 'to-do' && task.parent_task_id === null) || null;
   }, [filteredTasks]);
+
+  useEffect(() => {
+    setTimeRemaining(focusDuration);
+  }, [focusDuration]);
 
   useEffect(() => {
     if (isRunning) {
@@ -243,6 +247,10 @@ const FocusMode: React.FC = () => {
           onDelete={() => { /* Delete not typically in focus mode */ }}
           sections={sections}
           allCategories={allCategories}
+          createSection={createSection}
+          updateSection={updateSection}
+          deleteSection={deleteSection}
+          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
         />
       )}
     </div>

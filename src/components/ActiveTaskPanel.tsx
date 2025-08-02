@@ -9,6 +9,7 @@ import { useSound } from '@/context/SoundContext';
 import TaskDetailDialog from './TaskDetailDialog';
 import TaskOverviewDialog from './TaskOverviewDialog'; // For opening overview from panel
 import { useAuth } from '@/context/AuthContext'; // Import useAuth
+import { useTasks } from '@/hooks/useTasks'; // Import useTasks here
 
 interface ActiveTaskPanelProps {
   isOpen: boolean;
@@ -52,6 +53,9 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+
+  // Destructure section management functions from useTasks
+  const { createSection, updateSection, deleteSection, updateSectionIncludeInFocusMode } = useTasks();
 
   useEffect(() => {
     setTimeRemaining(focusDuration);
@@ -290,6 +294,10 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
           onDelete={onDeleteTask}
           sections={sections}
           allCategories={allCategories}
+          createSection={createSection}
+          updateSection={updateSection}
+          deleteSection={deleteSection}
+          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
         />
       )}
     </div>

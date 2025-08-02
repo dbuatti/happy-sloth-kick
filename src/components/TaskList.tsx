@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
-import { Plus, ListTodo, ChevronsDownUp } from 'lucide-react'; // Import ChevronsDownUp
+import { Plus, ListTodo, ChevronsDownUp } from 'lucide-react';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -54,9 +54,9 @@ interface TaskListProps {
   onOpenOverview: (task: Task) => void;
   currentDate: Date;
   setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
-  expandedSections: Record<string, boolean>; // New prop
-  toggleSection: (sectionId: string) => void; // New prop
-  toggleAllSections: () => void; // New prop
+  expandedSections: Record<string, boolean>;
+  toggleSection: (sectionId: string) => void;
+  toggleAllSections: () => void;
 }
 
 const TaskList: React.FC<TaskListProps> = (props) => {
@@ -71,6 +71,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     toggleTaskSelection,
     markAllTasksInSectionCompleted,
     sections,
+    createSection, // Destructure new props
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode,
@@ -79,9 +80,9 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     allCategories,
     onOpenOverview,
     currentDate,
-    expandedSections, // Destructure new prop
-    toggleSection, // Destructure new prop
-    toggleAllSections, // Destructure new prop
+    expandedSections,
+    toggleSection,
+    toggleAllSections,
   } = props;
 
   const { user } = useAuth();
@@ -212,15 +213,15 @@ const TaskList: React.FC<TaskListProps> = (props) => {
         >
           <SortableContext items={[...allSortableSections.map(s => s.id)]} strategy={verticalListSortingStrategy}>
             {/* New: Toggle All Sections Button */}
-            <div className="flex justify-end mb-3"> {/* Increased margin-bottom */}
+            <div className="flex justify-end mb-3">
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={toggleAllSections} // Use the prop from DailyTasksV3
+                onClick={toggleAllSections}
                 aria-label="Toggle all sections"
-                className="h-9 px-3" // Increased height
+                className="h-9 px-3"
               >
-                <ChevronsDownUp className="h-5 w-5 mr-2" /> Toggle All Sections {/* Increased icon size */}
+                <ChevronsDownUp className="h-5 w-5 mr-2" /> Toggle All Sections
               </Button>
             </div>
 
@@ -242,13 +243,13 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                 <div
                   key={currentSection.id}
                   className={cn(
-                    "mb-6", // Increased margin-bottom
-                    index < allSortableSections.length - 1 && "border-b border-border pb-6" // Increased padding-bottom
+                    "mb-6",
+                    index < allSortableSections.length - 1 && "border-b border-border pb-6"
                   )}
                 >
                   <SortableSectionHeader
                     section={currentSection}
-                    sectionTasksCount={remainingTasksCount} // Pass remaining tasks count
+                    sectionTasksCount={remainingTasksCount}
                     isExpanded={isExpanded}
                     toggleSection={toggleSection}
                     handleAddTaskToSpecificSection={(sectionId) => openAddTaskForSection(sectionId)}
@@ -260,18 +261,18 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                   />
 
                   {isExpanded && (
-                    <div className="mt-4 space-y-3"> {/* Increased margin-top and space-y */}
+                    <div className="mt-4 space-y-3">
                       <SortableContext items={sectionItemIds} strategy={verticalListSortingStrategy}>
-                        <ul className="list-none space-y-3"> {/* Increased space-y */}
+                        <ul className="list-none space-y-3">
                           {topLevelTasksInSection.length === 0 ? (
-                            <div className="text-center text-foreground/80 dark:text-foreground/80 py-6 rounded-xl border-dashed border-border bg-muted/30" data-no-dnd="true"> {/* Increased vertical padding */}
-                              <div className="flex items-center justify-center gap-2 mb-4"> {/* Increased margin-bottom */}
-                                <ListTodo className="h-7 w-7" /> {/* Increased icon size */}
-                                <p className="text-xl font-medium">No tasks in this section yet.</p> {/* Increased font size */}
+                            <div className="text-center text-foreground/80 dark:text-foreground/80 py-6 rounded-xl border-dashed border-border bg-muted/30" data-no-dnd="true">
+                              <div className="flex items-center justify-center gap-2 mb-4">
+                                <ListTodo className="h-7 w-7" />
+                                <p className="text-xl font-medium">No tasks in this section yet.</p>
                               </div>
                               <div className="flex items-center justify-center gap-2">
-                                <Button size="lg" onClick={() => openAddTaskForSection(currentSection.id === 'no-section-header' ? null : currentSection.id)} className="h-11"> {/* Increased height */}
-                                  <Plus className="mr-2 h-5 w-5" /> Add Task {/* Increased icon size */}
+                                <Button size="lg" onClick={() => openAddTaskForSection(currentSection.id === 'no-section-header' ? null : currentSection.id)} className="h-11">
+                                  <Plus className="mr-2 h-5 w-5" /> Add Task
                                 </Button>
                               </div>
                             </div>
@@ -312,7 +313,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                   <SortableSectionHeader
                     section={activeItemData as TaskSection}
                     sectionTasksCount={
-                      filteredTasks.filter(t => t.parent_task_id === null && (t.section_id === activeItemData.id || (t.section_id === null && activeItemData.id === 'no-section-header'))).filter(t => t.status === 'to-do').length // Filter for remaining tasks
+                      filteredTasks.filter(t => t.parent_task_id === null && (t.section_id === activeItemData.id || (t.section_id === null && activeItemData.id === 'no-section-header'))).filter(t => t.status === 'to-do').length
                     }
                     isExpanded={true}
                     toggleSection={() => {}}
@@ -371,6 +372,10 @@ const TaskList: React.FC<TaskListProps> = (props) => {
             preselectedSectionId={preselectedSectionId ?? undefined}
             currentDate={currentDate}
             autoFocus
+            createSection={createSection} // Pass new props
+            updateSection={updateSection}
+            deleteSection={deleteSection}
+            updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
           />
         </DialogContent>
       </Dialog>

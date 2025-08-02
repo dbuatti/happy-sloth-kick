@@ -54,9 +54,9 @@ const DailyTasksV3: React.FC = () => {
     setPriorityFilter,
     sectionFilter,
     setSectionFilter,
-    currentDate, // Now directly from useTasks
-    setCurrentDate, // Now directly from useTasks
-  } = useTasks({ viewMode: 'daily' }); // No need to pass currentDate/setCurrentDate here
+    currentDate,
+    setCurrentDate,
+  } = useTasks({ viewMode: 'daily' });
 
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
@@ -152,13 +152,17 @@ const DailyTasksV3: React.FC = () => {
             nextAvailableTask={nextAvailableTask}
             updateTask={updateTask}
             onOpenOverview={handleOpenOverview}
-            toggleAllSections={toggleAllSections} // Pass toggleAllSections
+            toggleAllSections={toggleAllSections}
+            createSection={createSection} // Pass new props
+            updateSection={updateSection}
+            deleteSection={deleteSection}
+            updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
           />
 
           {/* Main Task List Card */}
           <Card className="p-3 flex-1 flex flex-col rounded-none shadow-none">
             <CardContent className="p-4 flex-1 flex flex-col">
-              <div className="flex-1 overflow-y-auto pt-3"> {/* Removed ref={scrollRef} as it's now in DailyTasksHeader */}
+              <div className="flex-1 overflow-y-auto pt-3">
                 <TaskList
                   tasks={tasks}
                   filteredTasks={filteredTasks}
@@ -183,9 +187,9 @@ const DailyTasksV3: React.FC = () => {
                   onOpenOverview={handleOpenOverview}
                   currentDate={currentDate}
                   setCurrentDate={setCurrentDate}
-                  expandedSections={expandedSections} // Pass expandedSections
-                  toggleSection={toggleSection} // Pass toggleSection
-                  toggleAllSections={toggleAllSections} // Pass toggleAllSections
+                  expandedSections={expandedSections}
+                  toggleSection={toggleSection}
+                  toggleAllSections={toggleAllSections}
                 />
               </div>
             </CardContent>
@@ -247,6 +251,10 @@ const DailyTasksV3: React.FC = () => {
           onDelete={deleteTask}
           sections={sections}
           allCategories={allCategories}
+          createSection={createSection} // Pass new props
+          updateSection={updateSection}
+          deleteSection={deleteSection}
+          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
         />
       )}
 

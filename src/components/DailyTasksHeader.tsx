@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, ListTodo, Brain, CheckCircle2, Clock, Target, Edit, ChevronsDownUp, Sparkles } from 'lucide-react';
+import { Plus, ListTodo, Brain, CheckCircle2, Clock, Target, Edit, ChevronsDownUp, Sparkles, Settings, FolderOpen, Tag } from 'lucide-react'; // Added Settings, FolderOpen, Tag icons
 import DateNavigator from '@/components/DateNavigator';
 import TaskFilter from '@/components/TaskFilter';
 import { cn } from '@/lib/utils';
@@ -11,7 +11,9 @@ import { suggestTaskDetails } from '@/integrations/supabase/api';
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
 import { isBefore, isSameDay, parseISO } from 'date-fns';
 import { useSound } from '@/context/SoundContext';
-import { Progress } from '@/components/Progress'; // Import Progress component
+import { Progress } from '@/components/Progress';
+import ManageCategoriesDialog from './ManageCategoriesDialog'; // Import new dialog
+import ManageSectionsDialog from './ManageSectionsDialog'; // Import new dialog
 
 interface DailyTasksHeaderProps {
   currentDate: Date;
@@ -36,7 +38,12 @@ interface DailyTasksHeaderProps {
   nextAvailableTask: Task | null;
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
   onOpenOverview: (task: Task) => void;
-  toggleAllSections: () => void; // New prop
+  toggleAllSections: () => void;
+  // New props for section/category management
+  createSection: (name: string) => Promise<void>;
+  updateSection: (sectionId: string, newName: string) => Promise<void>;
+  deleteSection: (sectionId: string) => Promise<void>;
+  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
 }
 
 const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
@@ -60,13 +67,20 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   nextAvailableTask,
   updateTask,
   onOpenOverview,
-  toggleAllSections, // Destructure new prop
+  toggleAllSections,
+  createSection, // Destructure new props
+  updateSection,
+  deleteSection,
+  updateSectionIncludeInFocusMode,
 }) => {
   const { dailyTaskCount } = useDailyTaskCount();
   const { playSound } = useSound();
   const [quickAddTaskDescription, setQuickAddTaskDescription] = useState('');
   const quickAddInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
+  const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
 
   const { totalCount, completedCount, overdueCount } = React.useMemo(() => {
     const focusModeSectionIds = new Set(sections.filter(s => s.include_in_focus_mode).map(s => s.id));
@@ -180,15 +194,35 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
           onGoToToday={() => setCurrentDate(new Date())}
           setCurrentDate={setCurrentDate}
         />
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setIsFocusPanelOpen(true)}
-          aria-label="Open focus tools"
-          className="h-10 w-10"
-        >
-          <Brain className="h-6 w-6" />
-        </Button>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsManageCategoriesOpen(true)}
+            aria-label="Manage Categories"
+            className="h-10 w-10"
+          >
+            <Tag className="h-6 w-6" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsManageSectionsOpen(true)}
+            aria-label="Manage Sections"
+            className="h-10 w-10"
+          >
+            <FolderOpen className="h-6 w-6" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsFocusPanelOpen(true)}
+            aria-label="Open focus tools"
+            className="h-10 w-10"
+          >
+            <Brain className="h-6 w-6" />
+          </Button>
+        </div>
       </div>
 
       {/* Today's Summary (Pending, Completed, Overdue) - Now with larger Progress Bar */}
@@ -205,8 +239,8 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         </div>
         <Progress
           value={totalCount > 0 ? (completedCount / totalCount) * 100 : 0}
-          className="h-4 rounded-full" // Larger height
-          indicatorClassName="bg-gradient-to-r from-primary to-accent rounded-full" // Gradient for progress
+          className="h-4 rounded-full"
+          indicatorClassName="bg-gradient-to-r from-primary to-accent rounded-full"
         />
         {overdueCount > 0 && (
           <p className="text-sm text-destructive mt-2 flex items-center gap-1">
@@ -285,6 +319,24 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         sections={sections}
         allCategories={allCategories}
         searchRef={searchInputRef}
+      />
+
+      <ManageCategoriesDialog
+        isOpen={isManageCategoriesOpen}
+        onClose={() => setIsManageCategoriesOpen(false)}
+        categories={allCategories}
+        onCategoryCreated={() => { /* useTasks handles refresh */ }}
+        onCategoryDeleted={() => { /* useTasks handles refresh */ }}
+      />
+
+      <ManageSectionsDialog
+        isOpen={isManageSectionsOpen}
+        onClose={() => setIsManageSectionsOpen(false)}
+        sections={sections}
+        createSection={createSection}
+        updateSection={updateSection}
+        deleteSection={deleteSection}
+        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
       />
     </div>
   );

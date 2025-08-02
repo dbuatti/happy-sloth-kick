@@ -16,9 +16,9 @@ import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { suggestTaskDetails } from '@/integrations/supabase/api'; // Updated import path
-import { showError } from '@/utils/toast'; // Import showError
-import { useAuth } from '@/context/AuthContext'; // Import useAuth
+import { suggestTaskDetails } from '@/integrations/supabase/api';
+import { showError } from '@/utils/toast';
+import { useAuth } from '@/context/AuthContext';
 
 const taskFormSchema = z.object({
   description: z.string().min(1, { message: 'Task description is required.' }).max(255, { message: 'Description must be 255 characters or less.' }),
@@ -104,7 +104,12 @@ interface TaskFormProps {
   autoFocus?: boolean;
   preselectedSectionId?: string | null;
   parentTaskId?: string | null;
-  currentDate?: Date; // Added currentDate prop
+  currentDate?: Date;
+  // New props for section management
+  createSection: (name: string) => Promise<void>;
+  updateSection: (sectionId: string, newName: string) => Promise<void>;
+  deleteSection: (sectionId: string) => Promise<void>;
+  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
 }
 
 const TaskForm: React.FC<TaskFormProps> = ({
@@ -116,7 +121,11 @@ const TaskForm: React.FC<TaskFormProps> = ({
   autoFocus = false,
   preselectedSectionId = null,
   parentTaskId = null,
-  currentDate = new Date(), // Default to new Date() if not provided
+  currentDate = new Date(),
+  createSection, // Destructure new props
+  updateSection,
+  deleteSection,
+  updateSectionIncludeInFocusMode,
 }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
@@ -247,6 +256,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
     if (success) {
       onCancel();
     }
+    return success; // Return success status
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -321,7 +331,15 @@ const TaskForm: React.FC<TaskFormProps> = ({
           control={control}
           name="sectionId"
           render={({ field }) => (
-            <SectionSelector value={field.value} onChange={field.onChange} sections={sections} />
+            <SectionSelector
+              value={field.value}
+              onChange={field.onChange}
+              sections={sections}
+              createSection={createSection}
+              updateSection={updateSection}
+              deleteSection={deleteSection}
+              updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+            />
           )}
         />
         {errors.sectionId && <p className="text-destructive text-sm mt-1">{errors.sectionId.message}</p>}
