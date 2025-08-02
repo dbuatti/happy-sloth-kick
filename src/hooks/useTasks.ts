@@ -322,7 +322,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       console.error('useTasks: handleAddTask - User not authenticated.');
       return false;
     }
-    // Get category color from allCategories directly, not categoriesMap
+    // Get category color from allCategories directly
     const categoryColor = allCategories.find(cat => cat.id === newTaskData.category)?.color || 'gray';
     const parentId = newTaskData.parent_task_id || null;
     
@@ -342,7 +342,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       status: newTaskData.status || 'to-do',
       recurring_type: newTaskData.recurring_type || 'none',
       category: newTaskData.category,
-      category_color: categoryColor,
+      category_color: categoryColor, // Use the directly obtained color
       priority: (newTaskData.priority || 'medium') as Task['priority'],
       due_date: newTaskData.due_date || null,
       notes: newTaskData.notes || null,
