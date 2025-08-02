@@ -39,12 +39,15 @@ export const useSleepAnalytics = ({ startDate, endDate }: UseSleepAnalyticsProps
     if (!userId) {
       setAnalyticsData([]);
       setLoading(false);
+      console.log('useSleepAnalytics: No user ID, skipping fetch.');
       return;
     }
     setLoading(true);
     try {
       const startOfRange = format(startOfDay(startDate), 'yyyy-MM-dd');
       const endOfRange = format(endOfDay(endDate), 'yyyy-MM-dd');
+
+      console.log(`useSleepAnalytics: Fetching records for user ${userId} from ${startOfRange} to ${endOfRange}`);
 
       const { data, error } = await supabase
         .from('sleep_records')
@@ -55,6 +58,8 @@ export const useSleepAnalytics = ({ startDate, endDate }: UseSleepAnalyticsProps
         .order('date', { ascending: true });
 
       if (error) throw error;
+
+      console.log('useSleepAnalytics: Raw data fetched:', data);
 
       const processedData: SleepAnalyticsData[] = (data || []).map(record => {
         const recordDate = parseISO(record.date);
@@ -104,17 +109,19 @@ export const useSleepAnalytics = ({ startDate, endDate }: UseSleepAnalyticsProps
           sleepEfficiency = (totalSleepMinutes / timeInBedMinutes) * 100;
         }
 
-        return {
+        const result = {
           date: format(recordDate, 'MMM dd'),
           totalSleepMinutes: Math.max(0, totalSleepMinutes), // Ensure non-negative
           timeInBedMinutes: Math.max(0, timeInBedMinutes),
           timeToFallAsleepMinutes: Math.max(0, timeToFallAsleepMinutes),
           sleepEfficiency: Math.min(100, Math.max(0, Math.round(sleepEfficiency))), // Cap between 0-100
         };
+        console.log(`useSleepAnalytics: Processed record for ${record.date}:`, result);
+        return result;
       });
       setAnalyticsData(processedData);
     } catch (error: any) {
-      console.error('Error fetching sleep analytics:', error.message);
+      console.error('useSleepAnalytics: Error fetching sleep analytics:', error.message);
       showError('Failed to load sleep analytics.');
     } finally {
       setLoading(false);
