@@ -242,7 +242,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
       category: data.category,
       priority: data.priority,
       due_date: data.dueDate instanceof Date ? data.dueDate.toISOString() : null,
-      notes: data.notes || null,
+      notes: data.notes ?? null, // Changed from || null to ?? null
       remind_at: finalRemindAt instanceof Date ? finalRemindAt.toISOString() : null,
       section_id: data.sectionId || null, // Ensure sectionId is null if undefined
       recurring_type: data.recurringType,

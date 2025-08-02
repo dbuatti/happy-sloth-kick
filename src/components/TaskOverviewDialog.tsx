@@ -27,7 +27,7 @@ interface TaskOverviewDialogProps {
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<void>;
   onDelete: (taskId: string) => void;
   sections: TaskSection[];
-  allCategories: Category[];
+  allCategories: Category[]; // This prop is no longer used directly in this component
   allTasks: Task[];
 }
 
@@ -39,6 +39,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
   onUpdate,
   onDelete,
   sections,
+  // Removed allCategories from destructuring as it's not used here
   allTasks,
 }) => {
   const { playSound } = useSound();
