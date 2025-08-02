@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useAuth } from '@/context/AuthContext';
+// Removed useAuth as it's not directly used in this component
 import { Clock } from 'lucide-react';
 import { useWorkHours } from '@/hooks/useWorkHours'; // Import the refactored hook
 

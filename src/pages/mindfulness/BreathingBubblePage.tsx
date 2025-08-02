@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { useSound } from '@/context/SoundContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MadeWithDyad } from '@/components/made-with-dyad';
-import { useAuth } from '@/context/AuthContext'; // Import useAuth
+import { useAuth } from '@/context/AuthContext'; // Re-introduced useAuth
 
 interface BreathCycle {
   name: string;
@@ -25,9 +25,8 @@ const breathCycles: BreathCycle[] = [
 ];
 
 const BreathingBubblePage: React.FC = () => {
-  // Removed userId as it's not directly used in this component's logic
-  // const { user } = useAuth(); 
-  // const userId = user?.id; 
+  const { user } = useAuth(); // Re-introduced user as it's used
+  // userId is used by useAuth hook internally, no need to declare here if not directly used
 
   const { playSound } = useSound();
   const [isRunning, setIsRunning] = useState(false);

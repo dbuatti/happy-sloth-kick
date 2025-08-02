@@ -7,12 +7,11 @@ import { MadeWithDyad } from "@/components/made-with-dyad";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from '@/lib/utils';
 import { useSound } from '@/context/SoundContext';
-import { useAuth } from '@/context/AuthContext'; // Import useAuth
+import { useAuth } from '@/context/AuthContext'; // Re-introduced useAuth
 
 const Meditation: React.FC = () => {
-  // Removed userId as it's not directly used in this component's logic
-  // const { user } = useAuth(); 
-  // const userId = user?.id; 
+  const { user } = useAuth(); // Re-introduced user as it's used
+  // userId is used by useAuth hook internally, no need to declare here if not directly used
 
   const { playSound } = useSound();
   const [duration, setDuration] = useState(10 * 60); // Default to 10 minutes in seconds

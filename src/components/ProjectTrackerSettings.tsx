@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useProjects } from '@/hooks/useProjects';
 import { LayoutGrid, Edit } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useAuth } from '@/context/AuthContext'; // Import useAuth
+// Removed useAuth as it's not directly used in this component
 
 const ProjectTrackerSettings: React.FC = () => {
   // Removed userId as it's not directly used in this component's logic

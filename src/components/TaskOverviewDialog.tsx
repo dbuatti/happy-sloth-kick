@@ -19,7 +19,7 @@ import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { getCategoryColorProps } from '@/lib/categoryColors';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useAuth } from '@/context/AuthContext'; // Import useAuth
+// Removed useAuth as it's not directly used in this component
 
 interface TaskOverviewDialogProps {
   task: Task | null;

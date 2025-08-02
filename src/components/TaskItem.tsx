@@ -41,7 +41,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   // Removed dragHandleProps
 }) => {
   const { user } = useAuth(); // Use useAuth to get the user
-  const userId = user?.id || null; // Get userId from useAuth
+  const userId = user?.id || null; // Re-introduced userId as it's used
   const { playSound } = useSound();
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
 

@@ -49,7 +49,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   updateSectionIncludeInFocusMode,
 }) => {
   const { user } = useAuth(); // Use useAuth to get the user
-  const userId = user?.id || null; // Get userId from useAuth
+  const userId = user?.id || null; // Re-introduced userId as it's used in handleAddSubtask (commented out but good to keep)
 
   // Only use useTasks for actions that require it, not for fetching global state
   const { tasks: allTasks, handleAddTask, updateTask: updateSubtask } = useTasks(); 

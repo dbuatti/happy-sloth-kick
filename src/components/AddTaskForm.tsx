@@ -1,7 +1,7 @@
 import React from 'react';
 import TaskForm from './TaskForm';
 import { TaskSection, Category } from '@/hooks/useTasks';
-import { useAuth } from '@/context/AuthContext'; // Import useAuth
+// Removed useAuth as it's not directly used in this component's logic
 
 interface AddTaskFormProps {
   onAddTask: (taskData: {

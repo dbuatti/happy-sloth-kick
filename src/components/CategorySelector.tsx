@@ -1,18 +1,12 @@
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
-// Removed Input as it's not used directly
 import { Label } from "@/components/ui/label";
-// Removed Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger as they are not used directly
-// Removed Plus, X as they are not used directly
-// Removed supabase as it's not used directly
-// Removed showSuccess, showError as they are not used directly
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from '@/lib/utils';
 import { categoryColorMap, CategoryColorKey, getCategoryColorProps } from '@/lib/categoryColors';
 import { Category } from '@/hooks/useTasks';
-import { useAuth } from '@/context/AuthContext'; // Import useAuth
+// Removed useAuth as it's not directly used in this component
 import ManageCategoriesDialog from './ManageCategoriesDialog'; // Import the new dialog
-// Removed AlertDialog components as they are not used directly
 
 interface CategorySelectorProps {
   value: string; // This is the category ID

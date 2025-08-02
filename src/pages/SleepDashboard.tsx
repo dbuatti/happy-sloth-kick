@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { DateRange } from 'react-day-picker';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/AuthContext'; // Re-introduced useAuth
 import { useSleepAnalytics } from '@/hooks/useSleepAnalytics';
 
 interface SleepDashboardProps {
@@ -19,9 +19,8 @@ interface SleepDashboardProps {
 }
 
 const SleepDashboard: React.FC<SleepDashboardProps> = ({ dateRange, setDateRange }) => {
-  const { user } = useAuth();
-  // Removed currentUserId as it's not directly used in this component's logic
-  // const currentUserId = user?.id; 
+  const { user } = useAuth(); // Re-introduced user as it's used
+  // currentUserId is used by useAuth hook internally, no need to declare here if not directly used
 
   const { analyticsData, loading } = useSleepAnalytics({
     startDate: dateRange?.from || startOfMonth(new Date()),
@@ -33,7 +32,7 @@ const SleepDashboard: React.FC<SleepDashboardProps> = ({ dateRange, setDateRange
     avgTimeInBed,
     avgTimeToFallAsleep,
     avgSleepEfficiency,
-    // Removed mostConsistentSleepDay,
+    // mostConsistentSleepDay, // Removed as it's not directly used in JSX
   } = useMemo(() => {
     if (analyticsData.length === 0) {
       return {

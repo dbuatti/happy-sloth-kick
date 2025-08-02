@@ -5,12 +5,11 @@ import { Eye, Wind, Sparkles, UtensilsCrossed, ScanEye, MessageSquare, Armchair 
 import MindfulnessToolCard from '@/components/MindfulnessToolCard'; // Import the new card component
 import WorryJournal from '@/components/WorryJournal';
 import GratitudeJournal from '@/components/GratitudeJournal';
-import { useAuth } from '@/context/AuthContext'; // Import useAuth
+import { useAuth } from '@/context/AuthContext'; // Re-introduced useAuth
 
 const MindfulnessTools: React.FC = () => {
-  // Removed userId as it's not directly used in this component's logic
-  // const { user } = useAuth(); 
-  // const userId = user?.id; 
+  const { user } = useAuth(); // Re-introduced user as it's used
+  // userId is used by useAuth hook internally, no need to declare here if not directly used
 
   return (
     <div className="flex-1 flex flex-col">

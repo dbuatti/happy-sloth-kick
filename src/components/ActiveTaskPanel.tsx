@@ -35,7 +35,7 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
   currentDate, // Keep this, it's used
 }) => {
   const { user } = useAuth(); // Use useAuth to get the user
-  // Removed userId as it's not directly used in this component's logic
+  // userId is used by useTasks hook internally, no need to declare here if not directly used
   // Removed setFocusDuration as it's not directly used in this component's logic
 
   const { playSound } = useSound();

@@ -5,7 +5,7 @@ import { useWorkHours } from '@/hooks/useWorkHours';
 import { format, addMinutes, parse, isBefore, getMinutes, getHours } from 'date-fns';
 import { CalendarDays, Clock, Settings } from 'lucide-react';
 import DateNavigator from '@/components/DateNavigator';
-import { cn } from '@/lib/utils'; // Removed cn as it's not used
+import { cn } from '@/lib/utils'; // Re-introduced cn as it's used
 import { useAppointments, Appointment, NewAppointmentData } from '@/hooks/useAppointments';
 import AppointmentForm from '@/components/AppointmentForm';
 import AppointmentCard from '@/components/AppointmentCard';
@@ -25,12 +25,11 @@ import {
   verticalListSortingStrategy,
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
-import { useAuth } from '@/context/AuthContext'; // Import useAuth
+import { useAuth } from '@/context/AuthContext'; // Re-introduced useAuth
 
 const TimeBlockSchedule: React.FC = () => {
-  // Removed userId as it's not directly used in this component's logic
-  // const { user } = useAuth(); 
-  // const userId = user?.id; 
+  const { user } = useAuth(); // Re-introduced user as it's used
+  // userId is used by useAuth hook internally, no need to declare here if not directly used
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const { workHours: singleDayWorkHoursRaw, loading: workHoursLoading } = useWorkHours({ date: currentDate });

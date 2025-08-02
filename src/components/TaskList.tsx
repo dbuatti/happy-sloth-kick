@@ -86,7 +86,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
   } = props;
 
   const { user } = useAuth();
-  const userId = user?.id || null;
+  const userId = user?.id || ''; // Ensure userId is always a string for TaskSection
 
   const [isAddTaskOpenLocal, setIsAddTaskOpenLocal] = useState(false);
   const [preselectedSectionId, setPreselectedSectionId] = useState<string | null>(null);
@@ -103,7 +103,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     const noSection: TaskSection = {
       id: 'no-section-header',
       name: 'No Section',
-      user_id: userId || '',
+      user_id: userId, // Use the actual userId here
       order: sections.length,
       include_in_focus_mode: true,
     };

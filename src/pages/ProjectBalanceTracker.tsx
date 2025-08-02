@@ -22,12 +22,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useAuth } from '@/context/AuthContext'; // Import useAuth
+import { useAuth } from '@/context/AuthContext'; // Re-introduced useAuth
 
 const ProjectBalanceTracker: React.FC = () => {
-  // Removed userId as it's not directly used in this component's logic
-  // const { user } = useAuth(); 
-  // const userId = user?.id; 
+  const { user } = useAuth(); // Re-introduced user as it's used
+  // userId is used by useAuth hook internally, no need to declare here if not directly used
 
   const {
     projects,

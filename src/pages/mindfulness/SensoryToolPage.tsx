@@ -4,12 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Eye, Hand, Ear, Soup, Utensils, RefreshCcw, Sparkles } from 'lucide-react';
 import { useSound } from '@/context/SoundContext';
 import { MadeWithDyad } from '@/components/made-with-dyad';
-import { useAuth } from '@/context/AuthContext'; // Import useAuth
+import { useAuth } from '@/context/AuthContext'; // Re-introduced useAuth
 
 const SensoryToolPage: React.FC = () => {
-  // Removed userId as it's not directly used in this component's logic
-  // const { user } = useAuth(); 
-  // const userId = user?.id; 
+  const { user } = useAuth(); // Re-introduced user as it's used
+  // userId is used by useAuth hook internally, no need to declare here if not directly used
 
   const { playSound } = useSound();
   const [step, setStep] = useState(5);

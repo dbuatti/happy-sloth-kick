@@ -1,7 +1,7 @@
 import { Label } from "@/components/ui/label";
 import { FolderOpen, Plus } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useAuth } from '@/context/AuthContext';
+// Removed useAuth as it's not directly used in this component
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import ManageSectionsDialog from './ManageSectionsDialog'; // Import the new dialog

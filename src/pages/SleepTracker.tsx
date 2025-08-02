@@ -10,7 +10,7 @@ import { format, addDays } from 'date-fns';
 import { Moon, Bed, AlarmClock, LogOut, Hourglass, ListX, Clock, Goal } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSound } from '@/context/SoundContext';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/AuthContext'; // Re-introduced useAuth
 
 interface SleepTrackerProps {
   currentDate: Date;
@@ -18,9 +18,8 @@ interface SleepTrackerProps {
 }
 
 const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate }) => {
-  // Removed userId as it's not directly used in this component's logic
-  // const { user } = useAuth(); 
-  // const userId = user?.id; 
+  const { user } = useAuth(); // Re-introduced user as it's used
+  // userId is used by useAuth hook internally, no need to declare here if not directly used
 
   const { playSound } = useSound();
   const { sleepRecord, loading, saveSleepRecord } = useSleepRecords({ selectedDate: currentDate });

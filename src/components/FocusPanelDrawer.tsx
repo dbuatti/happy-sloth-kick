@@ -2,7 +2,7 @@ import React from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import ActiveTaskPanel from './ActiveTaskPanel';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
-import { useAuth } from '@/context/AuthContext'; // Import useAuth
+// Removed useAuth as it's not directly used in this component's logic
 
 interface FocusPanelDrawerProps {
   isOpen: boolean;

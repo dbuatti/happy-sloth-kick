@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import { showError, showLoading, dismissToast } from '@/utils/toast';
 import { suggestTaskDetails } from '@/integrations/supabase/api';
-import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
+import { useDailyTaskCount } from '@/hooks/useDailyTaskCount'; // Re-introduced
 import { isBefore, isSameDay, parseISO } from 'date-fns';
 import { useSound } from '@/context/SoundContext';
 import { Progress } from '@/components/Progress';
@@ -71,8 +71,8 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   deleteSection,
   updateSectionIncludeInFocusMode,
 }) => {
-  // Removed dailyTaskCount as it's not directly used in this component's logic
-  // const { dailyTaskCount } = useDailyTaskCount(); 
+  // dailyTaskCount is used in the JSX, so keep useDailyTaskCount
+  const { dailyTaskCount } = useDailyTaskCount(); 
   const { playSound } = useSound();
   const [quickAddTaskDescription, setQuickAddTaskDescription] = useState('');
   const quickAddInputRef = useRef<HTMLInputElement>(null);

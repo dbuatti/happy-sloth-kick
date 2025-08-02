@@ -48,8 +48,9 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
   deleteSection,
   updateSectionIncludeInFocusMode,
 }) => {
-  const { user } = useAuth(); // Use useAuth to get the user
+  const { user } = useAuth(); // Re-introduced user as it's used by useAuth hook
   // Removed userId as it's not directly used in this component's logic
+
   const navigate = useNavigate();
 
   const { playSound } = useSound();
@@ -274,7 +275,7 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
       {/* Quick Add Task */}
       <Card className="w-full shadow-lg rounded-xl flex-shrink-0">
         <CardHeader className="pb-2">
-          <CardTitle className="text-xl font-bold flex items-center gap-2">
+          <CardTitle className="text-xl font-bold flex items-center justify-center gap-2">
             <Plus className="h-5 w-5 text-primary" /> Quick Add Task
           </CardTitle>
         </CardHeader>

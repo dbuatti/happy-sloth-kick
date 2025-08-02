@@ -7,13 +7,9 @@ import { useTasks, Task } from '@/hooks/useTasks';
 import TaskItem from '@/components/TaskItem';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import TaskOverviewDialog from '@/components/TaskOverviewDialog';
-import { useAuth } from '@/context/AuthContext'; // Import useAuth
+import { useAuth } from '@/context/AuthContext';
 
 const Archive: React.FC = () => {
-  // Removed userId as it's not directly used in this component's logic
-  // const { user } = useAuth(); 
-  // const userId = user?.id; 
-
   const {
     tasks: allTasks, // Need all tasks for subtask filtering in overview
     filteredTasks: archivedTasks, 
