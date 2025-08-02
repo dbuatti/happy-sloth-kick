@@ -213,49 +213,49 @@ const DailyTasksV3: React.FC = () => {
     <div className="flex-1 flex flex-col">
       <main className={cn("flex-grow p-4", isBulkActionsActive ? "pb-[90px]" : "")}>
         <div className="w-full max-w-4xl mx-auto flex flex-col space-y-4">
-          {/* Top Header Card */}
-          <Card className="p-4 flex flex-col">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <ListTodo className="h-5 w-5 text-primary" />
-                  <span className="text-lg font-semibold">{dailyTaskCount}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <MoodBoosterButton />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setIsFocusPanelOpen(true)}
-                    aria-label="Open focus tools"
-                    className="h-9 w-9"
-                  >
-                    <Brain className="h-5 w-5" />
-                  </Button>
-                </div>
-              </div>
-              <DateNavigator
-                currentDate={currentDate}
-                onPreviousDay={handlePreviousDay}
-                onNextDay={handleNextDay}
-                onGoToToday={handleGoToToday}
-                setCurrentDate={setCurrentDate}
-              />
-              <div className="flex justify-center gap-3 mt-2">
-                <Badge variant="outline" className="px-3 py-1 text-sm font-medium bg-primary/10 text-primary">
-                  <ListTodo className="h-3.5 w-3.5 mr-1.5" /> {totalCount} Total
-                </Badge>
-                <Badge variant="outline" className="px-3 py-1 text-sm font-medium bg-green-500/10 text-green-600 dark:text-green-400">
-                  <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" /> {completedCount} Completed
-                </Badge>
-                <Badge variant="outline" className="px-3 py-1 text-sm font-medium bg-destructive/10 text-destructive">
-                  <Clock className="h-3.5 w-3.5 mr-1.5" /> {overdueCount} Overdue
-                </Badge>
-              </div>
-            </CardHeader>
-          </Card>
+          {/* Top Header: Task Count, Mood Booster, Focus Button */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ListTodo className="h-6 w-6 text-primary" />
+              <span className="text-2xl font-bold">{dailyTaskCount}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <MoodBoosterButton />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsFocusPanelOpen(true)}
+                aria-label="Open focus tools"
+                className="h-9 w-9"
+              >
+                <Brain className="h-5 w-5" />
+              </Button>
+            </div>
+          </div>
 
-          {/* Quick Add Task Bar (moved up) */}
+          {/* Date Navigator */}
+          <DateNavigator
+            currentDate={currentDate}
+            onPreviousDay={handlePreviousDay}
+            onNextDay={handleNextDay}
+            onGoToToday={handleGoToToday}
+            setCurrentDate={setCurrentDate}
+          />
+
+          {/* Status Badges */}
+          <div className="flex justify-center gap-3 mt-2">
+            <Badge variant="outline" className="px-3 py-1 text-sm font-medium bg-primary/10 text-primary">
+              <ListTodo className="h-3.5 w-3.5 mr-1.5" /> {totalCount} Total
+            </Badge>
+            <Badge variant="outline" className="px-3 py-1 text-sm font-medium bg-green-500/10 text-green-600 dark:text-green-400">
+              <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" /> {completedCount} Completed
+            </Badge>
+            <Badge variant="outline" className="px-3 py-1 text-sm font-medium bg-destructive/10 text-destructive">
+              <Clock className="h-3.5 w-3.5 mr-1.5" /> {overdueCount} Overdue
+            </Badge>
+          </div>
+
+          {/* Quick Add Task Bar */}
           <div
             className={cn(
               "quick-add-bar rounded-lg",
@@ -305,7 +305,7 @@ const DailyTasksV3: React.FC = () => {
           />
 
           {/* Main Task List Card */}
-          <Card className="p-3 flex-1 flex flex-col"> {/* Changed p-4 to p-3 */}
+          <Card className="p-3 flex-1 flex flex-col shadow-none"> {/* Removed shadow-lg */}
             <CardContent className="p-4 flex-1 flex flex-col">
               <div ref={scrollRef} className="flex-1 overflow-y-auto pt-3">
                 <TaskList

@@ -18,7 +18,7 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({ currentDate, onPreviousDa
   const isToday = isSameDay(currentDate, new Date());
 
   return (
-    <div className="w-full rounded-lg p-2 bg-card dark:bg-gray-800 shadow-sm flex items-center justify-between">
+    <div className="w-full p-2 flex items-center justify-between"> {/* Removed rounded-lg, bg-card, dark:bg-gray-800, shadow-sm */}
       <Button variant="ghost" size="icon" onClick={onPreviousDay} className="h-9 w-9 rounded-full hover:bg-primary/10 text-primary">
         <ChevronLeft className="h-5 w-5" />
       </Button>

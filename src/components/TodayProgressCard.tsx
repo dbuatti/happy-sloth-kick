@@ -18,7 +18,7 @@ const TodayProgressCard: React.FC<TodayProgressCardProps> = ({
   const progressValue = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
   return (
-    <Card className="w-full">
+    <Card className="w-full shadow-none"> {/* Removed shadow-lg */}
       <CardHeader className="pb-2">
         <CardTitle className="text-xl font-bold flex items-center justify-center gap-2">
           <CheckCircle2 className="h-5 w-5 text-primary" /> Today's Progress
