@@ -242,8 +242,8 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                 <div
                   key={currentSection.id}
                   className={cn(
-                    "mb-4", // Increased margin-bottom
-                    index < allSortableSections.length - 1 && "border-b border-border pb-4" // Increased padding-bottom
+                    "mb-6", // Increased margin-bottom
+                    index < allSortableSections.length - 1 && "border-b border-border pb-6" // Increased padding-bottom
                   )}
                 >
                   <SortableSectionHeader
@@ -260,17 +260,17 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                   />
 
                   {isExpanded && (
-                    <div className="mt-4 space-y-2"> {/* Increased margin-top and space-y */}
+                    <div className="mt-4 space-y-3"> {/* Increased margin-top and space-y */}
                       <SortableContext items={sectionItemIds} strategy={verticalListSortingStrategy}>
-                        <ul className="list-none space-y-2"> {/* Increased space-y */}
+                        <ul className="list-none space-y-3"> {/* Increased space-y */}
                           {topLevelTasksInSection.length === 0 ? (
-                            <div className="text-center text-foreground/80 dark:text-foreground/80 py-4 rounded-xl border-dashed border-border bg-muted/30" data-no-dnd="true"> {/* Increased vertical padding */}
+                            <div className="text-center text-foreground/80 dark:text-foreground/80 py-6 rounded-xl border-dashed border-border bg-muted/30" data-no-dnd="true"> {/* Increased vertical padding */}
                               <div className="flex items-center justify-center gap-2 mb-4"> {/* Increased margin-bottom */}
-                                <ListTodo className="h-6 w-6" /> {/* Increased icon size */}
-                                <p className="text-lg font-medium">No tasks in this section yet.</p> {/* Increased font size */}
+                                <ListTodo className="h-7 w-7" /> {/* Increased icon size */}
+                                <p className="text-xl font-medium">No tasks in this section yet.</p> {/* Increased font size */}
                               </div>
                               <div className="flex items-center justify-center gap-2">
-                                <Button size="lg" onClick={() => openAddTaskForSection(currentSection.id === 'no-section-header' ? null : currentSection.id)} className="h-10"> {/* Increased height */}
+                                <Button size="lg" onClick={() => openAddTaskForSection(currentSection.id === 'no-section-header' ? null : currentSection.id)} className="h-11"> {/* Increased height */}
                                   <Plus className="mr-2 h-5 w-5" /> Add Task {/* Increased icon size */}
                                 </Button>
                               </div>
