@@ -84,7 +84,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
         {...(attributes || {})} // Conditionally spread attributes
         {...(listeners || {})} // Conditionally spread listeners
         aria-label="Drag to reorder section"
-        data-no-dnd="true" // Ensure this button is the only drag handle
+        data-dnd-handle="true" // Mark as the drag handle
         disabled={isOverlay} // Disable on overlay
       >
         <GripVertical className="h-4 w-4" /> {/* Adjusted size */}

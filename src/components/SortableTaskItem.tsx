@@ -74,7 +74,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         aria-label="Drag to reorder task"
         {...(attributes || {})} // Conditionally spread attributes
         {...(listeners || {})} // Conditionally spread listeners
-        data-no-dnd="true" // Ensure this button is the only drag handle
+        data-dnd-handle="true" // Mark as the drag handle
       >
         <GripVertical className="h-4 w-4" /> {/* Adjusted size */}
       </button>
