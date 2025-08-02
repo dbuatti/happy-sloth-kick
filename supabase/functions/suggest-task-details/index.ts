@@ -1,3 +1,6 @@
+/// <reference lib="deno.ns" />
+/// <reference lib="deno.unstable" />
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.15.0";
 
@@ -109,7 +112,7 @@ serve(async (req) => {
     `;
 
     const result = await model.generateContent(prompt);
-    const response = result.response;
+    const response = await result.response;
     const text = response.text();
 
     console.log("Raw AI response text:", text); // Log the raw response
