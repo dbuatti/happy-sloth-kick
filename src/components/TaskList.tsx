@@ -253,7 +253,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                   key={currentSection.id}
                   className={cn(
                     "mb-1.5",
-                    index < allSortableSections.length - 1 && "border-b border-border pb-3" // Add border-bottom and padding-bottom
+                    index < allSortableSections.length - 1 && "border-b border-border pb-1" // Changed pb-3 to pb-1
                   )}
                 >
                   <SortableSectionHeader

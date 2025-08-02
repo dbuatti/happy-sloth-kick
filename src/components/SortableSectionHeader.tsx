@@ -95,7 +95,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "relative flex items-center py-2 pl-1 pr-2",
+        "relative flex items-center py-1 pl-1 pr-2", // Changed py-2 to py-1
         "group",
         isDragging && !isOverlay ? "" : "rounded-lg",
         isOverlay ? "shadow-xl ring-2 ring-primary bg-card" : "",
@@ -124,7 +124,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
                   "text-foreground",
                   "appearance-none",
                   "flex-1 truncate",
-                  "!h-auto !min-h-0 !py-0" // Added these to remove any default height/padding
+                  "!h-auto !min-h-0 !py-0"
                 )}
                 style={{ lineHeight: '1.5rem' }}
                 autoFocus={true}
