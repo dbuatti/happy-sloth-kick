@@ -212,15 +212,15 @@ const TaskList: React.FC<TaskListProps> = (props) => {
         >
           <SortableContext items={[...allSortableSections.map(s => s.id)]} strategy={verticalListSortingStrategy}>
             {/* New: Toggle All Sections Button */}
-            <div className="flex justify-end mb-2">
+            <div className="flex justify-end mb-3"> {/* Increased margin-bottom */}
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={toggleAllSections} // Use the prop from DailyTasksV3
                 aria-label="Toggle all sections"
-                className="h-8 px-3"
+                className="h-9 px-3" // Increased height
               >
-                <ChevronsDownUp className="h-4 w-4 mr-2" /> Toggle All Sections
+                <ChevronsDownUp className="h-5 w-5 mr-2" /> Toggle All Sections {/* Increased icon size */}
               </Button>
             </div>
 
@@ -242,8 +242,8 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                 <div
                   key={currentSection.id}
                   className={cn(
-                    "mb-0.5",
-                    index < allSortableSections.length - 1 && "border-b border-border pb-0.5"
+                    "mb-1", // Increased margin-bottom
+                    index < allSortableSections.length - 1 && "border-b border-border pb-1" // Increased padding-bottom
                   )}
                 >
                   <SortableSectionHeader
@@ -260,18 +260,18 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                   />
 
                   {isExpanded && (
-                    <div className="mt-0.5 space-y-0.5 pl-2">
+                    <div className="mt-1 space-y-1"> {/* Increased margin-top and space-y */}
                       <SortableContext items={sectionItemIds} strategy={verticalListSortingStrategy}>
-                        <ul className="list-none space-y-0.5">
+                        <ul className="list-none space-y-1"> {/* Increased space-y */}
                           {topLevelTasksInSection.length === 0 ? (
-                            <div className="text-center text-foreground/80 dark:text-foreground/80 py-1.5 rounded-md border-dashed border-border bg-muted/30" data-no-dnd="true">
-                              <div className="flex items-center justify-center gap-2 mb-1.5">
-                                <ListTodo className="h-4 w-4" />
-                                <p className="text-sm font-medium">No tasks in this section yet.</p>
+                            <div className="text-center text-foreground/80 dark:text-foreground/80 py-2 rounded-md border-dashed border-border bg-muted/30" data-no-dnd="true"> {/* Increased vertical padding */}
+                              <div className="flex items-center justify-center gap-2 mb-2"> {/* Increased margin-bottom */}
+                                <ListTodo className="h-5 w-5" /> {/* Increased icon size */}
+                                <p className="text-base font-medium">No tasks in this section yet.</p> {/* Increased font size */}
                               </div>
                               <div className="flex items-center justify-center gap-2">
-                                <Button size="sm" onClick={() => openAddTaskForSection(currentSection.id === 'no-section-header' ? null : currentSection.id)}>
-                                  <Plus className="mr-2 h-4 w-4" /> Add Task
+                                <Button size="sm" onClick={() => openAddTaskForSection(currentSection.id === 'no-section-header' ? null : currentSection.id)} className="h-9"> {/* Increased height */}
+                                  <Plus className="mr-2 h-5 w-5" /> Add Task {/* Increased icon size */}
                                 </Button>
                               </div>
                             </div>

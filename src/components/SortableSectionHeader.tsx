@@ -97,7 +97,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "relative flex items-center py-0 pr-2",
+        "relative flex items-center py-2 pr-3", // Increased vertical padding
         "group",
         isDragging && !isOverlay ? "" : "", // Removed rounded-lg
         isOverlay ? "shadow-xl ring-2 ring-primary bg-card" : "", // Removed hover:shadow-sm
@@ -120,7 +120,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
                 onKeyDown={handleInputKeyDown}
                 onMouseDown={(e) => e.stopPropagation()} // Prevent toggle on input click
                 className={cn(
-                  "!text-lg !font-bold",
+                  "!text-xl !font-bold", // Increased font size
                   "border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0",
                   "p-0",
                   "text-foreground",
@@ -136,7 +136,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
           ) : (
             <>
               <h3 
-                className="text-lg font-bold truncate cursor-pointer" // Removed flex-1 here
+                className="text-xl font-bold truncate cursor-pointer" // Increased font size
                 onClick={handleStartEdit} // This h3 click starts edit and stops propagation
                 data-no-dnd="true" // Ensure dnd-kit doesn't interfere
               >
@@ -144,7 +144,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               </h3>
               {/* NEW: Fun colored circle for task count */}
               <div className={cn(
-                "ml-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 transition-colors duration-200",
+                "ml-2 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 transition-colors duration-200", // Increased size and font
                 getTaskCountCircleClasses(sectionTasksCount)
               )} data-no-dnd="true">
                 {sectionTasksCount}
@@ -166,32 +166,32 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="h-7 w-7 p-0"
+                    className="h-8 w-8 p-0" // Increased button size
                     data-no-dnd="true" 
                     tabIndex={isOverlay ? -1 : 0}
                     onClick={(e) => e.stopPropagation()} // Prevent toggle on button click
                   >
                     <span>
                       <span className="sr-only">Open section menu</span>
-                      <MoreHorizontal className="h-4 w-4" />
+                      <MoreHorizontal className="h-5 w-5" /> {/* Increased icon size */}
                     </span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" data-no-dnd="true">
                   <DropdownMenuItem onSelect={() => handleAddTaskToSpecificSection(section.id)}>
-                    <Plus className="mr-2 h-3.5 w-3.5" /> Add Task to Section
+                    <Plus className="mr-2 h-4 w-4" /> Add Task to Section {/* Increased icon size */}
                   </DropdownMenuItem>
                   <DropdownMenuItem onSelect={() => markAllTasksInSectionCompleted(section.id)}>
-                    <CheckCircle2 className="mr-2 h-3.5 w-3.5" /> Mark All Completed
+                    <CheckCircle2 className="mr-2 h-4 w-4" /> Mark All Completed {/* Increased icon size */}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onSelect={() => updateSectionIncludeInFocusMode(section.id, !section.include_in_focus_mode)}>
-                    {section.include_in_focus_mode ? <EyeOff className="mr-2 h-3.5 w-3.5" /> : <Eye className="mr-2 h-3.5 w-3.5" />}
+                    {section.include_in_focus_mode ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />} {/* Increased icon size */}
                     {section.include_in_focus_mode ? 'Exclude from Focus Mode' : 'Include in Focus Mode'}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onSelect={() => handleDeleteSectionClick(section.id)} className="text-destructive focus:text-destructive">
-                    <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete Section
+                    <Trash2 className="mr-2 h-4 w-4" /> Delete Section {/* Increased icon size */}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -199,11 +199,11 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
                 variant="ghost" 
                 size="icon" 
                 onClick={(e) => { e.stopPropagation(); toggleSection(section.id); }} // Prevent toggle on button click
-                className="h-7 w-7 p-0" 
+                className="h-8 w-8 p-0" // Increased button size
                 data-no-dnd="true" 
                 tabIndex={isOverlay ? -1 : 0}
               >
-                <ChevronDown className={cn("h-4 w-4 transition-transform", isExpanded ? "rotate-0" : "-rotate-90")} />
+                <ChevronDown className={cn("h-5 w-5 transition-transform", isExpanded ? "rotate-0" : "-rotate-90")} /> {/* Increased icon size */}
               </Button>
             </>
           )}
