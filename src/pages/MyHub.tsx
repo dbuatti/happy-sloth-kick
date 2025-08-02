@@ -182,7 +182,7 @@ const MyHub: React.FC = () => {
 
   const totalTasksCompleted = chartData.reduce((sum, day) => sum + day.tasksCompleted, 0);
   const totalTasksCreated = chartData.reduce((sum, day) => sum + day.totalTasks, 0);
-  const averageCompletionRate = totalTasksCreated > 0 ? Math.round((totalTasksCompleted / totalTasksCreated) * 100) : 0;
+  const averageCompletionRate = totalTasksCreated > 0 ? (totalTasksCompleted / totalTasksCreated) * 100 : 0;
   const mostProductiveDay = chartData.length > 0 
     ? chartData.reduce((max, day) => day.tasksCompleted > max.tasksCompleted ? day : max) 
     : null;
@@ -635,7 +635,10 @@ const MyHub: React.FC = () => {
           task={taskToOverview}
           userId={archiveUserId}
           isOpen={isTaskOverviewOpen}
-          onClose={() => setIsTaskOverviewOpen(false)}
+          onClose={() => {
+            setIsTaskOverviewOpen(false);
+            setTaskToOverview(null);
+          }}
           onEditClick={handleEditTaskFromOverview}
           onUpdate={updateTask}
           onDelete={deleteTask}

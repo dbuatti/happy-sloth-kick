@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import CategorySelector from "./CategorySelector";
 import PrioritySelector from "./PrioritySelector";
 import SectionSelector from "./SectionSelector";
-import { format, setHours, setMinutes, parse, addDays, addWeeks, addMonths, startOfDay, parseISO } from 'date-fns';
+import { format, setHours, setMinutes, parse, addDays, addWeeks, addMonths, startOfDay, parseISO, isValid } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import { useForm, Controller } from 'react-hook-form';
@@ -60,7 +60,7 @@ const taskFormSchema = z.object({
         path: ['remindAtTime'],
       });
     } else {
-      const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+      const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-5]$/;
       if (!timeRegex.test(data.remindAtTime)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -200,11 +200,10 @@ const TaskForm: React.FC<TaskFormProps> = ({
 
         if (suggestions.remindAt) {
           const parsedRemindAt = parseISO(suggestions.remindAt);
-          setValue('remindAtDate', parsedRemindAt);
-          setValue('remindAtTime', format(parsedRemindAt, 'HH:mm'));
-        } else {
-          setValue('remindAtDate', null);
-          setValue('remindAtTime', '');
+          if (isValid(parsedRemindAt)) {
+            setValue('remindAtDate', parsedRemindAt);
+            setValue('remindAtTime', format(parsedRemindAt, 'HH:mm'));
+          }
         }
 
         // For section, we need to find the actual section ID if it exists

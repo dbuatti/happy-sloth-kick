@@ -1,13 +1,11 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { Eye, Hand, Ear, Soup, Utensils, RefreshCcw, Play, Pause, Leaf, Wind, Sparkles, Brain, Lightbulb, Armchair, UtensilsCrossed, ScanEye, MessageSquare } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useSound } from '@/context/SoundContext';
+import { Eye, Wind, Sparkles, Brain, UtensilsCrossed, ScanEye, MessageSquare, Armchair } from 'lucide-react';
+import MindfulnessToolCard from '@/components/MindfulnessToolCard'; // Import the new card component
 import WorryJournal from '@/components/WorryJournal';
 import GratitudeJournal from '@/components/GratitudeJournal';
-import MindfulnessToolCard from '@/components/MindfulnessToolCard'; // Import the new card component
 
 const MindfulnessTools: React.FC = () => {
   return (

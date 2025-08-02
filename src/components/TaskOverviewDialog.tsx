@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Trash2, CheckCircle2, ListTodo, Edit, Calendar, Clock, StickyNote, BellRing, FolderOpen, Repeat, Link as LinkIcon } from 'lucide-react';
+import { Trash2, ListTodo, Edit, Calendar, Clock, StickyNote, BellRing, FolderOpen, Repeat, Link as LinkIcon } from 'lucide-react';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
 import {
@@ -131,7 +131,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
         <div className="py-3 space-y-3 text-sm text-foreground">
           <div className="grid grid-cols-2 gap-y-1.5 gap-x-4">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-3.5 w-3.5 text-muted-foreground" />
+              <ListTodo className="h-3.5 w-3.5 text-muted-foreground" />
               <span>Status: <span className="font-semibold capitalize">{task.status}</span></span>
             </div>
             <div className="flex items-center gap-2">
@@ -201,7 +201,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
                     >
                       {subtask.description}
                     </label>
-                    {subtask.status === 'completed' && <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />}
+                    {subtask.status === 'completed' && <ListTodo className="h-3.5 w-3.5 text-green-500" />}
                   </li>
                 ))}
               </ul>
@@ -229,7 +229,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
               {task.status === 'completed' ? (
                 <><ListTodo className="mr-2 h-3.5 w-3.5" /> Mark To-Do</>
               ) : (
-                <><CheckCircle2 className="mr-2 h-3.5 w-3.5" /> Mark Complete</>
+                <><ListTodo className="mr-2 h-3.5 w-3.5" /> Mark Complete</>
               )}
             </Button>
             <Button variant="destructive" onClick={handleDeleteClick} disabled={isUpdatingStatus} className="flex-1 h-9">

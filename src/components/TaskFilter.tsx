@@ -5,8 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Search, Filter, X, ListRestart } from 'lucide-react'; // Added ListRestart icon
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
-import { showError } from "@/utils/toast";
 import { TaskSection, Category } from '@/hooks/useTasks'; // Import types
 
 interface TaskFilterProps {

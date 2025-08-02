@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, BarChart3, Settings as SettingsIcon, HelpCircle, Archive as ArchiveIcon, Timer, LayoutGrid, CalendarClock, Menu, Leaf, Moon, Volume2, VolumeX, Brain, Target, LayoutDashboard, Sparkles } from 'lucide-react';
+import { Home, BarChart3, HelpCircle, Archive as ArchiveIcon, Target, LayoutGrid, CalendarClock, Menu, Leaf, Moon, Volume2, VolumeX, Brain, LayoutDashboard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';

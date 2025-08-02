@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Trash2, CheckCircle2, ListTodo } from 'lucide-react';
+import { Trash2, ListTodo } from 'lucide-react';
 import { Task, TaskSection, Category } from '@/hooks/useTasks'; // Import Task, TaskSection, Category types
 import { useTasks } from '@/hooks/useTasks'; // Keep useTasks for subtask updates and handleAddTask
 import {
@@ -124,7 +124,6 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
         <TaskForm
-          initialData={task}
           onSave={handleSaveMainTask}
           onCancel={onClose}
           userId={userId}
@@ -162,7 +161,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
                   >
                     {subtask.description}
                   </label>
-                  {subtask.status === 'completed' && <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />}
+                  {subtask.status === 'completed' && <ListTodo className="h-3.5 w-3.5 text-green-500" />}
                 </li>
               ))}
             </ul>
@@ -179,7 +178,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
             {task.status === 'completed' ? (
               <><ListTodo className="mr-2 h-3.5 w-3.5" /> Mark To-Do</>
             ) : (
-              <><CheckCircle2 className="mr-2 h-3.5 w-3.5" /> Mark Complete</>
+              <><ListTodo className="mr-2 h-3.5 w-3.5" /> Mark Complete</>
             )}
           </Button>
           <Button variant="destructive" onClick={handleDeleteClick} disabled={isSaving} className="w-full sm:w-auto mt-1.5 sm:mt-0 h-9">
