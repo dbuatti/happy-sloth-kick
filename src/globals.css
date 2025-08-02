@@ -297,51 +297,6 @@
     --ring: 220 20% 85%;
   }
 
-  .cosmic-dusk {
-    --background: 225 30% 8%;
-    --foreground: 225 15% 92%;
-    --card: 225 30% 8%;
-    --card-foreground: 225 15% 92%;
-    --popover: 225 35% 12%;
-    --popover-foreground: 225 15% 92%;
-    --primary: 225 45% 55%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 225 30% 65%;
-    --secondary-foreground: 225 15% 92%;
-    --muted: 225 35% 12%;
-    --muted-foreground: 225 15% 70%;
-    --accent: 345 55% 70%;
-    --accent-foreground: 225 15% 92%;
-    --destructive: 25 75% 65%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 225 30% 20%;
-    --input: 225 30% 15%;
-    --ring: 225 20% 85%;
-    --radius: 0.5rem;
-  }
-
-  .dark .cosmic-dusk {
-    --background: 225 30% 8%;
-    --foreground: 225 15% 92%;
-    --card: 225 35% 12%;
-    --card-foreground: 225 15% 92%;
-    --popover: 225 35% 12%;
-    --popover-foreground: 225 15% 92%;
-    --primary: 225 45% 55%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 225 30% 65%;
-    --secondary-foreground: 225 15% 92%;
-    --muted: 225 35% 12%;
-    --muted-foreground: 225 15% 70%;
-    --accent: 345 55% 70%;
-    --accent-foreground: 225 15% 92%;
-    --destructive: 25 75% 65%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 225 30% 20%;
-    --input: 225 30% 15%;
-    --ring: 225 20% 85%;
-  }
-
   .focus-flow {
     --background: 200 15% 98%;
     --foreground: 200 20% 15%;
@@ -546,7 +501,7 @@
     /* Status and Priority colors adjusted for theme */
     --border-status-due-today: 30 80% 60%;
     --border-status-overdue: 0 80% 60%;
-    --status-completed: 90 60% 40%; /* Earthy green */
+    --status-completed': 90 60% 40%; /* Earthy green */
     --task-completed-bg: 40 100% 95%;
     --priority-low: 90 60% 40%;
     --priority-medium: 40 90% 50%;
@@ -580,7 +535,7 @@
     /* Status and Priority colors adjusted for theme */
     --border-status-due-today: 30 80% 75%;
     --border-status-overdue: 0 90% 70%;
-    --status-completed: 90 70% 50%; /* Brighter earthy green */
+    --status-completed': 90 70% 50%; /* Brighter earthy green */
     --task-completed-bg: 30 25% 20%;
     --priority-low: 90 70% 50%;
     --priority-medium: 40 90% 70%;
@@ -614,7 +569,7 @@
     --radius: 0.5rem;
     --border-status-due-today: 200 30% 60%;
     --border-status-overdue: 15 60% 55%;
-    --status-completed: 120 30% 40%;
+    --status-completed': 120 30% 40%;
     --task-completed-bg: 120 10% 98%;
     --priority-low: 120 30% 40%;
     --priority-medium: 200 30% 60%;
@@ -644,7 +599,7 @@
     --ring: 120 10% 80%;
     --border-status-due-today: 200 35% 70%;
     --border-status-overdue: 15 70% 70%;
-    --status-completed: 120 35% 55%;
+    --status-completed': 120 35% 55%;
     --task-completed-bg: 120 20% 25%;
     --priority-low: 120 35% 55%;
     --priority-medium: 200 35% 70%;
@@ -677,7 +632,7 @@
     --radius: 1rem;
     --border-status-due-today: 50 90% 60%;
     --border-status-overdue: 0 80% 60%;
-    --status-completed: 200 80% 60%;
+    --status-completed': 200 80% 60%;
     --task-completed-bg: 0 0% 98%;
     --priority-low: 200 80% 60%;
     --priority-medium: 50 90% 60%;
@@ -709,7 +664,7 @@
     --ring: 330 90% 75%;
     --border-status-due-today: 50 95% 75%;
     --border-status-overdue: 0 90% 70%;
-    --status-completed: 200 90% 70%;
+    --status-completed': 200 90% 70%;
     --task-completed-bg: 240 25% 20%;
     --priority-low: 200 90% 70%;
     --priority-medium: 50 95% 75%;
