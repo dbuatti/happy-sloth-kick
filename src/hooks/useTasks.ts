@@ -699,17 +699,39 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
 
   const refreshGroup = useCallback(async (groupParentId: string | null, groupSectionId: string | null) => {
     if (!userId) return;
-    const { data, error } = await supabase
+    
+    let query = supabase
       .from('tasks')
       .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link')
-      .eq('user_id', userId)
-      .eq('parent_task_id', groupParentId)
-      .eq('section_id', groupSectionId);
-    if (error) return;
+      .eq('user_id', userId);
+
+    if (groupParentId === null) {
+      query = query.is('parent_task_id', null);
+    } else {
+      query = query.eq('parent_task_id', groupParentId);
+    }
+
+    if (groupSectionId === null) {
+      query = query.is('section_id', null);
+    } else {
+      query = query.eq('section_id', groupSectionId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error refreshing group:', error);
+      return;
+    }
     setTasks(prev => {
       const ids = new Set((data || []).map(t => t.id));
       const updated = (data || []).map((t: any) => ({ ...t, category_color: categoriesMapRef.current.get(t.category) || 'gray' }));
-      return prev.map(t => ids.has(t.id) ? updated.find(u => u.id === t.id)! : t);
+      // Filter out tasks that are no longer in this group (e.g., moved to another section/parent)
+      // And update existing tasks, add new ones
+      const remainingTasks = prev.filter(t => 
+        !(t.parent_task_id === groupParentId && (t.section_id === groupSectionId || (t.section_id === null && groupSectionId === null)))
+      );
+      return [...remainingTasks, ...updated];
     });
   }, [userId]);
 
