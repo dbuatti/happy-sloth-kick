@@ -214,9 +214,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     setIsAddTaskOpenLocal(true);
   };
 
-  // First, I need to add `editingSectionId` and `editingSectionName` states to `TaskList.tsx`
-  // and pass their setters down to `SortableSectionHeader`.
-
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [editingSectionName, setEditingSectionName] = useState('');
 
@@ -224,21 +221,9 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     console.log('TaskList: handleEditSectionClickCorrected called for section:', section.id);
     setEditingSectionId(section.id);
     setEditingSectionName(section.name);
-  }, [setEditingSectionId, setEditingSectionName]); // Added setters to dependency array
+  }, [setEditingSectionId, setEditingSectionName]);
 
-  const handleSaveSectionEdit = useCallback(async () => {
-    if (editingSectionId && editingSectionName.trim()) {
-      await updateSection(editingSectionId, editingSectionName.trim());
-      setEditingSectionId(null);
-      setEditingSectionName('');
-    }
-  }, [editingSectionId, editingSectionName, updateSection]);
-
-  const handleCancelSectionEdit = useCallback(() => {
-    setEditingSectionId(null);
-    setEditingSectionName('');
-  }, []);
-
+  // Removed handleSaveSectionEdit and handleCancelSectionEdit as they are now handled inline in SortableSectionHeader
 
   return (
     <>
@@ -280,13 +265,12 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                     editingSectionId={editingSectionId} // Pass state
                     editingSectionName={editingSectionName} // Pass state
                     setNewEditingSectionName={setEditingSectionName} // Pass setter
-                    handleRenameSection={handleSaveSectionEdit} // Pass handler
-                    handleCancelSectionEdit={handleCancelSectionEdit} // Pass handler
                     handleEditSectionClick={handleEditSectionClickCorrected} // Pass corrected handler
                     handleAddTaskToSpecificSection={(sectionId) => openAddTaskForSection(sectionId)}
                     markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
                     handleDeleteSectionClick={deleteSection}
                     updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+                    onUpdateSectionName={updateSection} // Pass the update function directly
                     isOverlay={false} // Not an overlay
                   />
 
@@ -351,13 +335,12 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                     editingSectionId={null}
                     editingSectionName=""
                     setNewEditingSectionName={() => {}}
-                    handleRenameSection={async () => {}}
-                    handleCancelSectionEdit={() => {}}
                     handleEditSectionClick={() => {}}
                     handleAddTaskToSpecificSection={() => {}}
                     markAllTasksInSectionCompleted={async () => {}}
                     handleDeleteSectionClick={() => {}}
                     updateSectionIncludeInFocusMode={async () => {}}
+                    onUpdateSectionName={async () => {}} // Dummy for overlay
                     isOverlay={true} // Mark as overlay
                   />
                 ) : (

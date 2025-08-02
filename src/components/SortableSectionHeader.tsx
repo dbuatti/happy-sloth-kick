@@ -22,13 +22,12 @@ interface SortableSectionHeaderProps {
   editingSectionId: string | null;
   editingSectionName: string;
   setNewEditingSectionName: (name: string) => void;
-  handleRenameSection: () => Promise<void>;
-  handleCancelSectionEdit: () => void;
   handleEditSectionClick: (section: TaskSection) => void;
   handleAddTaskToSpecificSection: (sectionId: string | null) => void;
   markAllTasksInSectionCompleted: (sectionId: string | null) => Promise<void>;
   handleDeleteSectionClick: (sectionId: string) => void;
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
+  onUpdateSectionName: (sectionId: string, newName: string) => Promise<void>; // New prop for direct update
   isOverlay?: boolean; // New prop for drag overlay
 }
 
@@ -40,13 +39,12 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
   editingSectionId,
   editingSectionName,
   setNewEditingSectionName,
-  handleRenameSection,
-  handleCancelSectionEdit,
   handleEditSectionClick,
   handleAddTaskToSpecificSection,
   markAllTasksInSectionCompleted,
   handleDeleteSectionClick,
   updateSectionIncludeInFocusMode,
+  onUpdateSectionName, // Destructure new prop
   isOverlay = false, // Default to false
 }) => {
   // Conditionally use useSortable
@@ -65,6 +63,22 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
     // If it's the original item being dragged, make it invisible
     opacity: isDragging && !isOverlay ? 0 : 1,
     visibility: isDragging && !isOverlay ? 'hidden' : 'visible',
+  };
+
+  const handleInputBlur = async () => {
+    if (editingSectionId && editingSectionName.trim() !== section.name) {
+      await onUpdateSectionName(editingSectionId, editingSectionName.trim());
+    }
+    handleEditSectionClick(section); // Call to exit editing mode (sets editingSectionId to null)
+  };
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.currentTarget.blur(); // Trigger blur to save
+    } else if (e.key === 'Escape') {
+      setNewEditingSectionName(section.name); // Revert to original name
+      handleEditSectionClick(section); // Call to exit editing mode (sets editingSectionId to null)
+    }
   };
 
   return (
@@ -97,22 +111,16 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
             <Input
               value={editingSectionName}
               onChange={(e) => setNewEditingSectionName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleRenameSection()}
+              onBlur={handleInputBlur}
+              onKeyDown={handleInputKeyDown}
               className="text-lg font-semibold h-8" // Adjusted height
               autoFocus
             />
-            <Button size="sm" onClick={handleRenameSection} disabled={!editingSectionName.trim()} className="h-8">Save</Button> {/* Adjusted height */}
-            <Button variant="ghost" size="sm" onClick={handleCancelSectionEdit} className="h-8">Cancel</Button> {/* Adjusted height */}
           </div>
         ) : (
           <div 
             className="flex items-center gap-2 flex-1 cursor-pointer" // Added cursor-pointer
-            onClick={() => {
-              console.log('SortableSectionHeader: Section header div clicked for section:', section.id);
-              if (!isOverlay) {
-                handleEditSectionClick(section);
-              }
-            }} // Direct edit on click
+            onClick={() => !isOverlay && handleEditSectionClick(section)} // Direct edit on click
             data-no-dnd="true" // Prevent drag when clicking on text to edit
           >
             <FolderOpen className="h-4 w-4 text-muted-foreground" /> {/* Adjusted icon size */}
