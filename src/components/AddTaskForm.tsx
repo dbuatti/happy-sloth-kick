@@ -1,6 +1,7 @@
 import React from 'react';
 import TaskForm from './TaskForm';
 import { TaskSection, Category } from '@/hooks/useTasks';
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 interface AddTaskFormProps {
   onAddTask: (taskData: {
@@ -14,7 +15,6 @@ interface AddTaskFormProps {
     recurring_type: 'none' | 'daily' | 'weekly' | 'monthly';
     parent_task_id: string | null;
   }) => Promise<any>;
-  userId: string | null;
   onTaskAdded?: () => void; // Callback for when task is successfully added
   sections: TaskSection[];
   allCategories: Category[];
@@ -26,7 +26,6 @@ interface AddTaskFormProps {
 
 const AddTaskForm: React.FC<AddTaskFormProps> = ({
   onAddTask,
-  userId,
   onTaskAdded,
   sections,
   allCategories,
@@ -35,6 +34,9 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({
   parentTaskId,
   currentDate, // Destructure currentDate
 }) => {
+  const { user } = useAuth(); // Use useAuth to get the user
+  const userId = user?.id || null; // Get userId from useAuth
+
   const handleSave = async (taskData: Parameters<typeof onAddTask>[0]) => {
     const success = await onAddTask(taskData);
     if (success) {

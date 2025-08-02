@@ -10,10 +10,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from '@/lib/utils';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import MiniBreathingBubble from '@/components/MiniBreathingBubble'; // Import MiniBreathingBubble
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 const FocusMode: React.FC = () => {
+  const { user } = useAuth(); // Use useAuth to get the user
+  const userId = user?.id; // Get userId from useAuth
+
   const { playSound } = useSound();
-  const { filteredTasks, updateTask, userId, sections, allCategories } = useTasks({ viewMode: 'focus' });
+  const { filteredTasks, updateTask, sections, allCategories } = useTasks({ viewMode: 'focus' });
 
   const [focusDuration, setFocusDuration] = useState(25 * 60); // 25 minutes
   const [breakDuration, setBreakDuration] = useState(5 * 60); // 5 minutes

@@ -8,17 +8,19 @@ import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
 import TaskDetailDialog from './TaskDetailDialog';
 import TaskOverviewDialog from './TaskOverviewDialog'; // For opening overview from panel
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 interface ActiveTaskPanelProps {
+  isOpen: boolean;
+  onClose: () => void;
   nextAvailableTask: Task | null;
-  tasks: Task[]; // All tasks for subtask filtering
-  filteredTasks: Task[]; // Filtered tasks for upcoming list
+  tasks: Task[];
+  filteredTasks: Task[];
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
-  onOpenDetail: (task: Task) => void; // To open full task detail dialog
-  onDeleteTask: (taskId: string) => void; // Pass through delete for TaskDetailDialog
+  onOpenDetail: (task: Task) => void;
+  onDeleteTask: (taskId: string) => void;
   sections: TaskSection[];
   allCategories: Category[];
-  userId: string | null;
   currentDate: Date;
 }
 
@@ -31,9 +33,11 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
   onDeleteTask,
   sections,
   allCategories,
-  userId,
   currentDate,
 }) => {
+  const { user } = useAuth(); // Use useAuth to get the user
+  const userId = user?.id || null; // Get userId from useAuth
+
   const { playSound } = useSound();
 
   // Focus Timer State

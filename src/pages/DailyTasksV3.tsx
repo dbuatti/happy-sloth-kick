@@ -20,7 +20,6 @@ const getUTCStartOfDay = (date: Date) => {
 };
 
 const DailyTasksV3: React.FC = () => {
-  const [currentDate, setCurrentDate] = useState(() => getUTCStartOfDay(new Date()));
   const { user } = useAuth();
 
   const {
@@ -55,7 +54,9 @@ const DailyTasksV3: React.FC = () => {
     setPriorityFilter,
     sectionFilter,
     setSectionFilter,
-  } = useTasks({ currentDate, setCurrentDate, viewMode: 'daily' });
+    currentDate, // Now directly from useTasks
+    setCurrentDate, // Now directly from useTasks
+  } = useTasks({ viewMode: 'daily' }); // No need to pass currentDate/setCurrentDate here
 
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
@@ -142,7 +143,6 @@ const DailyTasksV3: React.FC = () => {
                   updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
                   updateTaskParentAndOrder={updateTaskParentAndOrder}
                   reorderSections={reorderSections}
-                  _moveTask={async () => {}} // Dummy function for now
                   allCategories={allCategories}
                   setIsAddTaskOpen={() => {}}
                   onOpenOverview={handleOpenOverview}

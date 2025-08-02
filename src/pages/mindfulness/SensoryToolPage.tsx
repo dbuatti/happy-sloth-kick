@@ -4,8 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Eye, Hand, Ear, Soup, Utensils, RefreshCcw, Sparkles } from 'lucide-react';
 import { useSound } from '@/context/SoundContext';
 import { MadeWithDyad } from '@/components/made-with-dyad';
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 const SensoryToolPage: React.FC = () => {
+  const { user } = useAuth(); // Use useAuth to get the user
+  const userId = user?.id; // Get userId from useAuth
+
   const { playSound } = useSound();
   const [step, setStep] = useState(5);
   const [promptIndex, setPromptIndex] = useState(0);

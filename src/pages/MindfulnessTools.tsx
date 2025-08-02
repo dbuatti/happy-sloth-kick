@@ -5,8 +5,12 @@ import { Eye, Wind, Sparkles, Brain, UtensilsCrossed, ScanEye, MessageSquare, Ar
 import MindfulnessToolCard from '@/components/MindfulnessToolCard'; // Import the new card component
 import WorryJournal from '@/components/WorryJournal';
 import GratitudeJournal from '@/components/GratitudeJournal';
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 const MindfulnessTools: React.FC = () => {
+  const { user } = useAuth(); // Use useAuth to get the user
+  const userId = user?.id; // Get userId from useAuth
+
   return (
     <div className="flex-1 flex flex-col">
       <main className="flex-grow p-4 flex flex-col items-center space-y-8">

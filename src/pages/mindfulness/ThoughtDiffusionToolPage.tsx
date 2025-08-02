@@ -6,10 +6,14 @@ import { Play, Pause, RefreshCcw, Lightbulb, Laugh, MessageSquare, Repeat, Cloud
 import { cn } from '@/lib/utils';
 import { useSound } from '@/context/SoundContext';
 import { MadeWithDyad } from '@/components/made-with-dyad';
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 type DiffusionTechnique = 'none' | 'funny-voice' | 'having-thought' | 'repeat' | 'floating-away';
 
 const ThoughtDiffusionToolPage: React.FC = () => {
+  const { user } = useAuth(); // Use useAuth to get the user
+  const userId = user?.id; // Get userId from useAuth
+
   const { playSound } = useSound();
   const [originalThought, setOriginalThought] = useState('');
   const [displayedThought, setDisplayedThought] = useState<React.ReactNode>(''); // Changed type to React.ReactNode

@@ -70,12 +70,11 @@ const cleanTaskForDb = (task: Partial<Task>): Partial<Omit<Task, 'category_color
 };
 
 interface UseTasksProps {
-  currentDate?: Date;
-  setCurrentDate?: React.Dispatch<React.SetStateAction<Date>>;
+  currentDate?: Date; // Make optional, as it might be managed internally for 'daily' view
   viewMode?: 'daily' | 'archive' | 'focus';
 }
 
-export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: UseTasksProps = {}) => {
+export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: UseTasksProps = {}) => {
   const { user, loading: authLoading } = useAuth();
   const userId = user?.id;
   const { addReminder, dismissReminder } = useReminders();
@@ -92,6 +91,10 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [sectionFilter, setSectionFilter] = useState('all');
+
+  // Manage currentDate internally if in 'daily' view and not provided externally
+  const [internalCurrentDate, setInternalCurrentDate] = useState(() => getUTCStartOfDay(new Date()));
+  const effectiveCurrentDate = viewMode === 'daily' ? internalCurrentDate : (propCurrentDate || new Date());
 
   const categoriesMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -239,8 +242,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     };
   }, [userId, addReminder, dismissReminder]);
 
-  const today = currentDate || new Date();
-  const todayStart = getUTCStartOfDay(today);
+  const todayStart = getUTCStartOfDay(effectiveCurrentDate);
 
   const processedTasks = useMemo(() => {
     const allProcessedTasks: Task[] = [];
@@ -335,7 +337,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       }
     });
     return allProcessedTasks;
-  }, [tasks, currentDate, allCategories]);
+  }, [tasks, effectiveCurrentDate, allCategories]); // Depend on effectiveCurrentDate
 
   const { finalFilteredTasks, nextAvailableTask } = useMemo(() => {
     let relevant: Task[] = processedTasks;
@@ -410,7 +412,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     const newTask: Task = {
       id: uuidv4(),
       user_id: userId,
-      created_at: (currentDate || new Date()).toISOString(),
+      created_at: effectiveCurrentDate.toISOString(), // Use effectiveCurrentDate
       status: newTaskData.status || 'to-do',
       recurring_type: newTaskData.recurring_type || 'none',
       category: newTaskData.category,
@@ -450,7 +452,7 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
       setTasks(prev => prev.filter(t => t.id !== newTask.id));
       return false;
     }
-  }, [userId, currentDate, tasks, addReminder]);
+  }, [userId, effectiveCurrentDate, tasks, addReminder]); // Depend on effectiveCurrentDate
 
   const updateTask = useCallback(async (taskId: string, updates: TaskUpdate) => {
     if (!userId) {
@@ -850,8 +852,8 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     filteredTasks: finalFilteredTasks,
     nextAvailableTask,
     loading,
-    currentDate,
-    setCurrentDate,
+    currentDate: effectiveCurrentDate, // Expose effectiveCurrentDate
+    setCurrentDate: setInternalCurrentDate, // Expose setter for external control in 'daily' mode
     userId,
     handleAddTask,
     updateTask,

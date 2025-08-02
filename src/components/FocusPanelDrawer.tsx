@@ -2,6 +2,7 @@ import React from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import ActiveTaskPanel from './ActiveTaskPanel';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 interface FocusPanelDrawerProps {
   isOpen: boolean;
@@ -14,7 +15,6 @@ interface FocusPanelDrawerProps {
   onDeleteTask: (taskId: string) => void;
   sections: TaskSection[];
   allCategories: Category[];
-  userId: string | null;
   currentDate: Date;
 }
 
@@ -29,9 +29,11 @@ const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
   onDeleteTask,
   sections,
   allCategories,
-  userId,
   currentDate,
 }) => {
+  const { user } = useAuth(); // Use useAuth to get the user
+  const userId = user?.id || null; // Get userId from useAuth
+
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent side="right" className="w-full sm:max-w-md flex flex-col">

@@ -19,10 +19,10 @@ import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { getCategoryColorProps } from '@/lib/categoryColors';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 interface TaskOverviewDialogProps {
   task: Task | null;
-  userId: string | null;
   isOpen: boolean;
   onClose: () => void;
   onEditClick: (task: Task) => void; // To open the full edit dialog
@@ -43,6 +43,9 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
   sections,
   allTasks,
 }) => {
+  const { user } = useAuth(); // Use useAuth to get the user
+  const userId = user?.id || null; // Get userId from useAuth
+
   const { playSound } = useSound();
   const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);

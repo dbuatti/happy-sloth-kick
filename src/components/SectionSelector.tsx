@@ -1,6 +1,7 @@
 import { Label } from "@/components/ui/label";
 import { FolderOpen } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Import Select components
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 interface TaskSection {
   id: string;
@@ -12,11 +13,13 @@ interface TaskSection {
 interface SectionSelectorProps {
   value: string | null;
   onChange: (sectionId: string | null) => void;
-  userId: string | null;
   sections: TaskSection[]; // Pass sections as a prop
 }
 
 const SectionSelector: React.FC<SectionSelectorProps> = ({ value, onChange, sections }) => {
+  const { user } = useAuth(); // Use useAuth to get the user
+  const userId = user?.id || null; // Get userId from useAuth
+
   const selectedSection = sections.find(sec => sec.id === value);
 
   return (

@@ -9,10 +9,10 @@ import { Task } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { CheckCircle2 } from 'lucide-react'; // Ensure CheckCircle2 is imported for the animation
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 interface TaskItemProps {
   task: Task;
-  userId: string | null;
   onStatusChange: (taskId: string, newStatus: Task['status']) => Promise<void>;
   onDelete: (taskId: string) => void;
   onUpdate: (taskId: string, updates: Partial<Task>) => void;
@@ -39,6 +39,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
   isOverlay = false,
   dragListeners,
 }) => {
+  const { user } = useAuth(); // Use useAuth to get the user
+  const userId = user?.id || null; // Get userId from useAuth
   const { playSound } = useSound();
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
 

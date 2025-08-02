@@ -10,15 +10,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from '@/lib/utils';
 import { categoryColorMap, CategoryColorKey, getCategoryColorProps } from '@/lib/categoryColors';
 import { Category } from '@/hooks/useTasks';
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 interface CategorySelectorProps {
   value: string; // This is the category ID
   onChange: (categoryId: string) => void;
-  userId: string | null;
   categories: Category[]; // Now receives categories as a prop
 }
 
-const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, userId, categories }) => {
+const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, categories }) => {
+  const { user } = useAuth(); // Use useAuth to get the user
+  const userId = user?.id || null; // Get userId from useAuth
+
   const [isOpen, setIsOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [selectedColorKey, setSelectedColorKey] = useState<CategoryColorKey>('gray'); // Store the key

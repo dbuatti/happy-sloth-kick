@@ -18,10 +18,10 @@ import { useSound } from '@/context/SoundContext';
 import TaskForm from './TaskForm';
 import { cn } from '@/lib/utils';
 import { Checkbox } from "@/components/ui/checkbox";
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 interface TaskDetailDialogProps {
   task: Task | null;
-  userId: string | null;
   isOpen: boolean;
   onClose: () => void;
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<void>;
@@ -32,7 +32,6 @@ interface TaskDetailDialogProps {
 
 const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   task,
-  userId,
   isOpen,
   onClose,
   onUpdate,
@@ -40,6 +39,9 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   sections, // Destructure from props
   allCategories, // Destructure from props
 }) => {
+  const { user } = useAuth(); // Use useAuth to get the user
+  const userId = user?.id || null; // Get userId from useAuth
+
   // Only use useTasks for actions that require it, not for fetching global state
   const { tasks: allTasks, handleAddTask, updateTask: updateSubtask } = useTasks(); 
   const { playSound } = useSound();

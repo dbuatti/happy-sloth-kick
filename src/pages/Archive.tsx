@@ -7,13 +7,16 @@ import { useTasks, Task } from '@/hooks/useTasks';
 import TaskItem from '@/components/TaskItem';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import TaskOverviewDialog from '@/components/TaskOverviewDialog';
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 const Archive: React.FC = () => {
+  const { user } = useAuth(); // Use useAuth to get the user
+  const userId = user?.id; // Get userId from useAuth
+
   const {
     tasks: allTasks, // Need all tasks for subtask filtering in overview
     filteredTasks: archivedTasks, 
     loading: archiveLoading,
-    userId: archiveUserId,
     updateTask,
     deleteTask,
     sections,
@@ -73,7 +76,7 @@ const Archive: React.FC = () => {
                   <li key={task.id} className="relative rounded-lg p-2 transition-all duration-200 ease-in-out group hover:shadow-md">
                     <TaskItem
                       task={task}
-                      userId={archiveUserId}
+                      userId={userId}
                       onStatusChange={handleTaskStatusChange}
                       onDelete={deleteTask}
                       onUpdate={updateTask}
@@ -98,7 +101,7 @@ const Archive: React.FC = () => {
       {taskToOverview && (
         <TaskOverviewDialog
           task={taskToOverview}
-          userId={archiveUserId}
+          userId={userId}
           isOpen={isTaskOverviewOpen}
           onClose={() => {
             setIsTaskOverviewOpen(false);
@@ -115,7 +118,7 @@ const Archive: React.FC = () => {
       {taskToEdit && (
         <TaskDetailDialog
           task={taskToEdit}
-          userId={archiveUserId}
+          userId={userId}
           isOpen={isTaskDetailOpen}
           onClose={() => setIsTaskDetailOpen(false)}
           onUpdate={updateTask}

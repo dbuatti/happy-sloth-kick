@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { useSound } from '@/context/SoundContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MadeWithDyad } from '@/components/made-with-dyad';
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 interface BreathCycle {
   name: string;
@@ -24,6 +25,9 @@ const breathCycles: BreathCycle[] = [
 ];
 
 const BreathingBubblePage: React.FC = () => {
+  const { user } = useAuth(); // Use useAuth to get the user
+  const userId = user?.id; // Get userId from useAuth
+
   const { playSound } = useSound();
   const [isRunning, setIsRunning] = useState(false);
   const [phase, setPhase] = useState<'inhale' | 'hold-top' | 'exhale' | 'hold-bottom'>('inhale');

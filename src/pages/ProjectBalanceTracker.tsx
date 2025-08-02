@@ -22,8 +22,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 const ProjectBalanceTracker: React.FC = () => {
+  const { user } = useAuth(); // Use useAuth to get the user
+  const userId = user?.id; // Get userId from useAuth
+
   const {
     projects,
     loading,
@@ -327,14 +331,14 @@ const ProjectBalanceTracker: React.FC = () => {
                             />
                             <Textarea
                               value={editingProjectDescription}
-                              onChange={(e) => setEditingProjectDescription(e.target.value)}
+                              onChange={(e) => setNewProjectDescription(e.target.value)}
                               placeholder="Description..."
                               rows={2}
                               disabled={isSavingProject}
                             />
                             <Input
                               type="url"
-                              value={editingProjectLink}
+                              value={newProjectLink} // Use newProjectLink here
                               onChange={(e) => setNewProjectLink(e.target.value)}
                               placeholder="e.g., https://github.com/my-project"
                               disabled={isSavingProject}

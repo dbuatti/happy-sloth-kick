@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { useSound } from '@/context/SoundContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MadeWithDyad } from '@/components/made-with-dyad';
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 interface ImageryTheme {
   name: string;
@@ -75,6 +76,9 @@ const imageryThemes: ImageryTheme[] = [
 ];
 
 const GuidedImageryPage: React.FC = () => {
+  const { user } = useAuth(); // Use useAuth to get the user
+  const userId = user?.id; // Get userId from useAuth
+
   const { playSound } = useSound();
   const [selectedThemeName, setSelectedThemeName] = useState(imageryThemes[0].name);
   const [currentScriptIndex, setCurrentScriptIndex] = useState(0);

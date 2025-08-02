@@ -28,12 +28,12 @@ import SortableTaskItem from './SortableTaskItem';
 import SortableSectionHeader from './SortableSectionHeader';
 import TaskForm from './TaskForm';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 interface TaskListProps {
   tasks: Task[];
   filteredTasks: Task[];
   loading: boolean;
-  userId: string | null;
   handleAddTask: (taskData: any) => Promise<any>;
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
   deleteTask: (taskId: string) => void;
@@ -49,7 +49,6 @@ interface TaskListProps {
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
   updateTaskParentAndOrder: (activeId: string, newParentId: string | null, newSectionId: string | null, overId: string | null) => Promise<void>;
   reorderSections: (activeId: string, overId: string) => Promise<void>;
-  _moveTask: (taskId: string, direction: 'up' | 'down') => Promise<void>; // Renamed to _moveTask
   allCategories: Category[];
   setIsAddTaskOpen: (open: boolean) => void;
   onOpenOverview: (task: Task) => void; // Added this prop
@@ -62,7 +61,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     tasks,
     filteredTasks,
     loading,
-    userId,
     handleAddTask,
     updateTask,
     deleteTask,
@@ -79,6 +77,9 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     onOpenOverview, // Destructure the new prop
     currentDate,
   } = props;
+
+  const { user } = useAuth(); // Use useAuth to get the user
+  const userId = user?.id || null; // Get userId from useAuth
 
   const [isAddTaskOpenLocal, setIsAddTaskOpenLocal] = useState(false);
   const [preselectedSectionId, setPreselectedSectionId] = useState<string | null>(null);

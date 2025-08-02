@@ -10,8 +10,12 @@ import { format, addDays } from 'date-fns';
 import { Moon, Bed, AlarmClock, LogOut } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSound } from '@/context/SoundContext';
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 const SleepTracker: React.FC = () => {
+  const { user } = useAuth(); // Use useAuth to get the user
+  const userId = user?.id; // Get userId from useAuth
+
   const { playSound } = useSound();
   const [currentDate, setCurrentDate] = useState(new Date());
   const { sleepRecord, loading, saveSleepRecord } = useSleepRecords({ selectedDate: currentDate });

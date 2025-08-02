@@ -18,6 +18,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { suggestTaskDetails } from '@/integrations/supabase/api'; // Updated import path
 import { showError } from '@/utils/toast'; // Import showError
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 const taskFormSchema = z.object({
   description: z.string().min(1, { message: 'Task description is required.' }).max(255, { message: 'Description must be 255 characters or less.' }),
@@ -98,7 +99,7 @@ interface TaskFormProps {
     link: string | null;
   }) => Promise<any>;
   onCancel: () => void;
-  userId: string | null;
+  userId: string | null; // Keep userId prop for now, as it's used in CategorySelector and SectionSelector
   sections: TaskSection[];
   allCategories: Category[];
   autoFocus?: boolean;
@@ -111,7 +112,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
   initialData,
   onSave,
   onCancel,
-  userId,
+  userId, // Destructure userId
   sections,
   allCategories,
   autoFocus = false,

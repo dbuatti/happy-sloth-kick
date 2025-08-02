@@ -7,8 +7,12 @@ import { MadeWithDyad } from "@/components/made-with-dyad";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from '@/lib/utils';
 import { useSound } from '@/context/SoundContext';
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 const Meditation: React.FC = () => {
+  const { user } = useAuth(); // Use useAuth to get the user
+  const userId = user?.id; // Get userId from useAuth
+
   const { playSound } = useSound();
   const [duration, setDuration] = useState(10 * 60); // Default to 10 minutes in seconds
   const [timeRemaining, setTimeRemaining] = useState(duration);
