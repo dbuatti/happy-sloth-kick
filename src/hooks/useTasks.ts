@@ -624,19 +624,23 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     });
 
     try {
+      console.log('useTasks: updateTaskParentAndOrder - Sending individual updates to DB:');
       // Execute updates individually using .update()
       for (const update of updates) {
         const { id, ...rest } = update;
         if (id) { // Ensure id exists for update operation
-          await supabase
+          console.log(`  Updating task ${id}:`, cleanTaskForDb(rest));
+          const { error } = await supabase
             .from('tasks')
             .update(cleanTaskForDb(rest)) // Only send the fields to update
             .eq('id', id)
             .eq('user_id', userId); // Ensure RLS is respected
+          if (error) throw error;
+          console.log(`  Task ${id} updated successfully.`);
         }
       }
       showSuccess('Task moved!');
-      console.log('useTasks: updateTaskParentAndOrder - DB updates successful.');
+      console.log('useTasks: updateTaskParentAndOrder - All DB updates successful.');
     } catch (e: any) {
       console.error('useTasks: updateTaskParentAndOrder - Update failed:', e.message);
       showError('Failed to move task.');
@@ -694,19 +698,23 @@ export const useTasks = ({ currentDate, setCurrentDate, viewMode = 'daily' }: Us
     });
 
     try {
+      console.log('useTasks: moveTask - Sending individual updates to DB:');
       // Execute updates individually using .update()
       for (const update of updates) {
         const { id, ...rest } = update;
         if (id) { // Ensure id exists for update operation
-          await supabase
+          console.log(`  Updating task ${id}:`, cleanTaskForDb(rest));
+          const { error } = await supabase
             .from('tasks')
             .update(cleanTaskForDb(rest)) // Only send the fields to update
             .eq('id', id)
             .eq('user_id', userId); // Ensure RLS is respected
+          if (error) throw error;
+          console.log(`  Task ${id} updated successfully.`);
         }
       }
       showSuccess('Task reordered!');
-      console.log('useTasks: moveTask - DB updates successful.');
+      console.log('useTasks: moveTask - All DB updates successful.');
     } catch (e: any) {
       console.error('useTasks: moveTask - Update failed:', e.message);
       showError('Failed to reorder task.');
