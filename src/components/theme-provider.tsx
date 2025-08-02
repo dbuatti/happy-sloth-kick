@@ -21,7 +21,8 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
         "retro-wave",
         "sepia-dusk",
         "vibrant-flow",
-        "honeycomb" // Added the new theme
+        "honeycomb",
+        "forest-calm" // Added the new theme
       ]}
       {...props}
     >
