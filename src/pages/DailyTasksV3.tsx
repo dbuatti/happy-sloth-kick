@@ -248,36 +248,10 @@ const DailyTasksV3: React.FC = () => {
             </CardHeader>
           </Card>
 
-          {/* Today's Progress Card (separate) */}
-          <TodayProgressCard
-            totalTasks={totalCount}
-            completedTasks={completedCount}
-            overdueTasks={overdueCount}
-          />
-
-          {/* Task Filter and Search (separate) */}
-          <TaskFilter
-            currentDate={currentDate}
-            setCurrentDate={setCurrentDate}
-            searchFilter={searchFilter}
-            setSearchFilter={setSearchFilter}
-            statusFilter={statusFilter}
-            setStatusFilter={setStatusFilter}
-            categoryFilter={categoryFilter}
-            setCategoryFilter={setCategoryFilter}
-            priorityFilter={priorityFilter}
-            setPriorityFilter={setPriorityFilter}
-            sectionFilter={sectionFilter}
-            setSectionFilter={setSectionFilter}
-            sections={sections}
-            allCategories={allCategories}
-            searchRef={searchInputRef}
-          />
-
-          {/* Quick Add Task Bar (separate) */}
+          {/* Quick Add Task Bar (moved up) */}
           <div
             className={cn(
-              "quick-add-bar rounded-lg", // Added rounded-lg
+              "quick-add-bar rounded-lg",
               stuck ? "stuck" : ""
             )}
           >
@@ -296,6 +270,32 @@ const DailyTasksV3: React.FC = () => {
               </div>
             </form>
           </div>
+
+          {/* Today's Progress Card */}
+          <TodayProgressCard
+            totalTasks={totalCount}
+            completedTasks={completedCount}
+            overdueTasks={overdueCount}
+          />
+
+          {/* Task Filter and Search */}
+          <TaskFilter
+            currentDate={currentDate}
+            setCurrentDate={setCurrentDate}
+            searchFilter={searchFilter}
+            setSearchFilter={setSearchFilter}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+            categoryFilter={categoryFilter}
+            setCategoryFilter={setCategoryFilter}
+            priorityFilter={priorityFilter}
+            setPriorityFilter={setPriorityFilter}
+            sectionFilter={sectionFilter}
+            setSectionFilter={setSectionFilter}
+            sections={sections}
+            allCategories={allCategories}
+            searchRef={searchInputRef}
+          />
 
           {/* Main Task List Card */}
           <Card className="shadow-lg p-4 flex-1 flex flex-col">
