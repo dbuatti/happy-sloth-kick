@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { showError } from '@/utils/toast';
-import { format, parseISO, differenceInMinutes, addMinutes, isValid, startOfDay, endOfDay, parse } from 'date-fns';
+import { format, parseISO, differenceInMinutes, addMinutes, isValid, startOfDay, endOfDay } from 'date-fns';
 
 export interface SleepRecord {
   id: string;
@@ -71,23 +71,23 @@ export const useSleepAnalytics = ({ startDate, endDate }: UseSleepAnalyticsProps
 
         // Parse times, handling potential overnight sleep (bed_time/lights_off_time might be on previous day)
         if (record.bed_time) {
-          bedTime = parse(`${record.date}T${record.bed_time}`, 'yyyy-MM-ddTHH:mm:ss', recordDate);
+          bedTime = parseISO(`${record.date}T${record.bed_time}`);
           // If bed time is after midnight but record date is for the next day, adjust bed time to previous day
           if (bedTime.getHours() >= 12 && bedTime.getHours() <= 23) { // Assuming bedtime is usually in the evening
             bedTime = addMinutes(bedTime, -1440); // Subtract 24 hours
           }
         }
         if (record.lights_off_time) {
-          lightsOffTime = parse(`${record.date}T${record.lights_off_time}`, 'yyyy-MM-ddTHH:mm:ss', recordDate);
+          lightsOffTime = parseISO(`${record.date}T${record.lights_off_time}`);
           if (lightsOffTime.getHours() >= 12 && lightsOffTime.getHours() <= 23) {
             lightsOffTime = addMinutes(lightsOffTime, -1440);
           }
         }
         if (record.wake_up_time) {
-          wakeUpTime = parse(`${record.date}T${record.wake_up_time}`, 'yyyy-MM-ddTHH:mm:ss', recordDate);
+          wakeUpTime = parseISO(`${record.date}T${record.wake_up_time}`);
         }
         if (record.get_out_of_bed_time) {
-          getOutOfBedTime = parse(`${record.date}T${record.get_out_of_bed_time}`, 'yyyy-MM-ddTHH:mm:ss', recordDate);
+          getOutOfBedTime = parseISO(`${record.date}T${record.get_out_of_bed_time}`);
         }
 
         let totalSleepMinutes = 0;
