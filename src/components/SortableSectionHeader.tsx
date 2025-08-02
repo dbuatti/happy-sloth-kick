@@ -96,14 +96,24 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
       )}
       {...(attributes || {})} // Keep attributes here
     >
-      {/* Removed DragHandleIcon button */}
+      <button
+        className={cn(
+          "flex-shrink-0 h-full py-2 px-1.5 text-muted-foreground opacity-100 group-hover:opacity-100 transition-opacity duration-200",
+          isOverlay ? "cursor-grabbing" : "cursor-grab active:cursor-grabbing"
+        )}
+        aria-label="Drag to reorder section"
+        disabled={isOverlay}
+        {...(sortable?.listeners || {})} // ADD listeners here
+      >
+        <DragHandleIcon className="h-4 w-4" /> {/* Use custom DragHandleIcon */}
+      </button>
       <div className="flex-1 flex items-center justify-between pl-1"> {/* Adjusted padding */}
         <div 
           className="relative flex items-center gap-2 flex-1 cursor-pointer" // Added relative positioning
           onClick={() => !isOverlay && handleEditSectionClick(section)} // Direct edit on click
           data-no-dnd="true" // Prevent drag when clicking on text to edit
         >
-          {/* Removed FolderOpen icon */}
+          <FolderOpen className="h-4 w-4 text-muted-foreground" /> {/* Adjusted icon size */}
           
           {/* Static text - always visible, but hidden when editing */}
           <h3 className={cn(
