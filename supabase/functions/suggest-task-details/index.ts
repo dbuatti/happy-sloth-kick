@@ -134,15 +134,10 @@ serve(async (req) => {
     if (jsonMatch && jsonMatch[1]) {
       jsonString = jsonMatch[1].trim();
     } else {
-      // Fallback: Try to find the first and last curly braces to extract JSON
-      const firstCurly = jsonString.indexOf('{');
-      const lastCurly = jsonString.lastIndexOf('}');
-      if (firstCurly !== -1 && lastCurly !== -1 && lastCurly > firstCurly) {
-        jsonString = jsonString.substring(firstCurly, lastCurly + 1);
-      }
+      // Fallback for cases where it might just be the JSON without markdown fences
+      // Or if the markdown fence is different (e.g., ```json without newline)
+      // For now, if it doesn't match the specific ```json\n...\n```, we assume it's just the JSON.
     }
-
-    console.log("Attempting to parse JSON string:", jsonString); // Log the string being parsed
 
     let parsedData;
     try {
