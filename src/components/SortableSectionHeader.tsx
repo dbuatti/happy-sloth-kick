@@ -130,9 +130,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
                 style={{ lineHeight: '1.5rem' }}
                 autoFocus={true}
               />
-              <span className="text-lg font-bold text-muted-foreground ml-1 flex-shrink-0">
-                ({sectionTasksCount})
-              </span>
+              {/* Removed the old task count span here */}
             </>
           ) : (
             <>
@@ -143,17 +141,20 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               >
                 {section.name}
               </h3>
-              <span className="text-lg font-bold text-muted-foreground ml-1 flex-shrink-0" data-no-dnd="true">
-                ({sectionTasksCount})
-              </span>
-              {/* NEW: This is the toggle area */}
-              <div
-                className="flex-1 h-full min-h-[28px] cursor-pointer" // This takes up remaining space, min-h to ensure clickable area
-                onClick={!isOverlay && !isEditingLocal ? () => toggleSection(section.id) : undefined} // This toggles
-                data-no-dnd="true"
-              ></div>
+              {/* NEW: Fun colored circle for task count */}
+              {sectionTasksCount > 0 && (
+                <div className="ml-2 w-6 h-6 rounded-full bg-accent text-accent-foreground flex items-center justify-center text-xs font-bold flex-shrink-0" data-no-dnd="true">
+                  {sectionTasksCount}
+                </div>
+              )}
             </>
           )}
+          {/* NEW: This is the toggle area */}
+          <div
+            className="flex-1 h-full min-h-[28px] cursor-pointer" // This takes up remaining space, min-h to ensure clickable area
+            onClick={!isOverlay && !isEditingLocal ? () => toggleSection(section.id) : undefined} // This toggles
+            data-no-dnd="true"
+          ></div>
         </div>
         <div className="flex items-center space-x-1" data-no-dnd="true">
           {!isOverlay && (
