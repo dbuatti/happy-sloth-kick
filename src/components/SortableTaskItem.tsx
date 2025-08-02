@@ -63,7 +63,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
       )}
     >
       <button
-        className="flex-shrink-0 py-2 px-1.5 text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity duration-200 cursor-grab active:cursor-grabbing"
+        className="flex-shrink-0 py-2 px-1.5 text-muted-foreground opacity-100 group-hover:opacity-100 transition-opacity duration-200 cursor-grab active:cursor-grabbing" // Always visible
         aria-label="Drag to reorder task"
         {...attributes} // Apply attributes to the drag handle
         {...listeners} // Apply listeners to the drag handle

@@ -40,6 +40,7 @@
 
     /* New custom property for completed status */
     --status-completed: 140 70% 40%; /* Vibrant Green */
+    --task-completed-bg: 210 40% 98%; /* Very light gray for completed task background */
 
     /* New custom properties for priority badge colors */
     --priority-low: 200 70% 60%; /* Light Blue */
@@ -90,6 +91,7 @@
 
     /* New custom property for completed status in dark mode */
     --status-completed: 140 80% 50%; /* Brighter Green */
+    --task-completed-bg: 220 20% 15%; /* Slightly darker background for completed tasks in dark mode */
 
     /* New custom properties for priority badge colors in dark mode */
     --priority-low: 200 80% 70%; /* Lighter Blue */
@@ -127,6 +129,7 @@
     --border-status-due-today: 15 60% 55%;
     --border-status-overdue: 15 60% 55%;
     --status-completed: 180 35% 45%; /* Greenish primary */
+    --task-completed-bg: 25 10% 98%; /* Lighter background for completed tasks */
     --priority-low: 180 35% 45%;
     --priority-medium: 25 50% 75%;
     --priority-high: 15 60% 55%;
@@ -154,6 +157,7 @@
     --border-status-due-today: 15 70% 70%;
     --border-status-overdue: 15 70% 70%;
     --status-completed: 180 40% 60%; /* Greenish primary */
+    --task-completed-bg: 25 20% 25%; /* Slightly darker background for completed tasks */
     --priority-low: 180 40% 60%;
     --priority-medium: 25 60% 80%;
     --priority-high: 15 70% 70%;
@@ -181,6 +185,7 @@
     --border-status-due-today: 30 25% 65%;
     --border-status-overdue: 15 60% 55%;
     --status-completed: 140 25% 45%; /* Greenish primary */
+    --task-completed-bg: 140 10% 98%;
     --priority-low: 140 25% 45%;
     --priority-medium: 30 25% 65%;
     --priority-high: 15 60% 55%;
@@ -208,6 +213,7 @@
     --border-status-due-today: 30 30% 70%;
     --border-status-overdue: 15 70% 70%;
     --status-completed: 140 30% 60%; /* Greenish primary */
+    --task-completed-bg: 140 20% 25%;
     --priority-low: 140 30% 60%;
     --priority-medium: 30 30% 70%;
     --priority-high: 15 70% 70%;
@@ -237,6 +243,7 @@
     --border-status-due-today: 15 20% 70%;
     --border-status-overdue: 15 60% 55%;
     --status-completed: 140 10% 75%; /* Greenish secondary */
+    --task-completed-bg: 30 10% 98%;
     --priority-low: 140 10% 75%;
     --priority-medium: 15 20% 70%;
     --priority-high: 15 60% 55%;
@@ -266,6 +273,7 @@
     --border-status-due-today: 15 25% 75%;
     --border-status-overdue: 15 70% 70%;
     --status-completed: 140 15% 85%; /* Greenish secondary */
+    --task-completed-bg: 30 20% 28%;
     --priority-low: 140 15% 85%;
     --priority-medium: 15 25% 75%;
     --priority-high: 15 70% 70%;
@@ -293,6 +301,7 @@
     --border-status-due-today: 30 25% 65%;
     --border-status-overdue: 15 60% 55%;
     --status-completed: 220 25% 45%; /* Primary color */
+    --task-completed-bg: 220 10% 98%;
     --priority-low: 220 25% 45%;
     --priority-medium: 30 25% 65%;
     --priority-high: 15 60% 55%;
@@ -320,6 +329,7 @@
     --border-status-due-today: 30 30% 70%;
     --border-status-overdue: 15 70% 70%;
     --status-completed: 220 30% 60%; /* Primary color */
+    --task-completed-bg: 220 20% 28%;
     --priority-low: 220 30% 60%;
     --priority-medium: 30 30% 70%;
     --priority-high: 15 70% 70%;
@@ -349,6 +359,7 @@
     --border-status-due-today: 345 55% 70%;
     --border-status-overdue: 25 75% 65%;
     --status-completed: 225 45% 55%; /* Primary color */
+    --task-completed-bg: 225 35% 18%;
     --priority-low: 225 45% 55%;
     --priority-medium: 345 55% 70%;
     --priority-high: 25 75% 65%;
@@ -378,6 +389,7 @@
     --border-status-due-today: 345 55% 70%;
     --border-status-overdue: 25 75% 65%;
     --status-completed: 225 45% 55%; /* Primary color */
+    --task-completed-bg: 225 35% 18%;
     --priority-low: 225 45% 55%;
     --priority-medium: 345 55% 70%;
     --priority-high: 25 75% 65%;
@@ -407,6 +419,7 @@
     --border-status-due-today: 60 70% 45%;
     --border-status-overdue: 0 70% 55%;
     --status-completed: 200 60% 35%; /* Primary color */
+    --task-completed-bg: 200 15% 98%;
     --priority-low: 200 60% 35%;
     --priority-medium: 60 70% 45%;
     --priority-high: 0 70% 55%;
@@ -436,6 +449,7 @@
     --border-status-due-today: 60 75% 55%;
     --border-status-overdue: 0 75% 60%;
     --status-completed: 200 65% 45%; /* Primary color */
+    --task-completed-bg: 200 30% 20%;
     --priority-low: 200 65% 45%;
     --priority-medium: 60 75% 55%;
     --priority-high: 0 75% 60%;
@@ -465,6 +479,7 @@
     --border-status-due-today: 40 90% 60%;
     --border-status-overdue: 0 80% 60%;
     --status-completed: 180 70% 50%; /* Secondary color */
+    --task-completed-bg: 240 20% 98%;
     --priority-low: 180 70% 50%;
     --priority-medium: 40 90% 60%;
     --priority-high: 0 80% 60%;
@@ -494,6 +509,7 @@
     --border-status-due-today: 40 95% 70%;
     --border-status-overdue: 0 90% 70%;
     --status-completed: 180 80% 60%; /* Secondary color */
+    --task-completed-bg: 260 35% 18%;
     --priority-low: 180 80% 60%;
     --priority-medium: 40 95% 70%;
     --priority-high: 0 90% 70%;
@@ -523,6 +539,7 @@
     --border-status-due-today: 99 25% 30%;
     --border-status-overdue: 6 48% 31%;
     --status-completed: 99 25% 30%; /* Accent color */
+    --task-completed-bg: 29 70% 92%;
     --priority-low: 99 25% 30%;
     --priority-medium: 29 48% 81%;
     --priority-high: 6 48% 31%;
@@ -552,6 +569,7 @@
     --border-status-due-today: 99 34% 38%;
     --border-status-overdue: 6 48% 46%;
     --status-completed: 99 34% 38%; /* Accent color */
+    --task-completed-bg: 29 29% 18%;
     --priority-low: 99 34% 38%;
     --priority-medium: 29 29% 21%;
     --priority-high: 6 48% 46%;
@@ -581,6 +599,7 @@
     --border-status-due-today: 40 90% 60%;
     --border-status-overdue: 0 80% 60%;
     --status-completed: 180 70% 50%; /* Secondary color */
+    --task-completed-bg: 210 20% 98%;
     --priority-low: 180 70% 50%;
     --priority-medium: 40 90% 60%;
     --priority-high: 0 80% 60%;
@@ -610,6 +629,7 @@
     --border-status-due-today: 40 95% 70%;
     --border-status-overdue: 0 90% 70%;
     --status-completed: 180 80% 60%; /* Secondary color */
+    --task-completed-bg: 240 35% 18%;
     --priority-low: 180 80% 60%;
     --priority-medium: 40 95% 70%;
     --priority-high: 0 90% 70%;

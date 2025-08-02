@@ -73,7 +73,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
       )}
     >
       <button
-        className="flex-shrink-0 h-full py-2 px-1.5 text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity duration-200 cursor-grab active:cursor-grabbing"
+        className="flex-shrink-0 h-full py-2 px-1.5 text-muted-foreground opacity-100 group-hover:opacity-100 transition-opacity duration-200 cursor-grab active:cursor-grabbing" // Always visible
         {...attributes}
         {...listeners}
         aria-label="Drag to reorder section"

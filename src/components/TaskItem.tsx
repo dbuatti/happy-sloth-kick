@@ -98,8 +98,12 @@ const TaskItem: React.FC<TaskItemProps> = ({
     <div
       className={cn(
         "relative flex items-start space-x-3 w-full py-2 px-3", // Increased horizontal padding
-        task.status === 'completed' ? "opacity-70" : "",
-        "hover:shadow-sm transition-shadow duration-200" // Added subtle shadow on hover
+        task.status === 'completed' ? "bg-task-completed-bg opacity-80" : "bg-card", // Apply completed background
+        "hover:shadow-sm transition-shadow duration-200", // Added subtle shadow on hover
+        // Conditional left border for status
+        isOverdue && "border-l-4 border-status-overdue",
+        isDueToday && "border-l-4 border-status-due-today",
+        !isOverdue && !isDueToday && "border-l-4 border-transparent" // Ensure consistent border width
       )}
       style={{ paddingLeft: '4px', paddingRight: '4px' }} // Apply 4px gutter
     >
@@ -137,7 +141,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
         <div className="flex flex-wrap items-center text-sm text-muted-foreground mt-1 gap-x-3 gap-y-1"> {/* Increased spacing */}
           {/* Priority Dot */}
-          <div className={cn("w-2 h-2 rounded-full", getPriorityDotColor(task.priority))} /> {/* Increased size */}
+          <div className={cn("w-2.5 h-2.5 rounded-full", getPriorityDotColor(task.priority))} /> {/* Increased size */}
           
           {task.recurring_type !== 'none' && (
             <Tooltip>

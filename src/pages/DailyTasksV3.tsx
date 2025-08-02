@@ -57,15 +57,15 @@ const DailyTasksV3: React.FC = () => {
     updateTaskParentAndOrder,
   } = useTasks({ currentDate, setCurrentDate, viewMode: 'daily' });
 
-  // Removed useDailyTaskCount as DailyOverviewCard is removed
-  // const { dailyTaskCount } = useDailyTaskCount();
+  const { dailyTaskCount } = useDailyTaskCount(); // Re-added useDailyTaskCount
 
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
-  // Removed quickAddTaskDescription and quickAddInputRef
+  const [quickAddTaskDescription, setQuickAddTaskDescription] = useState(''); // Re-added quick add state
+  const quickAddInputRef = useRef<HTMLInputElement>(null); // Re-added quick add ref
 
   const handlePreviousDay = () => {
     setCurrentDate(prevDate => getUTCStartOfDay(addDays(prevDate, -1)));
@@ -98,14 +98,36 @@ const DailyTasksV3: React.FC = () => {
     handleOpenDetail(task);
   };
 
-  // Removed handleQuickAddTask
+  const handleQuickAddTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickAddTaskDescription.trim()) {
+      showError('Task description cannot be empty.');
+      return;
+    }
+    const success = await handleAddTask({
+      description: quickAddTaskDescription.trim(),
+      category: allCategories.find(cat => cat.name.toLowerCase() === 'general')?.id || allCategories[0]?.id || '',
+      priority: 'medium',
+      section_id: null,
+      recurring_type: 'none',
+      due_date: null,
+      notes: null,
+      remind_at: null,
+      parent_task_id: null,
+      link: null,
+    });
+    if (success) {
+      setQuickAddTaskDescription('');
+      quickAddInputRef.current?.focus();
+    }
+  };
 
   // Keyboard shortcuts (+ "/" quick focus for quick-add)
   const shortcuts: ShortcutMap = {
     'arrowleft': () => handlePreviousDay(),
     'arrowright': () => handleNextDay(),
     't': () => handleGoToToday(),
-    // Removed '/' shortcut as quick add input is removed
+    '/': (e) => { e.preventDefault(); quickAddInputRef.current?.focus(); }, // Re-added '/' shortcut
     'cmd+k': (e) => { e.preventDefault(); setIsCommandPaletteOpen(prev => !prev); },
   };
   useKeyboardShortcuts(shortcuts);
@@ -122,10 +144,28 @@ const DailyTasksV3: React.FC = () => {
     return { totalCount: total, completedCount: completed, overdueCount: overdue };
   }, [filteredTasks, currentDate]);
 
-  // Removed sticky shadow cue on scroll logic
-  const stuck = false; // Always false as sticky logic is removed
+  // Sticky shadow cue on scroll logic
+  const [stuck, setStuck] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Removed filter active check and reset filter function
+  useEffect(() => {
+    const handleScroll = () => {
+      if (scrollRef.current) {
+        setStuck(scrollRef.current.scrollTop > 0);
+      }
+    };
+
+    const currentScrollRef = scrollRef.current;
+    if (currentScrollRef) {
+      currentScrollRef.addEventListener('scroll', handleScroll);
+    }
+
+    return () => {
+      if (currentScrollRef) {
+        currentScrollRef.removeEventListener('scroll', handleScroll);
+      }
+    };
+  }, []);
 
   const isBulkActionsActive = selectedTaskIds.length > 0;
 
@@ -135,12 +175,15 @@ const DailyTasksV3: React.FC = () => {
         <div className="w-full max-w-6xl mx-auto h-full"> {/* Increased max-width for larger screens */}
           <ResizablePanelGroup direction={isMobile ? "vertical" : "horizontal"} className="h-full items-stretch">
             {/* Left Panel: Main Task List */}
-            <ResizablePanel defaultSize={100} minSize={100}> {/* Takes full width */}
+            <ResizablePanel defaultSize={isMobile ? 65 : 70} minSize={isMobile ? 50 : 60}> {/* Takes full width */}
               <Card className="shadow-lg p-4 h-full flex flex-col">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-2xl font-bold">Your Tasks</CardTitle>
-                    {/* Removed dailyTaskCount display */}
+                    <div className="flex items-center gap-2">
+                      <ListTodo className="h-5 w-5 text-primary" />
+                      <span className="text-lg font-semibold">{dailyTaskCount}</span>
+                    </div>
                   </div>
                   <div className="text-center text-sm text-muted-foreground mt-2">
                     <p>{totalCount} total, {completedCount} completed, {overdueCount} overdue</p>
@@ -158,15 +201,14 @@ const DailyTasksV3: React.FC = () => {
                     />
                   </div>
 
-                  {/* Removed sticky quick add bar */}
-                  {/*
+                  {/* Quick Add Task Bar */}
                   <div
                     className={cn(
-                      "sticky top-16 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border -mx-4 px-4 py-3 transition-shadow",
+                      "sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border -mx-4 px-4 py-3 transition-shadow",
                       stuck ? "shadow-lg" : ""
                     )}
                   >
-                    <form onSubmit={handleQuickAddTask} className="mb-3">
+                    <form onSubmit={handleQuickAddTask}>
                       <div className="flex items-center gap-2">
                         <Input
                           ref={quickAddInputRef}
@@ -181,9 +223,8 @@ const DailyTasksV3: React.FC = () => {
                       </div>
                     </form>
                   </div>
-                  */}
 
-                  <div className="flex-1 overflow-y-auto pt-3 -mx-4 px-4"> {/* Adjusted padding */}
+                  <div ref={scrollRef} className="flex-1 overflow-y-auto pt-3 -mx-4 px-4"> {/* Adjusted padding */}
                     <TaskList
                       tasks={tasks}
                       filteredTasks={filteredTasks}
@@ -217,8 +258,6 @@ const DailyTasksV3: React.FC = () => {
               </Card>
             </ResizablePanel>
 
-            {/* Removed ResizableHandle and Right Panel */}
-            {/*
             <ResizableHandle withHandle />
             <ResizablePanel defaultSize={isMobile ? 35 : 30} minSize={isMobile ? 20 : 25}>
               <div className="h-full flex flex-col space-y-3 p-4">
@@ -240,7 +279,6 @@ const DailyTasksV3: React.FC = () => {
                 />
               </div>
             </ResizablePanel>
-            */}
           </ResizablePanelGroup>
         </div>
       </main>
