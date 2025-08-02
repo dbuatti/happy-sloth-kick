@@ -22,9 +22,9 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import FocusPanelDrawer from '@/components/FocusPanelDrawer';
 import { Badge } from '@/components/ui/badge';
 import TaskFilter from '@/components/TaskFilter';
-import MoodBoosterButton from '@/components/MoodBoosterButton';
+import MoodBoosterButton from '@/components/MoodBoosterButton'; // Re-import MoodBoosterButton
 import TodayProgressCard from '@/components/TodayProgressCard';
-import { suggestTaskDetails } from '@/integrations/supabase/api'; // Updated import path
+import { suggestTaskDetails } from '@/integrations/supabase/api';
 
 
 const getUTCStartOfDay = (date: Date) => {
@@ -84,7 +84,6 @@ const DailyTasksV3: React.FC = () => {
   const quickAddInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [isFocusPanelOpen, setIsFocusPanelOpen] = useState(false);
-  // const [isAiParserOpen, setIsAiParserOpen] = useState(false); // Removed State for AI Parser Dialog
 
   const handlePreviousDay = () => {
     setCurrentDate(prevDate => getUTCStartOfDay(addDays(prevDate, -1)));
@@ -209,18 +208,12 @@ const DailyTasksV3: React.FC = () => {
         <div className="w-full max-w-4xl mx-auto h-full">
           <Card className="shadow-lg p-4 h-full flex flex-col">
             <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                {/* Date Navigator moved to top */}
-                <DateNavigator
-                  currentDate={currentDate}
-                  onPreviousDay={handlePreviousDay}
-                  onNextDay={handleNextDay}
-                  onGoToToday={handleGoToToday}
-                  setCurrentDate={setCurrentDate}
-                />
+              <div className="flex items-center justify-between mb-4"> {/* Added margin-bottom */}
                 <div className="flex items-center gap-2">
                   <ListTodo className="h-5 w-5 text-primary" />
                   <span className="text-lg font-semibold">{dailyTaskCount}</span>
+                </div>
+                <div className="flex items-center gap-2">
                   <MoodBoosterButton />
                   <Button
                     variant="ghost"
@@ -233,6 +226,14 @@ const DailyTasksV3: React.FC = () => {
                   </Button>
                 </div>
               </div>
+              {/* Date Navigator now takes full width */}
+              <DateNavigator
+                currentDate={currentDate}
+                onPreviousDay={handlePreviousDay}
+                onNextDay={handleNextDay}
+                onGoToToday={handleGoToToday}
+                setCurrentDate={setCurrentDate}
+              />
               <div className="flex justify-center gap-3 mt-2">
                 <Badge variant="outline" className="px-3 py-1 text-sm font-medium bg-primary/10 text-primary">
                   <ListTodo className="h-3.5 w-3.5 mr-1.5" /> {totalCount} Total
@@ -294,7 +295,6 @@ const DailyTasksV3: React.FC = () => {
                     <Button type="submit" className="whitespace-nowrap h-9 text-sm">
                       <Plus className="mr-1 h-3 w-3" /> Add
                     </Button>
-                    {/* Removed the AI Parser button */}
                   </div>
                 </form>
               </div>
@@ -406,8 +406,6 @@ const DailyTasksV3: React.FC = () => {
         userId={userId}
         currentDate={currentDate}
       />
-
-      {/* Removed AI Task Parser Dialog */}
     </div>
   );
 };
