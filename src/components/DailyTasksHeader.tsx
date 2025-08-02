@@ -170,63 +170,43 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   };
 
   return (
-    <div className="flex flex-col bg-background sticky top-0 z-10 shadow-sm">
-      {/* Top Bar: Task Count & Utility Buttons */}
+    <div className="flex flex-col bg-gradient-to-br from-[hsl(var(--gradient-start-light))] to-[hsl(var(--gradient-end-light))] dark:from-[hsl(var(--gradient-start-dark))] dark:to-[hsl(var(--gradient-end-dark))] sticky top-0 z-10 shadow-sm">
+      {/* Top Bar: Date Navigator & Focus Mode Button */}
       <div className="flex items-center justify-between px-4 pt-4">
-        {/* Left: Total Task Count */}
-        <div className="flex items-center gap-2">
-          <ListTodo className="h-8 w-8 text-primary" />
-          <span className="text-5xl font-bold">{dailyTaskCount}</span>
-        </div>
-
-        {/* Right: Focus Mode Button */}
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleAllSections} // New button for toggling all sections
-            aria-label="Toggle all sections"
-            className="h-10 w-10"
-          >
-            <ChevronsDownUp className="h-6 w-6" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsFocusPanelOpen(true)}
-            aria-label="Open focus tools"
-            className="h-10 w-10"
-          >
-            <Brain className="h-6 w-6" />
-          </Button>
-        </div>
+        <DateNavigator
+          currentDate={currentDate}
+          onPreviousDay={() => setCurrentDate(prevDate => new Date(prevDate.setDate(prevDate.getDate() - 1)))}
+          onNextDay={() => setCurrentDate(prevDate => new Date(prevDate.setDate(prevDate.getDate() + 1)))}
+          onGoToToday={() => setCurrentDate(new Date())}
+          setCurrentDate={setCurrentDate}
+        />
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setIsFocusPanelOpen(true)}
+          aria-label="Open focus tools"
+          className="h-10 w-10"
+        >
+          <Brain className="h-6 w-6" />
+        </Button>
       </div>
 
-      {/* Date Navigator */}
-      <DateNavigator
-        currentDate={currentDate}
-        onPreviousDay={() => setCurrentDate(prevDate => new Date(prevDate.setDate(prevDate.getDate() - 1)))}
-        onNextDay={() => setCurrentDate(prevDate => new Date(prevDate.setDate(prevDate.getDate() + 1)))}
-        onGoToToday={() => setCurrentDate(new Date())}
-        setCurrentDate={setCurrentDate}
-      />
-
-      {/* Today's Summary (Pending, Completed, Overdue) - Now with Progress Bar */}
-      <div className="px-4 pb-3">
-        <div className="flex items-center justify-between text-sm text-muted-foreground mb-1">
+      {/* Today's Summary (Pending, Completed, Overdue) - Now with larger Progress Bar */}
+      <div className="px-4 pb-3 pt-2">
+        <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
           <span className="flex items-center gap-1">
-            <ListTodo className="h-3.5 w-3.5 text-foreground" />
-            <span className="font-semibold text-foreground">{totalCount - completedCount} pending</span>
+            <ListTodo className="h-4 w-4 text-foreground" />
+            <span className="font-semibold text-foreground text-lg">{totalCount - completedCount} pending</span>
           </span>
           <span className="flex items-center gap-1">
-            <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
-            <span className="font-semibold text-primary">{completedCount} completed</span>
+            <CheckCircle2 className="h-4 w-4 text-primary" />
+            <span className="font-semibold text-primary text-lg">{completedCount} completed</span>
           </span>
         </div>
         <Progress
           value={totalCount > 0 ? (completedCount / totalCount) * 100 : 0}
-          className="h-2.5"
-          indicatorClassName="bg-primary"
+          className="h-4 rounded-full" // Larger height
+          indicatorClassName="bg-gradient-to-r from-primary to-accent rounded-full" // Gradient for progress
         />
         {overdueCount > 0 && (
           <p className="text-sm text-destructive mt-2 flex items-center gap-1">

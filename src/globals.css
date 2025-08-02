@@ -55,6 +55,12 @@
     --shadow-lg: 0 5px 7.5px -1.5px rgb(0 0 0 / 0.02), 0 2px 3px -2px rgb(0 0 0 / 0.02);
     --shadow-xl: 0 10px 12.5px -2.5px rgb(0 0 0 / 0.02), 0 4px 5px -3px rgb(0 0 0 / 0.02);
 
+    /* Gradients for neurodivergent-friendly design */
+    --gradient-start-light: 270 60% 98%; /* Very light purple */
+    --gradient-end-light: 210 20% 98%; /* Very light blue-gray */
+    --gradient-start-dark: 270 40% 15%; /* Darker purple */
+    --gradient-end-dark: 210 20% 15%; /* Darker blue-gray */
+
     --radius: 1rem; /* Increased for a rounder look */
   }
 
@@ -136,6 +142,8 @@
     --priority-medium: 25 50% 75%;
     --priority-high: 15 60% 55%;
     --priority-urgent: 0 0% 20%;
+    --gradient-start-light: 180 35% 98%;
+    --gradient-end-light: 25 10% 98%;
   }
 
   .dark .adhd-friendly {
@@ -164,6 +172,8 @@
     --priority-medium: 25 60% 80%;
     --priority-high: 15 70% 70%;
     --priority-urgent: 25 10% 90%;
+    --gradient-start-dark: 180 25% 20%;
+    --gradient-end-dark: 25 20% 20%;
   }
 
   .calm-mist {
@@ -192,6 +202,8 @@
     --priority-medium: 30 25% 65%;
     --priority-high: 15 60% 55%;
     --priority-urgent: 0 0% 20%;
+    --gradient-start-light: 140 15% 98%;
+    --gradient-end-light: 140 10% 98%;
   }
 
   .dark .calm-mist {
@@ -220,6 +232,8 @@
     --priority-medium: 30 30% 70%;
     --priority-high: 15 70% 70%;
     --priority-urgent: 140 10% 90%;
+    --gradient-start-dark: 140 25% 20%;
+    --gradient-end-dark: 140 20% 20%;
   }
 
   .warm-dawn {
@@ -250,6 +264,8 @@
     --priority-medium: 15 20% 70%;
     --priority-high: 15 60% 55%;
     --priority-urgent: 0 0% 30%;
+    --gradient-start-light: 30 15% 98%;
+    --gradient-end-light: 30 10% 98%;
   }
 
   .dark .warm-dawn {
@@ -280,6 +296,8 @@
     --priority-medium: 15 25% 75%;
     --priority-high: 15 70% 70%;
     --priority-urgent: 30 10% 92%;
+    --gradient-start-dark: 30 25% 23%;
+    --gradient-end-dark: 30 20% 23%;
   }
 
   .gentle-night {
@@ -308,6 +326,8 @@
     --priority-medium: 30 25% 65%;
     --priority-high: 15 60% 55%;
     --priority-urgent: 220 15% 25%;
+    --gradient-start-light: 220 15% 98%;
+    --gradient-end-light: 220 10% 98%;
   }
 
   .dark .gentle-night {
@@ -336,6 +356,8 @@
     --priority-medium: 30 30% 70%;
     --priority-high: 15 70% 70%;
     --priority-urgent: 220 15% 92%;
+    --gradient-start-dark: 220 25% 23%;
+    --gradient-end-dark: 220 20% 23%;
   }
 
   .cosmic-dusk {
@@ -366,6 +388,8 @@
     --priority-medium: 345 55% 70%;
     --priority-high: 25 75% 65%;
     --priority-urgent: 225 15% 92%;
+    --gradient-start-dark: 225 35% 18%;
+    --gradient-end-dark: 225 30% 18%;
   }
 
   .dark .cosmic-dusk {
@@ -426,6 +450,8 @@
     --priority-medium: 60 70% 45%;
     --priority-high: 0 70% 55%;
     --priority-urgent: 200 20% 15%;
+    --gradient-start-light: 200 20% 98%;
+    --gradient-end-light: 200 15% 98%;
   }
 
   .dark .focus-flow {
@@ -456,6 +482,8 @@
     --priority-medium: 60 75% 55%;
     --priority-high: 0 75% 60%;
     --priority-urgent: 200 15% 92%;
+    --gradient-start-dark: 200 30% 18%;
+    --gradient-end-dark: 200 25% 18%;
   }
 
   .retro-wave {
@@ -486,6 +514,8 @@
     --priority-medium: 40 90% 60%;
     --priority-high: 0 80% 60%;
     --priority-urgent: 300 80% 55%;
+    --gradient-start-light: 300 80% 98%;
+    --gradient-end-light: 240 20% 98%;
   }
 
   .dark .retro-wave {
@@ -516,6 +546,8 @@
     --priority-medium: 40 95% 70%;
     --priority-high: 0 90% 70%;
     --priority-urgent: 300 90% 65%;
+    --gradient-start-dark: 300 80% 15%;
+    --gradient-end-dark: 260 40% 15%;
   }
 
   .sepia-dusk {
@@ -546,6 +578,8 @@
     --priority-medium: 29 48% 81%;
     --priority-high: 6 48% 31%;
     --priority-urgent: 270 28% 36%;
+    --gradient-start-light: 270 30% 92%;
+    --gradient-end-light: 29 70% 92%;
   }
 
   .dark .sepia-dusk {
@@ -576,6 +610,8 @@
     --priority-medium: 29 29% 21%;
     --priority-high: 6 48% 46%;
     --priority-urgent: 270 28% 54%;
+    --gradient-start-dark: 270 20% 18%;
+    --gradient-end-dark: 29 29% 18%;
   }
 
   .vibrant-flow {
@@ -606,6 +642,8 @@
     --priority-medium: 40 90% 60%;
     --priority-high: 0 80% 60%;
     --priority-urgent: 260 80% 55%;
+    --gradient-start-light: 260 80% 98%;
+    --gradient-end-light: 210 20% 98%;
   }
 
   .dark .vibrant-flow {
@@ -636,6 +674,8 @@
     --priority-medium: 40 95% 70%;
     --priority-high: 0 90% 70%;
     --priority-urgent: 260 90% 65%;
+    --gradient-start-dark: 260 40% 15%;
+    --gradient-end-dark: 240 35% 15%;
   }
 }
 

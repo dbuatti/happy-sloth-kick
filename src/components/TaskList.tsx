@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
-import { Plus, ListTodo } from 'lucide-react';
+import { Plus, ListTodo, ChevronsDownUp } from 'lucide-react'; // Import ChevronsDownUp
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -56,6 +56,7 @@ interface TaskListProps {
   setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
   expandedSections: Record<string, boolean>; // New prop
   toggleSection: (sectionId: string) => void; // New prop
+  toggleAllSections: () => void; // New prop
 }
 
 const TaskList: React.FC<TaskListProps> = (props) => {
@@ -80,6 +81,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     currentDate,
     expandedSections, // Destructure new prop
     toggleSection, // Destructure new prop
+    toggleAllSections, // Destructure new prop
   } = props;
 
   const { user } = useAuth();
@@ -209,6 +211,19 @@ const TaskList: React.FC<TaskListProps> = (props) => {
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={[...allSortableSections.map(s => s.id)]} strategy={verticalListSortingStrategy}>
+            {/* New: Toggle All Sections Button */}
+            <div className="flex justify-end mb-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleAllSections} // Use the prop from DailyTasksV3
+                aria-label="Toggle all sections"
+                className="h-8 px-3"
+              >
+                <ChevronsDownUp className="h-4 w-4 mr-2" /> Toggle All Sections
+              </Button>
+            </div>
+
             {allSortableSections.map((currentSection: TaskSection, index) => {
               const isExpanded = expandedSections[currentSection.id] !== false;
 

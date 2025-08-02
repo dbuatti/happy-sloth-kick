@@ -185,6 +185,7 @@ const DailyTasksV3: React.FC = () => {
                   setCurrentDate={setCurrentDate}
                   expandedSections={expandedSections} // Pass expandedSections
                   toggleSection={toggleSection} // Pass toggleSection
+                  toggleAllSections={toggleAllSections} // Pass toggleAllSections
                 />
               </div>
             </CardContent>
