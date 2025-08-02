@@ -94,10 +94,10 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
   const getTaskCountCircleClasses = (count: number) => {
     if (count === 0) {
       return "bg-muted text-muted-foreground";
-    } else if (count <= 5) {
+    } else if (count >= 1 && count <= 5) {
       return "bg-primary text-primary-foreground";
-    } else { // For counts > 5
-      return "bg-accent text-accent-foreground";
+    } else { // For counts 6 and above
+      return "bg-muted text-foreground"; // Lighter background, darker text
     }
   };
 
