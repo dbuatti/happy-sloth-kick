@@ -79,7 +79,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
         aria-label="Drag to reorder section"
         data-no-dnd="true" // Ensure this button is the only drag handle
       >
-        <GripVertical className="h-5 w-5" /> {/* Increased size */}
+        <GripVertical className="h-4 w-4" /> {/* Increased size */}
       </button>
       <div className="flex-1 flex items-center justify-between py-2 pl-0 pr-3"> {/* Increased padding */}
         {editingSectionId === section.id ? (
@@ -88,22 +88,22 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               value={editingSectionName}
               onChange={(e) => setNewEditingSectionName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleRenameSection()}
-              className="text-lg font-semibold h-11" // Taller input
+              className="text-lg font-semibold h-9" // Taller input
               autoFocus
             />
-            <Button size="sm" onClick={handleRenameSection} disabled={!editingSectionName.trim()} className="h-11">Save</Button> {/* Taller button */}
-            <Button variant="ghost" size="sm" onClick={handleCancelSectionEdit} className="h-11">Cancel</Button> {/* Taller button */}
+            <Button size="sm" onClick={handleRenameSection} disabled={!editingSectionName.trim()} className="h-9">Save</Button> {/* Taller button */}
+            <Button variant="ghost" size="sm" onClick={handleCancelSectionEdit} className="h-9">Cancel</Button> {/* Taller button */}
           </div>
         ) : (
           <div 
             className="flex items-center gap-2 flex-1 cursor-pointer" 
             onClick={() => toggleSection(section.id)}
           >
-            <h3 className="text-2xl font-bold flex items-center gap-2"> {/* Larger, bolder text */}
-              <FolderOpen className="h-6 w-6 text-muted-foreground" /> {/* Larger icon */}
+            <h3 className="text-xl font-bold flex items-center gap-2"> {/* Larger, bolder text */}
+              <FolderOpen className="h-5 w-5 text-muted-foreground" /> {/* Larger icon */}
               {section.name} ({sectionTasksCount})
             </h3>
-            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleEditSectionClick(section); }} className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-opacity duration-200" data-no-dnd="true"> {/* Larger button */}
+            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleEditSectionClick(section); }} className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity duration-200" data-no-dnd="true"> {/* Larger button */}
               <Edit className="h-4 w-4" /> {/* Larger icon */}
             </Button>
           </div>
@@ -112,8 +112,8 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
           <div className="flex items-center space-x-2">
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className="h-9 w-9 flex items-center justify-center p-0 text-muted-foreground hover:text-foreground cursor-pointer"> {/* Larger clickable area */}
-                  {section.include_in_focus_mode ? <Eye className="h-6 w-6" /> : <EyeOff className="h-6 w-6" />} {/* Larger icons */}
+                <span className="h-8 w-8 flex items-center justify-center p-0 text-muted-foreground hover:text-foreground cursor-pointer"> {/* Larger clickable area */}
+                  {section.include_in_focus_mode ? <Eye className="h-5 w-5" /> : <EyeOff className="h-5 w-5" />} {/* Larger icons */}
                 </span>
               </TooltipTrigger>
               <TooltipContent>
@@ -135,32 +135,32 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="h-9 w-9 p-0" // Larger button
+                className="h-8 w-8 p-0" // Larger button
               >
                 <span>
                   <span className="sr-only">Open section menu</span>
-                  <MoreHorizontal className="h-5 w-5" /> {/* Larger icon */}
+                  <MoreHorizontal className="h-4 w-4" /> {/* Larger icon */}
                 </span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" data-no-dnd="true">
               <DropdownMenuItem onSelect={() => handleAddTaskToSpecificSection(section.id)}>
-                <Plus className="mr-2 h-4 w-4" /> Add Task to Section
+                <Plus className="mr-2 h-3.5 w-3.5" /> Add Task to Section
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => markAllTasksInSectionCompleted(section.id)}>
-                <CheckCircle2 className="mr-2 h-4 w-4" /> Mark All Completed
+                <CheckCircle2 className="mr-2 h-3.5 w-3.5" /> Mark All Completed
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => handleEditSectionClick(section)}>
-                <Edit className="mr-2 h-4 w-4" /> Rename Section
+                <Edit className="mr-2 h-3.5 w-3.5" /> Rename Section
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={() => handleDeleteSectionClick(section.id)} className="text-destructive focus:text-destructive">
-                <Trash2 className="mr-2 h-4 w-4" /> Delete Section
+                <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete Section
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button variant="ghost" size="icon" onClick={() => toggleSection(section.id)} className="h-9 w-9 p-0"> {/* Larger button */}
-            <ChevronDown className={cn("h-6 w-6 transition-transform", isExpanded ? "rotate-0" : "-rotate-90")} /> {/* Larger icon */}
+          <Button variant="ghost" size="icon" onClick={() => toggleSection(section.id)} className="h-8 w-8 p-0"> {/* Larger button */}
+            <ChevronDown className={cn("h-5 w-5 transition-transform", isExpanded ? "rotate-0" : "-rotate-90")} /> {/* Larger icon */}
           </Button>
         </div>
       </div>
