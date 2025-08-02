@@ -117,7 +117,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               onBlur={handleSaveEdit}
               onKeyDown={handleInputKeyDown}
               className={cn(
-                "w-full h-full text-base font-bold",
+                "!text-base !font-bold",
                 "border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0",
                 "p-0",
                 "text-foreground",
