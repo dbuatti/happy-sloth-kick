@@ -8,17 +8,19 @@ interface TodayProgressCardProps {
   totalTasks: number;
   completedTasks: number;
   overdueTasks: number;
+  className?: string; // Add className prop
 }
 
 const TodayProgressCard: React.FC<TodayProgressCardProps> = ({
   totalTasks,
   completedTasks,
   overdueTasks,
+  className, // Destructure className
 }) => {
   const progressValue = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
   return (
-    <Card className="w-full shadow-none"> {/* Removed shadow-lg */}
+    <Card className={cn("w-full", className)}> {/* Apply className here */}
       <CardHeader className="pb-2">
         <CardTitle className="text-xl font-bold flex items-center justify-center gap-2">
           <CheckCircle2 className="h-5 w-5 text-primary" /> Today's Progress

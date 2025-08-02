@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Search, Filter, X, ListRestart } from 'lucide-react'; // Added ListRestart icon
+import { Search, Filter, X, ListRestart } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
-import { TaskSection, Category } from '@/hooks/useTasks'; // Import types
+import { TaskSection, Category } from '@/hooks/useTasks';
+import { cn } from '@/lib/utils'; // Ensure cn is imported
 
 interface TaskFilterProps {
   currentDate: Date;
@@ -23,6 +24,7 @@ interface TaskFilterProps {
   sections: TaskSection[];
   allCategories: Category[];
   searchRef: React.RefObject<HTMLInputElement>; // New prop for search input ref
+  className?: string; // Add className prop
 }
 
 const TaskFilter: React.FC<TaskFilterProps> = ({
@@ -41,6 +43,7 @@ const TaskFilter: React.FC<TaskFilterProps> = ({
   sections,
   allCategories,
   searchRef, // Destructure new prop
+  className, // Destructure className
 }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
@@ -80,7 +83,7 @@ const TaskFilter: React.FC<TaskFilterProps> = ({
   const isAnyFilterActive = searchFilter !== '' || statusFilter !== 'all' || categoryFilter !== 'all' || priorityFilter !== 'all' || sectionFilter !== 'all';
 
   return (
-    <div className="flex flex-col sm:flex-row gap-3 mb-4">
+    <div className={cn("flex flex-col sm:flex-row gap-3 mb-4", className)}> {/* Apply className here */}
       <div className="relative flex-1">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
         <Input
@@ -136,7 +139,6 @@ const TaskFilter: React.FC<TaskFilterProps> = ({
                   </SelectTrigger>
                   <SelectContent className="z-[9999]">
                     <SelectItem value="all">All</SelectItem>
-                    {/* Removed hardcoded "general" as it's now included in allCategories */}
                     {allCategories.map(cat => (
                       <SelectItem key={cat.id} value={cat.id}>
                         {cat.name}
