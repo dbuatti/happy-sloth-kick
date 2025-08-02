@@ -112,8 +112,8 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
   }, [timeRemaining, playSound]);
 
   const pauseTimer = useCallback(() => {
-    setIsRunning(false);
-    playSound('pause');
+      setIsRunning(false);
+      playSound('pause');
   }, [playSound]);
 
   const resetTimer = useCallback(() => {
@@ -148,10 +148,11 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
     }
   };
 
-  const handleOpenTaskDetails = (task: Task) => {
-    setTaskToEdit(task);
-    setIsTaskDetailOpen(true);
-  };
+  // Removed handleOpenTaskDetails as it's no longer needed
+  // const handleOpenTaskDetails = (task: Task) => {
+  //   setTaskToEdit(task);
+  //   setIsTaskDetailOpen(true);
+  // };
 
   const handleOpenTaskOverview = (task: Task) => {
     setTaskToOverview(task);
@@ -160,7 +161,7 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
 
   const handleEditTaskFromOverview = (task: Task) => {
     setIsTaskOverviewOpen(false);
-    onOpenDetail(task); // This is where onOpenDetail is used
+    onOpenDetail(task); // Directly call onOpenDetail
   };
 
   const upcomingTasks = useMemo(() => {

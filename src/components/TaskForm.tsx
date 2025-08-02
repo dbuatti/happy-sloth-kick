@@ -164,7 +164,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
         sectionId: initialData.section_id,
         recurringType: initialData.recurring_type,
         parentTaskId: initialData.parent_task_id,
-        link: initialData.link || null, // Ensure it's null if undefined
+        link: initialData.link ?? null, // Ensure it's null if undefined
       });
     } else {
       const generalCategory = allCategories.find(cat => cat.name.toLowerCase() === 'general');
