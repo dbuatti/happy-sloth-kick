@@ -7,7 +7,6 @@ import { MadeWithDyad } from '@/components/made-with-dyad';
 import { useAuth } from '@/context/AuthContext'; // Re-introduced useAuth
 
 const SensoryToolPage: React.FC = () => {
-  // Removed 'user' from useAuth destructuring as it's not directly used here.
   useAuth(); 
 
   const { playSound } = useSound();
@@ -42,11 +41,9 @@ const SensoryToolPage: React.FC = () => {
     ],
   };
 
-  const currentPrompts = prompts[step as keyof typeof prompts];
-  const CurrentIcon = currentPrompts[promptIndex].icon;
-
   const handleNext = () => {
     playSound('success');
+    const currentPrompts = prompts[step as keyof typeof prompts];
     if (promptIndex < currentPrompts.length - 1) {
       setPromptIndex(prev => prev + 1);
     } else if (step > 1) {
@@ -62,8 +59,9 @@ const SensoryToolPage: React.FC = () => {
     if (promptIndex > 0) {
       setPromptIndex(prev => prev - 1);
     } else if (step < 5 && step > 0) {
-      setStep(prev => prev + 1);
-      setPromptIndex(prompts[step + 1 as keyof typeof prompts].length - 1);
+      const newStep = step + 1;
+      setStep(newStep);
+      setPromptIndex(prompts[newStep as keyof typeof prompts].length - 1);
     } else if (step === 0) { // If completed, go back to step 1
       setStep(1);
       setPromptIndex(0);
@@ -74,6 +72,33 @@ const SensoryToolPage: React.FC = () => {
     playSound('reset');
     setStep(5);
     setPromptIndex(0);
+  };
+
+  const renderActiveStep = () => {
+    if (step === 0) return null; // Should not happen if called correctly, but good for safety
+    const currentPrompts = prompts[step as keyof typeof prompts];
+    const CurrentIcon = currentPrompts[promptIndex].icon;
+
+    return (
+      <>
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <div className="text-6xl font-extrabold text-primary">{step}</div>
+          <CurrentIcon className="h-12 w-12 text-muted-foreground" />
+          <p className="text-lg font-semibold text-center">{currentPrompts[promptIndex].text}</p>
+        </div>
+        <div className="flex justify-center space-x-4">
+          <Button variant="outline" onClick={handlePrevious} disabled={step === 5 && promptIndex === 0} className="h-9 text-base">
+            Previous
+          </Button>
+          <Button onClick={handleNext} className="h-9 text-base">
+            {step === 1 && promptIndex === currentPrompts.length - 1 ? "Finish" : "Next"}
+          </Button>
+        </div>
+        <Button variant="ghost" onClick={handleReset} className="w-full h-9 text-base">
+          <RefreshCcw className="mr-2 h-4 w-4" /> Reset Tool
+        </Button>
+      </>
+    );
   };
 
   return (
@@ -99,24 +124,7 @@ const SensoryToolPage: React.FC = () => {
                 </Button>
               </div>
             ) : (
-              <>
-                <div className="flex flex-col items-center justify-center space-y-4">
-                  <div className="text-6xl font-extrabold text-primary">{step}</div>
-                  <CurrentIcon className="h-12 w-12 text-muted-foreground" />
-                  <p className="text-lg font-semibold text-center">{currentPrompts[promptIndex].text}</p>
-                </div>
-                <div className="flex justify-center space-x-4">
-                  <Button variant="outline" onClick={handlePrevious} disabled={step === 5 && promptIndex === 0} className="h-9 text-base">
-                    Previous
-                  </Button>
-                  <Button onClick={handleNext} className="h-9 text-base">
-                    {step === 1 && promptIndex === currentPrompts.length - 1 ? "Finish" : "Next"}
-                  </Button>
-                </div>
-                <Button variant="ghost" onClick={handleReset} className="w-full h-9 text-base">
-                  <RefreshCcw className="mr-2 h-4 w-4" /> Reset Tool
-                </Button>
-              </>
+              renderActiveStep()
             )}
           </CardContent>
         </Card>
