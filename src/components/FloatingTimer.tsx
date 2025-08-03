@@ -1,7 +1,7 @@
 import React from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { Timer, Play, Pause, X } from "lucide-react";
+import { Timer, Play, Pause, X, RefreshCcw, Square } from "lucide-react";
 import { useTimer } from '@/context/TimerContext';
 
 const formatTime = (seconds: number) => {
@@ -79,6 +79,12 @@ const FloatingTimer: React.FC = () => {
 
   const progress = duration > 0 ? ((duration - timeRemaining) / duration) * 100 : 0;
 
+  const handleLoop = () => {
+    if (duration > 0) {
+      startTimer(duration / 60);
+    }
+  };
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -93,14 +99,25 @@ const FloatingTimer: React.FC = () => {
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-2 mb-2" side="top" align="end">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={togglePause}>
-            {isRunning ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-          </Button>
-          <Button variant="ghost" size="icon" onClick={resetTimer} className="text-destructive">
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
+        {timeRemaining > 0 ? (
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" onClick={togglePause}>
+              {isRunning ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+            </Button>
+            <Button variant="ghost" size="icon" onClick={resetTimer} className="text-destructive">
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" onClick={handleLoop} title="Restart Timer">
+              <RefreshCcw className="h-5 w-5" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={resetTimer} className="text-destructive" title="Stop Timer">
+              <Square className="h-5 w-5" />
+            </Button>
+          </div>
+        )}
       </PopoverContent>
     </Popover>
   );
