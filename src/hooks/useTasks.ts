@@ -331,7 +331,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
           if ((isDailyMatch || isWeeklyMatch || isMonthlyMatch) && templateTask.status !== 'archived') {
             const virtualTask: Task = {
               ...templateTask,
-              id: uuidv4(),
+              id: `virtual-${templateTask.id}-${format(todayStart, 'yyyy-MM-dd')}`,
               created_at: todayStart.toISOString(),
               status: 'to-do',
               original_task_id: templateTask.id,
@@ -424,8 +424,8 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     
     if (!originalTask) {
       const virtualTask = processedTasks.find(t => t.id === taskId);
-      if (!virtualTask || !virtualTask.original_task_id) {
-          console.warn(`useTasks: Virtual task with ID ${taskId} not found in processedTasks or missing original_task_id for update. Cannot proceed.`);
+      if (!virtualTask || !taskId.toString().startsWith('virtual-')) {
+          console.warn(`useTasks: Task with ID ${taskId} not found for update. Cannot proceed.`);
           return;
       }
 
