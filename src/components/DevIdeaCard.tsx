@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Edit } from 'lucide-react';
 import { DevIdea } from '@/hooks/useDevIdeas';
 import { cn } from '@/lib/utils';
+import { showSuccess, showError } from '@/utils/toast';
 
 interface DevIdeaCardProps {
   idea: DevIdea;
@@ -21,11 +22,21 @@ const DevIdeaCard: React.FC<DevIdeaCardProps> = ({ idea, onEdit }) => {
   };
 
   const handleCardClick = (event: React.MouseEvent<HTMLDivElement>) => {
-    // Don't select text if the edit button was clicked
+    // Don't trigger if the edit button was clicked
     if ((event.target as HTMLElement).closest('button')) {
       return;
     }
 
+    const textToCopy = `${idea.title}${idea.description ? `\n\n${idea.description}` : ''}`;
+    
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      showSuccess('Idea copied to clipboard!');
+    }).catch(err => {
+      console.error('Failed to copy text: ', err);
+      showError('Could not copy idea to clipboard.');
+    });
+
+    // Also keep the selection behavior
     const cardElement = event.currentTarget;
     if (cardElement && window.getSelection) {
       const selection = window.getSelection();
