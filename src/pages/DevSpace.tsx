@@ -12,7 +12,6 @@ import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, u
 import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import SortableDevIdeaCard from '@/components/SortableDevIdeaCard';
 import { useDroppable } from '@dnd-kit/core';
-import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
 
 interface DevIdeaColumnProps {
     id: string;
@@ -119,14 +118,6 @@ const DevSpace: React.FC = () => {
     { id: 'in-progress', title: 'In Progress', icon: Zap, className: 'text-blue-500' },
     { id: 'completed', title: 'Completed', icon: CheckCircle2, className: 'text-green-500' },
   ];
-
-  const shortcuts: ShortcutMap = {
-    'cmd+n': (e) => {
-      e.preventDefault();
-      handleAddClick();
-    },
-  };
-  useKeyboardShortcuts(shortcuts);
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
