@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Moon, BarChart3, Bed } from 'lucide-react';
+import { Moon, BarChart3, Bed, BookOpen } from 'lucide-react';
 import SleepTracker from './SleepTracker';
 import SleepDashboard from './SleepDashboard';
+import SleepDiaryView from './SleepDiaryView';
 import { DateRange } from 'react-day-picker';
 import { startOfMonth } from 'date-fns';
 
@@ -28,12 +29,15 @@ const SleepPage: React.FC = () => {
           </CardHeader>
           <CardContent className="pt-0">
             <Tabs defaultValue="tracker" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="tracker">
                   <Bed className="h-4 w-4 mr-2" /> Tracker
                 </TabsTrigger>
                 <TabsTrigger value="dashboard">
                   <BarChart3 className="h-4 w-4 mr-2" /> Dashboard
+                </TabsTrigger>
+                <TabsTrigger value="diary">
+                  <BookOpen className="h-4 w-4 mr-2" /> Diary
                 </TabsTrigger>
               </TabsList>
 
@@ -42,6 +46,9 @@ const SleepPage: React.FC = () => {
               </TabsContent>
               <TabsContent value="dashboard" className="mt-4">
                 <SleepDashboard dateRange={analyticsDateRange} setDateRange={setAnalyticsDateRange} />
+              </TabsContent>
+              <TabsContent value="diary" className="mt-4">
+                <SleepDiaryView />
               </TabsContent>
             </Tabs>
           </CardContent>
