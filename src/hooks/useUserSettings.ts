@@ -51,8 +51,21 @@ export const useUserSettings = () => {
           .insert({ user_id: userId, ...defaultSettings })
           .select()
           .single();
-        if (insertError) throw insertError;
-        setSettings(newData);
+        if (insertError) {
+          if (insertError.code === '23505') { // unique_violation, handle race condition
+            const { data: refetchedSettings, error: refetchError } = await supabase
+              .from('user_settings')
+              .select('*')
+              .eq('user_id', userId)
+              .single();
+            if (refetchError) throw refetchError;
+            setSettings(refetchedSettings);
+          } else {
+            throw insertError;
+          }
+        } else {
+          setSettings(newData);
+        }
       }
     } catch (error: any) {
       console.error('Error fetching user settings:', error);
