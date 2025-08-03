@@ -20,6 +20,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Inter', 'sans-serif'], // Changed font to Inter
+        bubbly: ['Fredoka', 'sans-serif'], // Added new bubbly font
       },
       colors: {
         border: "hsl(var(--border))",

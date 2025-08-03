@@ -297,19 +297,17 @@ const TimeBlockSchedule: React.FC = () => {
               </div>
             ) : (
               <div className="grid grid-cols-[80px_1fr] gap-x-4">
-                <div className="grid" style={{
-                  gridTemplateRows: `repeat(${timeBlocks.length}, ${rowHeight}px)`,
-                  rowGap: `${gapHeight}px`,
+                <div className="relative" style={{
                   height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`,
                 }}>
                   {timeBlocks.map((block, index) => (
                     getMinutes(block.start) === 0 && (
                       <div
                         key={`label-${format(block.start, 'HH:mm')}`}
-                        className="flex items-start justify-end pt-1 pr-4 text-sm text-muted-foreground"
-                        style={{ gridRow: `${index + 1} / span 2` }}
+                        className="absolute right-4"
+                        style={{ top: `${index * (rowHeight + gapHeight) - 10}px` }}
                       >
-                        <span>{format(block.start, 'h a')}</span>
+                        <span className="text-sm text-muted-foreground">{format(block.start, 'h a')}</span>
                       </div>
                     )
                   ))}
@@ -330,15 +328,14 @@ const TimeBlockSchedule: React.FC = () => {
                       getMinutes(block.start) === 0 && (
                         <div
                           key={`bg-label-${format(block.start, 'HH')}`}
-                          className="absolute inset-x-0 h-full flex items-center justify-center text-9xl font-black text-gray-200 dark:text-gray-800 select-none pointer-events-none"
+                          className="absolute inset-x-0 h-full flex items-center justify-center text-[120px] font-bubbly font-bold text-gray-200/50 dark:text-gray-800/50 select-none pointer-events-none"
                           style={{
                             top: `${index * (rowHeight + gapHeight)}px`,
                             height: `${2 * rowHeight + gapHeight}px`,
                             zIndex: 0,
                           }}
                         >
-                          <span className="relative -right-4 tracking-tighter">{format(block.start, 'h')}</span>
-                          <span className="text-7xl ml-2 tracking-normal relative -left-4">{format(block.start, 'a')}</span>
+                          <span>{format(block.start, 'h:00')}</span>
                         </div>
                       )
                     ))}
