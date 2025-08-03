@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -10,6 +10,9 @@ import { useSound } from '@/context/SoundContext';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { Input } from './ui/input';
+import DragHandleIcon from './DragHandleIcon';
+import { useSortable } from '@dnd-kit/sortable';
 
 interface TaskItemProps {
   task: Task;
@@ -24,6 +27,7 @@ interface TaskItemProps {
   onMoveUp: (taskId: string) => Promise<void>;
   onMoveDown: (taskId: string) => Promise<void>;
   isOverlay?: boolean;
+  dragListeners?: ReturnType<typeof useSortable>['listeners'];
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -36,10 +40,47 @@ const TaskItem: React.FC<TaskItemProps> = ({
   onOpenOverview,
   currentDate,
   isOverlay = false,
+  dragListeners,
 }) => {
   useAuth(); 
   const { playSound } = useSound();
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editText, setEditText] = useState(task.description);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
+  const handleStartEdit = (e: React.MouseEvent) => {
+    if (isOverlay) return;
+    e.stopPropagation();
+    setIsEditing(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (editText.trim() && editText.trim() !== task.description) {
+      onUpdate(task.id, { description: editText.trim() });
+    }
+    setIsEditing(false);
+  };
+
+  const handleCancelEdit = () => {
+    setEditText(task.description);
+    setIsEditing(false);
+  };
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSaveEdit();
+    } else if (e.key === 'Escape') {
+      handleCancelEdit();
+    }
+  };
 
   const getPriorityDotColor = (priority: string) => {
     switch (priority) {
@@ -90,8 +131,12 @@ const TaskItem: React.FC<TaskItemProps> = ({
         isOverdue && "border-l-4 border-status-overdue",
         isDueToday && "border-l-4 border-status-due-today",
       )}
-      onClick={() => !isOverlay && onOpenOverview(task)}
+      onClick={() => !isOverlay && !isEditing && onOpenOverview(task)}
     >
+      <div {...dragListeners} className="cursor-grab p-2 opacity-0 group-hover:opacity-50 transition-opacity" data-no-dnd="true" onClick={(e) => e.stopPropagation()}>
+        <DragHandleIcon className="h-4 w-4" />
+      </div>
+
       <div data-no-dnd="true">
         <Checkbox
           key={`${task.id}-${task.status}`}
@@ -107,15 +152,29 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
       <div className={cn("w-3 h-3 rounded-full flex-shrink-0", getPriorityDotColor(task.priority))} />
       
-      <span
-        className={cn(
-          "text-lg leading-tight line-clamp-2 flex-grow",
-          task.status === 'completed' ? 'line-through' : 'font-medium',
-          "block"
+      <div className="flex-grow" onClick={handleStartEdit} data-no-dnd={isEditing ? "true" : "false"}>
+        {isEditing ? (
+          <Input
+            ref={inputRef}
+            value={editText}
+            onChange={(e) => setEditText(e.target.value)}
+            onBlur={handleSaveEdit}
+            onKeyDown={handleInputKeyDown}
+            className="h-auto text-lg leading-tight p-0 border-none bg-transparent shadow-none focus-visible:ring-1 focus-visible:ring-ring"
+            onClick={(e) => e.stopPropagation()}
+          />
+        ) : (
+          <span
+            className={cn(
+              "text-lg leading-tight line-clamp-2",
+              task.status === 'completed' ? 'line-through' : 'font-medium',
+              "block"
+            )}
+          >
+            {task.description}
+          </span>
         )}
-      >
-        {task.description}
-      </span>
+      </div>
 
       <div className="flex-shrink-0 flex items-center space-x-2" data-no-dnd="true">
         {task.recurring_type !== 'none' && (

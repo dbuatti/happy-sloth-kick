@@ -58,17 +58,16 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         isDragging && !isOverlay ? "" : "rounded-lg", // Only apply border/rounded-lg if not the invisible original
         isOverlay ? "shadow-xl ring-2 ring-primary bg-card" : "", // Apply distinct styles for the overlay
         level > 0 ? "border-l border-l-primary/50" : "",
-        "flex items-center",
-        isOverlay ? "cursor-grabbing" : "cursor-grab"
+        "flex items-center"
       )}
       {...attributes}
-      {...listeners}
     >
       <div className="flex-1"> {/* This div now contains the TaskItem and subtasks */}
         <TaskItem
           task={task}
           {...rest}
           isOverlay={isOverlay}
+          dragListeners={listeners}
         />
         {directSubtasks.length > 0 && (
           <ul className="list-none mt-1.5 space-y-1.5">

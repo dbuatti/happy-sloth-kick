@@ -9,6 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Plus, CheckCircle2, ChevronDown, MoreHorizontal, Trash2, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TaskSection } from '@/hooks/useTasks';
+import DragHandleIcon from './DragHandleIcon';
 
 interface SortableSectionHeaderProps {
   section: TaskSection;
@@ -69,7 +70,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
   }, [isOverlay, section.name]);
 
   const handleSaveEdit = useCallback(async () => {
-    if (localSectionName.trim() !== section.name) {
+    if (localSectionName.trim() && localSectionName.trim() !== section.name) {
       await onUpdateSectionName(section.id, localSectionName.trim());
     }
     setIsEditingLocal(false);
@@ -101,11 +102,13 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
         "group",
         isDragging && !isOverlay ? "" : "rounded-xl",
         isOverlay ? "shadow-xl ring-2 ring-primary bg-card" : "",
-        isOverlay ? "cursor-grabbing" : "cursor-grab",
       )}
       {...(attributes || {})}
-      {...(listeners || {})}
     >
+      <div {...(listeners || {})} className={cn("cursor-grab p-2 opacity-0 group-hover:opacity-50 transition-opacity", isOverlay ? "cursor-grabbing" : "cursor-grab")} data-no-dnd="true" onClick={(e) => e.stopPropagation()}>
+        <DragHandleIcon className="h-5 w-5" />
+      </div>
+
       <div className="flex-1 flex items-center justify-between">
         <div 
           className="flex items-center flex-1 min-w-0"
