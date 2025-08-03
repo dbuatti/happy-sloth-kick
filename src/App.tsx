@@ -13,7 +13,7 @@ import FocusMode from "./pages/FocusMode";
 import LandingPage from "./pages/LandingPage";
 import DailyTasksV3 from "./pages/DailyTasksV3";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
-import { ReminderProvider } from "@/context/ReminderContext";
+import { ReminderProvider } from "@/context/ReminderContext.tsx";
 import { SoundProvider } from "@/context/SoundContext";
 import { Sidebar } from "./components/Sidebar";
 import AuthComponent from "@/components/AuthComponent";
@@ -22,6 +22,7 @@ import DevSpace from "./pages/DevSpace";
 import { TimerProvider } from "./context/TimerContext";
 import TaskCalendar from "./pages/TaskCalendar";
 import { SettingsProvider } from "./context/SettingsContext";
+import Dashboard from "./pages/Dashboard"; // Import the new Dashboard page
 
 // Import new dedicated mindfulness tool pages
 import BodyScanMeditationPage from "./pages/mindfulness/BodyScanMeditationPage";
@@ -67,7 +68,8 @@ const AppContent = () => {
         <div className="relative h-screen w-screen">
           <Sidebar>
             <Routes>
-              <Route path="/" element={<DailyTasksV3 />} />
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/daily-tasks" element={<DailyTasksV3 />} />
               <Route path="/calendar" element={<TaskCalendar />} />
               <Route path="/my-hub" element={<MyHub />} />
