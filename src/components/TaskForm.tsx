@@ -140,35 +140,38 @@ const TaskForm: React.FC<TaskFormProps> = ({
   const remindAtDate = watch('remindAtDate');
 
   useEffect(() => {
+    const generalCategory = allCategories.find(cat => cat.name.toLowerCase() === 'general');
+    const defaultValues = {
+      description: '',
+      category: generalCategory?.id || allCategories[0]?.id || '',
+      priority: 'medium',
+      dueDate: null,
+      notes: null,
+      remindAtDate: null,
+      remindAtTime: '',
+      sectionId: preselectedSectionId,
+      recurringType: 'none' as const,
+      parentTaskId: parentTaskId ?? null,
+      link: null,
+    };
+
     if (initialData) {
       reset({
-        description: initialData.description,
-        category: initialData.category,
-        priority: initialData.priority,
+        ...defaultValues,
+        description: initialData.description || '',
+        category: initialData.category || defaultValues.category,
+        priority: initialData.priority || 'medium',
         dueDate: initialData.due_date ? parseISO(initialData.due_date) : null,
         notes: initialData.notes || null,
         remindAtDate: initialData.remind_at ? parseISO(initialData.remind_at) : null,
         remindAtTime: initialData.remind_at ? format(parseISO(initialData.remind_at), 'HH:mm') : '',
         sectionId: initialData.section_id,
-        recurringType: initialData.recurring_type,
+        recurringType: initialData.recurring_type || 'none',
         parentTaskId: initialData.parent_task_id,
         link: initialData.link ?? null,
       });
     } else {
-      const generalCategory = allCategories.find(cat => cat.name.toLowerCase() === 'general');
-      reset({
-        description: '',
-        category: generalCategory?.id || allCategories[0]?.id || '',
-        priority: 'medium',
-        dueDate: null,
-        notes: null,
-        remindAtDate: null,
-        remindAtTime: '',
-        sectionId: preselectedSectionId,
-        recurringType: 'none',
-        parentTaskId: parentTaskId ?? null,
-        link: null,
-      });
+      reset(defaultValues);
     }
   }, [initialData, preselectedSectionId, parentTaskId, allCategories, reset]);
 

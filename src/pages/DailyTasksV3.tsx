@@ -11,6 +11,8 @@ import CommandPalette from '@/components/CommandPalette';
 import { Card, CardContent } from "@/components/ui/card";
 import FocusPanelDrawer from '@/components/FocusPanelDrawer';
 import DailyTasksHeader from '@/components/DailyTasksHeader';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import AddTaskForm from '@/components/AddTaskForm';
 
 
 const getUTCStartOfDay = (date: Date) => {
@@ -63,6 +65,8 @@ const DailyTasksV3: React.FC = () => {
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
   const [isFocusPanelOpen, setIsFocusPanelOpen] = useState(false);
+  const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
+  const [prefilledTaskData, setPrefilledTaskData] = useState<Partial<Task> | null>(null);
 
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() => {
     try {
@@ -152,6 +156,8 @@ const DailyTasksV3: React.FC = () => {
             doTodayOffIds={doTodayOffIds}
             archiveAllCompletedTasks={archiveAllCompletedTasks}
             toggleAllDoToday={toggleAllDoToday}
+            setIsAddTaskDialogOpen={setIsAddTaskDialogOpen}
+            setPrefilledTaskData={setPrefilledTaskData}
           />
 
           <Card className="p-3 flex-1 flex flex-col rounded-none shadow-none">
@@ -247,6 +253,39 @@ const DailyTasksV3: React.FC = () => {
         allCategories={allCategories}
         onOpenDetail={handleOpenDetail}
       />
+
+      <Dialog open={isAddTaskDialogOpen} onOpenChange={setIsAddTaskDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add New Task</DialogTitle>
+            <DialogDescription className="sr-only">
+              Fill in the details to add a new task.
+            </DialogDescription>
+          </DialogHeader>
+          <AddTaskForm
+            onAddTask={async (taskData) => {
+              const success = await handleAddTask(taskData);
+              if (success) {
+                setIsAddTaskDialogOpen(false);
+                setPrefilledTaskData(null);
+              }
+              return success;
+            }}
+            onTaskAdded={() => {
+              setIsAddTaskDialogOpen(false);
+              setPrefilledTaskData(null);
+            }}
+            sections={sections}
+            allCategories={allCategories}
+            currentDate={currentDate}
+            createSection={createSection}
+            updateSection={updateSection}
+            deleteSection={deleteSection}
+            updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+            initialData={prefilledTaskData as Task | null}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

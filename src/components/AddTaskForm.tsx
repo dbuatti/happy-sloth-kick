@@ -1,6 +1,6 @@
 import React from 'react';
 import TaskForm from './TaskForm';
-import { TaskSection, Category } from '@/hooks/useTasks';
+import { Task, TaskSection, Category } from '@/hooks/useTasks';
 // Removed useAuth as it's not directly used in this component's logic
 
 interface AddTaskFormProps {
@@ -27,6 +27,7 @@ interface AddTaskFormProps {
   updateSection: (sectionId: string, newName: string) => Promise<void>;
   deleteSection: (sectionId: string) => Promise<void>;
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
+  initialData?: Partial<Task> | null;
 }
 
 const AddTaskForm: React.FC<AddTaskFormProps> = ({
@@ -42,6 +43,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({
   updateSection,
   deleteSection,
   updateSectionIncludeInFocusMode,
+  initialData,
 }) => {
   // Removed userId as it's not directly used in this component's logic
   // const { user } = useAuth(); 
@@ -57,6 +59,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({
 
   return (
     <TaskForm
+      initialData={initialData as Task | null}
       onSave={handleSave}
       onCancel={onTaskAdded || (() => {})} // If onTaskAdded is not provided, use a no-op
       sections={sections}

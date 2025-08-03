@@ -45,6 +45,8 @@ interface DailyTasksHeaderProps {
   doTodayOffIds: Set<string>;
   archiveAllCompletedTasks: () => Promise<void>;
   toggleAllDoToday: () => Promise<void>;
+  setIsAddTaskDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  setPrefilledTaskData: React.Dispatch<React.SetStateAction<Partial<Task> | null>>;
 }
 
 const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
@@ -75,6 +77,8 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   doTodayOffIds,
   archiveAllCompletedTasks,
   toggleAllDoToday,
+  setIsAddTaskDialogOpen,
+  setPrefilledTaskData,
 }) => {
   useDailyTaskCount(); 
   const { playSound } = useSound();
@@ -105,42 +109,52 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
     return { totalCount: total, completedCount: completed, overdueCount: overdue };
   }, [filteredTasks, currentDate, sections, doTodayOffIds]);
 
-  const handleQuickAddTask = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!quickAddTaskDescription.trim()) {
-      showError('Task description cannot be empty.');
+  const handleQuickAdd = async () => {
+    const description = quickAddTaskDescription.trim();
+    if (!description) {
+      setPrefilledTaskData(null);
+      setIsAddTaskDialogOpen(true);
       return;
     }
 
     const loadingToastId = showLoading('Getting AI suggestions...');
-    const categoriesForAI = allCategories.map(cat => ({ id: cat.id, name: cat.name }));
-    const suggestions = await suggestTaskDetails(quickAddTaskDescription.trim(), categoriesForAI, currentDate);
-    dismissToast(loadingToastId);
+    try {
+      const categoriesForAI = allCategories.map(cat => ({ id: cat.id, name: cat.name }));
+      const suggestions = await suggestTaskDetails(description, categoriesForAI, currentDate);
+      dismissToast(loadingToastId);
 
-    if (!suggestions) {
-      showError('Failed to get AI suggestions. Please try again.');
-      return;
-    }
+      if (!suggestions) {
+        showError('AI suggestions failed. Please add task details manually.');
+        setPrefilledTaskData({ description });
+        setIsAddTaskDialogOpen(true);
+        return;
+      }
 
-    const suggestedCategoryId = allCategories.find(cat => cat.name.toLowerCase() === suggestions.category.toLowerCase())?.id || allCategories.find(cat => cat.name.toLowerCase() === 'general')?.id || allCategories[0]?.id || '';
-    const suggestedSectionId = sections.find(sec => sec.name.toLowerCase() === suggestions.section?.toLowerCase())?.id || null;
+      const suggestedCategoryId = allCategories.find(cat => cat.name.toLowerCase() === suggestions.category.toLowerCase())?.id || allCategories.find(cat => cat.name.toLowerCase() === 'general')?.id || allCategories[0]?.id || '';
+      const suggestedSectionId = sections.find(sec => sec.name.toLowerCase() === suggestions.section?.toLowerCase())?.id || null;
 
-    const success = await handleAddTask({
-      description: suggestions.cleanedDescription,
-      category: suggestedCategoryId,
-      priority: suggestions.priority as Task['priority'],
-      due_date: suggestions.dueDate,
-      notes: suggestions.notes,
-      remind_at: suggestions.remindAt,
-      section_id: suggestedSectionId,
-      recurring_type: 'none',
-      parent_task_id: null,
-      link: suggestions.link,
-    });
+      const success = await handleAddTask({
+        description: suggestions.cleanedDescription,
+        category: suggestedCategoryId,
+        priority: suggestions.priority as Task['priority'],
+        due_date: suggestions.dueDate,
+        notes: suggestions.notes,
+        remind_at: suggestions.remindAt,
+        section_id: suggestedSectionId,
+        recurring_type: 'none',
+        parent_task_id: null,
+        link: suggestions.link,
+      });
 
-    if (success) {
-      setQuickAddTaskDescription('');
-      quickAddInputRef.current?.focus();
+      if (success) {
+        setQuickAddTaskDescription('');
+        quickAddInputRef.current?.focus();
+      }
+    } catch (error) {
+      dismissToast(loadingToastId);
+      showError('An error occurred. Please add task details manually.');
+      setPrefilledTaskData({ description });
+      setIsAddTaskDialogOpen(true);
     }
   };
 
@@ -297,20 +311,24 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
           stuck ? "stuck" : ""
         )}
       >
-        <form onSubmit={handleQuickAddTask}>
-          <div className="flex items-center gap-2">
-            <Input
-              ref={quickAddInputRef}
-              placeholder='Quick add a task (AI-powered) — press "/" to focus, Enter to add'
-              value={quickAddTaskDescription}
-              onChange={(e) => setQuickAddTaskDescription(e.target.value)}
-              className="flex-1 h-10 text-base"
-            />
-            <Button type="submit" className="whitespace-nowrap h-10 text-base">
-              <Plus className="mr-1 h-4 w-4" /> Add <Sparkles className="ml-1 h-4 w-4" />
-            </Button>
-          </div>
-        </form>
+        <div className="flex items-center gap-2">
+          <Input
+            ref={quickAddInputRef}
+            placeholder='Quick add a task (AI-powered) — press "/" to focus, Enter to add'
+            value={quickAddTaskDescription}
+            onChange={(e) => setQuickAddTaskDescription(e.target.value)}
+            className="flex-1 h-10 text-base"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleQuickAdd();
+              }
+            }}
+          />
+          <Button type="button" onClick={handleQuickAdd} className="whitespace-nowrap h-10 text-base">
+            <Plus className="mr-1 h-4 w-4" /> Add <Sparkles className="ml-1 h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       <TaskFilter
