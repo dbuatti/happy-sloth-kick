@@ -26,7 +26,8 @@ import {
 } from '@dnd-kit/sortable';
 import { useAuth } from '@/context/AuthContext';
 import { useTasks } from '@/hooks/useTasks';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import TimeBlockActionMenu from '@/components/TimeBlockActionMenu';
 
 const TimeBlockSchedule: React.FC = () => {
   useAuth(); 
@@ -98,9 +99,9 @@ const TimeBlockSchedule: React.FC = () => {
     return blocks;
   }, [singleDayWorkHours, currentDate]);
 
-  const handleTimeBlockClick = (blockStart: Date, blockEnd: Date) => {
+  const handleOpenAppointmentForm = (block: { start: Date; end: Date }) => {
     setEditingAppointment(null);
-    setSelectedTimeSlotForNew({ start: blockStart, end: blockEnd });
+    setSelectedTimeSlotForNew(block);
     setIsAppointmentFormOpen(true);
   };
 
@@ -323,6 +324,22 @@ const TimeBlockSchedule: React.FC = () => {
                     gridTemplateRows: `repeat(${timeBlocks.length}, ${rowHeight}px)`,
                     height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`,
                   }}>
+                    {timeBlocks.map((block, index) => (
+                      getMinutes(block.start) === 0 && (
+                        <div
+                          key={`bg-label-${format(block.start, 'HH')}`}
+                          className="absolute text-7xl sm:text-8xl md:text-9xl font-bold text-muted-foreground/10 dark:text-muted-foreground/5 select-none pointer-events-none"
+                          style={{
+                            top: `${index * (rowHeight + gapHeight)}px`,
+                            left: '1rem',
+                            zIndex: 0,
+                          }}
+                        >
+                          {format(block.start, 'h a')}
+                        </div>
+                      )
+                    ))}
+
                     {timeBlocks.map((block, index) => {
                       const isBlockOccupied = appointmentsWithPositions.some(app => {
                         const appStart = parse(app.start_time, 'HH:mm:ss', currentDate);
@@ -336,26 +353,22 @@ const TimeBlockSchedule: React.FC = () => {
 
                       return (
                         <div
-                          key={`select-${format(block.start, 'HH:mm')}`}
-                          className="relative flex items-center justify-center h-10"
-                          style={{ gridRow: `${index + 1}` }}
+                          key={`empty-block-${format(block.start, 'HH:mm')}`}
+                          style={{ gridRow: `${index + 1}`, zIndex: 1 }}
                         >
-                          <Select onValueChange={(taskId) => handleScheduleTask(taskId, block.start)}>
-                            <SelectTrigger className="w-full h-full bg-card dark:bg-gray-800 rounded-xl shadow-sm border-dashed border-border/50 hover:border-primary/50 transition-colors duration-150">
-                              <SelectValue placeholder="Schedule a task..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {unscheduledDoTodayTasks.length > 0 ? (
-                                unscheduledDoTodayTasks.map(task => (
-                                  <SelectItem key={task.id} value={task.id}>
-                                    {task.description}
-                                  </SelectItem>
-                                ))
-                              ) : (
-                                <div className="p-2 text-sm text-muted-foreground">No 'Do Today' tasks available.</div>
-                              )}
-                            </SelectContent>
-                          </Select>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <div className="h-full w-full cursor-pointer rounded-lg hover:bg-muted/50 transition-colors border-dashed border-border/50" />
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-1">
+                              <TimeBlockActionMenu
+                                block={block}
+                                onAddAppointment={() => handleOpenAppointmentForm(block)}
+                                onScheduleTask={handleScheduleTask}
+                                unscheduledTasks={unscheduledDoTodayTasks}
+                              />
+                            </PopoverContent>
+                          </Popover>
                         </div>
                       );
                     })}
