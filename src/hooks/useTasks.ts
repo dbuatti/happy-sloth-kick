@@ -90,6 +90,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
   const [doTodayOffIds, setDoTodayOffIds] = useState<Set<string>>(new Set());
 
   const isReorderingRef = useRef(false);
+  const isUpdatingRef = useRef(false);
 
   const [searchFilter, setSearchFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -201,7 +202,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
         'postgres_changes',
         { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${userId}` },
         (payload) => {
-          if (isReorderingRef.current) return;
+          if (isReorderingRef.current || isUpdatingRef.current) return;
           const newOrOldTask = (payload.new || payload.old) as Task;
           const categoryColor = categoriesMapRef.current.get(newOrOldTask.category) || 'gray';
 
@@ -355,40 +356,41 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       showError('User not authenticated.');
       return false;
     }
-    const categoryColor = allCategoriesRef.current.find(cat => cat.id === newTaskData.category)?.color || 'gray';
-    const parentId = newTaskData.parent_task_id || null;
-
-    const siblings = tasks
-      .filter(t =>
-        (parentId === null && t.parent_task_id === null && (t.section_id === newTaskData.section_id || (t.section_id === null && newTaskData.section_id === null))) ||
-        (parentId !== null && t.parent_task_id === parentId)
-      )
-      .sort((a, b) => (a.order || 0) - (b.order || 0));
-    const newOrder = siblings.length;
-
-    const newTask: Task = {
-      id: uuidv4(),
-      user_id: userId,
-      created_at: effectiveCurrentDate.toISOString(),
-      status: newTaskData.status || 'to-do',
-      recurring_type: newTaskData.recurring_type || 'none',
-      category: newTaskData.category,
-      category_color: categoryColor,
-      priority: (newTaskData.priority || 'medium') as Task['priority'],
-      due_date: newTaskData.due_date || null,
-      notes: newTaskData.notes || null,
-      remind_at: newTaskData.remind_at || null,
-      section_id: newTaskData.section_id || null,
-      order: newOrder,
-      original_task_id: null,
-      parent_task_id: parentId,
-      description: newTaskData.description,
-      link: newTaskData.link || null,
-    };
-
-    setTasks(prev => [...prev, newTask]);
-
+    isUpdatingRef.current = true;
     try {
+      const categoryColor = allCategoriesRef.current.find(cat => cat.id === newTaskData.category)?.color || 'gray';
+      const parentId = newTaskData.parent_task_id || null;
+
+      const siblings = tasks
+        .filter(t =>
+          (parentId === null && t.parent_task_id === null && (t.section_id === newTaskData.section_id || (t.section_id === null && newTaskData.section_id === null))) ||
+          (parentId !== null && t.parent_task_id === parentId)
+        )
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
+      const newOrder = siblings.length;
+
+      const newTask: Task = {
+        id: uuidv4(),
+        user_id: userId,
+        created_at: effectiveCurrentDate.toISOString(),
+        status: newTaskData.status || 'to-do',
+        recurring_type: newTaskData.recurring_type || 'none',
+        category: newTaskData.category,
+        category_color: categoryColor,
+        priority: (newTaskData.priority || 'medium') as Task['priority'],
+        due_date: newTaskData.due_date || null,
+        notes: newTaskData.notes || null,
+        remind_at: newTaskData.remind_at || null,
+        section_id: newTaskData.section_id || null,
+        order: newOrder,
+        original_task_id: null,
+        parent_task_id: parentId,
+        description: newTaskData.description,
+        link: newTaskData.link || null,
+      };
+
+      setTasks(prev => [...prev, newTask]);
+
       const { data, error } = await supabase
         .from('tasks')
         .insert(cleanTaskForDb(newTask))
@@ -407,8 +409,9 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     } catch (e: any) {
       showError('Failed to add task.');
       console.error('useTasks: Error adding task to DB:', e.message);
-      setTasks(prev => prev.filter(t => t.id !== newTask.id));
       return false;
+    } finally {
+      isUpdatingRef.current = false;
     }
   }, [userId, effectiveCurrentDate, tasks, addReminder]);
 
@@ -417,69 +420,64 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       showError('User not authenticated.');
       return;
     }
-    let color: string | undefined;
-    if (updates.category) color = allCategoriesRef.current.find(cat => cat.id === updates.category)?.color || 'gray';
-
-    const originalTask: Task | undefined = tasks.find(t => t.id === taskId);
-    
-    if (!originalTask) {
-      const virtualTask = processedTasks.find(t => t.id === taskId);
-      if (!virtualTask || !taskId.toString().startsWith('virtual-')) {
-          console.warn(`useTasks: Task with ID ${taskId} not found for update. Cannot proceed.`);
-          return;
-      }
-
-      if (updates.status === 'completed') {
-          const newCompletedInstance: Task = {
-              id: uuidv4(),
-              user_id: userId,
-              description: virtualTask.description,
-              status: 'completed',
-              recurring_type: 'none',
-              created_at: effectiveCurrentDate.toISOString(),
-              category: virtualTask.category,
-              category_color: allCategoriesRef.current.find(cat => cat.id === virtualTask.category)?.color || 'gray',
-              priority: virtualTask.priority,
-              due_date: virtualTask.due_date,
-              notes: virtualTask.notes,
-              remind_at: null,
-              section_id: virtualTask.section_id,
-              order: null,
-              original_task_id: virtualTask.original_task_id || virtualTask.id,
-              parent_task_id: virtualTask.parent_task_id,
-              link: virtualTask.link,
-          };
-
-          setTasks(prev => [...prev, newCompletedInstance]);
-
-          try {
-              const { data, error } = await supabase
-                  .from('tasks')
-                  .insert(cleanTaskForDb(newCompletedInstance))
-                  .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link')
-                  .single();
-
-              if (error) throw error;
-
-              setTasks(prev => prev.map(t => t.id === newCompletedInstance.id ? { ...data, category_color: allCategoriesRef.current.find(cat => cat.id === data.category)?.color || 'gray' } : t));
-              showSuccess('Task completed!');
-              dismissReminder(virtualTask.id);
-              return;
-          } catch (e: any) {
-              showError('Failed to complete task.');
-              console.error(`useTasks: Error inserting new completed instance for virtual task ${taskId}:`, e.message);
-              setTasks(prev => prev.filter(t => t.id !== newCompletedInstance.id));
-              return;
-          }
-      } else {
-          console.warn(`useTasks: Attempted to update non-status property or un-complete a virtual task ${taskId}. This operation is not supported directly.`);
-          return;
-      }
-    }
-
-    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates, ...(color && { category_color: color }) } : t));
-
+    isUpdatingRef.current = true;
+    let originalTaskState: Task | undefined;
     try {
+      let color: string | undefined;
+      if (updates.category) color = allCategoriesRef.current.find(cat => cat.id === updates.category)?.color || 'gray';
+
+      originalTaskState = tasks.find(t => t.id === taskId);
+      
+      if (!originalTaskState) {
+        const virtualTask = processedTasks.find(t => t.id === taskId);
+        if (!virtualTask || !taskId.toString().startsWith('virtual-')) {
+            console.warn(`useTasks: Task with ID ${taskId} not found for update. Cannot proceed.`);
+            return;
+        }
+
+        if (updates.status === 'completed') {
+            const newCompletedInstance: Task = {
+                id: uuidv4(),
+                user_id: userId,
+                description: virtualTask.description,
+                status: 'completed',
+                recurring_type: 'none',
+                created_at: effectiveCurrentDate.toISOString(),
+                category: virtualTask.category,
+                category_color: allCategoriesRef.current.find(cat => cat.id === virtualTask.category)?.color || 'gray',
+                priority: virtualTask.priority,
+                due_date: virtualTask.due_date,
+                notes: virtualTask.notes,
+                remind_at: null,
+                section_id: virtualTask.section_id,
+                order: null,
+                original_task_id: virtualTask.original_task_id || virtualTask.id,
+                parent_task_id: virtualTask.parent_task_id,
+                link: virtualTask.link,
+            };
+
+            setTasks(prev => [...prev, newCompletedInstance]);
+
+            const { data, error } = await supabase
+                .from('tasks')
+                .insert(cleanTaskForDb(newCompletedInstance))
+                .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link')
+                .single();
+
+            if (error) throw error;
+
+            setTasks(prev => prev.map(t => t.id === newCompletedInstance.id ? { ...data, category_color: allCategoriesRef.current.find(cat => cat.id === data.category)?.color || 'gray' } : t));
+            showSuccess('Task completed!');
+            dismissReminder(virtualTask.id);
+            return;
+        } else {
+            console.warn(`useTasks: Attempted to update non-status property or un-complete a virtual task ${taskId}. This operation is not supported directly.`);
+            return;
+        }
+      }
+
+      setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates, ...(color && { category_color: color }) } : t));
+
       const { data, error } = await supabase
         .from('tasks')
         .update(cleanTaskForDb(updates))
@@ -495,7 +493,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
 
       if (updates.remind_at) {
         const d = parseISO(updates.remind_at as string);
-        if (isValid(d) && (updates.status === undefined || updates.status === 'to-do')) addReminder(taskId, `Reminder: ${originalTask.description}`, d);
+        if (isValid(d) && (updates.status === undefined || updates.status === 'to-do')) addReminder(taskId, `Reminder: ${originalTaskState.description}`, d);
       }
       if (updates.status === 'completed' || updates.status === 'archived' || updates.remind_at === null) {
         dismissReminder(taskId);
@@ -503,7 +501,11 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     } catch (e: any) {
       showError('Failed to update task.');
       console.error(`useTasks: Error updating task ${taskId} in DB:`, e.message);
-      setTasks(prev => prev.map(t => t.id === taskId ? originalTask : t));
+      if (originalTaskState) {
+        setTasks(prev => prev.map(t => t.id === taskId ? originalTaskState! : t));
+      }
+    } finally {
+      isUpdatingRef.current = false;
     }
   }, [userId, tasks, processedTasks, effectiveCurrentDate, addReminder, dismissReminder]);
 
@@ -512,29 +514,32 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       showError('User not authenticated.');
       return;
     }
-    const taskToDelete: Task | undefined = tasks.find(t => t.id === taskId);
-    if (!taskToDelete) return;
-
-    let idsToDelete = [taskId];
-    const subIds = tasks.filter(t => t.parent_task_id === taskId).map(t => t.id);
-    idsToDelete = [...idsToDelete, ...subIds];
-    if (taskToDelete.recurring_type !== 'none' && taskToDelete.original_task_id === null) {
-      const inst = tasks.filter(t => t.original_task_id === taskId).map(t => t.id);
-      idsToDelete = [...idsToDelete, ...inst];
-    }
-
+    isUpdatingRef.current = true;
     const originalTasks = [...tasks];
-    setTasks(prev => prev.filter(t => !idsToDelete.includes(t.id)));
-
     try {
+      const taskToDelete: Task | undefined = tasks.find(t => t.id === taskId);
+      if (!taskToDelete) return;
+
+      let idsToDelete = [taskId];
+      const subIds = tasks.filter(t => t.parent_task_id === taskId).map(t => t.id);
+      idsToDelete = [...idsToDelete, ...subIds];
+      if (taskToDelete.recurring_type !== 'none' && taskToDelete.original_task_id === null) {
+        const inst = tasks.filter(t => t.original_task_id === taskId).map(t => t.id);
+        idsToDelete = [...idsToDelete, ...inst];
+      }
+
+      setTasks(prev => prev.filter(t => !idsToDelete.includes(t.id)));
+
       const { error } = await supabase.from('tasks').delete().in('id', idsToDelete).eq('user_id', userId).select('id');
       if (error) throw error;
       showSuccess('Task(s) deleted!');
       idsToDelete.forEach(dismissReminder);
     } catch (e: any) {
       showError('Failed to delete task.');
-      console.error(`useTasks: Error deleting task(s) ${idsToDelete.join(', ')} from DB:`, e.message);
+      console.error(`useTasks: Error deleting task(s) from DB:`, e.message);
       setTasks(originalTasks);
+    } finally {
+      isUpdatingRef.current = false;
     }
   }, [userId, tasks, dismissReminder]);
 
@@ -546,13 +551,13 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     if (ids.length === 0) {
       return;
     }
-
+    isUpdatingRef.current = true;
     const original = [...tasks];
-    setTasks(prev =>
-      prev.map(t => (ids.includes(t.id) ? { ...t, ...updates } : t))
-    );
-
     try {
+      setTasks(prev =>
+        prev.map(t => (ids.includes(t.id) ? { ...t, ...updates } : t))
+      );
+
       const { error } = await supabase
         .from('tasks')
         .update(cleanTaskForDb(updates))
@@ -565,6 +570,8 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       showError('Failed to update tasks.');
       console.error(`useTasks: Error during bulk update for tasks ${ids.join(', ')}:`, e.message);
       setTasks(original);
+    } finally {
+      isUpdatingRef.current = false;
     }
   }, [tasks, userId]);
 
