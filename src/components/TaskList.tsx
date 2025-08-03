@@ -58,6 +58,9 @@ interface TaskListProps {
   expandedSections: Record<string, boolean>;
   toggleSection: (sectionId: string) => void;
   toggleAllSections: () => void;
+  setFocusTask: (taskId: string | null) => Promise<void>;
+  doTodayOffIds: Set<string>;
+  toggleDoToday: (taskId: string) => void;
 }
 
 const TaskList: React.FC<TaskListProps> = (props) => {
@@ -84,6 +87,9 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     expandedSections,
     toggleSection,
     toggleAllSections,
+    setFocusTask,
+    doTodayOffIds,
+    toggleDoToday,
   } = props;
 
   const { user } = useAuth();
@@ -314,9 +320,9 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                             level={0}
                             allTasks={tasks}
                             isOverlay={false}
-                            setFocusTask={async () => {}}
-                            isDoToday={false}
-                            toggleDoToday={() => {}}
+                            setFocusTask={setFocusTask}
+                            isDoToday={!doTodayOffIds.has(task.id)}
+                            toggleDoToday={toggleDoToday}
                           />
                         ))}
                       </ul>
@@ -374,9 +380,9 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                     onMoveUp={async () => {}}
                     onMoveDown={async () => {}}
                     isOverlay={true}
-                    setFocusTask={async () => {}}
-                    isDoToday={true}
-                    toggleDoToday={() => {}}
+                    setFocusTask={setFocusTask}
+                    isDoToday={!doTodayOffIds.has((activeItemData as Task).id)}
+                    toggleDoToday={toggleDoToday}
                   />
                 )
               )}
