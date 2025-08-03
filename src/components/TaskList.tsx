@@ -96,8 +96,15 @@ const TaskList: React.FC<TaskListProps> = (props) => {
   const [activeItemData, setActiveItemData] = useState<Task | TaskSection | null>(null);
 
   const sensors = useSensors(
-    useSensor(CustomPointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    useSensor(CustomPointerSensor, {
+      activationConstraint: {
+        delay: 150, // ms
+        tolerance: 5, // px
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
   );
 
   const tasksMap = useMemo(() => new Map(tasks.map(task => [task.id, task])), [tasks]);

@@ -9,7 +9,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Plus, CheckCircle2, ChevronDown, MoreHorizontal, Trash2, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TaskSection } from '@/hooks/useTasks';
-import DragHandleIcon from './DragHandleIcon';
 
 interface SortableSectionHeaderProps {
   section: TaskSection;
@@ -98,17 +97,14 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "relative flex items-center py-2 pr-3",
+        "relative flex items-center py-2 pr-3 cursor-grab",
         "group",
         isDragging && !isOverlay ? "" : "rounded-xl",
         isOverlay ? "shadow-xl ring-2 ring-primary bg-card" : "",
       )}
       {...(attributes || {})}
+      {...(listeners || {})}
     >
-      <div {...(listeners || {})} className={cn("cursor-grab p-2 opacity-0 group-hover:opacity-50 transition-opacity", isOverlay ? "cursor-grabbing" : "cursor-grab")} data-no-dnd="true" onClick={(e) => e.stopPropagation()}>
-        <DragHandleIcon className="h-5 w-5" />
-      </div>
-
       <div className="flex-1 flex items-center justify-between">
         <div 
           className="flex items-center flex-1 min-w-0"
@@ -137,7 +133,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
           ) : (
             <>
               <h3 
-                className="text-xl font-bold truncate cursor-pointer"
+                className="text-xl font-bold truncate cursor-text"
                 onClick={handleStartEdit}
                 data-no-dnd="true"
               >
@@ -152,7 +148,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
             </>
           )}
           <div
-            className="flex-1 h-full min-h-[28px] cursor-pointer"
+            className="flex-1 h-full min-h-[28px]"
             onClick={!isOverlay && !isEditingLocal ? () => toggleSection(section.id) : undefined}
             data-no-dnd="true"
           ></div>

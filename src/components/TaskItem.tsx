@@ -11,7 +11,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Input } from './ui/input';
-import DragHandleIcon from './DragHandleIcon';
 import { useSortable } from '@dnd-kit/sortable';
 
 interface TaskItemProps {
@@ -125,18 +124,15 @@ const TaskItem: React.FC<TaskItemProps> = ({
   return (
     <div
       className={cn(
-        "relative flex items-center space-x-2 w-full py-3 pr-3",
+        "relative flex items-center space-x-2 w-full p-3 cursor-grab",
         task.status === 'completed' ? "text-muted-foreground bg-task-completed-bg" : "text-foreground",
         "group",
         isOverdue && "border-l-4 border-status-overdue",
         isDueToday && "border-l-4 border-status-due-today",
       )}
       onClick={() => !isOverlay && !isEditing && onOpenOverview(task)}
+      {...dragListeners}
     >
-      <div {...dragListeners} className="cursor-grab p-2 opacity-0 group-hover:opacity-50 transition-opacity" data-no-dnd="true" onClick={(e) => e.stopPropagation()}>
-        <DragHandleIcon className="h-4 w-4" />
-      </div>
-
       <div data-no-dnd="true">
         <Checkbox
           key={`${task.id}-${task.status}`}
@@ -152,7 +148,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
       <div className={cn("w-3 h-3 rounded-full flex-shrink-0", getPriorityDotColor(task.priority))} />
       
-      <div className="flex-grow" onClick={handleStartEdit} data-no-dnd={isEditing ? "true" : "false"}>
+      <div className="flex-grow cursor-text" onClick={handleStartEdit} data-no-dnd={isEditing ? "true" : "false"}>
         {isEditing ? (
           <Input
             ref={inputRef}
