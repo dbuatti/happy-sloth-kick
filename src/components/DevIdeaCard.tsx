@@ -1,19 +1,21 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit, Clipboard, Image as ImageIcon } from 'lucide-react';
+import { Edit, Clipboard, Image as ImageIcon, GripVertical } from 'lucide-react';
 import { DevIdea } from '@/hooks/useDevIdeas';
 import { cn } from '@/lib/utils';
 import { showSuccess, showError } from '@/utils/toast';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
+import { useSortable } from '@dnd-kit/sortable';
 
 interface DevIdeaCardProps {
   idea: DevIdea;
   onEdit: (idea: DevIdea) => void;
+  dragListeners?: ReturnType<typeof useSortable>['listeners'];
 }
 
-const DevIdeaCard: React.FC<DevIdeaCardProps> = ({ idea, onEdit }) => {
+const DevIdeaCard: React.FC<DevIdeaCardProps> = ({ idea, onEdit, dragListeners }) => {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'high': return 'border-l-red-500';
@@ -60,8 +62,13 @@ const DevIdeaCard: React.FC<DevIdeaCardProps> = ({ idea, onEdit }) => {
     <Card 
       className={cn("group w-full shadow-md hover:shadow-lg transition-shadow duration-200 border-l-4", getPriorityColor(idea.priority))}
     >
-      <CardHeader className="pb-2 flex-row items-start justify-between">
-        <CardTitle className="text-lg font-semibold">{idea.title}</CardTitle>
+      <CardHeader className="pb-2 flex-row items-center justify-between">
+        <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="h-7 w-7 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity" {...dragListeners}>
+                <GripVertical className="h-4 w-4" />
+            </Button>
+            <CardTitle className="text-lg font-semibold">{idea.title}</CardTitle>
+        </div>
         <div className="flex items-center">
           <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={handleCopyTextClick} title="Copy Text Only">
             <Clipboard className="h-4 w-4" />

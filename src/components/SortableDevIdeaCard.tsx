@@ -30,9 +30,8 @@ const SortableDevIdeaCard: React.FC<SortableDevIdeaCardProps> = ({ idea, onEdit 
         ref={setNodeRef} 
         style={style} 
         {...attributes} 
-        {...listeners}
     >
-        <DevIdeaCard idea={idea} onEdit={onEdit} />
+        <DevIdeaCard idea={idea} onEdit={onEdit} dragListeners={listeners} />
     </div>
   );
 };
