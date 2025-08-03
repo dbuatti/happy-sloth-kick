@@ -256,29 +256,29 @@ const TaskItem: React.FC<TaskItemProps> = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onOpenOverview(task); }}>
+            <DropdownMenuItem onSelect={() => onOpenOverview(task)}>
               <Edit className="mr-2 h-4 w-4" /> View Details
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setFocusTask(task.id); }}>
+            <DropdownMenuItem onSelect={() => setFocusTask(task.id)}>
               <Target className="mr-2 h-4 w-4" /> Set as Focus
             </DropdownMenuItem>
             {task.status === 'archived' && (
-              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onStatusChange(task.id, 'to-do'); playSound('success'); }}>
+              <DropdownMenuItem onSelect={() => { onStatusChange(task.id, 'to-do'); playSound('success'); }}>
                 <Undo2 className="mr-2 h-4 w-4" /> Restore
               </DropdownMenuItem>
             )}
             {task.status !== 'archived' && (
               <>
-                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onStatusChange(task.id, 'to-do'); playSound('success'); }}>
+                <DropdownMenuItem onSelect={() => { onStatusChange(task.id, 'to-do'); playSound('success'); }}>
                   Mark as To-Do
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onStatusChange(task.id, 'completed'); playSound('success'); }}>
+                <DropdownMenuItem onSelect={() => { onStatusChange(task.id, 'completed'); playSound('success'); }}>
                   Mark as Completed
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onStatusChange(task.id, 'skipped'); playSound('success'); }}>
+                <DropdownMenuItem onSelect={() => { onStatusChange(task.id, 'skipped'); playSound('success'); }}>
                   Mark as Skipped
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onStatusChange(task.id, 'archived'); playSound('success'); }}>
+                <DropdownMenuItem onSelect={() => { onStatusChange(task.id, 'archived'); playSound('success'); }}>
                   <Archive className="mr-2 h-4 w-4" /> Archive
                 </DropdownMenuItem>
               </>
@@ -294,8 +294,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
                 ) : (
                   <>
                     <DropdownMenuItem
-                      onSelect={(e) => {
-                        e.preventDefault();
+                      onSelect={() => {
                         onUpdate(task.id, { section_id: null });
                         playSound('success');
                       }}
@@ -306,8 +305,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
                     {sections.map(section => (
                       <DropdownMenuItem
                         key={section.id}
-                        onSelect={(e) => {
-                          e.preventDefault();
+                        onSelect={() => {
                           onUpdate(task.id, { section_id: section.id });
                           playSound('success');
                         }}
@@ -321,7 +319,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
               </DropdownMenuSubContent>
             </DropdownMenuSub>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onDelete(task.id); playSound('alert'); }} className="text-destructive focus:text-destructive">
+            <DropdownMenuItem onSelect={() => { onDelete(task.id); playSound('alert'); }} className="text-destructive focus:text-destructive">
               <Trash2 className="mr-2 h-4 w-4" /> Delete
             </DropdownMenuItem>
           </DropdownMenuContent>
