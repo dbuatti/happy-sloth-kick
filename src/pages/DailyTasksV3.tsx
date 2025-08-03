@@ -54,6 +54,7 @@ const DailyTasksV3: React.FC = () => {
     setFocusTask,
     doTodayOffIds,
     toggleDoToday,
+    toggleAllDoToday,
   } = useTasks({ viewMode: 'daily' });
 
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
@@ -150,6 +151,7 @@ const DailyTasksV3: React.FC = () => {
             updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
             doTodayOffIds={doTodayOffIds}
             archiveAllCompletedTasks={archiveAllCompletedTasks}
+            toggleAllDoToday={toggleAllDoToday}
           />
 
           <Card className="p-3 flex-1 flex flex-col rounded-none shadow-none">

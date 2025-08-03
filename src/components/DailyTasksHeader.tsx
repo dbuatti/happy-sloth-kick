@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, ListTodo, Brain, CheckCircle2, Clock, Target, Edit, Sparkles, FolderOpen, Tag, Archive } from 'lucide-react'; // Removed ChevronsDownUp, Settings
+import { Plus, ListTodo, Brain, CheckCircle2, Clock, Target, Edit, Sparkles, FolderOpen, Tag, Archive, ToggleRight } from 'lucide-react';
 import DateNavigator from '@/components/DateNavigator';
 import TaskFilter from '@/components/TaskFilter';
 import { cn } from '@/lib/utils';
@@ -12,8 +12,8 @@ import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
 import { isBefore, isSameDay, parseISO } from 'date-fns';
 import { useSound } from '@/context/SoundContext';
 import { Progress } from '@/components/Progress';
-import ManageCategoriesDialog from './ManageCategoriesDialog'; // Import new dialog
-import ManageSectionsDialog from './ManageSectionsDialog'; // Import new dialog
+import ManageCategoriesDialog from './ManageCategoriesDialog';
+import ManageSectionsDialog from './ManageSectionsDialog';
 
 interface DailyTasksHeaderProps {
   currentDate: Date;
@@ -44,6 +44,7 @@ interface DailyTasksHeaderProps {
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
   doTodayOffIds: Set<string>;
   archiveAllCompletedTasks: () => Promise<void>;
+  toggleAllDoToday: () => Promise<void>;
 }
 
 const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
@@ -73,6 +74,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   updateSectionIncludeInFocusMode,
   doTodayOffIds,
   archiveAllCompletedTasks,
+  toggleAllDoToday,
 }) => {
   useDailyTaskCount(); 
   const { playSound } = useSound();
@@ -247,11 +249,16 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
               <Clock className="h-4 w-4" /> {overdueCount} overdue
             </p>
           ) : <div />}
-          {completedCount > 0 && (
-            <Button variant="outline" size="sm" onClick={archiveAllCompletedTasks} className="h-8 text-xs">
-              <Archive className="mr-2 h-3.5 w-3.5" /> Archive Completed
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={toggleAllDoToday} className="h-8 text-xs">
+              <ToggleRight className="mr-2 h-3.5 w-3.5" /> Toggle All 'Do Today'
             </Button>
-          )}
+            {completedCount > 0 && (
+              <Button variant="outline" size="sm" onClick={archiveAllCompletedTasks} className="h-8 text-xs">
+                <Archive className="mr-2 h-3.5 w-3.5" /> Archive Completed
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 

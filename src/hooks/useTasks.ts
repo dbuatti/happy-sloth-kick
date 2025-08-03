@@ -967,6 +967,50 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     }
   }, [userId, effectiveCurrentDate, doTodayOffIds]);
 
+  const toggleAllDoToday = useCallback(async () => {
+    if (!userId) return;
+
+    const nonRecurringTasks = finalFilteredTasks.filter(t => t.recurring_type === 'none');
+    if (nonRecurringTasks.length === 0) {
+      showSuccess("No non-recurring tasks to toggle.");
+      return;
+    }
+
+    const nonRecurringTaskIds = nonRecurringTasks.map(t => t.original_task_id || t.id);
+    const currentlyOnCount = nonRecurringTasks.filter(t => !doTodayOffIds.has(t.original_task_id || t.id)).length;
+    const turnAllOff = currentlyOnCount > nonRecurringTasks.length / 2;
+
+    const formattedDate = format(effectiveCurrentDate, 'yyyy-MM-dd');
+    const originalOffIds = new Set(doTodayOffIds);
+
+    if (turnAllOff) {
+      const newOffIds = new Set(nonRecurringTaskIds);
+      setDoTodayOffIds(newOffIds);
+      try {
+        await supabase.from('do_today_off_log').delete().eq('user_id', userId).eq('off_date', formattedDate);
+        const recordsToInsert = nonRecurringTaskIds.map(taskId => ({ user_id: userId, task_id: taskId, off_date: formattedDate }));
+        if (recordsToInsert.length > 0) {
+          const { error } = await supabase.from('do_today_off_log').insert(recordsToInsert);
+          if (error) throw error;
+        }
+        showSuccess("All tasks toggled off for today.");
+      } catch (e: any) {
+        showError("Failed to sync 'Do Today' settings.");
+        setDoTodayOffIds(originalOffIds);
+      }
+    } else {
+      setDoTodayOffIds(new Set());
+      try {
+        const { error } = await supabase.from('do_today_off_log').delete().eq('user_id', userId).eq('off_date', formattedDate);
+        if (error) throw error;
+        showSuccess("All tasks toggled on for today.");
+      } catch (e: any) {
+        showError("Failed to sync 'Do Today' settings.");
+        setDoTodayOffIds(originalOffIds);
+      }
+    }
+  }, [userId, finalFilteredTasks, doTodayOffIds, effectiveCurrentDate]);
+
   return {
     tasks,
     filteredTasks: finalFilteredTasks,
@@ -1003,5 +1047,6 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     setFocusTask,
     doTodayOffIds,
     toggleDoToday,
+    toggleAllDoToday,
   };
 };
