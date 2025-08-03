@@ -6,12 +6,9 @@ import { Label } from "@/components/ui/label";
 import { useProjects } from '@/hooks/useProjects';
 import { LayoutGrid, Edit } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useAuth } from '@/context/AuthContext'; // Import useAuth
+// Removed useAuth as it's not directly used in this component
 
 const ProjectTrackerSettings: React.FC = () => {
-  const { user } = useAuth(); // Use useAuth to get the user
-  const userId = user?.id; // Get userId from useAuth
-
   const { sectionTitle, updateProjectTrackerTitle, loading: projectsLoading } = useProjects();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [tempSectionTitle, setTempSectionTitle] = useState(sectionTitle);
@@ -81,7 +78,7 @@ const ProjectTrackerSettings: React.FC = () => {
         ) : (
           <div className="flex items-center justify-between">
             <p className="text-lg font-medium text-foreground">{sectionTitle}</p>
-            <Button variant="outline" size="sm" onClick={() => setIsEditingTitle(true)} className="h-9">
+            <Button variant="outline" size="sm" onClick={() => setIsEditingTitle(true)} className="h-9 text-base">
               <Edit className="mr-2 h-4 w-4" /> Edit
             </Button>
           </div>

@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useAuth } from '@/context/AuthContext';
+// Removed useAuth as it's not directly used in this component
 import { Clock } from 'lucide-react';
 import { useWorkHours } from '@/hooks/useWorkHours'; // Import the refactored hook
 
@@ -17,8 +17,6 @@ interface WorkHourState {
 }
 
 const WorkHoursSettings: React.FC = () => {
-  const { user } = useAuth();
-  const userId = user?.id;
   // Call useWorkHours without a date to get all work hours
   const { workHours: fetchedWorkHours, loading, saveWorkHours, allDaysOfWeek, defaultTime } = useWorkHours();
   

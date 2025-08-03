@@ -2,22 +2,20 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess } from '@/utils/toast';
-import { arrayMove } from '@dnd-kit/sortable';
 
 export interface DevIdea {
   id: string;
   user_id: string;
   title: string;
   description: string | null;
-  status: string;
-  priority: string;
+  status: 'idea' | 'in-progress' | 'completed';
+  priority: 'low' | 'medium' | 'high';
   created_at: string;
 }
 
 export const useDevIdeas = () => {
   const { user } = useAuth();
   const userId = user?.id;
-
   const [ideas, setIdeas] = useState<DevIdea[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -46,15 +44,13 @@ export const useDevIdeas = () => {
   }, [userId]);
 
   useEffect(() => {
-    if (userId) {
-      fetchIdeas();
-    }
-  }, [userId, fetchIdeas]);
+    fetchIdeas();
+  }, [fetchIdeas]);
 
-  const addIdea = useCallback(async (ideaData: Omit<DevIdea, 'id' | 'user_id' | 'created_at'>) => {
+  const addIdea = async (ideaData: Omit<DevIdea, 'id' | 'user_id' | 'created_at'>) => {
     if (!userId) {
       showError('User not authenticated.');
-      return false;
+      return null;
     }
     try {
       const { data, error } = await supabase
@@ -62,44 +58,40 @@ export const useDevIdeas = () => {
         .insert({ ...ideaData, user_id: userId })
         .select()
         .single();
-
       if (error) throw error;
       setIdeas(prev => [data, ...prev]);
-      showSuccess('Idea added successfully!');
-      return true;
+      showSuccess('Idea added!');
+      return data;
     } catch (error: any) {
-      console.error('Error adding idea:', error.message);
       showError('Failed to add idea.');
-      return false;
+      return null;
     }
-  }, [userId]);
+  };
 
-  const updateIdea = useCallback(async (ideaId: string, updates: Partial<Omit<DevIdea, 'id' | 'user_id' | 'created_at'>>) => {
+  const updateIdea = async (id: string, updates: Partial<Omit<DevIdea, 'id' | 'user_id' | 'created_at'>>) => {
     if (!userId) {
       showError('User not authenticated.');
-      return false;
+      return null;
     }
     try {
       const { data, error } = await supabase
         .from('dev_ideas')
         .update(updates)
-        .eq('id', ideaId)
+        .eq('id', id)
         .eq('user_id', userId)
         .select()
         .single();
-
       if (error) throw error;
-      setIdeas(prev => prev.map(idea => (idea.id === ideaId ? data : idea)));
-      showSuccess('Idea updated successfully!');
-      return true;
+      setIdeas(prev => prev.map(idea => (idea.id === id ? data : idea)));
+      showSuccess('Idea updated!');
+      return data;
     } catch (error: any) {
-      console.error('Error updating idea:', error.message);
       showError('Failed to update idea.');
-      return false;
+      return null;
     }
-  }, [userId]);
+  };
 
-  const deleteIdea = useCallback(async (ideaId: string) => {
+  const deleteIdea = async (id: string) => {
     if (!userId) {
       showError('User not authenticated.');
       return false;
@@ -108,35 +100,17 @@ export const useDevIdeas = () => {
       const { error } = await supabase
         .from('dev_ideas')
         .delete()
-        .eq('id', ideaId)
+        .eq('id', id)
         .eq('user_id', userId);
-
       if (error) throw error;
-      setIdeas(prev => prev.filter(idea => idea.id !== ideaId));
-      showSuccess('Idea deleted successfully!');
+      setIdeas(prev => prev.filter(idea => idea.id !== id));
+      showSuccess('Idea deleted!');
       return true;
     } catch (error: any) {
-      console.error('Error deleting idea:', error.message);
       showError('Failed to delete idea.');
       return false;
     }
-  }, [userId]);
-  
-  const reorderIdeas = useCallback((activeId: string, overId: string) => {
-    setIdeas((items) => {
-        const oldIndex = items.findIndex((item) => item.id === activeId);
-        const newIndex = items.findIndex((item) => item.id === overId);
-        return arrayMove(items, oldIndex, newIndex);
-      });
-  }, []);
-
-
-  return {
-    ideas,
-    loading,
-    addIdea,
-    updateIdea,
-    deleteIdea,
-    reorderIdeas,
   };
+
+  return { ideas, loading, addIdea, updateIdea, deleteIdea, setIdeas };
 };

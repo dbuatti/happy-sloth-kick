@@ -143,10 +143,10 @@ const MiniBreathingBubble: React.FC = () => {
           )}
         </div>
         <div className="flex justify-center space-x-2">
-          <Button size="sm" onClick={handleStartPause} className={cn(isRunning ? "bg-accent hover:bg-accent/90 h-9" : "bg-primary hover:bg-primary/90 h-9")}>
+          <Button size="sm" onClick={handleStartPause} className={cn(isRunning ? "bg-accent hover:bg-accent/90 h-9 text-base" : "bg-primary hover:bg-primary/90 h-9 text-base")}>
             {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
           </Button>
-          <Button size="sm" variant="outline" onClick={handleReset} className="h-9">
+          <Button size="sm" variant="outline" onClick={handleReset} className="h-9 text-base">
             <RefreshCcw className="h-4 w-4" />
           </Button>
         </div>

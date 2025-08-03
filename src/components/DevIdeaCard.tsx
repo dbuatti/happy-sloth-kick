@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Edit } from 'lucide-react';
 import { DevIdea } from '@/hooks/useDevIdeas';
 import { cn } from '@/lib/utils';
+import { showSuccess, showError } from '@/utils/toast';
 
 interface DevIdeaCardProps {
   idea: DevIdea;
@@ -20,14 +21,28 @@ const DevIdeaCard: React.FC<DevIdeaCardProps> = ({ idea, onEdit }) => {
     }
   };
 
+  const handleCardClick = () => {
+    console.log('Card clicked. Attempting to copy.');
+    const textToCopy = `${idea.title}${idea.description ? `\n\n${idea.description}` : ''}`;
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      console.log('Successfully copied to clipboard.');
+      showSuccess('Idea copied to clipboard!');
+    }).catch(err => {
+      console.error('Failed to copy text: ', err);
+      showError('Could not copy idea to clipboard.');
+    });
+  };
+
   const handleEditClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Stop the click from bubbling up to the parent div
+    e.stopPropagation(); // Prevent the card's onClick from firing
+    console.log('Edit button clicked.');
     onEdit(idea);
   };
 
   return (
     <Card 
-      className={cn("w-full shadow-md hover:shadow-lg transition-shadow duration-200 border-l-4", getPriorityColor(idea.priority))}
+      className={cn("w-full shadow-md hover:shadow-lg transition-shadow duration-200 border-l-4 cursor-pointer", getPriorityColor(idea.priority))}
+      onClick={handleCardClick}
     >
       <CardHeader className="pb-2 flex-row items-start justify-between">
         <CardTitle className="text-lg font-semibold">{idea.title}</CardTitle>

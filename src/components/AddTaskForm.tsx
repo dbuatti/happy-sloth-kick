@@ -1,7 +1,7 @@
 import React from 'react';
 import TaskForm from './TaskForm';
 import { TaskSection, Category } from '@/hooks/useTasks';
-import { useAuth } from '@/context/AuthContext'; // Import useAuth
+// Removed useAuth as it's not directly used in this component's logic
 
 interface AddTaskFormProps {
   onAddTask: (taskData: {
@@ -22,6 +22,11 @@ interface AddTaskFormProps {
   preselectedSectionId?: string | null;
   parentTaskId?: string | null; // For sub-tasks
   currentDate: Date; // Added currentDate prop
+  // New props for section management
+  createSection: (name: string) => Promise<void>;
+  updateSection: (sectionId: string, newName: string) => Promise<void>;
+  deleteSection: (sectionId: string) => Promise<void>;
+  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
 }
 
 const AddTaskForm: React.FC<AddTaskFormProps> = ({
@@ -32,10 +37,15 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({
   autoFocus,
   preselectedSectionId,
   parentTaskId,
-  currentDate, // Destructure currentDate
+  currentDate,
+  createSection, // Destructure new props
+  updateSection,
+  deleteSection,
+  updateSectionIncludeInFocusMode,
 }) => {
-  const { user } = useAuth(); // Use useAuth to get the user
-  const userId = user?.id || null; // Get userId from useAuth
+  // Removed userId as it's not directly used in this component's logic
+  // const { user } = useAuth(); 
+  // const userId = user?.id || null; 
 
   const handleSave = async (taskData: Parameters<typeof onAddTask>[0]) => {
     const success = await onAddTask(taskData);
@@ -54,7 +64,11 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({
       autoFocus={autoFocus}
       preselectedSectionId={preselectedSectionId}
       parentTaskId={parentTaskId}
-      currentDate={currentDate} // Pass currentDate to TaskForm
+      currentDate={currentDate}
+      createSection={createSection} // Pass new props
+      updateSection={updateSection}
+      deleteSection={deleteSection}
+      updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
     />
   );
 };

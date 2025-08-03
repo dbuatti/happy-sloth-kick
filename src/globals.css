@@ -122,6 +122,8 @@
     --foreground: 0 0% 20%;
     --card: 25 10% 96%;
     --card-foreground: 0 0% 20%;
+    --popover: 25 10% 96%;
+    --popover-foreground: 0 0% 20%;
     --primary: 180 35% 45%;
     --primary-foreground: 0 0% 100%;
     --secondary: 25 50% 75%;
@@ -133,25 +135,18 @@
     --destructive: 15 60% 55%;
     --destructive-foreground: 0 0% 100%;
     --border: 25 10% 90%;
-    --input: 25 10% 98%; /* Slightly off-white for input background */
+    --input: 25 10% 90%;
     --ring: 0 0% 20%;
-    --border-status-due-today: 15 60% 55%;
-    --border-status-overdue: 15 60% 55%;
-    --status-completed: 180 35% 45%; /* Greenish primary */
-    --task-completed-bg: 25 10% 98%; /* Lighter background for completed task */
-    --priority-low: 180 35% 45%;
-    --priority-medium: 25 50% 75%;
-    --priority-high: 15 60% 55%;
-    --priority-urgent: 0 0% 20%;
-    --gradient-start-light: 180 35% 98%;
-    --gradient-end-light: 25 10% 98%;
+    --radius: 0.5rem;
   }
 
   .dark .adhd-friendly {
     --background: 25 20% 15%;
     --foreground: 25 10% 90%;
-    --card: 25 20% 15%; /* Same as background */
+    --card: 25 20% 20%;
     --card-foreground: 25 10% 90%;
+    --popover: 25 20% 20%;
+    --popover-foreground: 25 10% 90%;
     --primary: 180 40% 60%;
     --primary-foreground: 0 0% 100%;
     --secondary: 25 60% 80%;
@@ -163,25 +158,17 @@
     --destructive: 15 70% 70%;
     --destructive-foreground: 0 0% 100%;
     --border: 25 20% 30%;
-    --input: 25 20% 20%; /* Slightly lighter dark for input background */
+    --input: 25 20% 30%;
     --ring: 0 0% 80%;
-    --border-status-due-today: 15 70% 70%;
-    --border-status-overdue: 15 70% 70%;
-    --status-completed: 180 40% 60%; /* Greenish primary */
-    --task-completed-bg: 25 20% 25%; /* Slightly darker background for completed task */
-    --priority-low: 180 40% 60%;
-    --priority-medium: 25 60% 80%;
-    --priority-high: 15 70% 70%;
-    --priority-urgent: 25 10% 90%;
-    --gradient-start-dark: 180 25% 20%;
-    --gradient-end-dark: 25 20% 20%;
   }
 
   .calm-mist {
     --background: 140 10% 96%;
     --foreground: 0 0% 20%;
-    --card: 140 10% 96%; /* Same as background */
+    --card: 140 10% 96%;
     --card-foreground: 0 0% 20%;
+    --popover: 140 10% 96%;
+    --popover-foreground: 0 0% 20%;
     --primary: 140 25% 45%;
     --primary-foreground: 0 0% 100%;
     --secondary: 140 15% 75%;
@@ -193,25 +180,18 @@
     --destructive: 15 60% 55%;
     --destructive-foreground: 0 0% 100%;
     --border: 140 10% 90%;
-    --input: 140 10% 98%; /* Slightly off-white for input background */
+    --input: 140 10% 90%;
     --ring: 0 0% 20%;
-    --border-status-due-today: 30 25% 65%;
-    --border-status-overdue: 15 60% 55%;
-    --status-completed: 140 25% 45%; /* Greenish primary */
-    --task-completed-bg: 140 10% 98%;
-    --priority-low: 140 25% 45%;
-    --priority-medium: 30 25% 65%;
-    --priority-high: 15 60% 55%;
-    --priority-urgent: 0 0% 20%;
-    --gradient-start-light: 140 15% 98%;
-    --gradient-end-light: 140 10% 98%;
+    --radius: 0.5rem;
   }
 
   .dark .calm-mist {
     --background: 140 20% 15%;
     --foreground: 140 10% 90%;
-    --card: 140 20% 15%; /* Same as background */
+    --card: 140 20% 20%;
     --card-foreground: 140 10% 90%;
+    --popover: 140 20% 20%;
+    --popover-foreground: 140 10% 90%;
     --primary: 140 30% 60%;
     --primary-foreground: 0 0% 100%;
     --secondary: 140 20% 80%;
@@ -223,24 +203,14 @@
     --destructive: 15 70% 70%;
     --destructive-foreground: 0 0% 100%;
     --border: 140 20% 30%;
-    --input: 140 20% 20%; /* Slightly lighter dark for input background */
+    --input: 140 20% 30%;
     --ring: 0 0% 80%;
-    --border-status-due-today: 30 30% 70%;
-    --border-status-overdue: 15 70% 70%;
-    --status-completed: 140 30% 60%; /* Greenish primary */
-    --task-completed-bg: 140 20% 25%;
-    --priority-low: 140 30% 60%;
-    --priority-medium: 30 30% 70%;
-    --priority-high: 15 70% 70%;
-    --priority-urgent: 140 10% 90%;
-    --gradient-start-dark: 140 25% 20%;
-    --gradient-end-dark: 140 20% 20%;
   }
 
   .warm-dawn {
     --background: 30 10% 97%;
     --foreground: 0 0% 30%;
-    --card: 30 10% 97%; /* Same as background */
+    --card: 30 10% 97%;
     --card-foreground: 0 0% 30%;
     --popover: 30 10% 97%;
     --popover-foreground: 0 0% 30%;
@@ -255,24 +225,15 @@
     --destructive: 15 60% 55%;
     --destructive-foreground: 0 0% 100%;
     --border: 30 10% 92%;
-    --input: 30 10% 98%; /* Slightly off-white for input background */
+    --input: 30 10% 92%;
     --ring: 0 0% 30%;
-    --border-status-due-today: 15 20% 70%;
-    --border-status-overdue: 15 60% 55%;
-    --status-completed: 140 10% 75%; /* Greenish secondary */
-    --task-completed-bg: 30 10% 98%;
-    --priority-low: 140 10% 75%;
-    --priority-medium: 15 20% 70%;
-    --priority-high: 15 60% 55%;
-    --priority-urgent: 0 0% 30%;
-    --gradient-start-light: 30 15% 98%;
-    --gradient-end-light: 30 10% 98%;
+    --radius: 0.5rem;
   }
 
   .dark .warm-dawn {
     --background: 30 20% 18%;
     --foreground: 30 10% 92%;
-    --card: 30 20% 18%; /* Same as background */
+    --card: 30 20% 23%;
     --card-foreground: 30 10% 92%;
     --popover: 30 20% 23%;
     --popover-foreground: 30 10% 92%;
@@ -287,24 +248,14 @@
     --destructive: 15 70% 70%;
     --destructive-foreground: 0 0% 100%;
     --border: 30 20% 35%;
-    --input: 30 20% 23%; /* Slightly lighter dark for input background */
+    --input: 30 20% 35%;
     --ring: 0 0% 85%;
-    --border-status-due-today: 15 25% 75%;
-    --border-status-overdue: 15 70% 70%;
-    --status-completed: 140 15% 85%; /* Greenish secondary */
-    --task-completed-bg: 30 20% 28%;
-    --priority-low: 140 15% 85%;
-    --priority-medium: 15 25% 75%;
-    --priority-high: 15 70% 70%;
-    --priority-urgent: 30 10% 92%;
-    --gradient-start-dark: 30 25% 23%;
-    --gradient-end-dark: 30 20% 23%;
   }
 
   .gentle-night {
     --background: 220 10% 95%;
     --foreground: 220 15% 25%;
-    --card: 220 10% 95%; /* Same as background */
+    --card: 220 10% 95%;
     --card-foreground: 220 15% 25%;
     --popover: 220 10% 95%;
     --popover-foreground: 220 15% 25%;
@@ -319,25 +270,18 @@
     --destructive: 15 60% 55%;
     --destructive-foreground: 0 0% 100%;
     --border: 220 10% 88%;
-    --input: 220 10% 98%; /* Slightly off-white for input background */
+    --input: 220 10% 88%;
     --ring: 220 15% 35%;
-    --border-status-due-today: 30 25% 65%;
-    --border-status-overdue: 15 60% 55%;
-    --status-completed: 220 25% 45%; /* Primary color */
-    --task-completed-bg: 220 10% 98%;
-    --priority-low: 220 25% 45%;
-    --priority-medium: 30 25% 65%;
-    --priority-high: 15 60% 55%;
-    --priority-urgent: 220 15% 25%;
-    --gradient-start-light: 220 15% 98%;
-    --gradient-end-light: 220 10% 98%;
+    --radius: 0.5rem;
   }
 
   .dark .gentle-night {
     --background: 220 20% 18%;
     --foreground: 220 15% 92%;
-    --card: 220 20% 18%; /* Same as background */
+    --card: 220 20% 23%;
     --card-foreground: 220 15% 92%;
+    --popover: 220 20% 23%;
+    --popover-foreground: 220 15% 92%;
     --primary: 220 30% 60%;
     --primary-foreground: 0 0% 100%;
     --secondary: 220 15% 85%;
@@ -349,86 +293,14 @@
     --destructive: 15 70% 70%;
     --destructive-foreground: 0 0% 100%;
     --border: 220 20% 35%;
-    --input: 220 20% 23%; /* Slightly lighter dark for input background */
+    --input: 220 20% 35%;
     --ring: 220 20% 85%;
-    --border-status-due-today: 30 30% 70%;
-    --border-status-overdue: 15 70% 70%;
-    --status-completed: 220 30% 60%; /* Primary color */
-    --task-completed-bg: 220 20% 28%;
-    --priority-low: 220 30% 60%;
-    --priority-medium: 30 30% 70%;
-    --priority-high: 15 70% 70%;
-    --priority-urgent: 220 15% 92%;
-    --gradient-start-dark: 220 25% 23%;
-    --gradient-end-dark: 220 20% 23%;
-  }
-
-  .cosmic-dusk {
-    --background: 225 30% 8%;
-    --foreground: 225 15% 92%;
-    --card: 225 30% 8%; /* Same as background */
-    --card-foreground: 225 15% 92%;
-    --popover: 225 35% 12%;
-    --popover-foreground: 225 15% 92%;
-    --primary: 225 45% 55%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 225 30% 65%;
-    --secondary-foreground: 225 15% 92%;
-    --muted: 225 35% 12%;
-    --muted-foreground: 225 15% 70%;
-    --accent: 345 55% 70%;
-    --accent-foreground: 225 15% 92%;
-    --destructive: 25 75% 65%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 225 30% 20%;
-    --input: 225 30% 15%; /* Slightly lighter dark for input background */
-    --ring: 225 20% 85%;
-    --border-status-due-today: 345 55% 70%;
-    --border-status-overdue: 25 75% 65%;
-    --status-completed: 225 45% 55%; /* Primary color */
-    --task-completed-bg: 225 35% 18%;
-    --priority-low: 225 45% 55%;
-    --priority-medium: 345 55% 70%;
-    --priority-high: 25 75% 65%;
-    --priority-urgent: 225 15% 92%;
-    --gradient-start-dark: 225 35% 18%;
-    --gradient-end-dark: 225 30% 18%;
-  }
-
-  .dark .cosmic-dusk {
-    --background: 225 30% 8%;
-    --foreground: 225 15% 92%;
-    --card: 225 35% 12%;
-    --card-foreground: 225 15% 92%;
-    --popover: 225 35% 12%;
-    --popover-foreground: 225 15% 92%;
-    --primary: 225 45% 55%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 225 30% 65%;
-    --secondary-foreground: 225 15% 92%;
-    --muted: 225 35% 12%;
-    --muted-foreground: 225 15% 70%;
-    --accent: 345 55% 70%;
-    --accent-foreground: 225 15% 92%;
-    --destructive: 25 75% 65%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 225 30% 20%;
-    --input: 225 30% 15%; /* Slightly lighter dark for input background */
-    --ring: 225 20% 85%;
-    --border-status-due-today: 345 55% 70%;
-    --border-status-overdue: 25 75% 65%;
-    --status-completed: 225 45% 55%; /* Primary color */
-    --task-completed-bg: 225 35% 18%;
-    --priority-low: 225 45% 55%;
-    --priority-medium: 345 55% 70%;
-    --priority-high: 25 75% 65%;
-    --priority-urgent: 225 15% 92%;
   }
 
   .focus-flow {
     --background: 200 15% 98%;
     --foreground: 200 20% 15%;
-    --card: 200 15% 98%; /* Same as background */
+    --card: 200 15% 98%;
     --card-foreground: 200 20% 15%;
     --popover: 200 15% 98%;
     --popover-foreground: 200 20% 15%;
@@ -443,24 +315,15 @@
     --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 100%;
     --border: 200 15% 90%;
-    --input: 200 15% 98%; /* Slightly off-white for input background */
+    --input: 200 15% 90%;
     --ring: 200 20% 20%;
-    --border-status-due-today: 60 70% 45%;
-    --border-status-overdue: 0 70% 55%;
-    --status-completed: 200 60% 35%; /* Primary color */
-    --task-completed-bg: 200 15% 98%;
-    --priority-low: 200 60% 35%;
-    --priority-medium: 60 70% 45%;
-    --priority-high: 0 70% 55%;
-    --priority-urgent: 200 20% 15%;
-    --gradient-start-light: 200 20% 98%;
-    --gradient-end-light: 200 15% 98%;
+    --radius: 0.5rem;
   }
 
   .dark .focus-flow {
     --background: 200 25% 12%;
     --foreground: 200 15% 92%;
-    --card: 200 25% 12%; /* Same as background */
+    --card: 200 30% 16%;
     --card-foreground: 200 15% 92%;
     --popover: 200 30% 16%;
     --popover-foreground: 200 15% 92%;
@@ -475,24 +338,14 @@
     --destructive: 0 75% 60%;
     --destructive-foreground: 0 0% 100%;
     --border: 200 30% 25%;
-    --input: 200 30% 20%; /* Slightly lighter dark for input background */
+    --input: 200 30% 25%;
     --ring: 200 25% 85%;
-    --border-status-due-today: 60 75% 55%;
-    --border-status-overdue: 0 75% 60%;
-    --status-completed: 200 65% 45%; /* Primary color */
-    --task-completed-bg: 200 30% 20%;
-    --priority-low: 200 65% 45%;
-    --priority-medium: 60 75% 55%;
-    --priority-high: 0 75% 60%;
-    --priority-urgent: 200 15% 92%;
-    --gradient-start-dark: 200 30% 18%;
-    --gradient-end-dark: 200 25% 18%;
   }
 
   .retro-wave {
     --background: 240 20% 98%;
     --foreground: 240 10% 20%;
-    --card: 240 20% 98%; /* Same as background */
+    --card: 240 20% 98%;
     --card-foreground: 240 10% 20%;
     --popover: 240 20% 98%;
     --popover-foreground: 240 10% 20%;
@@ -507,18 +360,9 @@
     --destructive: 0 80% 60%; /* Sharp Red */
     --destructive-foreground: 0 0% 100%;
     --border: 240 10% 85%;
-    --input: 240 20% 98%; /* Slightly off-white for input background */
+    --input: 240 10% 85%;
     --ring: 240 10% 20%;
-    --border-status-due-today: 40 90% 60%;
-    --border-status-overdue: 0 80% 60%;
-    --status-completed: 180 70% 50%; /* Secondary color */
-    --task-completed-bg: 240 20% 98%;
-    --priority-low: 180 70% 50%;
-    --priority-medium: 40 90% 60%;
-    --priority-high: 0 80% 60%;
-    --priority-urgent: 300 80% 55%;
-    --gradient-start-light: 300 80% 98%;
-    --gradient-end-light: 240 20% 98%;
+    --radius: 0.5rem;
   }
 
   .dark .retro-wave {
@@ -534,23 +378,13 @@
     --secondary-foreground: 240 10% 95%;
     --muted: 260 30% 18%;
     --muted-foreground: 240 10% 70%;
-    --accent: 40 95% 70%;
+    --accent: 40 95% 70%; /* Brighter Yellow-Orange */
     --accent-foreground: 240 10% 95%;
     --destructive: 0 90% 70%;
     --destructive-foreground: 0 0% 100%;
     --border: 260 30% 25%;
-    --input: 260 30% 18%; /* Slightly lighter dark for input background */
+    --input: 260 30% 25%;
     --ring: 240 10% 85%;
-    --border-status-due-today: 40 95% 70%;
-    --border-status-overdue: 0 90% 70%;
-    --status-completed: 180 80% 60%; /* Secondary color */
-    --task-completed-bg: 260 35% 18%;
-    --priority-low: 180 80% 60%;
-    --priority-medium: 40 95% 70%;
-    --priority-high: 0 90% 70%;
-    --priority-urgent: 300 90% 65%;
-    --gradient-start-dark: 300 80% 15%;
-    --gradient-end-dark: 260 40% 15%;
   }
 
   .sepia-dusk {
@@ -571,18 +405,9 @@
     --destructive: 6 48% 31%;
     --destructive-foreground: 270 100% 98%;
     --border: 29 48% 81%;
-    --input: 29 70% 92%; /* Slightly off-white for input background */
+    --input: 29 70% 92%;
     --ring: 270 28% 36%;
-    --border-status-due-today: 99 25% 30%;
-    --border-status-overdue: 6 48% 31%;
-    --status-completed: 99 25% 30%; /* Accent color */
-    --task-completed-bg: 29 70% 92%;
-    --priority-low: 99 25% 30%;
-    --priority-medium: 29 48% 81%;
-    --priority-high: 6 48% 31%;
-    --priority-urgent: 270 28% 36%;
-    --gradient-start-light: 270 30% 92%;
-    --gradient-end-light: 29 70% 92%;
+    --radius: 0.5rem;
   }
 
   .dark .sepia-dusk {
@@ -603,18 +428,8 @@
     --destructive: 6 48% 46%;
     --destructive-foreground: 270 100% 98%;
     --border: 29 29% 26%;
-    --input: 29 29% 18%; /* Slightly lighter dark for input background */
+    --input: 29 29% 18%;
     --ring: 270 28% 54%;
-    --border-status-due-today: 99 34% 38%;
-    --border-status-overdue: 6 48% 46%;
-    --status-completed: 99 34% 38%; /* Accent color */
-    --task-completed-bg: 29 29% 18%;
-    --priority-low: 99 34% 38%;
-    --priority-medium: 29 29% 21%;
-    --priority-high: 6 48% 46%;
-    --priority-urgent: 270 28% 54%;
-    --gradient-start-dark: 270 20% 18%;
-    --gradient-end-dark: 29 29% 18%;
   }
 
   .vibrant-flow {
@@ -635,18 +450,9 @@
     --destructive: 0 80% 60%;
     --destructive-foreground: 0 0% 100%;
     --border: 210 10% 85%;
-    --input: 210 20% 98%; /* Slightly off-white for input background */
+    --input: 210 20% 98%;
     --ring: 210 10% 20%;
-    --border-status-due-today: 40 90% 60%;
-    --border-status-overdue: 0 80% 60%;
-    --status-completed: 180 70% 50%; /* Secondary color */
-    --task-completed-bg: 210 20% 98%;
-    --priority-low: 180 70% 50%;
-    --priority-medium: 40 90% 60%;
-    --priority-high: 0 80% 60%;
-    --priority-urgent: 260 80% 55%;
-    --gradient-start-light: 260 80% 98%;
-    --gradient-end-light: 210 20% 98%;
+    --radius: 0.5rem;
   }
 
   .dark .vibrant-flow {
@@ -667,18 +473,8 @@
     --destructive: 0 90% 70%;
     --destructive-foreground: 0 0% 100%;
     --border: 240 30% 25%;
-    --input: 240 30% 18%; /* Slightly lighter dark for input background */
+    --input: 240 30% 18%;
     --ring: 210 10% 85%;
-    --border-status-due-today: 40 95% 70%;
-    --border-status-overdue: 0 90% 70%;
-    --status-completed: 180 80% 60%; /* Secondary color */
-    --task-completed-bg: 240 35% 18%;
-    --priority-low: 180 80% 60%;
-    --priority-medium: 40 95% 70%;
-    --priority-high: 0 90% 70%;
-    --priority-urgent: 260 90% 65%;
-    --gradient-start-dark: 260 40% 15%;
-    --gradient-end-dark: 240 35% 15%;
   }
 
   .honeycomb {
@@ -705,7 +501,7 @@
     /* Status and Priority colors adjusted for theme */
     --border-status-due-today: 30 80% 60%;
     --border-status-overdue: 0 80% 60%;
-    --status-completed: 90 60% 40%; /* Earthy green */
+    --status-completed': 90 60% 40%; /* Earthy green */
     --task-completed-bg: 40 100% 95%;
     --priority-low: 90 60% 40%;
     --priority-medium: 40 90% 50%;
@@ -739,7 +535,7 @@
     /* Status and Priority colors adjusted for theme */
     --border-status-due-today: 30 80% 75%;
     --border-status-overdue: 0 90% 70%;
-    --status-completed: 90 70% 50%; /* Brighter earthy green */
+    --status-completed': 90 70% 50%; /* Brighter earthy green */
     --task-completed-bg: 30 25% 20%;
     --priority-low: 90 70% 50%;
     --priority-medium: 40 90% 70%;
@@ -773,7 +569,7 @@
     --radius: 0.5rem;
     --border-status-due-today: 200 30% 60%;
     --border-status-overdue: 15 60% 55%;
-    --status-completed: 120 30% 40%;
+    --status-completed': 120 30% 40%;
     --task-completed-bg: 120 10% 98%;
     --priority-low: 120 30% 40%;
     --priority-medium: 200 30% 60%;
@@ -803,7 +599,7 @@
     --ring: 120 10% 80%;
     --border-status-due-today: 200 35% 70%;
     --border-status-overdue: 15 70% 70%;
-    --status-completed: 120 35% 55%;
+    --status-completed': 120 35% 55%;
     --task-completed-bg: 120 20% 25%;
     --priority-low: 120 35% 55%;
     --priority-medium: 200 35% 70%;
@@ -836,7 +632,7 @@
     --radius: 1rem;
     --border-status-due-today: 50 90% 60%;
     --border-status-overdue: 0 80% 60%;
-    --status-completed: 200 80% 60%;
+    --status-completed': 200 80% 60%;
     --task-completed-bg: 0 0% 98%;
     --priority-low: 200 80% 60%;
     --priority-medium: 50 90% 60%;
@@ -868,7 +664,7 @@
     --ring: 330 90% 75%;
     --border-status-due-today: 50 95% 75%;
     --border-status-overdue: 0 90% 70%;
-    --status-completed: 200 90% 70%;
+    --status-completed': 200 90% 70%;
     --task-completed-bg: 240 25% 20%;
     --priority-low: 200 90% 70%;
     --priority-medium: 50 95% 75%;
@@ -894,7 +690,7 @@
 
   /* Custom checkbox styling to match the image */
   .checkbox-root {
-    @apply rounded-sm; /* Make it square */
+    @apply rounded-full; /* Make it round */
   }
 
   .checkbox-root[data-state="unchecked"] {

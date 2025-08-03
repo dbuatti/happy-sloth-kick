@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, ListTodo, Brain, CheckCircle2, Clock, Target, Edit, ChevronsDownUp } from 'lucide-react';
+import { Plus, ListTodo, Brain, CheckCircle2, Clock, Target, Edit, Sparkles, FolderOpen, Tag, Archive } from 'lucide-react'; // Removed ChevronsDownUp, Settings
 import DateNavigator from '@/components/DateNavigator';
 import TaskFilter from '@/components/TaskFilter';
 import { cn } from '@/lib/utils';
@@ -11,7 +11,9 @@ import { suggestTaskDetails } from '@/integrations/supabase/api';
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
 import { isBefore, isSameDay, parseISO } from 'date-fns';
 import { useSound } from '@/context/SoundContext';
-import { Progress } from '@/components/Progress'; // Import Progress component
+import { Progress } from '@/components/Progress';
+import ManageCategoriesDialog from './ManageCategoriesDialog'; // Import new dialog
+import ManageSectionsDialog from './ManageSectionsDialog'; // Import new dialog
 
 interface DailyTasksHeaderProps {
   currentDate: Date;
@@ -36,7 +38,12 @@ interface DailyTasksHeaderProps {
   nextAvailableTask: Task | null;
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
   onOpenOverview: (task: Task) => void;
-  toggleAllSections: () => void; // New prop
+  createSection: (name: string) => Promise<void>;
+  updateSection: (sectionId: string, newName: string) => Promise<void>;
+  deleteSection: (sectionId: string) => Promise<void>;
+  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
+  doTodayOffIds: Set<string>;
+  archiveAllCompletedTasks: () => Promise<void>;
 }
 
 const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
@@ -60,20 +67,29 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   nextAvailableTask,
   updateTask,
   onOpenOverview,
-  toggleAllSections, // Destructure new prop
+  createSection,
+  updateSection,
+  deleteSection,
+  updateSectionIncludeInFocusMode,
+  doTodayOffIds,
+  archiveAllCompletedTasks,
 }) => {
-  const { dailyTaskCount } = useDailyTaskCount();
+  useDailyTaskCount(); 
   const { playSound } = useSound();
   const [quickAddTaskDescription, setQuickAddTaskDescription] = useState('');
   const quickAddInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
+  const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
+
   const { totalCount, completedCount, overdueCount } = React.useMemo(() => {
     const focusModeSectionIds = new Set(sections.filter(s => s.include_in_focus_mode).map(s => s.id));
 
     const focusTasks = filteredTasks.filter(t =>
-      t.parent_task_id === null && // Only count top-level tasks
-      (t.section_id === null || focusModeSectionIds.has(t.section_id))
+      t.parent_task_id === null &&
+      (t.section_id === null || focusModeSectionIds.has(t.section_id)) &&
+      (t.recurring_type !== 'none' || !doTodayOffIds.has(t.original_task_id || t.id))
     );
 
     const total = focusTasks.length;
@@ -85,7 +101,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
       return isOver;
     }).length;
     return { totalCount: total, completedCount: completed, overdueCount: overdue };
-  }, [filteredTasks, currentDate, sections]);
+  }, [filteredTasks, currentDate, sections, doTodayOffIds]);
 
   const handleQuickAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,7 +142,6 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
     }
   };
 
-  // Sticky shadow cue on scroll logic for the quick add bar
   const [stuck, setStuck] = useState(false);
   const quickAddBarRef = useRef<HTMLDivElement>(null);
 
@@ -136,7 +151,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         setStuck(!entry.isIntersecting);
       },
       {
-        rootMargin: '-1px 0px 0px 0px', // Trigger when 1px of the element is off screen
+        rootMargin: '-1px 0px 0px 0px',
         threshold: [0, 1],
       }
     );
@@ -171,7 +186,6 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
 
   return (
     <div className="flex flex-col bg-gradient-to-br from-[hsl(var(--gradient-start-light))] to-[hsl(var(--gradient-end-light))] dark:from-[hsl(var(--gradient-start-dark))] dark:to-[hsl(var(--gradient-end-dark))] sticky top-0 z-10 shadow-sm">
-      {/* Top Bar: Date Navigator & Focus Mode Button */}
       <div className="flex items-center justify-between px-4 pt-4">
         <DateNavigator
           currentDate={currentDate}
@@ -180,18 +194,37 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
           onGoToToday={() => setCurrentDate(new Date())}
           setCurrentDate={setCurrentDate}
         />
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setIsFocusPanelOpen(true)}
-          aria-label="Open focus tools"
-          className="h-10 w-10"
-        >
-          <Brain className="h-6 w-6" />
-        </Button>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsManageCategoriesOpen(true)}
+            aria-label="Manage Categories"
+            className="h-10 w-10"
+          >
+            <Tag className="h-6 w-6" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsManageSectionsOpen(true)}
+            aria-label="Manage Sections"
+            className="h-10 w-10"
+          >
+            <FolderOpen className="h-6 w-6" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsFocusPanelOpen(true)}
+            aria-label="Open focus tools"
+            className="h-10 w-10"
+          >
+            <Brain className="h-6 w-6" />
+          </Button>
+        </div>
       </div>
 
-      {/* Today's Summary (Pending, Completed, Overdue) - Now with larger Progress Bar */}
       <div className="px-4 pb-3 pt-2">
         <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
           <span className="flex items-center gap-1">
@@ -205,17 +238,23 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         </div>
         <Progress
           value={totalCount > 0 ? (completedCount / totalCount) * 100 : 0}
-          className="h-4 rounded-full" // Larger height
-          indicatorClassName="bg-gradient-to-r from-primary to-accent rounded-full" // Gradient for progress
+          className="h-4 rounded-full"
+          indicatorClassName="bg-gradient-to-r from-primary to-accent rounded-full"
         />
-        {overdueCount > 0 && (
-          <p className="text-sm text-destructive mt-2 flex items-center gap-1">
-            <Clock className="h-4 w-4" /> {overdueCount} overdue
-          </p>
-        )}
+        <div className="flex items-center justify-between mt-2">
+          {overdueCount > 0 ? (
+            <p className="text-sm text-destructive flex items-center gap-1">
+              <Clock className="h-4 w-4" /> {overdueCount} overdue
+            </p>
+          ) : <div />}
+          {completedCount > 0 && (
+            <Button variant="outline" size="sm" onClick={archiveAllCompletedTasks} className="h-8 text-xs">
+              <Archive className="mr-2 h-3.5 w-3.5" /> Archive Completed
+            </Button>
+          )}
+        </div>
       </div>
 
-      {/* NEW: Next Up Task Display */}
       <div className="bg-card p-6 mx-4 rounded-xl shadow-lg mb-4 flex flex-col items-center text-center">
         <h3 className="text-xl font-bold text-primary mb-3 flex items-center gap-2">
           <Target className="h-6 w-6" /> Your Next Task
@@ -244,7 +283,6 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         )}
       </div>
 
-      {/* Quick Add Task Bar */}
       <div
         ref={quickAddBarRef}
         className={cn(
@@ -256,19 +294,18 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
           <div className="flex items-center gap-2">
             <Input
               ref={quickAddInputRef}
-              placeholder='Quick add a task — press "/" to focus, Enter to add'
+              placeholder='Quick add a task (AI-powered) — press "/" to focus, Enter to add'
               value={quickAddTaskDescription}
               onChange={(e) => setQuickAddTaskDescription(e.target.value)}
               className="flex-1 h-10 text-base"
             />
             <Button type="submit" className="whitespace-nowrap h-10 text-base">
-              <Plus className="mr-1 h-4 w-4" /> Add
+              <Plus className="mr-1 h-4 w-4" /> Add <Sparkles className="ml-1 h-4 w-4" />
             </Button>
           </div>
         </form>
       </div>
 
-      {/* Task Filter and Search */}
       <TaskFilter
         currentDate={currentDate}
         setCurrentDate={setCurrentDate}
@@ -285,6 +322,24 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         sections={sections}
         allCategories={allCategories}
         searchRef={searchInputRef}
+      />
+
+      <ManageCategoriesDialog
+        isOpen={isManageCategoriesOpen}
+        onClose={() => setIsManageCategoriesOpen(false)}
+        categories={allCategories}
+        onCategoryCreated={() => {}}
+        onCategoryDeleted={() => {}}
+      />
+
+      <ManageSectionsDialog
+        isOpen={isManageSectionsOpen}
+        onClose={() => setIsManageSectionsOpen(false)}
+        sections={sections}
+        createSection={createSection}
+        updateSection={updateSection}
+        deleteSection={deleteSection}
+        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
       />
     </div>
   );

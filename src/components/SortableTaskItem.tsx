@@ -10,8 +10,6 @@ interface SortableTaskItemProps {
   onStatusChange: (taskId: string, newStatus: Task['status']) => Promise<void>;
   onDelete: (taskId: string) => void;
   onUpdate: (taskId: string, updates: Partial<Task>) => void;
-  isSelected: boolean;
-  onToggleSelect: (taskId: string, checked: boolean) => void;
   sections: { id: string; name: string }[];
   onOpenOverview: (task: Task) => void;
   currentDate: Date;
@@ -20,6 +18,10 @@ interface SortableTaskItemProps {
   level: number; // New prop for indentation level
   allTasks: Task[]; // Pass all tasks to filter subtasks
   isOverlay?: boolean; // New prop for drag overlay
+  setFocusTask: (taskId: string | null) => Promise<void>;
+  isDoToday: boolean;
+  toggleDoToday: (task: Task) => void;
+  doTodayOffIds: Set<string>;
 }
 
 const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
@@ -27,23 +29,24 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   level,
   allTasks,
   isOverlay = false, // Default to false
+  setFocusTask,
+  isDoToday,
+  toggleDoToday,
+  doTodayOffIds,
   ...rest
 }) => {
-  // Conditionally use useSortable
-  const sortable = !isOverlay ? useSortable({ id: task.id, data: { type: 'task', task } }) : null;
-
-  const attributes = sortable?.attributes;
-  const listeners = sortable?.listeners; // Get listeners here
-  const setNodeRef = sortable?.setNodeRef || null; // Use null if not sortable
-  const transform = sortable?.transform;
-  const transition = sortable?.transition;
-  const isDragging = sortable?.isDragging || false; // Default to false if not sortable
-
-  const style: React.CSSProperties = { // Explicitly type as React.CSSProperties
-    transform: CSS.Transform.toString(transform || null), // Ensure transform is Transform | null
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
     transition,
-    zIndex: isDragging ? 10 : 'auto', // Original item should be behind overlay
-    // If it's the original item being dragged, make it invisible
+    isDragging,
+  } = useSortable({ id: task.id, data: { type: 'task', task } });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform || null), // Correctly handle null transform
+    transition,
     opacity: isDragging && !isOverlay ? 0 : 1,
     visibility: isDragging && !isOverlay ? 'hidden' : 'visible',
     paddingLeft: `${level * 12}px`,
@@ -61,17 +64,19 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         isDragging && !isOverlay ? "" : "rounded-lg", // Only apply border/rounded-lg if not the invisible original
         isOverlay ? "shadow-xl ring-2 ring-primary bg-card" : "", // Apply distinct styles for the overlay
         level > 0 ? "border-l border-l-primary/50" : "",
-        "flex items-center",
-        isOverlay ? "cursor-grabbing" : ""
+        "flex items-center"
       )}
-      {...(attributes || {})} // Apply attributes to the li
+      {...attributes}
     >
       <div className="flex-1"> {/* This div now contains the TaskItem and subtasks */}
         <TaskItem
           task={task}
           {...rest}
           isOverlay={isOverlay}
-          dragListeners={listeners} // Pass listeners to TaskItem
+          dragListeners={listeners}
+          setFocusTask={setFocusTask}
+          isDoToday={isDoToday}
+          toggleDoToday={toggleDoToday}
         />
         {directSubtasks.length > 0 && (
           <ul className="list-none mt-1.5 space-y-1.5">
@@ -83,6 +88,10 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
                 allTasks={allTasks}
                 {...rest}
                 isOverlay={isOverlay}
+                setFocusTask={setFocusTask}
+                isDoToday={!doTodayOffIds.has(subtask.original_task_id || subtask.id)}
+                toggleDoToday={toggleDoToday}
+                doTodayOffIds={doTodayOffIds}
               />
             ))}
           </ul>

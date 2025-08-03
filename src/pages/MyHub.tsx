@@ -2,10 +2,11 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings as SettingsIcon, BarChart3, Archive as ArchiveIcon } from 'lucide-react';
+import { Settings as SettingsIcon, BarChart3, Archive as ArchiveIcon, HelpCircle } from 'lucide-react';
 import Settings from './Settings'; // Import new Settings page
 import Analytics from './Analytics'; // Import new Analytics page
 import Archive from './Archive'; // Import new Archive page
+import Help from './Help'; // Import Help page
 
 const MyHub: React.FC = () => {
   return (
@@ -17,7 +18,7 @@ const MyHub: React.FC = () => {
           </CardHeader>
           <CardContent className="pt-0">
             <Tabs defaultValue="settings" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4"> {/* Changed to grid-cols-4 */}
                 <TabsTrigger value="settings">
                   <SettingsIcon className="h-4 w-4 mr-2" /> Settings
                 </TabsTrigger>
@@ -26,6 +27,9 @@ const MyHub: React.FC = () => {
                 </TabsTrigger>
                 <TabsTrigger value="archive">
                   <ArchiveIcon className="h-4 w-4 mr-2" /> Archive
+                </TabsTrigger>
+                <TabsTrigger value="help"> {/* New Help Tab */}
+                  <HelpCircle className="h-4 w-4 mr-2" /> Help
                 </TabsTrigger>
               </TabsList>
 
@@ -37,6 +41,9 @@ const MyHub: React.FC = () => {
               </TabsContent>
               <TabsContent value="archive" className="mt-4">
                 <Archive />
+              </TabsContent>
+              <TabsContent value="help" className="mt-4"> {/* New Help Content */}
+                <Help />
               </TabsContent>
             </Tabs>
           </CardContent>

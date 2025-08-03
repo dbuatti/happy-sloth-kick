@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
-import { Plus, ListTodo, ChevronsDownUp } from 'lucide-react'; // Import ChevronsDownUp
+import { Plus, ListTodo, ChevronsDownUp } from 'lucide-react';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -9,13 +9,13 @@ import {
   DndContext,
   closestCenter,
   KeyboardSensor,
+  PointerSensor,
   useSensor,
   useSensors,
   DragEndEvent,
   DragStartEvent,
   DragOverlay,
   UniqueIdentifier,
-  DragOverEvent,
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -23,12 +23,13 @@ import {
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
 import { createPortal } from 'react-dom';
-import { CustomPointerSensor } from '@/lib/CustomPointerSensor';
 import SortableTaskItem from './SortableTaskItem';
 import SortableSectionHeader from './SortableSectionHeader';
 import TaskForm from './TaskForm';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
+import TaskItem from './TaskItem';
+import QuickAddTask from './QuickAddTask';
 
 interface TaskListProps {
   tasks: Task[];
@@ -37,10 +38,7 @@ interface TaskListProps {
   handleAddTask: (taskData: any) => Promise<any>;
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
   deleteTask: (taskId: string) => void;
-  selectedTaskIds: string[];
-  toggleTaskSelection: (taskId: string, checked: boolean) => void;
-  clearSelectedTasks: () => void;
-  bulkUpdateTasks: (updates: Partial<Task>, ids?: string[]) => Promise<void>;
+  bulkUpdateTasks: (updates: Partial<Task>, ids: string[]) => Promise<void>;
   markAllTasksInSectionCompleted: (sectionId: string | null) => Promise<void>;
   sections: TaskSection[];
   createSection: (name: string) => Promise<void>;
@@ -54,9 +52,12 @@ interface TaskListProps {
   onOpenOverview: (task: Task) => void;
   currentDate: Date;
   setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
-  expandedSections: Record<string, boolean>; // New prop
-  toggleSection: (sectionId: string) => void; // New prop
-  toggleAllSections: () => void; // New prop
+  expandedSections: Record<string, boolean>;
+  toggleSection: (sectionId: string) => void;
+  toggleAllSections: () => void;
+  setFocusTask: (taskId: string | null) => Promise<void>;
+  doTodayOffIds: Set<string>;
+  toggleDoToday: (task: Task) => void;
 }
 
 const TaskList: React.FC<TaskListProps> = (props) => {
@@ -67,10 +68,9 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     handleAddTask,
     updateTask,
     deleteTask,
-    selectedTaskIds,
-    toggleTaskSelection,
     markAllTasksInSectionCompleted,
     sections,
+    createSection,
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode,
@@ -79,13 +79,16 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     allCategories,
     onOpenOverview,
     currentDate,
-    expandedSections, // Destructure new prop
-    toggleSection, // Destructure new prop
-    toggleAllSections, // Destructure new prop
+    expandedSections,
+    toggleSection,
+    toggleAllSections,
+    setFocusTask,
+    doTodayOffIds,
+    toggleDoToday,
   } = props;
 
   const { user } = useAuth();
-  const userId = user?.id || null;
+  const userId = user?.id || '';
 
   const [isAddTaskOpenLocal, setIsAddTaskOpenLocal] = useState(false);
   const [preselectedSectionId, setPreselectedSectionId] = useState<string | null>(null);
@@ -94,29 +97,82 @@ const TaskList: React.FC<TaskListProps> = (props) => {
   const [activeItemData, setActiveItemData] = useState<Task | TaskSection | null>(null);
 
   const sensors = useSensors(
-    useSensor(CustomPointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        delay: 150, // ms
+        tolerance: 5, // px
+      },
+      onActivation: ({ event }) => {
+        const target = event.target as HTMLElement;
+        // Prevent drag from starting on any interactive element inside the task item
+        if (
+          target.closest('button') ||
+          target.closest('a') ||
+          target.closest('input') ||
+          target.closest('[role="button"]') || // This covers the Switch component
+          target.closest('[data-no-dnd="true"]')
+        ) {
+          return false; // Do not start dragging
+        }
+        return true; // Allow dragging
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
   );
+
+  const tasksMap = useMemo(() => new Map(tasks.map(task => [task.id, task])), [tasks]);
+  const getTaskById = useCallback((id: UniqueIdentifier | null) => {
+      if (!id) return undefined;
+      return tasksMap.get(String(id));
+  }, [tasksMap]);
+
+  const defaultCategory = useMemo(() => {
+    return allCategories.find(c => c.name.toLowerCase() === 'general') || allCategories[0];
+  }, [allCategories]);
 
   const allSortableSections = useMemo(() => {
     const noSection: TaskSection = {
       id: 'no-section-header',
       name: 'No Section',
-      user_id: userId || '',
+      user_id: userId,
       order: sections.length,
       include_in_focus_mode: true,
     };
     return [...sections, noSection];
   }, [sections, userId]);
 
+  const allVisibleItemIds = useMemo(() => {
+    const ids: UniqueIdentifier[] = [];
+    allSortableSections.forEach(section => {
+        ids.push(section.id);
+        const isExpanded = expandedSections[section.id] !== false;
+        if (isExpanded) {
+            const topLevelTasksInSection = filteredTasks
+                .filter(t => t.parent_task_id === null && (t.section_id === section.id || (t.section_id === null && section.id === 'no-section-header')))
+                .sort((a, b) => (a.order || 0) - (b.order || 0));
+            
+            const addSubtasksRecursively = (tasksToAdd: Task[]) => {
+                tasksToAdd.forEach(task => {
+                    ids.push(task.id);
+                    const subtasks = filteredTasks
+                        .filter(sub => sub.parent_task_id === task.id)
+                        .sort((a, b) => (a.order || 0) - (b.order || 0));
+                    if (subtasks.length > 0) {
+                        addSubtasksRecursively(subtasks);
+                    }
+                });
+            };
+            addSubtasksRecursively(topLevelTasksInSection);
+        }
+    });
+    return ids;
+  }, [allSortableSections, expandedSections, filteredTasks]);
+
   const isSectionHeaderId = (id: UniqueIdentifier | null) => {
     if (!id) return false;
     return id === 'no-section-header' || sections.some(s => s.id === id);
-  };
-
-  const getTaskById = (id: UniqueIdentifier | null) => {
-    if (!id) return undefined;
-    return tasks.find(t => t.id === id);
   };
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -128,10 +184,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     }
   };
 
-  const handleDragOver = (_event: DragOverEvent) => {
-    // No specific logic needed here for now, but required by DndContext
-  };
-
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
 
@@ -141,7 +193,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
       return;
     }
 
-    // Section reordering
     if (isSectionHeaderId(active.id) && isSectionHeaderId(over.id)) {
       const a = String(active.id);
       const b = String(over.id);
@@ -160,7 +211,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
       return;
     }
 
-    // Compute new parent/section
     let newParentId: string | null = null;
     let newSectionId: string | null = null;
     let overId: string | null = null;
@@ -178,7 +228,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
         return;
       }
       newParentId = overTask.parent_task_id;
-      newSectionId = overTask.parent_task_id ? draggedTask.section_id : overTask.section_id;
+      newSectionId = overTask.section_id;
       overId = overTask.id;
     }
 
@@ -194,8 +244,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
 
   return (
     <>
-      {/* Removed compact section overview bar */}
-
       {loading ? (
         <div className="space-y-3">
           {[...Array(5)].map((_, i) => (
@@ -207,48 +255,36 @@ const TaskList: React.FC<TaskListProps> = (props) => {
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
-          <SortableContext items={[...allSortableSections.map(s => s.id)]} strategy={verticalListSortingStrategy}>
-            {/* New: Toggle All Sections Button */}
-            <div className="flex justify-end mb-3"> {/* Increased margin-bottom */}
+          <SortableContext items={allVisibleItemIds} strategy={verticalListSortingStrategy}>
+            <div className="flex justify-end mb-3">
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={toggleAllSections} // Use the prop from DailyTasksV3
+                onClick={toggleAllSections}
                 aria-label="Toggle all sections"
-                className="h-9 px-3" // Increased height
+                className="h-9 px-3"
               >
-                <ChevronsDownUp className="h-5 w-5 mr-2" /> Toggle All Sections {/* Increased icon size */}
+                <ChevronsDownUp className="h-5 w-5 mr-2" /> Toggle All Sections
               </Button>
             </div>
 
             {allSortableSections.map((currentSection: TaskSection, index) => {
               const isExpanded = expandedSections[currentSection.id] !== false;
-
-              // Section-local top-level tasks
               const topLevelTasksInSection = filteredTasks
                 .filter(t => t.parent_task_id === null && (t.section_id === currentSection.id || (t.section_id === null && currentSection.id === 'no-section-header')))
                 .sort((a, b) => (a.order || 0) - (b.order || 0));
-
-              // Calculate remaining tasks for the badge
               const remainingTasksCount = topLevelTasksInSection.filter(t => t.status === 'to-do').length;
-
-              // DnD items for this section only
-              const sectionItemIds = topLevelTasksInSection.map(t => t.id);
 
               return (
                 <div
                   key={currentSection.id}
-                  className={cn(
-                    "mb-4", // Increased margin-bottom
-                    index < allSortableSections.length - 1 && "border-b border-border pb-4" // Increased padding-bottom
-                  )}
+                  className={cn("mb-6", index < allSortableSections.length - 1 && "border-b border-border pb-6")}
                 >
                   <SortableSectionHeader
                     section={currentSection}
-                    sectionTasksCount={remainingTasksCount} // Pass remaining tasks count
+                    sectionTasksCount={remainingTasksCount}
                     isExpanded={isExpanded}
                     toggleSection={toggleSection}
                     handleAddTaskToSpecificSection={(sectionId) => openAddTaskForSection(sectionId)}
@@ -260,44 +296,45 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                   />
 
                   {isExpanded && (
-                    <div className="mt-4 space-y-2"> {/* Increased margin-top and space-y */}
-                      <SortableContext items={sectionItemIds} strategy={verticalListSortingStrategy}>
-                        <ul className="list-none space-y-2"> {/* Increased space-y */}
-                          {topLevelTasksInSection.length === 0 ? (
-                            <div className="text-center text-foreground/80 dark:text-foreground/80 py-4 rounded-xl border-dashed border-border bg-muted/30" data-no-dnd="true"> {/* Increased vertical padding */}
-                              <div className="flex items-center justify-center gap-2 mb-4"> {/* Increased margin-bottom */}
-                                <ListTodo className="h-6 w-6" /> {/* Increased icon size */}
-                                <p className="text-lg font-medium">No tasks in this section yet.</p> {/* Increased font size */}
-                              </div>
-                              <div className="flex items-center justify-center gap-2">
-                                <Button size="lg" onClick={() => openAddTaskForSection(currentSection.id === 'no-section-header' ? null : currentSection.id)} className="h-10"> {/* Increased height */}
-                                  <Plus className="mr-2 h-5 w-5" /> Add Task {/* Increased icon size */}
-                                </Button>
-                              </div>
-                            </div>
-                          ) : (
-                            topLevelTasksInSection.map(task => (
-                              <SortableTaskItem
-                                key={task.id}
-                                task={task}
-                                onStatusChange={async (taskId, newStatus) => updateTask(taskId, { status: newStatus })}
-                                onDelete={deleteTask}
-                                onUpdate={updateTask}
-                                isSelected={selectedTaskIds.includes(task.id)}
-                                onToggleSelect={toggleTaskSelection}
-                                sections={sections}
-                                onOpenOverview={onOpenOverview}
-                                currentDate={currentDate}
-                                onMoveUp={async () => {}}
-                                onMoveDown={async () => {}}
-                                level={0}
-                                allTasks={tasks}
-                                isOverlay={false}
-                              />
-                            ))
-                          )}
-                        </ul>
-                      </SortableContext>
+                    <div className="mt-4 space-y-3">
+                      <ul className="list-none space-y-3">
+                        {topLevelTasksInSection.length > 0 && topLevelTasksInSection.map(task => (
+                          <SortableTaskItem
+                            key={task.id}
+                            task={task}
+                            onStatusChange={async (taskId, newStatus) => updateTask(taskId, { status: newStatus })}
+                            onDelete={deleteTask}
+                            onUpdate={updateTask}
+                            sections={sections}
+                            onOpenOverview={onOpenOverview}
+                            currentDate={currentDate}
+                            onMoveUp={async () => {}}
+                            onMoveDown={async () => {}}
+                            level={0}
+                            allTasks={tasks}
+                            isOverlay={false}
+                            setFocusTask={setFocusTask}
+                            isDoToday={!doTodayOffIds.has(task.id)}
+                            toggleDoToday={toggleDoToday}
+                            doTodayOffIds={doTodayOffIds}
+                          />
+                        ))}
+                      </ul>
+                      <div className="mt-2" data-no-dnd="true">
+                        <QuickAddTask
+                          sectionId={currentSection.id === 'no-section-header' ? null : currentSection.id}
+                          onAddTask={async (data) => { await handleAddTask(data); }}
+                          defaultCategoryId={defaultCategory?.id || ''}
+                        />
+                      </div>
+                      {topLevelTasksInSection.length === 0 && (
+                        <div className="text-center text-foreground/80 dark:text-foreground/80 py-6 rounded-xl border-dashed border-border bg-muted/30" data-no-dnd="true">
+                          <div className="flex items-center justify-center gap-2 mb-4">
+                            <ListTodo className="h-7 w-7" />
+                            <p className="text-xl font-medium">No tasks in this section yet.</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -312,7 +349,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                   <SortableSectionHeader
                     section={activeItemData as TaskSection}
                     sectionTasksCount={
-                      filteredTasks.filter(t => t.parent_task_id === null && (t.section_id === activeItemData.id || (t.section_id === null && activeItemData.id === 'no-section-header'))).filter(t => t.status === 'to-do').length // Filter for remaining tasks
+                      filteredTasks.filter(t => t.parent_task_id === null && (t.section_id === activeItemData.id || (t.section_id === null && activeItemData.id === 'no-section-header'))).filter(t => t.status === 'to-do').length
                     }
                     isExpanded={true}
                     toggleSection={() => {}}
@@ -324,21 +361,20 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                     isOverlay={true}
                   />
                 ) : (
-                  <SortableTaskItem
+                  <TaskItem
                     task={activeItemData as Task}
                     onStatusChange={async () => {}}
                     onDelete={() => {}}
                     onUpdate={() => {}}
-                    isSelected={false}
-                    onToggleSelect={() => {}}
                     sections={sections}
                     onOpenOverview={() => {}}
                     currentDate={currentDate}
                     onMoveUp={async () => {}}
                     onMoveDown={async () => {}}
-                    level={0}
-                    allTasks={tasks}
                     isOverlay={true}
+                    setFocusTask={setFocusTask}
+                    isDoToday={!doTodayOffIds.has((activeItemData as Task).id)}
+                    toggleDoToday={toggleDoToday}
                   />
                 )
               )}
@@ -371,6 +407,10 @@ const TaskList: React.FC<TaskListProps> = (props) => {
             preselectedSectionId={preselectedSectionId ?? undefined}
             currentDate={currentDate}
             autoFocus
+            createSection={createSection}
+            updateSection={updateSection}
+            deleteSection={deleteSection}
+            updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
           />
         </DialogContent>
       </Dialog>

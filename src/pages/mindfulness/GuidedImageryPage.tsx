@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { useSound } from '@/context/SoundContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MadeWithDyad } from '@/components/made-with-dyad';
-import { useAuth } from '@/context/AuthContext'; // Import useAuth
+import { useAuth } from '@/context/AuthContext'; // Re-introduced useAuth
 
 interface ImageryTheme {
   name: string;
@@ -76,8 +76,8 @@ const imageryThemes: ImageryTheme[] = [
 ];
 
 const GuidedImageryPage: React.FC = () => {
-  const { user } = useAuth(); // Use useAuth to get the user
-  const userId = user?.id; // Get userId from useAuth
+  // Removed 'user' from useAuth destructuring as it's not directly used here.
+  useAuth(); 
 
   const { playSound } = useSound();
   const [selectedThemeName, setSelectedThemeName] = useState(imageryThemes[0].name);
@@ -179,7 +179,7 @@ const GuidedImageryPage: React.FC = () => {
           <CardContent className="space-y-6">
             <div className="space-y-2">
               <Select value={selectedThemeName} onValueChange={setSelectedThemeName} disabled={isRunning}>
-                <SelectTrigger className="w-full max-w-[240px] mx-auto h-9">
+                <SelectTrigger className="w-full max-w-[240px] mx-auto h-9 text-base">
                   <SelectValue placeholder="Select a theme" />
                 </SelectTrigger>
                 <SelectContent>
@@ -200,7 +200,7 @@ const GuidedImageryPage: React.FC = () => {
                 <Sparkles className="h-16 w-16 text-primary mx-auto animate-bounce" />
                 <p className="text-xl font-semibold">Meditation Complete!</p>
                 <p className="text-muted-foreground">You've completed your guided imagery session.</p>
-                <Button onClick={resetMeditation} className="h-9">
+                <Button onClick={resetMeditation} className="h-9 text-base">
                   <RefreshCcw className="mr-2 h-4 w-4" /> Start Over
                 </Button>
               </div>
@@ -232,14 +232,14 @@ const GuidedImageryPage: React.FC = () => {
                     size="lg"
                     onClick={isRunning ? pauseTimer : startTimer}
                     className={cn(
-                      "w-28 h-9",
+                      "w-28 h-9 text-base",
                       isRunning ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90"
                     )}
                     disabled={timeRemaining === 0 && !isRunning}
                   >
                     {isRunning ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
                   </Button>
-                  <Button size="lg" variant="outline" onClick={resetMeditation} className="w-28 h-9">
+                  <Button size="lg" variant="outline" onClick={resetMeditation} className="w-28 h-9 text-base">
                     <RefreshCcw className="h-6 w-6" />
                   </Button>
                 </div>

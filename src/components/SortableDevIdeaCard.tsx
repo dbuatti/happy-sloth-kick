@@ -3,7 +3,6 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { DevIdea } from '@/hooks/useDevIdeas';
 import DevIdeaCard from './DevIdeaCard';
-import { showSuccess, showError } from '@/utils/toast';
 
 interface SortableDevIdeaCardProps {
   idea: DevIdea;
@@ -26,30 +25,12 @@ const SortableDevIdeaCard: React.FC<SortableDevIdeaCardProps> = ({ idea, onEdit 
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const handleClick = (e: React.MouseEvent) => {
-    // Prevent copy action if a button inside the card was clicked
-    if ((e.target as HTMLElement).closest('button')) {
-      return;
-    }
-
-    const textToCopy = `${idea.title}${idea.description ? `\n\n${idea.description}` : ''}`;
-    navigator.clipboard.writeText(textToCopy).then(() => {
-      showSuccess('Idea copied to clipboard!');
-    }).catch(err => {
-      console.error('Failed to copy text: ', err);
-      showError('Could not copy idea to clipboard.');
-    });
-  };
-
   return (
     <div 
         ref={setNodeRef} 
         style={style} 
         {...attributes} 
         {...listeners}
-        onClick={handleClick}
-        // The PointerSensor's activationConstraint will prevent this onClick
-        // from firing if a drag is initiated.
     >
         <DevIdeaCard idea={idea} onEdit={onEdit} />
     </div>

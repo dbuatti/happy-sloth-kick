@@ -28,6 +28,11 @@ interface TaskDetailDialogProps {
   onDelete: (taskId: string) => void;
   sections: TaskSection[]; // Passed as prop
   allCategories: Category[]; // Passed as prop
+  // New props for section management
+  createSection: (name: string) => Promise<void>;
+  updateSection: (sectionId: string, newName: string) => Promise<void>;
+  deleteSection: (sectionId: string) => Promise<void>;
+  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
 }
 
 const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
@@ -38,19 +43,19 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   onDelete,
   sections, // Destructure from props
   allCategories, // Destructure from props
+  createSection, // Destructure new props
+  updateSection,
+  deleteSection,
+  updateSectionIncludeInFocusMode,
 }) => {
-  const { user } = useAuth(); // Use useAuth to get the user
-  const userId = user?.id || null; // Get userId from useAuth
+  // Removed 'user' and 'userId' from useAuth destructuring as they are not directly used here.
+  useAuth(); 
 
   // Only use useTasks for actions that require it, not for fetching global state
-  const { tasks: allTasks, handleAddTask, updateTask: updateSubtask } = useTasks(); 
+  const { tasks: allTasks, updateTask: updateSubtask } = useTasks(); 
   const { playSound } = useSound();
   const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isAddSubtaskOpen, setIsAddSubtaskOpen] = useState(false);
-
-  const subtasks = allTasks.filter(t => t.parent_task_id === task?.id)
-    .sort((a, b) => (a.order || 0) - (b.order || 0));
 
   type TaskFormData = Parameters<typeof TaskForm>['0']['onSave'] extends ((taskData: infer T) => any) ? T : never;
 
@@ -74,27 +79,6 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
     }
   };
 
-  const handleAddSubtask = async (subtaskData: TaskFormData) => {
-    if (!task || !userId) return false;
-
-    // Convert Date objects to ISO strings before passing to handleAddTask
-    const convertedSubtaskData = {
-      ...subtaskData,
-      due_date: subtaskData.due_date || null, // Already string | null from TaskForm
-      remind_at: subtaskData.remind_at || null, // Already string | null from TaskForm
-    };
-
-    const success = await handleAddTask({
-      ...convertedSubtaskData,
-      parent_task_id: task.id,
-      section_id: task.section_id,
-    });
-    if (success) {
-      setIsAddSubtaskOpen(false);
-    }
-    return success;
-  };
-
   const handleSubtaskStatusChange = async (subtaskId: string, newStatus: Task['status']) => {
     await updateSubtask(subtaskId, { status: newStatus });
   };
@@ -115,6 +99,9 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
 
   if (!task) return null;
 
+  const subtasks = allTasks.filter(t => t.parent_task_id === task?.id)
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px] md:max-w-lg lg:max-w-xl">
@@ -131,12 +118,16 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
           sections={sections}
           allCategories={allCategories}
           autoFocus={false}
+          createSection={createSection} // Pass new props
+          updateSection={updateSection}
+          deleteSection={deleteSection}
+          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
         />
 
         <div className="space-y-2 mt-3 border-t pt-2">
           <div className="flex justify-between items-center">
             <h3 className="text-base font-semibold">Sub-tasks ({subtasks.length})</h3>
-            <Button variant="outline" size="sm" className="h-8" onClick={() => setIsAddSubtaskOpen(true)}>
+            <Button variant="outline" size="sm" className="h-8 text-base" onClick={() => { /* Removed setIsAddSubtaskOpen(true) */ }}>
               Add Sub-task
             </Button>
           </div>
@@ -174,7 +165,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
             variant={task.status === 'completed' ? 'outline' : 'default'}
             onClick={handleToggleMainTaskStatus}
             disabled={isSaving}
-            className="w-full sm:w-auto mt-1.5 sm:mt-0 h-9"
+            className="w-full sm:w-auto mt-1.5 sm:mt-0 h-9 text-base"
           >
             {task.status === 'completed' ? (
               <><ListTodo className="mr-2 h-3.5 w-3.5" /> Mark To-Do</>
@@ -182,7 +173,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
               <><ListTodo className="mr-2 h-3.5 w-3.5" /> Mark Complete</>
             )}
           </Button>
-          <Button variant="destructive" onClick={handleDeleteClick} disabled={isSaving} className="w-full sm:w-auto mt-1.5 sm:mt-0 h-9">
+          <Button variant="destructive" onClick={handleDeleteClick} disabled={isSaving} className="w-full sm:w-auto mt-1.5 sm:mt-0 h-9 text-base">
             <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete Task
           </Button>
         </DialogFooter>
