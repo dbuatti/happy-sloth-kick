@@ -89,8 +89,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
   const [loading, setLoading] = useState(true);
   const [doTodayOffIds, setDoTodayOffIds] = useState<Set<string>>(new Set());
 
-  const isReorderingRef = useRef(false);
-  const isUpdatingRef = useRef(false);
+  const inFlightUpdatesRef = useRef(new Set<string>());
 
   const [searchFilter, setSearchFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -202,8 +201,9 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
         'postgres_changes',
         { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${userId}` },
         (payload) => {
-          if (isReorderingRef.current || isUpdatingRef.current) return;
           const newOrOldTask = (payload.new || payload.old) as Task;
+          if (inFlightUpdatesRef.current.has(newOrOldTask.id)) return;
+
           const categoryColor = categoriesMapRef.current.get(newOrOldTask.category) || 'gray';
 
           if (payload.eventType === 'INSERT') {
@@ -230,8 +230,9 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
         'postgres_changes',
         { event: '*', schema: 'public', table: 'task_sections', filter: `user_id=eq.${userId}` },
         (payload) => {
-          if (isReorderingRef.current) return;
           const newOrOldSection = (payload.new || payload.old) as TaskSection;
+          if (inFlightUpdatesRef.current.has(newOrOldSection.id)) return;
+
           if (payload.eventType === 'INSERT') {
             setSections(prev => [...prev, newOrOldSection].sort((a, b) => (a.order || 0) - (b.order || 0)));
           } else if (payload.eventType === 'UPDATE') {
@@ -250,8 +251,9 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
         'postgres_changes',
         { event: '*', schema: 'public', table: 'task_categories', filter: `user_id=eq.${userId}` },
         (payload) => {
-          if (isReorderingRef.current) return;
           const newOrOldCategory = (payload.new || payload.old) as Category;
+          if (inFlightUpdatesRef.current.has(newOrOldCategory.id)) return;
+
           if (payload.eventType === 'INSERT') {
             setAllCategories(prev => [...prev, newOrOldCategory]);
           } else if (payload.eventType === 'UPDATE') {
@@ -356,7 +358,8 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       showError('User not authenticated.');
       return false;
     }
-    isUpdatingRef.current = true;
+    const newTaskClientSideId = uuidv4();
+    inFlightUpdatesRef.current.add(newTaskClientSideId);
     try {
       const categoryColor = allCategoriesRef.current.find(cat => cat.id === newTaskData.category)?.color || 'gray';
       const parentId = newTaskData.parent_task_id || null;
@@ -370,7 +373,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       const newOrder = siblings.length;
 
       const newTask: Task = {
-        id: uuidv4(),
+        id: newTaskClientSideId,
         user_id: userId,
         created_at: effectiveCurrentDate.toISOString(),
         status: newTaskData.status || 'to-do',
@@ -411,7 +414,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       console.error('useTasks: Error adding task to DB:', e.message);
       return false;
     } finally {
-      isUpdatingRef.current = false;
+      inFlightUpdatesRef.current.delete(newTaskClientSideId);
     }
   }, [userId, effectiveCurrentDate, tasks, addReminder]);
 
@@ -420,8 +423,9 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       showError('User not authenticated.');
       return;
     }
-    isUpdatingRef.current = true;
+    let idToTrack = taskId;
     let originalTaskState: Task | undefined;
+    
     try {
       let color: string | undefined;
       if (updates.category) color = allCategoriesRef.current.find(cat => cat.id === updates.category)?.color || 'gray';
@@ -455,7 +459,8 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
                 parent_task_id: virtualTask.parent_task_id,
                 link: virtualTask.link,
             };
-
+            idToTrack = newCompletedInstance.id;
+            inFlightUpdatesRef.current.add(idToTrack);
             setTasks(prev => [...prev, newCompletedInstance]);
 
             const { data, error } = await supabase
@@ -476,6 +481,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
         }
       }
 
+      inFlightUpdatesRef.current.add(idToTrack);
       setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates, ...(color && { category_color: color }) } : t));
 
       const { data, error } = await supabase
@@ -505,7 +511,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
         setTasks(prev => prev.map(t => t.id === taskId ? originalTaskState! : t));
       }
     } finally {
-      isUpdatingRef.current = false;
+      inFlightUpdatesRef.current.delete(idToTrack);
     }
   }, [userId, tasks, processedTasks, effectiveCurrentDate, addReminder, dismissReminder]);
 
@@ -514,7 +520,6 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       showError('User not authenticated.');
       return;
     }
-    isUpdatingRef.current = true;
     const originalTasks = [...tasks];
     try {
       const taskToDelete: Task | undefined = tasks.find(t => t.id === taskId);
@@ -527,7 +532,8 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
         const inst = tasks.filter(t => t.original_task_id === taskId).map(t => t.id);
         idsToDelete = [...idsToDelete, ...inst];
       }
-
+      
+      idsToDelete.forEach(id => inFlightUpdatesRef.current.add(id));
       setTasks(prev => prev.filter(t => !idsToDelete.includes(t.id)));
 
       const { error } = await supabase.from('tasks').delete().in('id', idsToDelete).eq('user_id', userId).select('id');
@@ -539,7 +545,17 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       console.error(`useTasks: Error deleting task(s) from DB:`, e.message);
       setTasks(originalTasks);
     } finally {
-      isUpdatingRef.current = false;
+      const taskToDelete: Task | undefined = originalTasks.find(t => t.id === taskId);
+      if (taskToDelete) {
+        let idsToDelete = [taskId];
+        const subIds = originalTasks.filter(t => t.parent_task_id === taskId).map(t => t.id);
+        idsToDelete = [...idsToDelete, ...subIds];
+        if (taskToDelete.recurring_type !== 'none' && taskToDelete.original_task_id === null) {
+          const inst = originalTasks.filter(t => t.original_task_id === taskId).map(t => t.id);
+          idsToDelete = [...idsToDelete, ...inst];
+        }
+        idsToDelete.forEach(id => inFlightUpdatesRef.current.delete(id));
+      }
     }
   }, [userId, tasks, dismissReminder]);
 
@@ -551,7 +567,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     if (ids.length === 0) {
       return;
     }
-    isUpdatingRef.current = true;
+    ids.forEach(id => inFlightUpdatesRef.current.add(id));
     const original = [...tasks];
     try {
       setTasks(prev =>
@@ -571,7 +587,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       console.error(`useTasks: Error during bulk update for tasks ${ids.join(', ')}:`, e.message);
       setTasks(original);
     } finally {
-      isUpdatingRef.current = false;
+      ids.forEach(id => inFlightUpdatesRef.current.delete(id));
     }
   }, [tasks, userId]);
 
@@ -717,7 +733,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
 
     setSections(newOrderedSections);
 
-    isReorderingRef.current = true;
+    inFlightUpdatesRef.current.add(activeId);
     try {
       const { error } = await supabase.from('task_sections').upsert(updates, { onConflict: 'id' });
       if (error) throw error;
@@ -727,7 +743,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       console.error('useTasks: Error reordering sections:', e.message);
       setSections(sections);
     } finally {
-      isReorderingRef.current = false;
+      inFlightUpdatesRef.current.delete(activeId);
     }
   }, [userId, sections]);
 
@@ -736,11 +752,11 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       showError('User not authenticated.');
       return;
     }
-    isReorderingRef.current = true;
+    inFlightUpdatesRef.current.add(activeId);
     const originalTasks = [...tasks];
     const activeTask = tasks.find(t => t.id === activeId);
     if (!activeTask) {
-      isReorderingRef.current = false;
+      inFlightUpdatesRef.current.delete(activeId);
       return;
     }
 
@@ -801,7 +817,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       showError('Failed to move task.');
       setTasks(originalTasks);
     } finally {
-      isReorderingRef.current = false;
+      inFlightUpdatesRef.current.delete(activeId);
     }
   }, [userId, tasks]);
 
