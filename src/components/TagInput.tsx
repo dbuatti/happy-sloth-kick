@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
-import { X, Tag } from 'lucide-react';
+import { X, Tag, Plus } from 'lucide-react';
 import { DevIdeaTag } from '@/hooks/useDevIdeas';
 import { getRandomTagColor } from '@/lib/tagColors';
 
@@ -11,10 +11,9 @@ interface TagInputProps {
   selectedTags: DevIdeaTag[];
   setSelectedTags: React.Dispatch<React.SetStateAction<DevIdeaTag[]>>;
   onAddTag: (name: string, color: string) => Promise<DevIdeaTag | null>;
-  onEnter?: () => Promise<void>;
 }
 
-const TagInput: React.FC<TagInputProps> = ({ allTags, selectedTags, setSelectedTags, onAddTag, onEnter }) => {
+const TagInput: React.FC<TagInputProps> = ({ allTags, selectedTags, setSelectedTags, onAddTag }) => {
   const [open, setOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
 
@@ -44,7 +43,6 @@ const TagInput: React.FC<TagInputProps> = ({ allTags, selectedTags, setSelectedT
     if (e.key === 'Enter') {
       e.preventDefault();
       await handleCreateTag();
-      await onEnter?.();
     }
   };
 
@@ -52,6 +50,8 @@ const TagInput: React.FC<TagInputProps> = ({ allTags, selectedTags, setSelectedT
     !selectedTags.some(selected => selected.id === tag.id) &&
     tag.name.toLowerCase().includes(inputValue.toLowerCase())
   );
+
+  const canCreate = inputValue.trim().length > 0 && !allTags.some(t => t.name.toLowerCase() === inputValue.trim().toLowerCase());
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -84,20 +84,33 @@ const TagInput: React.FC<TagInputProps> = ({ allTags, selectedTags, setSelectedT
         <Command>
           <CommandInput placeholder="Search or create tag..." className="h-9" />
           <CommandList>
-            <CommandEmpty>
-              {inputValue.trim() ? `No tag found. Press Enter to create "${inputValue.trim()}".` : 'No tags found.'}
-            </CommandEmpty>
-            <CommandGroup>
-              {filteredTags.map((tag) => (
+            {filteredTags.length === 0 && !canCreate && <CommandEmpty>No tags found.</CommandEmpty>}
+            
+            {canCreate && (
+              <CommandGroup>
                 <CommandItem
-                  key={tag.id}
-                  onSelect={() => handleSelectTag(tag)}
+                  onSelect={handleCreateTag}
+                  className="cursor-pointer"
                 >
-                  <Tag className="mr-2 h-4 w-4" style={{ color: tag.color }} />
-                  {tag.name}
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create "{inputValue.trim()}"
                 </CommandItem>
-              ))}
-            </CommandGroup>
+              </CommandGroup>
+            )}
+
+            {filteredTags.length > 0 && (
+              <CommandGroup>
+                {filteredTags.map((tag) => (
+                  <CommandItem
+                    key={tag.id}
+                    onSelect={() => handleSelectTag(tag)}
+                  >
+                    <Tag className="mr-2 h-4 w-4" style={{ color: tag.color }} />
+                    {tag.name}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
           </CommandList>
         </Command>
       </PopoverContent>

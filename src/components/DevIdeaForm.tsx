@@ -217,7 +217,6 @@ const DevIdeaForm: React.FC<DevIdeaFormProps> = ({ isOpen, onClose, onSave, init
               selectedTags={selectedTags}
               setSelectedTags={setSelectedTags}
               onAddTag={onAddTag}
-              onEnter={handleSubmit}
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
