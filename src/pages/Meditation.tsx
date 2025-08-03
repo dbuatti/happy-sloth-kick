@@ -52,12 +52,13 @@ const Meditation: React.FC = () => {
   }, [isRunning, playSound]);
 
   const startTimer = useCallback(() => {
-    if (timeRemaining > 0) {
-      setIsRunning(true);
-      setIsSessionActive(true);
-      playSound('start');
+    if (timeRemaining <= 0) {
+      setTimeRemaining(duration);
     }
-  }, [timeRemaining, playSound]);
+    setIsRunning(true);
+    setIsSessionActive(true);
+    playSound('start');
+  }, [timeRemaining, duration, playSound]);
 
   const pauseTimer = useCallback(() => {
     setIsRunning(false);

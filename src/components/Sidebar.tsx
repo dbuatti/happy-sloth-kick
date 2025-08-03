@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Target, LayoutGrid, CalendarClock, Menu, Leaf, Moon, Volume2, VolumeX, Brain, LayoutDashboard } from 'lucide-react'; // Removed HelpCircle, BarChart3, ArchiveIcon, SettingsIcon
+import { Home, Target, LayoutGrid, CalendarClock, Menu, Leaf, Moon, Volume2, VolumeX, Brain, LayoutDashboard, Code } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -19,14 +19,11 @@ const navItems = [
   { name: 'Focus Mode', path: '/focus', icon: Target },
   { name: 'Mindfulness', path: '/mindfulness', icon: Brain },
   { name: 'Meditation', path: '/meditation', icon: Leaf },
-  // Combined Sleep Tracker and Dashboard
   { name: 'Sleep', path: '/sleep', icon: Moon },
   { name: 'Project Balance', path: '/projects', icon: LayoutGrid },
   { name: 'Time Blocks', path: '/schedule', icon: CalendarClock },
   { name: 'My Hub', path: '/my-hub', icon: LayoutDashboard },
-  // Settings and Help are now accessed via My Hub, so removed from main sidebar
-  // { name: 'Settings', path: '/settings', icon: SettingsIcon },
-  // { name: 'Help', path: '/help', icon: HelpCircle },
+  { name: 'Dev Space', path: '/dev-space', icon: Code },
 ];
 
 const NavigationLinks = ({ onLinkClick }: { onLinkClick?: () => void }) => {
@@ -84,7 +81,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ children }) => {
               side="left"
               className="w-60 bg-card flex flex-col"
               onPointerDownOutside={(e) => {
-                // Prevent the sheet from closing if the click target is part of a Radix UI popover/dropdown
                 if (e.target instanceof HTMLElement && e.target.closest('[data-radix-popper-content-wrapper]')) {
                   e.preventDefault();
                 }

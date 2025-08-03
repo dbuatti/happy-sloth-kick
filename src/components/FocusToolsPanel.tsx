@@ -18,12 +18,13 @@ interface FocusToolsPanelProps {
   tasks: Task[];
   filteredTasks: Task[];
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
-  onOpenDetail: (task: Task) => void; // This prop is used by handleOpenTaskDetails
+  onOpenDetail: (task: Task) => void;
   onDeleteTask: (taskId: string) => void;
   sections: TaskSection[];
   allCategories: Category[];
   currentDate: Date;
-  handleAddTask: (taskData: any) => Promise<any>; // Added handleAddTask
+  handleAddTask: (taskData: any) => Promise<any>;
+  initialDuration?: number;
 }
 
 const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
@@ -31,37 +32,40 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
   tasks,
   filteredTasks,
   updateTask,
-  onOpenDetail, // Destructure onOpenDetail
+  onOpenDetail,
   onDeleteTask,
   sections,
   allCategories,
   currentDate,
-  handleAddTask, // Destructure handleAddTask
+  handleAddTask,
+  initialDuration,
 }) => {
   useAuth(); 
 
   const navigate = useNavigate();
-
   const { playSound } = useSound();
 
-  // Focus Timer State
-  const [focusDuration] = useState(25 * 60); // 25 minutes
-  const [timeRemaining, setTimeRemaining] = useState(focusDuration);
+  const [focusDuration, setFocusDuration] = useState(initialDuration || 25 * 60);
+  const [timeRemaining, setTimeRemaining] = useState(initialDuration || 25 * 60);
   const [isRunning, setIsRunning] = useState(false);
-  const [isSessionActive, setIsSessionActive] = useState(false); // To track if a session has started
+  const [isSessionActive, setIsSessionActive] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Task Detail/Overview Dialog State
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
 
-  // Quick Add Task State
   const [quickAddTaskDescription, setQuickAddTaskDescription] = useState('');
   const [isAddingQuickTask, setIsAddingQuickTask] = useState(false);
 
   useEffect(() => {
-    setTimeRemaining(focusDuration);
-  }, [focusDuration]);
+    if (initialDuration) {
+      setFocusDuration(initialDuration);
+      setTimeRemaining(initialDuration);
+      setIsRunning(true);
+      setIsSessionActive(true);
+      playSound('start');
+    }
+  }, [initialDuration, playSound]);
 
   useEffect(() => {
     if (isRunning) {
@@ -71,36 +75,30 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
             clearInterval(timerRef.current!);
             setIsRunning(false);
             setIsSessionActive(false);
-            playSound('alert'); // Alert sound when timer finishes
+            playSound('alert');
             return 0;
           }
           return prevTime - 1;
         });
       }, 1000);
     } else {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
+      if (timerRef.current) clearInterval(timerRef.current);
     }
-
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [isRunning, playSound]);
 
   const startTimer = useCallback(() => {
-    if (timeRemaining > 0) {
-      setIsRunning(true);
-      setIsSessionActive(true);
-      playSound('start');
+    if (timeRemaining <= 0) {
+      setTimeRemaining(focusDuration);
     }
-  }, [timeRemaining, playSound]);
+    setIsRunning(true);
+    setIsSessionActive(true);
+    playSound('start');
+  }, [timeRemaining, focusDuration, playSound]);
 
   const pauseTimer = useCallback(() => {
-      setIsRunning(false);
-      playSound('pause');
+    setIsRunning(false);
+    playSound('pause');
   }, [playSound]);
 
   const resetTimer = useCallback(() => {
@@ -142,20 +140,18 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
 
   const handleEditTaskFromOverview = (task: Task) => {
     setIsTaskOverviewOpen(false);
-    onOpenDetail(task); // Directly call onOpenDetail
+    onOpenDetail(task);
   };
 
   const upcomingTasks = useMemo(() => {
     if (!nextAvailableTask) return [];
-    // Filter out the nextAvailableTask and its direct subtasks
     const nextTaskAndSubtasksIds = new Set([
       nextAvailableTask.id,
       ...tasks.filter(t => t.parent_task_id === nextAvailableTask.id).map(t => t.id)
     ]);
-
     return filteredTasks
       .filter(t => !nextTaskAndSubtasksIds.has(t.id) && t.parent_task_id === null && t.status === 'to-do')
-      .slice(0, 5); // Show next 5 upcoming tasks
+      .slice(0, 5);
   }, [nextAvailableTask, filteredTasks, tasks]);
 
   const handleQuickAddTask = async (e: React.FormEvent) => {
@@ -164,22 +160,18 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
       showError('Task description cannot be empty.');
       return;
     }
-
     setIsAddingQuickTask(true);
     const loadingToastId = showLoading('Getting AI suggestions...');
     const categoriesForAI = allCategories.map(cat => ({ id: cat.id, name: cat.name }));
     const suggestions = await suggestTaskDetails(quickAddTaskDescription.trim(), categoriesForAI, currentDate);
     dismissToast(loadingToastId);
-
     if (!suggestions) {
       showError('Failed to get AI suggestions. Please try again.');
       setIsAddingQuickTask(false);
       return;
     }
-
     const suggestedCategoryId = allCategories.find(cat => cat.name.toLowerCase() === suggestions.category.toLowerCase())?.id || allCategories.find(cat => cat.name.toLowerCase() === 'general')?.id || allCategories[0]?.id || '';
     const suggestedSectionId = sections.find(sec => sec.name.toLowerCase() === suggestions.section?.toLowerCase())?.id || null;
-
     const success = await handleAddTask({
       description: suggestions.cleanedDescription,
       category: suggestedCategoryId,
@@ -192,7 +184,6 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
       parent_task_id: null,
       link: suggestions.link,
     });
-
     if (success) {
       setQuickAddTaskDescription('');
     }
@@ -211,7 +202,6 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
 
   return (
     <div className="h-full flex flex-col space-y-3">
-      {/* Focus Timer Card */}
       <Card className="w-full shadow-lg rounded-xl text-center flex-shrink-0">
         <CardHeader className="pb-2">
           <CardTitle className="text-xl font-bold flex items-center justify-center gap-2">
@@ -243,7 +233,7 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
                 "w-24 h-9 text-base",
                 isRunning ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90"
               )}
-              disabled={timeRemaining === 0 && isSessionActive}
+              disabled={timeRemaining === 0 && isSessionActive && !initialDuration}
             >
               {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
             </Button>
@@ -254,7 +244,6 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
         </CardContent>
       </Card>
 
-      {/* Quick Add Task */}
       <Card className="w-full shadow-lg rounded-xl flex-shrink-0">
         <CardHeader className="pb-2">
           <CardTitle className="text-xl font-bold flex items-center justify-center gap-2">
@@ -279,7 +268,6 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
         </CardContent>
       </Card>
 
-      {/* Next Up Task Card */}
       <Card className="w-full shadow-lg rounded-xl flex-grow flex flex-col">
         <CardHeader className="pb-2">
           <CardTitle className="text-xl font-bold flex items-center justify-center gap-2">
@@ -310,7 +298,6 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
         </CardContent>
       </Card>
 
-      {/* Upcoming Tasks Card */}
       <Card className="w-full shadow-lg rounded-xl flex-shrink-0">
         <CardHeader className="pb-2">
           <CardTitle className="text-xl font-bold flex items-center justify-center gap-2">
@@ -344,7 +331,6 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
         </CardContent>
       </Card>
 
-      {/* Quick Access Mindfulness Tools */}
       <Card className="w-full shadow-lg rounded-xl flex-shrink-0">
         <CardHeader className="pb-2">
           <CardTitle className="text-xl font-bold flex items-center justify-center gap-2">
