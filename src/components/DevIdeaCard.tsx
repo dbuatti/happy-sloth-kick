@@ -22,10 +22,8 @@ const DevIdeaCard: React.FC<DevIdeaCardProps> = ({ idea, onEdit }) => {
   };
 
   const handleCardClick = () => {
-    console.log('Card clicked. Attempting to copy.');
     const textToCopy = `${idea.title}${idea.description ? `\n\n${idea.description}` : ''}`;
     navigator.clipboard.writeText(textToCopy).then(() => {
-      console.log('Successfully copied to clipboard.');
       showSuccess('Idea copied to clipboard!');
     }).catch(err => {
       console.error('Failed to copy text: ', err);
@@ -35,7 +33,6 @@ const DevIdeaCard: React.FC<DevIdeaCardProps> = ({ idea, onEdit }) => {
 
   const handleEditClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent the card's onClick from firing
-    console.log('Edit button clicked.');
     onEdit(idea);
   };
 

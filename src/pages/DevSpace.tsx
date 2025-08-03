@@ -54,7 +54,7 @@ const DevSpace: React.FC = () => {
 
   const sensors = useSensors(useSensor(PointerSensor, {
     activationConstraint: {
-      delay: 50,
+      delay: 150,
       tolerance: 5,
     }
   }));
