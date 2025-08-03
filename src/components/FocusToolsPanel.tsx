@@ -1,17 +1,17 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/Progress";
 import { Play, Pause, RefreshCcw, CheckCircle2, Edit, Target, ListTodo, Clock, Plus, Sparkles, Wind, Home, TreePine, UtensilsCrossed, ScanEye, Armchair, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
-import { useSound } from '@/context/SoundContext';
-import TaskOverviewDialog from './TaskOverviewDialog'; // For opening overview from panel
-import { useAuth } from '@/context/AuthContext'; // Import useAuth
+import TaskOverviewDialog from './TaskOverviewDialog';
+import { useAuth } from '@/context/AuthContext';
 import { Input } from './ui/input';
 import { suggestTaskDetails } from '@/integrations/supabase/api';
 import { dismissToast, showError, showLoading } from '@/utils/toast';
 import { useNavigate } from 'react-router-dom';
+import { useTimer } from '@/context/TimerContext';
 
 interface FocusToolsPanelProps {
   nextAvailableTask: Task | null;
@@ -24,7 +24,6 @@ interface FocusToolsPanelProps {
   allCategories: Category[];
   currentDate: Date;
   handleAddTask: (taskData: any) => Promise<any>;
-  initialDuration?: number;
 }
 
 const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
@@ -38,18 +37,19 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
   allCategories,
   currentDate,
   handleAddTask,
-  initialDuration,
 }) => {
   useAuth(); 
 
   const navigate = useNavigate();
-  const { playSound } = useSound();
-
-  const [focusDuration, setFocusDuration] = useState(initialDuration || 25 * 60);
-  const [timeRemaining, setTimeRemaining] = useState(initialDuration || 25 * 60);
-  const [isRunning, setIsRunning] = useState(false);
-  const [isSessionActive, setIsSessionActive] = useState(false);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const {
+    duration: focusDuration,
+    timeRemaining,
+    isRunning,
+    isTimerActive,
+    togglePause,
+    resetTimer,
+  } = useTimer();
 
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
@@ -57,64 +57,13 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
   const [quickAddTaskDescription, setQuickAddTaskDescription] = useState('');
   const [isAddingQuickTask, setIsAddingQuickTask] = useState(false);
 
-  useEffect(() => {
-    if (initialDuration) {
-      setFocusDuration(initialDuration);
-      setTimeRemaining(initialDuration);
-      setIsRunning(true);
-      setIsSessionActive(true);
-      playSound('start');
-    }
-  }, [initialDuration, playSound]);
-
-  useEffect(() => {
-    if (isRunning) {
-      timerRef.current = setInterval(() => {
-        setTimeRemaining(prevTime => {
-          if (prevTime <= 1) {
-            clearInterval(timerRef.current!);
-            setIsRunning(false);
-            setIsSessionActive(false);
-            playSound('alert');
-            return 0;
-          }
-          return prevTime - 1;
-        });
-      }, 1000);
-    } else {
-      if (timerRef.current) clearInterval(timerRef.current);
-    }
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [isRunning, playSound]);
-
-  const startTimer = useCallback(() => {
-    if (timeRemaining <= 0) {
-      setTimeRemaining(focusDuration);
-    }
-    setIsRunning(true);
-    setIsSessionActive(true);
-    playSound('start');
-  }, [timeRemaining, focusDuration, playSound]);
-
-  const pauseTimer = useCallback(() => {
-    setIsRunning(false);
-    playSound('pause');
-  }, [playSound]);
-
-  const resetTimer = useCallback(() => {
-    pauseTimer();
-    setTimeRemaining(focusDuration);
-    setIsSessionActive(false);
-    playSound('reset');
-  }, [pauseTimer, focusDuration, playSound]);
-
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  const progressValue = (timeRemaining / focusDuration) * 100;
+  const progressValue = focusDuration > 0 ? ((focusDuration - timeRemaining) / focusDuration) * 100 : 0;
 
   const getPriorityDotColor = (priority: string) => {
     switch (priority) {
@@ -129,7 +78,6 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
   const handleMarkComplete = async () => {
     if (nextAvailableTask) {
       await updateTask(nextAvailableTask.id, { status: 'completed' });
-      playSound('success');
     }
   };
 
@@ -208,7 +156,7 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
             <Clock className="h-5 w-5 text-primary" /> Focus Timer
           </CardTitle>
           <p className="text-muted-foreground text-sm">
-            Dedicated time for deep work.
+            {isTimerActive ? "Global timer is active." : "Start a timer with the floating button."}
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -228,16 +176,16 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
           <div className="flex justify-center space-x-2">
             <Button
               size="sm"
-              onClick={isRunning ? pauseTimer : startTimer}
+              onClick={togglePause}
               className={cn(
                 "w-24 h-9 text-base",
                 isRunning ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90"
               )}
-              disabled={timeRemaining === 0 && isSessionActive && !initialDuration}
+              disabled={!isTimerActive || timeRemaining === 0}
             >
               {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
             </Button>
-            <Button size="sm" variant="outline" onClick={resetTimer} className="w-24 h-9 text-base">
+            <Button size="sm" variant="outline" onClick={resetTimer} className="w-24 h-9 text-base" disabled={!isTimerActive}>
               <RefreshCcw className="h-4 w-4" /> Reset
             </Button>
           </div>

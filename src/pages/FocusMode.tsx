@@ -3,12 +3,8 @@ import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useTasks, Task } from '@/hooks/useTasks';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import FocusToolsPanel from '@/components/FocusToolsPanel';
-import { useLocation } from 'react-router-dom';
 
 const FocusMode: React.FC = () => {
-  const location = useLocation();
-  const initialDuration = location.state?.duration;
-
   const {
     filteredTasks,
     updateTask,
@@ -47,7 +43,6 @@ const FocusMode: React.FC = () => {
             allCategories={allCategories}
             currentDate={currentDate}
             handleAddTask={handleAddTask}
-            initialDuration={initialDuration}
           />
         </div>
       </main>

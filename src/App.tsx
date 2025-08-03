@@ -19,6 +19,7 @@ import { Sidebar } from "./components/Sidebar";
 import AuthComponent from "@/components/AuthComponent";
 import FloatingTimer from "@/components/FloatingTimer";
 import DevSpace from "./pages/DevSpace";
+import { TimerProvider } from "./context/TimerContext";
 
 // Import new dedicated mindfulness tool pages
 import BodyScanMeditationPage from "./pages/mindfulness/BodyScanMeditationPage";
@@ -111,11 +112,13 @@ const App = () => {
         <Sonner position="top-right" />
         <AuthProvider>
           <SoundProvider>
-            <ReminderProvider>
-              <BrowserRouter>
-                <AppContent />
-              </BrowserRouter>
-            </ReminderProvider>
+            <TimerProvider>
+              <ReminderProvider>
+                <BrowserRouter>
+                  <AppContent />
+                </BrowserRouter>
+              </ReminderProvider>
+            </TimerProvider>
           </SoundProvider>
         </AuthProvider>
       </TooltipProvider>
