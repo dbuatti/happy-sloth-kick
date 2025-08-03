@@ -11,6 +11,7 @@ export interface DevIdea {
   status: 'idea' | 'in-progress' | 'completed';
   priority: 'low' | 'medium' | 'high';
   created_at: string;
+  image_url?: string | null;
 }
 
 export const useDevIdeas = () => {
@@ -74,6 +75,13 @@ export const useDevIdeas = () => {
       return null;
     }
     try {
+      const { data: existingIdea, error: fetchError } = await supabase
+        .from('dev_ideas')
+        .select('image_url')
+        .eq('id', id)
+        .single();
+      if (fetchError) throw fetchError;
+
       const { data, error } = await supabase
         .from('dev_ideas')
         .update(updates)
@@ -82,6 +90,12 @@ export const useDevIdeas = () => {
         .select()
         .single();
       if (error) throw error;
+
+      if (existingIdea?.image_url && existingIdea.image_url !== data.image_url) {
+        const oldImageKey = existingIdea.image_url.substring(existingIdea.image_url.lastIndexOf('/') + 1);
+        await supabase.storage.from('dev_idea_images').remove([oldImageKey]);
+      }
+
       setIdeas(prev => prev.map(idea => (idea.id === id ? data : idea)));
       showSuccess('Idea updated!');
       return data;
@@ -97,12 +111,27 @@ export const useDevIdeas = () => {
       return false;
     }
     try {
+      const { data: existingIdea, error: fetchError } = await supabase
+        .from('dev_ideas')
+        .select('image_url')
+        .eq('id', id)
+        .single();
+      if (fetchError) {
+        console.error('Could not fetch idea to delete image.');
+      }
+
       const { error } = await supabase
         .from('dev_ideas')
         .delete()
         .eq('id', id)
         .eq('user_id', userId);
       if (error) throw error;
+
+      if (existingIdea?.image_url) {
+        const imageKey = existingIdea.image_url.substring(existingIdea.image_url.lastIndexOf('/') + 1);
+        await supabase.storage.from('dev_idea_images').remove([imageKey]);
+      }
+
       setIdeas(prev => prev.filter(idea => idea.id !== id));
       showSuccess('Idea deleted!');
       return true;

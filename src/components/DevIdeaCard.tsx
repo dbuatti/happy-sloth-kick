@@ -21,18 +21,32 @@ const DevIdeaCard: React.FC<DevIdeaCardProps> = ({ idea, onEdit }) => {
     }
   };
 
-  const handleCardClick = () => {
-    const textToCopy = `${idea.title}${idea.description ? `\n\n${idea.description}` : ''}`;
-    navigator.clipboard.writeText(textToCopy).then(() => {
-      showSuccess('Idea copied to clipboard!');
-    }).catch(err => {
-      console.error('Failed to copy text: ', err);
-      showError('Could not copy idea to clipboard.');
-    });
+  const handleCardClick = async () => {
+    if (idea.image_url) {
+      try {
+        const response = await fetch(idea.image_url);
+        const blob = await response.blob();
+        await navigator.clipboard.write([
+          new ClipboardItem({ [blob.type]: blob }),
+        ]);
+        showSuccess('Image copied to clipboard!');
+      } catch (err) {
+        console.error('Failed to copy image: ', err);
+        showError('Could not copy image to clipboard.');
+      }
+    } else {
+      const textToCopy = `${idea.title}${idea.description ? `\n\n${idea.description}` : ''}`;
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        showSuccess('Idea copied to clipboard!');
+      }).catch(err => {
+        console.error('Failed to copy text: ', err);
+        showError('Could not copy idea to clipboard.');
+      });
+    }
   };
 
   const handleEditClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent the card's onClick from firing
+    e.stopPropagation();
     onEdit(idea);
   };
 
@@ -48,6 +62,9 @@ const DevIdeaCard: React.FC<DevIdeaCardProps> = ({ idea, onEdit }) => {
         </Button>
       </CardHeader>
       <CardContent>
+        {idea.image_url && (
+          <img src={idea.image_url} alt={idea.title} className="rounded-md mb-2 max-h-48 w-full object-cover" />
+        )}
         {idea.description && (
           <p className="text-sm text-muted-foreground">{idea.description}</p>
         )}
