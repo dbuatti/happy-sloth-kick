@@ -3,39 +3,45 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DevIdea } from '@/hooks/useDevIdeas';
 
 interface DevIdeaFormProps {
-  idea?: DevIdea | null;
-  onSave: (ideaData: Omit<DevIdea, 'id' | 'user_id' | 'created_at'>) => Promise<boolean>;
-  onCancel: () => void;
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (data: Omit<DevIdea, 'id' | 'user_id' | 'created_at'>) => Promise<any>;
+  initialData?: DevIdea | null;
 }
 
-const DevIdeaForm: React.FC<DevIdeaFormProps> = ({ idea, onSave, onCancel }) => {
+const DevIdeaForm: React.FC<DevIdeaFormProps> = ({ isOpen, onClose, onSave, initialData }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [status, setStatus] = useState<DevIdea['status']>('idea');
-  const [priority, setPriority] = useState<DevIdea['priority']>('medium');
+  const [status, setStatus] = useState<'idea' | 'in-progress' | 'completed'>('idea');
+  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    if (idea) {
-      setTitle(idea.title);
-      setDescription(idea.description || '');
-      setStatus(idea.status);
-      setPriority(idea.priority);
-    } else {
-      setTitle('');
-      setDescription('');
-      setStatus('idea');
-      setPriority('medium');
+    if (isOpen) {
+      if (initialData) {
+        setTitle(initialData.title);
+        setDescription(initialData.description || '');
+        setStatus(initialData.status);
+        setPriority(initialData.priority);
+      } else {
+        setTitle('');
+        setDescription('');
+        setStatus('idea');
+        setPriority('medium');
+      }
     }
-  }, [idea]);
+  }, [isOpen, initialData]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim()) return;
+  const handleSubmit = async () => {
+    if (!title.trim()) {
+      // You might want to show an error here
+      return;
+    }
     setIsSaving(true);
     const success = await onSave({
       title: title.trim(),
@@ -43,70 +49,67 @@ const DevIdeaForm: React.FC<DevIdeaFormProps> = ({ idea, onSave, onCancel }) => 
       status,
       priority,
     });
-    if (success) {
-      onCancel();
-    }
     setIsSaving(false);
+    if (success) {
+      onClose();
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <Label htmlFor="idea-title">Title</Label>
-        <Input
-          id="idea-title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="A brilliant new idea..."
-          required
-          autoFocus
-        />
-      </div>
-      <div>
-        <Label htmlFor="idea-description">Description (Optional)</Label>
-        <Textarea
-          id="idea-description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="More details about the idea..."
-          rows={3}
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="idea-status">Status</Label>
-          <Select value={status} onValueChange={(value) => setStatus(value as DevIdea['status'])}>
-            <SelectTrigger id="idea-status">
-              <SelectValue placeholder="Select status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="idea">Idea</SelectItem>
-              <SelectItem value="in-progress">In Progress</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-            </SelectContent>
-          </Select>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>{initialData ? 'Edit Idea' : 'Add New Idea'}</DialogTitle>
+          <DialogDescription className="sr-only">
+            {initialData ? 'Edit the details of your development idea.' : 'Fill in the details to add a new idea.'}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="title">Title</Label>
+            <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} disabled={isSaving} autoFocus />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="description">Description (Optional)</Label>
+            <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} disabled={isSaving} />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select value={status} onValueChange={(value) => setStatus(value as any)} disabled={isSaving}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="idea">Idea</SelectItem>
+                  <SelectItem value="in-progress">In Progress</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Priority</Label>
+              <Select value={priority} onValueChange={(value) => setPriority(value as any)} disabled={isSaving}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </div>
-        <div>
-          <Label htmlFor="idea-priority">Priority</Label>
-          <Select value={priority} onValueChange={(value) => setPriority(value as DevIdea['priority'])}>
-            <SelectTrigger id="idea-priority">
-              <SelectValue placeholder="Select priority" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="low">Low</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
-              <SelectItem value="high">High</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-      <div className="flex justify-end space-x-2">
-        <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
-        <Button type="submit" disabled={isSaving || !title.trim()}>
-          {isSaving ? 'Saving...' : 'Save Idea'}
-        </Button>
-      </div>
-    </form>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>Cancel</Button>
+          <Button type="submit" onClick={handleSubmit} disabled={isSaving || !title.trim()}>
+            {isSaving ? 'Saving...' : 'Save Idea'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 

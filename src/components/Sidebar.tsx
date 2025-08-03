@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, HelpCircle, Target, LayoutGrid, CalendarClock, Menu, Leaf, Moon, Volume2, VolumeX, Brain, LayoutDashboard, BarChart3, Archive as ArchiveIcon, Settings as SettingsIcon, Lightbulb } from 'lucide-react';
+import { Home, Target, LayoutGrid, CalendarClock, Menu, Leaf, Moon, Volume2, VolumeX, Brain, LayoutDashboard, Code } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
 import { Badge } from '@/components/ui/badge';
 import { useSound } from '@/context/SoundContext';
-import ThemeSelector from './ThemeSelector'; // Import ThemeSelector
+import ThemeSelector from './ThemeSelector';
 
 interface SidebarProps {
   children: React.ReactNode;
@@ -19,15 +19,11 @@ const navItems = [
   { name: 'Focus Mode', path: '/focus', icon: Target },
   { name: 'Mindfulness', path: '/mindfulness', icon: Brain },
   { name: 'Meditation', path: '/meditation', icon: Leaf },
-  { name: 'Sleep Tracker', path: '/sleep', icon: Moon },
+  { name: 'Sleep', path: '/sleep', icon: Moon },
   { name: 'Project Balance', path: '/projects', icon: LayoutGrid },
   { name: 'Time Blocks', path: '/schedule', icon: CalendarClock },
-  { name: 'Dev Ideas', path: '/dev-ideas', icon: Lightbulb },
   { name: 'My Hub', path: '/my-hub', icon: LayoutDashboard },
-  { name: 'Analytics', path: '/analytics', icon: BarChart3 }, // New direct link
-  { name: 'Archive', path: '/archive', icon: ArchiveIcon }, // New direct link
-  { name: 'Settings', path: '/settings', icon: SettingsIcon }, // New direct link
-  { name: 'Help', path: '/help', icon: HelpCircle },
+  { name: 'Dev Space', path: '/dev-space', icon: Code },
 ];
 
 const NavigationLinks = ({ onLinkClick }: { onLinkClick?: () => void }) => {
@@ -85,7 +81,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ children }) => {
               side="left"
               className="w-60 bg-card flex flex-col"
               onPointerDownOutside={(e) => {
-                // Prevent the sheet from closing if the click target is part of a Radix UI popover/dropdown
                 if (e.target instanceof HTMLElement && e.target.closest('[data-radix-popper-content-wrapper]')) {
                   e.preventDefault();
                 }
@@ -103,7 +98,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ children }) => {
                   <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"} className="h-7 w-7">
                     {isSoundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
                   </Button>
-                  <ThemeSelector /> {/* Reinstated ThemeSelector */}
+                  <ThemeSelector />
                 </div>
               </div>
             </SheetContent>
@@ -113,7 +108,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ children }) => {
             <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"} className="h-7 w-7">
               {isSoundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
             </Button>
-            <ThemeSelector /> {/* Reinstated ThemeSelector */}
+            <ThemeSelector />
           </div>
         </header>
         <div className="flex-1 overflow-auto">
@@ -124,8 +119,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ children }) => {
   }
 
   return (
-    <div className="min-h-screen flex bg-background">
-      <div className="w-60 bg-card/80 backdrop-blur shadow-md h-screen flex flex-col">
+    <div className="h-screen flex overflow-hidden bg-background">
+      <div className="w-60 bg-card/80 backdrop-blur shadow-md h-full flex flex-col flex-shrink-0">
         <div className="p-3 flex justify-between items-center">
           <h1 className="text-xl font-bold">TaskMaster</h1>
         </div>
@@ -138,11 +133,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ children }) => {
             <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"} className="h-7 w-7">
               {isSoundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
             </Button>
-            <ThemeSelector /> {/* Reinstated ThemeSelector */}
+            <ThemeSelector />
           </div>
         </div>
       </div>
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col overflow-y-auto">
         {children}
       </div>
     </div>

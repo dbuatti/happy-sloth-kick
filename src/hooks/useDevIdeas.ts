@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess } from '@/utils/toast';
-import { arrayMove } from '@dnd-kit/sortable';
 
 export interface DevIdea {
   id: string;
@@ -113,14 +112,5 @@ export const useDevIdeas = () => {
     }
   };
 
-  const reorderIdeas = useCallback((activeId: string, overId: string) => {
-    setIdeas((items) => {
-      const oldIndex = items.findIndex((item) => item.id === activeId);
-      const newIndex = items.findIndex((item) => item.id === overId);
-      if (oldIndex === -1 || newIndex === -1) return items;
-      return arrayMove(items, oldIndex, newIndex);
-    });
-  }, []);
-
-  return { ideas, loading, addIdea, updateIdea, deleteIdea, reorderIdeas, setIdeas };
+  return { ideas, loading, addIdea, updateIdea, deleteIdea, setIdeas };
 };

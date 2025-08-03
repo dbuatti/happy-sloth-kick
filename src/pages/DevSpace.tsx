@@ -12,7 +12,6 @@ import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, u
 import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import SortableDevIdeaCard from '@/components/SortableDevIdeaCard';
 import { useDroppable } from '@dnd-kit/core';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface DevIdeaColumnProps {
     id: string;
@@ -155,18 +154,12 @@ const DevSpace: React.FC = () => {
           <MadeWithDyad />
         </footer>
 
-        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{editingIdea ? 'Edit Idea' : 'Add New Idea'}</DialogTitle>
-            </DialogHeader>
-            <DevIdeaForm
-              onSave={handleSave}
-              onCancel={() => setIsFormOpen(false)}
-              idea={editingIdea}
-            />
-          </DialogContent>
-        </Dialog>
+        <DevIdeaForm
+          isOpen={isFormOpen}
+          onClose={() => setIsFormOpen(false)}
+          onSave={handleSave}
+          initialData={editingIdea}
+        />
       </div>
       {createPortal(
         <DragOverlay>
