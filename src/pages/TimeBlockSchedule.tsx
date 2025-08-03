@@ -296,16 +296,17 @@ const TimeBlockSchedule: React.FC = () => {
                 <p className="text-sm">Please check your work hour settings. Ensure your start time is before your end time.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-[60px_1fr] sm:grid-cols-[80px_1fr] md:grid-cols-[100px_1fr] lg:grid-cols-[120px_1fr] gap-x-2">
+              <div className="grid grid-cols-[80px_1fr] gap-x-4">
                 <div className="grid" style={{
                   gridTemplateRows: `repeat(${timeBlocks.length}, ${rowHeight}px)`,
+                  rowGap: `${gapHeight}px`,
                   height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`,
                 }}>
                   {timeBlocks.map((block, index) => (
                     getMinutes(block.start) === 0 && (
                       <div
                         key={`label-${format(block.start, 'HH:mm')}`}
-                        className="flex items-start justify-end pr-2 text-xs sm:text-sm text-muted-foreground"
+                        className="flex items-start justify-end pt-1 pr-4 text-sm text-muted-foreground"
                         style={{ gridRow: `${index + 1} / span 2` }}
                       >
                         <span>{format(block.start, 'h a')}</span>
@@ -320,22 +321,24 @@ const TimeBlockSchedule: React.FC = () => {
                   onDragStart={handleDragStart}
                   onDragEnd={handleDragEnd}
                 >
-                  <div className="relative grid gap-1" style={{
+                  <div className="relative grid" style={{
                     gridTemplateRows: `repeat(${timeBlocks.length}, ${rowHeight}px)`,
+                    rowGap: `${gapHeight}px`,
                     height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`,
                   }}>
                     {timeBlocks.map((block, index) => (
                       getMinutes(block.start) === 0 && (
                         <div
                           key={`bg-label-${format(block.start, 'HH')}`}
-                          className="absolute text-7xl sm:text-8xl md:text-9xl font-bold text-muted-foreground/10 dark:text-muted-foreground/5 select-none pointer-events-none"
+                          className="absolute inset-x-0 h-full flex items-center justify-center text-9xl font-black text-gray-200 dark:text-gray-800 select-none pointer-events-none"
                           style={{
                             top: `${index * (rowHeight + gapHeight)}px`,
-                            left: '1rem',
+                            height: `${2 * rowHeight + gapHeight}px`,
                             zIndex: 0,
                           }}
                         >
-                          {format(block.start, 'h a')}
+                          <span className="relative -right-4 tracking-tighter">{format(block.start, 'h')}</span>
+                          <span className="text-7xl ml-2 tracking-normal relative -left-4">{format(block.start, 'a')}</span>
                         </div>
                       )
                     ))}
@@ -347,28 +350,27 @@ const TimeBlockSchedule: React.FC = () => {
                         return block.start.getTime() >= appStart.getTime() && block.start.getTime() < appEnd.getTime();
                       });
 
-                      if (isBlockOccupied) {
-                        return <div key={`occupied-${format(block.start, 'HH:mm')}`} className="h-10" style={{ gridRow: `${index + 1}` }} />;
-                      }
-
                       return (
                         <div
-                          key={`empty-block-${format(block.start, 'HH:mm')}`}
+                          key={`block-container-${format(block.start, 'HH:mm')}`}
+                          className="relative h-full w-full border-t border-gray-200 dark:border-gray-700"
                           style={{ gridRow: `${index + 1}`, zIndex: 1 }}
                         >
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <div className="h-full w-full cursor-pointer rounded-lg hover:bg-muted/50 transition-colors border-dashed border-border/50" />
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-1">
-                              <TimeBlockActionMenu
-                                block={block}
-                                onAddAppointment={() => handleOpenAppointmentForm(block)}
-                                onScheduleTask={handleScheduleTask}
-                                unscheduledTasks={unscheduledDoTodayTasks}
-                              />
-                            </PopoverContent>
-                          </Popover>
+                          {!isBlockOccupied && (
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <div className="absolute inset-0 cursor-pointer rounded-lg hover:bg-muted/50 transition-colors" />
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-1">
+                                <TimeBlockActionMenu
+                                  block={block}
+                                  onAddAppointment={() => handleOpenAppointmentForm(block)}
+                                  onScheduleTask={handleScheduleTask}
+                                  unscheduledTasks={unscheduledDoTodayTasks}
+                                />
+                              </PopoverContent>
+                            </Popover>
+                          )}
                         </div>
                       );
                     })}
