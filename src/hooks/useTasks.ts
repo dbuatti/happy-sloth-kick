@@ -546,49 +546,35 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     }
   }, [userId, tasks, dismissReminder]);
 
-  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
-
-  const toggleTaskSelection = useCallback((taskId: string, checked: boolean) => {
-    setSelectedTaskIds(prev =>
-      checked ? [...prev, taskId] : prev.filter(id => id !== taskId)
-    );
-  }, []);
-
-  const clearSelectedTasks = useCallback(() => {
-    setSelectedTaskIds([]);
-  }, []);
-
-  const bulkUpdateTasks = useCallback(async (updates: Partial<Task>, ids?: string[]) => {
+  const bulkUpdateTasks = useCallback(async (updates: Partial<Task>, ids: string[]) => {
     if (!userId) {
       showError('User not authenticated.');
       return;
     }
-    const targetIds = ids || selectedTaskIds;
-    if (targetIds.length === 0) {
+    if (ids.length === 0) {
       return;
     }
 
     const original = [...tasks];
     setTasks(prev =>
-      prev.map(t => (targetIds.includes(t.id) ? { ...t, ...updates } : t))
+      prev.map(t => (ids.includes(t.id) ? { ...t, ...updates } : t))
     );
 
     try {
       const { error } = await supabase
         .from('tasks')
         .update(cleanTaskForDb(updates))
-        .in('id', targetIds)
+        .in('id', ids)
         .eq('user_id', userId);
 
       if (error) throw error;
       showSuccess('Tasks updated!');
-      clearSelectedTasks();
     } catch (e: any) {
       showError('Failed to update tasks.');
-      console.error(`useTasks: Error during bulk update for tasks ${targetIds.join(', ')}:`, e.message);
+      console.error(`useTasks: Error during bulk update for tasks ${ids.join(', ')}:`, e.message);
       setTasks(original);
     }
-  }, [tasks, userId, selectedTaskIds, clearSelectedTasks]);
+  }, [tasks, userId]);
 
   const markAllTasksInSectionCompleted = useCallback(async (sectionId: string | null) => {
     if (!userId) {
@@ -947,9 +933,6 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     allCategories,
     updateTaskParentAndOrder,
     moveTask: () => Promise.resolve(),
-    selectedTaskIds,
-    toggleTaskSelection,
-    clearSelectedTasks,
     bulkUpdateTasks,
     markAllTasksInSectionCompleted,
     createSection,

@@ -38,10 +38,7 @@ interface TaskListProps {
   handleAddTask: (taskData: any) => Promise<any>;
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
   deleteTask: (taskId: string) => void;
-  selectedTaskIds: string[];
-  toggleTaskSelection: (taskId: string, checked: boolean) => void;
-  clearSelectedTasks: () => void;
-  bulkUpdateTasks: (updates: Partial<Task>, ids?: string[]) => Promise<void>;
+  bulkUpdateTasks: (updates: Partial<Task>, ids: string[]) => Promise<void>;
   markAllTasksInSectionCompleted: (sectionId: string | null) => Promise<void>;
   sections: TaskSection[];
   createSection: (name: string) => Promise<void>;
@@ -71,8 +68,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     handleAddTask,
     updateTask,
     deleteTask,
-    selectedTaskIds,
-    toggleTaskSelection,
     markAllTasksInSectionCompleted,
     sections,
     createSection,
@@ -310,8 +305,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                             onStatusChange={async (taskId, newStatus) => updateTask(taskId, { status: newStatus })}
                             onDelete={deleteTask}
                             onUpdate={updateTask}
-                            isSelected={selectedTaskIds.includes(task.id)}
-                            onToggleSelect={toggleTaskSelection}
                             sections={sections}
                             onOpenOverview={onOpenOverview}
                             currentDate={currentDate}
@@ -372,8 +365,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                     onStatusChange={async () => {}}
                     onDelete={() => {}}
                     onUpdate={() => {}}
-                    isSelected={false}
-                    onToggleSelect={() => {}}
                     sections={sections}
                     onOpenOverview={() => {}}
                     currentDate={currentDate}

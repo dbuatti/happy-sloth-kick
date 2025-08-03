@@ -23,6 +23,8 @@ const Archive: React.FC = () => {
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode,
+    setFocusTask,
+    toggleDoToday,
   } = useTasks({ viewMode: 'archive' });
 
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
@@ -80,16 +82,14 @@ const Archive: React.FC = () => {
                       onStatusChange={handleTaskStatusChange}
                       onDelete={deleteTask}
                       onUpdate={updateTask}
-                      isSelected={false}
-                      onToggleSelect={() => {}}
                       sections={sections}
                       onOpenOverview={handleOpenOverview}
                       currentDate={new Date()}
                       onMoveUp={async () => {}}
                       onMoveDown={async () => {}}
-                      setFocusTask={async () => {}}
+                      setFocusTask={setFocusTask}
                       isDoToday={false}
-                      toggleDoToday={() => {}}
+                      toggleDoToday={() => toggleDoToday(task.id)}
                     />
                   </li>
                 ))}

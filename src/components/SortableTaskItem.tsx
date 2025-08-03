@@ -10,8 +10,6 @@ interface SortableTaskItemProps {
   onStatusChange: (taskId: string, newStatus: Task['status']) => Promise<void>;
   onDelete: (taskId: string) => void;
   onUpdate: (taskId: string, updates: Partial<Task>) => void;
-  isSelected: boolean;
-  onToggleSelect: (taskId: string, checked: boolean) => void;
   sections: { id: string; name: string }[];
   onOpenOverview: (task: Task) => void;
   currentDate: Date;

@@ -9,8 +9,6 @@ import { addDays } from 'date-fns';
 import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
 import CommandPalette from '@/components/CommandPalette';
 import { Card, CardContent } from "@/components/ui/card";
-import { cn } from '@/lib/utils';
-import BulkActions from '@/components/BulkActions';
 import FocusPanelDrawer from '@/components/FocusPanelDrawer';
 import DailyTasksHeader from '@/components/DailyTasksHeader';
 
@@ -32,9 +30,6 @@ const DailyTasksV3: React.FC = () => {
     sections,
     allCategories,
     handleAddTask,
-    selectedTaskIds,
-    toggleTaskSelection,
-    clearSelectedTasks,
     bulkUpdateTasks,
     markAllTasksInSectionCompleted,
     createSection,
@@ -121,11 +116,9 @@ const DailyTasksV3: React.FC = () => {
   };
   useKeyboardShortcuts(shortcuts);
 
-  const isBulkActionsActive = selectedTaskIds.length > 0;
-
   return (
     <div className="flex-1 flex flex-col">
-      <main className={cn("flex-grow", isBulkActionsActive ? "pb-[90px]" : "")}>
+      <main className="flex-grow">
         <div className="w-full max-w-4xl mx-auto flex flex-col">
           <DailyTasksHeader
             currentDate={currentDate}
@@ -167,9 +160,6 @@ const DailyTasksV3: React.FC = () => {
                   handleAddTask={handleAddTask}
                   updateTask={updateTask}
                   deleteTask={deleteTask}
-                  selectedTaskIds={selectedTaskIds}
-                  toggleTaskSelection={toggleTaskSelection}
-                  clearSelectedTasks={clearSelectedTasks}
                   bulkUpdateTasks={bulkUpdateTasks}
                   markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
                   sections={sections}
@@ -200,23 +190,6 @@ const DailyTasksV3: React.FC = () => {
       <footer className="p-4">
         <MadeWithDyad />
       </footer>
-
-      <BulkActions
-        selectedTaskIds={selectedTaskIds}
-        onAction={async (action) => {
-          if (action.startsWith('priority-')) {
-            await bulkUpdateTasks({ priority: action.replace('priority-', '') as Task['priority'] });
-          } else if (action === 'complete') {
-            await bulkUpdateTasks({ status: 'completed' });
-          } else if (action === 'archive') {
-            await bulkUpdateTasks({ status: 'archived' });
-          } else if (action === 'delete') {
-            await Promise.all(selectedTaskIds.map(id => deleteTask(id)));
-            clearSelectedTasks();
-          }
-        }}
-        onClearSelection={clearSelectedTasks}
-      />
 
       <CommandPalette
         isCommandPaletteOpen={isCommandPaletteOpen}
