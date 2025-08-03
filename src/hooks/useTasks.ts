@@ -882,14 +882,15 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
   const nextAvailableTask = useMemo(() => {
     if (focusedTaskId) {
       const focusedTask = finalFilteredTasks.find(t => t.id === focusedTaskId);
-      if (focusedTask && focusedTask.status === 'to-do') {
+      if (focusedTask && focusedTask.status === 'to-do' && (focusedTask.recurring_type !== 'none' || !doTodayOffIds.has(focusedTask.id))) {
         return focusedTask;
       }
     }
 
     const relevantTasks = finalFilteredTasks.filter(task =>
       task.status === 'to-do' &&
-      task.parent_task_id === null
+      task.parent_task_id === null &&
+      (task.recurring_type !== 'none' || !doTodayOffIds.has(task.id))
     );
 
     const tasksBySection = new Map<string | null, Task[]>();
@@ -918,7 +919,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     }
 
     return null;
-  }, [finalFilteredTasks, sections, focusedTaskId]);
+  }, [finalFilteredTasks, sections, focusedTaskId, doTodayOffIds]);
 
 
   return {
