@@ -27,6 +27,9 @@ interface SleepAnalyticsData {
   timeInBedMinutes: number;
   timeToFallAsleepMinutes: number;
   sleepEfficiency: number; // Percentage
+  sleepInterruptionsCount: number;
+  sleepInterruptionsDurationMinutes: number;
+  wakeUpVarianceMinutes: number; // Difference between planned and actual wake up
 }
 
 interface UseSleepAnalyticsProps {
@@ -52,8 +55,6 @@ export const useSleepAnalytics = ({ startDate, endDate }: UseSleepAnalyticsProps
       const startOfRange = format(startOfDay(startDate), 'yyyy-MM-dd');
       const endOfRange = format(endOfDay(endDate), 'yyyy-MM-dd');
 
-      console.log(`useSleepAnalytics: Fetching records for user ${userId} from ${startOfRange} to ${endOfRange}`);
-
       const { data, error } = await supabase
         .from('sleep_records')
         .select('*')
@@ -64,28 +65,18 @@ export const useSleepAnalytics = ({ startDate, endDate }: UseSleepAnalyticsProps
 
       if (error) throw error;
 
-      console.log('useSleepAnalytics: Raw data fetched:', data);
-
       const processedData: SleepAnalyticsData[] = (data || []).map(record => {
         const recordDate = parseISO(record.date);
         
         let bedTime: Date | null = null;
-        let lightsOffTime: Date | null = null;
         let wakeUpTime: Date | null = null;
         let getOutOfBedTime: Date | null = null;
+        let plannedWakeUpTime: Date | null = null;
 
-        // Parse times, handling potential overnight sleep (bed_time/lights_off_time might be on previous day)
         if (record.bed_time) {
           bedTime = parseISO(`${record.date}T${record.bed_time}`);
-          // If bed time is after midnight but record date is for the next day, adjust bed time to previous day
-          if (bedTime.getHours() >= 12 && bedTime.getHours() <= 23) { // Assuming bedtime is usually in the evening
-            bedTime = addMinutes(bedTime, -1440); // Subtract 24 hours
-          }
-        }
-        if (record.lights_off_time) {
-          lightsOffTime = parseISO(`${record.date}T${record.lights_off_time}`);
-          if (lightsOffTime.getHours() >= 12 && lightsOffTime.getHours() <= 23) {
-            lightsOffTime = addMinutes(lightsOffTime, -1440);
+          if (bedTime.getHours() >= 12) {
+            bedTime = addMinutes(bedTime, -1440);
           }
         }
         if (record.wake_up_time) {
@@ -94,35 +85,45 @@ export const useSleepAnalytics = ({ startDate, endDate }: UseSleepAnalyticsProps
         if (record.get_out_of_bed_time) {
           getOutOfBedTime = parseISO(`${record.date}T${record.get_out_of_bed_time}`);
         }
-
-        let totalSleepMinutes = 0;
-        let timeInBedMinutes = 0;
-        let timeToFallAsleepMinutes = 0;
-        let sleepEfficiency = 0;
-
-        if (lightsOffTime && wakeUpTime && isValid(lightsOffTime) && isValid(wakeUpTime)) {
-          totalSleepMinutes = differenceInMinutes(wakeUpTime, lightsOffTime);
+        if (record.planned_wake_up_time) {
+          plannedWakeUpTime = parseISO(`${record.date}T${record.planned_wake_up_time}`);
         }
+
+        let timeInBedMinutes = 0;
         if (bedTime && getOutOfBedTime && isValid(bedTime) && isValid(getOutOfBedTime)) {
           timeInBedMinutes = differenceInMinutes(getOutOfBedTime, bedTime);
         }
-        if (bedTime && lightsOffTime && isValid(bedTime) && isValid(lightsOffTime)) {
-          timeToFallAsleepMinutes = differenceInMinutes(lightsOffTime, bedTime);
+
+        const timeToFallAsleepMinutes = record.time_to_fall_asleep_minutes ?? 0;
+        const sleepInterruptionsDurationMinutes = record.sleep_interruptions_duration_minutes ?? 0;
+        const sleepInterruptionsCount = record.sleep_interruptions_count ?? 0;
+
+        let totalSleepMinutes = 0;
+        if (wakeUpTime && bedTime && isValid(wakeUpTime) && isValid(bedTime)) {
+          const grossSleepPeriod = differenceInMinutes(wakeUpTime, bedTime);
+          totalSleepMinutes = grossSleepPeriod - timeToFallAsleepMinutes - sleepInterruptionsDurationMinutes;
         }
 
+        let sleepEfficiency = 0;
         if (timeInBedMinutes > 0) {
           sleepEfficiency = (totalSleepMinutes / timeInBedMinutes) * 100;
         }
 
-        const result = {
+        let wakeUpVarianceMinutes = 0;
+        if (plannedWakeUpTime && wakeUpTime && isValid(plannedWakeUpTime) && isValid(wakeUpTime)) {
+          wakeUpVarianceMinutes = differenceInMinutes(wakeUpTime, plannedWakeUpTime);
+        }
+
+        return {
           date: format(recordDate, 'MMM dd'),
-          totalSleepMinutes: Math.max(0, totalSleepMinutes), // Ensure non-negative
+          totalSleepMinutes: Math.max(0, totalSleepMinutes),
           timeInBedMinutes: Math.max(0, timeInBedMinutes),
           timeToFallAsleepMinutes: Math.max(0, timeToFallAsleepMinutes),
-          sleepEfficiency: Math.min(100, Math.max(0, Math.round(sleepEfficiency))), // Cap between 0-100
+          sleepEfficiency: Math.min(100, Math.max(0, Math.round(sleepEfficiency))),
+          sleepInterruptionsCount: Math.max(0, sleepInterruptionsCount),
+          sleepInterruptionsDurationMinutes: Math.max(0, sleepInterruptionsDurationMinutes),
+          wakeUpVarianceMinutes: wakeUpVarianceMinutes,
         };
-        console.log(`useSleepAnalytics: Processed record for ${record.date}:`, result);
-        return result;
       });
       setAnalyticsData(processedData);
     } catch (error: any) {

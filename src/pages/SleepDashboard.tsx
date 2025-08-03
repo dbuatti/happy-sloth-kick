@@ -1,16 +1,15 @@
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { Moon, CalendarIcon, Clock, Bed, TrendingUp, Target } from 'lucide-react';
+import { Moon, CalendarIcon, Clock, Bed, TrendingUp, Target, ListX, AlertTriangle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { format, startOfMonth } from 'date-fns'; // Removed endOfMonth, eachDayOfInterval, addDays
+import { format, startOfMonth } from 'date-fns';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { DateRange } from 'react-day-picker';
 import { Skeleton } from '@/components/ui/skeleton';
-// Removed useAuth as it's not directly used here
 import { useSleepAnalytics } from '@/hooks/useSleepAnalytics';
 
 interface SleepDashboardProps {
@@ -29,6 +28,8 @@ const SleepDashboard: React.FC<SleepDashboardProps> = ({ dateRange, setDateRange
     avgTimeInBed,
     avgTimeToFallAsleep,
     avgSleepEfficiency,
+    avgInterruptionsCount,
+    avgInterruptionsDuration,
   } = useMemo(() => {
     if (analyticsData.length === 0) {
       return {
@@ -36,7 +37,8 @@ const SleepDashboard: React.FC<SleepDashboardProps> = ({ dateRange, setDateRange
         avgTimeInBed: 0,
         avgTimeToFallAsleep: 0,
         avgSleepEfficiency: 0,
-        mostConsistentSleepDay: null,
+        avgInterruptionsCount: '0.0',
+        avgInterruptionsDuration: 0,
       };
     }
 
@@ -44,21 +46,18 @@ const SleepDashboard: React.FC<SleepDashboardProps> = ({ dateRange, setDateRange
     const timeInBedSum = analyticsData.reduce((sum, d) => sum + d.timeInBedMinutes, 0);
     const timeToFallAsleepSum = analyticsData.reduce((sum, d) => sum + d.timeToFallAsleepMinutes, 0);
     const sleepEfficiencySum = analyticsData.reduce((sum, d) => sum + d.sleepEfficiency, 0);
+    const interruptionsCountSum = analyticsData.reduce((sum, d) => sum + d.sleepInterruptionsCount, 0);
+    const interruptionsDurationSum = analyticsData.reduce((sum, d) => sum + d.sleepInterruptionsDurationMinutes, 0);
 
     const count = analyticsData.length;
-
-    // For most consistent sleep day, we'd need more complex logic, e.g., standard deviation of sleep duration.
-    // For simplicity, let's just pick the day with the highest sleep efficiency for now.
-    const mostConsistent = analyticsData.reduce((prev, current) =>
-      current.sleepEfficiency > prev.sleepEfficiency ? current : prev
-    );
 
     return {
       avgTotalSleep: Math.round(totalSleepSum / count),
       avgTimeInBed: Math.round(timeInBedSum / count),
       avgTimeToFallAsleep: Math.round(timeToFallAsleepSum / count),
       avgSleepEfficiency: Math.round(sleepEfficiencySum / count),
-      mostConsistentSleepDay: mostConsistent,
+      avgInterruptionsCount: (interruptionsCountSum / count).toFixed(1),
+      avgInterruptionsDuration: Math.round(interruptionsDurationSum / count),
     };
   }, [analyticsData]);
 
@@ -121,8 +120,8 @@ const SleepDashboard: React.FC<SleepDashboardProps> = ({ dateRange, setDateRange
             </div>
             {loading ? (
               <div className="space-y-6">
-                <div className="grid gap-4 md:grid-cols-4">
-                  {[...Array(4)].map((_, i) => (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {[...Array(6)].map((_, i) => (
                     <Skeleton key={i} className="h-24 w-full rounded-xl" />
                   ))}
                 </div>
@@ -137,7 +136,7 @@ const SleepDashboard: React.FC<SleepDashboardProps> = ({ dateRange, setDateRange
               </div>
             ) : (
               <div className="space-y-6">
-                <div className="grid gap-4 md:grid-cols-4">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   <Card className="rounded-xl">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium">Avg. Total Sleep</CardTitle>
@@ -178,6 +177,26 @@ const SleepDashboard: React.FC<SleepDashboardProps> = ({ dateRange, setDateRange
                       <p className="text-xs text-muted-foreground">to fall asleep</p>
                     </CardContent>
                   </Card>
+                  <Card className="rounded-xl">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Avg. Interruptions</CardTitle>
+                      <ListX className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{avgInterruptionsCount}</div>
+                      <p className="text-xs text-muted-foreground">times per night</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="rounded-xl">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Avg. Wake Time</CardTitle>
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{avgInterruptionsDuration}m</div>
+                      <p className="text-xs text-muted-foreground">total interruption duration</p>
+                    </CardContent>
+                  </Card>
                 </div>
 
                 <Card className="rounded-xl">
@@ -199,45 +218,47 @@ const SleepDashboard: React.FC<SleepDashboardProps> = ({ dateRange, setDateRange
                   </CardContent>
                 </Card>
 
-                <Card className="rounded-xl">
-                  <CardHeader>
-                    <h3 className="text-lg font-semibold mb-3">Sleep Efficiency Trend (%)</h3>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-80">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={analyticsData}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="date" />
-                          <YAxis domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
-                          <Tooltip formatter={(value: number) => [`${value}%`, 'Sleep Efficiency']} />
-                          <Line type="monotone" dataKey="sleepEfficiency" stroke="hsl(var(--accent))" strokeWidth={2} dot={false} />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </CardContent>
-                </Card>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <Card className="rounded-xl">
+                    <CardHeader>
+                      <h3 className="text-lg font-semibold mb-3">Sleep Interruptions</h3>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-80">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={analyticsData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="date" />
+                            <YAxis yAxisId="left" orientation="left" stroke="hsl(var(--primary))" />
+                            <YAxis yAxisId="right" orientation="right" stroke="hsl(var(--accent))" />
+                            <Tooltip />
+                            <Bar yAxisId="left" dataKey="sleepInterruptionsCount" fill="hsl(var(--primary))" name="Count" />
+                            <Bar yAxisId="right" dataKey="sleepInterruptionsDurationMinutes" fill="hsl(var(--accent))" name="Duration (min)" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
 
-                <Card className="rounded-xl">
-                  <CardHeader>
-                    <h3 className="text-lg font-semibold mb-3">Time Components (Minutes)</h3>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-80">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={analyticsData}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="date" />
-                          <YAxis />
-                          <Tooltip formatter={(value: number) => [`${value}m`]} />
-                          <Bar dataKey="timeInBedMinutes" fill="hsl(var(--primary))" name="Time in Bed" />
-                          <Bar dataKey="totalSleepMinutes" fill="hsl(var(--accent))" name="Total Sleep" />
-                          <Bar dataKey="timeToFallAsleepMinutes" fill="hsl(var(--destructive))" name="Time to Fall Asleep" />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </CardContent>
-                </Card>
+                  <Card className="rounded-xl">
+                    <CardHeader>
+                      <h3 className="text-lg font-semibold mb-3">Wake Up Consistency (vs. Planned)</h3>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-80">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={analyticsData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="date" />
+                            <YAxis tickFormatter={(value) => `${value}m`} />
+                            <Tooltip formatter={(value: number) => [`${value > 0 ? '+' : ''}${value} min ${value > 0 ? 'late' : 'early'}`, 'Variance']} />
+                            <Line type="monotone" dataKey="wakeUpVarianceMinutes" stroke="hsl(var(--destructive))" strokeWidth={2} dot={false} name="Variance (min)" />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
             )}
           </CardContent>
