@@ -259,7 +259,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
             <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onOpenOverview(task); }}>
               <Edit className="mr-2 h-4 w-4" /> View Details
             </DropdownMenuItem>
