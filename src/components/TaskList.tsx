@@ -29,6 +29,7 @@ import TaskForm from './TaskForm';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import TaskItem from './TaskItem';
+import QuickAddTask from './QuickAddTask';
 
 interface TaskListProps {
   tasks: Task[];
@@ -71,7 +72,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     toggleTaskSelection,
     markAllTasksInSectionCompleted,
     sections,
-    createSection, // Destructure new props
+    createSection,
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode,
@@ -86,7 +87,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
   } = props;
 
   const { user } = useAuth();
-  const userId = user?.id || ''; // Ensure userId is always a string for TaskSection
+  const userId = user?.id || '';
 
   const [isAddTaskOpenLocal, setIsAddTaskOpenLocal] = useState(false);
   const [preselectedSectionId, setPreselectedSectionId] = useState<string | null>(null);
@@ -105,11 +106,15 @@ const TaskList: React.FC<TaskListProps> = (props) => {
       return tasksMap.get(String(id));
   }, [tasksMap]);
 
+  const defaultCategory = useMemo(() => {
+    return allCategories.find(c => c.name.toLowerCase() === 'general') || allCategories[0];
+  }, [allCategories]);
+
   const allSortableSections = useMemo(() => {
     const noSection: TaskSection = {
       id: 'no-section-header',
       name: 'No Section',
-      user_id: userId, // Use the actual userId here
+      user_id: userId,
       order: sections.length,
       include_in_focus_mode: true,
     };
@@ -166,7 +171,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
       return;
     }
 
-    // Section reordering
     if (isSectionHeaderId(active.id) && isSectionHeaderId(over.id)) {
       const a = String(active.id);
       const b = String(over.id);
@@ -185,7 +189,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
       return;
     }
 
-    // Compute new parent/section
     let newParentId: string | null = null;
     let newSectionId: string | null = null;
     let overId: string | null = null;
@@ -233,7 +236,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={allVisibleItemIds} strategy={verticalListSortingStrategy}>
-            {/* New: Toggle All Sections Button */}
             <div className="flex justify-end mb-3">
               <Button
                 variant="ghost"
@@ -248,22 +250,15 @@ const TaskList: React.FC<TaskListProps> = (props) => {
 
             {allSortableSections.map((currentSection: TaskSection, index) => {
               const isExpanded = expandedSections[currentSection.id] !== false;
-
-              // Section-local top-level tasks
               const topLevelTasksInSection = filteredTasks
                 .filter(t => t.parent_task_id === null && (t.section_id === currentSection.id || (t.section_id === null && currentSection.id === 'no-section-header')))
                 .sort((a, b) => (a.order || 0) - (b.order || 0));
-
-              // Calculate remaining tasks for the badge
               const remainingTasksCount = topLevelTasksInSection.filter(t => t.status === 'to-do').length;
 
               return (
                 <div
                   key={currentSection.id}
-                  className={cn(
-                    "mb-6",
-                    index < allSortableSections.length - 1 && "border-b border-border pb-6"
-                  )}
+                  className={cn("mb-6", index < allSortableSections.length - 1 && "border-b border-border pb-6")}
                 >
                   <SortableSectionHeader
                     section={currentSection}
@@ -281,40 +276,41 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                   {isExpanded && (
                     <div className="mt-4 space-y-3">
                       <ul className="list-none space-y-3">
-                        {topLevelTasksInSection.length === 0 ? (
-                          <div className="text-center text-foreground/80 dark:text-foreground/80 py-6 rounded-xl border-dashed border-border bg-muted/30" data-no-dnd="true">
-                            <div className="flex items-center justify-center gap-2 mb-4">
-                              <ListTodo className="h-7 w-7" />
-                              <p className="text-xl font-medium">No tasks in this section yet.</p>
-                            </div>
-                            <div className="flex items-center justify-center gap-2">
-                              <Button size="lg" onClick={() => openAddTaskForSection(currentSection.id === 'no-section-header' ? null : currentSection.id)} className="h-11">
-                                <Plus className="mr-2 h-5 w-5" /> Add Task
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          topLevelTasksInSection.map(task => (
-                            <SortableTaskItem
-                              key={task.id}
-                              task={task}
-                              onStatusChange={async (taskId, newStatus) => updateTask(taskId, { status: newStatus })}
-                              onDelete={deleteTask}
-                              onUpdate={updateTask}
-                              isSelected={selectedTaskIds.includes(task.id)}
-                              onToggleSelect={toggleTaskSelection}
-                              sections={sections}
-                              onOpenOverview={onOpenOverview}
-                              currentDate={currentDate}
-                              onMoveUp={async () => {}}
-                              onMoveDown={async () => {}}
-                              level={0}
-                              allTasks={tasks}
-                              isOverlay={false}
-                            />
-                          ))
-                        )}
+                        {topLevelTasksInSection.length > 0 && topLevelTasksInSection.map(task => (
+                          <SortableTaskItem
+                            key={task.id}
+                            task={task}
+                            onStatusChange={async (taskId, newStatus) => updateTask(taskId, { status: newStatus })}
+                            onDelete={deleteTask}
+                            onUpdate={updateTask}
+                            isSelected={selectedTaskIds.includes(task.id)}
+                            onToggleSelect={toggleTaskSelection}
+                            sections={sections}
+                            onOpenOverview={onOpenOverview}
+                            currentDate={currentDate}
+                            onMoveUp={async () => {}}
+                            onMoveDown={async () => {}}
+                            level={0}
+                            allTasks={tasks}
+                            isOverlay={false}
+                          />
+                        ))}
                       </ul>
+                      <div className="mt-2" data-no-dnd="true">
+                        <QuickAddTask
+                          sectionId={currentSection.id === 'no-section-header' ? null : currentSection.id}
+                          onAddTask={async (data) => { await handleAddTask(data); }}
+                          defaultCategoryId={defaultCategory?.id || ''}
+                        />
+                      </div>
+                      {topLevelTasksInSection.length === 0 && (
+                        <div className="text-center text-foreground/80 dark:text-foreground/80 py-6 rounded-xl border-dashed border-border bg-muted/30" data-no-dnd="true">
+                          <div className="flex items-center justify-center gap-2 mb-4">
+                            <ListTodo className="h-7 w-7" />
+                            <p className="text-xl font-medium">No tasks in this section yet.</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -386,7 +382,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
             preselectedSectionId={preselectedSectionId ?? undefined}
             currentDate={currentDate}
             autoFocus
-            createSection={createSection} // Pass new props
+            createSection={createSection}
             updateSection={updateSection}
             deleteSection={deleteSection}
             updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
