@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useDashboardData, WeeklyFocus } from '@/hooks/useDashboardData';
+import { useDashboardData } from '@/hooks/useDashboardData';
 import EditableCard from './EditableCard';
 import { Target } from 'lucide-react';
 import { Input } from '@/components/ui/input';
