@@ -25,15 +25,26 @@ const DevIdeaCard: React.FC<DevIdeaCardProps> = ({ idea, onEdit }) => {
   const handleCardClick = async () => {
     if (idea.image_url) {
       try {
+        // Prepare the text content
+        const textToCopy = `${idea.title}${idea.description ? `\n\n${idea.description}` : ''}`;
+        const textBlob = new Blob([textToCopy], { type: 'text/plain' });
+
+        // Fetch the image content
         const response = await fetch(idea.image_url);
-        const blob = await response.blob();
-        await navigator.clipboard.write([
-          new ClipboardItem({ [blob.type]: blob }),
-        ]);
-        showSuccess('Image copied to clipboard!');
+        const imageBlob = await response.blob();
+
+        // Create a ClipboardItem with both text and image representations
+        const clipboardItem = new ClipboardItem({
+          [imageBlob.type]: imageBlob,
+          'text/plain': textBlob,
+        });
+
+        // Write the single ClipboardItem (containing both types) to the clipboard
+        await navigator.clipboard.write([clipboardItem]);
+        showSuccess('Image and text copied to clipboard!');
       } catch (err) {
-        console.error('Failed to copy image: ', err);
-        showError('Could not copy image to clipboard.');
+        console.error('Failed to copy image and text: ', err);
+        showError('Could not copy image and text to clipboard.');
       }
     } else {
       const textToCopy = `${idea.title}${idea.description ? `\n\n${idea.description}` : ''}`;
