@@ -20,6 +20,9 @@ interface SortableTaskItemProps {
   level: number; // New prop for indentation level
   allTasks: Task[]; // Pass all tasks to filter subtasks
   isOverlay?: boolean; // New prop for drag overlay
+  setFocusTask: (taskId: string | null) => Promise<void>;
+  isDoToday: boolean;
+  toggleDoToday: (taskId: string) => void;
 }
 
 const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
@@ -27,6 +30,9 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   level,
   allTasks,
   isOverlay = false, // Default to false
+  setFocusTask,
+  isDoToday,
+  toggleDoToday,
   ...rest
 }) => {
   const {
@@ -68,6 +74,9 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           {...rest}
           isOverlay={isOverlay}
           dragListeners={listeners}
+          setFocusTask={setFocusTask}
+          isDoToday={isDoToday}
+          toggleDoToday={toggleDoToday}
         />
         {directSubtasks.length > 0 && (
           <ul className="list-none mt-1.5 space-y-1.5">
@@ -79,6 +88,9 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
                 allTasks={allTasks}
                 {...rest}
                 isOverlay={isOverlay}
+                setFocusTask={setFocusTask}
+                isDoToday={isDoToday}
+                toggleDoToday={toggleDoToday}
               />
             ))}
           </ul>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { startOfDay, parseISO, isSameDay, isBefore } from 'date-fns';
+import { startOfDay, parseISO, isSameDay, isBefore, format } from 'date-fns';
 
 // Define a minimal Task type for this hook, including necessary fields for filtering
 interface DailyCountTask {
@@ -30,6 +30,14 @@ export const useDailyTaskCount = () => {
     setLoading(true);
     try {
       const todayStart = startOfDay(new Date());
+
+      // Get "Do Today" off IDs from localStorage
+      const key = `doTodayOff-${userId}-${format(todayStart, 'yyyy-MM-dd')}`;
+      let offIds = new Set<string>();
+      try {
+        const saved = localStorage.getItem(key);
+        if (saved) offIds = new Set(JSON.parse(saved));
+      } catch {}
 
       // 1. Fetch sections included in focus mode
       const { data: sectionsData, error: sectionsError } = await supabase
@@ -105,10 +113,11 @@ export const useDailyTaskCount = () => {
           }
         });
 
-        // Now filter the relevant tasks by focus mode sections
+        // Now filter the relevant tasks by focus mode sections and "Do Today" switch
         relevantTasksForToday.forEach(task => {
           const isFocusModeTask = task.section_id === null || focusModeSectionIds.has(task.section_id);
-          if (isFocusModeTask) {
+          const isDoToday = task.recurring_type !== 'none' || !offIds.has(task.id);
+          if (isFocusModeTask && isDoToday) {
             count++;
           }
         });

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon } from 'lucide-react';
+import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target } from 'lucide-react';
 import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
@@ -12,6 +12,7 @@ import { CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Input } from './ui/input';
 import { useSortable } from '@dnd-kit/sortable';
+import DoTodaySwitch from './DoTodaySwitch';
 
 interface TaskItemProps {
   task: Task;
@@ -27,6 +28,9 @@ interface TaskItemProps {
   onMoveDown: (taskId: string) => Promise<void>;
   isOverlay?: boolean;
   dragListeners?: ReturnType<typeof useSortable>['listeners'];
+  setFocusTask: (taskId: string | null) => Promise<void>;
+  isDoToday: boolean;
+  toggleDoToday: (taskId: string) => void;
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -40,6 +44,9 @@ const TaskItem: React.FC<TaskItemProps> = ({
   currentDate,
   isOverlay = false,
   dragListeners,
+  setFocusTask,
+  isDoToday,
+  toggleDoToday,
 }) => {
   useAuth(); 
   const { playSound } = useSound();
@@ -126,6 +133,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
       className={cn(
         "relative flex items-center space-x-2 w-full p-3 cursor-grab",
         task.status === 'completed' ? "text-muted-foreground bg-task-completed-bg" : "text-foreground",
+        !isDoToday && task.recurring_type === 'none' && "opacity-40",
         "group",
         isOverdue && "border-l-4 border-status-overdue",
         isDueToday && "border-l-4 border-status-due-today",
@@ -231,6 +239,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
       )}
 
       <div className="flex-shrink-0 flex items-center space-x-1" data-no-dnd="true">
+        {task.recurring_type === 'none' && (
+          <DoTodaySwitch
+            isOn={isDoToday}
+            onToggle={() => toggleDoToday(task.id)}
+            taskId={task.id}
+          />
+        )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -245,11 +260,11 @@ const TaskItem: React.FC<TaskItemProps> = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onSelect={(e) => {
-              e.preventDefault();
-              onOpenOverview(task);
-            }}>
+            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onOpenOverview(task); }}>
               <Edit className="mr-2 h-4 w-4" /> View Details
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setFocusTask(task.id); }}>
+              <Target className="mr-2 h-4 w-4" /> Set as Focus
             </DropdownMenuItem>
             {task.status === 'archived' && (
               <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onStatusChange(task.id, 'to-do'); playSound('success'); }}>

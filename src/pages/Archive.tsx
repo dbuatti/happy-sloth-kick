@@ -87,6 +87,9 @@ const Archive: React.FC = () => {
                       currentDate={new Date()}
                       onMoveUp={async () => {}}
                       onMoveDown={async () => {}}
+                      setFocusTask={async () => {}}
+                      isDoToday={false}
+                      toggleDoToday={() => {}}
                     />
                   </li>
                 ))}

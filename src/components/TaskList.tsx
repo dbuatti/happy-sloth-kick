@@ -300,6 +300,9 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                             level={0}
                             allTasks={tasks}
                             isOverlay={false}
+                            setFocusTask={async () => {}}
+                            isDoToday={false}
+                            toggleDoToday={() => {}}
                           />
                         ))}
                       </ul>
@@ -357,6 +360,9 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                     onMoveUp={async () => {}}
                     onMoveDown={async () => {}}
                     isOverlay={true}
+                    setFocusTask={async () => {}}
+                    isDoToday={true}
+                    toggleDoToday={() => {}}
                   />
                 )
               )}
