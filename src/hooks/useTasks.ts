@@ -6,8 +6,9 @@ import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess } from '@/utils/toast';
 import { useReminders } from '@/context/ReminderContext';
 import { v4 as uuidv4 } from 'uuid';
-import { isSameDay, parseISO, isValid, isBefore, format, setHours, setMinutes, getHours, getMinutes } from 'date-fns';
+import { isSameDay, parseISO, isValid, isBefore, format, setHours, setMinutes, getHours, getMinutes, isAfter, startOfDay } from 'date-fns';
 import { arrayMove } from '@dnd-kit/sortable';
+import { useSettings } from '@/context/SettingsContext';
 
 export interface Task {
   id: string;
@@ -79,13 +80,13 @@ interface UseTasksProps {
 export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: UseTasksProps = {}) => {
   const { user, loading: authLoading } = useAuth();
   const userId = user?.id;
+  const { settings: userSettings, updateSettings } = useSettings();
   const { addReminder, dismissReminder } = useReminders();
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [sections, setSections] = useState<TaskSection[]>([]);
   const [allCategories, setAllCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [focusedTaskId, setFocusedTaskId] = useState<string | null>(null);
   const [doTodayOffIds, setDoTodayOffIds] = useState<Set<string>>(new Set());
 
   const isReorderingRef = useRef(false);
@@ -133,14 +134,6 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
   const fetchDataAndSettings = useCallback(async (currentUserId: string) => {
     setLoading(true);
     try {
-      const { data: settingsData, error: settingsError } = await supabase
-        .from('user_settings')
-        .select('focused_task_id')
-        .eq('user_id', currentUserId)
-        .single();
-      if (settingsError && settingsError.code !== 'PGRST116') throw settingsError;
-      if (settingsData) setFocusedTaskId(settingsData.focused_task_id);
-
       const { data: sectionsData, error: sectionsError } = await supabase
         .from('task_sections')
         .select('id, name, user_id, order, include_in_focus_mode')
@@ -850,6 +843,18 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
         return isTaskCreatedOnCurrentDate || isCarryOverTodo;
       });
     }
+
+    if (userSettings?.hide_future_tasks && viewMode === 'daily') {
+      const today = startOfDay(effectiveCurrentDate);
+      filtered = filtered.filter(task => {
+        if (!task.due_date) {
+          return true; // Always show tasks without a due date
+        }
+        const dueDate = startOfDay(parseISO(task.due_date));
+        return !isAfter(dueDate, today);
+      });
+    }
+
     return filtered;
   }, [
     processedTasks,
@@ -860,6 +865,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     sectionFilter,
     viewMode,
     effectiveCurrentDate,
+    userSettings?.hide_future_tasks,
   ]);
 
   const setFocusTask = useCallback(async (taskId: string | null) => {
@@ -867,20 +873,16 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       showError('User not authenticated.');
       return;
     }
-    setFocusedTaskId(taskId);
-    try {
-      const { error } = await supabase
-        .from('user_settings')
-        .upsert({ user_id: userId, focused_task_id: taskId }, { onConflict: 'user_id' });
-      if (error) throw error;
+    const success = await updateSettings({ focused_task_id: taskId });
+    if (success) {
       showSuccess(taskId ? 'Task set as focus!' : 'Focus cleared.');
-    } catch (e: any) {
+    } else {
       showError('Failed to set focus task.');
-      console.error("Error setting focus task:", e);
     }
-  }, [userId]);
+  }, [userId, updateSettings]);
 
   const nextAvailableTask = useMemo(() => {
+    const focusedTaskId = userSettings?.focused_task_id;
     if (focusedTaskId) {
       const focusedTask = finalFilteredTasks.find(t => t.id === focusedTaskId);
       if (focusedTask && focusedTask.status === 'to-do' && (focusedTask.recurring_type !== 'none' || !doTodayOffIds.has(focusedTask.original_task_id || focusedTask.id))) {
@@ -920,7 +922,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     }
 
     return null;
-  }, [finalFilteredTasks, sections, focusedTaskId, doTodayOffIds]);
+  }, [finalFilteredTasks, sections, userSettings?.focused_task_id, doTodayOffIds]);
 
   const toggleDoToday = useCallback(async (task: Task) => {
     if (!userId) return;

@@ -21,6 +21,7 @@ import FloatingTimer from "@/components/FloatingTimer";
 import DevSpace from "./pages/DevSpace";
 import { TimerProvider } from "./context/TimerContext";
 import TaskCalendar from "./pages/TaskCalendar";
+import { SettingsProvider } from "./context/SettingsContext";
 
 // Import new dedicated mindfulness tool pages
 import BodyScanMeditationPage from "./pages/mindfulness/BodyScanMeditationPage";
@@ -113,15 +114,17 @@ const App = () => {
       <TooltipProvider>
         <Sonner position="top-center" />
         <AuthProvider>
-          <SoundProvider>
-            <TimerProvider>
-              <ReminderProvider>
-                <BrowserRouter>
-                  <AppContent />
-                </BrowserRouter>
-              </ReminderProvider>
-            </TimerProvider>
-          </SoundProvider>
+          <SettingsProvider>
+            <SoundProvider>
+              <TimerProvider>
+                <ReminderProvider>
+                  <BrowserRouter>
+                    <AppContent />
+                  </BrowserRouter>
+                </ReminderProvider>
+              </TimerProvider>
+            </SoundProvider>
+          </SettingsProvider>
         </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>

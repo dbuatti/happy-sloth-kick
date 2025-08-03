@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess } from '@/utils/toast';
+import { useSettings } from '@/context/SettingsContext';
 
 export interface Project {
   id: string;
@@ -47,10 +48,11 @@ const normalizeUrl = (url: string | null): string | null => {
 export const useProjects = () => {
   const { user } = useAuth();
   const userId = user?.id;
+  const { settings, updateSettings } = useSettings();
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sectionTitle, setSectionTitle] = useState('Project Balance Tracker');
+  const sectionTitle = settings?.project_tracker_title || 'Project Balance Tracker';
   const [sortOption, setSortOption] = useState<ProjectSortOption>(getInitialSortOption);
 
   // Effect to save sortOption to localStorage whenever it changes
@@ -60,7 +62,7 @@ export const useProjects = () => {
     }
   }, [sortOption]);
 
-  const fetchProjectsAndSettings = useCallback(async () => {
+  const fetchProjects = useCallback(async () => {
     if (!userId) {
       setLoading(false);
       return;
@@ -99,39 +101,17 @@ export const useProjects = () => {
       if (projectsError) throw projectsError;
       setProjects(projectsData || []);
 
-      // Fetch user settings for section title
-      const { data: settingsData, error: settingsError } = await supabase
-        .from('user_settings')
-        .select('project_tracker_title')
-        .eq('user_id', userId)
-        .single();
-
-      if (settingsError && settingsError.code !== 'PGRST116') { // PGRST116 means no rows found
-        throw settingsError;
-      }
-
-      if (settingsData) {
-        setSectionTitle(settingsData.project_tracker_title);
-      } else {
-        // If no settings found, insert default
-        const { error: insertError } = await supabase
-          .from('user_settings')
-          .insert({ user_id: userId, project_tracker_title: 'Project Balance Tracker' });
-        if (insertError) throw insertError;
-        setSectionTitle('Project Balance Tracker');
-      }
-
     } catch (error: any) {
-      console.error('Error fetching projects or settings:', error);
-      showError('Failed to load projects or settings.');
+      console.error('Error fetching projects:', error);
+      showError('Failed to load projects.');
     } finally {
       setLoading(false);
     }
   }, [userId, sortOption]);
 
   useEffect(() => {
-    fetchProjectsAndSettings();
-  }, [fetchProjectsAndSettings]);
+    fetchProjects();
+  }, [fetchProjects]);
 
   const addProject = useCallback(async (name: string, description: string | null, link: string | null) => {
     if (!userId) {
@@ -147,7 +127,7 @@ export const useProjects = () => {
 
       if (error) throw error;
       // Re-fetch to ensure correct sorting after adding
-      await fetchProjectsAndSettings(); 
+      await fetchProjects(); 
       showSuccess('Project added successfully!');
       return true;
     } catch (error: any) {
@@ -155,7 +135,7 @@ export const useProjects = () => {
       showError('Failed to add project.');
       return false;
     }
-  }, [userId, fetchProjectsAndSettings]);
+  }, [userId, fetchProjects]);
 
   const updateProject = useCallback(async (projectId: string, updates: Partial<Project>) => {
     if (!userId) {
@@ -178,7 +158,7 @@ export const useProjects = () => {
 
       if (error) throw error;
       // Re-fetch to ensure correct sorting after updating
-      await fetchProjectsAndSettings();
+      await fetchProjects();
       showSuccess('Project updated successfully!');
       return true;
     } catch (error: any) {
@@ -186,7 +166,7 @@ export const useProjects = () => {
       showError('Failed to update project.');
       return false;
     }
-  }, [userId, fetchProjectsAndSettings]);
+  }, [userId, fetchProjects]);
 
   const deleteProject = useCallback(async (projectId: string) => {
     if (!userId) {
@@ -202,7 +182,7 @@ export const useProjects = () => {
 
       if (error) throw error;
       // Re-fetch to ensure correct sorting after deleting
-      await fetchProjectsAndSettings();
+      await fetchProjects();
       showSuccess('Project deleted successfully!');
       return true;
     } catch (error: any) {
@@ -210,7 +190,7 @@ export const useProjects = () => {
       showError('Failed to delete project.');
       return false;
     }
-  }, [userId, fetchProjectsAndSettings]);
+  }, [userId, fetchProjects]);
 
   const incrementProjectCount = useCallback(async (projectId: string) => {
     if (!userId) {
@@ -249,7 +229,7 @@ export const useProjects = () => {
 
       if (error) throw error;
       // Re-fetch to ensure correct sorting after resetting
-      await fetchProjectsAndSettings();
+      await fetchProjects();
       showSuccess('All project counters reset!');
       return true;
     } catch (error: any) {
@@ -257,28 +237,15 @@ export const useProjects = () => {
       showError('Failed to reset project counts.');
       return false;
     }
-  }, [userId, fetchProjectsAndSettings]);
+  }, [userId, fetchProjects]);
 
   const updateProjectTrackerTitle = useCallback(async (newTitle: string) => {
     if (!userId) {
       showError('User not authenticated.');
       return false;
     }
-    try {
-      const { error } = await supabase
-        .from('user_settings')
-        .upsert({ user_id: userId, project_tracker_title: newTitle }, { onConflict: 'user_id' });
-
-      if (error) throw error;
-      setSectionTitle(newTitle);
-      showSuccess('Tracker title updated!');
-      return true;
-    } catch (error: any) {
-      console.error('Error updating section title:', error);
-      showError('Failed to update tracker title.');
-      return false;
-    }
-  }, [userId]);
+    return await updateSettings({ project_tracker_title: newTitle });
+  }, [userId, updateSettings]);
 
   return {
     projects,

@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import WorkHoursSettings from '@/components/WorkHoursSettings';
 import ProjectTrackerSettings from '@/components/ProjectTrackerSettings';
 import { useTheme } from 'next-themes';
+import TaskSettings from '@/components/TaskSettings';
 
 const Settings: React.FC = () => {
   const { user } = useAuth();
@@ -179,6 +180,7 @@ const Settings: React.FC = () => {
               </CardContent>
             </Card>
 
+            <TaskSettings />
             <WorkHoursSettings />
             <ProjectTrackerSettings />
 
