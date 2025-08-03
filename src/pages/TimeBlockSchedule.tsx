@@ -25,7 +25,7 @@ import {
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
 import { useAuth } from '@/context/AuthContext';
-import { useTasks } from '@/hooks/useTasks';
+import { useTasks, Task } from '@/hooks/useTasks';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import TimeBlockActionMenu from '@/components/TimeBlockActionMenu';
 import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
@@ -35,6 +35,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { parseAppointmentText } from '@/integrations/supabase/api';
 import { showLoading, dismissToast, showError, showSuccess } from '@/utils/toast';
+import TaskOverviewDialog from '@/components/TaskOverviewDialog';
+import TaskDetailDialog from '@/components/TaskDetailDialog';
 
 const TimeBlockSchedule: React.FC = () => {
   useAuth(); 
@@ -44,7 +46,18 @@ const TimeBlockSchedule: React.FC = () => {
   const singleDayWorkHours = Array.isArray(singleDayWorkHoursRaw) ? null : singleDayWorkHoursRaw;
 
   const { appointments, loading: appointmentsLoading, addAppointment, updateAppointment, deleteAppointment } = useAppointments(currentDate);
-  const { filteredTasks: allDayTasks, allCategories } = useTasks({ currentDate });
+  const { 
+    tasks: allTasks,
+    filteredTasks: allDayTasks, 
+    allCategories, 
+    sections, 
+    updateTask, 
+    deleteTask: deleteTaskFromHook,
+    createSection,
+    updateSection,
+    deleteSection,
+    updateSectionIncludeInFocusMode
+  } = useTasks({ currentDate });
 
   const [isAppointmentFormOpen, setIsAppointmentFormOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
@@ -54,6 +67,11 @@ const TimeBlockSchedule: React.FC = () => {
   const [textToParse, setTextToParse] = useState('');
   const [isParsing, setIsParsing] = useState(false);
   const [parsedDataForForm, setParsedDataForForm] = useState<Partial<NewAppointmentData> | null>(null);
+
+  const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
+  const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+  const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -135,6 +153,26 @@ const TimeBlockSchedule: React.FC = () => {
     setEditingAppointment(appointment);
     setSelectedTimeSlotForNew(null);
     setIsAppointmentFormOpen(true);
+  };
+
+  const handleAppointmentClick = (appointment: Appointment) => {
+    if (appointment.task_id) {
+      const task = allTasks.find(t => t.id === appointment.task_id);
+      if (task) {
+        setTaskToOverview(task);
+        setIsTaskOverviewOpen(true);
+      } else {
+        handleEditAppointment(appointment);
+      }
+    } else {
+      handleEditAppointment(appointment);
+    }
+  };
+
+  const handleEditTaskFromOverview = (task: Task) => {
+    setIsTaskOverviewOpen(false);
+    setTaskToEdit(task);
+    setIsTaskDetailOpen(true);
   };
 
   const handleDeleteAppointment = async (id: string) => {
@@ -415,6 +453,7 @@ const TimeBlockSchedule: React.FC = () => {
                                   onAddAppointment={() => handleOpenAppointmentForm(block)}
                                   onScheduleTask={handleScheduleTask}
                                   unscheduledTasks={unscheduledDoTodayTasks}
+                                  sections={sections}
                                 />
                               </PopoverContent>
                             </Popover>
@@ -431,7 +470,7 @@ const TimeBlockSchedule: React.FC = () => {
                         <AppointmentCard
                           key={app.id}
                           appointment={app}
-                          onEdit={handleEditAppointment}
+                          onEdit={handleAppointmentClick}
                           gridRowStart={app.gridRowStart}
                           gridRowEnd={app.gridRowEnd}
                           overlapOffset={app.overlapOffset}
@@ -446,7 +485,7 @@ const TimeBlockSchedule: React.FC = () => {
                       {activeAppointment ? (
                         <AppointmentCard
                           appointment={activeAppointment}
-                          onEdit={handleEditAppointment}
+                          onEdit={handleAppointmentClick}
                           gridRowStart={1}
                           gridRowEnd={2}
                           overlapOffset={0}
@@ -481,6 +520,34 @@ const TimeBlockSchedule: React.FC = () => {
         selectedTimeSlot={selectedTimeSlotForNew}
         prefilledData={parsedDataForForm}
       />
+      {taskToOverview && (
+        <TaskOverviewDialog
+          task={taskToOverview}
+          isOpen={isTaskOverviewOpen}
+          onClose={() => setIsTaskOverviewOpen(false)}
+          onEditClick={handleEditTaskFromOverview}
+          onUpdate={updateTask}
+          onDelete={deleteTaskFromHook}
+          sections={sections}
+          allCategories={allCategories}
+          allTasks={allTasks}
+        />
+      )}
+      {taskToEdit && (
+        <TaskDetailDialog
+          task={taskToEdit}
+          isOpen={isTaskDetailOpen}
+          onClose={() => setIsTaskDetailOpen(false)}
+          onUpdate={updateTask}
+          onDelete={deleteTaskFromHook}
+          sections={sections}
+          allCategories={allCategories}
+          createSection={createSection}
+          updateSection={updateSection}
+          deleteSection={deleteSection}
+          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+        />
+      )}
       <Dialog open={isParsingDialogOpen} onOpenChange={setIsParsingDialogOpen}>
         <DialogContent>
           <DialogHeader>
