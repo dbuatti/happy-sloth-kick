@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Plus, ListTodo, ChevronsDownUp } from 'lucide-react';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
@@ -99,6 +99,12 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
+  const tasksMap = useMemo(() => new Map(tasks.map(task => [task.id, task])), [tasks]);
+  const getTaskById = useCallback((id: UniqueIdentifier | null) => {
+      if (!id) return undefined;
+      return tasksMap.get(String(id));
+  }, [tasksMap]);
+
   const allSortableSections = useMemo(() => {
     const noSection: TaskSection = {
       id: 'no-section-header',
@@ -140,11 +146,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
   const isSectionHeaderId = (id: UniqueIdentifier | null) => {
     if (!id) return false;
     return id === 'no-section-header' || sections.some(s => s.id === id);
-  };
-
-  const getTaskById = (id: UniqueIdentifier | null) => {
-    if (!id) return undefined;
-    return tasks.find(t => t.id === id);
   };
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -202,7 +203,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
         return;
       }
       newParentId = overTask.parent_task_id;
-      newSectionId = overTask.parent_task_id ? draggedTask.section_id : overTask.section_id;
+      newSectionId = overTask.section_id;
       overId = overTask.id;
     }
 
