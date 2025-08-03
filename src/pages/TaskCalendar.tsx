@@ -55,7 +55,7 @@ const TaskCalendar: React.FC = () => {
     setIsTaskOverviewOpen(true);
   };
 
-  const handleEditTaskFromOverview = (task: Task) => {
+  const handleEditTaskFromOverview = (_task: Task) => {
     setIsTaskOverviewOpen(false);
   };
 

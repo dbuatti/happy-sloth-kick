@@ -239,7 +239,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
       remind_at: finalRemindAt instanceof Date ? finalRemindAt.toISOString() : null,
       section_id: data.sectionId ?? null,
       recurring_type: data.recurringType,
-      parent_task_id: data.parentTaskId ?? null,
+      parent_task_id: data.parentTaskId || null,
       link: data.link ?? null,
     });
     setIsSaving(false);
