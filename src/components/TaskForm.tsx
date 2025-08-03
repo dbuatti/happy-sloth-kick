@@ -23,27 +23,25 @@ const taskFormSchema = z.object({
   description: z.string().min(1, { message: 'Task description is required.' }).max(255, { message: 'Description must be 255 characters or less.' }),
   category: z.string().min(1, { message: 'Category is required.' }),
   priority: z.string().min(1, { message: 'Priority is required.' }),
-  dueDate: z.date().nullable().optional(),
-  notes: z.string().max(500, { message: 'Notes must be 500 characters or less.' }).nullable().optional(),
-  remindAtDate: z.date().nullable().optional(),
-  remindAtTime: z.string().optional(), // Changed to optional string
-  sectionId: z.string().nullable().optional(),
+  dueDate: z.date().nullable().optional().transform(v => v ?? null),
+  notes: z.string().max(500, { message: 'Notes must be 500 characters or less.' }).nullable().optional().transform(v => v ?? null),
+  remindAtDate: z.date().nullable().optional().transform(v => v ?? null),
+  remindAtTime: z.string().optional(),
+  sectionId: z.string().nullable().optional().transform(v => v ?? null),
   recurringType: z.enum(['none', 'daily', 'weekly', 'monthly']),
-  parentTaskId: z.string().nullable().optional(),
+  parentTaskId: z.string().nullable().optional().transform(v => v ?? null),
   link: z.string().optional().transform((val) => {
     if (!val || val.trim() === '') return null;
     const trimmedVal = val.trim();
-    // If it's a local path, don't modify it
     if (trimmedVal.startsWith('/') || trimmedVal.startsWith('~') || trimmedVal.startsWith('file:')) {
         return trimmedVal;
     }
-    // If it's a URL-like string without a protocol, add one
     if (!/^https?:\/\//i.test(trimmedVal) && trimmedVal.includes('.')) {
         return `https://${trimmedVal}`;
     }
     return trimmedVal;
   }).nullable(),
-}).superRefine((data, ctx) => { // Using superRefine for more robust conditional validation
+}).superRefine((data, ctx) => {
   if (data.remindAtDate) {
     if (!data.remindAtTime || data.remindAtTime.trim() === "") {
       ctx.addIssue({
@@ -52,7 +50,7 @@ const taskFormSchema = z.object({
         path: ['remindAtTime'],
       });
     } else {
-      const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-5]$/;
+      const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
       if (!timeRegex.test(data.remindAtTime)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -95,7 +93,6 @@ interface TaskFormProps {
   preselectedSectionId?: string | null;
   parentTaskId?: string | null;
   currentDate?: Date;
-  // New props for section management
   createSection: (name: string) => Promise<void>;
   updateSection: (sectionId: string, newName: string) => Promise<void>;
   deleteSection: (sectionId: string) => Promise<void>;
@@ -112,7 +109,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
   preselectedSectionId = null,
   parentTaskId = null,
   currentDate = new Date(),
-  createSection, // Destructure new props
+  createSection,
   updateSection,
   deleteSection,
   updateSectionIncludeInFocusMode,
@@ -127,13 +124,13 @@ const TaskForm: React.FC<TaskFormProps> = ({
       category: '',
       priority: 'medium',
       dueDate: null,
-      notes: '',
+      notes: null,
       remindAtDate: null,
       remindAtTime: '',
       sectionId: preselectedSectionId,
       recurringType: 'none',
-      parentTaskId: parentTaskId ?? null, // Explicitly coalesce to null
-      link: null, // Explicitly set to null to match the schema's transform output
+      parentTaskId: parentTaskId ?? null,
+      link: null,
     },
   });
 
@@ -149,13 +146,13 @@ const TaskForm: React.FC<TaskFormProps> = ({
         category: initialData.category,
         priority: initialData.priority,
         dueDate: initialData.due_date ? parseISO(initialData.due_date) : null,
-        notes: initialData.notes || '',
+        notes: initialData.notes || null,
         remindAtDate: initialData.remind_at ? parseISO(initialData.remind_at) : null,
         remindAtTime: initialData.remind_at ? format(parseISO(initialData.remind_at), 'HH:mm') : '',
         sectionId: initialData.section_id,
         recurringType: initialData.recurring_type,
         parentTaskId: initialData.parent_task_id,
-        link: initialData.link ?? null, // Ensure it's null if undefined
+        link: initialData.link ?? null,
       });
     } else {
       const generalCategory = allCategories.find(cat => cat.name.toLowerCase() === 'general');
@@ -164,12 +161,12 @@ const TaskForm: React.FC<TaskFormProps> = ({
         category: generalCategory?.id || allCategories[0]?.id || '',
         priority: 'medium',
         dueDate: null,
-        notes: '',
+        notes: null,
         remindAtDate: null,
         remindAtTime: '',
         sectionId: preselectedSectionId,
         recurringType: 'none',
-        parentTaskId: parentTaskId ?? null, // Explicitly coalesce to null
+        parentTaskId: parentTaskId ?? null,
         link: null,
       });
     }
@@ -204,15 +201,14 @@ const TaskForm: React.FC<TaskFormProps> = ({
           }
         }
 
-        // For section, we need to find the actual section ID if it exists
         const suggestedSection = sections.find(s => s.name.toLowerCase() === suggestions.section?.toLowerCase());
         if (suggestedSection) {
           setValue('sectionId', suggestedSection.id);
         } else {
-          setValue('sectionId', null); // Default to no section if not found
+          setValue('sectionId', null);
         }
-        setValue('link', suggestions.link || null); // Ensure link is set
-        setValue('notes', suggestions.notes || null); // Ensure notes is set
+        setValue('link', suggestions.link || null);
+        setValue('notes', suggestions.notes || null);
       }
     } catch (error) {
       console.error('Error getting AI suggestions:', error);
@@ -234,29 +230,27 @@ const TaskForm: React.FC<TaskFormProps> = ({
       description: data.description.trim(),
       category: data.category,
       priority: data.priority,
-      due_date: data.dueDate instanceof Date ? data.dueDate.toISOString() : null,
-      notes: data.notes ?? null,
-      remind_at: finalRemindAt instanceof Date ? finalRemindAt.toISOString() : null,
-      section_id: data.sectionId ?? null,
+      due_date: data.dueDate ? data.dueDate.toISOString() : null,
+      notes: data.notes,
+      remind_at: finalRemindAt ? finalRemindAt.toISOString() : null,
+      section_id: data.sectionId,
       recurring_type: data.recurringType,
-      parent_task_id: data.parentTaskId ?? null,
-      link: data.link ?? null,
+      parent_task_id: data.parentTaskId,
+      link: data.link,
     });
     setIsSaving(false);
     if (success) {
       onCancel();
     }
-    return success; // Return success status
+    return success;
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey && description.trim()) {
       event.preventDefault();
-      // Only attempt submission if the form is currently valid
       if (form.formState.isValid) {
         handleSubmit(onSubmit)();
       } else {
-        // Trigger validation to show errors if not valid
         form.trigger();
       }
     }
