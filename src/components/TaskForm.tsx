@@ -30,22 +30,19 @@ const taskFormSchema = z.object({
   sectionId: z.string().nullable().optional(),
   recurringType: z.enum(['none', 'daily', 'weekly', 'monthly']),
   parentTaskId: z.string().nullable().optional(),
-  link: z.string().optional().transform((val) => { // Added .optional()
+  link: z.string().optional().transform((val) => {
     if (!val || val.trim() === '') return null;
-    let processedVal = val.trim();
-    if (!/^https?:\/\//i.test(processedVal)) {
-      processedVal = `https://${processedVal}`;
+    const trimmedVal = val.trim();
+    // If it's a local path, don't modify it
+    if (trimmedVal.startsWith('/') || trimmedVal.startsWith('~') || trimmedVal.startsWith('file:')) {
+        return trimmedVal;
     }
-    return processedVal;
-  }).refine((val) => {
-    if (val === null) return true;
-    try {
-      new URL(val);
-      return true;
-    } catch (e) {
-      return false;
+    // If it's a URL-like string without a protocol, add one
+    if (!/^https?:\/\//i.test(trimmedVal) && trimmedVal.includes('.')) {
+        return `https://${trimmedVal}`;
     }
-  }, { message: 'Please enter a valid URL (e.g., example.com or https://example.com).' }).nullable(),
+    return trimmedVal;
+  }).nullable(),
 }).superRefine((data, ctx) => { // Using superRefine for more robust conditional validation
   if (data.remindAtDate) {
     if (!data.remindAtTime || data.remindAtTime.trim() === "") {
@@ -443,10 +440,10 @@ const TaskForm: React.FC<TaskFormProps> = ({
       </div>
 
       <div>
-        <Label htmlFor="task-link">Link (Optional)</Label>
+        <Label htmlFor="task-link">Link / File Path (Optional)</Label>
         <Input
           id="task-link"
-          placeholder="e.g., https://example.com/task-details"
+          placeholder="URL or local file path (e.g., /Users/...)"
           {...register('link')}
           disabled={isSaving || isSuggesting}
           className="h-9 text-base"

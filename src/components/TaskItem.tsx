@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target } from 'lucide-react';
+import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy } from 'lucide-react';
 import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
@@ -13,6 +13,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Input } from './ui/input';
 import { useSortable } from '@dnd-kit/sortable';
 import DoTodaySwitch from './DoTodaySwitch';
+import { showSuccess, showError } from '@/utils/toast';
 
 interface TaskItemProps {
   task: Task;
@@ -121,6 +122,18 @@ const TaskItem: React.FC<TaskItemProps> = ({
     }
   };
 
+  const isUrl = (path: string) => path.startsWith('http://') || path.startsWith('https://');
+
+  const handleCopyPath = async (e: React.MouseEvent, path: string) => {
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(path);
+      showSuccess('Path copied to clipboard!');
+    } catch (err) {
+      showError('Failed to copy path.');
+    }
+  };
+
   const isOverdue = task.due_date && task.status !== 'completed' && isPast(parseISO(task.due_date)) && !isSameDay(parseISO(task.due_date), currentDate);
   const isDueToday = task.due_date && task.status !== 'completed' && isSameDay(parseISO(task.due_date), currentDate);
 
@@ -191,22 +204,40 @@ const TaskItem: React.FC<TaskItemProps> = ({
         )}
 
         {task.link && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <a 
-                href={task.link} 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="inline-flex items-center flex-shrink-0 text-muted-foreground hover:text-primary"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <LinkIcon className="h-4 w-4" />
-              </a>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{task.link}</p>
-            </TooltipContent>
-          </Tooltip>
+          isUrl(task.link) ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <a
+                  href={task.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center flex-shrink-0 text-muted-foreground hover:text-primary"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <LinkIcon className="h-4 w-4" />
+                </a>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Open link: {task.link}</p>
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 flex-shrink-0 text-muted-foreground hover:text-primary"
+                  onClick={(e) => handleCopyPath(e, task.link!)}
+                >
+                  <ClipboardCopy className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Copy path: {task.link}</p>
+              </TooltipContent>
+            </Tooltip>
+          )
         )}
 
         {task.due_date && (

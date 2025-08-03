@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Trash2, ListTodo, Edit, Calendar, StickyNote, BellRing, FolderOpen, Repeat, Link as LinkIcon } from 'lucide-react';
+import { Trash2, ListTodo, Edit, Calendar, StickyNote, BellRing, FolderOpen, Repeat, Link as LinkIcon, ClipboardCopy } from 'lucide-react';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
 import {
@@ -17,6 +17,7 @@ import {
 import { cn } from '@/lib/utils';
 import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { getCategoryColorProps } from '@/lib/categoryColors';
+import { showSuccess, showError } from '@/utils/toast';
 
 interface TaskOverviewDialogProps {
   task: Task | null;
@@ -98,6 +99,17 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
     }
   };
 
+  const isUrl = (path: string) => path.startsWith('http://') || path.startsWith('https://');
+
+  const handleCopyPath = async (path: string) => {
+    try {
+      await navigator.clipboard.writeText(path);
+      showSuccess('Path copied to clipboard!');
+    } catch (err) {
+      showError('Failed to copy path.');
+    }
+  };
+
   if (!task) return null;
 
   const categoryColorProps = getCategoryColorProps(task.category_color);
@@ -152,11 +164,24 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
             )}
             {task.link && (
               <div className="flex items-center gap-2 col-span-2">
-                <LinkIcon className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                <span className="flex-shrink-0">Link:</span>
-                <a href={task.link} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline flex-1 min-w-0 truncate">
-                  {task.link}
-                </a>
+                {isUrl(task.link) ? (
+                  <>
+                    <LinkIcon className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                    <span className="flex-shrink-0">Link:</span>
+                    <a href={task.link} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline flex-1 min-w-0 truncate">
+                      {task.link}
+                    </a>
+                  </>
+                ) : (
+                  <>
+                    <ClipboardCopy className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                    <span className="flex-shrink-0">Path:</span>
+                    <span className="font-mono text-sm bg-muted px-1 rounded flex-1 min-w-0 truncate">{task.link}</span>
+                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleCopyPath(task.link!)}>
+                      <ClipboardCopy className="h-3.5 w-3.5" />
+                    </Button>
+                  </>
+                )}
               </div>
             )}
           </div>
