@@ -184,16 +184,16 @@ importers:
         specifier: latest
         version: 0.8.0(vite@6.3.4(@types/node@22.14.1)(jiti@1.21.7)(yaml@2.7.1))
       '@eslint/js':
-        specifier: ^9.9.0
+        specifier: ^12.23.12
         version: 9.24.0
       '@tailwindcss/typography':
         specifier: ^0.5.15
         version: 0.5.16(tailwindcss@3.4.17)
       '@types/deno':
-        specifier: 2.3.0
+        specifier: ^12.23.12
         version: 2.3.0
       '@types/node':
-        specifier: ^22.5.5
+        specifier: ^12.23.12
         version: 22.14.1
       '@types/react':
         specifier: ^18.3.3
