@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MadeWithDyad } from "@/components/made-with-dyad";
@@ -10,7 +9,7 @@ import { format, addDays } from 'date-fns';
 import { Moon, Bed, AlarmClock, LogOut, Hourglass, ListX, Clock, Goal } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSound } from '@/context/SoundContext';
-import { useAuth } from '@/context/AuthContext'; // Re-introduced useAuth
+import { useAuth } from '@/context/AuthContext';
 
 interface SleepTrackerProps {
   currentDate: Date;
@@ -18,7 +17,6 @@ interface SleepTrackerProps {
 }
 
 const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate }) => {
-  // Removed 'user' from useAuth destructuring as it's not directly used here.
   useAuth(); 
 
   const { playSound } = useSound();
@@ -62,7 +60,8 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
     setCurrentDate(new Date());
   };
 
-  const handleSubmit = async () => {
+  const handleAutoSave = async () => {
+    if (isSaving) return;
     setIsSaving(true);
     const dataToSave: NewSleepRecordData = {
       date: format(currentDate, 'yyyy-MM-dd'),
@@ -90,6 +89,7 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
           <CardHeader className="pb-2">
             <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
               <Moon className="h-7 w-7 text-primary" /> Sleep Tracker
+              {isSaving && <span className="text-sm font-normal text-muted-foreground animate-pulse">Saving...</span>}
             </CardTitle>
             <p className="text-sm text-muted-foreground text-center">Log your sleep times and details for better insights.</p>
           </CardHeader>
@@ -125,6 +125,7 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
                     type="time"
                     value={bedTime}
                     onChange={(e) => setBedTime(e.target.value)}
+                    onBlur={handleAutoSave}
                     disabled={isSaving}
                     className="h-9 text-base"
                   />
@@ -138,6 +139,7 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
                     type="time"
                     value={lightsOffTime}
                     onChange={(e) => setLightsOffTime(e.target.value)}
+                    onBlur={handleAutoSave}
                     disabled={isSaving}
                     className="h-9 text-base"
                   />
@@ -151,6 +153,7 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
                     type="number"
                     value={timeToFallAsleepMinutes}
                     onChange={(e) => setTimeToFallAsleepMinutes(e.target.value === '' ? '' : Number(e.target.value))}
+                    onBlur={handleAutoSave}
                     placeholder="e.g., 15"
                     min="0"
                     disabled={isSaving}
@@ -166,6 +169,7 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
                     type="number"
                     value={sleepInterruptionsCount}
                     onChange={(e) => setSleepInterruptionsCount(e.target.value === '' ? '' : Number(e.target.value))}
+                    onBlur={handleAutoSave}
                     placeholder="e.g., 2"
                     min="0"
                     disabled={isSaving}
@@ -181,6 +185,7 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
                     type="number"
                     value={sleepInterruptionsDurationMinutes}
                     onChange={(e) => setSleepInterruptionsDurationMinutes(e.target.value === '' ? '' : Number(e.target.value))}
+                    onBlur={handleAutoSave}
                     placeholder="e.g., 30"
                     min="0"
                     disabled={isSaving}
@@ -196,6 +201,7 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
                     type="number"
                     value={timesLeftBedCount}
                     onChange={(e) => setTimesLeftBedCount(e.target.value === '' ? '' : Number(e.target.value))}
+                    onBlur={handleAutoSave}
                     placeholder="e.g., 1"
                     min="0"
                     disabled={isSaving}
@@ -211,6 +217,7 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
                     type="time"
                     value={wakeUpTime}
                     onChange={(e) => setWakeUpTime(e.target.value)}
+                    onBlur={handleAutoSave}
                     disabled={isSaving}
                     className="h-9 text-base"
                   />
@@ -224,6 +231,7 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
                     type="time"
                     value={plannedWakeUpTime}
                     onChange={(e) => setPlannedWakeUpTime(e.target.value)}
+                    onBlur={handleAutoSave}
                     disabled={isSaving}
                     className="h-9 text-base"
                   />
@@ -237,13 +245,11 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
                     type="time"
                     value={getOutOfBedTime}
                     onChange={(e) => setGetOutOfBedTime(e.target.value)}
+                    onBlur={handleAutoSave}
                     disabled={isSaving}
                     className="h-9 text-base"
                   />
                 </div>
-                <Button onClick={handleSubmit} className="w-full h-9 text-base" disabled={isSaving}>
-                  {isSaving ? 'Saving...' : 'Save Sleep Record'}
-                </Button>
               </div>
             )}
           </CardContent>
