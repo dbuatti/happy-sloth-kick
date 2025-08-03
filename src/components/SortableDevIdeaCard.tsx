@@ -29,6 +29,7 @@ const SortableDevIdeaCard: React.FC<SortableDevIdeaCardProps> = ({ idea, onEdit 
   const pointerDownPos = useRef<{x: number, y: number} | null>(null);
 
   const handlePointerDown = (e: React.PointerEvent) => {
+    console.log('handlePointerDown triggered');
     if (listeners?.onPointerDown) {
       listeners.onPointerDown(e);
     }
@@ -36,25 +37,34 @@ const SortableDevIdeaCard: React.FC<SortableDevIdeaCardProps> = ({ idea, onEdit 
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
+    console.log('handlePointerUp triggered');
     if (pointerDownPos.current) {
       const deltaX = Math.abs(e.clientX - pointerDownPos.current.x);
       const deltaY = Math.abs(e.clientY - pointerDownPos.current.y);
       
-      // Tolerance for what is considered a click vs a drag
+      console.log(`Movement delta: dX=${deltaX}, dY=${deltaY}`);
+
       const clickTolerance = 5; 
 
       if (deltaX < clickTolerance && deltaY < clickTolerance) {
-        // This is a click, perform the action
+        console.log('Movement within click tolerance. Treating as a click.');
+        
         if ((e.target as HTMLElement).closest('button')) {
+          console.log('Click was on a button, ignoring copy action.');
           return;
         }
+
+        console.log('Attempting to copy to clipboard...');
         const textToCopy = `${idea.title}${idea.description ? `\n\n${idea.description}` : ''}`;
         navigator.clipboard.writeText(textToCopy).then(() => {
+          console.log('Successfully copied to clipboard.');
           showSuccess('Idea copied to clipboard!');
         }).catch(err => {
           console.error('Failed to copy text: ', err);
           showError('Could not copy idea to clipboard.');
         });
+      } else {
+        console.log('Movement exceeded click tolerance. Treating as a drag.');
       }
     }
     pointerDownPos.current = null;
