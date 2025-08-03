@@ -28,6 +28,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTasks } from '@/hooks/useTasks';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import TimeBlockActionMenu from '@/components/TimeBlockActionMenu';
+import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
 
 const TimeBlockSchedule: React.FC = () => {
   useAuth(); 
@@ -52,25 +53,31 @@ const TimeBlockSchedule: React.FC = () => {
 
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
 
-  const handlePreviousDay = () => {
+  const handlePreviousDay = useCallback(() => {
     setCurrentDate(prevDate => {
       const newDate = new Date(prevDate);
       newDate.setDate(prevDate.getDate() - 1);
       return newDate;
     });
-  };
+  }, []);
 
-  const handleNextDay = () => {
+  const handleNextDay = useCallback(() => {
     setCurrentDate(prevDate => {
       const newDate = new Date(prevDate);
       newDate.setDate(prevDate.getDate() + 1);
-      return new Date();
+      return newDate;
     });
-  };
+  }, []);
 
   const handleGoToToday = () => {
     setCurrentDate(new Date());
   };
+
+  const shortcuts: ShortcutMap = {
+    'arrowleft': handlePreviousDay,
+    'arrowright': handleNextDay,
+  };
+  useKeyboardShortcuts(shortcuts);
 
   const timeBlocks = useMemo(() => {
     const workHours = singleDayWorkHours;
