@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useWorkHours } from '@/hooks/useWorkHours';
 import { format, addMinutes, parse, isBefore, getMinutes, getHours } from 'date-fns';
-import { CalendarDays, Clock, Settings } from 'lucide-react';
+import { CalendarDays, Clock, Settings, Sparkles } from 'lucide-react';
 import DateNavigator from '@/components/DateNavigator';
 import { useAppointments, Appointment, NewAppointmentData } from '@/hooks/useAppointments';
 import AppointmentForm from '@/components/AppointmentForm';
@@ -29,6 +29,12 @@ import { useTasks } from '@/hooks/useTasks';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import TimeBlockActionMenu from '@/components/TimeBlockActionMenu';
 import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { parseAppointmentText } from '@/integrations/supabase/api';
+import { showLoading, dismissToast, showError, showSuccess } from '@/utils/toast';
 
 const TimeBlockSchedule: React.FC = () => {
   useAuth(); 
@@ -43,6 +49,11 @@ const TimeBlockSchedule: React.FC = () => {
   const [isAppointmentFormOpen, setIsAppointmentFormOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const [selectedTimeSlotForNew, setSelectedTimeSlotForNew] = useState<{ start: Date; end: Date } | null>(null);
+  
+  const [isParsingDialogOpen, setIsParsingDialogOpen] = useState(false);
+  const [textToParse, setTextToParse] = useState('');
+  const [isParsing, setIsParsing] = useState(false);
+  const [parsedDataForForm, setParsedDataForForm] = useState<Partial<NewAppointmentData> | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -266,14 +277,47 @@ const TimeBlockSchedule: React.FC = () => {
     await addAppointment(newAppointment);
   };
 
+  const handleParseText = async () => {
+    if (!textToParse.trim()) {
+      showError('Please paste some text to parse.');
+      return;
+    }
+    setIsParsing(true);
+    const loadingToastId = showLoading('Parsing appointment details...');
+    const result = await parseAppointmentText(textToParse, currentDate);
+    dismissToast(loadingToastId);
+    setIsParsing(false);
+
+    if (result) {
+      showSuccess('Details parsed successfully!');
+      setParsedDataForForm({
+        title: result.title,
+        description: result.description,
+        date: result.date,
+        start_time: `${result.startTime}:00`,
+        end_time: `${result.endTime}:00`,
+      });
+      setIsParsingDialogOpen(false);
+      setIsAppointmentFormOpen(true);
+      setTextToParse('');
+    } else {
+      showError('Could not parse the text. Please check the format.');
+    }
+  };
+
   return (
     <div className="flex-1 flex flex-col">
       <main className="flex-grow p-4">
         <Card className="w-full max-w-4xl mx-auto shadow-lg rounded-xl p-4">
           <CardHeader className="pb-2">
-            <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
-              <CalendarDays className="h-7 w-7" /> Dynamic Schedule
-            </CardTitle>
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
+                <CalendarDays className="h-7 w-7" /> Dynamic Schedule
+              </CardTitle>
+              <Button variant="outline" onClick={() => setIsParsingDialogOpen(true)}>
+                <Sparkles className="mr-2 h-4 w-4" /> Parse from Text
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="pt-0">
             <DateNavigator
@@ -428,13 +472,42 @@ const TimeBlockSchedule: React.FC = () => {
           setIsAppointmentFormOpen(false);
           setEditingAppointment(null);
           setSelectedTimeSlotForNew(null);
+          setParsedDataForForm(null);
         }}
         onSave={handleSaveAppointment}
         onDelete={handleDeleteAppointment}
         initialData={editingAppointment}
         selectedDate={currentDate}
         selectedTimeSlot={selectedTimeSlotForNew}
+        prefilledData={parsedDataForForm}
       />
+      <Dialog open={isParsingDialogOpen} onOpenChange={setIsParsingDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Parse Appointment from Text</DialogTitle>
+            <DialogDescription>
+              Paste your appointment details below (e.g., "meeting at 3pm for 1 hour" or a confirmation email) and we'll try to fill out the form for you.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Label htmlFor="text-to-parse">Appointment Text</Label>
+            <Textarea
+              id="text-to-parse"
+              value={textToParse}
+              onChange={(e) => setTextToParse(e.target.value)}
+              rows={10}
+              placeholder="Paste text here..."
+              disabled={isParsing}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsParsingDialogOpen(false)} disabled={isParsing}>Cancel</Button>
+            <Button onClick={handleParseText} disabled={isParsing || !textToParse.trim()}>
+              {isParsing ? 'Parsing...' : 'Parse and Create'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -8,7 +8,7 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, Trash2 } from 'lucide-react'; // Added Trash2 icon
 import { cn } from "@/lib/utils";
-import { format, parse, setHours, setMinutes, parseISO, addMinutes } from 'date-fns';
+import { format, parse, setHours, setMinutes, parseISO, addMinutes, isValid } from 'date-fns';
 import { Appointment, NewAppointmentData } from '@/hooks/useAppointments';
 import {
   AlertDialog,
@@ -50,6 +50,7 @@ interface AppointmentFormProps {
   initialData?: Appointment | null;
   selectedDate: Date;
   selectedTimeSlot?: { start: Date; end: Date } | null;
+  prefilledData?: Partial<NewAppointmentData> | null;
 }
 
 const presetColors = [
@@ -71,6 +72,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   initialData,
   selectedDate,
   selectedTimeSlot,
+  prefilledData,
 }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false); // State for delete confirmation
@@ -100,6 +102,16 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
           endTime: initialData.end_time.substring(0, 5),     // HH:MM
           color: initialData.color,
         });
+      } else if (prefilledData) {
+        const parsedDate = prefilledData.date && isValid(parseISO(prefilledData.date)) ? parseISO(prefilledData.date) : selectedDate;
+        reset({
+          title: prefilledData.title || '',
+          description: prefilledData.description || '',
+          date: parsedDate,
+          startTime: prefilledData.start_time ? prefilledData.start_time.substring(0, 5) : '',
+          endTime: prefilledData.end_time ? prefilledData.end_time.substring(0, 5) : '',
+          color: prefilledData.color || presetColors[0].value,
+        });
       } else {
         const now = new Date();
         const defaultStartTime = format(setMinutes(setHours(now, now.getHours()), Math.floor(now.getMinutes() / 30) * 30), 'HH:mm');
@@ -115,7 +127,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
         });
       }
     }
-  }, [isOpen, initialData, selectedDate, selectedTimeSlot, reset]);
+  }, [isOpen, initialData, prefilledData, selectedDate, selectedTimeSlot, reset]);
 
   const onSubmit = async (data: AppointmentFormData) => {
     setIsSaving(true);

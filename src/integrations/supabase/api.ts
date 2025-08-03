@@ -37,3 +37,24 @@ export const suggestTaskDetails = async (
     return null;
   }
 };
+
+export const parseAppointmentText = async (
+  text: string,
+  currentDate: Date
+): Promise<{ title: string; description: string | null; date: string; startTime: string; endTime: string } | null> => {
+  try {
+    const { data, error } = await supabase.functions.invoke('parse-appointment-text', {
+      body: { text, currentDate: currentDate.toISOString().split('T')[0] },
+    });
+
+    if (error) {
+      console.error('Error invoking Edge Function:', error);
+      throw new Error(error.message);
+    }
+
+    return data;
+  } catch (error: any) {
+    console.error('Failed to parse appointment text:', error.message);
+    return null;
+  }
+};
