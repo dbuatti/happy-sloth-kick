@@ -6,6 +6,7 @@ import { DevIdea } from '@/hooks/useDevIdeas';
 import { cn } from '@/lib/utils';
 import { showSuccess, showError } from '@/utils/toast';
 import { Badge } from '@/components/ui/badge';
+import { formatDistanceToNow } from 'date-fns';
 
 interface DevIdeaCardProps {
   idea: DevIdea;
@@ -129,6 +130,9 @@ const DevIdeaCard: React.FC<DevIdeaCardProps> = ({ idea, onEdit }) => {
             ))}
           </div>
         )}
+        <p className="text-xs text-muted-foreground mt-2">
+          Updated {formatDistanceToNow(new Date(idea.updated_at), { addSuffix: true })}
+        </p>
       </CardContent>
     </Card>
   );

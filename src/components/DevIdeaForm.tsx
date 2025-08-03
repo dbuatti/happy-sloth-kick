@@ -17,7 +17,7 @@ import TagInput from './TagInput'; // Import the new TagInput component
 interface DevIdeaFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: Omit<DevIdea, 'id' | 'user_id' | 'created_at' | 'tags'> & { tagIds: string[] }) => Promise<any>;
+  onSave: (data: Omit<DevIdea, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'tags'> & { tagIds: string[] }) => Promise<any>;
   initialData?: DevIdea | null;
   allTags: DevIdeaTag[];
   onAddTag: (name: string, color: string) => Promise<DevIdeaTag | null>;

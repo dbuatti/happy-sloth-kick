@@ -17,6 +17,7 @@ export interface DevIdea {
   status: 'idea' | 'in-progress' | 'completed';
   priority: 'low' | 'medium' | 'high';
   created_at: string;
+  updated_at: string;
   image_url?: string | null;
   tags: DevIdeaTag[];
 }
@@ -95,7 +96,7 @@ export const useDevIdeas = () => {
     }
   };
 
-  const addIdea = async (ideaData: Omit<DevIdea, 'id' | 'user_id' | 'created_at' | 'tags'> & { tagIds: string[] }) => {
+  const addIdea = async (ideaData: Omit<DevIdea, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'tags'> & { tagIds: string[] }) => {
     if (!userId) {
       showError('User not authenticated.');
       return null;
@@ -119,7 +120,7 @@ export const useDevIdeas = () => {
     }
   };
 
-  const updateIdea = async (id: string, updates: Partial<Omit<DevIdea, 'id' | 'user_id' | 'created_at' | 'tags'>> & { tagIds?: string[] }) => {
+  const updateIdea = async (id: string, updates: Partial<Omit<DevIdea, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'tags'>> & { tagIds?: string[] }) => {
     if (!userId) {
       showError('User not authenticated.');
       return null;
