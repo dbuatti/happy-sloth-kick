@@ -117,7 +117,7 @@ const DevIdeaForm: React.FC<DevIdeaFormProps> = ({ isOpen, onClose, onSave, init
     if (imageFile) {
       const filePath = `${user.id}/${uuidv4()}`;
       const { error: uploadError } = await supabase.storage
-        .from('dev_idea_images')
+        .from('devideaimages')
         .upload(filePath, imageFile);
 
       if (uploadError) {
@@ -127,7 +127,7 @@ const DevIdeaForm: React.FC<DevIdeaFormProps> = ({ isOpen, onClose, onSave, init
       }
 
       const { data: urlData } = supabase.storage
-        .from('dev_idea_images')
+        .from('devideaimages')
         .getPublicUrl(filePath);
       
       imageUrlToSave = urlData.publicUrl;

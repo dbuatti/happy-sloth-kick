@@ -148,7 +148,6 @@ export const useDevIdeas = () => {
   };
 
   const deleteIdea = async (id: string) => {
-    // ... (existing delete logic is fine, associations will cascade)
     if (!userId) {
       showError('User not authenticated.');
       return false;
@@ -172,7 +171,7 @@ export const useDevIdeas = () => {
 
       if (existingIdea?.image_url) {
         const imageKey = existingIdea.image_url.substring(existingIdea.image_url.lastIndexOf('/') + 1);
-        await supabase.storage.from('dev_idea_images').remove([imageKey]);
+        await supabase.storage.from('devideaimages').remove([imageKey]);
       }
 
       setIdeas(prev => prev.filter(idea => idea.id !== id));
