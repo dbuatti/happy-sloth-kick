@@ -52,18 +52,33 @@ export const useDashboardData = () => {
         .select('*')
         .eq('user_id', userId)
         .eq('week_start_date', weekStartDate)
-        .single();
+        .maybeSingle();
 
-      if (focusError && focusError.code === 'PGRST116') {
+      if (focusError) throw focusError;
+
+      if (!focusData) {
         const { data: newFocus, error: insertError } = await supabase
           .from('weekly_focus')
           .insert({ user_id: userId, week_start_date: weekStartDate })
           .select()
           .single();
-        if (insertError) throw insertError;
-        focusData = newFocus;
-      } else if (focusError) {
-        throw focusError;
+        
+        if (insertError) {
+          if (insertError.code === '23505') { // unique_violation, handle race condition
+            const { data: refetchedFocus, error: refetchError } = await supabase
+              .from('weekly_focus')
+              .select('*')
+              .eq('user_id', userId)
+              .eq('week_start_date', weekStartDate)
+              .single();
+            if (refetchError) throw refetchError;
+            focusData = refetchedFocus;
+          } else {
+            throw insertError;
+          }
+        } else {
+          focusData = newFocus;
+        }
       }
       setWeeklyFocus(focusData);
 
