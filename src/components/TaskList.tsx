@@ -277,6 +277,10 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                 .sort((a, b) => (a.order || 0) - (b.order || 0));
               const remainingTasksCount = topLevelTasksInSection.filter(t => t.status === 'to-do').length;
 
+              if (currentSection.id === 'no-section-header' && topLevelTasksInSection.length === 0) {
+                return null;
+              }
+
               return (
                 <div
                   key={currentSection.id}
