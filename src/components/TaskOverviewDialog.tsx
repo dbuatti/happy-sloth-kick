@@ -51,6 +51,13 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
       .sort((a, b) => (a.order || 0) - (b.order || 0));
   }, [allTasks, task?.id]);
 
+  const originalTask = useMemo(() => {
+    if (!task?.original_task_id) return null;
+    return allTasks.find(t => t.id === task.original_task_id);
+  }, [allTasks, task]);
+
+  const recurringType = originalTask ? originalTask.recurring_type : task?.recurring_type;
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'urgent': return 'text-priority-urgent';
@@ -146,10 +153,12 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
               <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
               <span>Section: <span className="font-semibold">{sectionName}</span></span>
             </div>
-            <div className="flex items-center gap-2">
-              <Repeat className="h-3.5 w-3.5 text-muted-foreground" />
-              <span>Recurring: <span className="font-semibold capitalize">{task.recurring_type}</span></span>
-            </div>
+            {recurringType !== 'none' && (
+              <div className="flex items-center gap-2">
+                <Repeat className="h-3.5 w-3.5 text-muted-foreground" />
+                <span>Recurring: <span className="font-semibold capitalize">{recurringType}</span></span>
+              </div>
+            )}
             {task.due_date && (
               <div className="flex items-center gap-2 col-span-2">
                 <Calendar className="h-3.5 w-3.5 text-muted-foreground" />

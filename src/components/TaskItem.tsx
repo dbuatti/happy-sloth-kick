@@ -266,7 +266,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
       )}
 
       <div className="flex-shrink-0 flex items-center space-x-1" data-no-dnd="true">
-        {task.recurring_type === 'none' && (
+        {task.recurring_type === 'none' && !task.original_task_id && (
           <DoTodaySwitch
             isOn={isDoToday}
             onToggle={() => toggleDoToday(task)}
