@@ -38,8 +38,8 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
     isDragging,
   } = useSortable({ id: task.id, data: { type: 'task', task } });
 
-  const style: React.CSSProperties = { // Explicitly type as React.CSSProperties
-    transform: CSS.Transform.toString(transform),
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform || null), // Correctly handle null transform
     transition,
     opacity: isDragging && !isOverlay ? 0 : 1,
     visibility: isDragging && !isOverlay ? 'hidden' : 'visible',
