@@ -5,7 +5,6 @@ import { useWorkHours } from '@/hooks/useWorkHours';
 import { format, addMinutes, parse, isBefore, getMinutes, getHours } from 'date-fns';
 import { CalendarDays, Clock, Settings } from 'lucide-react';
 import DateNavigator from '@/components/DateNavigator';
-import { cn } from '@/lib/utils'; // Re-introduced cn as it's used
 import { useAppointments, Appointment, NewAppointmentData } from '@/hooks/useAppointments';
 import AppointmentForm from '@/components/AppointmentForm';
 import AppointmentCard from '@/components/AppointmentCard';

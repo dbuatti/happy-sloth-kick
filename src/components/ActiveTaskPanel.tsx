@@ -17,6 +17,7 @@ interface ActiveTaskPanelProps {
   onDeleteTask: (taskId: string) => void;
   sections: TaskSection[];
   allCategories: Category[];
+  onOpenDetail: (task: Task) => void;
 }
 
 const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
@@ -27,6 +28,7 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
   onDeleteTask,
   sections,
   allCategories,
+  onOpenDetail,
 }) => {
   useAuth(); 
 
@@ -126,18 +128,8 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
 
   const handleEditTaskFromOverview = useCallback((task: Task) => {
     setIsTaskOverviewOpen(false);
-    // This function is now responsible for opening the detail dialog via the parent's prop
-    // Since ActiveTaskPanel doesn't manage TaskDetailDialog directly, it can't call setTaskToEdit here.
-    // The parent component (FocusMode) will handle opening the TaskDetailDialog based on the onOpenDetail prop.
-    // So, we just need to ensure the task is passed correctly to the parent's handler.
-    // For now, I'll leave this as a placeholder or remove it if it's not strictly needed for the flow.
-    // Given the current structure, onOpenDetail is passed to FocusToolsPanel, which then passes it to ActiveTaskPanel.
-    // ActiveTaskPanel doesn't have onOpenDetail as a prop, so this needs to be handled by the parent.
-    // Let's re-add onOpenDetail to ActiveTaskPanelProps and pass it down.
-    // Re-evaluating: FocusToolsPanel has onOpenDetail, and it passes it to ActiveTaskPanel.
-    // So, ActiveTaskPanel needs onOpenDetail as a prop.
-    // Let's add it back to ActiveTaskPanelProps.
-  }, []);
+    onOpenDetail(task);
+  }, [onOpenDetail]);
 
   const upcomingTasks = useMemo(() => {
     if (!nextAvailableTask) return [];

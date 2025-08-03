@@ -242,12 +242,12 @@ const TaskForm: React.FC<TaskFormProps> = ({
       category: data.category,
       priority: data.priority,
       due_date: data.dueDate instanceof Date ? data.dueDate.toISOString() : null,
-      notes: data.notes ?? null, // Changed from || null to ?? null
+      notes: data.notes ?? null,
       remind_at: finalRemindAt instanceof Date ? finalRemindAt.toISOString() : null,
-      section_id: data.sectionId || null, // Ensure sectionId is null if undefined
+      section_id: data.sectionId ?? null,
       recurring_type: data.recurringType,
-      parent_task_id: data.parentTaskId || null, // Ensure parentTaskId is null if undefined
-      link: data.link ?? null, // Use nullish coalescing for consistency
+      parent_task_id: data.parentTaskId ?? null,
+      link: data.link ?? null,
     });
     setIsSaving(false);
     if (success) {

@@ -267,7 +267,7 @@ const DailyTasksV3: React.FC = () => {
         onDeleteTask={deleteTask}
         sections={sections}
         allCategories={allCategories}
-        // Removed currentDate={currentDate}
+        onOpenDetail={handleOpenDetail}
       />
     </div>
   );
