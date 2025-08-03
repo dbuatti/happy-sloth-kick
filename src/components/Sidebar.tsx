@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Target, LayoutGrid, CalendarClock, Menu, Leaf, Moon, Volume2, VolumeX, Brain, LayoutDashboard, Code, ListTodo } from 'lucide-react';
+import { Menu, Volume2, VolumeX } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -9,32 +9,26 @@ import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
 import { Badge } from '@/components/ui/badge';
 import { useSound } from '@/context/SoundContext';
 import ThemeSelector from './ThemeSelector';
+import { navItems } from '@/lib/navItems';
+import { useSettings } from '@/context/SettingsContext';
 
 interface SidebarProps {
   children: React.ReactNode;
 }
 
-const navItems = [
-  { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-  { name: 'Daily Tasks', path: '/daily-tasks', icon: ListTodo, showCount: true },
-  { name: 'Calendar', path: '/calendar', icon: Home },
-  { name: 'Focus Mode', path: '/focus', icon: Target },
-  { name: 'Mindfulness', path: '/mindfulness', icon: Brain },
-  { name: 'Meditation', path: '/meditation', icon: Leaf },
-  { name: 'Sleep', path: '/sleep', icon: Moon },
-  { name: 'Project Balance', path: '/projects', icon: LayoutGrid },
-  { name: 'Time Blocks', path: '/schedule', icon: CalendarClock },
-  { name: 'My Hub', path: '/my-hub', icon: LayoutDashboard },
-  { name: 'Dev Space', path: '/dev-space', icon: Code },
-];
-
 const NavigationLinks = ({ onLinkClick }: { onLinkClick?: () => void }) => {
   const location = useLocation();
   const { dailyTaskCount, loading: countLoading } = useDailyTaskCount();
+  const { settings } = useSettings();
+
+  const visibleNavItems = navItems.filter(item => {
+    if (!item.toggleable) return true;
+    return settings?.visible_pages?.[item.path] !== false;
+  });
 
   return (
     <nav className="flex-1 px-2 space-y-0.5">
-      {navItems.map((item) => {
+      {visibleNavItems.map((item) => {
         const isActive = location.pathname === item.path;
         const Icon = item.icon;
         return (
