@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit } from 'lucide-react';
+import { Edit, ClipboardCopy } from 'lucide-react';
 import { DevIdea } from '@/hooks/useDevIdeas';
 import { cn } from '@/lib/utils';
 import { showSuccess, showError } from '@/utils/toast';
@@ -36,16 +36,11 @@ const DevIdeaCard: React.FC<DevIdeaCardProps> = ({ idea, onEdit }) => {
   const handleCardClick = async () => {
     if (idea.image_url) {
       try {
-        // 1. Prepare plain text version as a fallback
         const textToCopy = `${idea.title}${idea.description ? `\n\n${idea.description}` : ''}`;
         const textBlob = new Blob([textToCopy], { type: 'text/plain' });
-
-        // 2. Fetch image and convert to data URL for HTML embedding
         const response = await fetch(idea.image_url);
         const imageBlob = await response.blob();
         const dataUrl = await blobToDataURL(imageBlob);
-
-        // 3. Prepare HTML version
         const htmlToCopy = `
           <div>
             <img src="${dataUrl}" alt="${idea.title}" style="max-width: 100%; height: auto;" />
@@ -54,19 +49,11 @@ const DevIdeaCard: React.FC<DevIdeaCardProps> = ({ idea, onEdit }) => {
           </div>
         `;
         const htmlBlob = new Blob([htmlToCopy], { type: 'text/html' });
-
-        // 4. Create a ClipboardItem with both HTML and plain text representations
-        const clipboardItem = new ClipboardItem({
-          'text/html': htmlBlob,
-          'text/plain': textBlob,
-        });
-
-        // 5. Write to clipboard
+        const clipboardItem = new ClipboardItem({ 'text/html': htmlBlob, 'text/plain': textBlob });
         await navigator.clipboard.write([clipboardItem]);
         showSuccess('Idea (with image) copied to clipboard!');
       } catch (err) {
         console.error('Failed to copy rich text: ', err);
-        // Fallback to just copying text if rich copy fails
         try {
           const textToCopy = `${idea.title}${idea.description ? `\n\n${idea.description}` : ''}`;
           await navigator.clipboard.writeText(textToCopy);
@@ -77,7 +64,6 @@ const DevIdeaCard: React.FC<DevIdeaCardProps> = ({ idea, onEdit }) => {
         }
       }
     } else {
-      // Text-only copy logic remains the same
       const textToCopy = `${idea.title}${idea.description ? `\n\n${idea.description}` : ''}`;
       navigator.clipboard.writeText(textToCopy).then(() => {
         showSuccess('Idea copied to clipboard!');
@@ -88,6 +74,22 @@ const DevIdeaCard: React.FC<DevIdeaCardProps> = ({ idea, onEdit }) => {
     }
   };
 
+  const handleCopyImageClick = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent the card's click handler from firing
+    if (!idea.image_url) return;
+
+    try {
+      const response = await fetch(idea.image_url);
+      const imageBlob = await response.blob();
+      const clipboardItem = new ClipboardItem({ [imageBlob.type]: imageBlob });
+      await navigator.clipboard.write([clipboardItem]);
+      showSuccess('Image copied to clipboard!');
+    } catch (err) {
+      console.error('Failed to copy image: ', err);
+      showError('Could not copy image.');
+    }
+  };
+
   const handleEditClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onEdit(idea);
@@ -95,14 +97,21 @@ const DevIdeaCard: React.FC<DevIdeaCardProps> = ({ idea, onEdit }) => {
 
   return (
     <Card 
-      className={cn("w-full shadow-md hover:shadow-lg transition-shadow duration-200 border-l-4 cursor-pointer", getPriorityColor(idea.priority))}
+      className={cn("group w-full shadow-md hover:shadow-lg transition-shadow duration-200 border-l-4 cursor-pointer", getPriorityColor(idea.priority))}
       onClick={handleCardClick}
     >
       <CardHeader className="pb-2 flex-row items-start justify-between">
         <CardTitle className="text-lg font-semibold">{idea.title}</CardTitle>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleEditClick}>
-          <Edit className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center">
+          {idea.image_url && (
+            <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={handleCopyImageClick} title="Copy Image Only">
+              <ClipboardCopy className="h-4 w-4" />
+            </Button>
+          )}
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleEditClick}>
+            <Edit className="h-4 w-4" />
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {idea.image_url && (
