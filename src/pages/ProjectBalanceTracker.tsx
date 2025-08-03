@@ -22,11 +22,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useAuth } from '@/context/AuthContext'; // Re-introduced useAuth
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 const ProjectBalanceTracker: React.FC = () => {
-  // Removed 'user' from useAuth destructuring as it's not directly used here.
-  useAuth(); 
+  const { user } = useAuth(); // Use useAuth to get the user
+  const userId = user?.id; // Get userId from useAuth
 
   const {
     projects,
@@ -330,7 +330,7 @@ const ProjectBalanceTracker: React.FC = () => {
                               disabled={isSavingProject}
                             />
                             <Textarea
-                              value={newProjectDescription} // Use newProjectDescription here
+                              value={editingProjectDescription}
                               onChange={(e) => setNewProjectDescription(e.target.value)}
                               placeholder="Description..."
                               rows={2}
@@ -350,7 +350,7 @@ const ProjectBalanceTracker: React.FC = () => {
                             <h3 className="text-xl font-bold truncate flex items-center gap-2">
                               {project.name}
                               {project.current_count === 10 && (
-                                <CheckCircle2 className="h-5 w-5" />
+                                <CheckCircle2 className="h-5 w-5 text-primary" />
                               )}
                               {project.link && (
                                 <a 

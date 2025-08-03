@@ -5,6 +5,7 @@ import { useWorkHours } from '@/hooks/useWorkHours';
 import { format, addMinutes, parse, isBefore, getMinutes, getHours } from 'date-fns';
 import { CalendarDays, Clock, Settings } from 'lucide-react';
 import DateNavigator from '@/components/DateNavigator';
+import { cn } from '@/lib/utils';
 import { useAppointments, Appointment, NewAppointmentData } from '@/hooks/useAppointments';
 import AppointmentForm from '@/components/AppointmentForm';
 import AppointmentCard from '@/components/AppointmentCard';
@@ -24,10 +25,11 @@ import {
   verticalListSortingStrategy,
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 const TimeBlockSchedule: React.FC = () => {
-  useAuth(); 
+  const { user } = useAuth(); // Use useAuth to get the user
+  const userId = user?.id; // Get userId from useAuth
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const { workHours: singleDayWorkHoursRaw, loading: workHoursLoading } = useWorkHours({ date: currentDate });
@@ -317,7 +319,7 @@ const TimeBlockSchedule: React.FC = () => {
                           key={app.id}
                           appointment={app}
                           onEdit={handleEditAppointment}
-                          // Removed onDelete
+                          onDelete={handleDeleteAppointment}
                           gridRowStart={app.gridRowStart}
                           gridRowEnd={app.gridRowEnd}
                           overlapOffset={app.overlapOffset}
@@ -333,7 +335,7 @@ const TimeBlockSchedule: React.FC = () => {
                         <AppointmentCard
                           appointment={activeAppointment}
                           onEdit={handleEditAppointment}
-                          // Removed onDelete
+                          onDelete={handleDeleteAppointment}
                           gridRowStart={1}
                           gridRowEnd={2}
                           overlapOffset={0}

@@ -16,8 +16,9 @@ import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { suggestTaskDetails } from '@/integrations/supabase/api';
-import { showError } from '@/utils/toast';
+import { suggestTaskDetails } from '@/integrations/supabase/api'; // Updated import path
+import { showError } from '@/utils/toast'; // Import showError
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 const taskFormSchema = z.object({
   description: z.string().min(1, { message: 'Task description is required.' }).max(255, { message: 'Description must be 255 characters or less.' }),
@@ -30,24 +31,29 @@ const taskFormSchema = z.object({
   sectionId: z.string().nullable().optional(),
   recurringType: z.enum(['none', 'daily', 'weekly', 'monthly']),
   parentTaskId: z.string().nullable().optional(),
-  link: z.string().optional().transform((val) => { // Added .optional()
-    if (!val || val.trim() === '') return null;
+  link: z.string().nullable().optional().transform((val) => {
+    if (!val) return null;
     let processedVal = val.trim();
+    if (processedVal === '') return null;
+
+    // If it doesn't start with http:// or https://, prepend https://
     if (!/^https?:\/\//i.test(processedVal)) {
       processedVal = `https://${processedVal}`;
     }
     return processedVal;
   }).refine((val) => {
+    // Only validate if not null
     if (val === null) return true;
     try {
-      new URL(val);
+      new URL(val); // Attempt to create a URL object
       return true;
     } catch (e) {
       return false;
     }
-  }, { message: 'Please enter a valid URL (e.g., example.com or https://example.com).' }).nullable(),
+  }, { message: 'Please enter a valid URL (e.g., example.com or https://example.com).' }), // Improved error message
 }).superRefine((data, ctx) => { // Using superRefine for more robust conditional validation
   if (data.remindAtDate) {
+    // If remindAtDate is set, remindAtTime is required and must be valid
     if (!data.remindAtTime || data.remindAtTime.trim() === "") {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -65,6 +71,7 @@ const taskFormSchema = z.object({
       }
     }
   } else {
+    // If remindAtDate is NOT set, remindAtTime must be empty or undefined
     if (data.remindAtTime && data.remindAtTime.trim() !== "") {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -97,12 +104,7 @@ interface TaskFormProps {
   autoFocus?: boolean;
   preselectedSectionId?: string | null;
   parentTaskId?: string | null;
-  currentDate?: Date;
-  // New props for section management
-  createSection: (name: string) => Promise<void>;
-  updateSection: (sectionId: string, newName: string) => Promise<void>;
-  deleteSection: (sectionId: string) => Promise<void>;
-  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
+  currentDate?: Date; // Added currentDate prop
 }
 
 const TaskForm: React.FC<TaskFormProps> = ({
@@ -114,11 +116,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
   autoFocus = false,
   preselectedSectionId = null,
   parentTaskId = null,
-  currentDate = new Date(),
-  createSection, // Destructure new props
-  updateSection,
-  deleteSection,
-  updateSectionIncludeInFocusMode,
+  currentDate = new Date(), // Default to new Date() if not provided
 }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
@@ -135,8 +133,8 @@ const TaskForm: React.FC<TaskFormProps> = ({
       remindAtTime: '',
       sectionId: preselectedSectionId,
       recurringType: 'none',
-      parentTaskId: parentTaskId ?? null, // Explicitly coalesce to null
-      link: null, // Explicitly set to null to match the schema's transform output
+      parentTaskId: parentTaskId,
+      link: '',
     },
   });
 
@@ -158,7 +156,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
         sectionId: initialData.section_id,
         recurringType: initialData.recurring_type,
         parentTaskId: initialData.parent_task_id,
-        link: initialData.link ?? null, // Ensure it's null if undefined
+        link: initialData.link || '',
       });
     } else {
       const generalCategory = allCategories.find(cat => cat.name.toLowerCase() === 'general');
@@ -172,8 +170,8 @@ const TaskForm: React.FC<TaskFormProps> = ({
         remindAtTime: '',
         sectionId: preselectedSectionId,
         recurringType: 'none',
-        parentTaskId: parentTaskId ?? null, // Explicitly coalesce to null
-        link: null,
+        parentTaskId: parentTaskId,
+        link: '',
       });
     }
   }, [initialData, preselectedSectionId, parentTaskId, allCategories, reset]);
@@ -238,18 +236,17 @@ const TaskForm: React.FC<TaskFormProps> = ({
       category: data.category,
       priority: data.priority,
       due_date: data.dueDate instanceof Date ? data.dueDate.toISOString() : null,
-      notes: data.notes ?? null,
+      notes: data.notes || null,
       remind_at: finalRemindAt instanceof Date ? finalRemindAt.toISOString() : null,
-      section_id: data.sectionId ?? null,
+      section_id: data.sectionId || null, // Ensure sectionId is null if undefined
       recurring_type: data.recurringType,
-      parent_task_id: data.parentTaskId ?? null,
-      link: data.link ?? null,
+      parent_task_id: data.parentTaskId || null, // Ensure parentTaskId is null if undefined
+      link: data.link || null, // Include link
     });
     setIsSaving(false);
     if (success) {
       onCancel();
     }
-    return success; // Return success status
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -277,7 +274,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
             onKeyDown={handleKeyDown}
             disabled={isSaving || isSuggesting}
             autoFocus={autoFocus}
-            className="flex-1 h-9 text-base"
+            className="flex-1 h-9"
           />
           <Button
             type="button"
@@ -324,15 +321,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
           control={control}
           name="sectionId"
           render={({ field }) => (
-            <SectionSelector
-              value={field.value}
-              onChange={field.onChange}
-              sections={sections}
-              createSection={createSection}
-              updateSection={updateSection}
-              deleteSection={deleteSection}
-              updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-            />
+            <SectionSelector value={field.value} onChange={field.onChange} sections={sections} />
           )}
         />
         {errors.sectionId && <p className="text-destructive text-sm mt-1">{errors.sectionId.message}</p>}
@@ -350,7 +339,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal h-9 text-base",
+                      "w-full justify-start text-left font-normal h-9",
                       !field.value && "text-muted-foreground"
                     )}
                     disabled={isSaving || isSuggesting}
@@ -381,7 +370,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
             name="recurringType"
             render={({ field }) => (
               <Select value={field.value} onValueChange={field.onChange} disabled={!!initialData?.parent_task_id || isSaving || isSuggesting}>
-                <SelectTrigger aria-label="Select recurrence type" className="h-9 text-base">
+                <SelectTrigger aria-label="Select recurrence type" className="h-9">
                   <SelectValue placeholder="Select recurrence" />
                 </SelectTrigger>
                 <SelectContent>
@@ -409,7 +398,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
                   <Button
                     variant="outline"
                     className={cn(
-                      "flex-1 justify-start text-left font-normal h-9 text-base",
+                      "flex-1 justify-start text-left font-normal h-9",
                       !field.value && "text-muted-foreground"
                     )}
                     disabled={isSaving || isSuggesting}
@@ -433,7 +422,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
           <Input
             type="time"
             {...register('remindAtTime')}
-            className="w-24 h-9 text-base"
+            className="w-24 h-9"
             disabled={isSaving || isSuggesting || !remindAtDate}
             aria-label="Set reminder time"
           />
@@ -449,7 +438,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
           placeholder="e.g., https://example.com/task-details"
           {...register('link')}
           disabled={isSaving || isSuggesting}
-          className="h-9 text-base"
+          className="h-9"
         />
         {errors.link && <p className="text-destructive text-sm mt-1">{errors.link.message}</p>}
       </div>
@@ -462,16 +451,16 @@ const TaskForm: React.FC<TaskFormProps> = ({
           {...register('notes')}
           rows={2}
           disabled={isSaving || isSuggesting}
-          className="min-h-[60px] text-base"
+          className="min-h-[60px]"
         />
         {errors.notes && <p className="text-destructive text-sm mt-1">{errors.notes.message}</p>}
       </div>
 
       <div className="flex justify-end space-x-1.5 mt-3">
-        <Button type="button" variant="outline" onClick={onCancel} disabled={isSaving || isSuggesting} className="h-9 text-base">
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isSaving || isSuggesting} className="h-9">
           Cancel
         </Button>
-        <Button type="submit" disabled={isSaving || isSuggesting || (!form.formState.isValid && form.formState.isSubmitted)} className="h-9 text-base">
+        <Button type="submit" disabled={isSaving || isSuggesting || (!form.formState.isValid && form.formState.isSubmitted)} className="h-9">
           {isSaving ? 'Saving...' : (initialData ? 'Save Changes' : 'Add Task')}
         </Button>
       </div>

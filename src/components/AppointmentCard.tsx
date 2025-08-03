@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { Appointment } from '@/hooks/useAppointments';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
-import { Info } from 'lucide-react'; // Corrected syntax
+import { Info } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -10,7 +10,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 interface AppointmentCardProps {
   appointment: Appointment;
   onEdit: (appointment: Appointment) => void;
-  // Removed onDelete as it's not directly used in this component
+  onDelete: (id: string) => void;
   gridRowStart: number;
   gridRowEnd: number;
   overlapOffset: number;
@@ -22,7 +22,7 @@ interface AppointmentCardProps {
 const AppointmentCard: React.FC<AppointmentCardProps> = ({
   appointment,
   onEdit,
-  // Removed onDelete
+  onDelete,
   gridRowStart,
   gridRowEnd,
   overlapOffset,

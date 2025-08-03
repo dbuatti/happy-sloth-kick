@@ -2,7 +2,7 @@ import React from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import ActiveTaskPanel from './ActiveTaskPanel';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
-// Removed useAuth as it's not directly used in this component's logic
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 interface FocusPanelDrawerProps {
   isOpen: boolean;
@@ -15,7 +15,7 @@ interface FocusPanelDrawerProps {
   onDeleteTask: (taskId: string) => void;
   sections: TaskSection[];
   allCategories: Category[];
-  // Removed currentDate as it's not directly used here
+  currentDate: Date;
 }
 
 const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
@@ -29,8 +29,11 @@ const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
   onDeleteTask,
   sections,
   allCategories,
-  // Removed currentDate from destructuring
+  currentDate,
 }) => {
+  const { user } = useAuth(); // Use useAuth to get the user
+  const userId = user?.id || null; // Get userId from useAuth
+
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent side="right" className="w-full sm:max-w-md flex flex-col">
@@ -39,15 +42,17 @@ const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
         </SheetHeader>
         <div className="flex-1 overflow-y-auto py-4">
           <ActiveTaskPanel
+            isOpen={isOpen} // Pass isOpen
+            onClose={onClose} // Pass onClose
             nextAvailableTask={nextAvailableTask}
             tasks={tasks}
             filteredTasks={filteredTasks}
             updateTask={updateTask}
+            onOpenDetail={onOpenDetail}
             onDeleteTask={onDeleteTask}
             sections={sections}
             allCategories={allCategories}
-            onOpenDetail={onOpenDetail}
-            // Removed currentDate prop from here as it's not used by ActiveTaskPanel
+            currentDate={currentDate}
           />
         </div>
       </SheetContent>

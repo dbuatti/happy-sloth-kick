@@ -8,6 +8,7 @@ import Help from "./pages/Help";
 import ProjectBalanceTracker from "./pages/ProjectBalanceTracker";
 import TimeBlockSchedule from "./pages/TimeBlockSchedule";
 import Meditation from "./pages/Meditation";
+import SleepTracker from "./pages/SleepTracker";
 import MindfulnessTools from "./pages/MindfulnessTools";
 import FocusMode from "./pages/FocusMode";
 import LandingPage from "./pages/LandingPage";
@@ -15,11 +16,8 @@ import DailyTasksV3 from "./pages/DailyTasksV3";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { ReminderProvider } from "@/context/ReminderContext";
 import { SoundProvider } from "@/context/SoundContext";
-import { Sidebar } from "./components/Sidebar";
+import { Sidebar } from "./components/Sidebar"; // Corrected import
 import AuthComponent from "@/components/AuthComponent";
-import FloatingTimer from "@/components/FloatingTimer";
-import DevSpace from "./pages/DevSpace";
-import { TimerProvider } from "./context/TimerContext";
 
 // Import new dedicated mindfulness tool pages
 import BodyScanMeditationPage from "./pages/mindfulness/BodyScanMeditationPage";
@@ -34,7 +32,7 @@ import BreathingBubblePage from "./pages/mindfulness/BreathingBubblePage";
 import Settings from "./pages/Settings";
 import Analytics from "./pages/Analytics";
 import Archive from "./pages/Archive";
-import SleepPage from "./pages/SleepPage"; // Import the new combined SleepPage
+
 
 const queryClient = new QueryClient();
 
@@ -62,38 +60,36 @@ const AppContent = () => {
   return (
     <div className="flex-1 flex flex-col">
       {user ? (
-        <div className="relative h-screen w-screen">
-          <Sidebar>
-            <Routes>
-              <Route path="/" element={<DailyTasksV3 />} />
-              <Route path="/daily-tasks" element={<DailyTasksV3 />} />
-              <Route path="/my-hub" element={<MyHub />} />
-              <Route path="/help" element={<Help />} />
-              <Route path="/projects" element={<ProjectBalanceTracker />} />
-              <Route path="/schedule" element={<TimeBlockSchedule />} />
-              <Route path="/meditation" element={<Meditation />} />
-              <Route path="/sleep" element={<SleepPage />} />
-              <Route path="/mindfulness" element={<MindfulnessTools />} />
-              <Route path="/focus" element={<FocusMode />} />
-              <Route path="/dev-space" element={<DevSpace />} />
-              
-              <Route path="/mindfulness/body-scan" element={<BodyScanMeditationPage />} />
-              <Route path="/mindfulness/mindful-eating" element={<MindfulEatingGuidePage />} />
-              <Route path="/mindfulness/pmr" element={<ProgressiveMuscleRelaxationPage />} />
-              <Route path="/mindfulness/guided-imagery" element={<GuidedImageryPage />} />
-              <Route path="/mindfulness/thought-diffusion" element={<ThoughtDiffusionToolPage />} />
-              <Route path="/mindfulness/sensory-tool" element={<SensoryToolPage />} />
-              <Route path="/mindfulness/breathing-bubble" element={<BreathingBubblePage />} />
+        <Sidebar>
+          <Routes>
+            <Route path="/" element={<DailyTasksV3 />} />
+            <Route path="/daily-tasks" element={<DailyTasksV3 />} />
+            <Route path="/my-hub" element={<MyHub />} />
+            <Route path="/help" element={<Help />} />
+            <Route path="/projects" element={<ProjectBalanceTracker />} />
+            <Route path="/schedule" element={<TimeBlockSchedule />} />
+            <Route path="/meditation" element={<Meditation />} />
+            <Route path="/sleep" element={<SleepTracker />} />
+            <Route path="/mindfulness" element={<MindfulnessTools />} />
+            <Route path="/focus" element={<FocusMode />} />
+            
+            {/* New routes for dedicated mindfulness tools */}
+            <Route path="/mindfulness/body-scan" element={<BodyScanMeditationPage />} />
+            <Route path="/mindfulness/mindful-eating" element={<MindfulEatingGuidePage />} />
+            <Route path="/mindfulness/pmr" element={<ProgressiveMuscleRelaxationPage />} />
+            <Route path="/mindfulness/guided-imagery" element={<GuidedImageryPage />} />
+            <Route path="/mindfulness/thought-diffusion" element={<ThoughtDiffusionToolPage />} />
+            <Route path="/mindfulness/sensory-tool" element={<SensoryToolPage />} />
+            <Route path="/mindfulness/breathing-bubble" element={<BreathingBubblePage />} />
 
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/analytics" element={<Analytics />} />
-              <Route path="/archive" element={<Archive />} />
+            {/* New routes for MyHub sections */}
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/analytics" element={<Analytics />} />
+            <Route path="/archive" element={<Archive />} />
 
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Sidebar>
-          <FloatingTimer />
-        </div>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Sidebar>
       ) : (
         <Routes>
           <Route path="/" element={<LandingPage />} />
@@ -112,13 +108,11 @@ const App = () => {
         <Sonner position="top-right" />
         <AuthProvider>
           <SoundProvider>
-            <TimerProvider>
-              <ReminderProvider>
-                <BrowserRouter>
-                  <AppContent />
-                </BrowserRouter>
-              </ReminderProvider>
-            </TimerProvider>
+            <ReminderProvider>
+              <BrowserRouter>
+                <AppContent />
+              </BrowserRouter>
+            </ReminderProvider>
           </SoundProvider>
         </AuthProvider>
       </TooltipProvider>

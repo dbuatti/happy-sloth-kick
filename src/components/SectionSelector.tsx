@@ -1,39 +1,24 @@
 import { Label } from "@/components/ui/label";
-import { FolderOpen, Plus } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-// Removed useAuth as it's not directly used in this component
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import ManageSectionsDialog from './ManageSectionsDialog'; // Import the new dialog
+import { FolderOpen } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Import Select components
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 interface TaskSection {
   id: string;
   name: string;
   user_id: string;
   order: number | null;
-  include_in_focus_mode: boolean; // Added for consistency
 }
 
 interface SectionSelectorProps {
   value: string | null;
   onChange: (sectionId: string | null) => void;
-  sections: TaskSection[];
-  createSection: (name: string) => Promise<void>;
-  updateSection: (sectionId: string, newName: string) => Promise<void>;
-  deleteSection: (sectionId: string) => Promise<void>;
-  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
+  sections: TaskSection[]; // Pass sections as a prop
 }
 
-const SectionSelector: React.FC<SectionSelectorProps> = ({
-  value,
-  onChange,
-  sections,
-  createSection,
-  updateSection,
-  deleteSection,
-  updateSectionIncludeInFocusMode,
-}) => {
-  const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
+const SectionSelector: React.FC<SectionSelectorProps> = ({ value, onChange, sections }) => {
+  const { user } = useAuth(); // Use useAuth to get the user
+  const userId = user?.id || null; // Get userId from useAuth
 
   const selectedSection = sections.find(sec => sec.id === value);
 
@@ -56,9 +41,7 @@ const SectionSelector: React.FC<SectionSelectorProps> = ({
             )}
           </SelectContent>
         </Select>
-        <Button type="button" size="icon" variant="outline" className="h-9 w-9" onClick={() => setIsManageSectionsOpen(true)}>
-          <Plus className="h-3.5 w-3.5" />
-        </Button>
+        {/* Removed Dialog for managing sections */}
       </div>
       
       {selectedSection && (
@@ -67,16 +50,6 @@ const SectionSelector: React.FC<SectionSelectorProps> = ({
           <span>{selectedSection.name}</span>
         </div>
       )}
-
-      <ManageSectionsDialog
-        isOpen={isManageSectionsOpen}
-        onClose={() => setIsManageSectionsOpen(false)}
-        sections={sections}
-        createSection={createSection}
-        updateSection={updateSection}
-        deleteSection={deleteSection}
-        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-      />
     </div>
   );
 };

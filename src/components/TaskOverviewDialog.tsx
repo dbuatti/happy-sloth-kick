@@ -17,6 +17,9 @@ import {
 import { cn } from '@/lib/utils';
 import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { getCategoryColorProps } from '@/lib/categoryColors';
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 interface TaskOverviewDialogProps {
   task: Task | null;
@@ -26,7 +29,7 @@ interface TaskOverviewDialogProps {
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<void>;
   onDelete: (taskId: string) => void;
   sections: TaskSection[];
-  allCategories: Category[]; // This prop is no longer used directly in this component
+  allCategories: Category[];
   allTasks: Task[];
 }
 
@@ -38,9 +41,11 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
   onUpdate,
   onDelete,
   sections,
-  // Removed allCategories from destructuring as it's not used here
   allTasks,
 }) => {
+  const { user } = useAuth(); // Use useAuth to get the user
+  const userId = user?.id || null; // Get userId from useAuth
+
   const { playSound } = useSound();
   const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
@@ -55,7 +60,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
       case 'urgent': return 'text-priority-urgent';
       case 'high': return 'text-priority-high';
       case 'medium': return 'text-priority-medium';
-      case 'low': return 'text-priority-low';
+      case 'low': return 'text-muted-foreground';
       default: return 'text-muted-foreground';
     }
   };
@@ -176,10 +181,9 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
               <ul className="space-y-1.5">
                 {subtasks.map(subtask => (
                   <li key={subtask.id} className="flex items-center space-x-2 p-1.5 rounded-md bg-background shadow-sm">
-                    <input // Changed from Checkbox to input type="checkbox"
-                      type="checkbox"
+                    <Checkbox
                       checked={subtask.status === 'completed'}
-                      onChange={(e) => handleSubtaskStatusChange(subtask.id, e.target.checked ? 'completed' : 'to-do')}
+                      onCheckedChange={(checked: boolean) => handleSubtaskStatusChange(subtask.id, checked ? 'completed' : 'to-do')}
                       id={`subtask-overview-${subtask.id}`}
                       className="flex-shrink-0 h-3.5 w-3.5"
                       disabled={isUpdatingStatus}

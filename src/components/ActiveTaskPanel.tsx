@@ -6,18 +6,22 @@ import { Play, Pause, RefreshCcw, CheckCircle2, Edit, Target, ListTodo, Clock } 
 import { cn } from '@/lib/utils';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
+import TaskDetailDialog from './TaskDetailDialog';
 import TaskOverviewDialog from './TaskOverviewDialog'; // For opening overview from panel
 import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 interface ActiveTaskPanelProps {
+  isOpen: boolean;
+  onClose: () => void;
   nextAvailableTask: Task | null;
   tasks: Task[];
   filteredTasks: Task[];
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
+  onOpenDetail: (task: Task) => void;
   onDeleteTask: (taskId: string) => void;
   sections: TaskSection[];
   allCategories: Category[];
-  onOpenDetail: (task: Task) => void;
+  currentDate: Date;
 }
 
 const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
@@ -25,17 +29,19 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
   tasks,
   filteredTasks,
   updateTask,
+  onOpenDetail,
   onDeleteTask,
   sections,
   allCategories,
-  onOpenDetail,
+  currentDate,
 }) => {
-  useAuth(); 
+  const { user } = useAuth(); // Use useAuth to get the user
+  const userId = user?.id || null; // Get userId from useAuth
 
   const { playSound } = useSound();
 
   // Focus Timer State
-  const [focusDuration] = useState(25 * 60); // 25 minutes
+  const [focusDuration, setFocusDuration] = useState(25 * 60); // 25 minutes
   const [timeRemaining, setTimeRemaining] = useState(focusDuration);
   const [isRunning, setIsRunning] = useState(false);
   const [isSessionActive, setIsSessionActive] = useState(false); // To track if a session has started
@@ -44,6 +50,8 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
   // Task Detail/Overview Dialog State
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
+  const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
 
   useEffect(() => {
     setTimeRemaining(focusDuration);
@@ -121,15 +129,20 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
     }
   };
 
-  const handleOpenTaskOverview = useCallback((task: Task) => {
+  const handleOpenTaskDetails = (task: Task) => {
+    setTaskToEdit(task);
+    setIsTaskDetailOpen(true);
+  };
+
+  const handleOpenTaskOverview = (task: Task) => {
     setTaskToOverview(task);
     setIsTaskOverviewOpen(true);
-  }, []);
+  };
 
-  const handleEditTaskFromOverview = useCallback((task: Task) => {
+  const handleEditTaskFromOverview = (task: Task) => {
     setIsTaskOverviewOpen(false);
-    onOpenDetail(task);
-  }, [onOpenDetail]);
+    handleOpenTaskDetails(task);
+  };
 
   const upcomingTasks = useMemo(() => {
     if (!nextAvailableTask) return [];
@@ -175,14 +188,14 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
               size="sm"
               onClick={isRunning ? pauseTimer : startTimer}
               className={cn(
-                "w-24 h-9 text-base",
+                "w-24",
                 isRunning ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90"
               )}
               disabled={timeRemaining === 0 && isSessionActive}
             >
               {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
             </Button>
-            <Button size="sm" variant="outline" onClick={resetTimer} className="w-24 h-9 text-base">
+            <Button size="sm" variant="outline" onClick={resetTimer} className="w-24">
               <RefreshCcw className="h-4 w-4" /> Reset
             </Button>
           </div>
@@ -192,7 +205,7 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
       {/* Next Up Task Card */}
       <Card className="w-full shadow-lg rounded-xl flex-grow flex flex-col">
         <CardHeader className="pb-2">
-          <CardTitle className="text-xl font-bold flex items-center justify-center gap-2">
+          <CardTitle className="text-xl font-bold flex items-center gap-2">
             <Target className="h-5 w-5 text-primary" /> Next Up
           </CardTitle>
         </CardHeader>
@@ -204,10 +217,10 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
                 {nextAvailableTask.description}
               </h3>
               <div className="flex space-x-2">
-                <Button size="sm" onClick={handleMarkComplete} className="h-8 text-base">
+                <Button size="sm" onClick={handleMarkComplete} className="h-8">
                   <CheckCircle2 className="mr-2 h-4 w-4" /> Done
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => handleOpenTaskOverview(nextAvailableTask)} className="h-8 text-base">
+                <Button size="sm" variant="outline" onClick={() => handleOpenTaskOverview(nextAvailableTask)} className="h-8">
                   <Edit className="mr-2 h-4 w-4" /> Details
                 </Button>
               </div>
@@ -223,7 +236,7 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
       {/* Upcoming Tasks Card */}
       <Card className="w-full shadow-lg rounded-xl flex-shrink-0">
         <CardHeader className="pb-2">
-          <CardTitle className="text-xl font-bold flex items-center justify-center gap-2">
+          <CardTitle className="text-xl font-bold flex items-center gap-2">
             <ListTodo className="h-5 w-5 text-primary" /> Upcoming
           </CardTitle>
         </CardHeader>
@@ -265,6 +278,18 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
           sections={sections}
           allCategories={allCategories}
           allTasks={tasks}
+        />
+      )}
+
+      {taskToEdit && (
+        <TaskDetailDialog
+          task={taskToEdit}
+          isOpen={isTaskDetailOpen}
+          onClose={() => setIsTaskDetailOpen(false)}
+          onUpdate={updateTask}
+          onDelete={onDeleteTask}
+          sections={sections}
+          allCategories={allCategories}
         />
       )}
     </div>

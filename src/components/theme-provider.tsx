@@ -16,13 +16,14 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
         "calm-mist",
         "warm-dawn",
         "gentle-night",
+        "cosmic-dusk",
         "focus-flow",
         "retro-wave",
         "sepia-dusk",
         "vibrant-flow",
         "honeycomb",
         "forest-calm",
-        "rainbow-whimsy"
+        "rainbow-whimsy" // Added the new theme
       ]}
       {...props}
     >

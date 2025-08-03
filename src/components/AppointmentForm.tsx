@@ -165,7 +165,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
               placeholder="Appointment Title"
               disabled={isSaving}
               autoFocus
-              className="h-9 text-base"
+              className="h-9"
             />
             {errors.title && <p className="text-destructive text-sm mt-1">{errors.title.message}</p>}
           </div>
@@ -178,7 +178,6 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
               placeholder="Details about the appointment..."
               rows={2}
               disabled={isSaving}
-              className="text-base"
             />
             {errors.description && <p className="text-destructive text-sm mt-1">{errors.description.message}</p>}
           </div>
@@ -195,7 +194,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                       <Button
                         variant="outline"
                         className={cn(
-                          "w-full justify-start text-left font-normal h-9 text-base",
+                          "w-full justify-start text-left font-normal h-9",
                           !field.value && "text-muted-foreground"
                         )}
                         disabled={isSaving}
@@ -254,7 +253,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                 type="time"
                 {...register('startTime')}
                 disabled={isSaving}
-                className="h-9 text-base"
+                className="h-9"
               />
               {errors.startTime && <p className="text-destructive text-sm mt-1">{errors.startTime.message}</p>}
             </div>
@@ -265,22 +264,22 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                 type="time"
                 {...register('endTime')}
                 disabled={isSaving}
-                className="h-9 text-base"
+                className="h-9"
               />
               {errors.endTime && <p className="text-destructive text-sm mt-1">{errors.endTime.message}</p>}
             </div>
           </div>
           <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2 pt-4">
             {initialData && ( // Only show delete button if editing an existing appointment
-              <Button type="button" variant="destructive" onClick={handleDeleteClick} disabled={isSaving} className="w-full sm:w-auto mt-2 sm:mt-0 h-9 text-base">
+              <Button type="button" variant="destructive" onClick={handleDeleteClick} disabled={isSaving} className="w-full sm:w-auto mt-2 sm:mt-0 h-9">
                 <Trash2 className="mr-2 h-4 w-4" /> Delete Appointment
               </Button>
             )}
             <div className="flex space-x-2 w-full sm:w-auto">
-              <Button type="button" variant="outline" onClick={onClose} disabled={isSaving} className="flex-1 h-9 text-base">
+              <Button type="button" variant="outline" onClick={onClose} disabled={isSaving} className="flex-1 h-9">
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSaving} className="flex-1 h-9 text-base">
+              <Button type="submit" disabled={isSaving} className="flex-1 h-9">
                 {isSaving ? 'Saving...' : 'Save Appointment'}
               </Button>
             </div>

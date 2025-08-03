@@ -1,34 +1,30 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target } from 'lucide-react';
+import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon } from 'lucide-react';
 import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { CheckCircle2 } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
-import { Input } from './ui/input';
-import { useSortable } from '@dnd-kit/sortable';
-import DoTodaySwitch from './DoTodaySwitch';
+import { CheckCircle2 } from 'lucide-react'; // Ensure CheckCircle2 is imported for the animation
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 interface TaskItemProps {
   task: Task;
   onStatusChange: (taskId: string, newStatus: Task['status']) => Promise<void>;
   onDelete: (taskId: string) => void;
   onUpdate: (taskId: string, updates: Partial<Task>) => void;
+  isSelected: boolean;
+  onToggleSelect: (taskId: string, checked: boolean) => void;
   sections: { id: string; name: string }[];
   onOpenOverview: (task: Task) => void;
   currentDate: Date;
   onMoveUp: (taskId: string) => Promise<void>;
   onMoveDown: (taskId: string) => Promise<void>;
   isOverlay?: boolean;
-  dragListeners?: ReturnType<typeof useSortable>['listeners'];
-  setFocusTask: (taskId: string | null) => Promise<void>;
-  isDoToday: boolean;
-  toggleDoToday: (task: Task) => void;
+  dragListeners?: any;
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -36,54 +32,17 @@ const TaskItem: React.FC<TaskItemProps> = ({
   onStatusChange,
   onDelete,
   onUpdate,
+  onToggleSelect,
   sections,
   onOpenOverview,
   currentDate,
   isOverlay = false,
   dragListeners,
-  setFocusTask,
-  isDoToday,
-  toggleDoToday,
 }) => {
-  useAuth(); 
+  const { user } = useAuth(); // Use useAuth to get the user
+  const userId = user?.id || null; // Get userId from useAuth
   const { playSound } = useSound();
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editText, setEditText] = useState(task.description);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (isEditing && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
-    }
-  }, [isEditing]);
-
-  const handleStartEdit = (e: React.MouseEvent) => {
-    if (isOverlay) return;
-    e.stopPropagation();
-    setIsEditing(true);
-  };
-
-  const handleSaveEdit = () => {
-    if (editText.trim() && editText.trim() !== task.description) {
-      onUpdate(task.id, { description: editText.trim() });
-    }
-    setIsEditing(false);
-  };
-
-  const handleCancelEdit = () => {
-    setEditText(task.description);
-    setIsEditing(false);
-  };
-
-  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      handleSaveEdit();
-    } else if (e.key === 'Escape') {
-      handleCancelEdit();
-    }
-  };
 
   const getPriorityDotColor = (priority: string) => {
     switch (priority) {
@@ -97,6 +56,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
   const handleCheckboxChange = (checked: boolean) => {
     if (isOverlay) return;
+    onToggleSelect(task.id, checked);
     onStatusChange(task.id, checked ? 'completed' : 'to-do');
     if (checked) {
       playSound('success');
@@ -127,61 +87,49 @@ const TaskItem: React.FC<TaskItemProps> = ({
   return (
     <div
       className={cn(
-        "relative flex items-center space-x-2 w-full p-3 cursor-grab",
+        "relative flex items-center space-x-2 w-full py-3 pr-3", // Increased vertical padding
         task.status === 'completed' ? "text-muted-foreground bg-task-completed-bg" : "text-foreground",
-        !isDoToday && task.recurring_type === 'none' && "opacity-40",
         "group",
-        isOverdue && "border-l-4 border-status-overdue",
-        isDueToday && "border-l-4 border-status-due-today",
+        isOverlay ? "cursor-grabbing" : "", // Removed hover:shadow-sm
+        isOverdue && "border-l-4 border-status-overdue", // Only border, no extra padding
+        isDueToday && "border-l-4 border-status-due-today", // Only border, no extra padding
       )}
-      onClick={() => !isOverlay && !isEditing && onOpenOverview(task)}
-      {...dragListeners}
+      onClick={() => !isOverlay && onOpenOverview(task)}
+      style={{ cursor: isOverlay ? 'grabbing' : 'pointer' }}
+      {...(dragListeners || {})}
     >
-      <div data-no-dnd="true">
-        <Checkbox
-          key={`${task.id}-${task.status}`}
-          checked={task.status === 'completed'}
-          onCheckedChange={handleCheckboxChange}
-          id={`task-${task.id}`}
-          onClick={(e) => e.stopPropagation()}
-          className="flex-shrink-0 h-5 w-5"
-          aria-label={`Mark task "${task.description}" as ${task.status === 'completed' ? 'to-do' : 'completed'}`}
-          disabled={isOverlay}
-        />
-      </div>
+      <Checkbox
+        key={`${task.id}-${task.status}`}
+        checked={task.status === 'completed'}
+        onCheckedChange={handleCheckboxChange}
+        id={`task-${task.id}`}
+        onClick={(e) => e.stopPropagation()}
+        className="flex-shrink-0 h-5 w-5" // Increased checkbox size
+        data-no-dnd="true"
+        aria-label={`Mark task "${task.description}" as ${task.status === 'completed' ? 'to-do' : 'completed'}`}
+        disabled={isOverlay}
+      />
 
-      <div className={cn("w-3 h-3 rounded-full flex-shrink-0", getPriorityDotColor(task.priority))} />
+      {/* Priority Dot */}
+      <div className={cn("w-3 h-3 rounded-full flex-shrink-0", getPriorityDotColor(task.priority))} /> {/* Increased dot size */}
       
-      <div className="flex-grow" onClick={handleStartEdit} data-no-dnd={isEditing ? "true" : "false"}>
-        {isEditing ? (
-          <Input
-            ref={inputRef}
-            value={editText}
-            onChange={(e) => setEditText(e.target.value)}
-            onBlur={handleSaveEdit}
-            onKeyDown={handleInputKeyDown}
-            className="h-auto text-lg font-medium leading-tight p-0 border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full"
-            onClick={(e) => e.stopPropagation()}
-          />
-        ) : (
-          <span
-            className={cn(
-              "text-lg leading-tight line-clamp-2",
-              task.status === 'completed' ? 'line-through' : 'font-medium',
-              "block cursor-text"
-            )}
-          >
-            {task.description}
-          </span>
+      <span
+        className={cn(
+          "text-lg leading-tight line-clamp-2 flex-grow", // Increased font size
+          task.status === 'completed' ? 'line-through' : 'font-medium',
+          "block"
         )}
-      </div>
+      >
+        {task.description}
+      </span>
 
-      <div className="flex-shrink-0 flex items-center space-x-2" data-no-dnd="true">
+      {/* Icons on the right */}
+      <div className="flex-shrink-0 flex items-center space-x-2">
         {task.recurring_type !== 'none' && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className="inline-flex items-center flex-shrink-0">
-                <Repeat className="h-4 w-4 text-muted-foreground" />
+              <span className="inline-flex items-center flex-shrink-0" data-no-dnd="true">
+                <Repeat className="h-4 w-4 text-muted-foreground" /> {/* Increased icon size */}
               </span>
             </TooltipTrigger>
             <TooltipContent>
@@ -199,8 +147,9 @@ const TaskItem: React.FC<TaskItemProps> = ({
                 rel="noopener noreferrer" 
                 className="inline-flex items-center flex-shrink-0 text-muted-foreground hover:text-primary"
                 onClick={(e) => e.stopPropagation()}
+                data-no-dnd="true"
               >
-                <LinkIcon className="h-4 w-4" />
+                <LinkIcon className="h-4 w-4" /> {/* Increased icon size */}
               </a>
             </TooltipTrigger>
             <TooltipContent>
@@ -217,8 +166,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
                 "text-muted-foreground",
                 isOverdue && "text-status-overdue",
                 isDueToday && "text-status-due-today"
-              )}>
-                <CalendarIcon className="h-3.5 w-3.5 mr-1" /> {getDueDateDisplay(task.due_date)}
+              )} data-no-dnd="true">
+                <CalendarIcon className="h-3.5 w-3.5 mr-1" /> {getDueDateDisplay(task.due_date)} {/* Increased icon size */}
               </span>
             </TooltipTrigger>
             <TooltipContent>
@@ -235,66 +184,61 @@ const TaskItem: React.FC<TaskItemProps> = ({
       )}
 
       <div className="flex-shrink-0 flex items-center space-x-1" data-no-dnd="true">
-        {task.recurring_type === 'none' && (
-          <DoTodaySwitch
-            isOn={isDoToday}
-            onToggle={() => toggleDoToday(task)}
-            taskId={task.id}
-          />
-        )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              className="h-8 w-8 p-0"
+              className="h-8 w-8 p-0" // Increased button size
               onClick={(e) => e.stopPropagation()}
               aria-label="More options"
+              data-no-dnd="true"
               disabled={isOverlay}
             >
               <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
+              <MoreHorizontal className="h-4 w-4" /> {/* Increased icon size */}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-            <DropdownMenuItem onSelect={() => onOpenOverview(task)}>
-              <Edit className="mr-2 h-4 w-4" /> View Details
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => setFocusTask(task.id)}>
-              <Target className="mr-2 h-4 w-4" /> Set as Focus
+          <DropdownMenuContent align="end" data-no-dnd="true">
+            <DropdownMenuItem onSelect={(e) => {
+              e.preventDefault();
+              onOpenOverview(task);
+            }}>
+              <Edit className="mr-2 h-4 w-4" /> View Details {/* Increased icon size */}
             </DropdownMenuItem>
             {task.status === 'archived' && (
-              <DropdownMenuItem onSelect={() => { onStatusChange(task.id, 'to-do'); playSound('success'); }}>
-                <Undo2 className="mr-2 h-4 w-4" /> Restore
+              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onStatusChange(task.id, 'to-do'); playSound('success'); }}>
+                <Undo2 className="mr-2 h-4 w-4" /> Restore {/* Increased icon size */}
               </DropdownMenuItem>
             )}
             {task.status !== 'archived' && (
               <>
-                <DropdownMenuItem onSelect={() => { onStatusChange(task.id, 'to-do'); playSound('success'); }}>
+                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onStatusChange(task.id, 'to-do'); playSound('success'); }}>
                   Mark as To-Do
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => { onStatusChange(task.id, 'completed'); playSound('success'); }}>
+                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onStatusChange(task.id, 'completed'); playSound('success'); }}>
                   Mark as Completed
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => { onStatusChange(task.id, 'skipped'); playSound('success'); }}>
+                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onStatusChange(task.id, 'skipped'); playSound('success'); }}>
                   Mark as Skipped
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => { onStatusChange(task.id, 'archived'); playSound('success'); }}>
-                  <Archive className="mr-2 h-4 w-4" /> Archive
+                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onStatusChange(task.id, 'archived'); playSound('success'); }}>
+                  <Archive className="mr-2 h-4 w-4" /> Archive {/* Increased icon size */}
                 </DropdownMenuItem>
               </>
             )}
             <DropdownMenuSeparator />
             <DropdownMenuSub>
-              <DropdownMenuSubTrigger onSelect={(e) => e.preventDefault()}>
-                <FolderOpen className="mr-2 h-4 w-4" /> Move to Section
+              <DropdownMenuSubTrigger onSelect={(e) => e.preventDefault()} data-no-dnd="true">
+                <FolderOpen className="mr-2 h-4 w-4" /> Move to Section {/* Increased icon size */}
               </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent>
+              <DropdownMenuSubContent data-no-dnd="true">
                 {sections.length === 0 ? (
                   <DropdownMenuItem disabled>No sections available</DropdownMenuItem>
                 ) : (
                   <>
                     <DropdownMenuItem
-                      onSelect={() => {
+                      onSelect={(e) => {
+                        e.preventDefault();
                         onUpdate(task.id, { section_id: null });
                         playSound('success');
                       }}
@@ -305,7 +249,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
                     {sections.map(section => (
                       <DropdownMenuItem
                         key={section.id}
-                        onSelect={() => {
+                        onSelect={(e) => {
+                          e.preventDefault();
                           onUpdate(task.id, { section_id: section.id });
                           playSound('success');
                         }}
@@ -318,9 +263,10 @@ const TaskItem: React.FC<TaskItemProps> = ({
                 )}
               </DropdownMenuSubContent>
             </DropdownMenuSub>
+            {/* Removed Move Up and Move Down */}
             <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => { onDelete(task.id); playSound('alert'); }} className="text-destructive focus:text-destructive">
-              <Trash2 className="mr-2 h-4 w-4" /> Delete
+            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onDelete(task.id); playSound('alert'); }} className="text-destructive focus:text-destructive">
+              <Trash2 className="mr-2 h-4 w-4" /> Delete {/* Increased icon size */}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

@@ -9,6 +9,8 @@ import { addDays } from 'date-fns';
 import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
 import CommandPalette from '@/components/CommandPalette';
 import { Card, CardContent } from "@/components/ui/card";
+import { cn } from '@/lib/utils';
+import BulkActions from '@/components/BulkActions';
 import FocusPanelDrawer from '@/components/FocusPanelDrawer';
 import DailyTasksHeader from '@/components/DailyTasksHeader';
 
@@ -26,12 +28,15 @@ const DailyTasksV3: React.FC = () => {
     nextAvailableTask,
     updateTask,
     deleteTask,
+    userId,
     loading: tasksLoading,
     sections,
     allCategories,
     handleAddTask,
+    selectedTaskIds,
+    toggleTaskSelection,
+    clearSelectedTasks,
     bulkUpdateTasks,
-    archiveAllCompletedTasks,
     markAllTasksInSectionCompleted,
     createSection,
     updateSection,
@@ -49,12 +54,9 @@ const DailyTasksV3: React.FC = () => {
     setPriorityFilter,
     sectionFilter,
     setSectionFilter,
-    currentDate,
-    setCurrentDate,
-    setFocusTask,
-    doTodayOffIds,
-    toggleDoToday,
-  } = useTasks({ viewMode: 'daily' });
+    currentDate, // Now directly from useTasks
+    setCurrentDate, // Now directly from useTasks
+  } = useTasks({ viewMode: 'daily' }); // No need to pass currentDate/setCurrentDate here
 
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
@@ -63,6 +65,7 @@ const DailyTasksV3: React.FC = () => {
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
   const [isFocusPanelOpen, setIsFocusPanelOpen] = useState(false);
 
+  // State for section expansion, lifted from TaskList
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() => {
     try {
       const saved = localStorage.getItem('taskList_expandedSections');
@@ -86,6 +89,7 @@ const DailyTasksV3: React.FC = () => {
     sections.forEach(section => {
       newExpandedState[section.id] = !allExpanded;
     });
+    // Also handle 'no-section-header'
     newExpandedState['no-section-header'] = !allExpanded;
 
     setExpandedSections(newExpandedState);
@@ -108,19 +112,23 @@ const DailyTasksV3: React.FC = () => {
     handleOpenDetail(task);
   };
 
+  // Keyboard shortcuts
   const shortcuts: ShortcutMap = {
     'arrowleft': () => setCurrentDate(prevDate => getUTCStartOfDay(addDays(prevDate, -1))),
     'arrowright': () => setCurrentDate(prevDate => getUTCStartOfDay(addDays(prevDate, 1))),
     't': () => setCurrentDate(getUTCStartOfDay(new Date())),
-    '/': (e) => { e.preventDefault(); },
+    '/': (e) => { e.preventDefault(); /* Focus handled by TaskFilter's searchRef */ },
     'cmd+k': (e) => { e.preventDefault(); setIsCommandPaletteOpen(prev => !prev); },
   };
   useKeyboardShortcuts(shortcuts);
 
+  const isBulkActionsActive = selectedTaskIds.length > 0;
+
   return (
     <div className="flex-1 flex flex-col">
-      <main className="flex-grow">
+      <main className={cn("flex-grow", isBulkActionsActive ? "pb-[90px]" : "")}>
         <div className="w-full max-w-4xl mx-auto flex flex-col">
+          {/* New DailyTasksHeader component */}
           <DailyTasksHeader
             currentDate={currentDate}
             setCurrentDate={setCurrentDate}
@@ -144,17 +152,13 @@ const DailyTasksV3: React.FC = () => {
             nextAvailableTask={nextAvailableTask}
             updateTask={updateTask}
             onOpenOverview={handleOpenOverview}
-            createSection={createSection}
-            updateSection={updateSection}
-            deleteSection={deleteSection}
-            updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-            doTodayOffIds={doTodayOffIds}
-            archiveAllCompletedTasks={archiveAllCompletedTasks}
+            toggleAllSections={toggleAllSections} // Pass toggleAllSections
           />
 
+          {/* Main Task List Card */}
           <Card className="p-3 flex-1 flex flex-col rounded-none shadow-none">
             <CardContent className="p-4 flex-1 flex flex-col">
-              <div className="flex-1 overflow-y-auto pt-3">
+              <div className="flex-1 overflow-y-auto pt-3"> {/* Removed ref={scrollRef} as it's now in DailyTasksHeader */}
                 <TaskList
                   tasks={tasks}
                   filteredTasks={filteredTasks}
@@ -162,6 +166,9 @@ const DailyTasksV3: React.FC = () => {
                   handleAddTask={handleAddTask}
                   updateTask={updateTask}
                   deleteTask={deleteTask}
+                  selectedTaskIds={selectedTaskIds}
+                  toggleTaskSelection={toggleTaskSelection}
+                  clearSelectedTasks={clearSelectedTasks}
                   bulkUpdateTasks={bulkUpdateTasks}
                   markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
                   sections={sections}
@@ -176,12 +183,9 @@ const DailyTasksV3: React.FC = () => {
                   onOpenOverview={handleOpenOverview}
                   currentDate={currentDate}
                   setCurrentDate={setCurrentDate}
-                  expandedSections={expandedSections}
-                  toggleSection={toggleSection}
-                  toggleAllSections={toggleAllSections}
-                  setFocusTask={setFocusTask}
-                  doTodayOffIds={doTodayOffIds}
-                  toggleDoToday={toggleDoToday}
+                  expandedSections={expandedSections} // Pass expandedSections
+                  toggleSection={toggleSection} // Pass toggleSection
+                  toggleAllSections={toggleAllSections} // Pass toggleAllSections
                 />
               </div>
             </CardContent>
@@ -192,6 +196,23 @@ const DailyTasksV3: React.FC = () => {
       <footer className="p-4">
         <MadeWithDyad />
       </footer>
+
+      <BulkActions
+        selectedTaskIds={selectedTaskIds}
+        onAction={async (action) => {
+          if (action.startsWith('priority-')) {
+            await bulkUpdateTasks({ priority: action.replace('priority-', '') as Task['priority'] });
+          } else if (action === 'complete') {
+            await bulkUpdateTasks({ status: 'completed' });
+          } else if (action === 'archive') {
+            await bulkUpdateTasks({ status: 'archived' });
+          } else if (action === 'delete') {
+            await Promise.all(selectedTaskIds.map(id => deleteTask(id)));
+            clearSelectedTasks();
+          }
+        }}
+        onClearSelection={clearSelectedTasks}
+      />
 
       <CommandPalette
         isCommandPaletteOpen={isCommandPaletteOpen}
@@ -226,10 +247,6 @@ const DailyTasksV3: React.FC = () => {
           onDelete={deleteTask}
           sections={sections}
           allCategories={allCategories}
-          createSection={createSection}
-          updateSection={updateSection}
-          deleteSection={deleteSection}
-          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
         />
       )}
 
@@ -240,10 +257,11 @@ const DailyTasksV3: React.FC = () => {
         tasks={tasks}
         filteredTasks={filteredTasks}
         updateTask={updateTask}
+        onOpenDetail={handleOpenDetail}
         onDeleteTask={deleteTask}
         sections={sections}
         allCategories={allCategories}
-        onOpenDetail={handleOpenDetail}
+        currentDate={currentDate}
       />
     </div>
   );

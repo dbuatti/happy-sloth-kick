@@ -7,9 +7,12 @@ import { useTasks, Task } from '@/hooks/useTasks';
 import TaskItem from '@/components/TaskItem';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import TaskOverviewDialog from '@/components/TaskOverviewDialog';
-// Removed useAuth as it's not directly used in this component
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 const Archive: React.FC = () => {
+  const { user } = useAuth(); // Use useAuth to get the user
+  const userId = user?.id; // Get userId from useAuth
+
   const {
     tasks: allTasks, // Need all tasks for subtask filtering in overview
     filteredTasks: archivedTasks, 
@@ -19,12 +22,6 @@ const Archive: React.FC = () => {
     sections,
     allCategories,
     setStatusFilter, // To ensure only archived tasks are fetched
-    createSection, // Destructure new props
-    updateSection,
-    deleteSection,
-    updateSectionIncludeInFocusMode,
-    setFocusTask,
-    toggleDoToday,
   } = useTasks({ viewMode: 'archive' });
 
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
@@ -82,14 +79,13 @@ const Archive: React.FC = () => {
                       onStatusChange={handleTaskStatusChange}
                       onDelete={deleteTask}
                       onUpdate={updateTask}
+                      isSelected={false}
+                      onToggleSelect={() => {}}
                       sections={sections}
                       onOpenOverview={handleOpenOverview}
                       currentDate={new Date()}
                       onMoveUp={async () => {}}
                       onMoveDown={async () => {}}
-                      setFocusTask={setFocusTask}
-                      isDoToday={false}
-                      toggleDoToday={() => toggleDoToday(task)}
                     />
                   </li>
                 ))}
@@ -126,10 +122,6 @@ const Archive: React.FC = () => {
           onDelete={deleteTask}
           sections={sections}
           allCategories={allCategories}
-          createSection={createSection}
-          updateSection={updateSection}
-          deleteSection={deleteSection}
-          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
         />
       )}
     </div>

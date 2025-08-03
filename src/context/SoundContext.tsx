@@ -3,59 +3,41 @@ import React, { createContext, useContext, useState, useCallback } from 'react';
 interface SoundContextType {
   isSoundEnabled: boolean;
   toggleSound: () => void;
-  playSound: (soundName: keyof typeof soundConfig) => void;
+  playSound: (soundName: keyof typeof soundMap) => void;
 }
 
 const SoundContext = createContext<SoundContextType | undefined>(undefined);
 
-// Define configurations for generic computer-generated sounds
-const soundConfig = {
-  success: { frequency: 880, type: 'sine' as OscillatorType, duration: 0.1 }, // A short, high-pitched tone
-  pause: { frequency: 440, type: 'sine' as OscillatorType, duration: 0.1 },    // A short, mid-range tone
-  reset: { frequency: 220, type: 'sine' as OscillatorType, duration: 0.1 },    // A short, low-pitched tone
-  alert: { frequency: 660, type: 'triangle' as OscillatorType, duration: 0.2, repeat: 2 }, // A slightly longer, distinct tone
-  start: { frequency: 550, type: 'sine' as OscillatorType, duration: 0.1 },    // A short, mid-high tone
-  complete: { frequency: 770, type: 'sine' as OscillatorType, duration: 0.3 }, // A slightly longer, satisfying tone
-  delete: { frequency: 110, type: 'sawtooth' as OscillatorType, duration: 0.15 }, // A short, descending tone
-  move: { frequency: 330, type: 'square' as OscillatorType, duration: 0.05 },  // A very short, subtle click/tone
-  focus: { frequency: 150, type: 'sine' as OscillatorType, duration: 0.5 },    // A sustained, low, calming tone
+// Define a map of sound names to their URLs
+// IMPORTANT: Replace these placeholder URLs with actual links to your hosted sound files.
+// You can find free sound effects on sites like freesound.org or zapsplat.com.
+const soundMap = {
+  success: '/sounds/success.mp3', // A positive, uplifting chime for completions
+  pause: '/sounds/pause.mp3',     // A short, neutral tone for pausing
+  reset: '/sounds/reset.mp3',     // A soft, descending tone for resetting
+  alert: '/sounds/alert.mp3',     // A clear, attention-grabbing sound for timers ending
+  start: '/sounds/start.mp3',     // A short, ascending tone for starting timers
+  complete: '/sounds/complete.mp3', // A satisfying, longer chime for task completion
+  delete: '/sounds/delete.mp3',   // A short, slightly negative tone for deletions
+  move: '/sounds/move.mp3',       // A subtle "whoosh" or "click" for reordering
+  focus: '/sounds/focus.mp3',     // A gentle, focusing sound for entering focus mode
 };
 
-// Function to generate and play a sound using Web Audio API
-const generateSound = (config: { frequency: number; type: OscillatorType; duration: number; repeat?: number }) => {
+// Function to play an audio file from a URL
+const playAudioFile = (url: string) => {
+  if (!url) {
+    console.warn('Attempted to play sound with empty URL.');
+    return;
+  }
   try {
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-
-    oscillator.type = config.type;
-    oscillator.frequency.setValueAtTime(config.frequency, audioContext.currentTime);
-    gainNode.gain.setValueAtTime(0.5, audioContext.currentTime); // Set initial volume
-
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-
-    let playCount = 0;
-    const playSingleSound = () => {
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + config.duration);
-      gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + config.duration + 0.05); // Fade out
-
-      oscillator.onended = () => {
-        playCount++;
-        if (config.repeat && playCount < config.repeat) {
-          setTimeout(playSingleSound, 100); // Short delay between repeats
-        } else {
-          audioContext.close(); // Clean up context after sound finishes
-        }
-      };
-    };
-
-    playSingleSound();
-
+    const audio = new Audio(url);
+    audio.volume = 0.5; // Adjust volume as needed
+    audio.play().catch(error => {
+      console.warn('Error playing audio:', error);
+      // This catch is important for handling user gesture requirements in browsers
+    });
   } catch (error) {
-    console.warn('Error generating audio:', error);
-    // This catch is important for handling user gesture requirements in browsers
+    console.warn('Audio playback failed:', error);
   }
 };
 
@@ -66,13 +48,13 @@ export const SoundProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsSoundEnabled(prev => !prev);
   }, []);
 
-  const playSound = useCallback((soundName: keyof typeof soundConfig) => {
+  const playSound = useCallback((soundName: keyof typeof soundMap) => {
     if (isSoundEnabled) {
-      const config = soundConfig[soundName];
-      if (config) {
-        generateSound(config);
+      const soundUrl = soundMap[soundName];
+      if (soundUrl) {
+        playAudioFile(soundUrl);
       } else {
-        console.warn(`Sound "${soundName}" not found in soundConfig.`);
+        console.warn(`Sound "${soundName}" not found in soundMap.`);
       }
     }
   }, [isSoundEnabled]);

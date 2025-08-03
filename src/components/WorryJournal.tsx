@@ -144,9 +144,9 @@ const WorryJournal: React.FC = () => {
             onChange={(e) => setNewThought(e.target.value)}
             rows={3}
             disabled={isSaving}
-            className="min-h-[80px] text-base"
+            className="min-h-[80px]"
           />
-          <Button onClick={handleAddThought} className="w-full h-9 text-base" disabled={isSaving || !newThought.trim()}>
+          <Button onClick={handleAddThought} className="w-full h-9" disabled={isSaving || !newThought.trim()}>
             <Plus className="mr-2 h-4 w-4" /> {isSaving ? 'Saving...' : 'Add Thought'}
           </Button>
         </div>
