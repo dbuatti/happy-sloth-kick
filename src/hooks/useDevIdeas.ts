@@ -19,6 +19,7 @@ export interface DevIdea {
   created_at: string;
   updated_at: string;
   image_url?: string | null;
+  local_file_path?: string | null; // Added local_file_path
   tags: DevIdeaTag[];
 }
 

@@ -29,6 +29,7 @@ const DevIdeaForm: React.FC<DevIdeaFormProps> = ({ isOpen, onClose, onSave, init
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState<'idea' | 'in-progress' | 'completed'>('idea');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
+  const [localFilePath, setLocalFilePath] = useState(''); // New state for file path
   const [selectedTags, setSelectedTags] = useState<DevIdeaTag[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -43,6 +44,7 @@ const DevIdeaForm: React.FC<DevIdeaFormProps> = ({ isOpen, onClose, onSave, init
         setDescription(initialData.description || '');
         setStatus(initialData.status);
         setPriority(initialData.priority);
+        setLocalFilePath(initialData.local_file_path || ''); // Set initial file path
         setImagePreview(initialData.image_url || null);
         setSelectedTags(initialData.tags || []);
       } else {
@@ -50,6 +52,7 @@ const DevIdeaForm: React.FC<DevIdeaFormProps> = ({ isOpen, onClose, onSave, init
         setDescription('');
         setStatus('idea');
         setPriority('medium');
+        setLocalFilePath(''); // Reset file path
         setImagePreview(null);
         setSelectedTags([]);
       }
@@ -141,6 +144,7 @@ const DevIdeaForm: React.FC<DevIdeaFormProps> = ({ isOpen, onClose, onSave, init
       status,
       priority,
       image_url: imageUrlToSave,
+      local_file_path: localFilePath.trim() || null, // Save the file path
       tagIds: selectedTags.map(t => t.id),
     });
     setIsSaving(false);
@@ -201,6 +205,10 @@ const DevIdeaForm: React.FC<DevIdeaFormProps> = ({ isOpen, onClose, onSave, init
           <div className="space-y-2">
             <Label htmlFor="description">Description (Optional)</Label>
             <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} disabled={isSaving} onKeyDown={handleKeyDown} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="local-file-path">Local File Path (Optional)</Label>
+            <Input id="local-file-path" value={localFilePath} onChange={(e) => setLocalFilePath(e.target.value)} placeholder="/Users/yourname/path/to/file" disabled={isSaving} onKeyDown={handleKeyDown} />
           </div>
           <div className="space-y-2">
             <Label>Tags</Label>
