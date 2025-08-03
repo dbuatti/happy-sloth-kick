@@ -1,50 +1,16 @@
 import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Lightbulb, Zap, CheckCircle2 } from 'lucide-react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useDevIdeas, DevIdea } from '@/hooks/useDevIdeas';
 import DevIdeaCard from '@/components/DevIdeaCard';
 import DevIdeaForm from '@/components/DevIdeaForm';
-import { Skeleton } from '@/components/ui/skeleton';
 import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, useSensor, useSensors, closestCenter } from '@dnd-kit/core';
-import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { arrayMove } from '@dnd-kit/sortable';
 import SortableDevIdeaCard from '@/components/SortableDevIdeaCard';
-import { useDroppable } from '@dnd-kit/core';
-
-interface DevIdeaColumnProps {
-    id: string;
-    title: string;
-    icon: React.ElementType;
-    className: string;
-    ideas: DevIdea[];
-    loading: boolean;
-    onEdit: (idea: DevIdea) => void;
-}
-
-const DevIdeaColumn: React.FC<DevIdeaColumnProps> = ({ id, title, icon: Icon, className, ideas, loading, onEdit }) => {
-    const { setNodeRef } = useDroppable({ id });
-
-    return (
-        <Card className="bg-muted/30 h-full">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <Icon className={className} /> {title} ({ideas.length})
-                </CardTitle>
-            </CardHeader>
-            <CardContent ref={setNodeRef} className="space-y-4 min-h-[200px]">
-                <SortableContext id={id} items={ideas.map(i => i.id)} strategy={verticalListSortingStrategy}>
-                    {loading ? (
-                        <Skeleton className="h-24 w-full" />
-                    ) : (
-                        ideas.map(idea => <SortableDevIdeaCard key={idea.id} idea={idea} onEdit={onEdit} />)
-                    )}
-                </SortableContext>
-            </CardContent>
-        </Card>
-    );
-};
+import DevIdeaColumn from '@/components/DevIdeaColumn';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 const DevSpace: React.FC = () => {
   const { ideas, loading, addIdea, updateIdea, setIdeas } = useDevIdeas();
@@ -130,9 +96,23 @@ const DevSpace: React.FC = () => {
         <main className="flex-grow p-4">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold">Dev Space</h1>
-            <Button onClick={handleAddClick}>
-              <Plus className="mr-2 h-4 w-4" /> Add Idea
-            </Button>
+            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={handleAddClick}>
+                  <Plus className="mr-2 h-4 w-4" /> Add Idea
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>{editingIdea ? 'Edit Idea' : 'Add New Idea'}</DialogTitle>
+                </DialogHeader>
+                <DevIdeaForm
+                  onSave={handleSave}
+                  onClose={() => setIsFormOpen(false)}
+                  initialData={editingIdea}
+                />
+              </DialogContent>
+            </Dialog>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -153,13 +133,6 @@ const DevSpace: React.FC = () => {
         <footer className="p-4">
           <MadeWithDyad />
         </footer>
-
-        <DevIdeaForm
-          isOpen={isFormOpen}
-          onClose={() => setIsFormOpen(false)}
-          onSave={handleSave}
-          initialData={editingIdea}
-        />
       </div>
       {createPortal(
         <DragOverlay>
