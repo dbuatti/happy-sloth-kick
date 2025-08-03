@@ -112,5 +112,5 @@ export const useDevIdeas = () => {
     }
   };
 
-  return { ideas, loading, addIdea, updateIdea, deleteIdea };
+  return { ideas, loading, addIdea, updateIdea, deleteIdea, setIdeas };
 };
