@@ -52,12 +52,7 @@ const DevSpace: React.FC = () => {
   const [editingIdea, setEditingIdea] = useState<DevIdea | null>(null);
   const [activeIdea, setActiveIdea] = useState<DevIdea | null>(null);
 
-  const sensors = useSensors(useSensor(PointerSensor, {
-    activationConstraint: {
-      delay: 150,
-      tolerance: 5,
-    }
-  }));
+  const sensors = useSensors(useSensor(PointerSensor));
 
   const columns = useMemo(() => {
     const ideaCol = ideas.filter(i => i.status === 'idea');
@@ -76,7 +71,7 @@ const DevSpace: React.FC = () => {
     setIsFormOpen(true);
   };
 
-  const handleSave = async (data: Omit<DevIdea, 'id' | 'user_id' | 'created_at' | 'tags'> & { tagIds: string[] }) => {
+  const handleSave = async (data: Omit<DevIdea, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'tags'> & { tagIds: string[] }) => {
     if (editingIdea) {
       return await updateIdea(editingIdea.id, data);
     } else {
