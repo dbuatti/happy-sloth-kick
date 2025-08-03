@@ -5,6 +5,7 @@ import { Edit } from 'lucide-react';
 import { DevIdea } from '@/hooks/useDevIdeas';
 import { cn } from '@/lib/utils';
 import { showSuccess, showError } from '@/utils/toast';
+import { Badge } from '@/components/ui/badge';
 
 interface DevIdeaCardProps {
   idea: DevIdea;
@@ -67,6 +68,15 @@ const DevIdeaCard: React.FC<DevIdeaCardProps> = ({ idea, onEdit }) => {
         )}
         {idea.description && (
           <p className="text-sm text-muted-foreground">{idea.description}</p>
+        )}
+        {idea.tags && idea.tags.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1">
+            {idea.tags.map(tag => (
+              <Badge key={tag.id} style={{ backgroundColor: tag.color }} className="text-white">
+                {tag.name}
+              </Badge>
+            ))}
+          </div>
         )}
       </CardContent>
     </Card>

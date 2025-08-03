@@ -47,7 +47,7 @@ const DevIdeaColumn: React.FC<DevIdeaColumnProps> = ({ id, title, icon: Icon, cl
 };
 
 const DevSpace: React.FC = () => {
-  const { ideas, loading, addIdea, updateIdea, setIdeas } = useDevIdeas();
+  const { ideas, tags, loading, addIdea, updateIdea, setIdeas, addTag } = useDevIdeas();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingIdea, setEditingIdea] = useState<DevIdea | null>(null);
   const [activeIdea, setActiveIdea] = useState<DevIdea | null>(null);
@@ -76,7 +76,7 @@ const DevSpace: React.FC = () => {
     setIsFormOpen(true);
   };
 
-  const handleSave = async (data: Omit<DevIdea, 'id' | 'user_id' | 'created_at'>) => {
+  const handleSave = async (data: Omit<DevIdea, 'id' | 'user_id' | 'created_at' | 'tags'> & { tagIds: string[] }) => {
     if (editingIdea) {
       return await updateIdea(editingIdea.id, data);
     } else {
@@ -159,6 +159,8 @@ const DevSpace: React.FC = () => {
           onClose={() => setIsFormOpen(false)}
           onSave={handleSave}
           initialData={editingIdea}
+          allTags={tags}
+          onAddTag={addTag}
         />
       </div>
       {createPortal(

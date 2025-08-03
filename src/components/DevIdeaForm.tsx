@@ -1,31 +1,35 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DevIdea } from '@/hooks/useDevIdeas';
+import { DevIdea, DevIdeaTag } from '@/hooks/useDevIdeas';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 import { showError } from '@/utils/toast';
 import { UploadCloud, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import TagInput from './TagInput'; // Import the new TagInput component
 
 interface DevIdeaFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: Omit<DevIdea, 'id' | 'user_id' | 'created_at'>) => Promise<any>;
+  onSave: (data: Omit<DevIdea, 'id' | 'user_id' | 'created_at' | 'tags'> & { tagIds: string[] }) => Promise<any>;
   initialData?: DevIdea | null;
+  allTags: DevIdeaTag[];
+  onAddTag: (name: string, color: string) => Promise<DevIdeaTag | null>;
 }
 
-const DevIdeaForm: React.FC<DevIdeaFormProps> = ({ isOpen, onClose, onSave, initialData }) => {
+const DevIdeaForm: React.FC<DevIdeaFormProps> = ({ isOpen, onClose, onSave, initialData, allTags, onAddTag }) => {
   const { user } = useAuth();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState<'idea' | 'in-progress' | 'completed'>('idea');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
+  const [selectedTags, setSelectedTags] = useState<DevIdeaTag[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -40,12 +44,14 @@ const DevIdeaForm: React.FC<DevIdeaFormProps> = ({ isOpen, onClose, onSave, init
         setStatus(initialData.status);
         setPriority(initialData.priority);
         setImagePreview(initialData.image_url || null);
+        setSelectedTags(initialData.tags || []);
       } else {
         setTitle('');
         setDescription('');
         setStatus('idea');
         setPriority('medium');
         setImagePreview(null);
+        setSelectedTags([]);
       }
       setImageFile(null);
     }
@@ -135,6 +141,7 @@ const DevIdeaForm: React.FC<DevIdeaFormProps> = ({ isOpen, onClose, onSave, init
       status,
       priority,
       image_url: imageUrlToSave,
+      tagIds: selectedTags.map(t => t.id),
     });
     setIsSaving(false);
     if (success) {
@@ -187,6 +194,15 @@ const DevIdeaForm: React.FC<DevIdeaFormProps> = ({ isOpen, onClose, onSave, init
           <div className="space-y-2">
             <Label htmlFor="description">Description (Optional)</Label>
             <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} disabled={isSaving} />
+          </div>
+          <div className="space-y-2">
+            <Label>Tags</Label>
+            <TagInput
+              allTags={allTags}
+              selectedTags={selectedTags}
+              setSelectedTags={setSelectedTags}
+              onAddTag={onAddTag}
+            />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
