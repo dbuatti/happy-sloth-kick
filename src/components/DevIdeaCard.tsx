@@ -22,31 +22,62 @@ const DevIdeaCard: React.FC<DevIdeaCardProps> = ({ idea, onEdit }) => {
     }
   };
 
+  // Helper function to convert a blob to a data URL
+  const blobToDataURL = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error);
+      reader.onabort = () => reject(new Error("Read aborted"));
+      reader.readAsDataURL(blob);
+    });
+  };
+
   const handleCardClick = async () => {
     if (idea.image_url) {
       try {
-        // Prepare the text content
+        // 1. Prepare plain text version as a fallback
         const textToCopy = `${idea.title}${idea.description ? `\n\n${idea.description}` : ''}`;
         const textBlob = new Blob([textToCopy], { type: 'text/plain' });
 
-        // Fetch the image content
+        // 2. Fetch image and convert to data URL for HTML embedding
         const response = await fetch(idea.image_url);
         const imageBlob = await response.blob();
+        const dataUrl = await blobToDataURL(imageBlob);
 
-        // Create a ClipboardItem with both text and image representations
+        // 3. Prepare HTML version
+        const htmlToCopy = `
+          <div>
+            <img src="${dataUrl}" alt="${idea.title}" style="max-width: 100%; height: auto;" />
+            <p><strong>${idea.title}</strong></p>
+            ${idea.description ? `<p>${idea.description.replace(/\n/g, '<br>')}</p>` : ''}
+          </div>
+        `;
+        const htmlBlob = new Blob([htmlToCopy], { type: 'text/html' });
+
+        // 4. Create a ClipboardItem with both HTML and plain text representations
         const clipboardItem = new ClipboardItem({
-          [imageBlob.type]: imageBlob,
+          'text/html': htmlBlob,
           'text/plain': textBlob,
         });
 
-        // Write the single ClipboardItem (containing both types) to the clipboard
+        // 5. Write to clipboard
         await navigator.clipboard.write([clipboardItem]);
-        showSuccess('Image and text copied to clipboard!');
+        showSuccess('Idea (with image) copied to clipboard!');
       } catch (err) {
-        console.error('Failed to copy image and text: ', err);
-        showError('Could not copy image and text to clipboard.');
+        console.error('Failed to copy rich text: ', err);
+        // Fallback to just copying text if rich copy fails
+        try {
+          const textToCopy = `${idea.title}${idea.description ? `\n\n${idea.description}` : ''}`;
+          await navigator.clipboard.writeText(textToCopy);
+          showSuccess('Image copy failed, but text was copied!');
+        } catch (textErr) {
+          console.error('Failed to copy text as fallback: ', textErr);
+          showError('Could not copy idea to clipboard.');
+        }
       }
     } else {
+      // Text-only copy logic remains the same
       const textToCopy = `${idea.title}${idea.description ? `\n\n${idea.description}` : ''}`;
       navigator.clipboard.writeText(textToCopy).then(() => {
         showSuccess('Idea copied to clipboard!');
