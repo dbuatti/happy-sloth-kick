@@ -64,19 +64,16 @@ const DevSpace: React.FC = () => {
     const activeIdea = ideas.find(idea => idea.id === activeId);
     if (!activeIdea) return;
 
-    let overContainerStatus: DevIdea['status'] | null = null;
-    if (columns.idea.some(i => i.id === overId)) {
-      overContainerStatus = 'idea';
-    } else if (columns['in-progress'].some(i => i.id === overId)) {
-      overContainerStatus = 'in-progress';
-    } else if (columns.completed.some(i => i.id === overId)) {
-      overContainerStatus = 'completed';
-    } else if (['idea', 'in-progress', 'completed'].includes(overId as string)) {
-      overContainerStatus = overId as DevIdea['status'];
+    // Find the container of the 'over' element. It could be a column or an item in a column.
+    const overContainerId = over.data.current?.sortable?.containerId || over.id;
+
+    let overStatus: DevIdea['status'] | null = null;
+    if (['idea', 'in-progress', 'completed'].includes(overContainerId as string)) {
+      overStatus = overContainerId as DevIdea['status'];
     }
 
-    if (overContainerStatus && activeIdea.status !== overContainerStatus) {
-      updateIdea(active.id as string, { status: overContainerStatus });
+    if (overStatus && activeIdea.status !== overStatus) {
+      updateIdea(active.id as string, { status: overStatus });
     }
   };
 
@@ -110,7 +107,7 @@ const DevSpace: React.FC = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4 min-h-[100px]">
-                      <SortableContext items={columnIdeas.map(i => i.id)} strategy={verticalListSortingStrategy}>
+                      <SortableContext id={column.id} items={columnIdeas.map(i => i.id)} strategy={verticalListSortingStrategy}>
                         {loading ? (
                           <Skeleton className="h-24 w-full" />
                         ) : (
