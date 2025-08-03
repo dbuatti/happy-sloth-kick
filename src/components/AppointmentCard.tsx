@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { Appointment } from '@/hooks/useAppointments';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
-import { Info, ListTodo } from 'lucide-react';
+import { Info, ListTodo, GripVertical } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -64,16 +64,14 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "absolute rounded-lg p-2 text-white shadow-md cursor-pointer",
-        "flex flex-col justify-between transition-all duration-200 ease-in-out",
+        "absolute rounded-lg p-2 text-white shadow-md",
+        "flex flex-row justify-between items-start transition-all duration-200 ease-in-out",
         "group",
         isDragging ? "ring-2 ring-primary shadow-lg" : "hover:scale-[1.01] hover:shadow-lg",
       )}
       {...(attributes || {})}
-      {...(listeners || {})}
-      onClick={() => onEdit(appointment)}
     >
-      <div className="flex flex-col">
+      <div className="flex-grow cursor-pointer h-full" onClick={() => onEdit(appointment)}>
         <h4 className="font-semibold text-sm truncate flex items-center gap-1.5">
           {appointment.task_id && <ListTodo className="h-3.5 w-3.5 flex-shrink-0" />}
           {appointment.title}
@@ -81,19 +79,25 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
         <p className="text-xs opacity-90">
           {format(startTime, 'h:mm a')} - {format(endTime, 'h:mm a')}
         </p>
+        {appointment.description && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Info className="h-4 w-4 text-white opacity-70 mt-1" />
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs">
+              <p className="font-semibold">{appointment.title}</p>
+              <p className="text-sm">{appointment.description}</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
       </div>
-
-      {appointment.description && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Info className="h-4 w-4 text-white opacity-70 self-end mt-1" />
-          </TooltipTrigger>
-          <TooltipContent className="max-w-xs">
-            <p className="font-semibold">{appointment.title}</p>
-            <p className="text-sm">{appointment.description}</p>
-          </TooltipContent>
-        </Tooltip>
-      )}
+      <div 
+        className="cursor-grab p-1 -mr-1 -mt-1 opacity-0 group-hover:opacity-100 transition-opacity"
+        {...listeners}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <GripVertical className="h-4 w-4 text-white/70" />
+      </div>
     </div>
   );
 };
