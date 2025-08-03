@@ -20,7 +20,8 @@ interface SortableTaskItemProps {
   isOverlay?: boolean; // New prop for drag overlay
   setFocusTask: (taskId: string | null) => Promise<void>;
   isDoToday: boolean;
-  toggleDoToday: (taskId: string) => void;
+  toggleDoToday: (task: Task) => void;
+  doTodayOffIds: Set<string>;
 }
 
 const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
@@ -31,6 +32,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   setFocusTask,
   isDoToday,
   toggleDoToday,
+  doTodayOffIds,
   ...rest
 }) => {
   const {
@@ -87,8 +89,9 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
                 {...rest}
                 isOverlay={isOverlay}
                 setFocusTask={setFocusTask}
-                isDoToday={isDoToday}
+                isDoToday={!doTodayOffIds.has(subtask.original_task_id || subtask.id)}
                 toggleDoToday={toggleDoToday}
+                doTodayOffIds={doTodayOffIds}
               />
             ))}
           </ul>

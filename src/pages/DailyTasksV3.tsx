@@ -31,6 +31,7 @@ const DailyTasksV3: React.FC = () => {
     allCategories,
     handleAddTask,
     bulkUpdateTasks,
+    archiveAllCompletedTasks,
     markAllTasksInSectionCompleted,
     createSection,
     updateSection,
@@ -148,6 +149,7 @@ const DailyTasksV3: React.FC = () => {
             deleteSection={deleteSection}
             updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
             doTodayOffIds={doTodayOffIds}
+            archiveAllCompletedTasks={archiveAllCompletedTasks}
           />
 
           <Card className="p-3 flex-1 flex flex-col rounded-none shadow-none">

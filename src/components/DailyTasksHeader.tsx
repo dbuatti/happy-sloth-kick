@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, ListTodo, Brain, CheckCircle2, Clock, Target, Edit, Sparkles, FolderOpen, Tag } from 'lucide-react'; // Removed ChevronsDownUp, Settings
+import { Plus, ListTodo, Brain, CheckCircle2, Clock, Target, Edit, Sparkles, FolderOpen, Tag, Archive } from 'lucide-react'; // Removed ChevronsDownUp, Settings
 import DateNavigator from '@/components/DateNavigator';
 import TaskFilter from '@/components/TaskFilter';
 import { cn } from '@/lib/utils';
@@ -43,6 +43,7 @@ interface DailyTasksHeaderProps {
   deleteSection: (sectionId: string) => Promise<void>;
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
   doTodayOffIds: Set<string>;
+  archiveAllCompletedTasks: () => Promise<void>;
 }
 
 const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
@@ -71,6 +72,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   deleteSection,
   updateSectionIncludeInFocusMode,
   doTodayOffIds,
+  archiveAllCompletedTasks,
 }) => {
   useDailyTaskCount(); 
   const { playSound } = useSound();
@@ -87,7 +89,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
     const focusTasks = filteredTasks.filter(t =>
       t.parent_task_id === null &&
       (t.section_id === null || focusModeSectionIds.has(t.section_id)) &&
-      (t.recurring_type !== 'none' || !doTodayOffIds.has(t.id))
+      (t.recurring_type !== 'none' || !doTodayOffIds.has(t.original_task_id || t.id))
     );
 
     const total = focusTasks.length;
@@ -239,11 +241,18 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
           className="h-4 rounded-full"
           indicatorClassName="bg-gradient-to-r from-primary to-accent rounded-full"
         />
-        {overdueCount > 0 && (
-          <p className="text-sm text-destructive mt-2 flex items-center gap-1">
-            <Clock className="h-4 w-4" /> {overdueCount} overdue
-          </p>
-        )}
+        <div className="flex items-center justify-between mt-2">
+          {overdueCount > 0 ? (
+            <p className="text-sm text-destructive flex items-center gap-1">
+              <Clock className="h-4 w-4" /> {overdueCount} overdue
+            </p>
+          ) : <div />}
+          {completedCount > 0 && (
+            <Button variant="outline" size="sm" onClick={archiveAllCompletedTasks} className="h-8 text-xs">
+              <Archive className="mr-2 h-3.5 w-3.5" /> Archive Completed
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="bg-card p-6 mx-4 rounded-xl shadow-lg mb-4 flex flex-col items-center text-center">

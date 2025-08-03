@@ -89,7 +89,7 @@ const Archive: React.FC = () => {
                       onMoveDown={async () => {}}
                       setFocusTask={setFocusTask}
                       isDoToday={false}
-                      toggleDoToday={() => toggleDoToday(task.id)}
+                      toggleDoToday={() => toggleDoToday(task)}
                     />
                   </li>
                 ))}

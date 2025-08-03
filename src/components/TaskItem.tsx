@@ -28,7 +28,7 @@ interface TaskItemProps {
   dragListeners?: ReturnType<typeof useSortable>['listeners'];
   setFocusTask: (taskId: string | null) => Promise<void>;
   isDoToday: boolean;
-  toggleDoToday: (taskId: string) => void;
+  toggleDoToday: (task: Task) => void;
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -238,7 +238,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
         {task.recurring_type === 'none' && (
           <DoTodaySwitch
             isOn={isDoToday}
-            onToggle={() => toggleDoToday(task.id)}
+            onToggle={() => toggleDoToday(task)}
             taskId={task.id}
           />
         )}

@@ -57,7 +57,7 @@ interface TaskListProps {
   toggleAllSections: () => void;
   setFocusTask: (taskId: string | null) => Promise<void>;
   doTodayOffIds: Set<string>;
-  toggleDoToday: (taskId: string) => void;
+  toggleDoToday: (task: Task) => void;
 }
 
 const TaskList: React.FC<TaskListProps> = (props) => {
@@ -316,6 +316,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                             setFocusTask={setFocusTask}
                             isDoToday={!doTodayOffIds.has(task.id)}
                             toggleDoToday={toggleDoToday}
+                            doTodayOffIds={doTodayOffIds}
                           />
                         ))}
                       </ul>

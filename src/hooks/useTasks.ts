@@ -99,32 +99,6 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
   const [internalCurrentDate, setInternalCurrentDate] = useState(() => getUTCStartOfDay(new Date()));
   const effectiveCurrentDate = viewMode === 'daily' ? internalCurrentDate : (propCurrentDate || new Date());
 
-  useEffect(() => {
-    if (!userId) return;
-    const key = `doTodayOff-${userId}-${format(effectiveCurrentDate, 'yyyy-MM-dd')}`;
-    try {
-      const saved = localStorage.getItem(key);
-      setDoTodayOffIds(saved ? new Set(JSON.parse(saved)) : new Set());
-    } catch {
-      setDoTodayOffIds(new Set());
-    }
-  }, [userId, effectiveCurrentDate]);
-
-  const toggleDoToday = useCallback((taskId: string) => {
-    if (!userId) return;
-    const key = `doTodayOff-${userId}-${format(effectiveCurrentDate, 'yyyy-MM-dd')}`;
-    setDoTodayOffIds(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(taskId)) {
-        newSet.delete(taskId);
-      } else {
-        newSet.add(taskId);
-      }
-      localStorage.setItem(key, JSON.stringify(Array.from(newSet)));
-      return newSet;
-    });
-  }, [userId, effectiveCurrentDate]);
-
   const categoriesMap = useMemo(() => {
     const map = new Map<string, string>();
     allCategories.forEach(c => map.set(c.id, c.color));
@@ -140,6 +114,21 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
   useEffect(() => {
     categoriesMapRef.current = categoriesMap;
   }, [categoriesMap]);
+
+  const fetchDoTodayOffLog = useCallback(async (date: Date, currentUserId: string) => {
+    const formattedDate = format(date, 'yyyy-MM-dd');
+    const { data: offLogData, error: offLogError } = await supabase
+      .from('do_today_off_log')
+      .select('task_id')
+      .eq('user_id', currentUserId)
+      .eq('off_date', formattedDate);
+    if (offLogError) {
+        showError("Could not load 'Do Today' settings.");
+        console.error(offLogError);
+        return new Set<string>();
+    }
+    return new Set(offLogData?.map(item => item.task_id) || []);
+  }, []);
 
   const fetchDataAndSettings = useCallback(async (currentUserId: string) => {
     setLoading(true);
@@ -182,13 +171,23 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       })) as Task[];
 
       setTasks(mappedTasks);
+
+      const offIds = await fetchDoTodayOffLog(effectiveCurrentDate, currentUserId);
+      setDoTodayOffIds(offIds);
+
     } catch (e: any) {
       console.error('useTasks: Error in fetchDataAndSettings:', e.message);
       showError('Failed to load data.');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [effectiveCurrentDate, fetchDoTodayOffLog]);
+
+  useEffect(() => {
+    if (userId) {
+        fetchDoTodayOffLog(effectiveCurrentDate, userId).then(setDoTodayOffIds);
+    }
+  }, [userId, effectiveCurrentDate, fetchDoTodayOffLog]);
 
   useEffect(() => {
     if (!authLoading && userId) fetchDataAndSettings(userId);
@@ -576,6 +575,22 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     }
   }, [tasks, userId]);
 
+  const archiveAllCompletedTasks = useCallback(async () => {
+    if (!userId) {
+        showError('User not authenticated.');
+        return;
+    }
+    const completedTaskIds = processedTasks
+        .filter(task => task.status === 'completed')
+        .map(task => task.id);
+
+    if (completedTaskIds.length === 0) {
+        showSuccess('No completed tasks to archive!');
+        return;
+    }
+    await bulkUpdateTasks({ status: 'archived' }, completedTaskIds);
+  }, [userId, processedTasks, bulkUpdateTasks]);
+
   const markAllTasksInSectionCompleted = useCallback(async (sectionId: string | null) => {
     if (!userId) {
       showError('User not authenticated.');
@@ -868,7 +883,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
   const nextAvailableTask = useMemo(() => {
     if (focusedTaskId) {
       const focusedTask = finalFilteredTasks.find(t => t.id === focusedTaskId);
-      if (focusedTask && focusedTask.status === 'to-do' && (focusedTask.recurring_type !== 'none' || !doTodayOffIds.has(focusedTask.id))) {
+      if (focusedTask && focusedTask.status === 'to-do' && (focusedTask.recurring_type !== 'none' || !doTodayOffIds.has(focusedTask.original_task_id || focusedTask.id))) {
         return focusedTask;
       }
     }
@@ -876,7 +891,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     const relevantTasks = finalFilteredTasks.filter(task =>
       task.status === 'to-do' &&
       task.parent_task_id === null &&
-      (task.recurring_type !== 'none' || !doTodayOffIds.has(task.id))
+      (task.recurring_type !== 'none' || !doTodayOffIds.has(task.original_task_id || task.id))
     );
 
     const tasksBySection = new Map<string | null, Task[]>();
@@ -907,6 +922,50 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     return null;
   }, [finalFilteredTasks, sections, focusedTaskId, doTodayOffIds]);
 
+  const toggleDoToday = useCallback(async (task: Task) => {
+    if (!userId) return;
+    const taskIdToLog = task.original_task_id || task.id;
+    const formattedDate = format(effectiveCurrentDate, 'yyyy-MM-dd');
+    const isCurrentlyOn = !doTodayOffIds.has(taskIdToLog);
+
+    setDoTodayOffIds(prev => {
+        const newSet = new Set(prev);
+        if (isCurrentlyOn) {
+            newSet.add(taskIdToLog);
+        } else {
+            newSet.delete(taskIdToLog);
+        }
+        return newSet;
+    });
+
+    try {
+        if (isCurrentlyOn) {
+            const { error } = await supabase
+                .from('do_today_off_log')
+                .insert({ user_id: userId, task_id: taskIdToLog, off_date: formattedDate });
+            if (error) throw error;
+        } else {
+            const { error } = await supabase
+                .from('do_today_off_log')
+                .delete()
+                .eq('user_id', userId)
+                .eq('task_id', taskIdToLog)
+                .eq('off_date', formattedDate);
+            if (error) throw error;
+        }
+    } catch (e: any) {
+        showError("Failed to sync 'Do Today' setting.");
+        setDoTodayOffIds(prev => {
+            const newSet = new Set(prev);
+            if (isCurrentlyOn) {
+                newSet.delete(taskIdToLog);
+            } else {
+                newSet.add(taskIdToLog);
+            }
+            return newSet;
+        });
+    }
+  }, [userId, effectiveCurrentDate, doTodayOffIds]);
 
   return {
     tasks,
@@ -934,6 +993,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     updateTaskParentAndOrder,
     moveTask: () => Promise.resolve(),
     bulkUpdateTasks,
+    archiveAllCompletedTasks,
     markAllTasksInSectionCompleted,
     createSection,
     updateSection,
