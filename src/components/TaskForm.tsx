@@ -30,27 +30,24 @@ const taskFormSchema = z.object({
   sectionId: z.string().nullable().optional(),
   recurringType: z.enum(['none', 'daily', 'weekly', 'monthly']),
   parentTaskId: z.string().nullable().optional(),
-  link: z.string().transform((val) => { // Changed from .nullable() to direct transform
-    if (val === null || val === undefined || val.trim() === '') return null;
+  link: z.string().optional().transform((val) => { // Added .optional()
+    if (!val || val.trim() === '') return null;
     let processedVal = val.trim();
-    // If it doesn't start with http:// or https://, prepend https://
     if (!/^https?:\/\//i.test(processedVal)) {
       processedVal = `https://${processedVal}`;
     }
     return processedVal;
   }).refine((val) => {
-    // Only validate if not null
     if (val === null) return true;
     try {
-      new URL(val); // Attempt to create a URL object
+      new URL(val);
       return true;
     } catch (e) {
       return false;
     }
-  }, { message: 'Please enter a valid URL (e.g., example.com or https://example.com).' }).nullable(), // Added .nullable() at the end
+  }, { message: 'Please enter a valid URL (e.g., example.com or https://example.com).' }).nullable(),
 }).superRefine((data, ctx) => { // Using superRefine for more robust conditional validation
   if (data.remindAtDate) {
-    // If remindAtDate is set, remindAtTime is required and must be valid
     if (!data.remindAtTime || data.remindAtTime.trim() === "") {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -68,7 +65,6 @@ const taskFormSchema = z.object({
       }
     }
   } else {
-    // If remindAtDate is NOT set, remindAtTime must be empty or undefined
     if (data.remindAtTime && data.remindAtTime.trim() !== "") {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

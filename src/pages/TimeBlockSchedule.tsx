@@ -24,7 +24,7 @@ import {
   verticalListSortingStrategy,
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
-import { useAuth } from '@/context/AuthContext'; // Re-introduced useAuth
+import { useAuth } from '@/context/AuthContext';
 
 const TimeBlockSchedule: React.FC = () => {
   useAuth(); 
