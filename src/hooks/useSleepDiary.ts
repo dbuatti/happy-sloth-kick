@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { showError } from '@/utils/toast';
-import { subDays, startOfDay, endOfDay, formatISO } from 'date-fns';
 import { SleepRecord } from './useSleepRecords';
 
 const PAGE_SIZE = 14; // Fetch 14 days at a time

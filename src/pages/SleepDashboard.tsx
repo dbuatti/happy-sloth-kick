@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { Moon, CalendarIcon, Clock, Bed, TrendingUp, Target, ListX, AlertTriangle } from 'lucide-react';
+import { Moon, CalendarIcon, Clock, Bed, TrendingUp, Target, ListX } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { format, startOfMonth } from 'date-fns';
