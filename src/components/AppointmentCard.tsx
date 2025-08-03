@@ -37,6 +37,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
     backgroundColor: appointment.color,
     left: `${calculatedLeft}px`,
     width: calculatedWidth,
+    zIndex: 10,
   };
 
   const startTime = parseISO(`2000-01-01T${appointment.start_time}`);
