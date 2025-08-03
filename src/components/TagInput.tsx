@@ -11,9 +11,10 @@ interface TagInputProps {
   selectedTags: DevIdeaTag[];
   setSelectedTags: React.Dispatch<React.SetStateAction<DevIdeaTag[]>>;
   onAddTag: (name: string, color: string) => Promise<DevIdeaTag | null>;
+  onEnter?: () => Promise<void>;
 }
 
-const TagInput: React.FC<TagInputProps> = ({ allTags, selectedTags, setSelectedTags, onAddTag }) => {
+const TagInput: React.FC<TagInputProps> = ({ allTags, selectedTags, setSelectedTags, onAddTag, onEnter }) => {
   const [open, setOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
 
@@ -39,10 +40,11 @@ const TagInput: React.FC<TagInputProps> = ({ allTags, selectedTags, setSelectedT
     setSelectedTags(prev => prev.filter(t => t.id !== tagId));
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      handleCreateTag();
+      await handleCreateTag();
+      await onEnter?.();
     }
   };
 

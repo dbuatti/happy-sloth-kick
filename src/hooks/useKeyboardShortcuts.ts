@@ -10,20 +10,19 @@ export type ShortcutMap = { // Added export
 const useKeyboardShortcuts = (shortcuts: ShortcutMap) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger shortcuts when typing in input fields
-      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) {
-        return;
-      }
-
-      // Check if the pressed key combination matches any registered shortcut
       const key = e.key.toLowerCase();
       const modifiers = [
-        e.ctrlKey ? 'ctrl' : null,
+        (e.ctrlKey || e.metaKey) ? 'cmd' : null, // Unify Cmd/Ctrl for easier definition
         e.shiftKey ? 'shift' : null,
         e.altKey ? 'alt' : null,
       ].filter(Boolean).join('+');
 
       const shortcut = modifiers ? `${modifiers}+${key}` : key;
+      
+      // Allow shortcuts with Cmd/Ctrl to work even when in an input field
+      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName) && !(e.metaKey || e.ctrlKey)) {
+        return;
+      }
       
       if (shortcuts[shortcut]) {
         e.preventDefault();

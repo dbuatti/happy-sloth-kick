@@ -149,6 +149,13 @@ const DevIdeaForm: React.FC<DevIdeaFormProps> = ({ isOpen, onClose, onSave, init
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent 
@@ -189,11 +196,11 @@ const DevIdeaForm: React.FC<DevIdeaFormProps> = ({ isOpen, onClose, onSave, init
 
           <div className="space-y-2">
             <Label htmlFor="title">Title</Label>
-            <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} disabled={isSaving} autoFocus />
+            <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} disabled={isSaving} autoFocus onKeyDown={handleKeyDown} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="description">Description (Optional)</Label>
-            <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} disabled={isSaving} />
+            <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} disabled={isSaving} onKeyDown={handleKeyDown} />
           </div>
           <div className="space-y-2">
             <Label>Tags</Label>
@@ -202,6 +209,7 @@ const DevIdeaForm: React.FC<DevIdeaFormProps> = ({ isOpen, onClose, onSave, init
               selectedTags={selectedTags}
               setSelectedTags={setSelectedTags}
               onAddTag={onAddTag}
+              onEnter={handleSubmit}
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
