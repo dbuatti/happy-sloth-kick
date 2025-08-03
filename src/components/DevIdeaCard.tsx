@@ -20,8 +20,29 @@ const DevIdeaCard: React.FC<DevIdeaCardProps> = ({ idea, onEdit }) => {
     }
   };
 
+  const handleCardClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    // Don't select text if the edit button was clicked
+    if ((event.target as HTMLElement).closest('button')) {
+      return;
+    }
+
+    const cardElement = event.currentTarget;
+    if (cardElement && window.getSelection) {
+      const selection = window.getSelection();
+      if (selection) {
+        const range = document.createRange();
+        range.selectNodeContents(cardElement);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    }
+  };
+
   return (
-    <Card className={cn("w-full shadow-md hover:shadow-lg transition-shadow duration-200 border-l-4", getPriorityColor(idea.priority))}>
+    <Card 
+      className={cn("w-full shadow-md hover:shadow-lg transition-shadow duration-200 border-l-4", getPriorityColor(idea.priority))}
+      onClick={handleCardClick}
+    >
       <CardHeader className="pb-2 flex-row items-start justify-between">
         <CardTitle className="text-lg font-semibold">{idea.title}</CardTitle>
         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(idea)}>
