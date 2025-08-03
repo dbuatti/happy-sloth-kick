@@ -123,8 +123,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ children }) => {
   }
 
   return (
-    <div className="min-h-screen flex bg-background">
-      <div className="w-60 bg-card/80 backdrop-blur shadow-md h-screen flex flex-col">
+    <div className="h-screen flex overflow-hidden bg-background">
+      <div className="w-60 bg-card/80 backdrop-blur shadow-md h-full flex flex-col flex-shrink-0">
         <div className="p-3 flex justify-between items-center">
           <h1 className="text-xl font-bold">TaskMaster</h1>
         </div>
@@ -141,7 +141,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ children }) => {
           </div>
         </div>
       </div>
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col overflow-y-auto">
         {children}
       </div>
     </div>

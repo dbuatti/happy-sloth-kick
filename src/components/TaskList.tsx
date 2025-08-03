@@ -9,6 +9,7 @@ import {
   DndContext,
   closestCenter,
   KeyboardSensor,
+  PointerSensor,
   useSensor,
   useSensors,
   DragEndEvent,
@@ -22,7 +23,6 @@ import {
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
 import { createPortal } from 'react-dom';
-import { CustomPointerSensor } from '@/lib/CustomPointerSensor';
 import SortableTaskItem from './SortableTaskItem';
 import SortableSectionHeader from './SortableSectionHeader';
 import TaskForm from './TaskForm';
@@ -96,7 +96,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
   const [activeItemData, setActiveItemData] = useState<Task | TaskSection | null>(null);
 
   const sensors = useSensors(
-    useSensor(CustomPointerSensor, {
+    useSensor(PointerSensor, {
       activationConstraint: {
         delay: 150, // ms
         tolerance: 5, // px
