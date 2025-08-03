@@ -126,6 +126,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
       start_time: format(parse(data.startTime, 'HH:mm', data.date), 'HH:mm:ss'),
       end_time: format(parse(data.endTime, 'HH:mm', data.date), 'HH:mm:ss'),
       color: data.color,
+      task_id: initialData?.task_id || null,
     });
     setIsSaving(false);
     if (success) {

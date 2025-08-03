@@ -15,6 +15,7 @@ export interface Appointment {
   color: string;
   created_at: string;
   updated_at: string;
+  task_id: string | null; // Added task_id
 }
 
 export type NewAppointmentData = Omit<Appointment, 'id' | 'user_id' | 'created_at' | 'updated_at'>;

@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { Appointment } from '@/hooks/useAppointments';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
-import { Info } from 'lucide-react'; // Corrected syntax
+import { Info, ListTodo } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -10,7 +10,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 interface AppointmentCardProps {
   appointment: Appointment;
   onEdit: (appointment: Appointment) => void;
-  // Removed onDelete as it's not directly used in this component
   gridRowStart: number;
   gridRowEnd: number;
   overlapOffset: number;
@@ -22,7 +21,6 @@ interface AppointmentCardProps {
 const AppointmentCard: React.FC<AppointmentCardProps> = ({
   appointment,
   onEdit,
-  // Removed onDelete
   gridRowStart,
   gridRowEnd,
   overlapOffset,
@@ -30,34 +28,32 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
   rowHeight, // Destructure new prop
   gapHeight, // Destructure new prop
 }) => {
-  // Conditionally use useSortable
   const sortable = !isOverlay ? useSortable({ id: appointment.id, data: { type: 'appointment', appointment } }) : null;
 
   const attributes = sortable?.attributes;
   const listeners = sortable?.listeners;
-  const setNodeRef = sortable?.setNodeRef || useRef(null).current; // Provide a dummy ref if not sortable
+  const setNodeRef = sortable?.setNodeRef || useRef(null).current;
   const transform = sortable?.transform;
   const transition = sortable?.transition;
-  const isDragging = sortable?.isDragging || false; // Default to false if not sortable
+  const isDragging = sortable?.isDragging || false;
 
   const calculatedTop = (gridRowStart - 1) * (rowHeight + gapHeight);
   const numberOfBlocksSpanned = gridRowEnd - gridRowStart;
   const calculatedHeight = numberOfBlocksSpanned * rowHeight + (numberOfBlocksSpanned > 0 ? (numberOfBlocksSpanned - 1) * gapHeight : 0);
 
-  // Calculate dynamic left and width based on overlapOffset
-  const calculatedLeft = overlapOffset * 10; // 10px offset per overlap
+  const calculatedLeft = overlapOffset * 10;
   const calculatedWidth = `calc(100% - ${calculatedLeft}px)`;
 
   const style = {
-    transform: CSS.Transform.toString(transform || null), // Ensure transform is Transform | null
+    transform: CSS.Transform.toString(transform || null),
     transition,
     zIndex: isDragging ? 100 : 'auto',
     opacity: isDragging ? 0.8 : 1,
     top: `${calculatedTop}px`,
     height: `${calculatedHeight}px`,
     backgroundColor: appointment.color,
-    left: `${calculatedLeft}px`, // Apply dynamic left
-    width: calculatedWidth,      // Apply dynamic width
+    left: `${calculatedLeft}px`,
+    width: calculatedWidth,
   };
 
   const startTime = parseISO(`2000-01-01T${appointment.start_time}`);
@@ -73,12 +69,15 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
         "group",
         isDragging ? "ring-2 ring-primary shadow-lg" : "hover:scale-[1.01] hover:shadow-lg",
       )}
-      {...(attributes || {})} // Conditionally spread attributes
-      {...(listeners || {})} // Conditionally spread listeners
+      {...(attributes || {})}
+      {...(listeners || {})}
       onClick={() => onEdit(appointment)}
     >
       <div className="flex flex-col">
-        <h4 className="font-semibold text-sm truncate">{appointment.title}</h4>
+        <h4 className="font-semibold text-sm truncate flex items-center gap-1.5">
+          {appointment.task_id && <ListTodo className="h-3.5 w-3.5 flex-shrink-0" />}
+          {appointment.title}
+        </h4>
         <p className="text-xs opacity-90">
           {format(startTime, 'h:mm a')} - {format(endTime, 'h:mm a')}
         </p>

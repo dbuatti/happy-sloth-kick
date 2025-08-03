@@ -25,6 +25,8 @@ import {
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
 import { useAuth } from '@/context/AuthContext';
+import { useTasks } from '@/hooks/useTasks';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const TimeBlockSchedule: React.FC = () => {
   useAuth(); 
@@ -34,6 +36,7 @@ const TimeBlockSchedule: React.FC = () => {
   const singleDayWorkHours = Array.isArray(singleDayWorkHoursRaw) ? null : singleDayWorkHoursRaw;
 
   const { appointments, loading: appointmentsLoading, addAppointment, updateAppointment, deleteAppointment } = useAppointments(currentDate);
+  const { filteredTasks: allDayTasks, allCategories } = useTasks({ currentDate });
 
   const [isAppointmentFormOpen, setIsAppointmentFormOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
@@ -229,6 +232,32 @@ const TimeBlockSchedule: React.FC = () => {
 
   const totalLoading = workHoursLoading || appointmentsLoading;
 
+  const unscheduledDoTodayTasks = useMemo(() => {
+    const scheduledTaskIds = new Set(
+      appointments.map(app => app.task_id).filter(Boolean)
+    );
+    return allDayTasks.filter(task => !scheduledTaskIds.has(task.id) && task.status === 'to-do');
+  }, [appointments, allDayTasks]);
+
+  const handleScheduleTask = async (taskId: string, blockStart: Date) => {
+    const task = allDayTasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const category = allCategories.find(c => c.id === task.category);
+
+    const newAppointment: NewAppointmentData = {
+      title: task.description,
+      description: task.notes,
+      date: format(currentDate, 'yyyy-MM-dd'),
+      start_time: format(blockStart, 'HH:mm:ss'),
+      end_time: format(addMinutes(blockStart, 30), 'HH:mm:ss'),
+      color: category?.color || '#3b82f6',
+      task_id: task.id,
+    };
+
+    await addAppointment(newAppointment);
+  };
+
   return (
     <div className="flex-1 flex flex-col">
       <main className="flex-grow p-4">
@@ -266,7 +295,7 @@ const TimeBlockSchedule: React.FC = () => {
                 <p className="text-sm">Please check your work hour settings. Ensure your start time is before your end time.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-[60px_1fr] sm:grid-cols-[80px_1fr] md:grid-cols-[100px_1fr] lg:grid-cols-[120px_1fr] gap-x-2"> {/* Adjusted grid columns */}
+              <div className="grid grid-cols-[60px_1fr] sm:grid-cols-[80px_1fr] md:grid-cols-[100px_1fr] lg:grid-cols-[120px_1fr] gap-x-2">
                 <div className="grid" style={{
                   gridTemplateRows: `repeat(${timeBlocks.length}, ${rowHeight}px)`,
                   height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`,
@@ -294,19 +323,42 @@ const TimeBlockSchedule: React.FC = () => {
                     gridTemplateRows: `repeat(${timeBlocks.length}, ${rowHeight}px)`,
                     height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`,
                   }}>
-                    {timeBlocks.map((block, index) => (
-                      <div
-                        key={format(block.start, 'HH:mm')}
-                        id={`time-block-${format(block.start, 'HH:mm')}`}
-                        className="relative flex items-center justify-center h-10 bg-card dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border-dashed border-border/50 hover:border-primary/50 transition-colors duration-150 cursor-pointer hover:scale-[1.01] hover:shadow-md"
-                        style={{ gridRow: `${index + 1}` }}
-                        onClick={() => handleTimeBlockClick(block.start, block.end)}
-                      >
-                        <span className="absolute inset-0 flex items-center justify-center text-5xl font-extrabold text-foreground opacity-10 pointer-events-none select-none">
-                          {format(block.start, 'h:mm')}
-                        </span>
-                      </div>
-                    ))}
+                    {timeBlocks.map((block, index) => {
+                      const isBlockOccupied = appointmentsWithPositions.some(app => {
+                        const appStart = parse(app.start_time, 'HH:mm:ss', currentDate);
+                        const appEnd = parse(app.end_time, 'HH:mm:ss', currentDate);
+                        return block.start.getTime() >= appStart.getTime() && block.start.getTime() < appEnd.getTime();
+                      });
+
+                      if (isBlockOccupied) {
+                        return <div key={`occupied-${format(block.start, 'HH:mm')}`} className="h-10" style={{ gridRow: `${index + 1}` }} />;
+                      }
+
+                      return (
+                        <div
+                          key={`select-${format(block.start, 'HH:mm')}`}
+                          className="relative flex items-center justify-center h-10"
+                          style={{ gridRow: `${index + 1}` }}
+                        >
+                          <Select onValueChange={(taskId) => handleScheduleTask(taskId, block.start)}>
+                            <SelectTrigger className="w-full h-full bg-card dark:bg-gray-800 rounded-xl shadow-sm border-dashed border-border/50 hover:border-primary/50 transition-colors duration-150">
+                              <SelectValue placeholder="Schedule a task..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {unscheduledDoTodayTasks.length > 0 ? (
+                                unscheduledDoTodayTasks.map(task => (
+                                  <SelectItem key={task.id} value={task.id}>
+                                    {task.description}
+                                  </SelectItem>
+                                ))
+                              ) : (
+                                <div className="p-2 text-sm text-muted-foreground">No 'Do Today' tasks available.</div>
+                              )}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      );
+                    })}
 
                     <SortableContext
                       items={appointments.map(app => app.id)}
@@ -317,7 +369,6 @@ const TimeBlockSchedule: React.FC = () => {
                           key={app.id}
                           appointment={app}
                           onEdit={handleEditAppointment}
-                          // Removed onDelete
                           gridRowStart={app.gridRowStart}
                           gridRowEnd={app.gridRowEnd}
                           overlapOffset={app.overlapOffset}
@@ -333,7 +384,6 @@ const TimeBlockSchedule: React.FC = () => {
                         <AppointmentCard
                           appointment={activeAppointment}
                           onEdit={handleEditAppointment}
-                          // Removed onDelete
                           gridRowStart={1}
                           gridRowEnd={2}
                           overlapOffset={0}
