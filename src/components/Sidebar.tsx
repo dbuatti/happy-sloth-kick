@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Target, LayoutGrid, CalendarClock, Menu, Leaf, Moon, Volume2, VolumeX, Brain, LayoutDashboard, Code } from 'lucide-react';
+import { Home, Target, LayoutGrid, CalendarClock, Menu, Leaf, Moon, Volume2, VolumeX, Brain, LayoutDashboard, Code, CalendarDays } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -16,6 +16,7 @@ interface SidebarProps {
 
 const navItems = [
   { name: 'Daily Tasks', path: '/daily-tasks', icon: Home, showCount: true },
+  { name: 'Calendar', path: '/calendar', icon: CalendarDays },
   { name: 'Focus Mode', path: '/focus', icon: Target },
   { name: 'Mindfulness', path: '/mindfulness', icon: Brain },
   { name: 'Meditation', path: '/meditation', icon: Leaf },

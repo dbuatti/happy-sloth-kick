@@ -20,6 +20,7 @@ import AuthComponent from "@/components/AuthComponent";
 import FloatingTimer from "@/components/FloatingTimer";
 import DevSpace from "./pages/DevSpace";
 import { TimerProvider } from "./context/TimerContext";
+import TaskCalendar from "./pages/TaskCalendar";
 
 // Import new dedicated mindfulness tool pages
 import BodyScanMeditationPage from "./pages/mindfulness/BodyScanMeditationPage";
@@ -67,6 +68,7 @@ const AppContent = () => {
             <Routes>
               <Route path="/" element={<DailyTasksV3 />} />
               <Route path="/daily-tasks" element={<DailyTasksV3 />} />
+              <Route path="/calendar" element={<TaskCalendar />} />
               <Route path="/my-hub" element={<MyHub />} />
               <Route path="/help" element={<Help />} />
               <Route path="/projects" element={<ProjectBalanceTracker />} />
