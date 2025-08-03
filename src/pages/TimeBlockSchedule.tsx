@@ -8,22 +8,6 @@ import DateNavigator from '@/components/DateNavigator';
 import { useAppointments, Appointment, NewAppointmentData } from '@/hooks/useAppointments';
 import AppointmentForm from '@/components/AppointmentForm';
 import AppointmentCard from '@/components/AppointmentCard';
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-  UniqueIdentifier,
-  DragOverlay,
-} from '@dnd-kit/core';
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-  sortableKeyboardCoordinates,
-} from '@dnd-kit/sortable';
 import { useAuth } from '@/context/AuthContext';
 import { useTasks, Task } from '@/hooks/useTasks';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -72,20 +56,6 @@ const TimeBlockSchedule: React.FC = () => {
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        delay: 150,
-        tolerance: 5,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
 
   const handlePreviousDay = useCallback(() => {
     setCurrentDate(prevDate => {
@@ -237,61 +207,6 @@ const TimeBlockSchedule: React.FC = () => {
     return finalApps;
   }, [appointments, getAppointmentGridPosition]);
 
-  const handleDragStart = (event: any) => {
-    setActiveId(event.active.id);
-  };
-
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (!over || active.id === over.id) {
-      setActiveId(null);
-      return;
-    }
-
-    const draggedAppointment = appointments.find(app => app.id === active.id);
-    if (!draggedAppointment) {
-      setActiveId(null);
-      return;
-    }
-
-    let newStartTime: Date | null = null;
-    if (typeof over.id === 'string' && over.id.startsWith('time-block-')) {
-      const timeString = over.id.replace('time-block-', '');
-      newStartTime = parse(timeString, 'HH:mm', currentDate);
-    } else if (over.data.current?.type === 'appointment') {
-      const overAppointment = appointments.find(app => app.id === over.id);
-      if (overAppointment) {
-        newStartTime = parse(overAppointment.start_time, 'HH:mm:ss', currentDate);
-      }
-    }
-
-    const workHours = singleDayWorkHours;
-
-    if (newStartTime && workHours && workHours.enabled) {
-      const originalDurationMinutes = (parse(draggedAppointment.end_time, 'HH:mm:ss', currentDate).getTime() - parse(draggedAppointment.start_time, 'HH:mm:ss', currentDate).getTime()) / (1000 * 60);
-      const newEndTime = addMinutes(newStartTime, originalDurationMinutes);
-
-      const workStart = parse(workHours.start_time, 'HH:mm:ss', currentDate);
-      const workEnd = parse(workHours.end_time, 'HH:mm:ss', currentDate);
-
-      if (isBefore(newStartTime, workStart) || isBefore(workEnd, newEndTime)) {
-        alert('Appointment cannot be moved outside of work hours.');
-        setActiveId(null);
-        return;
-      }
-
-      await updateAppointment(draggedAppointment.id, {
-        start_time: format(newStartTime, 'HH:mm:ss'),
-        end_time: format(newEndTime, 'HH:mm:ss'),
-        date: format(currentDate, 'yyyy-MM-dd'),
-      });
-    }
-    setActiveId(null);
-  };
-
-  const activeAppointment = activeId ? appointments.find(app => app.id === activeId) : null;
-
   const totalLoading = workHoursLoading || appointmentsLoading;
 
   const unscheduledDoTodayTasks = useMemo(() => {
@@ -407,101 +322,73 @@ const TimeBlockSchedule: React.FC = () => {
                   ))}
                 </div>
 
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragStart={handleDragStart}
-                  onDragEnd={handleDragEnd}
-                >
-                  <div className="relative grid" style={{
-                    gridTemplateRows: `repeat(${timeBlocks.length}, ${rowHeight}px)`,
-                    rowGap: `${gapHeight}px`,
-                    height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`,
-                  }}>
-                    {timeBlocks.map((block, index) => (
-                      getMinutes(block.start) === 0 && (
-                        <div
-                          key={`bg-label-${format(block.start, 'HH')}`}
-                          className="absolute inset-x-0 h-full flex items-center justify-center text-[120px] font-bubbly font-bold text-gray-200/50 dark:text-gray-800/50 select-none pointer-events-none"
-                          style={{
-                            top: `${index * (rowHeight + gapHeight)}px`,
-                            height: `${2 * rowHeight + gapHeight}px`,
-                            zIndex: 0,
-                          }}
-                        >
-                          <span>{format(block.start, 'h:00')}</span>
-                        </div>
-                      )
-                    ))}
+                <div className="relative grid" style={{
+                  gridTemplateRows: `repeat(${timeBlocks.length}, ${rowHeight}px)`,
+                  rowGap: `${gapHeight}px`,
+                  height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`,
+                }}>
+                  {timeBlocks.map((block, index) => (
+                    getMinutes(block.start) === 0 && (
+                      <div
+                        key={`bg-label-${format(block.start, 'HH')}`}
+                        className="absolute inset-x-0 h-full flex items-center justify-center text-[120px] font-bubbly font-bold text-gray-200/50 dark:text-gray-800/50 select-none pointer-events-none"
+                        style={{
+                          top: `${index * (rowHeight + gapHeight)}px`,
+                          height: `${2 * rowHeight + gapHeight}px`,
+                          zIndex: 0,
+                        }}
+                      >
+                        <span>{format(block.start, 'h:00')}</span>
+                      </div>
+                    )
+                  ))}
 
-                    {timeBlocks.map((block, index) => {
-                      const isBlockOccupied = appointmentsWithPositions.some(app => {
-                        const appStart = parse(app.start_time, 'HH:mm:ss', currentDate);
-                        const appEnd = parse(app.end_time, 'HH:mm:ss', currentDate);
-                        return block.start.getTime() >= appStart.getTime() && block.start.getTime() < appEnd.getTime();
-                      });
+                  {timeBlocks.map((block, index) => {
+                    const isBlockOccupied = appointmentsWithPositions.some(app => {
+                      const appStart = parse(app.start_time, 'HH:mm:ss', currentDate);
+                      const appEnd = parse(app.end_time, 'HH:mm:ss', currentDate);
+                      return block.start.getTime() >= appStart.getTime() && block.start.getTime() < appEnd.getTime();
+                    });
 
-                      return (
-                        <div
-                          key={`block-container-${format(block.start, 'HH:mm')}`}
-                          className="relative h-full w-full border-t border-gray-200 dark:border-gray-700"
-                          style={{ gridRow: `${index + 1}`, zIndex: 1 }}
-                        >
-                          {!isBlockOccupied && (
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <div className="absolute inset-0 cursor-pointer rounded-lg hover:bg-muted/50 transition-colors" />
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-1">
-                                <TimeBlockActionMenu
-                                  block={block}
-                                  onAddAppointment={() => handleOpenAppointmentForm(block)}
-                                  onScheduleTask={handleScheduleTask}
-                                  unscheduledTasks={unscheduledDoTodayTasks}
-                                  sections={sections}
-                                />
-                              </PopoverContent>
-                            </Popover>
-                          )}
-                        </div>
-                      );
-                    })}
+                    return (
+                      <div
+                        key={`block-container-${format(block.start, 'HH:mm')}`}
+                        className="relative h-full w-full border-t border-gray-200 dark:border-gray-700"
+                        style={{ gridRow: `${index + 1}`, zIndex: 1 }}
+                      >
+                        {!isBlockOccupied && (
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <div className="absolute inset-0 cursor-pointer rounded-lg hover:bg-muted/50 transition-colors" />
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-1">
+                              <TimeBlockActionMenu
+                                block={block}
+                                onAddAppointment={() => handleOpenAppointmentForm(block)}
+                                onScheduleTask={handleScheduleTask}
+                                unscheduledTasks={unscheduledDoTodayTasks}
+                                sections={sections}
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        )}
+                      </div>
+                    );
+                  })}
 
-                    <SortableContext
-                      items={appointments.map(app => app.id)}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      {appointmentsWithPositions.map((app) => (
-                        <AppointmentCard
-                          key={app.id}
-                          appointment={app}
-                          onEdit={handleAppointmentClick}
-                          gridRowStart={app.gridRowStart}
-                          gridRowEnd={app.gridRowEnd}
-                          overlapOffset={app.overlapOffset}
-                          rowHeight={rowHeight}
-                          gapHeight={gapHeight}
-                          isOverlay={false}
-                        />
-                      ))}
-                    </SortableContext>
-
-                    <DragOverlay>
-                      {activeAppointment ? (
-                        <AppointmentCard
-                          appointment={activeAppointment}
-                          onEdit={handleAppointmentClick}
-                          gridRowStart={1}
-                          gridRowEnd={2}
-                          overlapOffset={0}
-                          rowHeight={rowHeight}
-                          gapHeight={gapHeight}
-                          isOverlay={true}
-                        />
-                      ) : null}
-                    </DragOverlay>
-                  </div>
-                </DndContext>
+                  {appointmentsWithPositions.map((app) => (
+                    <AppointmentCard
+                      key={app.id}
+                      appointment={app}
+                      onEdit={handleAppointmentClick}
+                      gridRowStart={app.gridRowStart}
+                      gridRowEnd={app.gridRowEnd}
+                      overlapOffset={app.overlapOffset}
+                      rowHeight={rowHeight}
+                      gapHeight={gapHeight}
+                    />
+                  ))}
+                </div>
               </div>
             )}
           </CardContent>
