@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Lightbulb, Zap, CheckCircle2 } from 'lucide-react';
@@ -7,17 +8,23 @@ import { useDevIdeas, DevIdea } from '@/hooks/useDevIdeas';
 import DevIdeaCard from '@/components/DevIdeaCard';
 import DevIdeaForm from '@/components/DevIdeaForm';
 import { Skeleton } from '@/components/ui/skeleton';
+import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, useSensor, useSensors, closestCenter } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import SortableDevIdeaCard from '@/components/SortableDevIdeaCard';
 
 const DevSpace: React.FC = () => {
   const { ideas, loading, addIdea, updateIdea } = useDevIdeas();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingIdea, setEditingIdea] = useState<DevIdea | null>(null);
+  const [activeIdea, setActiveIdea] = useState<DevIdea | null>(null);
+
+  const sensors = useSensors(useSensor(PointerSensor));
 
   const columns = useMemo(() => {
     const ideaCol = ideas.filter(i => i.status === 'idea');
     const inProgressCol = ideas.filter(i => i.status === 'in-progress');
     const completedCol = ideas.filter(i => i.status === 'completed');
-    return { ideaCol, inProgressCol, completedCol };
+    return { idea: ideaCol, 'in-progress': inProgressCol, completed: completedCol };
   }, [ideas]);
 
   const handleAddClick = () => {
@@ -38,71 +45,105 @@ const DevSpace: React.FC = () => {
     }
   };
 
+  const handleDragStart = (event: DragStartEvent) => {
+    const { active } = event;
+    setActiveIdea(ideas.find(idea => idea.id === active.id) || null);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    setActiveIdea(null);
+    const { active, over } = event;
+
+    if (!over) return;
+
+    const activeId = active.id;
+    const overId = over.id;
+
+    if (activeId === overId) return;
+
+    const activeIdea = ideas.find(idea => idea.id === activeId);
+    if (!activeIdea) return;
+
+    let overContainerStatus: DevIdea['status'] | null = null;
+    if (columns.idea.some(i => i.id === overId)) {
+      overContainerStatus = 'idea';
+    } else if (columns['in-progress'].some(i => i.id === overId)) {
+      overContainerStatus = 'in-progress';
+    } else if (columns.completed.some(i => i.id === overId)) {
+      overContainerStatus = 'completed';
+    } else if (['idea', 'in-progress', 'completed'].includes(overId as string)) {
+      overContainerStatus = overId as DevIdea['status'];
+    }
+
+    if (overContainerStatus && activeIdea.status !== overContainerStatus) {
+      updateIdea(active.id as string, { status: overContainerStatus });
+    }
+  };
+
+  const columnData = [
+    { id: 'idea', title: 'Ideas', icon: Lightbulb, className: 'text-yellow-500' },
+    { id: 'in-progress', title: 'In Progress', icon: Zap, className: 'text-blue-500' },
+    { id: 'completed', title: 'Completed', icon: CheckCircle2, className: 'text-green-500' },
+  ];
+
   return (
-    <div className="flex-1 flex flex-col">
-      <main className="flex-grow p-4">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Dev Space</h1>
-          <Button onClick={handleAddClick}>
-            <Plus className="mr-2 h-4 w-4" /> Add Idea
-          </Button>
-        </div>
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <div className="flex-1 flex flex-col">
+        <main className="flex-grow p-4">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-3xl font-bold">Dev Space</h1>
+            <Button onClick={handleAddClick}>
+              <Plus className="mr-2 h-4 w-4" /> Add Idea
+            </Button>
+          </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Idea Column */}
-          <Card className="bg-muted/30">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2"><Lightbulb className="text-yellow-500" /> Ideas ({columns.ideaCol.length})</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {loading ? (
-                <Skeleton className="h-24 w-full" />
-              ) : (
-                columns.ideaCol.map(idea => <DevIdeaCard key={idea.id} idea={idea} onEdit={handleEditClick} />)
-              )}
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {columnData.map(column => {
+              const Icon = column.icon;
+              const columnIdeas = columns[column.id as keyof typeof columns];
+              return (
+                <div id={column.id} key={column.id}>
+                  <Card className="bg-muted/30 h-full">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Icon className={column.className} /> {column.title} ({columnIdeas.length})
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4 min-h-[100px]">
+                      <SortableContext items={columnIdeas.map(i => i.id)} strategy={verticalListSortingStrategy}>
+                        {loading ? (
+                          <Skeleton className="h-24 w-full" />
+                        ) : (
+                          columnIdeas.map(idea => <SortableDevIdeaCard key={idea.id} idea={idea} onEdit={handleEditClick} />)
+                        )}
+                      </SortableContext>
+                    </CardContent>
+                  </Card>
+                </div>
+              );
+            })}
+          </div>
+        </main>
+        <footer className="p-4">
+          <MadeWithDyad />
+        </footer>
 
-          {/* In Progress Column */}
-          <Card className="bg-muted/30">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2"><Zap className="text-blue-500" /> In Progress ({columns.inProgressCol.length})</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {loading ? (
-                <Skeleton className="h-24 w-full" />
-              ) : (
-                columns.inProgressCol.map(idea => <DevIdeaCard key={idea.id} idea={idea} onEdit={handleEditClick} />)
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Completed Column */}
-          <Card className="bg-muted/30">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2"><CheckCircle2 className="text-green-500" /> Completed ({columns.completedCol.length})</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {loading ? (
-                <Skeleton className="h-24 w-full" />
-              ) : (
-                columns.completedCol.map(idea => <DevIdeaCard key={idea.id} idea={idea} onEdit={handleEditClick} />)
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </main>
-      <footer className="p-4">
-        <MadeWithDyad />
-      </footer>
-
-      <DevIdeaForm
-        isOpen={isFormOpen}
-        onClose={() => setIsFormOpen(false)}
-        onSave={handleSave}
-        initialData={editingIdea}
-      />
-    </div>
+        <DevIdeaForm
+          isOpen={isFormOpen}
+          onClose={() => setIsFormOpen(false)}
+          onSave={handleSave}
+          initialData={editingIdea}
+        />
+      </div>
+      {createPortal(
+        <DragOverlay>
+          {activeIdea ? (
+            <DevIdeaCard idea={activeIdea} onEdit={() => {}} />
+          ) : null}
+        </DragOverlay>,
+        document.body
+      )}
+    </DndContext>
   );
 };
 
