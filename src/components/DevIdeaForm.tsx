@@ -111,7 +111,8 @@ const DevIdeaForm: React.FC<DevIdeaFormProps> = ({ isOpen, onClose, onSave, init
     setImagePreview(null);
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (event?: React.FormEvent) => {
+    if (event) event.preventDefault();
     if (!title.trim() || !user) return;
 
     setIsSaving(true);
@@ -165,88 +166,90 @@ const DevIdeaForm: React.FC<DevIdeaFormProps> = ({ isOpen, onClose, onSave, init
             {initialData ? 'Edit the details of your development idea.' : 'Fill in the details to add a new idea.'}
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div 
-            className={cn(
-              "relative border-2 border-dashed rounded-lg p-4 text-center transition-colors",
-              isDragging ? "border-primary bg-primary/10" : "border-border"
-            )}
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragEnter={handleDragEnter}
-            onDragLeave={handleDragLeave}
-          >
-            {imagePreview ? (
-              <>
-                <img src={imagePreview} alt="Preview" className="rounded-md max-h-40 mx-auto" />
-                <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-6 w-6 bg-background/50 hover:bg-background/80" onClick={handleRemoveImage}>
-                  <X className="h-4 w-4" />
-                </Button>
-              </>
-            ) : (
-              <div className="flex flex-col items-center justify-center space-y-2 text-muted-foreground">
-                <UploadCloud className="h-8 w-8" />
-                <p>Drag & drop an image here, or paste from clipboard.</p>
-              </div>
-            )}
-          </div>
+        <form onSubmit={handleSubmit}>
+          <div className="grid gap-4 py-4">
+            <div 
+              className={cn(
+                "relative border-2 border-dashed rounded-lg p-4 text-center transition-colors",
+                isDragging ? "border-primary bg-primary/10" : "border-border"
+              )}
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onDragEnter={handleDragEnter}
+              onDragLeave={handleDragLeave}
+            >
+              {imagePreview ? (
+                <>
+                  <img src={imagePreview} alt="Preview" className="rounded-md max-h-40 mx-auto" />
+                  <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-6 w-6 bg-background/50 hover:bg-background/80" onClick={handleRemoveImage}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center space-y-2 text-muted-foreground">
+                  <UploadCloud className="h-8 w-8" />
+                  <p>Drag & drop an image here, or paste from clipboard.</p>
+                </div>
+              )}
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="title">Title</Label>
-            <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} disabled={isSaving} autoFocus />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="description">Description (Optional)</Label>
-            <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} disabled={isSaving} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="local-file-path">Local File Path (Optional)</Label>
-            <Input id="local-file-path" value={localFilePath} onChange={(e) => setLocalFilePath(e.target.value)} placeholder="/Users/yourname/path/to/file" disabled={isSaving} />
-          </div>
-          <div className="space-y-2">
-            <Label>Tags</Label>
-            <TagInput
-              allTags={allTags}
-              selectedTags={selectedTags}
-              setSelectedTags={setSelectedTags}
-              onAddTag={onAddTag}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Status</Label>
-              <Select value={status} onValueChange={(value) => setStatus(value as any)} disabled={isSaving}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="idea">Idea</SelectItem>
-                  <SelectItem value="in-progress">In Progress</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="title">Title</Label>
+              <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} disabled={isSaving} autoFocus />
             </div>
             <div className="space-y-2">
-              <Label>Priority</Label>
-              <Select value={priority} onValueChange={(value) => setPriority(value as any)} disabled={isSaving}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select priority" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="description">Description (Optional)</Label>
+              <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} disabled={isSaving} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="local-file-path">Local File Path (Optional)</Label>
+              <Input id="local-file-path" value={localFilePath} onChange={(e) => setLocalFilePath(e.target.value)} placeholder="/Users/yourname/path/to/file" disabled={isSaving} />
+            </div>
+            <div className="space-y-2">
+              <Label>Tags</Label>
+              <TagInput
+                allTags={allTags}
+                selectedTags={selectedTags}
+                setSelectedTags={setSelectedTags}
+                onAddTag={onAddTag}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select value={status} onValueChange={(value) => setStatus(value as any)} disabled={isSaving}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="idea">Idea</SelectItem>
+                    <SelectItem value="in-progress">In Progress</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Priority</Label>
+                <Select value={priority} onValueChange={(value) => setPriority(value as any)} disabled={isSaving}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
-        </div>
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>Cancel</Button>
-          <Button type="submit" onClick={handleSubmit} disabled={isSaving || !title.trim()}>
-            {isSaving ? 'Saving...' : 'Save Idea'}
-          </Button>
-        </DialogFooter>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>Cancel</Button>
+            <Button type="submit" disabled={isSaving || !title.trim()}>
+              {isSaving ? 'Saving...' : 'Save Idea'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
