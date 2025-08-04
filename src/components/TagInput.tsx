@@ -84,10 +84,9 @@ const TagInput: React.FC<TagInputProps> = ({ allTags, selectedTags, setSelectedT
         <Command>
           <CommandInput placeholder="Search or create tag..." className="h-9" />
           <CommandList>
-            {filteredTags.length === 0 && !canCreate && <CommandEmpty>No tags found.</CommandEmpty>}
-            
-            {canCreate && (
-              <CommandGroup>
+            <CommandEmpty>No tags found.</CommandEmpty>
+            <CommandGroup>
+              {canCreate && (
                 <CommandItem
                   onSelect={handleCreateTag}
                   className="cursor-pointer"
@@ -95,22 +94,17 @@ const TagInput: React.FC<TagInputProps> = ({ allTags, selectedTags, setSelectedT
                   <Plus className="mr-2 h-4 w-4" />
                   Create "{inputValue.trim()}"
                 </CommandItem>
-              </CommandGroup>
-            )}
-
-            {filteredTags.length > 0 && (
-              <CommandGroup>
-                {filteredTags.map((tag) => (
-                  <CommandItem
-                    key={tag.id}
-                    onSelect={() => handleSelectTag(tag)}
-                  >
-                    <Tag className="mr-2 h-4 w-4" style={{ color: tag.color }} />
-                    {tag.name}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            )}
+              )}
+              {filteredTags.map((tag) => (
+                <CommandItem
+                  key={tag.id}
+                  onSelect={() => handleSelectTag(tag)}
+                >
+                  <Tag className="mr-2 h-4 w-4" style={{ color: tag.color }} />
+                  {tag.name}
+                </CommandItem>
+              ))}
+            </CommandGroup>
           </CommandList>
         </Command>
       </PopoverContent>
