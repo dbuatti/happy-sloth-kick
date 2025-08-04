@@ -42,7 +42,10 @@ const TagInput: React.FC<TagInputProps> = ({ allTags, selectedTags, setSelectedT
   const handleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (canCreate) {
+      const exactMatch = filteredTags.find(t => t.name.toLowerCase() === inputValue.trim().toLowerCase());
+      if (exactMatch) {
+        handleSelectTag(exactMatch);
+      } else if (canCreate) {
         await handleCreateTag();
       }
     }
@@ -86,19 +89,6 @@ const TagInput: React.FC<TagInputProps> = ({ allTags, selectedTags, setSelectedT
         <Command>
           <CommandInput placeholder="Search or create tag..." className="h-9" />
           <CommandList>
-            <CommandEmpty>
-              {canCreate ? (
-                <div
-                  className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none"
-                  onClick={handleCreateTag}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create "{inputValue.trim()}"
-                </div>
-              ) : (
-                "No tags found."
-              )}
-            </CommandEmpty>
             <CommandGroup>
               {filteredTags.map((tag) => (
                 <CommandItem
@@ -111,6 +101,22 @@ const TagInput: React.FC<TagInputProps> = ({ allTags, selectedTags, setSelectedT
                 </CommandItem>
               ))}
             </CommandGroup>
+            <CommandEmpty>
+              {canCreate ? (
+                <div
+                  className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    handleCreateTag();
+                  }}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create "{inputValue.trim()}"
+                </div>
+              ) : (
+                <div className="py-6 text-center text-sm">No tags found.</div>
+              )}
+            </CommandEmpty>
           </CommandList>
         </Command>
       </PopoverContent>
