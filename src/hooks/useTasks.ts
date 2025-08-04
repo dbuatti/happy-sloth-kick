@@ -346,7 +346,20 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       return { totalCount: 0, completedCount: 0, overdueCount: 0 };
     }
 
-    const tasksForToday = processedTasks;
+    const tasksForToday = processedTasks.filter(task => {
+      const taskDueDate = task.due_date ? getUTCStartOfDay(parseISO(task.due_date)) : null;
+      const taskCreatedAt = getUTCStartOfDay(parseISO(task.created_at));
+      const isCreatedOnThisDay = isSameDay(taskCreatedAt, effectiveCurrentDate);
+      
+      if (taskDueDate) {
+        const isDueOnThisDay = isSameDay(taskDueDate, effectiveCurrentDate);
+        const isOverdue = isBefore(taskDueDate, effectiveCurrentDate) && task.status === 'to-do';
+        return isCreatedOnThisDay || isDueOnThisDay || isOverdue;
+      } else {
+        const isCarryOver = isBefore(taskCreatedAt, effectiveCurrentDate) && task.status === 'to-do';
+        return isCreatedOnThisDay || isCarryOver;
+      }
+    });
 
     const focusModeSectionIds = new Set(sections.filter(s => s.include_in_focus_mode).map(s => s.id));
 
