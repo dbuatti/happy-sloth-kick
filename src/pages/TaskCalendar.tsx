@@ -4,7 +4,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { useTasks, Task } from '@/hooks/useTasks';
 import { format, parseISO, startOfDay } from 'date-fns';
 import { CalendarDays, ListTodo } from 'lucide-react';
-import { MadeWithDyad } from '@/components/made-with-dyad';
+import { MadeWithDyad } from "@/components/made-with-dyad";
 import TaskItem from '@/components/TaskItem';
 import TaskOverviewDialog from '@/components/TaskOverviewDialog';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -30,7 +30,7 @@ const TaskCalendar: React.FC = () => {
   const tasksByDueDate = useMemo(() => {
     const groupedTasks = new Map<string, Task[]>();
     filteredTasks.forEach(task => {
-      if (task.due_date) {
+      if (task.due_date && task.status !== 'archived') {
         const dateKey = format(startOfDay(parseISO(task.due_date)), 'yyyy-MM-dd');
         if (!groupedTasks.has(dateKey)) {
           groupedTasks.set(dateKey, []);
@@ -75,22 +75,16 @@ const TaskCalendar: React.FC = () => {
                 mode="single"
                 selected={selectedDate}
                 onSelect={setSelectedDate}
-                className="rounded-md border"
+                className="rounded-md"
                 modifiers={{
                   hasTasks: daysWithTasks,
                 }}
+                modifiersClassNames={{
+                  hasTasks: 'rdp-day_hasTasks',
+                }}
                 components={{
                   DayContent: ({ date }) => {
-                    const dateKey = format(startOfDay(date), 'yyyy-MM-dd');
-                    const tasksForDay = tasksByDueDate.get(dateKey);
-                    return (
-                      <div className="relative">
-                        <span>{format(date, 'd')}</span>
-                        {tasksForDay && tasksForDay.length > 0 && (
-                          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-primary" />
-                        )}
-                      </div>
-                    );
+                    return <span>{format(date, 'd')}</span>;
                   },
                 }}
               />

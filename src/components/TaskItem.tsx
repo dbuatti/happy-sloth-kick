@@ -96,6 +96,16 @@ const TaskItem: React.FC<TaskItemProps> = ({
     }
   };
 
+  const getPriorityBorderColor = (priority: string) => {
+    switch (priority) {
+      case 'urgent': return 'border-l-priority-urgent';
+      case 'high': return 'border-l-priority-high';
+      case 'medium': return 'border-l-priority-medium';
+      case 'low': return 'border-l-priority-low';
+      default: return 'border-l-gray-500';
+    }
+  };
+
   const handleCheckboxChange = (checked: boolean) => {
     if (isOverlay) return;
     onStatusChange(task.id, checked ? 'completed' : 'to-do');
@@ -144,8 +154,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
         task.status === 'completed' ? "text-muted-foreground bg-task-completed-bg" : "text-foreground",
         !isDoToday && task.recurring_type === 'none' && "opacity-40",
         "group",
-        isOverdue && "border-l-4 border-status-overdue",
-        isDueToday && "border-l-4 border-status-due-today",
+        "border-l-4",
+        getPriorityBorderColor(task.priority)
       )}
       onClick={() => !isOverlay && !isEditing && onOpenOverview(task)}
       {...dragListeners}
@@ -157,7 +167,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           onCheckedChange={handleCheckboxChange}
           id={`task-${task.id}`}
           onClick={(e) => e.stopPropagation()}
-          className="flex-shrink-0 h-5 w-5"
+          className="flex-shrink-0 h-5 w-5 checkbox-root"
           aria-label={`Mark task "${task.description}" as ${task.status === 'completed' ? 'to-do' : 'completed'}`}
           disabled={isOverlay}
         />
