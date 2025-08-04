@@ -353,6 +353,33 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     return allProcessedTasks;
   }, [tasks, effectiveCurrentDate, allCategories]);
 
+  const dailyProgress = useMemo(() => {
+    if (viewMode !== 'daily') {
+      return { totalCount: 0, completedCount: 0, overdueCount: 0 };
+    }
+
+    const tasksForToday = processedTasks;
+
+    const focusModeSectionIds = new Set(sections.filter(s => s.include_in_focus_mode).map(s => s.id));
+
+    const focusTasks = tasksForToday.filter(t =>
+      t.parent_task_id === null &&
+      (t.section_id === null || focusModeSectionIds.has(t.section_id)) &&
+      (t.recurring_type !== 'none' || !doTodayOffIds.has(t.original_task_id || t.id))
+    );
+
+    const completedCount = focusTasks.filter(t => t.status === 'completed' || t.status === 'archived').length;
+    const totalCount = focusTasks.filter(t => t.status !== 'skipped').length;
+    
+    const overdueCount = focusTasks.filter(t => {
+      if (!t.due_date || t.status === 'completed' || t.status === 'archived') return false;
+      const due = parseISO(t.due_date);
+      return isValid(due) && isBefore(startOfDay(due), startOfDay(effectiveCurrentDate));
+    }).length;
+
+    return { totalCount, completedCount, overdueCount };
+  }, [processedTasks, viewMode, sections, doTodayOffIds, effectiveCurrentDate]);
+
   const handleAddTask = useCallback(async (newTaskData: NewTaskData) => {
     if (!userId) {
       showError('User not authenticated.');
@@ -1073,5 +1100,6 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     doTodayOffIds,
     toggleDoToday,
     toggleAllDoToday,
+    dailyProgress,
   };
 };

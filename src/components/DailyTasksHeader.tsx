@@ -9,7 +9,6 @@ import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import { showError, showLoading, dismissToast } from '@/utils/toast';
 import { suggestTaskDetails } from '@/integrations/supabase/api';
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
-import { isBefore, isSameDay, parseISO } from 'date-fns';
 import { useSound } from '@/context/SoundContext';
 import { Progress } from '@/components/Progress';
 import ManageCategoriesDialog from './ManageCategoriesDialog';
@@ -47,12 +46,16 @@ interface DailyTasksHeaderProps {
   toggleAllDoToday: () => Promise<void>;
   setIsAddTaskDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
   setPrefilledTaskData: React.Dispatch<React.SetStateAction<Partial<Task> | null>>;
+  dailyProgress: {
+    totalCount: number;
+    completedCount: number;
+    overdueCount: number;
+  };
 }
 
 const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   currentDate,
   setCurrentDate,
-  filteredTasks,
   sections,
   allCategories,
   handleAddTask,
@@ -74,11 +77,11 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   updateSection,
   deleteSection,
   updateSectionIncludeInFocusMode,
-  doTodayOffIds,
   archiveAllCompletedTasks,
   toggleAllDoToday,
   setIsAddTaskDialogOpen,
   setPrefilledTaskData,
+  dailyProgress,
 }) => {
   useDailyTaskCount(); 
   const { playSound } = useSound();
@@ -89,25 +92,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
 
-  const { totalCount, completedCount, overdueCount } = React.useMemo(() => {
-    const focusModeSectionIds = new Set(sections.filter(s => s.include_in_focus_mode).map(s => s.id));
-
-    const focusTasks = filteredTasks.filter(t =>
-      t.parent_task_id === null &&
-      (t.section_id === null || focusModeSectionIds.has(t.section_id)) &&
-      (t.recurring_type !== 'none' || !doTodayOffIds.has(t.original_task_id || t.id))
-    );
-
-    const total = focusTasks.length;
-    const completed = focusTasks.filter(t => t.status === 'completed').length;
-    const overdue = focusTasks.filter(t => {
-      if (!t.due_date) return false;
-      const due = parseISO(t.due_date);
-      const isOver = isBefore(due, currentDate) && !isSameDay(due, currentDate) && t.status !== 'completed';
-      return isOver;
-    }).length;
-    return { totalCount: total, completedCount: completed, overdueCount: overdue };
-  }, [filteredTasks, currentDate, sections, doTodayOffIds]);
+  const { totalCount, completedCount, overdueCount } = dailyProgress;
 
   const handleQuickAdd = async () => {
     const description = quickAddTaskDescription.trim();

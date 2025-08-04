@@ -57,6 +57,7 @@ const DailyTasksV3: React.FC = () => {
     doTodayOffIds,
     toggleDoToday,
     toggleAllDoToday,
+    dailyProgress,
   } = useTasks({ viewMode: 'daily' });
 
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
@@ -158,6 +159,7 @@ const DailyTasksV3: React.FC = () => {
             toggleAllDoToday={toggleAllDoToday}
             setIsAddTaskDialogOpen={setIsAddTaskDialogOpen}
             setPrefilledTaskData={setPrefilledTaskData}
+            dailyProgress={dailyProgress}
           />
 
           <Card className="p-3 flex-1 flex flex-col rounded-none shadow-none">
