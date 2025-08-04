@@ -860,22 +860,24 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
   const finalFilteredTasks = useMemo(() => {
     let filtered = processedTasks;
 
-    // This is the main filtering logic for the daily view
     if (viewMode === 'daily') {
       filtered = filtered.filter(task => {
         const taskDueDate = task.due_date ? getUTCStartOfDay(parseISO(task.due_date)) : null;
+        const taskCreatedAt = getUTCStartOfDay(parseISO(task.created_at));
+
+        // If a task was created on the day being viewed, always show it.
+        if (isSameDay(taskCreatedAt, effectiveCurrentDate)) {
+          return true;
+        }
         
+        // Logic for other tasks (due today, overdue, or carry-over with no due date)
         if (taskDueDate) {
-          // Logic for tasks WITH a due date
           const isDueToday = isSameDay(taskDueDate, effectiveCurrentDate);
           const isOverdue = isBefore(taskDueDate, effectiveCurrentDate) && task.status === 'to-do';
           return isDueToday || isOverdue;
         } else {
-          // Logic for tasks WITHOUT a due date
-          const taskCreatedAt = getUTCStartOfDay(parseISO(task.created_at));
-          const isCreatedToday = isSameDay(taskCreatedAt, effectiveCurrentDate);
           const isCarryOver = isBefore(taskCreatedAt, effectiveCurrentDate) && task.status === 'to-do';
-          return isCreatedToday || isCarryOver;
+          return isCarryOver;
         }
       });
     }
