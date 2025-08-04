@@ -449,6 +449,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
   }, [userId, effectiveCurrentDate, tasks, addReminder]);
 
   const updateTask = useCallback(async (taskId: string, updates: TaskUpdate) => {
+    console.log(`[updateTask] Called for taskId: ${taskId}`, { updates });
     if (!userId) {
       showError('User not authenticated.');
       return;
@@ -461,11 +462,13 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       if (updates.category) color = allCategoriesRef.current.find(cat => cat.id === updates.category)?.color || 'gray';
 
       originalTaskState = tasks.find(t => t.id === taskId);
+      console.log('[updateTask] Original task state from local:', originalTaskState);
       
       if (!originalTaskState) {
+        console.log(`[updateTask] Task ID ${taskId} is a virtual task. Creating new instance.`);
         const virtualTask = processedTasks.find(t => t.id === taskId);
         if (!virtualTask || !taskId.toString().startsWith('virtual-')) {
-            console.warn(`useTasks: Task with ID ${taskId} not found for update. Cannot proceed.`);
+            console.warn(`[updateTask] Virtual task with ID ${taskId} not found in processed tasks. Cannot proceed.`);
             return;
         }
 
@@ -486,11 +489,12 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
             notes: updates.notes !== undefined ? updates.notes : virtualTask.notes,
             remind_at: updates.remind_at !== undefined ? updates.remind_at : virtualTask.remind_at,
             section_id: updates.section_id !== undefined ? updates.section_id : virtualTask.section_id,
-            order: virtualTask.order, // Keep original order if possible
+            order: virtualTask.order,
             original_task_id: virtualTask.original_task_id || virtualTask.id.replace(/^virtual-/, '').split(/-\d{4}-\d{2}-\d{2}$/)[0],
             parent_task_id: virtualTask.parent_task_id,
             link: updates.link !== undefined ? updates.link : virtualTask.link,
         };
+        console.log('[updateTask] New instance data prepared:', newInstanceData);
 
         // Optimistic update: add the new instance
         setTasks(prev => [...prev, { ...newInstanceData, id: newInstanceId, category_color: allCategoriesRef.current.find(cat => cat.id === newInstanceData.category)?.color || 'gray' }]);
@@ -501,20 +505,24 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
             .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link')
             .single();
 
-        if (error) throw error;
+        if (error) {
+            console.error('[updateTask] DB error inserting new instance:', error);
+            throw error;
+        }
+        console.log('[updateTask] DB insert successful. New task:', data);
 
         // Replace client-side version with DB version
         setTasks(prev => prev.map(t => t.id === newInstanceId ? { ...data, category_color: allCategoriesRef.current.find(cat => cat.id === data.category)?.color || 'gray' } : t));
         showSuccess('Task updated!');
         
-        // Handle reminders for the new instance
         if (data.remind_at && data.status === 'to-do') {
             const d = parseISO(data.remind_at);
             if (isValid(d)) addReminder(data.id, `Reminder: ${data.description}`, d);
         }
-        return; // Done with virtual task update
+        return;
       }
 
+      console.log(`[updateTask] Task ID ${taskId} is a real task. Performing update.`);
       inFlightUpdatesRef.current.add(idToTrack);
       setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates, ...(color && { category_color: color }) } : t));
 
@@ -526,7 +534,11 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
         .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link')
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('[updateTask] DB error updating real task:', error);
+        throw error;
+      }
+      console.log('[updateTask] DB update successful. Updated task:', data);
 
       setTasks(prev => prev.map(t => t.id === taskId ? { ...data, category_color: allCategoriesRef.current.find(cat => cat.id === data.category)?.color || 'gray' } : t));
       showSuccess('Task updated!');
@@ -540,11 +552,13 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       }
     } catch (e: any) {
       showError('Failed to update task.');
-      console.error(`useTasks: Error updating task ${taskId} in DB:`, e.message);
+      console.error(`[updateTask] Error updating task ${taskId} in DB:`, e.message);
       if (originalTaskState) {
+        console.log('[updateTask] Reverting optimistic update due to error.');
         setTasks(prev => prev.map(t => t.id === taskId ? originalTaskState! : t));
       }
     } finally {
+      console.log(`[updateTask] Finalizing update for ${idToTrack}.`);
       inFlightUpdatesRef.current.delete(idToTrack);
     }
   }, [userId, tasks, processedTasks, effectiveCurrentDate, addReminder, dismissReminder]);
