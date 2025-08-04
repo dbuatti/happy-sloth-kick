@@ -233,7 +233,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
       description: data.description.trim(),
       category: data.category,
       priority: data.priority,
-      due_date: data.dueDate ? data.dueDate.toISOString() : null,
+      due_date: data.dueDate ? format(data.dueDate, 'yyyy-MM-dd') : null,
       notes: data.notes,
       remind_at: finalRemindAt ? finalRemindAt.toISOString() : null,
       section_id: data.sectionId,
