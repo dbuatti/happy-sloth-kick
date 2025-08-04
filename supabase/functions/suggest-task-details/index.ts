@@ -1,20 +1,10 @@
+// @ts-ignore
 import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.15.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-interface SuggestTaskDetailsResponse {
-  category: string;
-  priority: string;
-  dueDate: string | null; // ISO string
-  remindAt: string | null; // ISO string
-  section: string | null;
-  cleanedDescription: string;
-  link: string | null;
-  notes: string | null;
-}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -47,6 +37,20 @@ Deno.serve(async (req) => {
     const today = new Date(currentDate);
     const dayOfWeek = today.toLocaleDateString('en-US', { weekday: 'long' });
 
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    const tomorrowDateString = tomorrow.toISOString().split('T')[0];
+
+    const nextFriday = new Date(today);
+    const currentDay = today.getDay(); // Sunday = 0, Friday = 5
+    const daysUntilFriday = (5 - currentDay + 7) % 7;
+    nextFriday.setDate(today.getDate() + (daysUntilFriday === 0 ? 7 : daysUntilFriday)); // if today is Friday, go to next Friday
+    const nextFridayDateString = nextFriday.toISOString().split('T')[0];
+
+    const nextWeek = new Date(today);
+    nextWeek.setDate(today.getDate() + 7);
+    const nextWeekDateString = nextWeek.toISOString().split('T')[0];
+
     const prompt = `You are a helpful assistant that extracts structured task data from natural language descriptions.
     Today's date is ${currentDate} (${dayOfWeek}).
     
@@ -68,8 +72,8 @@ Deno.serve(async (req) => {
     {
       "category": "Personal",
       "priority": "high",
-      "dueDate": "2024-08-15",
-      "remindAt": "2024-08-15T18:00:00Z",
+      "dueDate": "${tomorrowDateString}",
+      "remindAt": "${tomorrowDateString}T18:00:00Z",
       "section": "Groceries",
       "cleanedDescription": "Buy groceries for dinner",
       "link": null,
@@ -82,7 +86,7 @@ Deno.serve(async (req) => {
     {
       "category": "Work",
       "priority": "urgent",
-      "dueDate": "2024-08-16",
+      "dueDate": "${nextFridayDateString}",
       "remindAt": null,
       "section": "Work",
       "cleanedDescription": "Finish report",
@@ -110,7 +114,7 @@ Deno.serve(async (req) => {
     {
       "category": "Personal",
       "priority": "medium",
-      "dueDate": "2024-08-23",
+      "dueDate": "${nextWeekDateString}",
       "remindAt": null,
       "section": "Appointments",
       "cleanedDescription": "Schedule dentist appointment",
@@ -185,7 +189,7 @@ Deno.serve(async (req) => {
       status: 200,
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error in Edge Function (outer catch):", error);
     return new Response(JSON.stringify({ error: error.message || 'An unexpected error occurred in the Edge Function.' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

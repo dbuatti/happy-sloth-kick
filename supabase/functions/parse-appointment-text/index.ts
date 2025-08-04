@@ -1,3 +1,4 @@
+// @ts-ignore
 import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.15.0";
 
 const corsHeaders = {
@@ -30,6 +31,11 @@ Deno.serve(async (req) => {
 
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+
+    const today = new Date(currentDate);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    const tomorrowDateString = tomorrow.toISOString().split('T')[0];
 
     const prompt = `
       You are an expert appointment parser. Your task is to extract appointment details from a given text and return them as a JSON object.
@@ -72,7 +78,7 @@ Deno.serve(async (req) => {
       {
         "title": "Lunch with Sarah",
         "description": null,
-        "date": "2024-08-08",
+        "date": "${tomorrowDateString}",
         "startTime": "13:00",
         "endTime": "14:00"
       }
@@ -98,7 +104,7 @@ Deno.serve(async (req) => {
       status: 200,
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error in Edge Function:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
