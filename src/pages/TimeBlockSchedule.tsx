@@ -163,7 +163,7 @@ const TimeBlockSchedule: React.FC = () => {
     }
   };
 
-  const rowHeight = 40;
+  const rowHeight = 50;
   const gapHeight = 4;
 
   const getAppointmentGridPosition = useCallback((app: Appointment) => {
@@ -333,9 +333,9 @@ const TimeBlockSchedule: React.FC = () => {
                       <div
                         key={`label-${format(block.start, 'HH:mm')}`}
                         className="absolute right-4"
-                        style={{ top: `${index * (rowHeight + gapHeight) - 10}px` }}
+                        style={{ top: `${index * (rowHeight + gapHeight) - 8}px` }}
                       >
-                        <span className="text-sm text-muted-foreground">{format(block.start, 'h a')}</span>
+                        <span className="text-xs text-muted-foreground">{format(block.start, 'h a')}</span>
                       </div>
                     )
                   ))}
@@ -372,7 +372,7 @@ const TimeBlockSchedule: React.FC = () => {
                     return (
                       <div
                         key={`block-container-${format(block.start, 'HH:mm')}`}
-                        className="relative h-full w-full border-t border-gray-200 dark:border-gray-700"
+                        className="relative h-full w-full border-t border-gray-200/80 dark:border-gray-700/80"
                         style={{ gridRow: `${index + 1}`, zIndex: 1 }}
                       >
                         {!isBlockOccupied && (

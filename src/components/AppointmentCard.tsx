@@ -60,41 +60,41 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
     <div
       style={style}
       className={cn(
-        "absolute rounded-lg p-2 shadow-md group",
-        "flex flex-row justify-between items-start transition-all duration-200 ease-in-out",
+        "absolute rounded-lg p-2 shadow-md group text-white",
+        "flex flex-col justify-start items-start transition-all duration-200 ease-in-out",
         "cursor-pointer hover:scale-[1.01] hover:shadow-lg",
         isCompleted && "opacity-70"
       )}
       onClick={() => onEdit(appointment)}
     >
-      <div className="flex-grow h-full">
-        <h4 className="font-semibold text-sm truncate flex items-center gap-1.5">
+      <div className="flex-grow">
+        <h4 className="font-bold text-base truncate flex items-center gap-1.5 [text-shadow:0_1px_2px_rgba(0,0,0,0.2)]">
           {task ? (
             isCompleted ? (
-              <div className="h-3.5 w-3.5 flex-shrink-0 bg-white rounded-full flex items-center justify-center">
+              <div className="h-4 w-4 flex-shrink-0 bg-white rounded-full flex items-center justify-center">
                 <CheckCircle2 className="h-4 w-4 text-green-500" />
               </div>
             ) : (
-              <ListTodo className="h-3.5 w-3.5 flex-shrink-0" />
+              <ListTodo className="h-4 w-4 flex-shrink-0" />
             )
           ) : null}
           {appointment.title}
         </h4>
-        <p className="text-xs opacity-90">
+        <p className="text-xs opacity-90 [text-shadow:0_1px_2px_rgba(0,0,0,0.2)]">
           {format(startTime, 'h:mm a')} - {format(endTime, 'h:mm a')}
         </p>
-        {appointment.description && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Info className="h-4 w-4 text-white opacity-70 mt-1" />
-            </TooltipTrigger>
-            <TooltipContent className="max-w-xs">
-              <p className="font-semibold">{appointment.title}</p>
-              <p className="text-sm">{appointment.description}</p>
-            </TooltipContent>
-          </Tooltip>
-        )}
       </div>
+      {appointment.description && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Info className="h-4 w-4 text-white opacity-70 mt-1" />
+          </TooltipTrigger>
+          <TooltipContent className="max-w-xs">
+            <p className="font-semibold">{appointment.title}</p>
+            <p className="text-sm">{appointment.description}</p>
+          </TooltipContent>
+        </Tooltip>
+      )}
       {task && (
         <Button
           variant="ghost"
