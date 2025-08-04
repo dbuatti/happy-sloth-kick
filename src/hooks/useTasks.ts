@@ -410,14 +410,11 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
         link: newTaskData.link || null,
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { created_at, ...newTaskForDB } = newTaskForUI;
-
       setTasks(prev => [...prev, newTaskForUI]);
 
       const { data, error } = await supabase
         .from('tasks')
-        .insert(cleanTaskForDb(newTaskForDB))
+        .insert(cleanTaskForDb(newTaskForUI))
         .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link')
         .single();
 
@@ -487,14 +484,11 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
         };
         console.log('[updateTask] New instance data prepared for UI:', newInstanceDataForUI);
 
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { created_at, ...newInstanceDataForDB } = newInstanceDataForUI;
-
         setTasks(prev => [...prev, { ...newInstanceDataForUI, category_color: allCategoriesRef.current.find(cat => cat.id === newInstanceDataForUI.category)?.color || 'gray' }]);
 
         const { data, error } = await supabase
             .from('tasks')
-            .insert(newInstanceDataForDB)
+            .insert(cleanTaskForDb(newInstanceDataForUI))
             .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link')
             .single();
 
@@ -869,15 +863,16 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
         const taskDueDate = task.due_date ? getUTCStartOfDay(parseISO(task.due_date)) : null;
         const taskCreatedAt = getUTCStartOfDay(parseISO(task.created_at));
 
-        const isCreatedToday = isSameDay(taskCreatedAt, effectiveCurrentDate);
+        const isCreatedOnThisDay = isSameDay(taskCreatedAt, effectiveCurrentDate);
         
         if (taskDueDate) {
-          const isDueToday = isSameDay(taskDueDate, effectiveCurrentDate);
+          const isDueOnThisDay = isSameDay(taskDueDate, effectiveCurrentDate);
           const isOverdue = isBefore(taskDueDate, effectiveCurrentDate) && task.status === 'to-do';
-          return isCreatedToday || isDueToday || isOverdue;
+          return isCreatedOnThisDay || isDueOnThisDay || isOverdue;
         } else {
+          // No due date
           const isCarryOver = isBefore(taskCreatedAt, effectiveCurrentDate) && task.status === 'to-do';
-          return isCreatedToday || isCarryOver;
+          return isCreatedOnThisDay || isCarryOver;
         }
       });
     }
