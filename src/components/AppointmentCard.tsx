@@ -1,13 +1,17 @@
 import React from 'react';
 import { Appointment } from '@/hooks/useAppointments';
+import { Task } from '@/hooks/useTasks';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
-import { Info, ListTodo } from 'lucide-react';
+import { Info, ListTodo, CheckCircle2, X } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Button } from './ui/button';
 
 interface AppointmentCardProps {
   appointment: Appointment;
+  task?: Task;
   onEdit: (appointment: Appointment) => void;
+  onUnschedule: (appointmentId: string) => void;
   gridRowStart: number;
   gridRowEnd: number;
   overlapOffset: number;
@@ -17,7 +21,9 @@ interface AppointmentCardProps {
 
 const AppointmentCard: React.FC<AppointmentCardProps> = ({
   appointment,
+  task,
   onEdit,
+  onUnschedule,
   gridRowStart,
   gridRowEnd,
   overlapOffset,
@@ -43,19 +49,35 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
   const startTime = parseISO(`2000-01-01T${appointment.start_time}`);
   const endTime = parseISO(`2000-01-01T${appointment.end_time}`);
 
+  const handleUnscheduleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onUnschedule(appointment.id);
+  };
+
+  const isCompleted = task?.status === 'completed';
+
   return (
     <div
       style={style}
       className={cn(
-        "absolute rounded-lg p-2 text-white shadow-md",
+        "absolute rounded-lg p-2 shadow-md group",
         "flex flex-row justify-between items-start transition-all duration-200 ease-in-out",
-        "cursor-pointer hover:scale-[1.01] hover:shadow-lg"
+        "cursor-pointer hover:scale-[1.01] hover:shadow-lg",
+        isCompleted && "opacity-70"
       )}
       onClick={() => onEdit(appointment)}
     >
       <div className="flex-grow h-full">
         <h4 className="font-semibold text-sm truncate flex items-center gap-1.5">
-          {appointment.task_id && <ListTodo className="h-3.5 w-3.5 flex-shrink-0" />}
+          {task ? (
+            isCompleted ? (
+              <div className="h-3.5 w-3.5 flex-shrink-0 bg-white rounded-full flex items-center justify-center">
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
+              </div>
+            ) : (
+              <ListTodo className="h-3.5 w-3.5 flex-shrink-0" />
+            )
+          ) : null}
           {appointment.title}
         </h4>
         <p className="text-xs opacity-90">
@@ -73,6 +95,17 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
           </Tooltip>
         )}
       </div>
+      {task && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute top-1 right-1 h-6 w-6 rounded-full bg-black/20 hover:bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={handleUnscheduleClick}
+          title="Remove from schedule"
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      )}
     </div>
   );
 };

@@ -156,6 +156,13 @@ const TimeBlockSchedule: React.FC = () => {
     return await deleteAppointment(id);
   };
 
+  const handleUnscheduleTask = async (appointmentId: string) => {
+    const success = await updateAppointment(appointmentId, { task_id: null });
+    if (success) {
+      showSuccess("Task unscheduled successfully.");
+    }
+  };
+
   const rowHeight = 40;
   const gapHeight = 4;
 
@@ -388,18 +395,23 @@ const TimeBlockSchedule: React.FC = () => {
                     );
                   })}
 
-                  {appointmentsWithPositions.map((app) => (
-                    <AppointmentCard
-                      key={app.id}
-                      appointment={app}
-                      onEdit={handleAppointmentClick}
-                      gridRowStart={app.gridRowStart}
-                      gridRowEnd={app.gridRowEnd}
-                      overlapOffset={app.overlapOffset}
-                      rowHeight={rowHeight}
-                      gapHeight={gapHeight}
-                    />
-                  ))}
+                  {appointmentsWithPositions.map((app) => {
+                    const task = app.task_id ? allTasks.find(t => t.id === app.task_id) : undefined;
+                    return (
+                      <AppointmentCard
+                        key={app.id}
+                        appointment={app}
+                        task={task}
+                        onEdit={handleAppointmentClick}
+                        onUnschedule={handleUnscheduleTask}
+                        gridRowStart={app.gridRowStart}
+                        gridRowEnd={app.gridRowEnd}
+                        overlapOffset={app.overlapOffset}
+                        rowHeight={rowHeight}
+                        gapHeight={gapHeight}
+                      />
+                    );
+                  })}
                 </div>
               </div>
             )}

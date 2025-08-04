@@ -9,7 +9,7 @@ export const navItems = [
   { name: 'Meditation', path: '/meditation', icon: Leaf, toggleable: true },
   { name: 'Sleep', path: '/sleep', icon: Moon, toggleable: true },
   { name: 'Project Balance', path: '/projects', icon: LayoutGrid, toggleable: true },
-  { name: 'Time Blocks', path: '/schedule', icon: CalendarClock, toggleable: true },
+  { name: 'Schedule', path: '/schedule', icon: CalendarClock, toggleable: true },
   { name: 'Dev Space', path: '/dev-space', icon: Code, toggleable: true },
   { name: 'My Hub', path: '/my-hub', icon: LayoutDashboard, toggleable: false },
 ];
