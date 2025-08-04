@@ -140,12 +140,65 @@ export const useAppointments = (currentDate: Date) => {
     }
   }, [userId]);
 
+  const clearDayAppointments = useCallback(async () => {
+    if (!userId || appointments.length === 0) {
+      return [];
+    }
+    const appointmentsToDelete = [...appointments];
+    setAppointments([]); // Optimistic update
+
+    try {
+      const idsToDelete = appointmentsToDelete.map(app => app.id);
+      const { error } = await supabase
+        .from('schedule_appointments')
+        .delete()
+        .in('id', idsToDelete)
+        .eq('user_id', userId);
+      
+      if (error) throw error;
+      
+      return appointmentsToDelete;
+    } catch (error: any) {
+      showError('Failed to clear day.');
+      setAppointments(appointmentsToDelete); // Revert optimistic update
+      return [];
+    }
+  }, [userId, appointments]);
+
+  const batchAddAppointments = useCallback(async (appointmentsToRestore: Appointment[]) => {
+    if (!userId || appointmentsToRestore.length === 0) {
+      return false;
+    }
+    
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const recordsToInsert = appointmentsToRestore.map(({ id, created_at, updated_at, ...rest }) => rest);
+
+    setAppointments(prev => [...prev, ...appointmentsToRestore].sort((a, b) => a.start_time.localeCompare(b.start_time)));
+
+    try {
+      const { error } = await supabase
+        .from('schedule_appointments')
+        .insert(recordsToInsert);
+      
+      if (error) throw error;
+      
+      await fetchAppointments();
+      return true;
+    } catch (error: any) {
+      showError('Failed to restore appointments.');
+      await fetchAppointments();
+      return false;
+    }
+  }, [userId, fetchAppointments]);
+
   return {
     appointments,
     loading,
     addAppointment,
     updateAppointment,
     deleteAppointment,
-    fetchAppointments, // Expose fetchAppointments for manual refresh if needed
+    fetchAppointments,
+    clearDayAppointments,
+    batchAddAppointments,
   };
 };

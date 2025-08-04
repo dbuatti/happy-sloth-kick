@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useWorkHours } from '@/hooks/useWorkHours';
 import { format, addMinutes, parse, isBefore, getMinutes, getHours } from 'date-fns';
-import { CalendarDays, Clock, Settings, Sparkles } from 'lucide-react';
+import { CalendarDays, Clock, Settings, Sparkles, X } from 'lucide-react';
 import DateNavigator from '@/components/DateNavigator';
 import { useAppointments, Appointment, NewAppointmentData } from '@/hooks/useAppointments';
 import AppointmentForm from '@/components/AppointmentForm';
@@ -22,6 +22,7 @@ import { showLoading, dismissToast, showError, showSuccess } from '@/utils/toast
 import TaskOverviewDialog from '@/components/TaskOverviewDialog';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import { useSettings } from '@/context/SettingsContext';
+import { toast } from 'sonner';
 
 const TimeBlockSchedule: React.FC = () => {
   useAuth(); 
@@ -30,7 +31,7 @@ const TimeBlockSchedule: React.FC = () => {
   const { workHours: singleDayWorkHoursRaw, loading: workHoursLoading } = useWorkHours({ date: currentDate });
   const singleDayWorkHours = Array.isArray(singleDayWorkHoursRaw) ? null : singleDayWorkHoursRaw;
 
-  const { appointments, loading: appointmentsLoading, addAppointment, updateAppointment, deleteAppointment } = useAppointments(currentDate);
+  const { appointments, loading: appointmentsLoading, addAppointment, updateAppointment, deleteAppointment, clearDayAppointments, batchAddAppointments } = useAppointments(currentDate);
   const { 
     tasks: allTasks,
     filteredTasks: allDayTasks, 
@@ -163,6 +164,22 @@ const TimeBlockSchedule: React.FC = () => {
     }
   };
 
+  const handleClearDay = async () => {
+    const deletedApps = await clearDayAppointments();
+    if (deletedApps.length > 0) {
+      toast.success('Day cleared.', {
+        action: {
+          label: 'Undo',
+          onClick: () => handleUndoClear(deletedApps),
+        },
+      });
+    }
+  };
+
+  const handleUndoClear = async (appsToRestore: Appointment[]) => {
+    await batchAddAppointments(appsToRestore);
+  };
+
   const rowHeight = 50;
   const gapHeight = 4;
 
@@ -291,9 +308,14 @@ const TimeBlockSchedule: React.FC = () => {
               <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
                 <CalendarDays className="h-7 w-7" /> Dynamic Schedule
               </CardTitle>
-              <Button variant="outline" onClick={() => setIsParsingDialogOpen(true)}>
-                <Sparkles className="mr-2 h-4 w-4" /> Parse from Text
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" onClick={handleClearDay} disabled={appointments.length === 0}>
+                  <X className="mr-2 h-4 w-4" /> Clear Day
+                </Button>
+                <Button variant="outline" onClick={() => setIsParsingDialogOpen(true)}>
+                  <Sparkles className="mr-2 h-4 w-4" /> Parse from Text
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="pt-0">
