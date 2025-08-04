@@ -368,7 +368,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       const isInFocusArea = t.section_id === null || focusModeSectionIds.has(t.section_id);
       const isDoToday = t.recurring_type !== 'none' || !doTodayOffIds.has(t.original_task_id || t.id);
 
-      return isInFocusArea || isDoToday;
+      return isInFocusArea && isDoToday;
     });
 
     const completedCount = focusTasks.filter(t => t.status === 'completed' || t.status === 'archived').length;
