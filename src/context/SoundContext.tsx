@@ -25,28 +25,40 @@ const soundConfig = {
 const generateSound = (config: { frequency: number; type: OscillatorType; duration: number; repeat?: number }) => {
   try {
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-
-    oscillator.type = config.type;
-    oscillator.frequency.setValueAtTime(config.frequency, audioContext.currentTime);
-    gainNode.gain.setValueAtTime(0.5, audioContext.currentTime); // Set initial volume
-
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-
+    
     let playCount = 0;
+    const repeatCount = config.repeat || 1;
+
     const playSingleSound = () => {
+      if (playCount >= repeatCount) {
+        if (audioContext.state !== 'closed') {
+          audioContext.close();
+        }
+        return;
+      }
+
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.type = config.type;
+      oscillator.frequency.setValueAtTime(config.frequency, audioContext.currentTime);
+      gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
       oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + config.duration);
-      gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + config.duration + 0.05); // Fade out
+      gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + config.duration);
+      oscillator.stop(audioContext.currentTime + config.duration + 0.05);
 
       oscillator.onended = () => {
         playCount++;
-        if (config.repeat && playCount < config.repeat) {
-          setTimeout(playSingleSound, 100); // Short delay between repeats
+        if (playCount < repeatCount) {
+          setTimeout(playSingleSound, 100); // Delay between repeats
         } else {
-          audioContext.close(); // Clean up context after sound finishes
+          if (audioContext.state !== 'closed') {
+            audioContext.close();
+          }
         }
       };
     };
