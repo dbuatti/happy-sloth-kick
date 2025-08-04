@@ -10,6 +10,7 @@ import TaskOverviewDialog from '@/components/TaskOverviewDialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAllAppointments } from '@/hooks/useAllAppointments';
 import { Appointment } from '@/hooks/useAppointments';
+import TaskDetailDialog from '@/components/TaskDetailDialog'; // Import TaskDetailDialog
 
 const TaskCalendar: React.FC = () => {
   const {
@@ -23,6 +24,10 @@ const TaskCalendar: React.FC = () => {
     setFocusTask,
     toggleDoToday,
     doTodayOffIds,
+    createSection,
+    updateSection,
+    deleteSection,
+    updateSectionIncludeInFocusMode,
   } = useTasks();
 
   const { appointments: allAppointments } = useAllAppointments();
@@ -42,6 +47,8 @@ const TaskCalendar: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+  const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
 
   const tasksByDueDate = useMemo(() => {
     const groupedTasks = new Map<string, Task[]>();
@@ -72,8 +79,10 @@ const TaskCalendar: React.FC = () => {
     setIsTaskOverviewOpen(true);
   };
 
-  const handleEditTaskFromOverview = (_task: Task) => {
+  const handleEditTaskFromOverview = (task: Task) => {
     setIsTaskOverviewOpen(false);
+    setTaskToEdit(task);
+    setIsTaskDetailOpen(true);
   };
 
   return (
@@ -160,6 +169,21 @@ const TaskCalendar: React.FC = () => {
           sections={sections}
           allCategories={allCategories}
           allTasks={allTasks}
+        />
+      )}
+      {taskToEdit && (
+        <TaskDetailDialog
+          task={taskToEdit}
+          isOpen={isTaskDetailOpen}
+          onClose={() => setIsTaskDetailOpen(false)}
+          onUpdate={updateTask}
+          onDelete={deleteTask}
+          sections={sections}
+          allCategories={allCategories}
+          createSection={createSection}
+          updateSection={updateSection}
+          deleteSection={deleteSection}
+          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
         />
       )}
     </div>
