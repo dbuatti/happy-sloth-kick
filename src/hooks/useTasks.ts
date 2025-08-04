@@ -469,46 +469,50 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
             return;
         }
 
-        if (updates.status === 'completed') {
-            const newCompletedInstance: Task = {
-                id: uuidv4(),
-                user_id: userId,
-                description: virtualTask.description,
-                status: 'completed',
-                recurring_type: 'none',
-                created_at: effectiveCurrentDate.toISOString(),
-                category: virtualTask.category,
-                category_color: allCategoriesRef.current.find(cat => cat.id === virtualTask.category)?.color || 'gray',
-                priority: virtualTask.priority,
-                due_date: virtualTask.due_date,
-                notes: virtualTask.notes,
-                remind_at: null,
-                section_id: virtualTask.section_id,
-                order: null,
-                original_task_id: virtualTask.original_task_id || virtualTask.id,
-                parent_task_id: virtualTask.parent_task_id,
-                link: virtualTask.link,
-            };
-            idToTrack = newCompletedInstance.id;
-            inFlightUpdatesRef.current.add(idToTrack);
-            setTasks(prev => [...prev, newCompletedInstance]);
+        // Create a new concrete instance from the virtual task and the updates
+        const newInstanceId = uuidv4();
+        idToTrack = newInstanceId;
+        inFlightUpdatesRef.current.add(idToTrack);
 
-            const { data, error } = await supabase
-                .from('tasks')
-                .insert(cleanTaskForDb(newCompletedInstance))
-                .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link')
-                .single();
+        const newInstanceData: Omit<Task, 'id' | 'category_color'> = {
+            user_id: userId,
+            description: updates.description ?? virtualTask.description,
+            status: updates.status ?? 'to-do',
+            recurring_type: 'none', // This instance is now concrete
+            created_at: effectiveCurrentDate.toISOString(),
+            category: updates.category ?? virtualTask.category,
+            priority: updates.priority ?? virtualTask.priority,
+            due_date: updates.due_date !== undefined ? updates.due_date : virtualTask.due_date,
+            notes: updates.notes !== undefined ? updates.notes : virtualTask.notes,
+            remind_at: updates.remind_at !== undefined ? updates.remind_at : virtualTask.remind_at,
+            section_id: updates.section_id !== undefined ? updates.section_id : virtualTask.section_id,
+            order: virtualTask.order, // Keep original order if possible
+            original_task_id: virtualTask.original_task_id || virtualTask.id.replace(/^virtual-/, '').split(/-\d{4}-\d{2}-\d{2}$/)[0],
+            parent_task_id: virtualTask.parent_task_id,
+            link: updates.link !== undefined ? updates.link : virtualTask.link,
+        };
 
-            if (error) throw error;
+        // Optimistic update: add the new instance
+        setTasks(prev => [...prev, { ...newInstanceData, id: newInstanceId, category_color: allCategoriesRef.current.find(cat => cat.id === newInstanceData.category)?.color || 'gray' }]);
 
-            setTasks(prev => prev.map(t => t.id === newCompletedInstance.id ? { ...data, category_color: allCategoriesRef.current.find(cat => cat.id === data.category)?.color || 'gray' } : t));
-            showSuccess('Task completed!');
-            dismissReminder(virtualTask.id);
-            return;
-        } else {
-            console.warn(`useTasks: Attempted to update non-status property or un-complete a virtual task ${taskId}. This operation is not supported directly.`);
-            return;
+        const { data, error } = await supabase
+            .from('tasks')
+            .insert({ ...newInstanceData, id: newInstanceId })
+            .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link')
+            .single();
+
+        if (error) throw error;
+
+        // Replace client-side version with DB version
+        setTasks(prev => prev.map(t => t.id === newInstanceId ? { ...data, category_color: allCategoriesRef.current.find(cat => cat.id === data.category)?.color || 'gray' } : t));
+        showSuccess('Task updated!');
+        
+        // Handle reminders for the new instance
+        if (data.remind_at && data.status === 'to-do') {
+            const d = parseISO(data.remind_at);
+            if (isValid(d)) addReminder(data.id, `Reminder: ${data.description}`, d);
         }
+        return; // Done with virtual task update
       }
 
       inFlightUpdatesRef.current.add(idToTrack);
