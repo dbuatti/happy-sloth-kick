@@ -68,26 +68,26 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
       onClick={() => onEdit(appointment)}
     >
       <div className="flex-grow">
-        <h4 className="font-bold text-base truncate flex items-center gap-1.5 [text-shadow:0_1px_2px_rgba(0,0,0,0.2)]">
+        <h4 className="font-semibold text-sm truncate flex items-center gap-1.5">
           {task ? (
             isCompleted ? (
-              <div className="h-4 w-4 flex-shrink-0 bg-white rounded-full flex items-center justify-center">
+              <div className="h-3.5 w-3.5 flex-shrink-0 bg-white rounded-full flex items-center justify-center">
                 <CheckCircle2 className="h-4 w-4 text-green-500" />
               </div>
             ) : (
-              <ListTodo className="h-4 w-4 flex-shrink-0" />
+              <ListTodo className="h-3.5 w-3.5 flex-shrink-0" />
             )
           ) : null}
           {appointment.title}
         </h4>
-        <p className="text-xs opacity-90 [text-shadow:0_1px_2px_rgba(0,0,0,0.2)]">
+        <p className="text-xs opacity-90">
           {format(startTime, 'h:mm a')} - {format(endTime, 'h:mm a')}
         </p>
       </div>
       {appointment.description && (
         <Tooltip>
           <TooltipTrigger asChild>
-            <Info className="h-4 w-4 text-white opacity-70 mt-1" />
+            <Info className="h-4 w-4 text-white opacity-0 group-hover:opacity-70 mt-1 transition-opacity" />
           </TooltipTrigger>
           <TooltipContent className="max-w-xs">
             <p className="font-semibold">{appointment.title}</p>

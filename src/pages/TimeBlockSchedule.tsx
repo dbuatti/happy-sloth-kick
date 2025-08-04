@@ -157,7 +157,7 @@ const TimeBlockSchedule: React.FC = () => {
   };
 
   const handleUnscheduleTask = async (appointmentId: string) => {
-    const success = await updateAppointment(appointmentId, { task_id: null });
+    const success = await deleteAppointment(appointmentId);
     if (success) {
       showSuccess("Task unscheduled successfully.");
     }
