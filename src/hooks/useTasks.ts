@@ -298,25 +298,13 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
 
       if (!templateTask) {
         seriesInstances.forEach(orphanTask => {
-          const taskCreatedAt = getUTCStartOfDay(parseISO(orphanTask.created_at));
-          const isRelevantForDaily = isSameDay(taskCreatedAt, todayStart) || (isBefore(taskCreatedAt, todayStart) && orphanTask.status === 'to-do');
-          const isRelevantForArchive = orphanTask.status === 'archived';
-
-          if (isRelevantForDaily || isRelevantForArchive) {
             allProcessedTasks.push({ ...orphanTask, category_color: categoriesMapLocal.get(orphanTask.category) || 'gray' });
-          }
         });
         return;
       }
 
       if (templateTask.recurring_type === 'none') {
-        const taskCreatedAt = getUTCStartOfDay(parseISO(templateTask.created_at));
-        const isRelevantForDaily = isSameDay(taskCreatedAt, todayStart) || (isBefore(taskCreatedAt, todayStart) && templateTask.status === 'to-do');
-        const isRelevantForArchive = templateTask.status === 'archived';
-
-        if (isRelevantForDaily || isRelevantForArchive) {
-          allProcessedTasks.push({ ...templateTask, category_color: categoriesMapLocal.get(templateTask.category) || 'gray' });
-        }
+        allProcessedTasks.push({ ...templateTask, category_color: categoriesMapLocal.get(templateTask.category) || 'gray' });
       } else {
         const sortedInstances = [...seriesInstances].sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime());
         let relevantInstance: Task | null = sortedInstances.find(t => isSameDay(getUTCStartOfDay(parseISO(t.created_at)), todayStart)) || null;
@@ -872,6 +860,24 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
   const finalFilteredTasks = useMemo(() => {
     let filtered = processedTasks;
 
+    // This is the main filtering logic for the daily view
+    if (viewMode === 'daily') {
+      filtered = filtered.filter(task => {
+        const taskDueDate = task.due_date ? getUTCStartOfDay(parseISO(task.due_date)) : null;
+        const taskCreatedAt = getUTCStartOfDay(parseISO(task.created_at));
+
+        // A task is relevant for today if:
+        // 1. It's due today.
+        // 2. It's overdue and still 'to-do'.
+        // 3. It has no due date, but was created today or is a carry-over 'to-do'.
+        const isDueToday = taskDueDate && isSameDay(taskDueDate, effectiveCurrentDate);
+        const isOverdue = taskDueDate && isBefore(taskDueDate, effectiveCurrentDate) && task.status === 'to-do';
+        const isRelevantByCreation = !taskDueDate && (isSameDay(taskCreatedAt, effectiveCurrentDate) || (isBefore(taskCreatedAt, effectiveCurrentDate) && task.status === 'to-do'));
+        
+        return isDueToday || isOverdue || isRelevantByCreation;
+      });
+    }
+
     if (searchFilter) {
       filtered = filtered.filter(task =>
         task.description.toLowerCase().includes(searchFilter.toLowerCase()) ||
@@ -904,15 +910,6 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       } else {
         filtered = filtered.filter(task => task.section_id === sectionFilter);
       }
-    }
-
-    if (viewMode === 'daily' || viewMode === 'focus') {
-      filtered = filtered.filter(task => {
-        const taskCreatedAt = getUTCStartOfDay(parseISO(task.created_at));
-        const isTaskCreatedOnCurrentDate = isSameDay(taskCreatedAt, effectiveCurrentDate);
-        const isCarryOverTodo = isBefore(taskCreatedAt, effectiveCurrentDate) && task.status === 'to-do';
-        return isTaskCreatedOnCurrentDate || isCarryOverTodo;
-      });
     }
 
     if (userSettings?.hide_future_tasks && viewMode === 'daily') {
