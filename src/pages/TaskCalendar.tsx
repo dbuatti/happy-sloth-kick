@@ -8,6 +8,8 @@ import { MadeWithDyad } from "@/components/made-with-dyad";
 import TaskItem from '@/components/TaskItem';
 import TaskOverviewDialog from '@/components/TaskOverviewDialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAllAppointments } from '@/hooks/useAllAppointments';
+import { Appointment } from '@/hooks/useAppointments';
 
 const TaskCalendar: React.FC = () => {
   const {
@@ -22,6 +24,20 @@ const TaskCalendar: React.FC = () => {
     toggleDoToday,
     doTodayOffIds,
   } = useTasks();
+
+  const { appointments: allAppointments } = useAllAppointments();
+
+  const scheduledTasksMap = useMemo(() => {
+    const map = new Map<string, Appointment>();
+    if (allAppointments) {
+        allAppointments.forEach(app => {
+            if (app.task_id) {
+                map.set(app.task_id, app);
+            }
+        });
+    }
+    return map;
+  }, [allAppointments]);
 
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
@@ -116,6 +132,7 @@ const TaskCalendar: React.FC = () => {
                         setFocusTask={setFocusTask}
                         isDoToday={!doTodayOffIds.has(task.original_task_id || task.id)}
                         toggleDoToday={toggleDoToday}
+                        scheduledTasksMap={scheduledTasksMap}
                       />
                     </li>
                   ))}

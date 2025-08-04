@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import TaskList from '@/components/TaskList';
 import { MadeWithDyad } from '@/components/made-with-dyad';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
@@ -13,6 +13,8 @@ import FocusPanelDrawer from '@/components/FocusPanelDrawer';
 import DailyTasksHeader from '@/components/DailyTasksHeader';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import AddTaskForm from '@/components/AddTaskForm';
+import { useAllAppointments } from '@/hooks/useAllAppointments';
+import { Appointment } from '@/hooks/useAppointments';
 
 
 const getUTCStartOfDay = (date: Date) => {
@@ -59,6 +61,20 @@ const DailyTasksV3: React.FC = () => {
     toggleAllDoToday,
     dailyProgress,
   } = useTasks({ viewMode: 'daily' });
+
+  const { appointments: allAppointments } = useAllAppointments();
+
+  const scheduledTasksMap = useMemo(() => {
+    const map = new Map<string, Appointment>();
+    if (allAppointments) {
+        allAppointments.forEach(app => {
+            if (app.task_id) {
+                map.set(app.task_id, app);
+            }
+        });
+    }
+    return map;
+  }, [allAppointments]);
 
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
@@ -192,6 +208,7 @@ const DailyTasksV3: React.FC = () => {
                   setFocusTask={setFocusTask}
                   doTodayOffIds={doTodayOffIds}
                   toggleDoToday={toggleDoToday}
+                  scheduledTasksMap={scheduledTasksMap}
                 />
               </div>
             </CardContent>

@@ -30,6 +30,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import TaskItem from './TaskItem';
 import QuickAddTask from './QuickAddTask';
+import { Appointment } from '@/hooks/useAppointments';
 
 interface TaskListProps {
   tasks: Task[];
@@ -58,6 +59,7 @@ interface TaskListProps {
   setFocusTask: (taskId: string | null) => Promise<void>;
   doTodayOffIds: Set<string>;
   toggleDoToday: (task: Task) => void;
+  scheduledTasksMap: Map<string, Appointment>;
 }
 
 const TaskList: React.FC<TaskListProps> = (props) => {
@@ -85,6 +87,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     setFocusTask,
     doTodayOffIds,
     toggleDoToday,
+    scheduledTasksMap,
   } = props;
 
   const { user } = useAuth();
@@ -321,6 +324,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                             isDoToday={!doTodayOffIds.has(task.id)}
                             toggleDoToday={toggleDoToday}
                             doTodayOffIds={doTodayOffIds}
+                            scheduledTasksMap={scheduledTasksMap}
                           />
                         ))}
                       </ul>
@@ -379,6 +383,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                     setFocusTask={setFocusTask}
                     isDoToday={!doTodayOffIds.has((activeItemData as Task).id)}
                     toggleDoToday={toggleDoToday}
+                    scheduledTasksMap={scheduledTasksMap}
                   />
                 )
               )}

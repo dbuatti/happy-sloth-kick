@@ -4,6 +4,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Task } from '@/hooks/useTasks';
 import TaskItem from './TaskItem';
 import { cn } from '@/lib/utils';
+import { Appointment } from '@/hooks/useAppointments';
 
 interface SortableTaskItemProps {
   task: Task;
@@ -22,6 +23,7 @@ interface SortableTaskItemProps {
   isDoToday: boolean;
   toggleDoToday: (task: Task) => void;
   doTodayOffIds: Set<string>;
+  scheduledTasksMap: Map<string, Appointment>;
 }
 
 const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
@@ -33,6 +35,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   isDoToday,
   toggleDoToday,
   doTodayOffIds,
+  scheduledTasksMap,
   ...rest
 }) => {
   const {
@@ -77,6 +80,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           setFocusTask={setFocusTask}
           isDoToday={isDoToday}
           toggleDoToday={toggleDoToday}
+          scheduledTasksMap={scheduledTasksMap}
         />
         {directSubtasks.length > 0 && (
           <ul className="list-none mt-1.5 space-y-1.5">
@@ -92,6 +96,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
                 isDoToday={!doTodayOffIds.has(subtask.original_task_id || subtask.id)}
                 toggleDoToday={toggleDoToday}
                 doTodayOffIds={doTodayOffIds}
+                scheduledTasksMap={scheduledTasksMap}
               />
             ))}
           </ul>

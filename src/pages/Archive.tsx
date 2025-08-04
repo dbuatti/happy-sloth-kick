@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { Archive as ArchiveIcon } from 'lucide-react';
@@ -7,7 +7,8 @@ import { useTasks, Task } from '@/hooks/useTasks';
 import TaskItem from '@/components/TaskItem';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import TaskOverviewDialog from '@/components/TaskOverviewDialog';
-// Removed useAuth as it's not directly used in this component
+import { useAllAppointments } from '@/hooks/useAllAppointments';
+import { Appointment } from '@/hooks/useAppointments';
 
 const Archive: React.FC = () => {
   const {
@@ -26,6 +27,20 @@ const Archive: React.FC = () => {
     setFocusTask,
     toggleDoToday,
   } = useTasks({ viewMode: 'archive' });
+
+  const { appointments: allAppointments } = useAllAppointments();
+
+  const scheduledTasksMap = useMemo(() => {
+    const map = new Map<string, Appointment>();
+    if (allAppointments) {
+        allAppointments.forEach(app => {
+            if (app.task_id) {
+                map.set(app.task_id, app);
+            }
+        });
+    }
+    return map;
+  }, [allAppointments]);
 
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
@@ -90,6 +105,7 @@ const Archive: React.FC = () => {
                       setFocusTask={setFocusTask}
                       isDoToday={false}
                       toggleDoToday={() => toggleDoToday(task)}
+                      scheduledTasksMap={scheduledTasksMap}
                     />
                   </li>
                 ))}

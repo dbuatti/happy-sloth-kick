@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy } from 'lucide-react';
+import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock } from 'lucide-react';
 import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
@@ -14,6 +14,7 @@ import { Input } from './ui/input';
 import { useSortable } from '@dnd-kit/sortable';
 import DoTodaySwitch from './DoTodaySwitch';
 import { showSuccess, showError } from '@/utils/toast';
+import { Appointment } from '@/hooks/useAppointments';
 
 interface TaskItemProps {
   task: Task;
@@ -30,6 +31,7 @@ interface TaskItemProps {
   setFocusTask: (taskId: string | null) => Promise<void>;
   isDoToday: boolean;
   toggleDoToday: (task: Task) => void;
+  scheduledTasksMap: Map<string, Appointment>;
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -45,6 +47,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   setFocusTask,
   isDoToday,
   toggleDoToday,
+  scheduledTasksMap,
 }) => {
   useAuth(); 
   const { playSound } = useSound();
@@ -52,6 +55,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(task.description);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const scheduledAppointment = useMemo(() => scheduledTasksMap.get(task.id), [scheduledTasksMap, task.id]);
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -196,6 +201,14 @@ const TaskItem: React.FC<TaskItemProps> = ({
           >
             {task.description}
           </span>
+        )}
+        {scheduledAppointment && (
+          <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+            <CalendarClock className="h-3 w-3" />
+            <span>
+              Scheduled: {format(parseISO(scheduledAppointment.date), 'dd/MM')} {format(parseISO(`1970-01-01T${scheduledAppointment.start_time}`), 'h:mm a')}
+            </span>
+          </div>
         )}
       </div>
 
