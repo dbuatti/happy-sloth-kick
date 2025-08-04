@@ -11,7 +11,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 const TaskCalendar: React.FC = () => {
   const {
-    tasks,
+    tasks: allTasks,
+    filteredTasks,
     loading,
     updateTask,
     deleteTask,
@@ -28,7 +29,7 @@ const TaskCalendar: React.FC = () => {
 
   const tasksByDueDate = useMemo(() => {
     const groupedTasks = new Map<string, Task[]>();
-    tasks.forEach(task => {
+    filteredTasks.forEach(task => {
       if (task.due_date) {
         const dateKey = format(startOfDay(parseISO(task.due_date)), 'yyyy-MM-dd');
         if (!groupedTasks.has(dateKey)) {
@@ -38,7 +39,7 @@ const TaskCalendar: React.FC = () => {
       }
     });
     return groupedTasks;
-  }, [tasks]);
+  }, [filteredTasks]);
 
   const daysWithTasks = useMemo(() => {
     return Array.from(tasksByDueDate.keys()).map(dateStr => parseISO(dateStr));
@@ -147,7 +148,7 @@ const TaskCalendar: React.FC = () => {
           onDelete={deleteTask}
           sections={sections}
           allCategories={allCategories}
-          allTasks={tasks}
+          allTasks={allTasks}
         />
       )}
     </div>
