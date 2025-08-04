@@ -390,10 +390,10 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
         .sort((a, b) => (a.order || 0) - (b.order || 0));
       const newOrder = siblings.length;
 
-      const newTask: Task = {
+      const newTaskForUI: Task = {
         id: newTaskClientSideId,
         user_id: userId,
-        created_at: effectiveCurrentDate.toISOString(),
+        created_at: new Date().toISOString(),
         status: newTaskData.status || 'to-do',
         recurring_type: newTaskData.recurring_type || 'none',
         category: newTaskData.category,
@@ -410,21 +410,24 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
         link: newTaskData.link || null,
       };
 
-      setTasks(prev => [...prev, newTask]);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { created_at, ...newTaskForDB } = newTaskForUI;
+
+      setTasks(prev => [...prev, newTaskForUI]);
 
       const { data, error } = await supabase
         .from('tasks')
-        .insert(cleanTaskForDb(newTask))
+        .insert(cleanTaskForDb(newTaskForDB))
         .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link')
         .single();
 
       if (error) throw error;
-      setTasks(prev => prev.map(t => t.id === newTask.id ? { ...data, category_color: allCategoriesRef.current.find(cat => cat.id === data.category)?.color || 'gray' } : t));
+      setTasks(prev => prev.map(t => t.id === newTaskForUI.id ? { ...data, category_color: allCategoriesRef.current.find(cat => cat.id === data.category)?.color || 'gray' } : t));
       showSuccess('Task added successfully!');
 
-      if (newTask.remind_at) {
-        const d = parseISO(newTask.remind_at);
-        if (isValid(d)) addReminder(newTask.id, `Reminder: ${newTask.description}`, d);
+      if (newTaskForUI.remind_at) {
+        const d = parseISO(newTaskForUI.remind_at);
+        if (isValid(d)) addReminder(newTaskForUI.id, `Reminder: ${newTaskForUI.description}`, d);
       }
       return true;
     } catch (e: any) {
@@ -434,7 +437,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     } finally {
       inFlightUpdatesRef.current.delete(newTaskClientSideId);
     }
-  }, [userId, effectiveCurrentDate, tasks, addReminder]);
+  }, [userId, tasks, addReminder]);
 
   const updateTask = useCallback(async (taskId: string, updates: TaskUpdate) => {
     console.log(`[updateTask] Called for taskId: ${taskId}`, { updates });
@@ -460,17 +463,17 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
             return;
         }
 
-        // Create a new concrete instance from the virtual task and the updates
         const newInstanceId = uuidv4();
         idToTrack = newInstanceId;
         inFlightUpdatesRef.current.add(idToTrack);
 
-        const newInstanceData: Omit<Task, 'id' | 'category_color'> = {
+        const newInstanceDataForUI: Omit<Task, 'category_color'> = {
+            id: newInstanceId,
             user_id: userId,
             description: updates.description ?? virtualTask.description,
             status: updates.status ?? 'to-do',
-            recurring_type: 'none', // This instance is now concrete
-            created_at: effectiveCurrentDate.toISOString(),
+            recurring_type: 'none',
+            created_at: new Date().toISOString(),
             category: updates.category ?? virtualTask.category,
             priority: updates.priority ?? virtualTask.priority,
             due_date: updates.due_date !== undefined ? updates.due_date : virtualTask.due_date,
@@ -482,14 +485,16 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
             parent_task_id: virtualTask.parent_task_id,
             link: updates.link !== undefined ? updates.link : virtualTask.link,
         };
-        console.log('[updateTask] New instance data prepared:', newInstanceData);
+        console.log('[updateTask] New instance data prepared for UI:', newInstanceDataForUI);
 
-        // Optimistic update: add the new instance
-        setTasks(prev => [...prev, { ...newInstanceData, id: newInstanceId, category_color: allCategoriesRef.current.find(cat => cat.id === newInstanceData.category)?.color || 'gray' }]);
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { created_at, ...newInstanceDataForDB } = newInstanceDataForUI;
+
+        setTasks(prev => [...prev, { ...newInstanceDataForUI, category_color: allCategoriesRef.current.find(cat => cat.id === newInstanceDataForUI.category)?.color || 'gray' }]);
 
         const { data, error } = await supabase
             .from('tasks')
-            .insert({ ...newInstanceData, id: newInstanceId })
+            .insert(newInstanceDataForDB)
             .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link')
             .single();
 
@@ -499,7 +504,6 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
         }
         console.log('[updateTask] DB insert successful. New task:', data);
 
-        // Replace client-side version with DB version
         setTasks(prev => prev.map(t => t.id === newInstanceId ? { ...data, category_color: allCategoriesRef.current.find(cat => cat.id === data.category)?.color || 'gray' } : t));
         showSuccess('Task updated!');
         
@@ -549,7 +553,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       console.log(`[updateTask] Finalizing update for ${idToTrack}.`);
       inFlightUpdatesRef.current.delete(idToTrack);
     }
-  }, [userId, tasks, processedTasks, effectiveCurrentDate, addReminder, dismissReminder]);
+  }, [userId, tasks, processedTasks, addReminder, dismissReminder]);
 
   const deleteTask = useCallback(async (taskId: string) => {
     if (!userId) {
@@ -865,19 +869,15 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
         const taskDueDate = task.due_date ? getUTCStartOfDay(parseISO(task.due_date)) : null;
         const taskCreatedAt = getUTCStartOfDay(parseISO(task.created_at));
 
-        // If a task was created on the day being viewed, always show it.
-        if (isSameDay(taskCreatedAt, effectiveCurrentDate)) {
-          return true;
-        }
+        const isCreatedToday = isSameDay(taskCreatedAt, effectiveCurrentDate);
         
-        // Logic for other tasks (due today, overdue, or carry-over with no due date)
         if (taskDueDate) {
           const isDueToday = isSameDay(taskDueDate, effectiveCurrentDate);
           const isOverdue = isBefore(taskDueDate, effectiveCurrentDate) && task.status === 'to-do';
-          return isDueToday || isOverdue;
+          return isCreatedToday || isDueToday || isOverdue;
         } else {
           const isCarryOver = isBefore(taskCreatedAt, effectiveCurrentDate) && task.status === 'to-do';
-          return isCarryOver;
+          return isCreatedToday || isCarryOver;
         }
       });
     }
