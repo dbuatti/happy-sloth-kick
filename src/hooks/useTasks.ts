@@ -864,17 +864,19 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     if (viewMode === 'daily') {
       filtered = filtered.filter(task => {
         const taskDueDate = task.due_date ? getUTCStartOfDay(parseISO(task.due_date)) : null;
-        const taskCreatedAt = getUTCStartOfDay(parseISO(task.created_at));
-
-        // A task is relevant for today if:
-        // 1. It's due today.
-        // 2. It's overdue and still 'to-do'.
-        // 3. It has no due date, but was created today or is a carry-over 'to-do'.
-        const isDueToday = taskDueDate && isSameDay(taskDueDate, effectiveCurrentDate);
-        const isOverdue = taskDueDate && isBefore(taskDueDate, effectiveCurrentDate) && task.status === 'to-do';
-        const isRelevantByCreation = !taskDueDate && (isSameDay(taskCreatedAt, effectiveCurrentDate) || (isBefore(taskCreatedAt, effectiveCurrentDate) && task.status === 'to-do'));
         
-        return isDueToday || isOverdue || isRelevantByCreation;
+        if (taskDueDate) {
+          // Logic for tasks WITH a due date
+          const isDueToday = isSameDay(taskDueDate, effectiveCurrentDate);
+          const isOverdue = isBefore(taskDueDate, effectiveCurrentDate) && task.status === 'to-do';
+          return isDueToday || isOverdue;
+        } else {
+          // Logic for tasks WITHOUT a due date
+          const taskCreatedAt = getUTCStartOfDay(parseISO(task.created_at));
+          const isCreatedToday = isSameDay(taskCreatedAt, effectiveCurrentDate);
+          const isCarryOver = isBefore(taskCreatedAt, effectiveCurrentDate) && task.status === 'to-do';
+          return isCreatedToday || isCarryOver;
+        }
       });
     }
 
