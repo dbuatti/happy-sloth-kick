@@ -10,7 +10,7 @@ Deno.serve(async (req) => {
 
   try {
     const { description, categories, currentDate } = await req.json();
-    console.log("Received request:", { description, categories, currentDate });
+    console.log("Suggest Details: Received request:", { description, categories, currentDate });
 
     if (!description) {
       return new Response(JSON.stringify({ error: 'Task description is required.' }), {
@@ -21,12 +21,13 @@ Deno.serve(async (req) => {
 
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) {
-      console.error("GEMINI_API_KEY not set.");
+      console.error("Suggest Details: GEMINI_API_KEY not set.");
       return new Response(JSON.stringify({ error: 'GEMINI_API_KEY not set in environment variables.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
       });
     }
+    console.log("Suggest Details: GEMINI_API_KEY loaded.");
 
     const categoryNames = categories.map((cat: { name: string }) => cat.name).join(', ');
 
@@ -121,7 +122,7 @@ Deno.serve(async (req) => {
     Your response MUST be a valid JSON object. Do NOT include any other text or markdown outside the JSON.
     Task Description: "${description}"`;
 
-    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
 
     const geminiResponse = await fetch(API_URL, {
       method: 'POST',
@@ -135,7 +136,7 @@ Deno.serve(async (req) => {
 
     if (!geminiResponse.ok) {
       const errorBody = await geminiResponse.text();
-      console.error("Gemini API request failed:", geminiResponse.status, errorBody);
+      console.error("Suggest Details: Gemini API request failed:", geminiResponse.status, errorBody);
       throw new Error(`Gemini API request failed with status ${geminiResponse.status}: ${errorBody}`);
     }
 
@@ -146,7 +147,7 @@ Deno.serve(async (req) => {
     try {
       parsedData = JSON.parse(responseText);
     } catch (e) {
-      console.error("Failed to parse Gemini response:", responseText);
+      console.error("Suggest Details: Failed to parse Gemini response:", responseText);
       throw new Error("AI response was not valid JSON.");
     }
 
@@ -183,7 +184,7 @@ Deno.serve(async (req) => {
     });
 
   } catch (error: any) {
-    console.error("Error in Edge Function (outer catch):", error);
+    console.error("Error in Edge Function 'suggest-task-details' (outer catch):", error);
     return new Response(JSON.stringify({ error: error.message || 'An unexpected error occurred in the Edge Function.' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,

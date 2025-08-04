@@ -10,7 +10,7 @@ Deno.serve(async (req) => {
 
   try {
     const { text, currentDate } = await req.json();
-    console.log("Received request:", { text, currentDate });
+    console.log("Parse Appointment: Received request:", { text, currentDate });
 
     if (!text) {
       return new Response(JSON.stringify({ error: 'Text is required.' }), {
@@ -21,12 +21,13 @@ Deno.serve(async (req) => {
 
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) {
-      console.error("GEMINI_API_KEY not set.");
+      console.error("Parse Appointment: GEMINI_API_KEY not set.");
       return new Response(JSON.stringify({ error: 'GEMINI_API_KEY not set.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
       });
     }
+    console.log("Parse Appointment: GEMINI_API_KEY loaded.");
 
     const today = new Date(currentDate);
     const tomorrow = new Date(today);
@@ -83,7 +84,7 @@ Deno.serve(async (req) => {
       "${text}"
     `;
 
-    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
 
     const geminiResponse = await fetch(API_URL, {
       method: 'POST',
@@ -97,7 +98,7 @@ Deno.serve(async (req) => {
 
     if (!geminiResponse.ok) {
       const errorBody = await geminiResponse.text();
-      console.error("Gemini API request failed:", geminiResponse.status, errorBody);
+      console.error("Parse Appointment: Gemini API request failed:", geminiResponse.status, errorBody);
       throw new Error(`Gemini API request failed with status ${geminiResponse.status}: ${errorBody}`);
     }
 
@@ -108,7 +109,7 @@ Deno.serve(async (req) => {
     try {
       parsedData = JSON.parse(responseText);
     } catch (e) {
-      console.error("Failed to parse Gemini response:", responseText);
+      console.error("Parse Appointment: Failed to parse Gemini response:", responseText);
       throw new Error("AI response was not valid JSON.");
     }
 
@@ -118,7 +119,7 @@ Deno.serve(async (req) => {
     });
 
   } catch (error: any) {
-    console.error("Error in Edge Function:", error);
+    console.error("Error in Edge Function 'parse-appointment-text':", error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
