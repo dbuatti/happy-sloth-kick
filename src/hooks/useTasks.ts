@@ -873,20 +873,10 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
 
     if (viewMode === 'daily') {
       filtered = filtered.filter(task => {
-        const taskDueDate = task.due_date ? getUTCStartOfDay(parseISO(task.due_date)) : null;
         const taskCreatedAt = getUTCStartOfDay(parseISO(task.created_at));
-
         const isCreatedOnThisDay = isSameDay(taskCreatedAt, effectiveCurrentDate);
-        
-        if (taskDueDate) {
-          const isDueOnThisDay = isSameDay(taskDueDate, effectiveCurrentDate);
-          const isOverdue = isBefore(taskDueDate, effectiveCurrentDate) && task.status === 'to-do';
-          return isCreatedOnThisDay || isDueOnThisDay || isOverdue;
-        } else {
-          // No due date
-          const isCarryOver = isBefore(taskCreatedAt, effectiveCurrentDate) && task.status === 'to-do';
-          return isCreatedOnThisDay || isCarryOver;
-        }
+        const isCarryOver = isBefore(taskCreatedAt, effectiveCurrentDate) && task.status === 'to-do';
+        return isCreatedOnThisDay || isCarryOver;
       });
     }
 
