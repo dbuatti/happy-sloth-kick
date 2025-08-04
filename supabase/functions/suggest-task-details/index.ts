@@ -1,6 +1,3 @@
-// @ts-ignore
-import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.15.0";
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -13,6 +10,7 @@ Deno.serve(async (req) => {
 
   try {
     const { description, categories, currentDate } = await req.json();
+    console.log("Received request:", { description, categories, currentDate });
 
     if (!description) {
       return new Response(JSON.stringify({ error: 'Task description is required.' }), {
@@ -23,14 +21,12 @@ Deno.serve(async (req) => {
 
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) {
+      console.error("GEMINI_API_KEY not set.");
       return new Response(JSON.stringify({ error: 'GEMINI_API_KEY not set in environment variables.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
       });
     }
-
-    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
     const categoryNames = categories.map((cat: { name: string }) => cat.name).join(', ');
 
@@ -125,37 +121,35 @@ Deno.serve(async (req) => {
     Your response MUST be a valid JSON object. Do NOT include any other text or markdown outside the JSON.
     Task Description: "${description}"`;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
 
-    console.log("Raw AI response text:", text); // Log the raw response
+    const geminiResponse = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+      }),
+    });
 
-    let jsonString = text.trim();
-    // Attempt to extract JSON from potential markdown code blocks
-    const jsonMatch = jsonString.match(/```json\n([\s\S]*?)\n```/);
-    if (jsonMatch && jsonMatch[1]) {
-      jsonString = jsonMatch[1].trim();
-    } else {
-      // Fallback for cases where it might just be the JSON without markdown fences
-      // Or if the markdown fence is different (e.g., ```json without newline)
-      // For now, if it doesn't match the specific ```json\n...\n```, we assume it's just the JSON.
+    if (!geminiResponse.ok) {
+      const errorBody = await geminiResponse.text();
+      console.error("Gemini API request failed:", geminiResponse.status, errorBody);
+      throw new Error(`Gemini API request failed with status ${geminiResponse.status}: ${errorBody}`);
     }
 
+    const geminiData = await geminiResponse.json();
+    const responseText = geminiData.candidates[0].content.parts[0].text;
+    
     let parsedData;
     try {
-      parsedData = JSON.parse(jsonString);
-    } catch (parseError) {
-      console.error("Failed to parse AI response as JSON:", parseError);
-      console.error("Problematic JSON string:", jsonString);
-      // If parsing fails, return a 500 with a more specific error message
-      return new Response(JSON.stringify({ error: 'AI response could not be parsed as JSON. Please try again or rephrase your input.' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      });
+      parsedData = JSON.parse(responseText);
+    } catch (e) {
+      console.error("Failed to parse Gemini response:", responseText);
+      throw new Error("AI response was not valid JSON.");
     }
 
-    // Ensure dates are correctly formatted or null
     const parseDateString = (dateStr: string | null) => {
       if (!dateStr) return null;
       try {
@@ -169,7 +163,6 @@ Deno.serve(async (req) => {
     const finalDueDate = parsedData.dueDate ? parseDateString(parsedData.dueDate) : null;
     const finalRemindAt = parsedData.remindAt ? parseDateString(parsedData.remindAt) : null;
 
-    // Map category name back to ID
     const matchedCategory = categories.find((cat: { name: string }) => cat.name.toLowerCase() === parsedData.category.toLowerCase());
     const finalCategory = matchedCategory ? matchedCategory.id : categories.find((cat: { name: string }) => cat.name.toLowerCase() === 'general')?.id || categories[0]?.id;
 
@@ -181,7 +174,7 @@ Deno.serve(async (req) => {
       section: parsedData.section || null,
       cleanedDescription: parsedData.cleanedDescription || description,
       link: parsedData.link || null,
-      notes: parsedData.notes || null, // Ensure notes is included
+      notes: parsedData.notes || null,
     };
 
     return new Response(JSON.stringify(responseData), {
@@ -197,3 +190,5 @@ Deno.serve(async (req) => {
     });
   }
 });
+
+export {};

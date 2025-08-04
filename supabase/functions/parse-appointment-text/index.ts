@@ -1,6 +1,3 @@
-// @ts-ignore
-import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.15.0";
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -13,6 +10,7 @@ Deno.serve(async (req) => {
 
   try {
     const { text, currentDate } = await req.json();
+    console.log("Received request:", { text, currentDate });
 
     if (!text) {
       return new Response(JSON.stringify({ error: 'Text is required.' }), {
@@ -23,14 +21,12 @@ Deno.serve(async (req) => {
 
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) {
+      console.error("GEMINI_API_KEY not set.");
       return new Response(JSON.stringify({ error: 'GEMINI_API_KEY not set.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
       });
     }
-
-    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
     const today = new Date(currentDate);
     const tomorrow = new Date(today);
@@ -87,10 +83,27 @@ Deno.serve(async (req) => {
       "${text}"
     `;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const responseText = response.text();
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
 
+    const geminiResponse = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+      }),
+    });
+
+    if (!geminiResponse.ok) {
+      const errorBody = await geminiResponse.text();
+      console.error("Gemini API request failed:", geminiResponse.status, errorBody);
+      throw new Error(`Gemini API request failed with status ${geminiResponse.status}: ${errorBody}`);
+    }
+
+    const geminiData = await geminiResponse.json();
+    const responseText = geminiData.candidates[0].content.parts[0].text;
+    
     let parsedData;
     try {
       parsedData = JSON.parse(responseText);
@@ -112,3 +125,5 @@ Deno.serve(async (req) => {
     });
   }
 });
+
+export {};
