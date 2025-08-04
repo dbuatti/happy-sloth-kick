@@ -42,7 +42,9 @@ const TagInput: React.FC<TagInputProps> = ({ allTags, selectedTags, setSelectedT
   const handleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      await handleCreateTag();
+      if (canCreate) {
+        await handleCreateTag();
+      }
     }
   };
 
@@ -84,20 +86,24 @@ const TagInput: React.FC<TagInputProps> = ({ allTags, selectedTags, setSelectedT
         <Command>
           <CommandInput placeholder="Search or create tag..." className="h-9" />
           <CommandList>
-            <CommandEmpty>No tags found.</CommandEmpty>
-            <CommandGroup>
-              {canCreate && (
-                <CommandItem
-                  onSelect={handleCreateTag}
-                  className="cursor-pointer"
+            <CommandEmpty>
+              {canCreate ? (
+                <div
+                  className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none"
+                  onClick={handleCreateTag}
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   Create "{inputValue.trim()}"
-                </CommandItem>
+                </div>
+              ) : (
+                "No tags found."
               )}
+            </CommandEmpty>
+            <CommandGroup>
               {filteredTags.map((tag) => (
                 <CommandItem
                   key={tag.id}
+                  value={tag.name}
                   onSelect={() => handleSelectTag(tag)}
                 >
                   <Tag className="mr-2 h-4 w-4" style={{ color: tag.color }} />

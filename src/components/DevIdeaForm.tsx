@@ -153,13 +153,6 @@ const DevIdeaForm: React.FC<DevIdeaFormProps> = ({ isOpen, onClose, onSave, init
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit();
-    }
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent 
@@ -200,15 +193,15 @@ const DevIdeaForm: React.FC<DevIdeaFormProps> = ({ isOpen, onClose, onSave, init
 
           <div className="space-y-2">
             <Label htmlFor="title">Title</Label>
-            <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} disabled={isSaving} autoFocus onKeyDown={handleKeyDown} />
+            <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} disabled={isSaving} autoFocus />
           </div>
           <div className="space-y-2">
             <Label htmlFor="description">Description (Optional)</Label>
-            <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} disabled={isSaving} onKeyDown={handleKeyDown} />
+            <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} disabled={isSaving} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="local-file-path">Local File Path (Optional)</Label>
-            <Input id="local-file-path" value={localFilePath} onChange={(e) => setLocalFilePath(e.target.value)} placeholder="/Users/yourname/path/to/file" disabled={isSaving} onKeyDown={handleKeyDown} />
+            <Input id="local-file-path" value={localFilePath} onChange={(e) => setLocalFilePath(e.target.value)} placeholder="/Users/yourname/path/to/file" disabled={isSaving} />
           </div>
           <div className="space-y-2">
             <Label>Tags</Label>
