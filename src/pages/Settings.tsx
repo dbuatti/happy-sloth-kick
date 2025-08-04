@@ -10,7 +10,8 @@ import WorkHoursSettings from '@/components/WorkHoursSettings';
 import ProjectTrackerSettings from '@/components/ProjectTrackerSettings';
 import { useTheme } from 'next-themes';
 import TaskSettings from '@/components/TaskSettings';
-import PageToggleSettings from '@/components/PageToggleSettings'; // Import the new component
+import PageToggleSettings from '@/components/PageToggleSettings';
+import ScheduleSettings from '@/components/ScheduleSettings';
 
 const Settings: React.FC = () => {
   const { user } = useAuth();
@@ -183,6 +184,7 @@ const Settings: React.FC = () => {
 
             <PageToggleSettings />
             <TaskSettings />
+            <ScheduleSettings />
             <WorkHoursSettings />
             <ProjectTrackerSettings />
 

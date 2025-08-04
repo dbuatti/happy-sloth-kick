@@ -9,6 +9,7 @@ export interface UserSettings {
   focused_task_id: string | null;
   hide_future_tasks: boolean;
   visible_pages?: Record<string, boolean>;
+  schedule_show_focus_tasks_only: boolean;
 }
 
 const defaultSettings: Omit<UserSettings, 'user_id'> = {
@@ -16,6 +17,7 @@ const defaultSettings: Omit<UserSettings, 'user_id'> = {
   focused_task_id: null,
   hide_future_tasks: false,
   visible_pages: {},
+  schedule_show_focus_tasks_only: true,
 };
 
 export const useUserSettings = () => {
@@ -43,7 +45,10 @@ export const useUserSettings = () => {
       }
 
       if (data) {
-        setSettings(data);
+        setSettings({
+          ...defaultSettings,
+          ...data,
+        });
       } else {
         // No settings found, create default ones
         const { data: newData, error: insertError } = await supabase
@@ -59,7 +64,7 @@ export const useUserSettings = () => {
               .eq('user_id', userId)
               .single();
             if (refetchError) throw refetchError;
-            setSettings(refetchedSettings);
+            setSettings({ ...defaultSettings, ...refetchedSettings });
           } else {
             throw insertError;
           }

@@ -21,6 +21,7 @@ import { parseAppointmentText } from '@/integrations/supabase/api';
 import { showLoading, dismissToast, showError, showSuccess } from '@/utils/toast';
 import TaskOverviewDialog from '@/components/TaskOverviewDialog';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
+import { useSettings } from '@/context/SettingsContext';
 
 const TimeBlockSchedule: React.FC = () => {
   useAuth(); 
@@ -42,6 +43,7 @@ const TimeBlockSchedule: React.FC = () => {
     deleteSection,
     updateSectionIncludeInFocusMode
   } = useTasks({ currentDate });
+  const { settings } = useSettings();
 
   const [isAppointmentFormOpen, setIsAppointmentFormOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
@@ -213,8 +215,18 @@ const TimeBlockSchedule: React.FC = () => {
     const scheduledTaskIds = new Set(
       appointments.map(app => app.task_id).filter(Boolean)
     );
-    return allDayTasks.filter(task => !scheduledTaskIds.has(task.id) && task.status === 'to-do');
-  }, [appointments, allDayTasks]);
+    
+    let tasksToDisplay = allDayTasks.filter(task => !scheduledTaskIds.has(task.id) && task.status === 'to-do');
+
+    if (settings?.schedule_show_focus_tasks_only) {
+      const focusModeSectionIds = new Set(sections.filter(s => s.include_in_focus_mode).map(s => s.id));
+      tasksToDisplay = tasksToDisplay.filter(task => {
+        return task.section_id === null || focusModeSectionIds.has(task.section_id);
+      });
+    }
+
+    return tasksToDisplay;
+  }, [appointments, allDayTasks, settings?.schedule_show_focus_tasks_only, sections]);
 
   const handleScheduleTask = async (taskId: string, blockStart: Date) => {
     const task = allDayTasks.find(t => t.id === taskId);
