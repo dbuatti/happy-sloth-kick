@@ -24,7 +24,7 @@ interface TaskDetailDialogProps {
   task: Task | null;
   isOpen: boolean;
   onClose: () => void;
-  onUpdate: (taskId: string, updates: Partial<Task>) => Promise<void>;
+  onUpdate: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   onDelete: (taskId: string) => void;
   sections: TaskSection[]; // Passed as prop
   allCategories: Category[]; // Passed as prop

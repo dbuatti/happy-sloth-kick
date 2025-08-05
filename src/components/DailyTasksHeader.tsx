@@ -35,7 +35,7 @@ interface DailyTasksHeaderProps {
   sectionFilter: string;
   setSectionFilter: (value: string) => void;
   nextAvailableTask: Task | null;
-  updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
+  updateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   onOpenOverview: (task: Task) => void;
   createSection: (name: string) => Promise<void>;
   updateSection: (sectionId: string, newName: string) => Promise<void>;

@@ -8,9 +8,9 @@ import { Appointment } from '@/hooks/useAppointments';
 
 interface SortableTaskItemProps {
   task: Task;
-  onStatusChange: (taskId: string, newStatus: Task['status']) => Promise<void>;
+  onStatusChange: (taskId: string, newStatus: Task['status']) => Promise<string | null>;
   onDelete: (taskId: string) => void;
-  onUpdate: (taskId: string, updates: Partial<Task>) => void;
+  onUpdate: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   sections: { id: string; name: string }[];
   onOpenOverview: (task: Task) => void;
   currentDate: Date;

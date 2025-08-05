@@ -8,6 +8,9 @@ export interface UserSettings {
   project_tracker_title: string;
   focused_task_id: string | null;
   hide_future_tasks: boolean;
+  support_link: string | null;
+  meditation_notes: string | null;
+  dashboard_layout: any | null; // jsonb can be any
   visible_pages?: Record<string, boolean>;
   schedule_show_focus_tasks_only: boolean;
 }
@@ -16,6 +19,9 @@ const defaultSettings: Omit<UserSettings, 'user_id'> = {
   project_tracker_title: 'Project Balance Tracker',
   focused_task_id: null,
   hide_future_tasks: false,
+  support_link: null,
+  meditation_notes: null,
+  dashboard_layout: null,
   visible_pages: {},
   schedule_show_focus_tasks_only: true,
 };

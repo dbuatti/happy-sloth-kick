@@ -17,7 +17,7 @@ interface FocusToolsPanelProps {
   nextAvailableTask: Task | null;
   tasks: Task[];
   filteredTasks: Task[];
-  updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
+  updateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   onOpenDetail: (task: Task) => void;
   onDeleteTask: (taskId: string) => void;
   sections: TaskSection[];

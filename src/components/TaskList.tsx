@@ -37,7 +37,7 @@ interface TaskListProps {
   filteredTasks: Task[];
   loading: boolean;
   handleAddTask: (taskData: any) => Promise<any>;
-  updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
+  updateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   deleteTask: (taskId: string) => void;
   bulkUpdateTasks: (updates: Partial<Task>, ids: string[]) => Promise<void>;
   markAllTasksInSectionCompleted: (sectionId: string | null) => Promise<void>;
@@ -371,9 +371,9 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                 ) : (
                   <TaskItem
                     task={activeItemData as Task}
-                    onStatusChange={async () => {}}
+                    onStatusChange={async () => null}
                     onDelete={() => {}}
-                    onUpdate={() => {}}
+                    onUpdate={async () => null}
                     sections={sections}
                     onOpenOverview={() => {}}
                     currentDate={currentDate}

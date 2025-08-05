@@ -18,9 +18,9 @@ import { Appointment } from '@/hooks/useAppointments';
 
 interface TaskItemProps {
   task: Task;
-  onStatusChange: (taskId: string, newStatus: Task['status']) => Promise<void>;
+  onStatusChange: (taskId: string, newStatus: Task['status']) => Promise<string | null>;
   onDelete: (taskId: string) => void;
-  onUpdate: (taskId: string, updates: Partial<Task>) => void;
+  onUpdate: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   sections: { id: string; name: string }[];
   onOpenOverview: (task: Task) => void;
   currentDate: Date;
@@ -71,9 +71,9 @@ const TaskItem: React.FC<TaskItemProps> = ({
     setIsEditing(true);
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (editText.trim() && editText.trim() !== task.description) {
-      onUpdate(task.id, { description: editText.trim() });
+      await onUpdate(task.id, { description: editText.trim() });
     }
     setIsEditing(false);
   };
@@ -83,9 +83,9 @@ const TaskItem: React.FC<TaskItemProps> = ({
     setIsEditing(false);
   };
 
-  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleInputKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      handleSaveEdit();
+      await handleSaveEdit();
     } else if (e.key === 'Escape') {
       handleCancelEdit();
     }
@@ -317,22 +317,22 @@ const TaskItem: React.FC<TaskItemProps> = ({
               <Target className="mr-2 h-4 w-4" /> Set as Focus
             </DropdownMenuItem>
             {task.status === 'archived' && (
-              <DropdownMenuItem onSelect={() => { onStatusChange(task.id, 'to-do'); playSound('success'); }}>
+              <DropdownMenuItem onSelect={async () => { await onStatusChange(task.id, 'to-do'); playSound('success'); }}>
                 <Undo2 className="mr-2 h-4 w-4" /> Restore
               </DropdownMenuItem>
             )}
             {task.status !== 'archived' && (
               <>
-                <DropdownMenuItem onSelect={() => { onStatusChange(task.id, 'to-do'); playSound('success'); }}>
+                <DropdownMenuItem onSelect={async () => { await onStatusChange(task.id, 'to-do'); playSound('success'); }}>
                   Mark as To-Do
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => { onStatusChange(task.id, 'completed'); playSound('success'); }}>
+                <DropdownMenuItem onSelect={async () => { await onStatusChange(task.id, 'completed'); playSound('success'); }}>
                   Mark as Completed
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => { onStatusChange(task.id, 'skipped'); playSound('success'); }}>
+                <DropdownMenuItem onSelect={async () => { await onStatusChange(task.id, 'skipped'); playSound('success'); }}>
                   Mark as Skipped
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => { onStatusChange(task.id, 'archived'); playSound('success'); }}>
+                <DropdownMenuItem onSelect={async () => { await onStatusChange(task.id, 'archived'); playSound('success'); }}>
                   <Archive className="mr-2 h-4 w-4" /> Archive
                 </DropdownMenuItem>
               </>
@@ -348,8 +348,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
                 ) : (
                   <>
                     <DropdownMenuItem
-                      onSelect={() => {
-                        onUpdate(task.id, { section_id: null });
+                      onSelect={async () => {
+                        await onUpdate(task.id, { section_id: null });
                         playSound('success');
                       }}
                       disabled={task.section_id === null}
@@ -359,8 +359,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
                     {sections.map(section => (
                       <DropdownMenuItem
                         key={section.id}
-                        onSelect={() => {
-                          onUpdate(task.id, { section_id: section.id });
+                        onSelect={async () => {
+                          await onUpdate(task.id, { section_id: section.id });
                           playSound('success');
                         }}
                         disabled={task.section_id === section.id}

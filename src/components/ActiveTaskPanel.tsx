@@ -13,7 +13,7 @@ interface ActiveTaskPanelProps {
   nextAvailableTask: Task | null;
   tasks: Task[];
   filteredTasks: Task[];
-  updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
+  updateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   onDeleteTask: (taskId: string) => void;
   sections: TaskSection[];
   allCategories: Category[];

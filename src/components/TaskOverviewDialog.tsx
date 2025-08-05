@@ -24,7 +24,7 @@ interface TaskOverviewDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onEditClick: (task: Task) => void; // To open the full edit dialog
-  onUpdate: (taskId: string, updates: Partial<Task>) => Promise<void>;
+  onUpdate: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   onDelete: (taskId: string) => void;
   sections: TaskSection[];
   allCategories: Category[]; // This prop is no longer used directly in this component
