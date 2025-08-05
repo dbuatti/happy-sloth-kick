@@ -14,6 +14,7 @@ interface AddTaskFormProps {
     section_id: string | null;
     recurring_type: 'none' | 'daily' | 'weekly' | 'monthly';
     parent_task_id: string | null;
+    link: string | null;
   }) => Promise<any>;
   onTaskAdded?: () => void; // Callback for when task is successfully added
   sections: TaskSection[];
