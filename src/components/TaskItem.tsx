@@ -18,6 +18,7 @@ import { Appointment } from '@/hooks/useAppointments';
 
 interface TaskItemProps {
   task: Task;
+  allTasks: Task[];
   onStatusChange: (taskId: string, newStatus: Task['status']) => Promise<string | null>;
   onDelete: (taskId: string) => void;
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
@@ -36,6 +37,7 @@ interface TaskItemProps {
 
 const TaskItem: React.FC<TaskItemProps> = ({
   task,
+  allTasks,
   onStatusChange,
   onDelete,
   onUpdate,
@@ -57,6 +59,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const scheduledAppointment = useMemo(() => scheduledTasksMap.get(task.id), [scheduledTasksMap, task.id]);
+
+  const originalTask = useMemo(() => {
+    if (!task.original_task_id) return null;
+    return allTasks.find(t => t.id === task.original_task_id);
+  }, [allTasks, task.original_task_id]);
+
+  const recurringType = originalTask ? originalTask.recurring_type : task.recurring_type;
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -213,7 +222,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
       </div>
 
       <div className="flex-shrink-0 flex items-center space-x-2" data-no-dnd="true">
-        {task.recurring_type !== 'none' && (
+        {recurringType !== 'none' && (
           <Tooltip>
             <TooltipTrigger asChild>
               <span className="inline-flex items-center flex-shrink-0">
@@ -221,7 +230,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
               </span>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Recurring: {task.recurring_type.charAt(0).toUpperCase() + task.recurring_type.slice(1)}</p>
+              <p>Recurring: {recurringType.charAt(0).toUpperCase() + recurringType.slice(1)}</p>
             </TooltipContent>
           </Tooltip>
         )}
@@ -289,7 +298,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
       )}
 
       <div className="flex-shrink-0 flex items-center space-x-1" data-no-dnd="true">
-        {task.recurring_type === 'none' && !task.original_task_id && (
+        {recurringType === 'none' && (
           <DoTodaySwitch
             isOn={isDoToday}
             onToggle={() => toggleDoToday(task)}

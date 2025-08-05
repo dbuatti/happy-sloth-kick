@@ -371,6 +371,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                 ) : (
                   <TaskItem
                     task={activeItemData as Task}
+                    allTasks={tasks}
                     onStatusChange={async () => null}
                     onDelete={() => {}}
                     onUpdate={async () => null}

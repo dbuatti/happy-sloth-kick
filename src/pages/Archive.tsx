@@ -94,6 +94,7 @@ const Archive: React.FC = () => {
                   <li key={task.id} className="relative rounded-xl p-2 transition-all duration-200 ease-in-out group hover:shadow-md">
                     <TaskItem
                       task={task}
+                      allTasks={allTasks}
                       onStatusChange={handleTaskStatusChange}
                       onDelete={deleteTask}
                       onUpdate={updateTask}

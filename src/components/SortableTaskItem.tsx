@@ -74,6 +74,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
       <div className="flex-1"> {/* This div now contains the TaskItem and subtasks */}
         <TaskItem
           task={task}
+          allTasks={allTasks}
           {...rest}
           isOverlay={isOverlay}
           dragListeners={listeners}

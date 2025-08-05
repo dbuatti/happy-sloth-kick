@@ -130,6 +130,7 @@ const TaskCalendar: React.FC = () => {
                     <li key={task.id}>
                       <TaskItem
                         task={task}
+                        allTasks={allTasks}
                         onStatusChange={(taskId, newStatus) => updateTask(taskId, { status: newStatus })}
                         onDelete={deleteTask}
                         onUpdate={updateTask}
