@@ -98,7 +98,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
   const [sectionFilter, setSectionFilter] = useState('all');
 
   const [internalCurrentDate, setInternalCurrentDate] = useState(() => getUTCStartOfDay(new Date()));
-  const effectiveCurrentDate = viewMode === 'daily' ? internalCurrentDate : (propCurrentDate || new Date());
+  const effectiveCurrentDate = viewMode === 'daily' ? internalCurrentDate : (propCurrentDate || internalCurrentDate);
 
   const categoriesMap = useMemo(() => {
     const map = new Map<string, string>();
