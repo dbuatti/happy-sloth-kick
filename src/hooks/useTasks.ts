@@ -954,13 +954,13 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
   const nextAvailableTask = useMemo(() => {
     const focusedTaskId = userSettings?.focused_task_id;
     if (focusedTaskId) {
-      const focusedTask = finalFilteredTasks.find(t => t.id === focusedTaskId);
+      const focusedTask = processedTasks.find(t => t.id === focusedTaskId);
       if (focusedTask && focusedTask.status === 'to-do' && (focusedTask.recurring_type !== 'none' || !doTodayOffIds.has(focusedTask.original_task_id || focusedTask.id))) {
         return focusedTask;
       }
     }
 
-    const relevantTasks = finalFilteredTasks.filter(task =>
+    const relevantTasks = processedTasks.filter(task =>
       task.status === 'to-do' &&
       task.parent_task_id === null &&
       (task.recurring_type !== 'none' || !doTodayOffIds.has(task.original_task_id || task.id))
@@ -992,7 +992,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     }
 
     return null;
-  }, [finalFilteredTasks, sections, userSettings?.focused_task_id, doTodayOffIds]);
+  }, [processedTasks, sections, userSettings?.focused_task_id, doTodayOffIds]);
 
   const toggleDoToday = useCallback(async (task: Task) => {
     if (!userId) return;
