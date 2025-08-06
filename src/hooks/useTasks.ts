@@ -767,7 +767,9 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
 
     setSections(newOrderedSections);
 
-    inFlightUpdatesRef.current.add(activeId);
+    const updatedIds = updates.map(s => s.id);
+    updatedIds.forEach(id => inFlightUpdatesRef.current.add(id));
+
     try {
       const { error } = await supabase.from('task_sections').upsert(updates, { onConflict: 'id' });
       if (error) throw error;
@@ -777,7 +779,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       console.error('useTasks: Error reordering sections:', e.message);
       setSections(sections);
     } finally {
-      inFlightUpdatesRef.current.delete(activeId);
+      updatedIds.forEach(id => inFlightUpdatesRef.current.delete(id));
     }
   }, [userId, sections]);
 
@@ -786,14 +788,14 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       showError('User not authenticated.');
       return;
     }
-    inFlightUpdatesRef.current.add(activeId);
+    
     const originalTasks = [...tasks];
     const activeTask = tasks.find(t => t.id === activeId);
     if (!activeTask) {
-      inFlightUpdatesRef.current.delete(activeId);
       return;
     }
 
+    // Optimistic UI update
     let tempTasks = tasks.map(t => ({ ...t }));
     const activeTaskIndex = tempTasks.findIndex(t => t.id === activeId);
     const [movedTask] = tempTasks.splice(activeTaskIndex, 1);
@@ -840,6 +842,10 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       });
     });
 
+    // Add all IDs being updated to the in-flight ref
+    const updatedIds = updatesForDb.map(t => t.id);
+    updatedIds.forEach(id => inFlightUpdatesRef.current.add(id));
+
     setTasks(tempTasks);
 
     try {
@@ -852,7 +858,8 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       showError('Failed to move task.');
       setTasks(originalTasks);
     } finally {
-      inFlightUpdatesRef.current.delete(activeId);
+      // Remove all updated IDs from the in-flight ref
+      updatedIds.forEach(id => inFlightUpdatesRef.current.delete(id));
     }
   }, [userId, tasks]);
 
