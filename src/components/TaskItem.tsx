@@ -75,8 +75,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
   }, [isEditing]);
 
   const handleStartEdit = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent onOpenOverview from firing
     if (isOverlay) return;
-    e.stopPropagation();
     setIsEditing(true);
   };
 
@@ -172,8 +172,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
         getPriorityBorderColor(task.priority)
       )}
     >
-      {/* Drag Handle Area */}
-      <div className="flex-shrink-0 flex items-center px-3 cursor-grab" {...dragListeners}>
+      {/* Checkbox Area (NOT draggable) */}
+      <div className="flex-shrink-0 flex items-center px-3" data-no-dnd="true">
         <Checkbox
           key={`${task.id}-${task.status}`}
           checked={task.status === 'completed'}
@@ -186,14 +186,15 @@ const TaskItem: React.FC<TaskItemProps> = ({
         />
       </div>
 
-      {/* Clickable Content Area */}
+      {/* Clickable and Draggable Content Area */}
       <div 
-        className="flex-grow flex items-center space-x-2 py-3 cursor-pointer"
+        className="flex-grow flex items-center space-x-2 py-3 cursor-grab min-w-0"
         onClick={() => !isOverlay && !isEditing && onOpenOverview(task)}
+        {...dragListeners}
       >
         <div className={cn("w-3 h-3 rounded-full flex-shrink-0", getPriorityDotColor(task.priority))} />
         
-        <div className="flex-grow" onClick={handleStartEdit} data-no-dnd="true">
+        <div className="flex-grow min-w-0" onClick={handleStartEdit} data-no-dnd="true">
           {isEditing ? (
             <Input
               ref={inputRef}
@@ -205,23 +206,25 @@ const TaskItem: React.FC<TaskItemProps> = ({
               onClick={(e) => e.stopPropagation()}
             />
           ) : (
-            <span
-              className={cn(
-                "text-lg leading-tight line-clamp-2",
-                task.status === 'completed' ? 'line-through' : 'font-medium',
-                "block cursor-text"
-              )}
-            >
-              {task.description}
-            </span>
-          )}
-          {scheduledAppointment && (
-            <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-              <CalendarClock className="h-3 w-3" />
-              <span>
-                Scheduled: {format(parseISO(scheduledAppointment.date), 'dd/MM')} {format(parseISO(`1970-01-01T${scheduledAppointment.start_time}`), 'h:mm a')}
+            <>
+              <span
+                className={cn(
+                  "text-lg leading-tight line-clamp-2",
+                  task.status === 'completed' ? 'line-through' : 'font-medium',
+                  "block cursor-text"
+                )}
+              >
+                {task.description}
               </span>
-            </div>
+              {scheduledAppointment && (
+                <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                  <CalendarClock className="h-3 w-3" />
+                  <span>
+                    Scheduled: {format(parseISO(scheduledAppointment.date), 'dd/MM')} {format(parseISO(`1970-01-01T${scheduledAppointment.start_time}`), 'h:mm a')}
+                  </span>
+                </div>
+              )}
+            </>
           )}
         </div>
 
