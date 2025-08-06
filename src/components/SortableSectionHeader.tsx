@@ -97,17 +97,19 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "relative flex items-center py-2 pr-3 cursor-grab",
         "group",
         isDragging && !isOverlay ? "" : "rounded-xl",
         isOverlay ? "shadow-xl ring-2 ring-primary bg-card" : "",
       )}
       {...(attributes || {})}
-      {...(listeners || {})}
     >
-      <div className="flex-1 flex items-center justify-between">
+      <div 
+        className="relative flex items-center py-2 pr-3 cursor-pointer"
+        onClick={!isOverlay && !isEditingLocal ? () => toggleSection(section.id) : undefined}
+      >
         <div 
-          className="flex items-center flex-1 min-w-0"
+          className="flex items-center flex-1 min-w-0 cursor-grab"
+          {...(listeners || {})}
         >
           {isEditingLocal ? (
             <div data-no-dnd="true" className="flex-1">
@@ -147,11 +149,6 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               </div>
             </>
           )}
-          <div
-            className="flex-1 h-full min-h-[28px]"
-            onClick={!isOverlay && !isEditingLocal ? () => toggleSection(section.id) : undefined}
-            data-no-dnd="true"
-          ></div>
         </div>
         <div className="flex items-center space-x-1" data-no-dnd="true">
           {!isOverlay && (

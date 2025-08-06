@@ -164,140 +164,145 @@ const TaskItem: React.FC<TaskItemProps> = ({
   return (
     <div
       className={cn(
-        "relative flex items-center space-x-2 w-full p-3 cursor-grab",
+        "relative flex items-center w-full",
         task.status === 'completed' ? "text-muted-foreground bg-task-completed-bg" : "text-foreground",
         !isDoToday && task.recurring_type === 'none' && "opacity-40",
         "group",
         "border-l-4",
         getPriorityBorderColor(task.priority)
       )}
-      onClick={() => !isOverlay && !isEditing && onOpenOverview(task)}
-      {...dragListeners}
     >
-      <div data-no-dnd="true">
-        <Checkbox
-          key={`${task.id}-${task.status}`}
-          checked={task.status === 'completed'}
-          onCheckedChange={handleCheckboxChange}
-          id={`task-${task.id}`}
-          onClick={(e) => e.stopPropagation()}
-          className="flex-shrink-0 h-5 w-5 checkbox-root"
-          aria-label={`Mark task "${task.description}" as ${task.status === 'completed' ? 'to-do' : 'completed'}`}
-          disabled={isOverlay}
-        />
-      </div>
-
-      <div className={cn("w-3 h-3 rounded-full flex-shrink-0", getPriorityDotColor(task.priority))} />
-      
-      <div className="flex-grow" onClick={handleStartEdit} data-no-dnd={isEditing ? "true" : "false"}>
-        {isEditing ? (
-          <Input
-            ref={inputRef}
-            value={editText}
-            onChange={(e) => setEditText(e.target.value)}
-            onBlur={handleSaveEdit}
-            onKeyDown={handleInputKeyDown}
-            className="h-auto text-lg font-medium leading-tight p-0 border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full"
+      {/* Drag Handle Area */}
+      <div 
+        className="flex-shrink-0 flex items-center px-3 cursor-grab"
+        {...dragListeners}
+      >
+        <div data-no-dnd="true">
+          <Checkbox
+            key={`${task.id}-${task.status}`}
+            checked={task.status === 'completed'}
+            onCheckedChange={handleCheckboxChange}
+            id={`task-${task.id}`}
             onClick={(e) => e.stopPropagation()}
+            className="flex-shrink-0 h-5 w-5 checkbox-root"
+            aria-label={`Mark task "${task.description}" as ${task.status === 'completed' ? 'to-do' : 'completed'}`}
+            disabled={isOverlay}
           />
-        ) : (
-          <span
-            className={cn(
-              "text-lg leading-tight line-clamp-2",
-              task.status === 'completed' ? 'line-through' : 'font-medium',
-              "block cursor-text"
-            )}
-          >
-            {task.description}
-          </span>
-        )}
-        {scheduledAppointment && (
-          <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-            <CalendarClock className="h-3 w-3" />
-            <span>
-              Scheduled: {format(parseISO(scheduledAppointment.date), 'dd/MM')} {format(parseISO(`1970-01-01T${scheduledAppointment.start_time}`), 'h:mm a')}
-            </span>
-          </div>
-        )}
-      </div>
-
-      <div className="flex-shrink-0 flex items-center space-x-2" data-no-dnd="true">
-        {recurringType !== 'none' && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="inline-flex items-center flex-shrink-0">
-                <Repeat className="h-4 w-4 text-muted-foreground" />
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Recurring: {recurringType.charAt(0).toUpperCase() + recurringType.slice(1)}</p>
-            </TooltipContent>
-          </Tooltip>
-        )}
-
-        {task.link && (
-          isUrl(task.link) ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <a
-                  href={task.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center flex-shrink-0 text-muted-foreground hover:text-primary"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <LinkIcon className="h-4 w-4" />
-                </a>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Open link: {task.link}</p>
-              </TooltipContent>
-            </Tooltip>
-          ) : (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 flex-shrink-0 text-muted-foreground hover:text-primary"
-                  onClick={(e) => handleCopyPath(e, task.link!)}
-                >
-                  <ClipboardCopy className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Copy path: {task.link}</p>
-              </TooltipContent>
-            </Tooltip>
-          )
-        )}
-
-        {task.due_date && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className={cn(
-                "inline-flex items-center flex-shrink-0 text-xs font-medium px-1 py-0.5 rounded-sm",
-                "text-muted-foreground",
-                isOverdue && "text-status-overdue",
-                isDueToday && "text-status-due-today"
-              )}>
-                <CalendarIcon className="h-3.5 w-3.5 mr-1" /> {getDueDateDisplay(task.due_date)}
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Due: {format(parseISO(task.due_date), 'MMM d, yyyy')}</p>
-            </TooltipContent>
-          </Tooltip>
-        )}
-      </div>
-
-      {showCompletionEffect && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-          <CheckCircle2 className="h-14 w-14 text-primary animate-fade-in-out-check" />
         </div>
-      )}
+      </div>
 
-      <div className="flex-shrink-0 flex items-center space-x-1" data-no-dnd="true">
+      {/* Clickable Content Area */}
+      <div 
+        className="flex-grow flex items-center space-x-2 py-3 cursor-pointer"
+        onClick={() => !isOverlay && !isEditing && onOpenOverview(task)}
+      >
+        <div className={cn("w-3 h-3 rounded-full flex-shrink-0", getPriorityDotColor(task.priority))} />
+        
+        <div className="flex-grow" onClick={handleStartEdit} data-no-dnd={isEditing ? "true" : "false"}>
+          {isEditing ? (
+            <Input
+              ref={inputRef}
+              value={editText}
+              onChange={(e) => setEditText(e.target.value)}
+              onBlur={handleSaveEdit}
+              onKeyDown={handleInputKeyDown}
+              className="h-auto text-lg font-medium leading-tight p-0 border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full"
+              onClick={(e) => e.stopPropagation()}
+            />
+          ) : (
+            <span
+              className={cn(
+                "text-lg leading-tight line-clamp-2",
+                task.status === 'completed' ? 'line-through' : 'font-medium',
+                "block cursor-text"
+              )}
+            >
+              {task.description}
+            </span>
+          )}
+          {scheduledAppointment && (
+            <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+              <CalendarClock className="h-3 w-3" />
+              <span>
+                Scheduled: {format(parseISO(scheduledAppointment.date), 'dd/MM')} {format(parseISO(`1970-01-01T${scheduledAppointment.start_time}`), 'h:mm a')}
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex-shrink-0 flex items-center space-x-2" data-no-dnd="true">
+          {recurringType !== 'none' && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex items-center flex-shrink-0">
+                  <Repeat className="h-4 w-4 text-muted-foreground" />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Recurring: {recurringType.charAt(0).toUpperCase() + recurringType.slice(1)}</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+
+          {task.link && (
+            isUrl(task.link) ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <a
+                    href={task.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center flex-shrink-0 text-muted-foreground hover:text-primary"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <LinkIcon className="h-4 w-4" />
+                  </a>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Open link: {task.link}</p>
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 flex-shrink-0 text-muted-foreground hover:text-primary"
+                    onClick={(e) => handleCopyPath(e, task.link!)}
+                  >
+                    <ClipboardCopy className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Copy path: {task.link}</p>
+                </TooltipContent>
+              </Tooltip>
+            )
+          )}
+
+          {task.due_date && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className={cn(
+                  "inline-flex items-center flex-shrink-0 text-xs font-medium px-1 py-0.5 rounded-sm",
+                  "text-muted-foreground",
+                  isOverdue && "text-status-overdue",
+                  isDueToday && "text-status-due-today"
+                )}>
+                  <CalendarIcon className="h-3.5 w-3.5 mr-1" /> {getDueDateDisplay(task.due_date)}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Due: {format(parseISO(task.due_date), 'MMM d, yyyy')}</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </div>
+      </div>
+
+      {/* Actions Area */}
+      <div className="flex-shrink-0 flex items-center space-x-1 pr-3" data-no-dnd="true">
         {recurringType === 'none' && (
           <DoTodaySwitch
             isOn={isDoToday}
@@ -388,6 +393,12 @@ const TaskItem: React.FC<TaskItemProps> = ({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {showCompletionEffect && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+          <CheckCircle2 className="h-14 w-14 text-primary animate-fade-in-out-check" />
+        </div>
+      )}
     </div>
   );
 };
