@@ -102,22 +102,8 @@ const TaskList: React.FC<TaskListProps> = (props) => {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        delay: 150, // ms
-        tolerance: 5, // px
-      },
-      onActivation: ({ event }) => {
-        const target = event.target as HTMLElement;
-        // Prevent drag from starting on any interactive element inside the task item
-        if (
-          target.closest('button') ||
-          target.closest('a') ||
-          target.closest('input') ||
-          target.closest('[role="button"]') || // This covers the Switch component
-          target.closest('[data-no-dnd="true"]')
-        ) {
-          return false; // Do not start dragging
-        }
-        return true; // Allow dragging
+        delay: 150,
+        tolerance: 5,
       },
     }),
     useSensor(KeyboardSensor, {

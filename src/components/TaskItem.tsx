@@ -172,8 +172,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
         getPriorityBorderColor(task.priority)
       )}
     >
-      {/* Checkbox Area (NOT draggable) */}
-      <div className="flex-shrink-0 flex items-center px-3" data-no-dnd="true">
+      {/* Drag Handle Area */}
+      <div className="flex-shrink-0 flex items-center px-3 cursor-grab" {...dragListeners}>
         <Checkbox
           key={`${task.id}-${task.status}`}
           checked={task.status === 'completed'}
@@ -186,15 +186,14 @@ const TaskItem: React.FC<TaskItemProps> = ({
         />
       </div>
 
-      {/* Clickable and Draggable Content Area */}
+      {/* Clickable Content Area */}
       <div 
         className="flex-grow flex items-center space-x-2 py-3 cursor-pointer"
         onClick={() => !isOverlay && !isEditing && onOpenOverview(task)}
-        {...dragListeners}
       >
         <div className={cn("w-3 h-3 rounded-full flex-shrink-0", getPriorityDotColor(task.priority))} />
         
-        <div className="flex-grow" onClick={handleStartEdit} data-no-dnd={isEditing ? "true" : "false"}>
+        <div className="flex-grow" onClick={handleStartEdit} data-no-dnd="true">
           {isEditing ? (
             <Input
               ref={inputRef}
