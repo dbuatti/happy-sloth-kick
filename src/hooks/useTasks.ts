@@ -785,81 +785,85 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
 
   const updateTaskParentAndOrder = useCallback(async (activeId: string, newParentId: string | null, newSectionId: string | null, overId: string | null) => {
     if (!userId) {
-      showError('User not authenticated.');
-      return;
+        showError('User not authenticated.');
+        return;
     }
     
     const originalTasks = [...tasks];
     const activeTask = tasks.find(t => t.id === activeId);
-    if (!activeTask) {
-      return;
-    }
+    if (!activeTask) return;
 
-    // Optimistic UI update
-    let tempTasks = tasks.map(t => ({ ...t }));
-    const activeTaskIndex = tempTasks.findIndex(t => t.id === activeId);
-    const [movedTask] = tempTasks.splice(activeTaskIndex, 1);
-
-    movedTask.parent_task_id = newParentId;
-    movedTask.section_id = newSectionId;
+    // 1. Create a new array with the task moved to its new visual position
+    let tempTasks = tasks.filter(t => t.id !== activeId);
+    const updatedActiveTask = { ...activeTask, parent_task_id: newParentId, section_id: newSectionId };
 
     let insertionIndex = -1;
     if (overId) {
-      insertionIndex = tempTasks.findIndex(t => t.id === overId);
-    } else if (newSectionId) {
-      insertionIndex = tempTasks.findIndex(t => t.section_id === newSectionId && t.parent_task_id === null);
-    } else if (newParentId) {
-      insertionIndex = tempTasks.findIndex(t => t.parent_task_id === newParentId);
+        insertionIndex = tempTasks.findIndex(t => t.id === overId);
+    } else {
+        const firstTaskInNewLocation = tempTasks.find(t => t.section_id === newSectionId && t.parent_task_id === newParentId);
+        if (firstTaskInNewLocation) {
+            insertionIndex = tempTasks.indexOf(firstTaskInNewLocation);
+        }
     }
 
     if (insertionIndex !== -1) {
-      tempTasks.splice(insertionIndex, 0, movedTask);
+        tempTasks.splice(insertionIndex, 0, updatedActiveTask);
     } else {
-      tempTasks.push(movedTask);
+        tempTasks.push(updatedActiveTask);
     }
 
-    const updatesForDb: any[] = [];
+    // 2. Re-calculate order for all tasks and create the final state for the optimistic update
+    const updatesForDb: Partial<Task>[] = [];
     const groupsToUpdate = new Map<string, Task[]>();
+
     tempTasks.forEach(t => {
-      const key = `${t.parent_task_id || 'root'}-${t.section_id || 'no-section'}`;
-      if (!groupsToUpdate.has(key)) groupsToUpdate.set(key, []);
-      groupsToUpdate.get(key)!.push(t);
+        const key = `${t.parent_task_id || 'root'}-${t.section_id || 'no-section'}`;
+        if (!groupsToUpdate.has(key)) groupsToUpdate.set(key, []);
+        groupsToUpdate.get(key)!.push(t);
     });
 
     const originalTasksMap = new Map(originalTasks.map(t => [t.id, t]));
     groupsToUpdate.forEach(group => {
-      group.forEach((task, index) => {
-        const originalTask = originalTasksMap.get(task.id);
-        if (!originalTask || originalTask.order !== index || originalTask.parent_task_id !== task.parent_task_id || originalTask.section_id !== task.section_id) {
-          const updatedTaskData = {
-            ...task,
-            order: index,
-            parent_task_id: task.parent_task_id,
-            section_id: task.section_id,
-          };
-          updatesForDb.push(cleanTaskForDb(updatedTaskData));
-        }
-      });
+        group.forEach((task, index) => {
+            const originalTask = originalTasksMap.get(task.id);
+            if (!originalTask || originalTask.order !== index || originalTask.parent_task_id !== task.parent_task_id || originalTask.section_id !== task.section_id) {
+                updatesForDb.push({
+                    id: task.id,
+                    order: index,
+                    parent_task_id: task.parent_task_id,
+                    section_id: task.section_id,
+                });
+            }
+        });
     });
 
-    // Add all IDs being updated to the in-flight ref
-    const updatedIds = updatesForDb.map(t => t.id);
+    // 3. Create the final state for the UI with updated order properties
+    const updatesMap = new Map(updatesForDb.map(u => [u.id, u]));
+    const finalUiTasks = tempTasks.map(t => {
+        if (updatesMap.has(t.id)) {
+            return { ...t, ...updatesMap.get(t.id) };
+        }
+        return t;
+    });
+
+    // 4. Perform the optimistic update and DB update
+    const updatedIds = updatesForDb.map(t => t.id!);
     updatedIds.forEach(id => inFlightUpdatesRef.current.add(id));
 
-    setTasks(tempTasks);
+    setTasks(finalUiTasks);
 
     try {
-      if (updatesForDb.length > 0) {
-        const { error } = await supabase.from('tasks').upsert(updatesForDb, { onConflict: 'id' });
-        if (error) throw error;
-      }
-      showSuccess('Task moved!');
+        if (updatesForDb.length > 0) {
+            const { error } = await supabase.from('tasks').upsert(updatesForDb.map(cleanTaskForDb), { onConflict: 'id' });
+            if (error) throw error;
+        }
+        showSuccess('Task moved!');
     } catch (e: any) {
-      showError('Failed to move task.');
-      setTasks(originalTasks);
+        showError('Failed to move task.');
+        setTasks(originalTasks);
     } finally {
-      // Remove all updated IDs from the in-flight ref
-      updatedIds.forEach(id => inFlightUpdatesRef.current.delete(id));
+        updatedIds.forEach(id => inFlightUpdatesRef.current.delete(id));
     }
   }, [userId, tasks]);
 
