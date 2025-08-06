@@ -26,6 +26,7 @@ const Archive: React.FC = () => {
     updateSectionIncludeInFocusMode,
     setFocusTask,
     toggleDoToday,
+    doTodayOffIds,
   } = useTasks({ viewMode: 'archive' });
 
   const { appointments: allAppointments } = useAllAppointments();
@@ -104,7 +105,7 @@ const Archive: React.FC = () => {
                       onMoveUp={async () => {}}
                       onMoveDown={async () => {}}
                       setFocusTask={setFocusTask}
-                      isDoToday={false}
+                      isDoToday={!doTodayOffIds.has(task.original_task_id || task.id)}
                       toggleDoToday={() => toggleDoToday(task)}
                       scheduledTasksMap={scheduledTasksMap}
                     />
