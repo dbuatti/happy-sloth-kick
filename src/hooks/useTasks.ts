@@ -759,8 +759,10 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     const newOrderedSections = arrayMove(sections, oldIndex, newIndex);
     const updates = newOrderedSections.map((s, i) => ({
       id: s.id,
+      name: s.name,
       order: i,
       user_id: userId,
+      include_in_focus_mode: s.include_in_focus_mode,
     }));
 
     setSections(newOrderedSections);
@@ -827,12 +829,13 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
       group.forEach((task, index) => {
         const originalTask = originalTasksMap.get(task.id);
         if (!originalTask || originalTask.order !== index || originalTask.parent_task_id !== task.parent_task_id || originalTask.section_id !== task.section_id) {
-          updatesForDb.push({
-            id: task.id,
+          const updatedTaskData = {
+            ...task,
             order: index,
             parent_task_id: task.parent_task_id,
             section_id: task.section_id,
-          });
+          };
+          updatesForDb.push(cleanTaskForDb(updatedTaskData));
         }
       });
     });
