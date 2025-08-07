@@ -830,7 +830,6 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
             if (!originalTask || originalTask.order !== index || originalTask.parent_task_id !== task.parent_task_id || originalTask.section_id !== task.section_id) {
                 updatesForDb.push({
                     id: task.id,
-                    user_id: task.user_id,
                     order: index,
                     parent_task_id: task.parent_task_id,
                     section_id: task.section_id,
