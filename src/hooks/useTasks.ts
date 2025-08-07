@@ -814,7 +814,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     }
 
     // 2. Re-calculate order for all tasks and create the final state for the optimistic update
-    const updatesForDb: Partial<Task>[] = [];
+    const updatesForDb: Partial<Omit<Task, 'user_id'>>[] = [];
     const groupsToUpdate = new Map<string, Task[]>();
 
     tempTasks.forEach(t => {
