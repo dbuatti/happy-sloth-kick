@@ -855,12 +855,17 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
 
     try {
         if (updatesForDb.length > 0) {
+            console.log('Attempting to save reorder updates:', JSON.stringify(updatesForDb, null, 2));
             const { error } = await supabase.from('tasks').upsert(updatesForDb.map(cleanTaskForDb), { onConflict: 'id' });
-            if (error) throw error;
+            if (error) {
+              console.error('Supabase upsert error details:', JSON.stringify(error, null, 2));
+              throw error;
+            }
         }
         showSuccess('Task moved!');
     } catch (e: any) {
-        showError('Failed to move task.');
+        console.error('Full error object in useTasks catch block:', e);
+        showError(`Failed to move task. Check console for details. Message: ${e.message}`);
         setTasks(originalTasks);
     } finally {
         updatedIds.forEach(id => inFlightUpdatesRef.current.delete(id));
