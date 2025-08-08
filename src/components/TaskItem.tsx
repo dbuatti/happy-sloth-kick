@@ -194,7 +194,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
       >
         <div className={cn("w-3 h-3 rounded-full flex-shrink-0", getPriorityDotColor(task.priority))} />
         
-        <div className="flex-grow min-w-0 w-full" onClick={handleStartEdit} data-no-dnd="true">
+        <div className="flex-grow min-w-0 w-full" data-no-dnd="true">
           {isEditing ? (
             <Input
               ref={inputRef}
@@ -211,8 +211,9 @@ const TaskItem: React.FC<TaskItemProps> = ({
                 className={cn(
                   "text-lg leading-tight line-clamp-2",
                   task.status === 'completed' ? 'line-through' : 'font-medium',
-                  "block cursor-text"
+                  "inline-block cursor-text"
                 )}
+                onClick={handleStartEdit}
               >
                 {task.description}
               </span>
