@@ -784,6 +784,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
   }, [userId, sections]);
 
   const updateTaskParentAndOrder = useCallback(async (activeId: string, newParentId: string | null, newSectionId: string | null, overId: string | null) => {
+    console.log(`[DnD Start] activeId: ${activeId}, newParentId: ${newParentId}, newSectionId: ${newSectionId}, overId: ${overId}`);
     if (!userId) {
         showError('User not authenticated.');
         return;
@@ -791,7 +792,10 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     
     const originalTasks = [...tasks];
     const activeTask = tasks.find(t => t.id === activeId);
-    if (!activeTask) return;
+    if (!activeTask) {
+        console.error('[DnD Error] Active task not found');
+        return;
+    }
 
     // 1. Create a new array with the task moved to its new visual position
     let tempTasks = tasks.filter(t => t.id !== activeId);
@@ -800,10 +804,14 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     let insertionIndex = -1;
     if (overId) {
         insertionIndex = tempTasks.findIndex(t => t.id === overId);
+        console.log(`[DnD Logic] Found overId '${overId}'. Calculated insertionIndex: ${insertionIndex}`);
     } else {
         const firstTaskInNewLocation = tempTasks.find(t => t.section_id === newSectionId && t.parent_task_id === newParentId);
         if (firstTaskInNewLocation) {
             insertionIndex = tempTasks.indexOf(firstTaskInNewLocation);
+            console.log(`[DnD Logic] No overId. Found first task in new location '${firstTaskInNewLocation.id}'. Calculated insertionIndex: ${insertionIndex}`);
+        } else {
+            console.log(`[DnD Logic] No overId and no tasks in new location. Will push to end.`);
         }
     }
 
@@ -812,6 +820,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     } else {
         tempTasks.push(updatedActiveTask);
     }
+    console.log('[DnD Logic] tempTasks after splice/push:', tempTasks.map(t => ({id: t.id, order: t.order, desc: t.description})));
 
     // 2. Re-calculate order for all tasks and create the final state for the optimistic update
     const updatesForDb: Partial<Omit<Task, 'user_id'>>[] = [];
@@ -851,24 +860,28 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     const updatedIds = updatesForDb.map(t => t.id!);
     updatedIds.forEach(id => inFlightUpdatesRef.current.add(id));
 
+    console.log('[DnD Optimistic Update] Setting new UI state:', finalUiTasks.map(t => ({id: t.id, order: t.order, desc: t.description})));
     setTasks(finalUiTasks);
 
     try {
         if (updatesForDb.length > 0) {
-            console.log('Attempting to save reorder updates:', JSON.stringify(updatesForDb, null, 2));
+            console.log('[DnD DB Update] Calling RPC with updates:', JSON.stringify(updatesForDb, null, 2));
             const { error } = await supabase.rpc('update_tasks_order', { updates: updatesForDb });
             if (error) {
-              console.error('Supabase rpc error details:', JSON.stringify(error, null, 2));
+              console.error('[DnD DB Error] Supabase rpc error details:', JSON.stringify(error, null, 2));
               throw error;
             }
         }
+        console.log('[DnD DB Update] Success!');
         showSuccess('Task moved!');
     } catch (e: any) {
-        console.error('Full error object in useTasks catch block:', e);
+        console.error('[DnD DB Error] Full error object in catch block:', e);
         showError(`Failed to move task. Check console for details. Message: ${e.message}`);
+        console.log('[DnD Revert] Reverting optimistic update due to error.');
         setTasks(originalTasks);
     } finally {
         updatedIds.forEach(id => inFlightUpdatesRef.current.delete(id));
+        console.log('[DnD End] Process finished.');
     }
   }, [userId, tasks]);
 
