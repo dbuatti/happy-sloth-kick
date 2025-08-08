@@ -814,7 +814,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     }
 
     // 2. Re-calculate order for all tasks and create the final state for the optimistic update
-    const updatesForDb: Partial<Task>[] = [];
+    const updatesForDb: Partial<Omit<Task, 'user_id'>>[] = [];
     const groupsToUpdate = new Map<string, Task[]>();
 
     tempTasks.forEach(t => {
@@ -833,7 +833,6 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
                     order: index,
                     parent_task_id: task.parent_task_id,
                     section_id: task.section_id,
-                    user_id: userId,
                 });
             }
         });
@@ -857,9 +856,9 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     try {
         if (updatesForDb.length > 0) {
             console.log('Attempting to save reorder updates:', JSON.stringify(updatesForDb, null, 2));
-            const { error } = await supabase.from('tasks').upsert(updatesForDb.map(cleanTaskForDb), { onConflict: 'id' });
+            const { error } = await supabase.rpc('update_tasks_order', { updates: updatesForDb });
             if (error) {
-              console.error('Supabase upsert error details:', JSON.stringify(error, null, 2));
+              console.error('Supabase rpc error details:', JSON.stringify(error, null, 2));
               throw error;
             }
         }
