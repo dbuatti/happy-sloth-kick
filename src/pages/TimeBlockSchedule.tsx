@@ -1,13 +1,13 @@
 import React, { useState, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useWorkHours } from '@/hooks/useWorkHours';
-import { format, addMinutes, parse, isBefore, getMinutes, getHours } from 'date-fns';
+import { format, addMinutes, parse, isBefore, getMinutes, getHours, parseISO } from 'date-fns';
 import { CalendarDays, Clock, Settings, Sparkles, X } from 'lucide-react';
 import DateNavigator from '@/components/DateNavigator';
 import { useAppointments, Appointment, NewAppointmentData } from '@/hooks/useAppointments';
 import AppointmentForm from '@/components/AppointmentForm';
-import AppointmentCard from '@/components/AppointmentCard';
 import { useAuth } from '@/context/AuthContext';
 import { useTasks, Task } from '@/hooks/useTasks';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -23,6 +23,9 @@ import TaskOverviewDialog from '@/components/TaskOverviewDialog';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import { useSettings } from '@/context/SettingsContext';
 import { toast } from 'sonner';
+import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, useSensor, useSensors, useDroppable } from '@dnd-kit/core';
+import DraggableTaskListItem from '@/components/DraggableTaskListItem';
+import DraggableAppointmentCard from '@/components/DraggableAppointmentCard';
 
 interface TimeBlockScheduleProps {
   isDemo?: boolean;
@@ -64,6 +67,14 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
+
+  const [activeDragItem, setActiveDragItem] = useState<any>(null);
+
+  const sensors = useSensors(useSensor(PointerSensor, {
+    activationConstraint: {
+      distance: 8,
+    },
+  }));
 
   const handlePreviousDay = useCallback(() => {
     setCurrentDate(prevDate => {
@@ -304,221 +315,294 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
     }
   };
 
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveDragItem(event.active.data.current);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    setActiveDragItem(null);
+    const { active, over } = event;
+
+    if (!over || !over.data.current) return;
+
+    const overData = over.data.current;
+    const activeData = active.data.current;
+
+    if (overData.type !== 'time-block') return;
+
+    const newStartTime = overData.time as Date;
+
+    if (activeData?.type === 'task') {
+      const task = activeData.task as Task;
+      handleScheduleTask(task.id, newStartTime);
+    } else if (activeData?.type === 'appointment') {
+      const appointment = activeData.appointment as Appointment;
+      const duration = activeData.duration as number;
+      const newEndTime = addMinutes(newStartTime, duration);
+
+      updateAppointment(appointment.id, {
+        start_time: format(newStartTime, 'HH:mm:ss'),
+        end_time: format(newEndTime, 'HH:mm:ss'),
+        date: format(newStartTime, 'yyyy-MM-dd'),
+      });
+    }
+  };
+
   return (
-    <div className="flex-1 flex flex-col">
-      <main className="flex-grow p-4">
-        <Card className="w-full max-w-4xl mx-auto shadow-lg rounded-xl p-4">
-          <CardHeader className="pb-2">
-            <div className="flex justify-between items-center">
-              <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
-                <CalendarDays className="h-7 w-7" /> Dynamic Schedule
-              </CardTitle>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" onClick={handleClearDay} disabled={appointments.length === 0 || isDemo}>
-                  <X className="mr-2 h-4 w-4" /> Clear Day
-                </Button>
-                <Button variant="outline" onClick={() => setIsParsingDialogOpen(true)} disabled={isDemo}>
-                  <Sparkles className="mr-2 h-4 w-4" /> Parse from Text
-                </Button>
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <div className="flex-1 flex flex-col">
+        <main className="flex-grow p-4">
+          <Card className="w-full max-w-6xl mx-auto shadow-lg rounded-xl p-4">
+            <CardHeader className="pb-2">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
+                  <CalendarDays className="h-7 w-7" /> Dynamic Schedule
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" onClick={handleClearDay} disabled={appointments.length === 0 || isDemo}>
+                    <X className="mr-2 h-4 w-4" /> Clear Day
+                  </Button>
+                  <Button variant="outline" onClick={() => setIsParsingDialogOpen(true)} disabled={isDemo}>
+                    <Sparkles className="mr-2 h-4 w-4" /> Parse from Text
+                  </Button>
+                </div>
               </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <DateNavigator
+                currentDate={currentDate}
+                onPreviousDay={handlePreviousDay}
+                onNextDay={handleNextDay}
+                onGoToToday={handleGoToToday}
+                setCurrentDate={setCurrentDate}
+              />
+
+              {totalLoading ? (
+                <div className="flex justify-center items-center h-64">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                </div>
+              ) : (!singleDayWorkHours || !singleDayWorkHours.enabled) ? (
+                <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
+                  <Clock className="h-16 w-16 text-muted-foreground mb-4" />
+                  <p className="text-xl font-medium mb-2">No work hours set or enabled for this day.</p>
+                  <p className="text-md">Please go to <a href="/my-hub" className="text-blue-500 hover:underline flex items-center gap-1">
+                    <Settings className="h-4 w-4" /> My Hub (Settings tab)
+                  </a> to define your work hours to start scheduling!</p>
+                </div>
+              ) : timeBlocks.length === 0 ? (
+                <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
+                  <Clock className="h-16 w-16 text-muted-foreground mb-4" />
+                  <p className="text-xl font-medium mb-2">No time blocks generated for this day.</p>
+                  <p className="text-sm">Please check your work hour settings. Ensure your start time is before your end time.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
+                  <div className="grid grid-cols-[80px_1fr] gap-x-4">
+                    <div className="relative" style={{
+                      height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`,
+                    }}>
+                      {timeBlocks.map((block, index) => (
+                        getMinutes(block.start) === 0 && (
+                          <div
+                            key={`label-${format(block.start, 'HH:mm')}`}
+                            className="absolute right-4"
+                            style={{ top: `${index * (rowHeight + gapHeight) - 8}px` }}
+                          >
+                            <span className="text-xs text-muted-foreground">{format(block.start, 'h a')}</span>
+                          </div>
+                        )
+                      ))}
+                    </div>
+
+                    <div className="relative grid" style={{
+                      gridTemplateRows: `repeat(${timeBlocks.length}, ${rowHeight}px)`,
+                      rowGap: `${gapHeight}px`,
+                      height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`,
+                    }}>
+                      {timeBlocks.map((block, index) => (
+                        getMinutes(block.start) === 0 && (
+                          <div
+                            key={`bg-label-${format(block.start, 'HH')}`}
+                            className="absolute inset-x-0 h-full flex items-center justify-center text-[120px] font-bubbly font-bold text-gray-200/50 dark:text-gray-800/50 select-none pointer-events-none"
+                            style={{
+                              top: `${index * (rowHeight + gapHeight)}px`,
+                              height: `${2 * rowHeight + gapHeight}px`,
+                              zIndex: 0,
+                            }}
+                          >
+                            <span>{format(block.start, 'h:00')}</span>
+                          </div>
+                        )
+                      ))}
+
+                      {timeBlocks.map((block, index) => {
+                        const { setNodeRef, isOver } = useDroppable({
+                          id: `block-${format(block.start, 'HH:mm')}`,
+                          data: { type: 'time-block', time: block.start },
+                        });
+                        const isBlockOccupied = appointmentsWithPositions.some(app => {
+                          const appStart = parse(app.start_time, 'HH:mm:ss', currentDate);
+                          const appEnd = parse(app.end_time, 'HH:mm:ss', currentDate);
+                          return block.start.getTime() >= appStart.getTime() && block.start.getTime() < appEnd.getTime();
+                        });
+
+                        return (
+                          <div
+                            ref={setNodeRef}
+                            key={`block-container-${format(block.start, 'HH:mm')}`}
+                            className="relative h-full w-full border-t border-gray-200/80 dark:border-gray-700/80"
+                            style={{ gridRow: `${index + 1}`, zIndex: 1 }}
+                          >
+                            {isOver && <div className="absolute inset-0 bg-primary/20 rounded-lg" />}
+                            {!isBlockOccupied && !isDemo && (
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <div className="absolute inset-0 cursor-pointer rounded-lg hover:bg-muted/50 transition-colors" />
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-1">
+                                  <TimeBlockActionMenu
+                                    block={block}
+                                    onAddAppointment={() => handleOpenAppointmentForm(block)}
+                                    onScheduleTask={handleScheduleTask}
+                                    unscheduledTasks={unscheduledDoTodayTasks}
+                                    sections={sections}
+                                  />
+                                </PopoverContent>
+                              </Popover>
+                            )}
+                          </div>
+                        );
+                      })}
+
+                      {appointmentsWithPositions.map((app) => {
+                        const task = app.task_id ? allTasks.find(t => t.id === app.task_id) : undefined;
+                        return (
+                          <DraggableAppointmentCard
+                            key={app.id}
+                            appointment={app}
+                            task={task}
+                            onEdit={handleAppointmentClick}
+                            onUnschedule={handleUnscheduleTask}
+                            gridRowStart={app.gridRowStart}
+                            gridRowEnd={app.gridRowEnd}
+                            overlapOffset={app.overlapOffset}
+                            rowHeight={rowHeight}
+                            gapHeight={gapHeight}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Unscheduled Tasks</h3>
+                    <div className="space-y-2 max-h-[600px] overflow-y-auto p-1">
+                      {unscheduledDoTodayTasks.length > 0 ? (
+                        unscheduledDoTodayTasks.map(task => (
+                          <DraggableTaskListItem key={task.id} task={task} />
+                        ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground text-center py-4">No tasks to schedule.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </main>
+        <footer className="p-4">
+          <MadeWithDyad />
+        </footer>
+        <AppointmentForm
+          isOpen={isAppointmentFormOpen}
+          onClose={() => {
+            setIsAppointmentFormOpen(false);
+            setEditingAppointment(null);
+            setSelectedTimeSlotForNew(null);
+            setParsedDataForForm(null);
+          }}
+          onSave={handleSaveAppointment}
+          onDelete={handleDeleteAppointment}
+          initialData={editingAppointment}
+          selectedDate={currentDate}
+          selectedTimeSlot={selectedTimeSlotForNew}
+          prefilledData={parsedDataForForm}
+        />
+        {taskToOverview && (
+          <TaskOverviewDialog
+            task={taskToOverview}
+            isOpen={isTaskOverviewOpen}
+            onClose={() => setIsTaskOverviewOpen(false)}
+            onEditClick={handleEditTaskFromOverview}
+            onUpdate={updateTask}
+            onDelete={deleteTaskFromHook}
+            sections={sections}
+            allCategories={allCategories}
+            allTasks={allTasks}
+          />
+        )}
+        {taskToEdit && (
+          <TaskDetailDialog
+            task={taskToEdit}
+            isOpen={isTaskDetailOpen}
+            onClose={() => setIsTaskDetailOpen(false)}
+            onUpdate={updateTask}
+            onDelete={deleteTaskFromHook}
+            sections={sections}
+            allCategories={allCategories}
+            createSection={createSection}
+            updateSection={updateSection}
+            deleteSection={deleteSection}
+            updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+          />
+        )}
+        <Dialog open={isParsingDialogOpen} onOpenChange={setIsParsingDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Parse Appointment from Text</DialogTitle>
+              <DialogDescription>
+                Paste your appointment details below (e.g., "meeting at 3pm for 1 hour" or a confirmation email) and we'll try to fill out the form for you.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <Label htmlFor="text-to-parse">Appointment Text</Label>
+              <Textarea
+                id="text-to-parse"
+                value={textToParse}
+                onChange={(e) => setTextToParse(e.target.value)}
+                rows={10}
+                placeholder="Paste text here..."
+                disabled={isParsing}
+              />
             </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <DateNavigator
-              currentDate={currentDate}
-              onPreviousDay={handlePreviousDay}
-              onNextDay={handleNextDay}
-              onGoToToday={handleGoToToday}
-              setCurrentDate={setCurrentDate}
-            />
-
-            {totalLoading ? (
-              <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-              </div>
-            ) : (!singleDayWorkHours || !singleDayWorkHours.enabled) ? (
-              <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
-                <Clock className="h-16 w-16 text-muted-foreground mb-4" />
-                <p className="text-xl font-medium mb-2">No work hours set or enabled for this day.</p>
-                <p className="text-md">Please go to <a href="/my-hub" className="text-blue-500 hover:underline flex items-center gap-1">
-                  <Settings className="h-4 w-4" /> My Hub (Settings tab)
-                </a> to define your work hours to start scheduling!</p>
-              </div>
-            ) : timeBlocks.length === 0 ? (
-              <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
-                <Clock className="h-16 w-16 text-muted-foreground mb-4" />
-                <p className="text-xl font-medium mb-2">No time blocks generated for this day.</p>
-                <p className="text-sm">Please check your work hour settings. Ensure your start time is before your end time.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-[80px_1fr] gap-x-4">
-                <div className="relative" style={{
-                  height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`,
-                }}>
-                  {timeBlocks.map((block, index) => (
-                    getMinutes(block.start) === 0 && (
-                      <div
-                        key={`label-${format(block.start, 'HH:mm')}`}
-                        className="absolute right-4"
-                        style={{ top: `${index * (rowHeight + gapHeight) - 8}px` }}
-                      >
-                        <span className="text-xs text-muted-foreground">{format(block.start, 'h a')}</span>
-                      </div>
-                    )
-                  ))}
-                </div>
-
-                <div className="relative grid" style={{
-                  gridTemplateRows: `repeat(${timeBlocks.length}, ${rowHeight}px)`,
-                  rowGap: `${gapHeight}px`,
-                  height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`,
-                }}>
-                  {timeBlocks.map((block, index) => (
-                    getMinutes(block.start) === 0 && (
-                      <div
-                        key={`bg-label-${format(block.start, 'HH')}`}
-                        className="absolute inset-x-0 h-full flex items-center justify-center text-[120px] font-bubbly font-bold text-gray-200/50 dark:text-gray-800/50 select-none pointer-events-none"
-                        style={{
-                          top: `${index * (rowHeight + gapHeight)}px`,
-                          height: `${2 * rowHeight + gapHeight}px`,
-                          zIndex: 0,
-                        }}
-                      >
-                        <span>{format(block.start, 'h:00')}</span>
-                      </div>
-                    )
-                  ))}
-
-                  {timeBlocks.map((block, index) => {
-                    const isBlockOccupied = appointmentsWithPositions.some(app => {
-                      const appStart = parse(app.start_time, 'HH:mm:ss', currentDate);
-                      const appEnd = parse(app.end_time, 'HH:mm:ss', currentDate);
-                      return block.start.getTime() >= appStart.getTime() && block.start.getTime() < appEnd.getTime();
-                    });
-
-                    return (
-                      <div
-                        key={`block-container-${format(block.start, 'HH:mm')}`}
-                        className="relative h-full w-full border-t border-gray-200/80 dark:border-gray-700/80"
-                        style={{ gridRow: `${index + 1}`, zIndex: 1 }}
-                      >
-                        {!isBlockOccupied && !isDemo && (
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <div className="absolute inset-0 cursor-pointer rounded-lg hover:bg-muted/50 transition-colors" />
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-1">
-                              <TimeBlockActionMenu
-                                block={block}
-                                onAddAppointment={() => handleOpenAppointmentForm(block)}
-                                onScheduleTask={handleScheduleTask}
-                                unscheduledTasks={unscheduledDoTodayTasks}
-                                sections={sections}
-                              />
-                            </PopoverContent>
-                          </Popover>
-                        )}
-                      </div>
-                    );
-                  })}
-
-                  {appointmentsWithPositions.map((app) => {
-                    const task = app.task_id ? allTasks.find(t => t.id === app.task_id) : undefined;
-                    return (
-                      <AppointmentCard
-                        key={app.id}
-                        appointment={app}
-                        task={task}
-                        onEdit={handleAppointmentClick}
-                        onUnschedule={handleUnscheduleTask}
-                        gridRowStart={app.gridRowStart}
-                        gridRowEnd={app.gridRowEnd}
-                        overlapOffset={app.overlapOffset}
-                        rowHeight={rowHeight}
-                        gapHeight={gapHeight}
-                      />
-                    );
-                  })}
-                </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsParsingDialogOpen(false)} disabled={isParsing}>Cancel</Button>
+              <Button onClick={handleParseText} disabled={isParsing || !textToParse.trim()}>
+                {isParsing ? 'Parsing...' : 'Parse and Create'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        {createPortal(
+          <DragOverlay>
+            {activeDragItem?.type === 'task' && (
+              <div className="p-2 rounded-md bg-primary text-primary-foreground shadow-lg">
+                <p className="font-semibold text-sm">{activeDragItem.task.description}</p>
               </div>
             )}
-          </CardContent>
-        </Card>
-      </main>
-      <footer className="p-4">
-        <MadeWithDyad />
-      </footer>
-      <AppointmentForm
-        isOpen={isAppointmentFormOpen}
-        onClose={() => {
-          setIsAppointmentFormOpen(false);
-          setEditingAppointment(null);
-          setSelectedTimeSlotForNew(null);
-          setParsedDataForForm(null);
-        }}
-        onSave={handleSaveAppointment}
-        onDelete={handleDeleteAppointment}
-        initialData={editingAppointment}
-        selectedDate={currentDate}
-        selectedTimeSlot={selectedTimeSlotForNew}
-        prefilledData={parsedDataForForm}
-      />
-      {taskToOverview && (
-        <TaskOverviewDialog
-          task={taskToOverview}
-          isOpen={isTaskOverviewOpen}
-          onClose={() => setIsTaskOverviewOpen(false)}
-          onEditClick={handleEditTaskFromOverview}
-          onUpdate={updateTask}
-          onDelete={deleteTaskFromHook}
-          sections={sections}
-          allCategories={allCategories}
-          allTasks={allTasks}
-        />
-      )}
-      {taskToEdit && (
-        <TaskDetailDialog
-          task={taskToEdit}
-          isOpen={isTaskDetailOpen}
-          onClose={() => setIsTaskDetailOpen(false)}
-          onUpdate={updateTask}
-          onDelete={deleteTaskFromHook}
-          sections={sections}
-          allCategories={allCategories}
-          createSection={createSection}
-          updateSection={updateSection}
-          deleteSection={deleteSection}
-          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-        />
-      )}
-      <Dialog open={isParsingDialogOpen} onOpenChange={setIsParsingDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Parse Appointment from Text</DialogTitle>
-            <DialogDescription>
-              Paste your appointment details below (e.g., "meeting at 3pm for 1 hour" or a confirmation email) and we'll try to fill out the form for you.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <Label htmlFor="text-to-parse">Appointment Text</Label>
-            <Textarea
-              id="text-to-parse"
-              value={textToParse}
-              onChange={(e) => setTextToParse(e.target.value)}
-              rows={10}
-              placeholder="Paste text here..."
-              disabled={isParsing}
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsParsingDialogOpen(false)} disabled={isParsing}>Cancel</Button>
-            <Button onClick={handleParseText} disabled={isParsing || !textToParse.trim()}>
-              {isParsing ? 'Parsing...' : 'Parse and Create'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+            {activeDragItem?.type === 'appointment' && (
+              <div className="rounded-lg p-2 shadow-md text-white" style={{ backgroundColor: activeDragItem.appointment.color, width: '200px' }}>
+                <h4 className="font-semibold text-sm truncate">{activeDragItem.appointment.title}</h4>
+                <p className="text-xs opacity-90">
+                  {format(parseISO(`2000-01-01T${activeDragItem.appointment.start_time}`), 'h:mm a')} - {format(parseISO(`2000-01-01T${activeDragItem.appointment.end_time}`), 'h:mm a')}
+                </p>
+              </div>
+            )}
+          </DragOverlay>,
+          document.body
+        )}
+      </div>
+    </DndContext>
   );
 };
 
