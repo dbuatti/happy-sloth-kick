@@ -73,7 +73,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
     return allTasks.find(t => t.id === task.original_task_id);
   }, [allTasks, task.original_task_id]);
 
-  const recurringType = originalTask ? originalTask.recurring_type : task.recurring_type;
+  const recurringType = originalTask ? originalTask.recurring_type : task?.recurring_type;
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -164,7 +164,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
       className={cn(
         "relative flex items-center w-full rounded-lg transition-colors duration-200 py-2",
         task.status === 'completed' ? "text-muted-foreground bg-task-completed-bg" : "bg-card text-foreground",
-        !isDoToday && task.recurring_type === 'none' && "opacity-40",
+        !isDoToday && "opacity-40",
         "group hover:bg-muted/50"
       )}
       {...dragListeners}
@@ -316,14 +316,12 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
       {/* Actions Area */}
       <div className="flex-shrink-0 flex items-center space-x-1 pr-3" data-no-dnd="true">
-        {recurringType === 'none' && (
-          <DoTodaySwitch
-            isOn={isDoToday}
-            onToggle={() => toggleDoToday(task)}
-            taskId={task.id}
-            isDemo={isDemo}
-          />
-        )}
+        <DoTodaySwitch
+          isOn={isDoToday}
+          onToggle={() => toggleDoToday(task)}
+          taskId={task.id}
+          isDemo={isDemo}
+        />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button

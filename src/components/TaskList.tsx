@@ -319,7 +319,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                             expandedTasks={expandedTasks}
                             toggleTask={toggleTask}
                             setFocusTask={setFocusTask}
-                            isDoToday={!doTodayOffIds.has(task.id)}
+                            isDoToday={!doTodayOffIds.has(task.original_task_id || task.id)}
                             toggleDoToday={toggleDoToday}
                             doTodayOffIds={doTodayOffIds}
                             scheduledTasksMap={scheduledTasksMap}
