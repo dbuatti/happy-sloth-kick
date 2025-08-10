@@ -194,7 +194,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
 
   return (
     <div className="flex flex-col bg-gradient-to-br from-[hsl(var(--gradient-start-light))] to-[hsl(var(--gradient-end-light))] dark:from-[hsl(var(--gradient-start-dark))] dark:to-[hsl(var(--gradient-end-dark))] sticky top-0 z-10 shadow-sm">
-      <div className="flex items-center justify-between px-4 pt-4">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 pt-4">
         <DateNavigator
           currentDate={currentDate}
           onPreviousDay={() => setCurrentDate(prevDate => new Date(prevDate.setDate(prevDate.getDate() - 1)))}
@@ -251,13 +251,13 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
           className="h-4 rounded-full"
           indicatorClassName="bg-gradient-to-r from-primary to-accent rounded-full"
         />
-        <div className="flex items-center justify-between mt-2">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-2 gap-2">
           {overdueCount > 0 ? (
             <p className="text-sm text-destructive flex items-center gap-1">
               <Clock className="h-4 w-4" /> {overdueCount} overdue
             </p>
           ) : <div />}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 self-end">
             <Button variant="outline" size="sm" onClick={toggleAllDoToday} className="h-8 text-xs" disabled={isDemo}>
               <ToggleRight className="mr-2 h-3.5 w-3.5" /> Toggle All 'Do Today'
             </Button>
@@ -291,15 +291,15 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
           <div className="w-full space-y-4">
             <div className="flex items-center justify-center gap-3">
               <div className={cn("w-5 h-5 rounded-full flex-shrink-0", getPriorityDotColor(nextAvailableTask.priority))} />
-              <p className="text-4xl md:text-5xl font-extrabold text-foreground leading-tight line-clamp-2">
+              <p className="text-3xl sm:text-4xl font-extrabold text-foreground leading-tight line-clamp-2">
                 {nextAvailableTask.description}
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button onClick={handleMarkNextTaskComplete} className="h-12 px-8 text-lg" disabled={isDemo}>
+              <Button onClick={handleMarkNextTaskComplete} className="h-11 px-6 text-base sm:h-12 sm:px-8 sm:text-lg" disabled={isDemo}>
                 <CheckCircle2 className="mr-2 h-5 w-5" /> Mark Done
               </Button>
-              <Button variant="outline" onClick={() => onOpenOverview(nextAvailableTask)} className="h-12 px-8 text-lg">
+              <Button variant="outline" onClick={() => onOpenOverview(nextAvailableTask)} className="h-11 px-6 text-base sm:h-12 sm:px-8 sm:text-lg">
                 <Edit className="mr-2 h-5 w-5" /> Details
               </Button>
             </div>
