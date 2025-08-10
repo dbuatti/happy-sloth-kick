@@ -416,7 +416,7 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
                 </div>
               ) : (
                 <div className={cn(
-                  "grid grid-cols-1 gap-6 transition-all duration-300",
+                  "grid grid-cols-1 transition-all duration-300",
                   isTaskPanelCollapsed ? "lg:grid-cols-[1fr_auto]" : "lg:grid-cols-[1fr_300px]"
                 )}>
                   <div className="grid grid-cols-[80px_1fr] gap-x-4">
@@ -491,7 +491,7 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
                       })}
                     </div>
                   </div>
-                  <div className="relative">
+                  <div className="relative lg:border-l lg:border-border lg:pl-6">
                     <Button
                       variant="ghost"
                       size="icon"
@@ -502,7 +502,7 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
                       {isTaskPanelCollapsed ? <PanelRightOpen className="h-5 w-5" /> : <PanelRightClose className="h-5 w-5" />}
                     </Button>
                     {!isTaskPanelCollapsed && (
-                      <div className="space-y-4 lg:w-[300px] bg-muted rounded-lg p-4 pl-6">
+                      <div className="space-y-4 bg-muted rounded-lg p-4">
                         <h3 className="text-lg font-semibold">Unscheduled Tasks</h3>
                         <div className="space-y-2 max-h-[600px] overflow-y-auto p-1">
                           {unscheduledDoTodayTasks.length > 0 ? (
