@@ -502,7 +502,7 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
                       {isTaskPanelCollapsed ? <PanelRightOpen className="h-5 w-5" /> : <PanelRightClose className="h-5 w-5" />}
                     </Button>
                     {!isTaskPanelCollapsed && (
-                      <div className="space-y-4 lg:w-[300px] pl-4">
+                      <div className="space-y-4 lg:w-[300px] bg-muted/30 rounded-lg p-4 pl-6">
                         <h3 className="text-lg font-semibold">Unscheduled Tasks</h3>
                         <div className="space-y-2 max-h-[600px] overflow-y-auto p-1">
                           {unscheduledDoTodayTasks.length > 0 ? (
