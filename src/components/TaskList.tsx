@@ -332,7 +332,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
           </SortableContext>
 
           {createPortal(
-            <DragOverlay>
+            <DragOverlay dropAnimation={null}>
               {activeId && activeItemData && (
                 isSectionHeaderId(activeId) ? (
                   <SortableSectionHeader
