@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAppointments } from '@/hooks/useAppointments';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CalendarDays, ListTodo } from 'lucide-react';
@@ -8,7 +8,8 @@ import { Link } from 'react-router-dom';
 import { Button } from '../ui/button';
 
 const DailySchedulePreview: React.FC = () => {
-  const { appointments, loading } = useAppointments(new Date());
+  const [today] = useState(new Date());
+  const { appointments, loading } = useAppointments(today);
 
   return (
     <Card className="h-full">
