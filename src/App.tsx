@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -38,12 +39,15 @@ import Settings from "./pages/Settings";
 import Analytics from "./pages/Analytics";
 import Archive from "./pages/Archive";
 import SleepPage from "./pages/SleepPage";
+import CommandPalette from "./components/CommandPalette";
 
 const queryClient = new QueryClient();
 
 const AppContent = () => {
   const { user, loading: authLoading } = useAuth();
   const location = useLocation();
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
   if (authLoading) {
     return (
@@ -145,6 +149,12 @@ const AppContent = () => {
               </Routes>
             </Sidebar>
             <FloatingTimer />
+            <CommandPalette
+              isCommandPaletteOpen={isCommandPaletteOpen}
+              setIsCommandPaletteOpen={setIsCommandPaletteOpen}
+              currentDate={currentDate}
+              setCurrentDate={setCurrentDate}
+            />
           </div>
         ) : (
           <Routes>
