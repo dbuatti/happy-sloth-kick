@@ -202,6 +202,13 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
         { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${userId}` },
         (payload) => {
           const newOrOldTask = (payload.new || payload.old) as Task;
+          console.log('[RT Task Event]', { 
+            eventType: payload.eventType, 
+            id: newOrOldTask.id, 
+            inFlight: inFlightUpdatesRef.current.has(newOrOldTask.id),
+            inFlightRef: Array.from(inFlightUpdatesRef.current) 
+          });
+
           if (inFlightUpdatesRef.current.has(newOrOldTask.id)) return;
 
           const categoryColor = categoriesMapRef.current.get(newOrOldTask.category) || 'gray';
@@ -880,8 +887,11 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
         console.log('[DnD Revert] Reverting optimistic update due to error.');
         setTasks(originalTasks);
     } finally {
-        updatedIds.forEach(id => inFlightUpdatesRef.current.delete(id));
-        console.log('[DnD End] Process finished.');
+        setTimeout(() => {
+            updatedIds.forEach(id => inFlightUpdatesRef.current.delete(id));
+            console.log('[DnD End] In-flight refs cleared after delay.');
+        }, 1500); // Delay clearing the ref to account for real-time event latency
+        console.log('[DnD End] Process finished, refs will be cleared shortly.');
     }
   }, [userId, tasks]);
 
