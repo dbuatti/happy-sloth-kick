@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { LayoutDashboard, Plus, Settings as SettingsIcon } from 'lucide-react';
+import { CheckCircle2, ListTodo, CalendarDays } from 'lucide-react';
 import WeeklyFocusCard from '@/components/dashboard/WeeklyFocus';
 import SupportLinkCard from '@/components/dashboard/SupportLink';
 import MeditationNotesCard from '@/components/dashboard/MeditationNotes';
@@ -14,6 +14,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import PeopleMemoryCard from '@/components/dashboard/PeopleMemoryCard';
 import DashboardLayoutSettings from '@/components/dashboard/DashboardLayoutSettings';
+import DashboardHeader from '@/components/dashboard/DashboardHeader';
+import StatCard from '@/components/dashboard/StatCard';
+import { useDashboardStats } from '@/hooks/useDashboardStats';
 
 interface DashboardProps {
   isDemo?: boolean;
@@ -28,9 +31,11 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
     updateWeeklyFocus, 
     settings, 
     updateSettings, 
-    loading,
+    loading: dashboardDataLoading,
     updateCustomCard,
   } = useDashboardData({ userId: demoUserId });
+
+  const { tasksDue, tasksCompleted, appointmentsToday, loading: statsLoading } = useDashboardStats({ userId: demoUserId });
   
   const [isAddCardOpen, setIsAddCardOpen] = useState(false);
   const [newCardTitle, setNewCardTitle] = useState('');
@@ -52,24 +57,36 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
     setIsAddCardOpen(false);
   };
 
+  const statCards = [
+    { title: "Tasks Due Today", value: tasksDue, icon: ListTodo, description: "tasks remaining for today" },
+    { title: "Tasks Completed", value: tasksCompleted, icon: CheckCircle2, description: "tasks completed today" },
+    { title: "Appointments", value: appointmentsToday, icon: CalendarDays, description: "events scheduled for today" },
+  ];
+
   return (
     <div className="flex-1 flex flex-col">
-      <main className="flex-grow p-4">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <LayoutDashboard className="h-8 w-8 text-primary" />
-            My Dashboard
-          </h1>
-          <div className="flex items-center gap-2">
-            <Button onClick={() => setIsAddCardOpen(true)} disabled={isDemo}>
-              <Plus className="mr-2 h-4 w-4" /> Add Card
-            </Button>
-            <Button variant="outline" size="icon" onClick={() => setIsLayoutSettingsOpen(true)}>
-              <SettingsIcon className="h-4 w-4" />
-            </Button>
-          </div>
+      <main className="flex-grow p-4 md:p-6">
+        <DashboardHeader
+          onAddCard={() => setIsAddCardOpen(true)}
+          onCustomizeLayout={() => setIsLayoutSettingsOpen(true)}
+          isDemo={isDemo}
+        />
+
+        {/* Stat Cards */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
+          {statCards.map(stat => (
+            <StatCard
+              key={stat.title}
+              title={stat.title}
+              value={stat.value}
+              icon={stat.icon}
+              description={stat.description}
+              loading={statsLoading}
+            />
+          ))}
         </div>
 
+        {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {settings?.dashboard_layout?.['dailyScheduleVisible'] !== false && (
             <div className="lg:col-span-2">
@@ -82,29 +99,29 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
               <WeeklyFocusCard 
                 weeklyFocus={weeklyFocus} 
                 updateWeeklyFocus={updateWeeklyFocus} 
-                loading={loading} 
+                loading={dashboardDataLoading} 
               />
             )}
             {settings?.dashboard_layout?.['peopleMemoryVisible'] !== false && (
               <PeopleMemoryCard />
             )}
+            {customCards.filter(card => card.is_visible).map(card => (
+              <CustomCard key={card.id} card={card} />
+            ))}
             {settings?.dashboard_layout?.['supportLinkVisible'] !== false && (
               <SupportLinkCard 
                 settings={settings} 
                 updateSettings={updateSettings} 
-                loading={loading} 
+                loading={dashboardDataLoading} 
               />
             )}
             {settings?.dashboard_layout?.['meditationNotesVisible'] !== false && (
               <MeditationNotesCard 
                 settings={settings} 
                 updateSettings={updateSettings} 
-                loading={loading} 
+                loading={dashboardDataLoading} 
               />
             )}
-            {customCards.filter(card => card.is_visible).map(card => (
-              <CustomCard key={card.id} card={card} />
-            ))}
           </div>
         </div>
       </main>
