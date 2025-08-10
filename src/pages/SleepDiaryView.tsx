@@ -5,10 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format, getWeek, parseISO } from 'date-fns';
 
-const timelineHours = ['6pm', '9pm', 'midnight', '3am', '6am', '9am'];
+interface SleepDiaryViewProps {
+  isDemo?: boolean;
+  demoUserId?: string;
+}
 
-const SleepDiaryView: React.FC = () => {
-  const { records, loading, hasMore, loadMore } = useSleepDiary();
+const SleepDiaryView: React.FC<SleepDiaryViewProps> = ({ isDemo = false, demoUserId }) => {
+  const { records, loading, hasMore, loadMore } = useSleepDiary({ userId: demoUserId });
 
   return (
     <div className="space-y-4">
@@ -68,7 +71,7 @@ const SleepDiaryView: React.FC = () => {
         </div>
       )}
       {hasMore && !loading && (
-        <Button onClick={loadMore} variant="outline" className="w-full">
+        <Button onClick={loadMore} variant="outline" className="w-full" disabled={isDemo}>
           Load More
         </Button>
       )}
@@ -78,5 +81,7 @@ const SleepDiaryView: React.FC = () => {
     </div>
   );
 };
+
+const timelineHours = ['6pm', '9pm', 'midnight', '3am', '6am', '9am'];
 
 export default SleepDiaryView;

@@ -6,9 +6,9 @@ import { SleepRecord } from './useSleepRecords';
 
 const PAGE_SIZE = 14; // Fetch 14 days at a time
 
-export const useSleepDiary = () => {
+export const useSleepDiary = (props?: { userId?: string }) => {
   const { user } = useAuth();
-  const userId = user?.id;
+  const userId = props?.userId || user?.id;
   const [records, setRecords] = useState<SleepRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);

@@ -45,9 +45,9 @@ const normalizeUrl = (url: string | null): string | null => {
   return processedUrl;
 };
 
-export const useProjects = () => {
+export const useProjects = (props?: { userId?: string }) => {
   const { user } = useAuth();
-  const userId = user?.id;
+  const userId = props?.userId || user?.id;
   const { settings, updateSettings } = useSettings();
 
   const [projects, setProjects] = useState<Project[]>([]);

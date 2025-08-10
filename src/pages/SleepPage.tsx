@@ -9,7 +9,12 @@ import SleepDiaryView from './SleepDiaryView';
 import { DateRange } from 'react-day-picker';
 import { startOfMonth } from 'date-fns';
 
-const SleepPage: React.FC = () => {
+interface SleepPageProps {
+  isDemo?: boolean;
+  demoUserId?: string;
+}
+
+const SleepPage: React.FC<SleepPageProps> = ({ isDemo = false, demoUserId }) => {
   // State for SleepTracker (daily date)
   const [currentDate, setCurrentDate] = useState(new Date());
   // State for SleepDashboard (date range)
@@ -42,13 +47,13 @@ const SleepPage: React.FC = () => {
               </TabsList>
 
               <TabsContent value="tracker" className="mt-4">
-                <SleepTracker currentDate={currentDate} setCurrentDate={setCurrentDate} />
+                <SleepTracker currentDate={currentDate} setCurrentDate={setCurrentDate} isDemo={isDemo} demoUserId={demoUserId} />
               </TabsContent>
               <TabsContent value="dashboard" className="mt-4">
-                <SleepDashboard dateRange={analyticsDateRange} setDateRange={setAnalyticsDateRange} />
+                <SleepDashboard dateRange={analyticsDateRange} setDateRange={setAnalyticsDateRange} isDemo={isDemo} demoUserId={demoUserId} />
               </TabsContent>
               <TabsContent value="diary" className="mt-4">
-                <SleepDiaryView />
+                <SleepDiaryView isDemo={isDemo} demoUserId={demoUserId} />
               </TabsContent>
             </Tabs>
           </CardContent>

@@ -12,7 +12,12 @@ import { useAllAppointments } from '@/hooks/useAllAppointments';
 import { Appointment } from '@/hooks/useAppointments';
 import TaskDetailDialog from '@/components/TaskDetailDialog'; // Import TaskDetailDialog
 
-const TaskCalendar: React.FC = () => {
+interface TaskCalendarProps {
+  isDemo?: boolean;
+  demoUserId?: string;
+}
+
+const TaskCalendar: React.FC<TaskCalendarProps> = ({ isDemo = false, demoUserId }) => {
   const {
     tasks: allTasks,
     filteredTasks,
@@ -28,7 +33,7 @@ const TaskCalendar: React.FC = () => {
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode,
-  } = useTasks();
+  } = useTasks({ userId: demoUserId });
 
   const { appointments: allAppointments } = useAllAppointments();
 
@@ -143,6 +148,7 @@ const TaskCalendar: React.FC = () => {
                         isDoToday={!doTodayOffIds.has(task.original_task_id || task.id)}
                         toggleDoToday={toggleDoToday}
                         scheduledTasksMap={scheduledTasksMap}
+                        isDemo={isDemo}
                       />
                     </li>
                   ))}

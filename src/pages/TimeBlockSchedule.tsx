@@ -24,11 +24,16 @@ import TaskDetailDialog from '@/components/TaskDetailDialog';
 import { useSettings } from '@/context/SettingsContext';
 import { toast } from 'sonner';
 
-const TimeBlockSchedule: React.FC = () => {
+interface TimeBlockScheduleProps {
+  isDemo?: boolean;
+  demoUserId?: string;
+}
+
+const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, demoUserId }) => {
   useAuth(); 
 
   const [currentDate, setCurrentDate] = useState(new Date());
-  const { workHours: singleDayWorkHoursRaw, loading: workHoursLoading } = useWorkHours({ date: currentDate });
+  const { workHours: singleDayWorkHoursRaw, loading: workHoursLoading } = useWorkHours({ date: currentDate, userId: demoUserId });
   const singleDayWorkHours = Array.isArray(singleDayWorkHoursRaw) ? null : singleDayWorkHoursRaw;
 
   const { appointments, loading: appointmentsLoading, addAppointment, updateAppointment, deleteAppointment, clearDayAppointments, batchAddAppointments } = useAppointments(currentDate);
@@ -43,7 +48,7 @@ const TimeBlockSchedule: React.FC = () => {
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode
-  } = useTasks({ currentDate });
+  } = useTasks({ currentDate, userId: demoUserId });
   const { settings } = useSettings();
 
   const [isAppointmentFormOpen, setIsAppointmentFormOpen] = useState(false);
@@ -309,10 +314,10 @@ const TimeBlockSchedule: React.FC = () => {
                 <CalendarDays className="h-7 w-7" /> Dynamic Schedule
               </CardTitle>
               <div className="flex items-center gap-2">
-                <Button variant="outline" onClick={handleClearDay} disabled={appointments.length === 0}>
+                <Button variant="outline" onClick={handleClearDay} disabled={appointments.length === 0 || isDemo}>
                   <X className="mr-2 h-4 w-4" /> Clear Day
                 </Button>
-                <Button variant="outline" onClick={() => setIsParsingDialogOpen(true)}>
+                <Button variant="outline" onClick={() => setIsParsingDialogOpen(true)} disabled={isDemo}>
                   <Sparkles className="mr-2 h-4 w-4" /> Parse from Text
                 </Button>
               </div>
@@ -397,7 +402,7 @@ const TimeBlockSchedule: React.FC = () => {
                         className="relative h-full w-full border-t border-gray-200/80 dark:border-gray-700/80"
                         style={{ gridRow: `${index + 1}`, zIndex: 1 }}
                       >
-                        {!isBlockOccupied && (
+                        {!isBlockOccupied && !isDemo && (
                           <Popover>
                             <PopoverTrigger asChild>
                               <div className="absolute inset-0 cursor-pointer rounded-lg hover:bg-muted/50 transition-colors" />

@@ -35,11 +35,12 @@ interface SleepAnalyticsData {
 interface UseSleepAnalyticsProps {
   startDate: Date;
   endDate: Date;
+  userId?: string;
 }
 
-export const useSleepAnalytics = ({ startDate, endDate }: UseSleepAnalyticsProps) => {
+export const useSleepAnalytics = ({ startDate, endDate, userId: propUserId }: UseSleepAnalyticsProps) => {
   const { user } = useAuth();
-  const userId = user?.id;
+  const userId = propUserId || user?.id;
   const [analyticsData, setAnalyticsData] = useState<SleepAnalyticsData[]>([]);
   const [loading, setLoading] = useState(true);
 

@@ -4,7 +4,11 @@ import { useTasks, Task } from '@/hooks/useTasks';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import FocusToolsPanel from '@/components/FocusToolsPanel';
 
-const FocusMode: React.FC = () => {
+interface FocusModeProps {
+  demoUserId?: string;
+}
+
+const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
   const {
     filteredTasks,
     updateTask,
@@ -18,7 +22,7 @@ const FocusMode: React.FC = () => {
     updateSectionIncludeInFocusMode,
     handleAddTask,
     currentDate,
-  } = useTasks({ viewMode: 'focus' });
+  } = useTasks({ viewMode: 'focus', userId: demoUserId });
 
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);

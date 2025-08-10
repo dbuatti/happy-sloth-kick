@@ -47,8 +47,13 @@ const DevIdeaColumn: React.FC<DevIdeaColumnProps> = ({ id, title, icon: Icon, cl
     );
 };
 
-const DevSpace: React.FC = () => {
-  const { ideas, tags, loading, addIdea, updateIdea, setIdeas, addTag } = useDevIdeas();
+interface DevSpaceProps {
+  isDemo?: boolean;
+  demoUserId?: string;
+}
+
+const DevSpace: React.FC<DevSpaceProps> = ({ isDemo = false, demoUserId }) => {
+  const { ideas, tags, loading, addIdea, updateIdea, setIdeas, addTag } = useDevIdeas({ userId: demoUserId });
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingIdea, setEditingIdea] = useState<DevIdea | null>(null);
   const [activeIdea, setActiveIdea] = useState<DevIdea | null>(null);
@@ -138,7 +143,7 @@ const DevSpace: React.FC = () => {
         <main className="flex-grow p-4">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold">Dev Space</h1>
-            <Button onClick={handleAddClick}>
+            <Button onClick={handleAddClick} disabled={isDemo}>
               <Plus className="mr-2 h-4 w-4" /> Add Idea
             </Button>
           </div>

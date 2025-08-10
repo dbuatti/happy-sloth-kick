@@ -98,9 +98,14 @@ const getAnalyticsData = async (startDate: Date, endDate: Date, userId: string) 
   return { dailyData, categoryData, priorityData: priorityCounts };
 };
 
-const Analytics: React.FC = () => {
+interface AnalyticsProps {
+  isDemo?: boolean;
+  demoUserId?: string;
+}
+
+const Analytics: React.FC<AnalyticsProps> = ({ demoUserId }) => {
   const { user } = useAuth();
-  const currentUserId = user?.id;
+  const currentUserId = demoUserId || user?.id;
 
   const [analyticsDateRange, setAnalyticsDateRange] = useState<DateRange | undefined>({
     from: startOfMonth(new Date()),

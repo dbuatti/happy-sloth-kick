@@ -23,9 +23,9 @@ export interface DevIdea {
   tags: DevIdeaTag[];
 }
 
-export const useDevIdeas = () => {
+export const useDevIdeas = (props?: { userId?: string }) => {
   const { user } = useAuth();
-  const userId = user?.id;
+  const userId = props?.userId || user?.id;
   const [ideas, setIdeas] = useState<DevIdea[]>([]);
   const [tags, setTags] = useState<DevIdeaTag[]>([]);
   const [loading, setLoading] = useState(true);

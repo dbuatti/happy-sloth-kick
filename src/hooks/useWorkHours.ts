@@ -39,11 +39,12 @@ const allDaysOfWeek = [
 
 interface UseWorkHoursProps {
   date?: Date; // Make date optional
+  userId?: string;
 }
 
-export const useWorkHours = ({ date }: UseWorkHoursProps = {}) => { // Default to empty object
+export const useWorkHours = ({ date, userId: propUserId }: UseWorkHoursProps = {}) => { // Default to empty object
   const { user } = useAuth();
-  const userId = user?.id;
+  const userId = propUserId || user?.id;
   const [workHours, setWorkHours] = useState<WorkHour | WorkHour[] | null>(null); // Can be single or array
   const [loading, setLoading] = useState(true);
 

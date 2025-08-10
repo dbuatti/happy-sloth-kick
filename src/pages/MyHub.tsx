@@ -8,7 +8,12 @@ import Analytics from './Analytics'; // Import new Analytics page
 import Archive from './Archive'; // Import new Archive page
 import Help from './Help'; // Import Help page
 
-const MyHub: React.FC = () => {
+interface MyHubProps {
+  isDemo?: boolean;
+  demoUserId?: string;
+}
+
+const MyHub: React.FC<MyHubProps> = ({ isDemo = false, demoUserId }) => {
   return (
     <div className="flex-1 flex flex-col">
       <main className="flex-grow p-4 flex justify-center">
@@ -34,13 +39,13 @@ const MyHub: React.FC = () => {
               </TabsList>
 
               <TabsContent value="settings" className="mt-4">
-                <Settings />
+                <Settings isDemo={isDemo} demoUserId={demoUserId} />
               </TabsContent>
               <TabsContent value="analytics" className="mt-4">
-                <Analytics />
+                <Analytics isDemo={isDemo} demoUserId={demoUserId} />
               </TabsContent>
               <TabsContent value="archive" className="mt-4">
-                <Archive />
+                <Archive isDemo={isDemo} demoUserId={demoUserId} />
               </TabsContent>
               <TabsContent value="help" className="mt-4"> {/* New Help Content */}
                 <Help />

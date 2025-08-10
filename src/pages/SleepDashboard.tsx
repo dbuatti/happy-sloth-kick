@@ -15,12 +15,14 @@ import { useSleepAnalytics } from '@/hooks/useSleepAnalytics';
 interface SleepDashboardProps {
   dateRange: DateRange | undefined;
   setDateRange: React.Dispatch<React.SetStateAction<DateRange | undefined>>;
+  demoUserId?: string;
 }
 
-const SleepDashboard: React.FC<SleepDashboardProps> = ({ dateRange, setDateRange }) => {
+const SleepDashboard: React.FC<SleepDashboardProps> = ({ dateRange, setDateRange, demoUserId }) => {
   const { analyticsData, loading } = useSleepAnalytics({
     startDate: dateRange?.from || startOfMonth(new Date()),
     endDate: dateRange?.to || new Date(),
+    userId: demoUserId,
   });
 
   const {

@@ -10,7 +10,12 @@ import TaskOverviewDialog from '@/components/TaskOverviewDialog';
 import { useAllAppointments } from '@/hooks/useAllAppointments';
 import { Appointment } from '@/hooks/useAppointments';
 
-const Archive: React.FC = () => {
+interface ArchiveProps {
+  isDemo?: boolean;
+  demoUserId?: string;
+}
+
+const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
   const {
     tasks: allTasks, // Need all tasks for subtask filtering in overview
     filteredTasks: archivedTasks, 
@@ -27,7 +32,7 @@ const Archive: React.FC = () => {
     setFocusTask,
     toggleDoToday,
     doTodayOffIds,
-  } = useTasks({ viewMode: 'archive' });
+  } = useTasks({ viewMode: 'archive', userId: demoUserId });
 
   const { appointments: allAppointments } = useAllAppointments();
 
@@ -108,6 +113,7 @@ const Archive: React.FC = () => {
                       isDoToday={!doTodayOffIds.has(task.original_task_id || task.id)}
                       toggleDoToday={() => toggleDoToday(task)}
                       scheduledTasksMap={scheduledTasksMap}
+                      isDemo={isDemo}
                     />
                   </li>
                 ))}

@@ -73,7 +73,29 @@ const AppContent = () => {
               <Route path="/demo" element={<Dashboard isDemo={true} demoUserId={demoUserId} />} />
               <Route path="/demo/dashboard" element={<Dashboard isDemo={true} demoUserId={demoUserId} />} />
               <Route path="/demo/daily-tasks" element={<DailyTasksV3 isDemo={true} demoUserId={demoUserId} />} />
-              {/* Add other demo routes as needed, passing isDemo and demoUserId */}
+              <Route path="/demo/calendar" element={<TaskCalendar isDemo={true} demoUserId={demoUserId} />} />
+              <Route path="/demo/my-hub" element={<MyHub isDemo={true} demoUserId={demoUserId} />} />
+              <Route path="/demo/help" element={<Help />} />
+              <Route path="/demo/projects" element={<ProjectBalanceTracker isDemo={true} demoUserId={demoUserId} />} />
+              <Route path="/demo/schedule" element={<TimeBlockSchedule isDemo={true} demoUserId={demoUserId} />} />
+              <Route path="/demo/meditation" element={<Meditation />} />
+              <Route path="/demo/sleep" element={<SleepPage isDemo={true} demoUserId={demoUserId} />} />
+              <Route path="/demo/mindfulness" element={<MindfulnessTools isDemo={true} />} />
+              <Route path="/demo/focus" element={<FocusMode demoUserId={demoUserId} />} />
+              <Route path="/demo/dev-space" element={<DevSpace isDemo={true} demoUserId={demoUserId} />} />
+              
+              <Route path="/demo/mindfulness/body-scan" element={<BodyScanMeditationPage />} />
+              <Route path="/demo/mindfulness/mindful-eating" element={<MindfulEatingGuidePage />} />
+              <Route path="/demo/mindfulness/pmr" element={<ProgressiveMuscleRelaxationPage />} />
+              <Route path="/demo/mindfulness/guided-imagery" element={<GuidedImageryPage />} />
+              <Route path="/demo/mindfulness/thought-diffusion" element={<ThoughtDiffusionToolPage />} />
+              <Route path="/demo/mindfulness/sensory-tool" element={<SensoryToolPage />} />
+              <Route path="/demo/mindfulness/breathing-bubble" element={<BreathingBubblePage />} />
+
+              <Route path="/demo/settings" element={<Settings isDemo={true} demoUserId={demoUserId} />} />
+              <Route path="/demo/analytics" element={<Analytics isDemo={true} demoUserId={demoUserId} />} />
+              <Route path="/demo/archive" element={<Archive isDemo={true} demoUserId={demoUserId} />} />
+
               <Route path="*" element={<Navigate to="/demo" replace />} />
             </Routes>
           </Sidebar>

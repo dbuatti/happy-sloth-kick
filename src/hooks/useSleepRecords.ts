@@ -26,11 +26,12 @@ export type UpdateSleepRecordData = Partial<NewSleepRecordData>;
 
 interface UseSleepRecordsProps {
   selectedDate: Date;
+  userId?: string;
 }
 
-export const useSleepRecords = ({ selectedDate }: UseSleepRecordsProps) => {
+export const useSleepRecords = ({ selectedDate, userId: propUserId }: UseSleepRecordsProps) => {
   const { user } = useAuth();
-  const userId = user?.id;
+  const userId = propUserId || user?.id;
   const [sleepRecord, setSleepRecord] = useState<SleepRecord | null>(null);
   const [loading, setLoading] = useState(true);
 

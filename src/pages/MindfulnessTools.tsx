@@ -7,7 +7,11 @@ import WorryJournal from '@/components/WorryJournal';
 import GratitudeJournal from '@/components/GratitudeJournal';
 // Removed useAuth as it's not directly used here
 
-const MindfulnessTools: React.FC = () => {
+interface MindfulnessToolsProps {
+  isDemo?: boolean;
+}
+
+const MindfulnessTools: React.FC<MindfulnessToolsProps> = ({ isDemo = false }) => {
   return (
     <div className="flex-1 flex flex-col">
       <main className="flex-grow p-4 flex flex-col items-center space-y-8">
@@ -22,43 +26,43 @@ const MindfulnessTools: React.FC = () => {
             title="5-4-3-2-1 Sensory Tool"
             description="Ground yourself in the present moment by engaging your five senses."
             icon={Eye}
-            link="/mindfulness/sensory-tool"
+            link={isDemo ? "/demo/mindfulness/sensory-tool" : "/mindfulness/sensory-tool"}
           />
           <MindfulnessToolCard
             title="Interactive Breathing"
             description="Follow guided breathing cycles to regulate your breath and calm your mind."
             icon={Wind}
-            link="/mindfulness/breathing-bubble"
+            link={isDemo ? "/demo/mindfulness/breathing-bubble" : "/mindfulness/breathing-bubble"}
           />
           <MindfulnessToolCard
             title="Body Scan Meditation"
             description="Systematically bring awareness to different parts of your body to release tension."
             icon={ScanEye}
-            link="/mindfulness/body-scan"
+            link={isDemo ? "/demo/mindfulness/body-scan" : "/mindfulness/body-scan"}
           />
           <MindfulnessToolCard
             title="Mindful Eating Guide"
             description="Practice mindful eating to savor your food and improve your relationship with it."
             icon={UtensilsCrossed}
-            link="/mindfulness/mindful-eating"
+            link={isDemo ? "/demo/mindfulness/mindful-eating" : "/mindfulness/mindful-eating"}
           />
           <MindfulnessToolCard
             title="Progressive Muscle Relaxation"
             description="Systematically tense and relax muscle groups to release physical tension."
             icon={Armchair}
-            link="/mindfulness/pmr"
+            link={isDemo ? "/demo/mindfulness/pmr" : "/mindfulness/pmr"}
           />
           <MindfulnessToolCard
             title="Guided Imagery"
             description="Visualize a peaceful place to find calm, safety, and mental escape."
             icon={Sparkles}
-            link="/mindfulness/guided-imagery"
+            link={isDemo ? "/demo/mindfulness/guided-imagery" : "/mindfulness/guided-imagery"}
           />
           <MindfulnessToolCard
             title="Thought Diffusion"
             description="Change your relationship with difficult or intrusive thoughts using various techniques."
             icon={MessageSquare}
-            link="/mindfulness/thought-diffusion"
+            link={isDemo ? "/demo/mindfulness/thought-diffusion" : "/mindfulness/thought-diffusion"}
           />
         </div>
       </main>

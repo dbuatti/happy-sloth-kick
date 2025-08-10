@@ -24,7 +24,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from '@/context/AuthContext'; // Re-introduced useAuth
 
-const ProjectBalanceTracker: React.FC = () => {
+interface ProjectBalanceTrackerProps {
+  isDemo?: boolean;
+  demoUserId?: string;
+}
+
+const ProjectBalanceTracker: React.FC<ProjectBalanceTrackerProps> = ({ isDemo = false, demoUserId }) => {
   // Removed 'user' from useAuth destructuring as it's not directly used here.
   useAuth(); 
 
@@ -40,7 +45,7 @@ const ProjectBalanceTracker: React.FC = () => {
     resetAllProjectCounts,
     sortOption,
     setSortOption,
-  } = useProjects();
+  } = useProjects({ userId: demoUserId });
 
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
@@ -190,7 +195,7 @@ const ProjectBalanceTracker: React.FC = () => {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-4">
               <Dialog open={isAddProjectOpen} onOpenChange={setIsAddProjectOpen}>
                 <DialogTrigger asChild>
-                  <Button disabled={isSavingProject} className="w-full sm:w-auto h-9">
+                  <Button disabled={isSavingProject || isDemo} className="w-full sm:w-auto h-9">
                     <Plus className="mr-2 h-4 w-4" /> Add Project
                   </Button>
                 </DialogTrigger>
@@ -266,7 +271,7 @@ const ProjectBalanceTracker: React.FC = () => {
                 <Sparkles className="h-8 w-8 text-primary animate-bounce" />
                 <p className="text-xl font-semibold">Congratulations! All projects are balanced!</p>
                 <p>Ready to start a new cycle?</p>
-                <Button onClick={handleResetAllClick} className="mt-2 h-9" disabled={isResettingAll}>
+                <Button onClick={handleResetAllClick} className="mt-2 h-9" disabled={isResettingAll || isDemo}>
                   {isResettingAll ? 'Resetting...' : <><RefreshCcw className="mr-2 h-4 w-4" /> Reset All Counters</>}
                 </Button>
               </div>
@@ -387,7 +392,7 @@ const ProjectBalanceTracker: React.FC = () => {
                                 size="icon"
                                 className="h-9 w-9"
                                 onClick={(e) => { e.stopPropagation(); handleDecrement(project.id); }}
-                                disabled={project.current_count <= 0}
+                                disabled={project.current_count <= 0 || isDemo}
                               >
                                 <Minus className="h-5 w-5" />
                               </Button>
@@ -400,7 +405,7 @@ const ProjectBalanceTracker: React.FC = () => {
                                 size="icon"
                                 className="h-9 w-9"
                                 onClick={(e) => { e.stopPropagation(); handleIncrement(project.id); }}
-                                disabled={project.current_count >= 10}
+                                disabled={project.current_count >= 10 || isDemo}
                               >
                                 <Plus className="h-5 w-5" />
                               </Button>
@@ -412,7 +417,7 @@ const ProjectBalanceTracker: React.FC = () => {
                                 className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                                 onClick={(e) => { e.stopPropagation(); handleEditProject(project); }}
                                 aria-label={`Edit ${project.name}`}
-                                disabled={isSavingProject}
+                                disabled={isSavingProject || isDemo}
                               >
                                 <Edit className="h-5 w-5" />
                               </Button>
@@ -422,7 +427,7 @@ const ProjectBalanceTracker: React.FC = () => {
                                 className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                                 onClick={(e) => { e.stopPropagation(); handleResetIndividualProjectClick(project.id); }}
                                 aria-label={`Reset ${project.name}`}
-                                disabled={isSavingProject}
+                                disabled={isSavingProject || isDemo}
                               >
                                 <RotateCcw className="h-5 w-5" />
                               </Button>
@@ -432,7 +437,7 @@ const ProjectBalanceTracker: React.FC = () => {
                                 className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-destructive"
                                 onClick={(e) => { e.stopPropagation(); handleDeleteProjectClick(project.id); }}
                                 aria-label={`Delete ${project.name}`}
-                                disabled={isSavingProject}
+                                disabled={isSavingProject || isDemo}
                               >
                                 <Trash2 className="h-5 w-5" />
                               </Button>
