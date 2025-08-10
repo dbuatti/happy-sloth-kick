@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock, ChevronRight } from 'lucide-react';
+import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock, ChevronRight, GripVertical } from 'lucide-react';
 import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
@@ -167,12 +167,18 @@ const TaskItem: React.FC<TaskItemProps> = ({
         !isDoToday && "opacity-40",
         "group hover:bg-muted/50"
       )}
-      {...dragListeners}
     >
       {/* Priority Pill */}
       <div className={cn("absolute left-0 top-0 h-full w-1.5 rounded-l-lg", getPriorityDotColor(task.priority))} />
 
-      <div className="flex-shrink-0 pl-4 pr-1 flex items-center" data-no-dnd="true">
+      {/* Drag Handle */}
+      <div className="flex-shrink-0 pl-2" data-no-dnd="true">
+        <Button variant="ghost" size="icon" className="h-8 w-8 cursor-grab opacity-20 group-hover:opacity-100 transition-opacity" {...dragListeners}>
+          <GripVertical className="h-5 w-5 text-muted-foreground" />
+        </Button>
+      </div>
+
+      <div className="flex-shrink-0 pr-1 flex items-center" data-no-dnd="true">
         {hasSubtasks && (
           <Button
             variant="ghost"
