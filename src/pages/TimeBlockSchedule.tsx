@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useWorkHours } from '@/hooks/useWorkHours';
 import { format, addMinutes, parse, isBefore, getMinutes, getHours, parseISO, isValid } from 'date-fns';
-import { CalendarDays, Clock, Settings, Sparkles, X } from 'lucide-react';
+import { CalendarDays, Clock, Settings, Sparkles, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import DateNavigator from '@/components/DateNavigator';
 import { useAppointments, Appointment, NewAppointmentData } from '@/hooks/useAppointments';
 import AppointmentForm from '@/components/AppointmentForm';
@@ -25,6 +25,7 @@ import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, u
 import DraggableTaskListItem from '@/components/DraggableTaskListItem';
 import DraggableAppointmentCard from '@/components/DraggableAppointmentCard';
 import TimeBlock from '@/components/TimeBlock';
+import { cn } from '@/lib/utils';
 
 interface TimeBlockScheduleProps {
   isDemo?: boolean;
@@ -68,6 +69,7 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
 
   const [activeDragItem, setActiveDragItem] = useState<any>(null);
+  const [isTaskPanelCollapsed, setIsTaskPanelCollapsed] = useState(false);
 
   const sensors = useSensors(useSensor(PointerSensor, {
     activationConstraint: {
@@ -398,7 +400,10 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
                   <p className="text-sm">Please check your work hour settings. Ensure your start time is before your end time.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
+                <div className={cn(
+                  "grid grid-cols-1 gap-6 transition-all duration-300",
+                  isTaskPanelCollapsed ? "lg:grid-cols-[1fr_auto]" : "lg:grid-cols-[1fr_300px]"
+                )}>
                   <div className="grid grid-cols-[80px_1fr] gap-x-4">
                     <div className="relative" style={{
                       height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`,
@@ -471,17 +476,30 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
                       })}
                     </div>
                   </div>
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Unscheduled Tasks</h3>
-                    <div className="space-y-2 max-h-[600px] overflow-y-auto p-1">
-                      {unscheduledDoTodayTasks.length > 0 ? (
-                        unscheduledDoTodayTasks.map(task => (
-                          <DraggableTaskListItem key={task.id} task={task} />
-                        ))
-                      ) : (
-                        <p className="text-sm text-muted-foreground text-center py-4">No tasks to schedule.</p>
-                      )}
-                    </div>
+                  <div className="relative">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsTaskPanelCollapsed(!isTaskPanelCollapsed)}
+                      className="absolute -left-4 top-1/2 -translate-y-1/2 z-20 bg-background hover:bg-muted rounded-full h-8 w-8"
+                      aria-label={isTaskPanelCollapsed ? "Show task panel" : "Hide task panel"}
+                    >
+                      {isTaskPanelCollapsed ? <ChevronLeft className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+                    </Button>
+                    {!isTaskPanelCollapsed && (
+                      <div className="space-y-4 lg:w-[300px]">
+                        <h3 className="text-lg font-semibold">Unscheduled Tasks</h3>
+                        <div className="space-y-2 max-h-[600px] overflow-y-auto p-1">
+                          {unscheduledDoTodayTasks.length > 0 ? (
+                            unscheduledDoTodayTasks.map(task => (
+                              <DraggableTaskListItem key={task.id} task={task} />
+                            ))
+                          ) : (
+                            <p className="text-sm text-muted-foreground text-center py-4">No tasks to schedule.</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
