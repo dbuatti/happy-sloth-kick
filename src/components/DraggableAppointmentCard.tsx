@@ -20,9 +20,9 @@ interface DraggableAppointmentCardProps {
 const DraggableAppointmentCard: React.FC<DraggableAppointmentCardProps> = (props) => {
   const { appointment } = props;
 
-  const startTime = parseISO(`2000-01-01T${appointment.start_time}`);
-  const endTime = parseISO(`2000-01-01T${appointment.end_time}`);
-  const duration = isValid(startTime) && isValid(endTime) ? differenceInMinutes(endTime, startTime) : 0;
+  const startTime = appointment.start_time ? parseISO(`2000-01-01T${appointment.start_time}`) : null;
+  const endTime = appointment.end_time ? parseISO(`2000-01-01T${appointment.end_time}`) : null;
+  const duration = startTime && endTime && isValid(startTime) && isValid(endTime) ? differenceInMinutes(endTime, startTime) : 0;
 
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `appointment-${appointment.id}`,

@@ -200,6 +200,9 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
   const gapHeight = 4;
 
   const getAppointmentGridPosition = useCallback((app: Appointment) => {
+    if (!app.start_time || !app.end_time) {
+      return { gridRowStart: 1, gridRowEnd: 1, overlapOffset: 0 };
+    }
     const appStartTime = parse(app.start_time, 'HH:mm:ss', currentDate);
     const appEndTime = parse(app.end_time, 'HH:mm:ss', currentDate);
 
@@ -591,13 +594,13 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
               </div>
             )}
             {activeDragItem?.type === 'appointment' && (() => {
-              const startTime = parseISO(`2000-01-01T${activeDragItem.appointment.start_time}`);
-              const endTime = parseISO(`2000-01-01T${activeDragItem.appointment.end_time}`);
+              const startTime = activeDragItem.appointment.start_time ? parseISO(`2000-01-01T${activeDragItem.appointment.start_time}`) : null;
+              const endTime = activeDragItem.appointment.end_time ? parseISO(`2000-01-01T${activeDragItem.appointment.end_time}`) : null;
               return (
                 <div className="rounded-lg p-2 shadow-md text-white" style={{ backgroundColor: activeDragItem.appointment.color, width: '200px' }}>
                   <h4 className="font-semibold text-sm truncate">{activeDragItem.appointment.title}</h4>
                   <p className="text-xs opacity-90">
-                    {isValid(startTime) && isValid(endTime) ? `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}` : 'Invalid time'}
+                    {startTime && endTime && isValid(startTime) && isValid(endTime) ? `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}` : 'Invalid time'}
                   </p>
                 </div>
               );

@@ -46,8 +46,8 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
     zIndex: 10,
   };
 
-  const startTime = parseISO(`2000-01-01T${appointment.start_time}`);
-  const endTime = parseISO(`2000-01-01T${appointment.end_time}`);
+  const startTime = appointment.start_time ? parseISO(`2000-01-01T${appointment.start_time}`) : null;
+  const endTime = appointment.end_time ? parseISO(`2000-01-01T${appointment.end_time}`) : null;
 
   const handleUnscheduleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -81,7 +81,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
           {appointment.title}
         </h4>
         <p className="text-xs opacity-90">
-          {isValid(startTime) && isValid(endTime) ? `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}` : 'Invalid time'}
+          {startTime && endTime && isValid(startTime) && isValid(endTime) ? `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}` : 'Invalid time'}
         </p>
       </div>
       {appointment.description && (
