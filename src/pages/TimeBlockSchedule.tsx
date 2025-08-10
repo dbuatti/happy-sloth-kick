@@ -580,7 +580,7 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
           </DialogContent>
         </Dialog>
         {createPortal(
-          <DragOverlay>
+          <DragOverlay dropAnimation={null}>
             {activeDragItem?.type === 'task' && (
               <div className="p-2 rounded-md bg-primary text-primary-foreground shadow-lg">
                 <p className="font-semibold text-sm">{activeDragItem.task.description}</p>
