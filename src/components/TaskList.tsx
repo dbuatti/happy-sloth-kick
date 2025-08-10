@@ -100,12 +100,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
   const [activeItemData, setActiveItemData] = useState<Task | TaskSection | null>(null);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        delay: 150,
-        tolerance: 5,
-      },
-    }),
+    useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
