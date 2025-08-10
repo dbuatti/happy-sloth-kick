@@ -2,9 +2,9 @@ import React from 'react';
 import { Appointment } from '@/hooks/useAppointments';
 import { Task } from '@/hooks/useTasks';
 import { cn } from '@/lib/utils';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isValid } from 'date-fns';
 import { Info, ListTodo, CheckCircle2, X } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from './ui/button';
 
 interface AppointmentCardProps {
@@ -81,7 +81,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
           {appointment.title}
         </h4>
         <p className="text-xs opacity-90">
-          {format(startTime, 'h:mm a')} - {format(endTime, 'h:mm a')}
+          {isValid(startTime) && isValid(endTime) ? `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}` : 'Invalid time'}
         </p>
       </div>
       {appointment.description && (

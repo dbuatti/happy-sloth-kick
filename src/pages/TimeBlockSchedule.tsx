@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useWorkHours } from '@/hooks/useWorkHours';
-import { format, addMinutes, parse, isBefore, getMinutes, getHours, parseISO } from 'date-fns';
+import { format, addMinutes, parse, isBefore, getMinutes, getHours, parseISO, isValid } from 'date-fns';
 import { CalendarDays, Clock, Settings, Sparkles, X } from 'lucide-react';
 import DateNavigator from '@/components/DateNavigator';
 import { useAppointments, Appointment, NewAppointmentData } from '@/hooks/useAppointments';
@@ -590,14 +590,18 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
                 <p className="font-semibold text-sm">{activeDragItem.task.description}</p>
               </div>
             )}
-            {activeDragItem?.type === 'appointment' && (
-              <div className="rounded-lg p-2 shadow-md text-white" style={{ backgroundColor: activeDragItem.appointment.color, width: '200px' }}>
-                <h4 className="font-semibold text-sm truncate">{activeDragItem.appointment.title}</h4>
-                <p className="text-xs opacity-90">
-                  {format(parseISO(`2000-01-01T${activeDragItem.appointment.start_time}`), 'h:mm a')} - {format(parseISO(`2000-01-01T${activeDragItem.appointment.end_time}`), 'h:mm a')}
-                </p>
-              </div>
-            )}
+            {activeDragItem?.type === 'appointment' && (() => {
+              const startTime = parseISO(`2000-01-01T${activeDragItem.appointment.start_time}`);
+              const endTime = parseISO(`2000-01-01T${activeDragItem.appointment.end_time}`);
+              return (
+                <div className="rounded-lg p-2 shadow-md text-white" style={{ backgroundColor: activeDragItem.appointment.color, width: '200px' }}>
+                  <h4 className="font-semibold text-sm truncate">{activeDragItem.appointment.title}</h4>
+                  <p className="text-xs opacity-90">
+                    {isValid(startTime) && isValid(endTime) ? `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}` : 'Invalid time'}
+                  </p>
+                </div>
+              );
+            })()}
           </DragOverlay>,
           document.body
         )}
