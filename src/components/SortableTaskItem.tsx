@@ -50,6 +50,8 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform || null), // Correctly handle null transform
     transition,
+    opacity: isDragging && !isOverlay ? 0 : 1,
+    visibility: isDragging && !isOverlay ? 'hidden' : 'visible',
     paddingLeft: `${level * 12}px`,
   };
 
@@ -71,6 +73,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         "flex items-center"
       )}
       {...attributes}
+      {...listeners}
     >
       <div className="flex-1"> {/* This div now contains the TaskItem and subtasks */}
         <TaskItem
@@ -78,7 +81,6 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           allTasks={allTasks}
           {...rest}
           isOverlay={isOverlay}
-          dragListeners={listeners}
           setFocusTask={setFocusTask}
           isDoToday={isDoToday}
           toggleDoToday={toggleDoToday}
