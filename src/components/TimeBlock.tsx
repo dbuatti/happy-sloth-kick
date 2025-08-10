@@ -37,6 +37,7 @@ const TimeBlock: React.FC<TimeBlockProps> = ({ block, index, appointmentsWithPos
       className="relative h-full w-full border-t border-gray-200/80 dark:border-gray-700/80"
       style={{ gridRow: `${index + 1}`, zIndex: 1 }}
     >
+      <div className="absolute top-1/2 w-full border-b border-dashed border-gray-200/50 dark:border-gray-700/50" />
       {isOver && <div className="absolute inset-0 bg-primary/20 rounded-lg" />}
       {!isBlockOccupied && !isDemo && (
         <Popover>

@@ -22,10 +22,11 @@ import TaskDetailDialog from '@/components/TaskDetailDialog';
 import { useSettings } from '@/context/SettingsContext';
 import { toast } from 'sonner';
 import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, useSensor, useSensors, pointerWithin } from '@dnd-kit/core';
-import DraggableTaskListItem from '@/components/DraggableTaskListItem';
 import DraggableAppointmentCard from '@/components/DraggableAppointmentCard';
 import TimeBlock from '@/components/TimeBlock';
 import { cn } from '@/lib/utils';
+import DraggableScheduleTaskItem from '@/components/DraggableScheduleTaskItem';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 interface TimeBlockScheduleProps {
   isDemo?: boolean;
@@ -78,6 +79,7 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
       return false;
     }
   });
+  const [isClearDayDialogOpen, setIsClearDayDialogOpen] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('scheduleTaskPanelCollapsed', JSON.stringify(isTaskPanelCollapsed));
@@ -203,6 +205,7 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
         },
       });
     }
+    setIsClearDayDialogOpen(false);
   };
 
   const handleUndoClear = async (appsToRestore: Appointment[]) => {
@@ -375,7 +378,7 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
                   <CalendarDays className="h-7 w-7" /> Dynamic Schedule
                 </CardTitle>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" onClick={handleClearDay} disabled={appointments.length === 0 || isDemo}>
+                  <Button variant="outline" onClick={() => setIsClearDayDialogOpen(true)} disabled={appointments.length === 0 || isDemo}>
                     <X className="mr-2 h-4 w-4" /> Clear Day
                   </Button>
                   <Button variant="outline" onClick={() => setIsParsingDialogOpen(true)} disabled={isDemo}>
@@ -504,7 +507,7 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
                         <div className="space-y-2 max-h-[600px] overflow-y-auto p-1">
                           {unscheduledDoTodayTasks.length > 0 ? (
                             unscheduledDoTodayTasks.map(task => (
-                              <DraggableTaskListItem key={task.id} task={task} />
+                              <DraggableScheduleTaskItem key={task.id} task={task} sections={sections} />
                             ))
                           ) : (
                             <p className="text-sm text-muted-foreground text-center py-4">No tasks to schedule.</p>
@@ -594,9 +597,7 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
         {createPortal(
           <DragOverlay dropAnimation={null}>
             {activeDragItem?.type === 'task' && (
-              <div className="p-2 rounded-md bg-primary text-primary-foreground shadow-lg">
-                <p className="font-semibold text-sm">{activeDragItem.task.description}</p>
-              </div>
+              <DraggableScheduleTaskItem task={activeDragItem.task} sections={sections} />
             )}
             {activeDragItem?.type === 'appointment' && (() => {
               const startTime = activeDragItem.appointment.start_time ? parseISO(`2000-01-01T${activeDragItem.appointment.start_time}`) : null;
@@ -613,6 +614,20 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
           </DragOverlay>,
           document.body
         )}
+        <AlertDialog open={isClearDayDialogOpen} onOpenChange={setIsClearDayDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure you want to clear the day?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action will remove all appointments for {format(currentDate, 'MMMM d, yyyy')}. This cannot be undone immediately, but you can undo it from the toast notification.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleClearDay}>Clear Day</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DndContext>
   );
