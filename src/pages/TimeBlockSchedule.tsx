@@ -21,7 +21,7 @@ import TaskOverviewDialog from '@/components/TaskOverviewDialog';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import { useSettings } from '@/context/SettingsContext';
 import { toast } from 'sonner';
-import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, useSensor, useSensors, pointerWithin } from '@dnd-kit/core';
 import DraggableTaskListItem from '@/components/DraggableTaskListItem';
 import DraggableAppointmentCard from '@/components/DraggableAppointmentCard';
 import TimeBlock from '@/components/TimeBlock';
@@ -353,7 +353,7 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
   };
 
   return (
-    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+    <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="flex-1 flex flex-col">
         <main className="flex-grow p-4">
           <Card className="w-full max-w-6xl mx-auto shadow-lg rounded-xl p-4">
