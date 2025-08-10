@@ -89,7 +89,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
   }, [handleCancelEdit]);
 
   const getTaskCountCircleClasses = () => {
-    return "bg-primary text-primary-foreground";
+    return "bg-primary/10 text-primary";
   };
 
   return (
@@ -102,14 +102,14 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
         isOverlay ? "shadow-xl ring-2 ring-primary bg-card" : "",
       )}
       {...(attributes || {})}
+      {...(listeners || {})}
     >
       <div 
-        className="relative flex items-center py-2 pr-3 cursor-pointer"
+        className="relative flex items-center p-2 cursor-pointer bg-muted/30 rounded-lg"
         onClick={!isOverlay && !isEditingLocal ? () => toggleSection(section.id) : undefined}
       >
         <div 
-          className="flex items-center flex-1 min-w-0 cursor-grab"
-          {...(listeners || {})}
+          className="flex items-center flex-1 min-w-0"
         >
           {isEditingLocal ? (
             <div data-no-dnd="true" className="flex-1">

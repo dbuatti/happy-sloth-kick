@@ -45,6 +45,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   onOpenOverview,
   currentDate,
   isOverlay = false,
+  dragListeners,
   setFocusTask,
   isDoToday,
   toggleDoToday,
@@ -109,16 +110,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
     }
   };
 
-  const getPriorityBorderColor = (priority: string) => {
-    switch (priority) {
-      case 'urgent': return 'border-l-priority-urgent';
-      case 'high': return 'border-l-priority-high';
-      case 'medium': return 'border-l-priority-medium';
-      case 'low': return 'border-l-priority-low';
-      default: return 'border-l-gray-500';
-    }
-  };
-
   const handleCheckboxChange = (checked: boolean) => {
     if (isOverlay) return;
     onStatusChange(task.id, checked ? 'completed' : 'to-do');
@@ -163,16 +154,18 @@ const TaskItem: React.FC<TaskItemProps> = ({
   return (
     <div
       className={cn(
-        "relative flex items-center w-full",
-        task.status === 'completed' ? "text-muted-foreground bg-task-completed-bg" : "text-foreground",
+        "relative flex items-center w-full rounded-lg transition-colors duration-200",
+        task.status === 'completed' ? "text-muted-foreground bg-task-completed-bg" : "bg-card text-foreground",
         !isDoToday && task.recurring_type === 'none' && "opacity-40",
-        "group",
-        "border-l-4",
-        getPriorityBorderColor(task.priority)
+        "group hover:bg-muted/50"
       )}
+      {...dragListeners}
     >
+      {/* Priority Pill */}
+      <div className={cn("absolute left-0 top-1/2 -translate-y-1/2 h-1/2 w-1 rounded-r-full", getPriorityDotColor(task.priority))} />
+
       {/* Checkbox Area */}
-      <div className="flex-shrink-0 flex items-center px-3" data-no-dnd="true">
+      <div className="flex-shrink-0 flex items-center pl-4 pr-3" data-no-dnd="true">
         <Checkbox
           key={`${task.id}-${task.status}`}
           checked={task.status === 'completed'}
@@ -190,8 +183,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
         className="flex-grow flex items-center space-x-2 py-3 cursor-pointer min-w-0"
         onClick={() => !isOverlay && !isEditing && onOpenOverview(task)}
       >
-        <div className={cn("w-3 h-3 rounded-full flex-shrink-0", getPriorityDotColor(task.priority))} />
-        
         <div className="flex-grow min-w-0 w-full" data-no-dnd="true">
           {isEditing ? (
             <Input
