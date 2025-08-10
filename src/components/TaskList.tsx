@@ -175,7 +175,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
-    console.log('[DnD Event] DragEnd triggered.', { active, over });
 
     if (!over || active.id === over.id) {
       setActiveId(null);

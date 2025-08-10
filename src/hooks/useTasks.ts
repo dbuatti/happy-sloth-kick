@@ -791,7 +791,6 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
   }, [userId, sections]);
 
   const updateTaskParentAndOrder = useCallback(async (activeId: string, newParentId: string | null, newSectionId: string | null, overId: string | null) => {
-    console.log(`[DnD Start] activeId: ${activeId}, newParentId: ${newParentId}, newSectionId: ${newSectionId}, overId: ${overId}`);
     if (!userId) {
         showError('User not authenticated.');
         return;
@@ -804,14 +803,19 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
         return;
     }
 
-    // 1. Create a new array with the task moved to its new visual position
     let tempTasks = tasks.filter(t => t.id !== activeId);
     const updatedActiveTask = { ...activeTask, parent_task_id: newParentId, section_id: newSectionId };
 
     let insertionIndex = -1;
     if (overId) {
+        const oldIndex = originalTasks.findIndex(t => t.id === activeId);
+        const overIndexInOriginal = originalTasks.findIndex(t => t.id === overId);
         insertionIndex = tempTasks.findIndex(t => t.id === overId);
-        console.log(`[DnD Logic] Found overId '${overId}'. Calculated insertionIndex: ${insertionIndex}`);
+
+        if (oldIndex !== -1 && overIndexInOriginal !== -1 && oldIndex < overIndexInOriginal && activeTask.parent_task_id === newParentId && activeTask.section_id === newSectionId) {
+            insertionIndex += 1;
+        }
+        console.log(`[DnD Logic] Found overId '${overId}'. oldIndex: ${oldIndex}, overIndexOriginal: ${overIndexInOriginal}, Calculated insertionIndex: ${insertionIndex}`);
     } else {
         const firstTaskInNewLocation = tempTasks.find(t => t.section_id === newSectionId && t.parent_task_id === newParentId);
         if (firstTaskInNewLocation) {
@@ -827,9 +831,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
     } else {
         tempTasks.push(updatedActiveTask);
     }
-    console.log('[DnD Logic] tempTasks after splice/push:', tempTasks.map(t => ({id: t.id, order: t.order, desc: t.description})));
 
-    // 2. Re-calculate order for all tasks and create the final state for the optimistic update
     const updatesForDb: Partial<Omit<Task, 'user_id'>>[] = [];
     const groupsToUpdate = new Map<string, Task[]>();
 
@@ -854,7 +856,6 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
         });
     });
 
-    // 3. Create the final state for the UI with updated order properties
     const updatesMap = new Map(updatesForDb.map(u => [u.id, u]));
     const finalUiTasks = tempTasks.map(t => {
         if (updatesMap.has(t.id)) {
@@ -863,35 +864,28 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
         return t;
     });
 
-    // 4. Perform the optimistic update and DB update
     const updatedIds = updatesForDb.map(t => t.id!);
     updatedIds.forEach(id => inFlightUpdatesRef.current.add(id));
 
-    console.log('[DnD Optimistic Update] Setting new UI state:', finalUiTasks.map(t => ({id: t.id, order: t.order, desc: t.description})));
     setTasks(finalUiTasks);
 
     try {
         if (updatesForDb.length > 0) {
-            console.log('[DnD DB Update] Calling RPC with updates:', JSON.stringify(updatesForDb, null, 2));
             const { error } = await supabase.rpc('update_tasks_order', { updates: updatesForDb });
             if (error) {
               console.error('[DnD DB Error] Supabase rpc error details:', JSON.stringify(error, null, 2));
               throw error;
             }
         }
-        console.log('[DnD DB Update] Success!');
         showSuccess('Task moved!');
     } catch (e: any) {
         console.error('[DnD DB Error] Full error object in catch block:', e);
         showError(`Failed to move task. Check console for details. Message: ${e.message}`);
-        console.log('[DnD Revert] Reverting optimistic update due to error.');
         setTasks(originalTasks);
     } finally {
         setTimeout(() => {
             updatedIds.forEach(id => inFlightUpdatesRef.current.delete(id));
-            console.log('[DnD End] In-flight refs cleared after delay.');
-        }, 1500); // Delay clearing the ref to account for real-time event latency
-        console.log('[DnD End] Process finished, refs will be cleared shortly.');
+        }, 1500);
     }
   }, [userId, tasks]);
 
