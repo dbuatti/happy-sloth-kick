@@ -14,11 +14,13 @@ import { useSettings } from '@/context/SettingsContext';
 
 interface SidebarProps {
   children: React.ReactNode;
+  isDemo?: boolean;
+  demoUserId?: string;
 }
 
-const NavigationLinks = ({ onLinkClick }: { onLinkClick?: () => void }) => {
+const NavigationLinks = ({ onLinkClick, isDemo, demoUserId }: { onLinkClick?: () => void; isDemo?: boolean; demoUserId?: string; }) => {
   const location = useLocation();
-  const { dailyTaskCount, loading: countLoading } = useDailyTaskCount();
+  const { dailyTaskCount, loading: countLoading } = useDailyTaskCount({ userId: demoUserId });
   const { settings } = useSettings();
 
   const visibleNavItems = navItems.filter(item => {
@@ -29,12 +31,13 @@ const NavigationLinks = ({ onLinkClick }: { onLinkClick?: () => void }) => {
   return (
     <nav className="flex-1 px-2 space-y-0.5">
       {visibleNavItems.map((item) => {
-        const isActive = location.pathname === item.path;
+        const path = isDemo ? (item.path === '/dashboard' ? '/demo' : `/demo${item.path}`) : item.path;
+        const isActive = location.pathname === path;
         const Icon = item.icon;
         return (
           <Link
             key={item.path}
-            to={item.path}
+            to={path}
             className={cn(
               "flex items-center space-x-2 px-2 py-1.5 rounded-md transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
               isActive
@@ -57,7 +60,7 @@ const NavigationLinks = ({ onLinkClick }: { onLinkClick?: () => void }) => {
   );
 };
 
-export const Sidebar: React.FC<SidebarProps> = ({ children }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false, demoUserId }) => {
   const isMobile = useIsMobile();
   const { isSoundEnabled, toggleSound } = useSound();
 
@@ -85,7 +88,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ children }) => {
               <div className="p-3 flex justify-between items-center">
                 <h1 className="text-xl font-bold">TaskMaster</h1>
               </div>
-              <NavigationLinks onLinkClick={() => setIsSheetOpen(false)} />
+              <NavigationLinks onLinkClick={() => setIsSheetOpen(false)} isDemo={isDemo} demoUserId={demoUserId} />
               <div className="p-3 border-t border-border flex justify-between items-center">
                 <p className="text-xs text-muted-foreground">
                   &copy; {new Date().getFullYear()} TaskMaster
@@ -120,7 +123,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ children }) => {
         <div className="p-3 flex justify-between items-center">
           <h1 className="text-xl font-bold">TaskMaster</h1>
         </div>
-        <NavigationLinks />
+        <NavigationLinks isDemo={isDemo} demoUserId={demoUserId} />
         <div className="p-3 border-t border-border flex justify-between items-center">
           <p className="text-xs text-muted-foreground">
             &copy; {new Date().getFullYear()} TaskMaster

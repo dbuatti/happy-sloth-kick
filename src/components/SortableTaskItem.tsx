@@ -24,6 +24,7 @@ interface SortableTaskItemProps {
   toggleDoToday: (task: Task) => void;
   doTodayOffIds: Set<string>;
   scheduledTasksMap: Map<string, Appointment>;
+  isDemo?: boolean;
 }
 
 const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
@@ -36,6 +37,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   toggleDoToday,
   doTodayOffIds,
   scheduledTasksMap,
+  isDemo = false,
   ...rest
 }) => {
   const {
@@ -85,6 +87,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           isDoToday={isDoToday}
           toggleDoToday={toggleDoToday}
           scheduledTasksMap={scheduledTasksMap}
+          isDemo={isDemo}
         />
         {directSubtasks.length > 0 && (
           <ul className="list-none mt-1.5 space-y-1.5">
@@ -101,6 +104,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
                 toggleDoToday={toggleDoToday}
                 doTodayOffIds={doTodayOffIds}
                 scheduledTasksMap={scheduledTasksMap}
+                isDemo={isDemo}
               />
             ))}
           </ul>

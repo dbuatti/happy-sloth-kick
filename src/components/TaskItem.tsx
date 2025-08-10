@@ -33,6 +33,7 @@ interface TaskItemProps {
   isDoToday: boolean;
   toggleDoToday: (task: Task) => void;
   scheduledTasksMap: Map<string, Appointment>;
+  isDemo?: boolean;
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -50,6 +51,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   isDoToday,
   toggleDoToday,
   scheduledTasksMap,
+  isDemo = false,
 }) => {
   useAuth(); 
   const { playSound } = useSound();
@@ -76,7 +78,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
   const handleStartEdit = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent onOpenOverview from firing
-    if (isOverlay) return;
+    if (isOverlay || isDemo) return;
     setIsEditing(true);
   };
 
@@ -111,7 +113,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   };
 
   const handleCheckboxChange = (checked: boolean) => {
-    if (isOverlay) return;
+    if (isOverlay || isDemo) return;
     onStatusChange(task.id, checked ? 'completed' : 'to-do');
     if (checked) {
       playSound('success');
@@ -174,7 +176,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           onClick={(e) => e.stopPropagation()}
           className="flex-shrink-0 h-5 w-5 checkbox-root"
           aria-label={`Mark task "${task.description}" as ${task.status === 'completed' ? 'to-do' : 'completed'}`}
-          disabled={isOverlay}
+          disabled={isOverlay || isDemo}
         />
       </div>
 
@@ -296,6 +298,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
             isOn={isDoToday}
             onToggle={() => toggleDoToday(task)}
             taskId={task.id}
+            isDemo={isDemo}
           />
         )}
         <DropdownMenu>
@@ -305,7 +308,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
               className="h-8 w-8 p-0"
               onClick={(e) => e.stopPropagation()}
               aria-label="More options"
-              disabled={isOverlay}
+              disabled={isOverlay || isDemo}
             >
               <span className="sr-only">Open menu</span>
               <MoreHorizontal className="h-4 w-4" />

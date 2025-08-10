@@ -44,8 +44,8 @@ const LandingPage: React.FC = () => {
             <Button size="lg" onClick={() => navigate('/auth')} className="h-12 text-lg">
               <Sparkles className="mr-2 h-5 w-5" /> Get Started - It's Free!
             </Button>
-            <Button size="lg" variant="outline" onClick={() => navigate('/help')} className="h-12 text-lg">
-              <LayoutDashboard className="mr-2 h-5 w-5" /> Learn More
+            <Button size="lg" variant="outline" onClick={() => navigate('/demo')} className="h-12 text-lg">
+              <LayoutDashboard className="mr-2 h-5 w-5" /> View Live Demo
             </Button>
           </div>
         </div>

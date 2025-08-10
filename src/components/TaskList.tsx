@@ -60,6 +60,7 @@ interface TaskListProps {
   doTodayOffIds: Set<string>;
   toggleDoToday: (task: Task) => void;
   scheduledTasksMap: Map<string, Appointment>;
+  isDemo?: boolean;
 }
 
 const TaskList: React.FC<TaskListProps> = (props) => {
@@ -88,6 +89,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     doTodayOffIds,
     toggleDoToday,
     scheduledTasksMap,
+    isDemo = false,
   } = props;
 
   const { user } = useAuth();
@@ -244,6 +246,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
           collisionDetection={closestCenter}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
+          disabled={isDemo}
         >
           <SortableContext items={allVisibleItemIds} strategy={verticalListSortingStrategy}>
             <div className="flex justify-end mb-3">
@@ -310,6 +313,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                             toggleDoToday={toggleDoToday}
                             doTodayOffIds={doTodayOffIds}
                             scheduledTasksMap={scheduledTasksMap}
+                            isDemo={isDemo}
                           />
                         ))}
                       </ul>
@@ -318,6 +322,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                           sectionId={currentSection.id === 'no-section-header' ? null : currentSection.id}
                           onAddTask={async (data) => { await handleAddTask(data); }}
                           defaultCategoryId={defaultCategory?.id || ''}
+                          isDemo={isDemo}
                         />
                       </div>
                       {topLevelTasksInSection.length === 0 && (

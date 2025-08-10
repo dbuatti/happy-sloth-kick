@@ -9,8 +9,8 @@ interface SettingsContextType {
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
-export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const userSettings = useUserSettings();
+export const SettingsProvider: React.FC<{ children: React.ReactNode, userId?: string }> = ({ children, userId }) => {
+  const userSettings = useUserSettings({ userId });
   return (
     <SettingsContext.Provider value={userSettings}>
       {children}

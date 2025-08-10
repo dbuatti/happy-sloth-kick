@@ -26,9 +26,9 @@ const defaultSettings: Omit<UserSettings, 'user_id'> = {
   schedule_show_focus_tasks_only: true,
 };
 
-export const useUserSettings = () => {
+export const useUserSettings = (props?: { userId?: string }) => {
   const { user } = useAuth();
-  const userId = user?.id;
+  const userId = props?.userId || user?.id;
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(true);
 

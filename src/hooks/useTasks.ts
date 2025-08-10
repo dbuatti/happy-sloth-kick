@@ -75,11 +75,12 @@ const cleanTaskForDb = (task: Partial<Task>): Partial<Omit<Task, 'category_color
 interface UseTasksProps {
   currentDate?: Date; // Make optional, as it might be managed internally for 'daily' view
   viewMode?: 'daily' | 'archive' | 'focus';
+  userId?: string;
 }
 
-export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: UseTasksProps = {}) => {
+export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', userId: propUserId }: UseTasksProps = {}) => {
   const { user, loading: authLoading } = useAuth();
-  const userId = user?.id;
+  const userId = propUserId || user?.id;
   const { settings: userSettings, updateSettings } = useSettings();
   const { addReminder, dismissReminder } = useReminders();
 
@@ -205,7 +206,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily' }: U
           console.log('[RT Task Event]', { 
             eventType: payload.eventType, 
             id: newOrOldTask.id, 
-            inFlight: inFlightUpdatesRef.current.has(newOrOldTask.id),
+            inFlight: inFlightUpdatesRef.current.has(newOrOldTask.id), 
             inFlightRef: Array.from(inFlightUpdatesRef.current) 
           });
 

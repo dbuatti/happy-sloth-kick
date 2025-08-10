@@ -21,7 +21,12 @@ const getUTCStartOfDay = (date: Date) => {
   return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
 };
 
-const DailyTasksV3: React.FC = () => {
+interface DailyTasksV3Props {
+  isDemo?: boolean;
+  demoUserId?: string;
+}
+
+const DailyTasksV3: React.FC<DailyTasksV3Props> = ({ isDemo = false, demoUserId }) => {
   const { user } = useAuth();
 
   const {
@@ -60,7 +65,7 @@ const DailyTasksV3: React.FC = () => {
     toggleDoToday,
     toggleAllDoToday,
     dailyProgress,
-  } = useTasks({ viewMode: 'daily' });
+  } = useTasks({ viewMode: 'daily', userId: demoUserId });
 
   const { appointments: allAppointments } = useAllAppointments();
 
@@ -176,6 +181,7 @@ const DailyTasksV3: React.FC = () => {
             setIsAddTaskDialogOpen={setIsAddTaskDialogOpen}
             setPrefilledTaskData={setPrefilledTaskData}
             dailyProgress={dailyProgress}
+            isDemo={isDemo}
           />
 
           <Card className="flex-1 flex flex-col rounded-none shadow-none border-0">
@@ -209,6 +215,7 @@ const DailyTasksV3: React.FC = () => {
                   doTodayOffIds={doTodayOffIds}
                   toggleDoToday={toggleDoToday}
                   scheduledTasksMap={scheduledTasksMap}
+                  isDemo={isDemo}
                 />
               </div>
             </CardContent>

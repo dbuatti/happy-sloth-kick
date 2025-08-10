@@ -12,9 +12,10 @@ interface QuickAddTaskProps {
     priority: Task['priority'];
   }) => Promise<any>;
   defaultCategoryId: string;
+  isDemo?: boolean;
 }
 
-const QuickAddTask: React.FC<QuickAddTaskProps> = ({ sectionId, onAddTask, defaultCategoryId }) => {
+const QuickAddTask: React.FC<QuickAddTaskProps> = ({ sectionId, onAddTask, defaultCategoryId, isDemo = false }) => {
   const [description, setDescription] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -41,7 +42,7 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({ sectionId, onAddTask, defau
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         className="h-8 border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 text-base"
-        disabled={isSaving}
+        disabled={isSaving || isDemo}
       />
     </form>
   );

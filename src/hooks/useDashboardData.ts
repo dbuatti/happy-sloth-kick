@@ -28,9 +28,9 @@ export interface DashboardSettings {
   meditation_notes: string | null;
 }
 
-export const useDashboardData = () => {
+export const useDashboardData = (props?: { userId?: string }) => {
   const { user } = useAuth();
-  const userId = user?.id;
+  const userId = props?.userId || user?.id;
 
   const [weeklyFocus, setWeeklyFocus] = useState<WeeklyFocus | null>(null);
   const [customCards, setCustomCards] = useState<CustomCard[]>([]);

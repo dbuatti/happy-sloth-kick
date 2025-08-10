@@ -51,6 +51,7 @@ interface DailyTasksHeaderProps {
     completedCount: number;
     overdueCount: number;
   };
+  isDemo?: boolean;
 }
 
 const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
@@ -82,6 +83,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   setIsAddTaskDialogOpen,
   setPrefilledTaskData,
   dailyProgress,
+  isDemo = false,
 }) => {
   useDailyTaskCount(); 
   const { playSound } = useSound();
@@ -202,6 +204,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
             onClick={() => setIsManageCategoriesOpen(true)}
             aria-label="Manage Categories"
             className="h-10 w-10"
+            disabled={isDemo}
           >
             <Tag className="h-6 w-6" />
           </Button>
@@ -211,6 +214,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
             onClick={() => setIsManageSectionsOpen(true)}
             aria-label="Manage Sections"
             className="h-10 w-10"
+            disabled={isDemo}
           >
             <FolderOpen className="h-6 w-6" />
           </Button>
@@ -249,11 +253,11 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
             </p>
           ) : <div />}
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={toggleAllDoToday} className="h-8 text-xs">
+            <Button variant="outline" size="sm" onClick={toggleAllDoToday} className="h-8 text-xs" disabled={isDemo}>
               <ToggleRight className="mr-2 h-3.5 w-3.5" /> Toggle All 'Do Today'
             </Button>
             {completedCount > 0 && (
-              <Button variant="outline" size="sm" onClick={archiveAllCompletedTasks} className="h-8 text-xs">
+              <Button variant="outline" size="sm" onClick={archiveAllCompletedTasks} className="h-8 text-xs" disabled={isDemo}>
                 <Archive className="mr-2 h-3.5 w-3.5" /> Archive Completed
               </Button>
             )}
@@ -274,7 +278,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button onClick={handleMarkNextTaskComplete} className="h-12 px-8 text-lg">
+              <Button onClick={handleMarkNextTaskComplete} className="h-12 px-8 text-lg" disabled={isDemo}>
                 <CheckCircle2 className="mr-2 h-5 w-5" /> Mark Done
               </Button>
               <Button variant="outline" onClick={() => onOpenOverview(nextAvailableTask)} className="h-12 px-8 text-lg">
@@ -309,8 +313,9 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
                 handleQuickAdd();
               }
             }}
+            disabled={isDemo}
           />
-          <Button type="button" onClick={handleQuickAdd} className="whitespace-nowrap h-10 text-base">
+          <Button type="button" onClick={handleQuickAdd} className="whitespace-nowrap h-10 text-base" disabled={isDemo}>
             <Plus className="mr-1 h-4 w-4" /> Add <Sparkles className="ml-1 h-4 w-4" />
           </Button>
         </div>

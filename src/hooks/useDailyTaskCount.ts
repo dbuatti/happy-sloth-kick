@@ -14,9 +14,9 @@ interface DailyCountTask {
   parent_task_id: string | null; // Added parent_task_id
 }
 
-export const useDailyTaskCount = () => {
+export const useDailyTaskCount = (props?: { userId?: string }) => {
   const { user } = useAuth();
-  const userId = user?.id;
+  const userId = props?.userId || user?.id;
   const [dailyTaskCount, setDailyTaskCount] = useState(0);
   const [loading, setLoading] = useState(true);
 

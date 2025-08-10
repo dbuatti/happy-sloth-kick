@@ -13,8 +13,13 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 
-const Dashboard: React.FC = () => {
-  const { customCards, addCustomCard } = useDashboardData();
+interface DashboardProps {
+  isDemo?: boolean;
+  demoUserId?: string;
+}
+
+const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => {
+  const { customCards, addCustomCard } = useDashboardData({ userId: demoUserId });
   const [isAddCardOpen, setIsAddCardOpen] = useState(false);
   const [newCardTitle, setNewCardTitle] = useState('');
   const [newCardContent, setNewCardContent] = useState('');
@@ -42,7 +47,7 @@ const Dashboard: React.FC = () => {
             <LayoutDashboard className="h-8 w-8 text-primary" />
             My Dashboard
           </h1>
-          <Button onClick={() => setIsAddCardOpen(true)}>
+          <Button onClick={() => setIsAddCardOpen(true)} disabled={isDemo}>
             <Plus className="mr-2 h-4 w-4" /> Add Card
           </Button>
         </div>
