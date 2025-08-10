@@ -11,6 +11,7 @@ import { useSound } from '@/context/SoundContext';
 import ThemeSelector from './ThemeSelector';
 import { navItems } from '@/lib/navItems';
 import { useSettings } from '@/context/SettingsContext';
+import { useAuth } from '@/context/AuthContext';
 
 interface SidebarProps {
   children: React.ReactNode;
@@ -22,8 +23,13 @@ const NavigationLinks = ({ onLinkClick, isDemo, demoUserId }: { onLinkClick?: ()
   const location = useLocation();
   const { dailyTaskCount, loading: countLoading } = useDailyTaskCount({ userId: demoUserId });
   const { settings } = useSettings();
+  const { user } = useAuth();
 
   const visibleNavItems = navItems.filter(item => {
+    // Hide Dev Space unless it's the specific user
+    if (item.path === '/dev-space') {
+      return user?.id === 'abc41fed-55ba-4249-90df-3b5a25b09e87';
+    }
     if (!item.toggleable) return true;
     return settings?.visible_pages?.[item.path] !== false;
   });
