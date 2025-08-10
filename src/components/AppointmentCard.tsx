@@ -61,7 +61,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
         isCompleted && "opacity-70"
       )}
     >
-      <div className="flex-grow w-full" onClick={() => onEdit(appointment)}>
+      <div className="flex-grow w-full">
         <h4 className="font-semibold text-sm truncate flex items-center gap-1.5">
           {task ? (
             isCompleted ? (
