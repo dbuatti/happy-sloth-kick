@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { LayoutDashboard, Plus } from 'lucide-react';
+import { LayoutDashboard, Plus, Settings as SettingsIcon } from 'lucide-react';
 import WeeklyFocusCard from '@/components/dashboard/WeeklyFocus';
 import SupportLinkCard from '@/components/dashboard/SupportLink';
 import MeditationNotesCard from '@/components/dashboard/MeditationNotes';
@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import PeopleMemoryCard from '@/components/dashboard/PeopleMemoryCard';
+import DashboardLayoutSettings from '@/components/dashboard/DashboardLayoutSettings';
 
 interface DashboardProps {
   isDemo?: boolean;
@@ -27,13 +28,15 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
     updateWeeklyFocus, 
     settings, 
     updateSettings, 
-    loading 
+    loading,
+    updateCustomCard,
   } = useDashboardData({ userId: demoUserId });
   
   const [isAddCardOpen, setIsAddCardOpen] = useState(false);
   const [newCardTitle, setNewCardTitle] = useState('');
   const [newCardContent, setNewCardContent] = useState('');
   const [newCardEmoji, setNewCardEmoji] = useState('');
+  const [isLayoutSettingsOpen, setIsLayoutSettingsOpen] = useState(false);
 
   const handleAddCard = async () => {
     if (!newCardTitle.trim()) return;
@@ -57,34 +60,49 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
             <LayoutDashboard className="h-8 w-8 text-primary" />
             My Dashboard
           </h1>
-          <Button onClick={() => setIsAddCardOpen(true)} disabled={isDemo}>
-            <Plus className="mr-2 h-4 w-4" /> Add Card
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={() => setIsAddCardOpen(true)} disabled={isDemo}>
+              <Plus className="mr-2 h-4 w-4" /> Add Card
+            </Button>
+            <Button variant="outline" size="icon" onClick={() => setIsLayoutSettingsOpen(true)}>
+              <SettingsIcon className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <DailySchedulePreview />
-          </div>
+          {settings?.dashboard_layout?.['dailyScheduleVisible'] !== false && (
+            <div className="lg:col-span-2">
+              <DailySchedulePreview />
+            </div>
+          )}
 
           <div className="lg:col-span-1 space-y-6">
-            <WeeklyFocusCard 
-              weeklyFocus={weeklyFocus} 
-              updateWeeklyFocus={updateWeeklyFocus} 
-              loading={loading} 
-            />
-            <PeopleMemoryCard />
-            <SupportLinkCard 
-              settings={settings} 
-              updateSettings={updateSettings} 
-              loading={loading} 
-            />
-            <MeditationNotesCard 
-              settings={settings} 
-              updateSettings={updateSettings} 
-              loading={loading} 
-            />
-            {customCards.map(card => (
+            {settings?.dashboard_layout?.['weeklyFocusVisible'] !== false && (
+              <WeeklyFocusCard 
+                weeklyFocus={weeklyFocus} 
+                updateWeeklyFocus={updateWeeklyFocus} 
+                loading={loading} 
+              />
+            )}
+            {settings?.dashboard_layout?.['peopleMemoryVisible'] !== false && (
+              <PeopleMemoryCard />
+            )}
+            {settings?.dashboard_layout?.['supportLinkVisible'] !== false && (
+              <SupportLinkCard 
+                settings={settings} 
+                updateSettings={updateSettings} 
+                loading={loading} 
+              />
+            )}
+            {settings?.dashboard_layout?.['meditationNotesVisible'] !== false && (
+              <MeditationNotesCard 
+                settings={settings} 
+                updateSettings={updateSettings} 
+                loading={loading} 
+              />
+            )}
+            {customCards.filter(card => card.is_visible).map(card => (
               <CustomCard key={card.id} card={card} />
             ))}
           </div>
@@ -119,6 +137,15 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <DashboardLayoutSettings
+        isOpen={isLayoutSettingsOpen}
+        onClose={() => setIsLayoutSettingsOpen(false)}
+        settings={settings}
+        customCards={customCards}
+        updateSettings={updateSettings}
+        updateCustomCard={updateCustomCard}
+      />
     </div>
   );
 };
