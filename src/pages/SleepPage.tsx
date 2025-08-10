@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Moon, BarChart3, Bed, BookOpen } from 'lucide-react';
+import { Moon, BarChart3, Bed, BookOpen, BookText } from 'lucide-react';
 import SleepTracker from './SleepTracker';
 import SleepDashboard from './SleepDashboard';
 import SleepDiaryView from './SleepDiaryView';
 import { DateRange } from 'react-day-picker';
 import { startOfMonth } from 'date-fns';
+import SleepResources from './SleepResources';
 
 interface SleepPageProps {
   isDemo?: boolean;
@@ -34,7 +35,7 @@ const SleepPage: React.FC<SleepPageProps> = ({ isDemo = false, demoUserId }) => 
           </CardHeader>
           <CardContent className="pt-0">
             <Tabs defaultValue="tracker" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="tracker">
                   <Bed className="h-4 w-4 mr-2" /> Tracker
                 </TabsTrigger>
@@ -43,6 +44,9 @@ const SleepPage: React.FC<SleepPageProps> = ({ isDemo = false, demoUserId }) => 
                 </TabsTrigger>
                 <TabsTrigger value="diary">
                   <BookOpen className="h-4 w-4 mr-2" /> Diary
+                </TabsTrigger>
+                <TabsTrigger value="resources">
+                  <BookText className="h-4 w-4 mr-2" /> Resources
                 </TabsTrigger>
               </TabsList>
 
@@ -54,6 +58,9 @@ const SleepPage: React.FC<SleepPageProps> = ({ isDemo = false, demoUserId }) => 
               </TabsContent>
               <TabsContent value="diary" className="mt-4">
                 <SleepDiaryView isDemo={isDemo} demoUserId={demoUserId} />
+              </TabsContent>
+              <TabsContent value="resources" className="mt-4">
+                <SleepResources />
               </TabsContent>
             </Tabs>
           </CardContent>
