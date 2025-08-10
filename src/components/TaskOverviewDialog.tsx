@@ -140,6 +140,11 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
         <div className="py-3 space-y-3 text-sm text-foreground">
+          {task.image_url && (
+            <div className="mb-3">
+              <img src={task.image_url} alt="Task attachment" className="rounded-lg max-h-64 w-full object-contain bg-muted" />
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-y-1.5 gap-x-4">
             <div className="flex items-center gap-2">
               <ListTodo className="h-3.5 w-3.5 text-muted-foreground" />

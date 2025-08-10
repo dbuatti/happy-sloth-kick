@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar, BellRing, Lightbulb } from 'lucide-react';
+import { Calendar, BellRing, Lightbulb, UploadCloud, X } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import CategorySelector from "./CategorySelector";
 import PrioritySelector from "./PrioritySelector";
@@ -18,6 +18,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { suggestTaskDetails } from '@/integrations/supabase/api';
 import { showError } from '@/utils/toast';
+import { useAuth } from '@/context/AuthContext';
+import { v4 as uuidv4 } from 'uuid';
+import { supabase } from '@/integrations/supabase/client';
 
 const taskFormSchema = z.object({
   description: z.string().min(1, { message: 'Task description is required.' }).max(255, { message: 'Description must be 255 characters or less.' }),
@@ -41,6 +44,7 @@ const taskFormSchema = z.object({
     }
     return trimmedVal;
   }).nullable(),
+  image_url: z.string().nullable().optional(),
 }).superRefine((data, ctx) => {
   if (data.remindAtDate) {
     if (!data.remindAtTime || data.remindAtTime.trim() === "") {
@@ -85,6 +89,7 @@ interface TaskFormProps {
     recurring_type: 'none' | 'daily' | 'weekly' | 'monthly';
     parent_task_id: string | null;
     link: string | null;
+    image_url: string | null;
   }) => Promise<any>;
   onCancel: () => void;
   sections: TaskSection[];
@@ -114,8 +119,12 @@ const TaskForm: React.FC<TaskFormProps> = ({
   deleteSection,
   updateSectionIncludeInFocusMode,
 }) => {
+  const { user } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskFormSchema),
@@ -131,6 +140,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
       recurringType: 'none',
       parentTaskId: parentTaskId ?? null,
       link: null,
+      image_url: null,
     },
   });
 
@@ -153,6 +163,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
       recurringType: 'none' as const,
       parentTaskId: parentTaskId ?? null,
       link: null,
+      image_url: null,
     };
 
     if (initialData) {
@@ -169,10 +180,14 @@ const TaskForm: React.FC<TaskFormProps> = ({
         recurringType: initialData.recurring_type || 'none',
         parentTaskId: initialData.parent_task_id,
         link: initialData.link ?? null,
+        image_url: initialData.image_url ?? null,
       });
+      setImagePreview(initialData.image_url || null);
     } else {
       reset(defaultValues);
+      setImagePreview(null);
     }
+    setImageFile(null);
   }, [initialData, preselectedSectionId, parentTaskId, allCategories, reset]);
 
   const handleSuggest = useCallback(async () => {
@@ -221,6 +236,57 @@ const TaskForm: React.FC<TaskFormProps> = ({
     }
   }, [description, allCategories, sections, setValue, currentDate]);
 
+  const handleFile = (file: File | null) => {
+    if (file && file.type.startsWith('image/')) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    } else {
+      showError('Please upload a valid image file.');
+    }
+  };
+
+  const handlePaste = (event: React.ClipboardEvent<HTMLFormElement>) => {
+    const items = event.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const file = items[i].getAsFile();
+        handleFile(file);
+        break;
+      }
+    }
+  };
+
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragging(false);
+    if (event.dataTransfer.files && event.dataTransfer.files[0]) {
+      handleFile(event.dataTransfer.files[0]);
+    }
+  };
+
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
+  const handleDragEnter = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleRemoveImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+  };
+
   const onSubmit = async (data: TaskFormData) => {
     let finalRemindAt: Date | null = null;
     if (data.remindAtDate && data.remindAtTime && data.remindAtTime.trim() !== "") {
@@ -229,6 +295,45 @@ const TaskForm: React.FC<TaskFormProps> = ({
     }
 
     setIsSaving(true);
+
+    let imageUrlToSave = initialData?.image_url || null;
+
+    if (imagePreview === null && initialData?.image_url) {
+      imageUrlToSave = null;
+      try {
+        const imagePath = initialData.image_url.split('/taskimages/')[1];
+        if (imagePath) {
+          await supabase.storage.from('taskimages').remove([imagePath]);
+        }
+      } catch (imgErr) {
+        console.error("Failed to delete old image:", imgErr);
+      }
+    }
+
+    if (imageFile) {
+      if (!user) {
+        showError("You must be logged in to upload images.");
+        setIsSaving(false);
+        return;
+      }
+      const filePath = `${user.id}/${uuidv4()}`;
+      const { error: uploadError } = await supabase.storage
+        .from('taskimages')
+        .upload(filePath, imageFile);
+
+      if (uploadError) {
+        showError(`Image upload failed: ${uploadError.message}`);
+        setIsSaving(false);
+        return;
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('taskimages')
+        .getPublicUrl(filePath);
+      
+      imageUrlToSave = urlData.publicUrl;
+    }
+
     const success = await onSave({
       description: data.description.trim(),
       category: data.category,
@@ -240,6 +345,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
       recurring_type: data.recurringType,
       parent_task_id: data.parentTaskId,
       link: data.link,
+      image_url: imageUrlToSave,
     });
     setIsSaving(false);
     if (success) {
@@ -260,7 +366,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 py-3">
+    <form onSubmit={handleSubmit(onSubmit)} onPaste={handlePaste} className="space-y-3 py-3">
       <div>
         <Label htmlFor="task-description">Task Description</Label>
         <div className="flex gap-1.5">
@@ -291,6 +397,35 @@ const TaskForm: React.FC<TaskFormProps> = ({
           </Button>
         </div>
         {errors.description && <p className="text-destructive text-sm mt-1">{errors.description.message}</p>}
+      </div>
+
+      <div 
+        className={cn(
+          "relative border-2 border-dashed rounded-lg p-4 text-center transition-colors",
+          isDragging ? "border-primary bg-primary/10" : "border-border"
+        )}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+      >
+        {imagePreview ? (
+          <>
+            <img src={imagePreview} alt="Preview" className="rounded-md max-h-40 mx-auto" />
+            <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-6 w-6 bg-background/50 hover:bg-background/80" onClick={handleRemoveImage}>
+              <X className="h-4 w-4" />
+            </Button>
+          </>
+        ) : (
+          <div className="flex flex-col items-center justify-center space-y-2 text-muted-foreground">
+            <UploadCloud className="h-8 w-8" />
+            <p>Drag & drop, paste, or click to upload an image.</p>
+            <Input type="file" accept="image/*" className="sr-only" id="file-upload" onChange={(e) => handleFile(e.target.files?.[0] || null)} />
+            <Label htmlFor="file-upload" className="text-primary underline cursor-pointer">
+              click to upload
+            </Label>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">

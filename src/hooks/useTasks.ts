@@ -28,6 +28,7 @@ export interface Task {
   original_task_id: string | null;
   parent_task_id: string | null;
   link: string | null;
+  image_url: string | null;
 }
 
 export interface TaskSection {
@@ -62,6 +63,7 @@ interface NewTaskData {
   original_task_id?: string | null; // Added for new instance creation
   created_at?: string; // Added for new instance creation
   link?: string | null;
+  image_url?: string | null;
 }
 
 const getUTCStartOfDay = (date: Date) => new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -153,7 +155,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
 
       const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
-        .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link')
+        .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link, image_url')
         .eq('user_id', currentUserId)
         .order('section_id', { ascending: true, nullsFirst: true })
         .order('order', { ascending: true });
@@ -429,6 +431,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
         parent_task_id: parentId,
         description: newTaskData.description,
         link: newTaskData.link || null,
+        image_url: newTaskData.image_url || null,
       };
 
       setTasks(prev => [...prev, newTaskForUI]);
@@ -436,7 +439,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
       const { data, error } = await supabase
         .from('tasks')
         .insert(cleanTaskForDb(newTaskForUI))
-        .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link')
+        .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link, image_url')
         .single();
 
       if (error) throw error;
@@ -498,6 +501,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
             original_task_id: virtualTask.original_task_id || virtualTask.id.replace(/^virtual-/, '').split(/-\d{4}-\d{2}-\d{2}$/)[0],
             parent_task_id: virtualTask.parent_task_id,
             link: updates.link !== undefined ? updates.link : virtualTask.link,
+            image_url: updates.image_url !== undefined ? updates.image_url : virtualTask.image_url,
         };
 
         setTasks(prev => [...prev, { ...newInstanceDataForUI, category_color: allCategoriesRef.current.find(cat => cat.id === newInstanceDataForUI.category)?.color || 'gray' }]);
@@ -505,7 +509,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
         const { data, error } = await supabase
             .from('tasks')
             .insert(cleanTaskForDb(newInstanceDataForUI))
-            .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link')
+            .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link, image_url')
             .single();
 
         if (error) throw error;
@@ -528,7 +532,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
         .update(cleanTaskForDb(updates))
         .eq('id', taskId)
         .eq('user_id', userId)
-        .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link')
+        .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link, image_url')
         .single();
 
       if (error) throw error;
@@ -564,6 +568,17 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
     try {
       const taskToDelete: Task | undefined = tasks.find(t => t.id === taskId);
       if (!taskToDelete) return;
+
+      if (taskToDelete.image_url) {
+        try {
+          const imagePath = taskToDelete.image_url.split('/taskimages/')[1];
+          if (imagePath) {
+            await supabase.storage.from('taskimages').remove([imagePath]);
+          }
+        } catch (imgErr) {
+          console.error("Failed to delete task image, but proceeding with task deletion:", imgErr);
+        }
+      }
 
       let idsToDelete = [taskId];
       const subIds = tasks.filter(t => t.parent_task_id === taskId).map(t => t.id);
