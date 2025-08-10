@@ -10,6 +10,7 @@ import { Moon, Bed, AlarmClock, LogOut, Hourglass, ListX, Clock, Goal } from 'lu
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSound } from '@/context/SoundContext';
 import { useAuth } from '@/context/AuthContext';
+import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
 
 interface SleepTrackerProps {
   currentDate: Date;
@@ -61,6 +62,12 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
   const handleGoToToday = () => {
     setCurrentDate(new Date());
   };
+
+  const shortcuts: ShortcutMap = {
+    'arrowleft': handlePreviousDay,
+    'arrowright': handleNextDay,
+  };
+  useKeyboardShortcuts(shortcuts);
 
   const handleAutoSave = async () => {
     if (isSaving || isDemo) return;
