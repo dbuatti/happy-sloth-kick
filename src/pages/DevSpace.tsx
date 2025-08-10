@@ -53,7 +53,11 @@ const DevSpace: React.FC = () => {
   const [editingIdea, setEditingIdea] = useState<DevIdea | null>(null);
   const [activeIdea, setActiveIdea] = useState<DevIdea | null>(null);
 
-  const sensors = useSensors(useSensor(PointerSensor));
+  const sensors = useSensors(useSensor(PointerSensor, {
+    activationConstraint: {
+      distance: 8,
+    },
+  }));
 
   const columns = useMemo(() => {
     const ideaCol = ideas.filter(i => i.status === 'idea');
