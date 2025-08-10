@@ -272,7 +272,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
               return (
                 <div
                   key={currentSection.id}
-                  className={cn("mb-6", index < allSortableSections.length - 1 && "border-b border-border pb-6")}
+                  className={cn("mb-4", index < allSortableSections.length - 1 && "border-b border-border pb-4")}
                 >
                   <SortableSectionHeader
                     section={currentSection}
@@ -288,8 +288,8 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                   />
 
                   {isExpanded && (
-                    <div className="mt-4 space-y-3">
-                      <ul className="list-none space-y-3">
+                    <div className="mt-3 space-y-1.5">
+                      <ul className="list-none space-y-1.5">
                         {topLevelTasksInSection.length > 0 && topLevelTasksInSection.map(task => (
                           <SortableTaskItem
                             key={task.id}

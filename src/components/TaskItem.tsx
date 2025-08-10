@@ -180,7 +180,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
       {/* Clickable Content Area */}
       <div 
-        className="flex-grow flex items-center space-x-2 py-3 cursor-pointer min-w-0"
+        className="flex-grow flex items-center space-x-2 py-2 cursor-pointer min-w-0"
         onClick={() => !isOverlay && !isEditing && onOpenOverview(task)}
       >
         <div className="flex-grow min-w-0 w-full" data-no-dnd="true">
