@@ -11,7 +11,8 @@ export interface Project {
   description: string | null;
   current_count: number;
   created_at: string;
-  link: string | null; // Added link field
+  link: string | null;
+  notes: string | null;
 }
 
 export interface UserSettings {

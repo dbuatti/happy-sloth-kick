@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Edit, Trash2, Sparkles, RefreshCcw, Lightbulb, RotateCcw, LayoutGrid, CheckCircle2, Minus, Link as LinkIcon } from 'lucide-react';
+import { Plus, Edit, Trash2, Sparkles, RefreshCcw, Lightbulb, RotateCcw, LayoutGrid, CheckCircle2, Minus, Link as LinkIcon, StickyNote } from 'lucide-react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useProjects, Project } from '@/hooks/useProjects';
 import { cn } from '@/lib/utils';
@@ -22,7 +22,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useAuth } from '@/context/AuthContext'; // Re-introduced useAuth
+import { useAuth } from '@/context/AuthContext';
+import ProjectNotesDialog from '@/components/ProjectNotesDialog';
 
 interface ProjectBalanceTrackerProps {
   isDemo?: boolean;
@@ -30,13 +31,12 @@ interface ProjectBalanceTrackerProps {
 }
 
 const ProjectBalanceTracker: React.FC<ProjectBalanceTrackerProps> = ({ isDemo = false, demoUserId }) => {
-  // Removed 'user' from useAuth destructuring as it's not directly used here.
   useAuth(); 
 
   const {
     projects,
     loading,
-    sectionTitle, // Keep sectionTitle for display
+    sectionTitle,
     addProject,
     updateProject,
     deleteProject,
@@ -66,6 +66,9 @@ const ProjectBalanceTracker: React.FC<ProjectBalanceTrackerProps> = ({ isDemo = 
   const [projectToResetId, setProjectToResetId] = useState<string | null>(null);
   const [showConfirmResetAllDialog, setShowConfirmResetAllDialog] = useState(false);
   const [isResettingAll, setIsResettingAll] = useState(false);
+
+  const [isNotesOpen, setIsNotesOpen] = useState(false);
+  const [selectedProjectForNotes, setSelectedProjectForNotes] = useState<Project | null>(null);
 
   const leastWorkedOnProject = useMemo(() => {
     if (projects.length === 0) return null;
@@ -182,6 +185,15 @@ const ProjectBalanceTracker: React.FC<ProjectBalanceTrackerProps> = ({ isDemo = 
     if (count >= 8) return 'bg-primary';
     if (count >= 4) return 'bg-accent';
     return 'bg-destructive';
+  };
+
+  const handleOpenNotes = (project: Project) => {
+    setSelectedProjectForNotes(project);
+    setIsNotesOpen(true);
+  };
+
+  const handleSaveNotes = async (projectId: string, notes: string) => {
+    await updateProject(projectId, { notes });
   };
 
   return (
@@ -320,7 +332,7 @@ const ProjectBalanceTracker: React.FC<ProjectBalanceTrackerProps> = ({ isDemo = 
                         "transition-all duration-200 ease-in-out group",
                         "hover:shadow-md",
                         editingProjectId === project.id ? "bg-accent/5 dark:bg-accent/10 border-accent/30 dark:border-accent/70" : "bg-card dark:bg-gray-800 shadow-sm",
-                        leastWorkedOnProject?.id === project.id && "border-2 border-primary dark:border-primary" // Highlight least worked on
+                        leastWorkedOnProject?.id === project.id && "border-2 border-primary dark:border-primary"
                       )}
                     >
                       <div className="flex-1 min-w-0">
@@ -335,16 +347,16 @@ const ProjectBalanceTracker: React.FC<ProjectBalanceTrackerProps> = ({ isDemo = 
                               disabled={isSavingProject}
                             />
                             <Textarea
-                              value={newProjectDescription} // Use newProjectDescription here
-                              onChange={(e) => setNewProjectDescription(e.target.value)}
+                              value={editingProjectDescription}
+                              onChange={(e) => setEditingProjectDescription(e.target.value)}
                               placeholder="Description..."
                               rows={2}
                               disabled={isSavingProject}
                             />
                             <Input
                               type="url"
-                              value={newProjectLink} // Use newProjectLink here
-                              onChange={(e) => setNewProjectLink(e.target.value)}
+                              value={editingProjectLink}
+                              onChange={(e) => setEditingProjectLink(e.target.value)}
                               placeholder="e.g., https://github.com/my-project"
                               disabled={isSavingProject}
                               className="h-9"
@@ -411,6 +423,16 @@ const ProjectBalanceTracker: React.FC<ProjectBalanceTrackerProps> = ({ isDemo = 
                               </Button>
                             </div>
                             <div className="flex gap-2 w-full sm:w-auto sm:ml-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                onClick={(e) => { e.stopPropagation(); handleOpenNotes(project); }}
+                                aria-label={`Notes for ${project.name}`}
+                                disabled={isSavingProject || isDemo}
+                              >
+                                <StickyNote className="h-5 w-5" />
+                              </Button>
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -507,6 +529,13 @@ const ProjectBalanceTracker: React.FC<ProjectBalanceTrackerProps> = ({ isDemo = 
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ProjectNotesDialog
+        project={selectedProjectForNotes}
+        isOpen={isNotesOpen}
+        onClose={() => setIsNotesOpen(false)}
+        onSave={handleSaveNotes}
+      />
     </div>
   );
 };
