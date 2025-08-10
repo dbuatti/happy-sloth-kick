@@ -646,6 +646,46 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
     }
   }, [tasks, userId]);
 
+  const bulkDeleteTasks = useCallback(async (ids: string[]) => {
+    if (!userId) {
+      showError('User not authenticated.');
+      return false;
+    }
+    if (ids.length === 0) {
+      return true;
+    }
+    const originalTasks = [...tasks];
+    try {
+      const tasksToDelete = originalTasks.filter(t => ids.includes(t.id));
+      const imageKeysToDelete = tasksToDelete
+        .map(t => t.image_url)
+        .filter((url): url is string => !!url)
+        .map(url => url.split('/taskimages/')[1])
+        .filter(Boolean);
+
+      if (imageKeysToDelete.length > 0) {
+        await supabase.storage.from('taskimages').remove(imageKeysToDelete);
+      }
+
+      ids.forEach(id => inFlightUpdatesRef.current.add(id));
+      setTasks(prev => prev.filter(t => !ids.includes(t.id)));
+
+      const { error } = await supabase.from('tasks').delete().in('id', ids).eq('user_id', userId);
+      if (error) throw error;
+
+      showSuccess(`${ids.length} task(s) deleted!`);
+      ids.forEach(dismissReminder);
+      return true;
+    } catch (e: any) {
+      showError('Failed to delete tasks.');
+      console.error(`useTasks: Error during bulk delete for tasks ${ids.join(', ')}:`, e.message);
+      setTasks(originalTasks);
+      return false;
+    } finally {
+      ids.forEach(id => inFlightUpdatesRef.current.delete(id));
+    }
+  }, [userId, tasks, dismissReminder]);
+
   const archiveAllCompletedTasks = useCallback(async () => {
     if (!userId) {
         showError('User not authenticated.');
@@ -1142,6 +1182,8 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
     handleAddTask,
     updateTask,
     deleteTask,
+    bulkUpdateTasks,
+    bulkDeleteTasks,
     searchFilter,
     setSearchFilter,
     statusFilter,
@@ -1156,7 +1198,6 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
     allCategories,
     updateTaskParentAndOrder,
     moveTask: () => Promise.resolve(),
-    bulkUpdateTasks,
     archiveAllCompletedTasks,
     markAllTasksInSectionCompleted,
     createSection,
