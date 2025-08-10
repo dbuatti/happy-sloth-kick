@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { DateRange } from 'react-day-picker';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSleepAnalytics } from '@/hooks/useSleepAnalytics';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface SleepDashboardProps {
   dateRange: DateRange | undefined;
@@ -68,6 +69,28 @@ const SleepDashboard: React.FC<SleepDashboardProps> = ({ dateRange, setDateRange
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
     return `${hours}h ${minutes}m`;
+  };
+
+  const timeAxisFormatter = (value: number) => {
+    const hour = Math.floor(value);
+    const minute = Math.round((value % 1) * 60);
+    let displayHour = hour;
+    if (hour < 0) displayHour += 24;
+    if (hour > 24) displayHour -= 24;
+    
+    const date = new Date(2000, 0, 1, displayHour, minute);
+    return format(date, 'h a');
+  };
+
+  const timeTooltipFormatter = (value: number) => {
+    const hour = Math.floor(value);
+    const minute = Math.round((value % 1) * 60);
+    let displayHour = hour;
+    if (hour < 0) displayHour += 24;
+    if (hour > 24) displayHour -= 24;
+    
+    const date = new Date(2000, 0, 1, displayHour, minute);
+    return format(date, 'h:mm a');
   };
 
   return (
@@ -128,7 +151,6 @@ const SleepDashboard: React.FC<SleepDashboardProps> = ({ dateRange, setDateRange
                     <Skeleton key={i} className="h-24 w-full rounded-xl" />
                   ))}
                 </div>
-                <Skeleton className="h-80 w-full rounded-xl" />
                 <Skeleton className="h-80 w-full rounded-xl" />
               </div>
             ) : analyticsData.length === 0 ? (
@@ -202,66 +224,137 @@ const SleepDashboard: React.FC<SleepDashboardProps> = ({ dateRange, setDateRange
                   </Card>
                 </div>
 
-                <Card className="rounded-xl">
-                  <CardHeader>
-                    <h3 className="text-lg font-semibold mb-3">Total Sleep Duration Trend (Hours)</h3>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-80">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={analyticsData}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="date" />
-                          <YAxis tickFormatter={(value) => `${Math.floor(value / 60)}h ${value % 60}m`} />
-                          <Tooltip formatter={(value: number) => [`${Math.floor(value / 60)}h ${value % 60}m`, 'Total Sleep']} />
-                          <Line type="monotone" dataKey="totalSleepMinutes" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </CardContent>
-                </Card>
+                <Tabs defaultValue="overview">
+                  <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
+                    <TabsTrigger value="overview">Overview</TabsTrigger>
+                    <TabsTrigger value="times">Times</TabsTrigger>
+                    <TabsTrigger value="quality">Quality</TabsTrigger>
+                    <TabsTrigger value="consistency">Consistency</TabsTrigger>
+                  </TabsList>
 
-                <div className="grid md:grid-cols-2 gap-6">
-                  <Card className="rounded-xl">
-                    <CardHeader>
-                      <h3 className="text-lg font-semibold mb-3">Sleep Interruptions</h3>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="h-80">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={analyticsData}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="date" />
-                            <YAxis yAxisId="left" orientation="left" stroke="hsl(var(--primary))" />
-                            <YAxis yAxisId="right" orientation="right" stroke="hsl(var(--accent))" />
-                            <Tooltip />
-                            <Bar yAxisId="left" dataKey="sleepInterruptionsCount" fill="hsl(var(--primary))" name="Count" />
-                            <Bar yAxisId="right" dataKey="sleepInterruptionsDurationMinutes" fill="hsl(var(--accent))" name="Duration (min)" />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <TabsContent value="overview" className="mt-4 space-y-6">
+                    <Card className="rounded-xl">
+                      <CardHeader>
+                        <h3 className="text-lg font-semibold mb-3">Total Sleep Duration Trend</h3>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="h-80">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={analyticsData}>
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis dataKey="date" />
+                              <YAxis tickFormatter={(value) => `${Math.floor(value / 60)}h ${value % 60}m`} />
+                              <Tooltip formatter={(value: number) => [`${Math.floor(value / 60)}h ${value % 60}m`, 'Total Sleep']} />
+                              <Line type="monotone" dataKey="totalSleepMinutes" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card className="rounded-xl">
+                      <CardHeader>
+                        <h3 className="text-lg font-semibold mb-3">Sleep Interruptions</h3>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="h-80">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={analyticsData}>
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis dataKey="date" />
+                              <YAxis yAxisId="left" orientation="left" stroke="hsl(var(--primary))" />
+                              <YAxis yAxisId="right" orientation="right" stroke="hsl(var(--accent))" />
+                              <Tooltip />
+                              <Bar yAxisId="left" dataKey="sleepInterruptionsCount" fill="hsl(var(--primary))" name="Count" />
+                              <Bar yAxisId="right" dataKey="sleepInterruptionsDurationMinutes" fill="hsl(var(--accent))" name="Duration (min)" />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
 
-                  <Card className="rounded-xl">
-                    <CardHeader>
-                      <h3 className="text-lg font-semibold mb-3">Wake Up Consistency (vs. Planned)</h3>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="h-80">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={analyticsData}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="date" />
-                            <YAxis tickFormatter={(value) => `${value}m`} />
-                            <Tooltip formatter={(value: number) => [`${value > 0 ? '+' : ''}${value} min ${value > 0 ? 'late' : 'early'}`, 'Variance']} />
-                            <Line type="monotone" dataKey="wakeUpVarianceMinutes" stroke="hsl(var(--destructive))" strokeWidth={2} dot={false} name="Variance (min)" />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
+                  <TabsContent value="times" className="mt-4">
+                    <Card className="rounded-xl">
+                      <CardHeader>
+                        <h3 className="text-lg font-semibold mb-3">Bed Time & Wake Time Trend</h3>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="h-80">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={analyticsData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis dataKey="date" />
+                              <YAxis tickFormatter={timeAxisFormatter} domain={[-4, 12]} />
+                              <Tooltip formatter={timeTooltipFormatter} />
+                              <Line type="monotone" dataKey="bedTimeValue" name="Bed Time" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+                              <Line type="monotone" dataKey="wakeUpTimeValue" name="Wake Time" stroke="hsl(var(--accent))" strokeWidth={2} dot={false} />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+
+                  <TabsContent value="quality" className="mt-4 space-y-6">
+                    <Card className="rounded-xl">
+                      <CardHeader>
+                        <h3 className="text-lg font-semibold mb-3">Sleep Efficiency Trend</h3>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="h-80">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={analyticsData}>
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis dataKey="date" />
+                              <YAxis domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
+                              <Tooltip formatter={(value: number) => [`${value.toFixed(1)}%`, 'Efficiency']} />
+                              <Line type="monotone" dataKey="sleepEfficiency" name="Efficiency (%)" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card className="rounded-xl">
+                      <CardHeader>
+                        <h3 className="text-lg font-semibold mb-3">Time to Fall Asleep Trend</h3>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="h-80">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={analyticsData}>
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis dataKey="date" />
+                              <YAxis tickFormatter={(value) => `${value}m`} />
+                              <Tooltip formatter={(value: number) => [`${value} minutes`, 'Time to Fall Asleep']} />
+                              <Bar dataKey="timeToFallAsleepMinutes" name="Minutes" fill="hsl(var(--accent))" />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+
+                  <TabsContent value="consistency" className="mt-4">
+                    <Card className="rounded-xl">
+                      <CardHeader>
+                        <h3 className="text-lg font-semibold mb-3">Wake Up Consistency (vs. Planned)</h3>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="h-80">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={analyticsData}>
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis dataKey="date" />
+                              <YAxis tickFormatter={(value) => `${value}m`} />
+                              <Tooltip formatter={(value: number) => [`${value > 0 ? '+' : ''}${value} min ${value > 0 ? 'late' : 'early'}`, 'Variance']} />
+                              <Line type="monotone" dataKey="wakeUpVarianceMinutes" stroke="hsl(var(--destructive))" strokeWidth={2} dot={false} name="Variance (min)" />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+                </Tabs>
               </div>
             )}
           </CardContent>

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { showError } from '@/utils/toast';
-import { format, parseISO, differenceInMinutes, addMinutes, isValid, startOfDay, endOfDay } from 'date-fns';
+import { format, parseISO, differenceInMinutes, addMinutes, isValid, startOfDay, endOfDay, getHours, getMinutes } from 'date-fns';
 
 export interface SleepRecord {
   id: string;
@@ -30,6 +30,8 @@ interface SleepAnalyticsData {
   sleepInterruptionsCount: number;
   sleepInterruptionsDurationMinutes: number;
   wakeUpVarianceMinutes: number; // Difference between planned and actual wake up
+  bedTimeValue: number | null; // For charting
+  wakeUpTimeValue: number | null; // For charting
 }
 
 interface UseSleepAnalyticsProps {
@@ -115,6 +117,21 @@ export const useSleepAnalytics = ({ startDate, endDate, userId: propUserId }: Us
           wakeUpVarianceMinutes = differenceInMinutes(wakeUpTime, plannedWakeUpTime);
         }
 
+        let bedTimeValue = null;
+        if (bedTime && isValid(bedTime)) {
+            let hours = getHours(bedTime);
+            const minutes = getMinutes(bedTime);
+            if (hours > 12) hours -= 24; // Represent PM times as negative hours from midnight
+            bedTimeValue = hours + minutes / 60;
+        }
+
+        let wakeUpTimeValue = null;
+        if (wakeUpTime && isValid(wakeUpTime)) {
+            const hours = getHours(wakeUpTime);
+            const minutes = getMinutes(wakeUpTime);
+            wakeUpTimeValue = hours + minutes / 60;
+        }
+
         return {
           date: format(recordDate, 'MMM dd'),
           totalSleepMinutes: Math.max(0, totalSleepMinutes),
@@ -124,6 +141,8 @@ export const useSleepAnalytics = ({ startDate, endDate, userId: propUserId }: Us
           sleepInterruptionsCount: Math.max(0, sleepInterruptionsCount),
           sleepInterruptionsDurationMinutes: Math.max(0, sleepInterruptionsDurationMinutes),
           wakeUpVarianceMinutes: wakeUpVarianceMinutes,
+          bedTimeValue,
+          wakeUpTimeValue,
         };
       });
       setAnalyticsData(processedData);
