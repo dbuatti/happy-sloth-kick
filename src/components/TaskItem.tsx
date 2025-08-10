@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock } from 'lucide-react';
+import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock, GripVertical } from 'lucide-react';
 import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
@@ -172,8 +172,16 @@ const TaskItem: React.FC<TaskItemProps> = ({
         getPriorityBorderColor(task.priority)
       )}
     >
-      {/* Checkbox Area (NOT draggable) */}
-      <div className="flex-shrink-0 flex items-center px-3" data-no-dnd="true">
+      {/* Drag Handle */}
+      <div 
+        className="flex-shrink-0 flex items-center px-2 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity"
+        {...dragListeners}
+      >
+        <GripVertical className="h-5 w-5 text-muted-foreground" />
+      </div>
+
+      {/* Checkbox Area */}
+      <div className="flex-shrink-0 flex items-center pr-3" data-no-dnd="true">
         <Checkbox
           key={`${task.id}-${task.status}`}
           checked={task.status === 'completed'}
@@ -186,11 +194,10 @@ const TaskItem: React.FC<TaskItemProps> = ({
         />
       </div>
 
-      {/* Clickable and Draggable Content Area */}
+      {/* Clickable Content Area */}
       <div 
-        className="flex-grow flex items-center space-x-2 py-3 cursor-grab min-w-0"
+        className="flex-grow flex items-center space-x-2 py-3 cursor-pointer min-w-0"
         onClick={() => !isOverlay && !isEditing && onOpenOverview(task)}
-        {...dragListeners}
       >
         <div className={cn("w-3 h-3 rounded-full flex-shrink-0", getPriorityDotColor(task.priority))} />
         

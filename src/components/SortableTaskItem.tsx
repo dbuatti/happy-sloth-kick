@@ -50,13 +50,15 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform || null), // Correctly handle null transform
     transition,
-    opacity: isDragging && !isOverlay ? 0 : 1,
-    visibility: isDragging && !isOverlay ? 'hidden' : 'visible',
     paddingLeft: `${level * 12}px`,
   };
 
   const directSubtasks = allTasks.filter(t => t.parent_task_id === task.id)
                                  .sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
+
+  if (isDragging && !isOverlay) {
+    return <div ref={setNodeRef} style={style} className="h-16 bg-muted/50 border-2 border-dashed border-border rounded-lg" />;
+  }
 
   return (
     <li
@@ -64,8 +66,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
       style={style}
       className={cn(
         "relative last:border-b-0 group",
-        isDragging && !isOverlay ? "" : "rounded-lg", // Only apply border/rounded-lg if not the invisible original
-        isOverlay ? "shadow-xl ring-2 ring-primary bg-card" : "", // Apply distinct styles for the overlay
+        isOverlay ? "shadow-xl ring-2 ring-primary bg-card rounded-lg" : "",
         level > 0 ? "border-l border-l-primary/50" : "",
         "flex items-center"
       )}

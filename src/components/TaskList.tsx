@@ -350,23 +350,25 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                     isOverlay={true}
                   />
                 ) : (
-                  <TaskItem
-                    task={activeItemData as Task}
-                    allTasks={tasks}
-                    onStatusChange={async () => null}
-                    onDelete={() => {}}
-                    onUpdate={async () => null}
-                    sections={sections}
-                    onOpenOverview={() => {}}
-                    currentDate={currentDate}
-                    onMoveUp={async () => {}}
-                    onMoveDown={async () => {}}
-                    isOverlay={true}
-                    setFocusTask={setFocusTask}
-                    isDoToday={!doTodayOffIds.has((activeItemData as Task).id)}
-                    toggleDoToday={toggleDoToday}
-                    scheduledTasksMap={scheduledTasksMap}
-                  />
+                  <div className="rotate-2">
+                    <TaskItem
+                      task={activeItemData as Task}
+                      allTasks={tasks}
+                      onStatusChange={async () => null}
+                      onDelete={() => {}}
+                      onUpdate={async () => null}
+                      sections={sections}
+                      onOpenOverview={() => {}}
+                      currentDate={currentDate}
+                      onMoveUp={async () => {}}
+                      onMoveDown={async () => {}}
+                      isOverlay={true}
+                      setFocusTask={setFocusTask}
+                      isDoToday={!doTodayOffIds.has((activeItemData as Task).id)}
+                      toggleDoToday={toggleDoToday}
+                      scheduledTasksMap={scheduledTasksMap}
+                    />
+                  </div>
                 )
               )}
             </DragOverlay>,
