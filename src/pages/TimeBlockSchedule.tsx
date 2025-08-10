@@ -444,6 +444,7 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
                           data: { type: 'time-block', time: block.start },
                         });
                         const isBlockOccupied = appointmentsWithPositions.some(app => {
+                          if (!app.start_time || !app.end_time) return false;
                           const appStart = parse(app.start_time, 'HH:mm:ss', currentDate);
                           const appEnd = parse(app.end_time, 'HH:mm:ss', currentDate);
                           return block.start.getTime() >= appStart.getTime() && block.start.getTime() < appEnd.getTime();
