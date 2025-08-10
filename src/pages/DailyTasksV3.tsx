@@ -199,6 +199,7 @@ const DailyTasksV3: React.FC<DailyTasksV3Props> = ({ isDemo = false, demoUserId 
             setPrefilledTaskData={setPrefilledTaskData}
             dailyProgress={dailyProgress}
             isDemo={isDemo}
+            toggleDoToday={toggleDoToday}
           />
 
           <Card className="flex-1 flex flex-col rounded-none shadow-none border-0">

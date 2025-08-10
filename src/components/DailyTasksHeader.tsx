@@ -13,6 +13,8 @@ import { useSound } from '@/context/SoundContext';
 import { Progress } from '@/components/Progress';
 import ManageCategoriesDialog from './ManageCategoriesDialog';
 import ManageSectionsDialog from './ManageSectionsDialog';
+import DoTodaySwitch from './DoTodaySwitch';
+import { Label } from '@/components/ui/label';
 
 interface DailyTasksHeaderProps {
   currentDate: Date;
@@ -52,6 +54,7 @@ interface DailyTasksHeaderProps {
     overdueCount: number;
   };
   isDemo?: boolean;
+  toggleDoToday: (task: Task) => void;
 }
 
 const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
@@ -84,6 +87,8 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   setPrefilledTaskData,
   dailyProgress,
   isDemo = false,
+  toggleDoToday,
+  doTodayOffIds,
 }) => {
   useDailyTaskCount(); 
   const { playSound } = useSound();
@@ -266,9 +271,22 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
       </div>
 
       <div className="bg-card p-6 mx-4 rounded-xl shadow-lg mb-4 flex flex-col items-center text-center">
-        <h3 className="text-xl font-bold text-primary mb-3 flex items-center gap-2">
-          <Target className="h-6 w-6" /> Your Next Task
-        </h3>
+        <div className="w-full flex justify-center items-center mb-3 relative">
+          <h3 className="text-xl font-bold text-primary flex items-center gap-2">
+            <Target className="h-6 w-6" /> Your Next Task
+          </h3>
+          {nextAvailableTask && nextAvailableTask.recurring_type === 'none' && (
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-2">
+              <Label htmlFor={`do-today-focus-${nextAvailableTask.id}`} className="text-sm font-medium text-muted-foreground">Do Today</Label>
+              <DoTodaySwitch
+                isOn={!doTodayOffIds.has(nextAvailableTask.original_task_id || nextAvailableTask.id)}
+                onToggle={() => toggleDoToday(nextAvailableTask)}
+                taskId={`focus-${nextAvailableTask.id}`}
+                isDemo={isDemo}
+              />
+            </div>
+          )}
+        </div>
         {nextAvailableTask ? (
           <div className="w-full space-y-4">
             <div className="flex items-center justify-center gap-3">
