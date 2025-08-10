@@ -75,7 +75,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false, demo
   if (isMobile) {
     return (
       <div className="min-h-screen flex flex-col">
-        <header className="flex items-center justify-between p-3 bg-card/80 backdrop-blur shadow-sm">
+        <header className="flex items-center justify-between p-3 bg-card/80 backdrop-blur shadow-sm sticky top-0 z-50">
           <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" aria-label="Open menu" className="h-8 w-8">
