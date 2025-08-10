@@ -10,8 +10,6 @@ import { useAppointments, Appointment, NewAppointmentData } from '@/hooks/useApp
 import AppointmentForm from '@/components/AppointmentForm';
 import { useAuth } from '@/context/AuthContext';
 import { useTasks, Task } from '@/hooks/useTasks';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import TimeBlockActionMenu from '@/components/TimeBlockActionMenu';
 import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
@@ -23,9 +21,10 @@ import TaskOverviewDialog from '@/components/TaskOverviewDialog';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import { useSettings } from '@/context/SettingsContext';
 import { toast } from 'sonner';
-import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, useSensor, useSensors, useDroppable } from '@dnd-kit/core';
+import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import DraggableTaskListItem from '@/components/DraggableTaskListItem';
 import DraggableAppointmentCard from '@/components/DraggableAppointmentCard';
+import TimeBlock from '@/components/TimeBlock';
 
 interface TimeBlockScheduleProps {
   isDemo?: boolean;
@@ -438,45 +437,20 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
                         )
                       ))}
 
-                      {timeBlocks.map((block, index) => {
-                        const { setNodeRef, isOver } = useDroppable({
-                          id: `block-${format(block.start, 'HH:mm')}`,
-                          data: { type: 'time-block', time: block.start },
-                        });
-                        const isBlockOccupied = appointmentsWithPositions.some(app => {
-                          if (!app.start_time || !app.end_time) return false;
-                          const appStart = parse(app.start_time, 'HH:mm:ss', currentDate);
-                          const appEnd = parse(app.end_time, 'HH:mm:ss', currentDate);
-                          return block.start.getTime() >= appStart.getTime() && block.start.getTime() < appEnd.getTime();
-                        });
-
-                        return (
-                          <div
-                            ref={setNodeRef}
-                            key={`block-container-${format(block.start, 'HH:mm')}`}
-                            className="relative h-full w-full border-t border-gray-200/80 dark:border-gray-700/80"
-                            style={{ gridRow: `${index + 1}`, zIndex: 1 }}
-                          >
-                            {isOver && <div className="absolute inset-0 bg-primary/20 rounded-lg" />}
-                            {!isBlockOccupied && !isDemo && (
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <div className="absolute inset-0 cursor-pointer rounded-lg hover:bg-muted/50 transition-colors" />
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-1">
-                                  <TimeBlockActionMenu
-                                    block={block}
-                                    onAddAppointment={() => handleOpenAppointmentForm(block)}
-                                    onScheduleTask={handleScheduleTask}
-                                    unscheduledTasks={unscheduledDoTodayTasks}
-                                    sections={sections}
-                                  />
-                                </PopoverContent>
-                              </Popover>
-                            )}
-                          </div>
-                        );
-                      })}
+                      {timeBlocks.map((block, index) => (
+                        <TimeBlock
+                          key={`block-${format(block.start, 'HH:mm')}`}
+                          block={block}
+                          index={index}
+                          appointmentsWithPositions={appointmentsWithPositions}
+                          isDemo={isDemo}
+                          onAddAppointment={handleOpenAppointmentForm}
+                          onScheduleTask={handleScheduleTask}
+                          unscheduledTasks={unscheduledDoTodayTasks}
+                          sections={sections}
+                          currentDate={currentDate}
+                        />
+                      ))}
 
                       {appointmentsWithPositions.map((app) => {
                         const task = app.task_id ? allTasks.find(t => t.id === app.task_id) : undefined;
