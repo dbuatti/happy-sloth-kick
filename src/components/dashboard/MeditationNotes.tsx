@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { useDashboardData } from '@/hooks/useDashboardData';
+import { DashboardSettings, useDashboardData } from '@/hooks/useDashboardData';
 import EditableCard from './EditableCard';
 import { Leaf } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 
-const MeditationNotesCard: React.FC = () => {
-  const { settings, updateSettings, loading } = useDashboardData();
+interface MeditationNotesCardProps {
+  settings: DashboardSettings;
+  updateSettings: ReturnType<typeof useDashboardData>['updateSettings'];
+  loading: boolean;
+}
+
+const MeditationNotesCard: React.FC<MeditationNotesCardProps> = ({ settings, updateSettings, loading }) => {
   const [notes, setNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 

@@ -19,7 +19,16 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => {
-  const { customCards, addCustomCard } = useDashboardData({ userId: demoUserId });
+  const { 
+    customCards, 
+    addCustomCard, 
+    weeklyFocus, 
+    updateWeeklyFocus, 
+    settings, 
+    updateSettings, 
+    loading 
+  } = useDashboardData({ userId: demoUserId });
+  
   const [isAddCardOpen, setIsAddCardOpen] = useState(false);
   const [newCardTitle, setNewCardTitle] = useState('');
   const [newCardContent, setNewCardContent] = useState('');
@@ -58,9 +67,21 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
           </div>
 
           <div className="lg:col-span-1 space-y-6">
-            <WeeklyFocusCard />
-            <SupportLinkCard />
-            <MeditationNotesCard />
+            <WeeklyFocusCard 
+              weeklyFocus={weeklyFocus} 
+              updateWeeklyFocus={updateWeeklyFocus} 
+              loading={loading} 
+            />
+            <SupportLinkCard 
+              settings={settings} 
+              updateSettings={updateSettings} 
+              loading={loading} 
+            />
+            <MeditationNotesCard 
+              settings={settings} 
+              updateSettings={updateSettings} 
+              loading={loading} 
+            />
             {customCards.map(card => (
               <CustomCard key={card.id} card={card} />
             ))}

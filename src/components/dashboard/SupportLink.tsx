@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useDashboardData } from '@/hooks/useDashboardData';
+import { DashboardSettings, useDashboardData } from '@/hooks/useDashboardData';
 import EditableCard from './EditableCard';
 import { LifeBuoy } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -7,8 +7,13 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 
-const SupportLinkCard: React.FC = () => {
-  const { settings, updateSettings, loading } = useDashboardData();
+interface SupportLinkCardProps {
+  settings: DashboardSettings;
+  updateSettings: ReturnType<typeof useDashboardData>['updateSettings'];
+  loading: boolean;
+}
+
+const SupportLinkCard: React.FC<SupportLinkCardProps> = ({ settings, updateSettings, loading }) => {
   const [link, setLink] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 

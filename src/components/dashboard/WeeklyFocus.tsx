@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { useDashboardData } from '@/hooks/useDashboardData';
+import { WeeklyFocus, useDashboardData } from '@/hooks/useDashboardData';
 import EditableCard from './EditableCard';
 import { Target } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 
-const WeeklyFocusCard: React.FC = () => {
-  const { weeklyFocus, updateWeeklyFocus, loading } = useDashboardData();
+interface WeeklyFocusCardProps {
+  weeklyFocus: WeeklyFocus | null;
+  updateWeeklyFocus: ReturnType<typeof useDashboardData>['updateWeeklyFocus'];
+  loading: boolean;
+}
+
+const WeeklyFocusCard: React.FC<WeeklyFocusCardProps> = ({ weeklyFocus, updateWeeklyFocus, loading }) => {
   const [primary, setPrimary] = useState('');
   const [secondary, setSecondary] = useState('');
   const [tertiary, setTertiary] = useState('');
