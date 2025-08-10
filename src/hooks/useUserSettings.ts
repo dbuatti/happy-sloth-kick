@@ -31,6 +31,7 @@ export const useUserSettings = (props?: { userId?: string }) => {
   const userId = props?.userId || user?.id;
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(true);
+  const isDemo = !!props?.userId;
 
   const fetchSettings = useCallback(async () => {
     if (!userId) {
@@ -56,7 +57,15 @@ export const useUserSettings = (props?: { userId?: string }) => {
           ...data,
         });
       } else {
-        // No settings found, create default ones
+        // If in demo mode, don't try to insert. Just use defaults.
+        if (isDemo) {
+          setSettings({
+            user_id: userId,
+            ...defaultSettings
+          });
+          return;
+        }
+        // No settings found, create default ones for a real user
         const { data: newData, error: insertError } = await supabase
           .from('user_settings')
           .insert({ user_id: userId, ...defaultSettings })
@@ -84,7 +93,7 @@ export const useUserSettings = (props?: { userId?: string }) => {
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, [userId, isDemo]);
 
   useEffect(() => {
     fetchSettings();
