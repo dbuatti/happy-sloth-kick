@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useWorkHours } from '@/hooks/useWorkHours';
 import { format, addMinutes, parse, isBefore, getMinutes, getHours, parseISO, isValid } from 'date-fns';
-import { CalendarDays, Clock, Settings, Sparkles, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CalendarDays, Clock, Settings, Sparkles, X, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import DateNavigator from '@/components/DateNavigator';
 import { useAppointments, Appointment, NewAppointmentData } from '@/hooks/useAppointments';
 import AppointmentForm from '@/components/AppointmentForm';
@@ -481,10 +481,10 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
                       variant="ghost"
                       size="icon"
                       onClick={() => setIsTaskPanelCollapsed(!isTaskPanelCollapsed)}
-                      className="absolute -left-4 top-1/2 -translate-y-1/2 z-20 bg-background hover:bg-muted rounded-full h-8 w-8"
+                      className="absolute -left-4 top-1/2 -translate-y-1/2 z-20 bg-background hover:bg-muted rounded-full h-8 w-8 border"
                       aria-label={isTaskPanelCollapsed ? "Show task panel" : "Hide task panel"}
                     >
-                      {isTaskPanelCollapsed ? <ChevronLeft className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+                      {isTaskPanelCollapsed ? <PanelRightOpen className="h-5 w-5" /> : <PanelRightClose className="h-5 w-5" />}
                     </Button>
                     {!isTaskPanelCollapsed && (
                       <div className="space-y-4 lg:w-[300px]">
