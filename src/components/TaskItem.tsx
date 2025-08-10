@@ -162,10 +162,10 @@ const TaskItem: React.FC<TaskItemProps> = ({
       {...dragListeners}
     >
       {/* Priority Pill */}
-      <div className={cn("absolute left-0 top-1/2 -translate-y-1/2 h-1/2 w-1 rounded-r-full", getPriorityDotColor(task.priority))} />
+      <div className={cn("absolute left-0 top-1/2 -translate-y-1/2 h-3/4 w-1 rounded-r-full", getPriorityDotColor(task.priority))} />
 
       {/* Checkbox Area */}
-      <div className="flex-shrink-0 flex items-center pl-4 pr-3" data-no-dnd="true">
+      <div className="flex-shrink-0 flex items-center pl-4 pr-3 pt-0.5" data-no-dnd="true">
         <Checkbox
           key={`${task.id}-${task.status}`}
           checked={task.status === 'completed'}
@@ -180,7 +180,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
       {/* Clickable Content Area */}
       <div 
-        className="flex-grow flex items-center space-x-2 py-2 cursor-pointer min-w-0"
+        className="flex-grow flex items-center space-x-2 py-1.5 cursor-pointer min-w-0"
         onClick={() => !isOverlay && !isEditing && onOpenOverview(task)}
       >
         <div className="flex-grow min-w-0 w-full" data-no-dnd="true">
@@ -290,7 +290,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
       </div>
 
       {/* Actions Area */}
-      <div className="flex-shrink-0 flex items-center space-x-1 pr-3 py-2" data-no-dnd="true">
+      <div className="flex-shrink-0 flex items-center space-x-1 pr-3" data-no-dnd="true">
         {recurringType === 'none' && (
           <DoTodaySwitch
             isOn={isDoToday}
