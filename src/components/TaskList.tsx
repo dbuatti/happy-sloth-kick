@@ -106,9 +106,11 @@ const TaskList: React.FC<TaskListProps> = (props) => {
       activationConstraint: {
         distance: 8,
       },
+      enabled: !isDemo,
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
+      enabled: !isDemo,
     })
   );
 
@@ -246,7 +248,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
           collisionDetection={closestCenter}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
-          disabled={isDemo}
         >
           <SortableContext items={allVisibleItemIds} strategy={verticalListSortingStrategy}>
             <div className="flex justify-end mb-3">
