@@ -154,7 +154,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   return (
     <div
       className={cn(
-        "relative flex items-center w-full rounded-lg transition-colors duration-200 py-1.5",
+        "relative flex items-center w-full rounded-lg transition-colors duration-200 py-2",
         task.status === 'completed' ? "text-muted-foreground bg-task-completed-bg" : "bg-card text-foreground",
         !isDoToday && task.recurring_type === 'none' && "opacity-40",
         "group hover:bg-muted/50"
@@ -162,7 +162,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
       {...dragListeners}
     >
       {/* Priority Pill */}
-      <div className={cn("absolute left-0 top-1/2 -translate-y-1/2 h-3/4 w-1 rounded-r-full", getPriorityDotColor(task.priority))} />
+      <div className={cn("absolute left-0 top-0 h-full w-1.5 rounded-l-lg", getPriorityDotColor(task.priority))} />
 
       {/* Checkbox Area */}
       <div className="flex-shrink-0 pl-4 pr-3" data-no-dnd="true">
@@ -191,7 +191,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
               onChange={(e) => setEditText(e.target.value)}
               onBlur={handleSaveEdit}
               onKeyDown={handleInputKeyDown}
-              className="h-auto text-lg font-medium leading-tight p-0 border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full"
+              className="h-auto text-lg leading-tight p-0 border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full"
               onClick={(e) => e.stopPropagation()}
             />
           ) : (
@@ -199,7 +199,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
               <span
                 className={cn(
                   "text-lg leading-tight line-clamp-2",
-                  task.status === 'completed' ? 'line-through' : 'font-medium',
+                  task.status === 'completed' ? 'line-through' : '',
                   "inline-block cursor-text"
                 )}
                 onClick={handleStartEdit}

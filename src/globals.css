@@ -690,7 +690,7 @@
 
   /* Custom checkbox styling to match the image */
   .checkbox-root {
-    @apply rounded-full; /* Make it round */
+    /* Removed rounded-full to make it square */
   }
 
   .checkbox-root[data-state="unchecked"] {
