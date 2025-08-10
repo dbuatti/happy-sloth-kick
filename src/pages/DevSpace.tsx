@@ -130,7 +130,7 @@ const DevSpace: React.FC<DevSpaceProps> = ({ isDemo = false, demoUserId }) => {
   ];
 
   const shortcuts: ShortcutMap = {
-    '/': (e) => {
+    'n': (e) => {
       e.preventDefault();
       handleAddClick();
     },
