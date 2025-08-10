@@ -15,6 +15,7 @@ import { useSleepAnalytics } from '@/hooks/useSleepAnalytics';
 interface SleepDashboardProps {
   dateRange: DateRange | undefined;
   setDateRange: React.Dispatch<React.SetStateAction<DateRange | undefined>>;
+  isDemo?: boolean;
   demoUserId?: string;
 }
 

@@ -31,6 +31,7 @@ export interface DashboardSettings {
 export const useDashboardData = (props?: { userId?: string }) => {
   const { user } = useAuth();
   const userId = props?.userId || user?.id;
+  const isDemo = !!props?.userId;
 
   const [weeklyFocus, setWeeklyFocus] = useState<WeeklyFocus | null>(null);
   const [customCards, setCustomCards] = useState<CustomCard[]>([]);
@@ -56,7 +57,7 @@ export const useDashboardData = (props?: { userId?: string }) => {
 
       if (focusError) throw focusError;
 
-      if (!focusData) {
+      if (!focusData && !isDemo) {
         const { data: newFocus, error: insertError } = await supabase
           .from('weekly_focus')
           .insert({ user_id: userId, week_start_date: weekStartDate })
@@ -111,7 +112,7 @@ export const useDashboardData = (props?: { userId?: string }) => {
     } finally {
       setLoading(false);
     }
-  }, [userId, weekStartDate]);
+  }, [userId, weekStartDate, isDemo]);
 
   useEffect(() => {
     fetchData();
