@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit, Clipboard, Image as ImageIcon, GripVertical, ClipboardCopy } from 'lucide-react';
+import { Edit, Clipboard, Image as ImageIcon, GripVertical, ClipboardCopy, ChevronDown, ChevronUp } from 'lucide-react';
 import { DevIdea } from '@/hooks/useDevIdeas';
 import { cn } from '@/lib/utils';
 import { showSuccess, showError } from '@/utils/toast';
@@ -15,7 +15,11 @@ interface DevIdeaCardProps {
   dragListeners?: ReturnType<typeof useSortable>['listeners'];
 }
 
+const TRUNCATE_LENGTH = 200;
+
 const DevIdeaCard: React.FC<DevIdeaCardProps> = ({ idea, onEdit, dragListeners }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'high': return 'border-l-red-500';
@@ -70,6 +74,11 @@ const DevIdeaCard: React.FC<DevIdeaCardProps> = ({ idea, onEdit, dragListeners }
     onEdit(idea);
   };
 
+  const isLongDescription = idea.description && idea.description.length > TRUNCATE_LENGTH;
+  const displayedDescription = isLongDescription && !isExpanded
+    ? `${idea.description!.substring(0, TRUNCATE_LENGTH)}...`
+    : idea.description;
+
   return (
     <Card 
       className={cn("group w-full shadow-md hover:shadow-lg transition-shadow duration-200 border-l-4", getPriorityColor(idea.priority))}
@@ -105,7 +114,22 @@ const DevIdeaCard: React.FC<DevIdeaCardProps> = ({ idea, onEdit, dragListeners }
           <img src={idea.image_url} alt={idea.title} className="rounded-md mb-2 max-h-48 w-full object-cover" />
         )}
         {idea.description && (
-          <p className="text-sm text-muted-foreground">{idea.description}</p>
+          <div className="text-sm text-muted-foreground whitespace-pre-wrap">
+            <p>{displayedDescription}</p>
+            {isLongDescription && (
+              <Button
+                variant="link"
+                className="p-0 h-auto text-xs mt-1"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsExpanded(!isExpanded);
+                }}
+              >
+                {isExpanded ? 'Show Less' : 'Show More'}
+                {isExpanded ? <ChevronUp className="ml-1 h-3 w-3" /> : <ChevronDown className="ml-1 h-3 w-3" />}
+              </Button>
+            )}
+          </div>
         )}
         {idea.tags && idea.tags.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1">
