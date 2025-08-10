@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import PeopleMemoryCard from '@/components/dashboard/PeopleMemoryCard';
 
 interface DashboardProps {
   isDemo?: boolean;
@@ -72,6 +73,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
               updateWeeklyFocus={updateWeeklyFocus} 
               loading={loading} 
             />
+            <PeopleMemoryCard />
             <SupportLinkCard 
               settings={settings} 
               updateSettings={updateSettings} 
