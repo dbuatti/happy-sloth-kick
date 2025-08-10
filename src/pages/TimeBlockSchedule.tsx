@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MadeWithDyad } from "@/components/made-with-dyad";
@@ -69,7 +69,19 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
 
   const [activeDragItem, setActiveDragItem] = useState<any>(null);
-  const [isTaskPanelCollapsed, setIsTaskPanelCollapsed] = useState(false);
+  
+  const [isTaskPanelCollapsed, setIsTaskPanelCollapsed] = useState(() => {
+    try {
+      const saved = localStorage.getItem('scheduleTaskPanelCollapsed');
+      return saved ? JSON.parse(saved) : false;
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('scheduleTaskPanelCollapsed', JSON.stringify(isTaskPanelCollapsed));
+  }, [isTaskPanelCollapsed]);
 
   const sensors = useSensors(useSensor(PointerSensor, {
     activationConstraint: {
