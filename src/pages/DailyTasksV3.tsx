@@ -99,10 +99,27 @@ const DailyTasksV3: React.FC<DailyTasksV3Props> = ({ isDemo = false, demoUserId 
     }
   });
 
+  const [expandedTasks, setExpandedTasks] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem('taskList_expandedTasks');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
   const toggleSection = useCallback((sectionId: string) => {
     setExpandedSections(prev => {
       const newState = { ...prev, [sectionId]: !(prev[sectionId] ?? true) };
       localStorage.setItem('taskList_expandedSections', JSON.stringify(newState));
+      return newState;
+    });
+  }, []);
+
+  const toggleTask = useCallback((taskId: string) => {
+    setExpandedTasks(prev => {
+      const newState = { ...prev, [taskId]: !(prev[taskId] ?? true) };
+      localStorage.setItem('taskList_expandedTasks', JSON.stringify(newState));
       return newState;
     });
   }, []);
@@ -211,6 +228,8 @@ const DailyTasksV3: React.FC<DailyTasksV3Props> = ({ isDemo = false, demoUserId 
                   expandedSections={expandedSections}
                   toggleSection={toggleSection}
                   toggleAllSections={toggleAllSections}
+                  expandedTasks={expandedTasks}
+                  toggleTask={toggleTask}
                   setFocusTask={setFocusTask}
                   doTodayOffIds={doTodayOffIds}
                   toggleDoToday={toggleDoToday}

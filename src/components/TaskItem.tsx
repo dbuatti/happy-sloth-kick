@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock } from 'lucide-react';
+import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock, ChevronRight } from 'lucide-react';
 import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
@@ -28,6 +28,9 @@ interface TaskItemProps {
   onMoveUp: (taskId: string) => Promise<void>;
   onMoveDown: (taskId: string) => Promise<void>;
   isOverlay?: boolean;
+  hasSubtasks?: boolean;
+  isExpanded?: boolean;
+  toggleTask?: (taskId: string) => void;
   dragListeners?: ReturnType<typeof useSortable>['listeners'];
   setFocusTask: (taskId: string | null) => Promise<void>;
   isDoToday: boolean;
@@ -46,6 +49,9 @@ const TaskItem: React.FC<TaskItemProps> = ({
   onOpenOverview,
   currentDate,
   isOverlay = false,
+  hasSubtasks = false,
+  isExpanded = true,
+  toggleTask,
   dragListeners,
   setFocusTask,
   isDoToday,
@@ -166,8 +172,25 @@ const TaskItem: React.FC<TaskItemProps> = ({
       {/* Priority Pill */}
       <div className={cn("absolute left-0 top-0 h-full w-1.5 rounded-l-lg", getPriorityDotColor(task.priority))} />
 
+      <div className="flex-shrink-0 pl-4 pr-1 flex items-center" data-no-dnd="true">
+        {hasSubtasks && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleTask?.(task.id);
+            }}
+            aria-label={isExpanded ? 'Collapse sub-tasks' : 'Expand sub-tasks'}
+          >
+            <ChevronRight className={cn("h-4 w-4 transition-transform", isExpanded ? "rotate-90" : "rotate-0")} />
+          </Button>
+        )}
+      </div>
+
       {/* Checkbox Area */}
-      <div className="flex-shrink-0 pl-4 pr-3" data-no-dnd="true">
+      <div className="flex-shrink-0 pr-3" data-no-dnd="true">
         <Checkbox
           key={`${task.id}-${task.status}`}
           checked={task.status === 'completed'}

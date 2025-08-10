@@ -54,6 +54,8 @@ interface TaskListProps {
   currentDate: Date;
   setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
   expandedSections: Record<string, boolean>;
+  expandedTasks: Record<string, boolean>;
+  toggleTask: (taskId: string) => void;
   toggleSection: (sectionId: string) => void;
   toggleAllSections: () => void;
   setFocusTask: (taskId: string | null) => Promise<void>;
@@ -83,6 +85,8 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     onOpenOverview,
     currentDate,
     expandedSections,
+    expandedTasks,
+    toggleTask,
     toggleSection,
     toggleAllSections,
     setFocusTask,
@@ -139,8 +143,8 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     const ids: UniqueIdentifier[] = [];
     allSortableSections.forEach(section => {
         ids.push(section.id);
-        const isExpanded = expandedSections[section.id] !== false;
-        if (isExpanded) {
+        const isSectionExpanded = expandedSections[section.id] !== false;
+        if (isSectionExpanded) {
             const topLevelTasksInSection = filteredTasks
                 .filter(t => t.parent_task_id === null && (t.section_id === section.id || (t.section_id === null && section.id === 'no-section-header')))
                 .sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -148,11 +152,14 @@ const TaskList: React.FC<TaskListProps> = (props) => {
             const addSubtasksRecursively = (tasksToAdd: Task[]) => {
                 tasksToAdd.forEach(task => {
                     ids.push(task.id);
-                    const subtasks = filteredTasks
-                        .filter(sub => sub.parent_task_id === task.id)
-                        .sort((a, b) => (a.order || 0) - (b.order || 0));
-                    if (subtasks.length > 0) {
-                        addSubtasksRecursively(subtasks);
+                    const isTaskExpanded = expandedTasks[task.id] !== false;
+                    if (isTaskExpanded) {
+                        const subtasks = filteredTasks
+                            .filter(sub => sub.parent_task_id === task.id)
+                            .sort((a, b) => (a.order || 0) - (b.order || 0));
+                        if (subtasks.length > 0) {
+                            addSubtasksRecursively(subtasks);
+                        }
                     }
                 });
             };
@@ -160,7 +167,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
         }
     });
     return ids;
-  }, [allSortableSections, expandedSections, filteredTasks]);
+  }, [allSortableSections, expandedSections, filteredTasks, expandedTasks]);
 
   const isSectionHeaderId = (id: UniqueIdentifier | null) => {
     if (!id) return false;
@@ -309,6 +316,8 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                             level={0}
                             allTasks={tasks}
                             isOverlay={false}
+                            expandedTasks={expandedTasks}
+                            toggleTask={toggleTask}
                             setFocusTask={setFocusTask}
                             isDoToday={!doTodayOffIds.has(task.id)}
                             toggleDoToday={toggleDoToday}

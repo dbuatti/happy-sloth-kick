@@ -19,6 +19,8 @@ interface SortableTaskItemProps {
   level: number; // New prop for indentation level
   allTasks: Task[]; // Pass all tasks to filter subtasks
   isOverlay?: boolean; // New prop for drag overlay
+  expandedTasks: Record<string, boolean>;
+  toggleTask: (taskId: string) => void;
   setFocusTask: (taskId: string | null) => Promise<void>;
   isDoToday: boolean;
   toggleDoToday: (task: Task) => void;
@@ -32,6 +34,8 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   level,
   allTasks,
   isOverlay = false, // Default to false
+  expandedTasks,
+  toggleTask,
   setFocusTask,
   isDoToday,
   toggleDoToday,
@@ -60,6 +64,8 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   const directSubtasks = allTasks.filter(t => t.parent_task_id === task.id)
                                  .sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
 
+  const isExpanded = expandedTasks[task.id] !== false;
+
   if (isDragging && !isOverlay) {
     return <div ref={setNodeRef} style={style} className="h-16 bg-muted/50 border-2 border-dashed border-border rounded-lg" />;
   }
@@ -80,6 +86,9 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
       <div className="flex-1"> {/* This div now contains the TaskItem and subtasks */}
         <TaskItem
           task={task}
+          hasSubtasks={directSubtasks.length > 0}
+          isExpanded={isExpanded}
+          toggleTask={toggleTask}
           allTasks={allTasks}
           {...rest}
           isOverlay={isOverlay}
@@ -89,7 +98,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           scheduledTasksMap={scheduledTasksMap}
           isDemo={isDemo}
         />
-        {directSubtasks.length > 0 && (
+        {isExpanded && directSubtasks.length > 0 && (
           <ul className="list-none mt-1.5 space-y-1.5">
             {directSubtasks.map(subtask => (
               <SortableTaskItem
@@ -98,6 +107,8 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
                 level={level + 1}
                 allTasks={allTasks}
                 {...rest}
+                expandedTasks={expandedTasks}
+                toggleTask={toggleTask}
                 isOverlay={isOverlay}
                 setFocusTask={setFocusTask}
                 isDoToday={!doTodayOffIds.has(subtask.original_task_id || subtask.id)}
