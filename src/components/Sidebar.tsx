@@ -92,7 +92,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false, demo
               }}
             >
               <div className="p-3 flex justify-between items-center">
-                <h1 className="text-xl font-bold">TaskMaster</h1>
+                <Link to={isDemo ? '/demo' : '/dashboard'} className="hover:opacity-80 transition-opacity">
+                  <h1 className="text-xl font-bold">TaskMaster</h1>
+                </Link>
               </div>
               <NavigationLinks onLinkClick={() => setIsSheetOpen(false)} isDemo={isDemo} demoUserId={demoUserId} />
               <div className="p-3 border-t border-border flex justify-between items-center">
@@ -108,7 +110,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false, demo
               </div>
             </SheetContent>
           </Sheet>
-          <h1 className="text-xl font-bold">TaskMaster</h1>
+          <Link to={isDemo ? '/demo' : '/dashboard'} className="hover:opacity-80 transition-opacity">
+            <h1 className="text-xl font-bold">TaskMaster</h1>
+          </Link>
           <div className="flex items-center space-x-1">
             <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"} className="h-7 w-7">
               {isSoundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
@@ -127,7 +131,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false, demo
     <div className="h-screen flex overflow-hidden bg-background">
       <div className="w-60 bg-card/80 backdrop-blur shadow-md h-full flex flex-col flex-shrink-0">
         <div className="p-3 flex justify-between items-center">
-          <h1 className="text-xl font-bold">TaskMaster</h1>
+          <Link to={isDemo ? '/demo' : '/dashboard'} className="hover:opacity-80 transition-opacity">
+            <h1 className="text-xl font-bold">TaskMaster</h1>
+          </Link>
         </div>
         <NavigationLinks isDemo={isDemo} demoUserId={demoUserId} />
         <div className="p-3 border-t border-border flex justify-between items-center">
