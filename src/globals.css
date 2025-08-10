@@ -683,9 +683,8 @@
     @apply bg-background text-foreground;
     font-family: 'Inter', sans-serif; /* Changed font to Inter */
     font-weight: 400; /* Default to regular weight for better readability */
-    font-size: 15px; /* Increased base font size slightly */
+    font-size: 16px; /* Increased base font size slightly */
     line-height: 1.6; /* Adjusted line height for better spacing */
-    touch-action: none; /* Disable pinch-to-zoom */
   }
 
   /* Custom checkbox styling to match the image */
