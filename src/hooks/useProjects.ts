@@ -73,7 +73,7 @@ export const useProjects = (props?: { userId?: string }) => {
       // Fetch projects
       let query = supabase
         .from('projects')
-        .select('*')
+        .select('id, user_id, name, description, current_count, created_at, link, notes')
         .eq('user_id', userId);
 
       switch (sortOption) {
