@@ -3,9 +3,10 @@ import { Appointment } from '@/hooks/useAppointments';
 import { Task } from '@/hooks/useTasks';
 import { cn } from '@/lib/utils';
 import { format, parseISO, isValid } from 'date-fns';
-import { Info, ListTodo, CheckCircle2, X } from 'lucide-react';
+import { Info, ListTodo, CheckCircle2, X, MoreHorizontal, Edit } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from './ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface AppointmentCardProps {
   appointment: Appointment;
@@ -49,11 +50,6 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
   const startTime = appointment.start_time ? parseISO(`2000-01-01T${appointment.start_time}`) : null;
   const endTime = appointment.end_time ? parseISO(`2000-01-01T${appointment.end_time}`) : null;
 
-  const handleUnscheduleClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onUnschedule(appointment.id);
-  };
-
   const isCompleted = task?.status === 'completed';
 
   return (
@@ -62,12 +58,10 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
       className={cn(
         "absolute rounded-lg p-2 shadow-md group text-white",
         "flex flex-col justify-start items-start transition-all duration-200 ease-in-out",
-        "cursor-pointer hover:scale-[1.01] hover:shadow-lg",
         isCompleted && "opacity-70"
       )}
-      onClick={() => onEdit(appointment)}
     >
-      <div className="flex-grow">
+      <div className="flex-grow w-full" onClick={() => onEdit(appointment)}>
         <h4 className="font-semibold text-sm truncate flex items-center gap-1.5">
           {task ? (
             isCompleted ? (
@@ -95,17 +89,25 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
           </TooltipContent>
         </Tooltip>
       )}
-      {task && (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute top-1 right-1 h-6 w-6 rounded-full bg-black/20 hover:bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-          onClick={handleUnscheduleClick}
-          title="Remove from schedule"
-        >
-          <X className="h-4 w-4" />
-        </Button>
-      )}
+      <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity" data-no-dnd="true">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full bg-black/20 hover:bg-black/40 text-white">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+            <DropdownMenuItem onSelect={() => onEdit(appointment)}>
+              <Edit className="mr-2 h-4 w-4" /> Edit/Details
+            </DropdownMenuItem>
+            {task && (
+              <DropdownMenuItem onSelect={() => onUnschedule(appointment.id)} className="text-destructive focus:text-destructive">
+                <X className="mr-2 h-4 w-4" /> Unschedule Task
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </div>
   );
 };
