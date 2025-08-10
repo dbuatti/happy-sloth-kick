@@ -244,19 +244,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
         </div>
 
         <div className="flex-shrink-0 flex items-center space-x-2" data-no-dnd="true">
-          {recurringType !== 'none' && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="inline-flex items-center flex-shrink-0">
-                  <Repeat className="h-4 w-4 text-muted-foreground" />
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Recurring: {recurringType.charAt(0).toUpperCase() + recurringType.slice(1)}</p>
-              </TooltipContent>
-            </Tooltip>
-          )}
-
           {task.link && (
             isUrl(task.link) ? (
               <Tooltip>
@@ -316,6 +303,18 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
       {/* Actions Area */}
       <div className="flex-shrink-0 flex items-center space-x-1 pr-3" data-no-dnd="true">
+        {recurringType !== 'none' && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-flex items-center flex-shrink-0">
+                <Repeat className="h-4 w-4 text-muted-foreground" />
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Recurring: {recurringType.charAt(0).toUpperCase() + recurringType.slice(1)}</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
         <DoTodaySwitch
           isOn={isDoToday}
           onToggle={() => toggleDoToday(task)}
