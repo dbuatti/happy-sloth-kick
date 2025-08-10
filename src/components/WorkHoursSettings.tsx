@@ -97,61 +97,66 @@ const WorkHoursSettings: React.FC = () => {
       <CardContent className="space-y-4 pt-0">
         <div className="rounded-xl p-3 bg-muted/50 shadow-sm">
           <h3 className="text-lg font-semibold mb-3 text-foreground">Apply to All Days</h3>
-          <div className="flex flex-col sm:flex-row items-center gap-3">
-            <div className="flex-1 w-full">
-              <Label htmlFor="all-start-time" className="sr-only">Start Time</Label>
-              <Input
-                id="all-start-time"
-                type="time"
-                value={allStartTime}
-                onChange={(e) => setAllStartTime(e.target.value)}
-                className="w-full h-10 text-base"
-              />
+          <div className="flex flex-col gap-3">
+            <div className="grid grid-cols-2 items-center gap-2">
+              <div className="space-y-1">
+                <Label htmlFor="all-start-time">Start Time</Label>
+                <Input
+                  id="all-start-time"
+                  type="time"
+                  value={allStartTime}
+                  onChange={(e) => setAllStartTime(e.target.value)}
+                  className="w-full h-10 text-base"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="all-end-time">End Time</Label>
+                <Input
+                  id="all-end-time"
+                  type="time"
+                  value={allEndTime}
+                  onChange={(e) => setAllEndTime(e.target.value)}
+                  className="w-full h-10 text-base"
+                />
+              </div>
             </div>
-            <span className="text-muted-foreground">-</span>
-            <div className="flex-1 w-full">
-              <Label htmlFor="all-end-time" className="sr-only">End Time</Label>
-              <Input
-                id="all-end-time"
-                type="time"
-                value={allEndTime}
-                onChange={(e) => setAllEndTime(e.target.value)}
-                className="w-full h-10 text-base"
-              />
-            </div>
-            <Button onClick={handleSetAllHoursAndSave} className="w-full sm:w-auto h-10 text-base" disabled={isSaving}>
-              Apply to All
+            <Button onClick={handleSetAllHoursAndSave} className="w-full h-10 text-base" disabled={isSaving}>
+              Apply to All & Enable
             </Button>
           </div>
         </div>
 
         {localWorkHours.map(dayHour => (
-          <div key={dayHour.day_of_week} className="flex items-center space-x-4 p-2 rounded-md shadow-sm bg-background">
-            <Checkbox
-              id={`enable-${dayHour.day_of_week}`}
-              checked={dayHour.enabled}
-              onCheckedChange={(checked) => handleEnabledChange(dayHour.day_of_week, !!checked)}
-              disabled={isSaving}
-              className="h-5 w-5"
-            />
-            <Label htmlFor={`enable-${dayHour.day_of_week}`} className="flex-1 font-medium capitalize text-base">
-              {allDaysOfWeek.find(d => d.id === dayHour.day_of_week)?.name}
-            </Label>
-            <Input
-              type="time"
-              value={dayHour.start_time}
-              onChange={(e) => handleTimeChange(dayHour.day_of_week, 'start_time', e.target.value)}
-              className="w-28 h-10 text-base"
-              disabled={!dayHour.enabled || isSaving}
-            />
-            <span className="text-muted-foreground">-</span>
-            <Input
-              type="time"
-              value={dayHour.end_time}
-              onChange={(e) => handleTimeChange(dayHour.day_of_week, 'end_time', e.target.value)}
-              className="w-28 h-10 text-base"
-              disabled={!dayHour.enabled || isSaving}
-            />
+          <div key={dayHour.day_of_week} className="flex flex-col sm:flex-row sm:items-center gap-2 p-2 rounded-md shadow-sm bg-background">
+            <div className="flex items-center flex-1">
+              <Checkbox
+                id={`enable-${dayHour.day_of_week}`}
+                checked={dayHour.enabled}
+                onCheckedChange={(checked) => handleEnabledChange(dayHour.day_of_week, !!checked)}
+                disabled={isSaving}
+                className="h-5 w-5"
+              />
+              <Label htmlFor={`enable-${dayHour.day_of_week}`} className="ml-2 font-medium capitalize text-base">
+                {allDaysOfWeek.find(d => d.id === dayHour.day_of_week)?.name}
+              </Label>
+            </div>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Input
+                type="time"
+                value={dayHour.start_time}
+                onChange={(e) => handleTimeChange(dayHour.day_of_week, 'start_time', e.target.value)}
+                className="flex-1 h-10 text-base"
+                disabled={!dayHour.enabled || isSaving}
+              />
+              <span className="text-muted-foreground">-</span>
+              <Input
+                type="time"
+                value={dayHour.end_time}
+                onChange={(e) => handleTimeChange(dayHour.day_of_week, 'end_time', e.target.value)}
+                className="flex-1 h-10 text-base"
+                disabled={!dayHour.enabled || isSaving}
+              />
+            </div>
           </div>
         ))}
         <Button onClick={handleSaveAllWorkHours} className="w-full mt-4 h-10 text-base" disabled={isSaving}>
