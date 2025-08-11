@@ -4,6 +4,7 @@ import { CheckCircle2, Edit, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Task } from '@/hooks/useTasks';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface NextTaskCardProps {
   nextAvailableTask: Task | null;
@@ -30,12 +31,14 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ nextAvailableTask, updateTa
   };
 
   return (
-    <fieldset className="rounded-xl border-2 border-border p-4 min-h-[150px] flex flex-col justify-center">
-      <legend className="px-2 text-sm text-muted-foreground -ml-1 font-medium flex items-center gap-2">
-        <Target className="h-4 w-4" />
-        Your Next Task
-      </legend>
-      <div className="flex-grow flex items-center justify-center">
+    <Card className="min-h-[150px] flex flex-col justify-center">
+      <CardHeader>
+        <CardTitle className="text-lg font-semibold flex items-center gap-2">
+          <Target className="h-5 w-5 text-primary" />
+          Your Next Task
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex-grow flex items-center justify-center">
         {loading ? (
           <div className="space-y-3 w-full flex flex-col items-center">
             <Skeleton className="h-6 w-3/4" />
@@ -64,8 +67,8 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ nextAvailableTask, updateTa
             No pending tasks for today. Great job!
           </div>
         )}
-      </div>
-    </fieldset>
+      </CardContent>
+    </Card>
   );
 };
 

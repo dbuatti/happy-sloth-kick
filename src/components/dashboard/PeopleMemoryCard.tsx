@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { usePeopleMemory, Person } from '@/hooks/usePeopleMemory';
 import { Button } from '@/components/ui/button';
-import { Plus, UploadCloud, X } from 'lucide-react';
+import { Plus, UploadCloud, X, Users } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import PersonAvatar from './PersonAvatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import { showError } from '@/utils/toast';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const PeopleMemoryCard: React.FC = () => {
   const { people, loading, addPerson, updatePerson, deletePerson } = usePeopleMemory();
@@ -91,9 +92,14 @@ const PeopleMemoryCard: React.FC = () => {
 
   return (
     <>
-      <fieldset className="rounded-xl border-2 border-border p-4 min-h-[150px] flex flex-col">
-        <legend className="px-2 text-sm text-muted-foreground -ml-1 font-medium">People Memory</legend>
-        <div className="flex-grow flex items-center justify-center">
+      <Card className="min-h-[150px] flex flex-col">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold flex items-center gap-2">
+            <Users className="h-5 w-5 text-primary" />
+            People Memory
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex-grow flex items-center justify-center">
           {loading ? (
             <div className="flex flex-wrap items-center gap-4">
               {[...Array(3)].map((_, i) => (
@@ -116,8 +122,8 @@ const PeopleMemoryCard: React.FC = () => {
               </Button>
             </div>
           )}
-        </div>
-      </fieldset>
+        </CardContent>
+      </Card>
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent>
