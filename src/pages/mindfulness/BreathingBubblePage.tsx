@@ -7,7 +7,7 @@ import { useSound } from '@/context/SoundContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MadeWithDyad } from '@/components/made-with-dyad';
 import { useAuth } from '@/context/AuthContext';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 
 interface BreathCycle {
   name: string;
@@ -109,9 +109,13 @@ const BreathingBubblePage: React.FC = () => {
     return 'Hold';
   };
 
-  const animationProps = {
-    scale: phase === 'inhale' || phase === 'hold-top' ? 1.2 : 0.7,
-    opacity: phase === 'inhale' || phase === 'hold-top' ? 1 : 0.8,
+  const animationStyle = {
+    animation: isRunning && currentPhaseData?.animationKeyframe
+      ? `${currentPhaseData.animationKeyframe} ${currentPhaseData.duration}s ease-in-out forwards`
+      : 'none',
+    transform: (isRunning && currentPhaseData?.animationKeyframe)
+      ? undefined
+      : (phase === 'hold-top' || phase === 'inhale' ? 'scale(1.2)' : 'scale(0.7)'),
   };
 
   return (
@@ -142,20 +146,17 @@ const BreathingBubblePage: React.FC = () => {
           </div>
 
           <div className="relative w-64 h-64 mx-auto flex items-center justify-center">
-            <motion.div
-              className="absolute w-full h-full rounded-full border-2 border-primary/10"
-              animate={animationProps}
-              transition={{ duration: currentPhaseData?.duration || 1, ease: 'easeInOut' }}
+            <div
+              className="absolute w-full h-full rounded-full border-2 border-primary/10 transition-transform duration-1000 ease-in-out"
+              style={animationStyle}
             />
-            <motion.div
-              className="absolute w-3/4 h-3/4 rounded-full border-2 border-primary/10"
-              animate={animationProps}
-              transition={{ duration: currentPhaseData?.duration || 1, ease: 'easeInOut', delay: 0.1 }}
+            <div
+              className="absolute w-3/4 h-3/4 rounded-full border-2 border-primary/10 transition-transform duration-1000 ease-in-out"
+              style={{...animationStyle, animationDelay: '0.1s'}}
             />
-            <motion.div
-              className="w-48 h-48 rounded-full bg-primary shadow-2xl shadow-primary/30 flex items-center justify-center"
-              animate={animationProps}
-              transition={{ duration: currentPhaseData?.duration || 1, ease: 'easeInOut' }}
+            <div
+              className="w-48 h-48 rounded-full bg-primary shadow-2xl shadow-primary/30 flex items-center justify-center transition-transform duration-1000 ease-in-out"
+              style={animationStyle}
             >
               <AnimatePresence mode="wait">
                 <motion.div
@@ -170,7 +171,7 @@ const BreathingBubblePage: React.FC = () => {
                   {isRunning && <p className="text-5xl font-light mt-2">{timer}</p>}
                 </motion.div>
               </AnimatePresence>
-            </motion.div>
+            </div>
           </div>
 
           <div className="flex justify-center space-x-4">
