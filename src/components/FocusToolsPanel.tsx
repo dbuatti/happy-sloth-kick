@@ -210,7 +210,7 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="relative w-40 h-40 mx-auto flex items-center justify-center">
-            <CircularProgress progress={100 - progressValue} />
+            <CircularProgress progress={progressValue} />
             <div className="relative z-10 text-4xl font-bold text-foreground">
               {formatTime(timeRemaining)}
             </div>
