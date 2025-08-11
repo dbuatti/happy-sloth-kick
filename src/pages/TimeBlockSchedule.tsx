@@ -433,7 +433,7 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
                           getMinutes(block.start) === 0 && (
                             <div
                               key={`label-${format(block.start, 'HH:mm')}`}
-                              className="absolute right-4"
+                              className="absolute right-0 text-right pr-2"
                               style={{ top: `${index * (rowHeight + gapHeight) - 8}px` }}
                             >
                               <span className="text-xs text-muted-foreground">{format(block.start, 'h a')}</span>
