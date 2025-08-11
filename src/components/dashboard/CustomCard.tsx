@@ -55,13 +55,37 @@ const CustomCard: React.FC<CustomCardProps> = ({ card }) => {
     </div>
   );
 
+  const renderContentWithLinks = (text: string | null) => {
+    if (!text) return 'No content yet.';
+    const urlRegex = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
+    const parts = text.split(urlRegex);
+
+    return parts.map((part, index) => {
+      if (part && part.match(urlRegex)) {
+        return (
+          <a
+            key={index}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:underline break-all"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {part}
+          </a>
+        );
+      }
+      return part;
+    });
+  };
+
   return (
     <div className="relative group">
       <EditableCard title={card.title} icon={StickyNote} onSave={handleSave} renderEditForm={renderEditForm} isSaving={isSaving}>
         <div className="flex items-start gap-4">
           {card.emoji && <span className="text-2xl">{card.emoji}</span>}
           <p className="text-sm text-muted-foreground whitespace-pre-wrap flex-1">
-            {card.content || 'No content yet.'}
+            {renderContentWithLinks(card.content)}
           </p>
         </div>
       </EditableCard>
