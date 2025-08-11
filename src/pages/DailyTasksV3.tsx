@@ -298,6 +298,8 @@ const DailyTasksV3: React.FC<DailyTasksV3Props> = ({ isDemo = false, demoUserId 
         sections={sections}
         allCategories={allCategories}
         onOpenDetail={handleOpenDetail}
+        handleAddTask={handleAddTask}
+        currentDate={currentDate}
       />
 
       <Dialog open={isAddTaskDialogOpen} onOpenChange={setIsAddTaskDialogOpen}>

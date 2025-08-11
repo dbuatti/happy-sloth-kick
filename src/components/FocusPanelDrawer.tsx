@@ -1,6 +1,6 @@
 import React from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import ActiveTaskPanel from './ActiveTaskPanel';
+import FocusToolsPanel from './FocusToolsPanel';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
 // Removed useAuth as it's not directly used in this component's logic
 
@@ -15,7 +15,8 @@ interface FocusPanelDrawerProps {
   onDeleteTask: (taskId: string) => void;
   sections: TaskSection[];
   allCategories: Category[];
-  // Removed currentDate as it's not directly used here
+  handleAddTask: (taskData: any) => Promise<any>; // Added handleAddTask
+  currentDate: Date; // Added currentDate
 }
 
 const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
@@ -29,7 +30,8 @@ const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
   onDeleteTask,
   sections,
   allCategories,
-  // Removed currentDate from destructuring
+  handleAddTask, // Destructure handleAddTask
+  currentDate, // Destructure currentDate
 }) => {
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
@@ -38,7 +40,7 @@ const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
           <SheetTitle>Focus Tools</SheetTitle>
         </SheetHeader>
         <div className="flex-1 overflow-y-auto py-4">
-          <ActiveTaskPanel
+          <FocusToolsPanel
             nextAvailableTask={nextAvailableTask}
             tasks={tasks}
             filteredTasks={filteredTasks}
@@ -47,7 +49,8 @@ const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
             sections={sections}
             allCategories={allCategories}
             onOpenDetail={onOpenDetail}
-            // Removed currentDate prop from here as it's not used by ActiveTaskPanel
+            handleAddTask={handleAddTask} // Pass handleAddTask
+            currentDate={currentDate} // Pass currentDate
           />
         </div>
       </SheetContent>
