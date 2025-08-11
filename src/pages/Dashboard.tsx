@@ -122,20 +122,24 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {settings?.dashboard_layout?.['dailyScheduleVisible'] !== false && (
-            <div className="lg:col-span-2">
-              <DailySchedulePreview />
+          {/* Main Content Column */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <NextTaskCard 
+                nextAvailableTask={nextAvailableTask}
+                updateTask={updateTask}
+                onOpenOverview={handleOpenOverview}
+                loading={tasksLoading}
+              />
+              <PomodoroCard />
             </div>
-          )}
+            {settings?.dashboard_layout?.['dailyScheduleVisible'] !== false && (
+              <DailySchedulePreview />
+            )}
+          </div>
 
+          {/* Side Content Column */}
           <div className="lg:col-span-1 space-y-6">
-            <PomodoroCard />
-            <NextTaskCard 
-              nextAvailableTask={nextAvailableTask}
-              updateTask={updateTask}
-              onOpenOverview={handleOpenOverview}
-              loading={tasksLoading}
-            />
             {settings?.dashboard_layout?.['weeklyFocusVisible'] !== false && (
               <WeeklyFocusCard 
                 weeklyFocus={weeklyFocus} 
