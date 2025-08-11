@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, RefreshCcw, Wind } from 'lucide-react';
@@ -11,82 +11,57 @@ const MiniBreathingBubble: React.FC = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [phase, setPhase] = useState<'inhale' | 'hold-top' | 'exhale' | 'hold-bottom'>('inhale');
   const [timer, setTimer] = useState(0);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const phaseIndexRef = useRef(0);
+  const [phaseIndex, setPhaseIndex] = useState(0);
 
-  const currentBreathCycle = { name: 'Box Breathing (4-4-4-4)', inhale: 4, holdTop: 4, exhale: 4, holdBottom: 4, description: 'Calming and focusing, equal phases.' };
+  const currentBreathCycle = useMemo(() => ({ name: 'Box Breathing (4-4-4-4)', inhale: 4, holdTop: 4, exhale: 4, holdBottom: 4, description: 'Calming and focusing, equal phases.' }), []);
 
-  const cyclePhases = [
+  const cyclePhases = useMemo(() => [
     { name: 'Inhale', duration: currentBreathCycle.inhale, animationKeyframe: 'breathe-in' },
     { name: 'Hold', duration: currentBreathCycle.holdTop, animationKeyframe: null },
     { name: 'Exhale', duration: currentBreathCycle.exhale, animationKeyframe: 'breathe-out' },
     { name: 'Hold', duration: currentBreathCycle.holdBottom, animationKeyframe: null },
-  ].filter(p => p.duration > 0);
+  ].filter(p => p.duration > 0), [currentBreathCycle]);
 
-  const currentPhaseData = cyclePhases[phaseIndexRef.current];
+  const currentPhaseData = cyclePhases[phaseIndex];
 
-  const startCycle = useCallback(() => {
-    if (timerRef.current) clearInterval(timerRef.current);
-
-    if (cyclePhases.length === 0) {
-      setIsRunning(false);
+  useEffect(() => {
+    if (!isRunning || cyclePhases.length === 0) {
       return;
     }
 
-    const currentPhaseDuration = cyclePhases[phaseIndexRef.current].duration;
-    
-    let newPhaseState: typeof phase;
-    if (cyclePhases[phaseIndexRef.current].name === 'Inhale') {
-      newPhaseState = 'inhale';
-    } else if (cyclePhases[phaseIndexRef.current].name === 'Exhale') {
-      newPhaseState = 'exhale';
-    } else {
-      if (phaseIndexRef.current === 1 || (cyclePhases.length === 2 && phaseIndexRef.current === 0)) {
-        newPhaseState = 'hold-top';
-      } else {
-        newPhaseState = 'hold-bottom';
-      }
-    }
-    setPhase(newPhaseState);
-    setTimer(currentPhaseDuration);
+    const currentPhase = cyclePhases[phaseIndex];
+    setTimer(currentPhase.duration);
 
-    timerRef.current = setInterval(() => {
-      setTimer(prev => { // Corrected from setTimeRemaining to setTimer
-        if (prev <= 1) {
-          clearInterval(timerRef.current!);
-          phaseIndexRef.current = (phaseIndexRef.current + 1) % cyclePhases.length;
-          startCycle();
-          return 0;
-        }
-        return prev - 1;
-      });
+    const interval = setInterval(() => {
+      setTimer(prev => prev - 1);
     }, 1000);
-  }, [cyclePhases, playSound]); // Added playSound to dependencies
 
-  useEffect(() => {
-    if (isRunning) {
-      startCycle();
-      playSound('start');
-    } else {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    }
+    const timeout = setTimeout(() => {
+      clearInterval(interval);
+      setPhaseIndex(prev => (prev + 1) % cyclePhases.length);
+    }, currentPhase.duration * 1000);
 
     return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
+      clearInterval(interval);
+      clearTimeout(timeout);
     };
-  }, [isRunning, startCycle, playSound]);
+  }, [isRunning, phaseIndex, cyclePhases]);
+
+  useEffect(() => {
+    if (cyclePhases.length > 0) {
+      const currentPhase = cyclePhases[phaseIndex];
+      let newPhaseState: typeof phase;
+      if (currentPhase.name === 'Inhale') newPhaseState = 'inhale';
+      else if (currentPhase.name === 'Exhale') newPhaseState = 'exhale';
+      else newPhaseState = phaseIndex === 1 || (cyclePhases.length === 2 && phaseIndex === 0) ? 'hold-top' : 'hold-bottom';
+      setPhase(newPhaseState);
+    }
+  }, [phaseIndex, cyclePhases]);
 
   const handleStartPause = () => {
     setIsRunning(prev => {
       const newState = !prev;
       if (newState) {
-        if (timer === 0 || timer === currentPhaseData.duration) {
-          phaseIndexRef.current = 0;
-        }
         playSound('start');
       } else {
         playSound('pause');
@@ -98,12 +73,8 @@ const MiniBreathingBubble: React.FC = () => {
   const handleReset = () => {
     playSound('reset');
     setIsRunning(false);
-    phaseIndexRef.current = 0;
-    setPhase('inhale');
+    setPhaseIndex(0);
     setTimer(cyclePhases[0]?.duration || 0);
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-    }
   };
 
   const getPhaseText = () => {
