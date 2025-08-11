@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { usePeopleMemory, Person } from '@/hooks/usePeopleMemory';
 import { Button } from '@/components/ui/button';
-import { Plus, UploadCloud, X } from 'lucide-react';
+import { Plus, UploadCloud, X, Users } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import PersonAvatar from './PersonAvatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -91,15 +91,26 @@ const PeopleMemoryCard: React.FC = () => {
 
   return (
     <>
-      <fieldset className="rounded-xl border-2 border-border p-3">
+      <fieldset className="rounded-xl border-2 border-border p-4 min-h-[150px] flex flex-col">
         <legend className="px-2 text-sm text-muted-foreground -ml-1 font-medium">People Memory</legend>
-        <div className="flex items-center gap-3 min-h-[48px]">
+        <div className="flex-grow flex items-center justify-center">
           {loading ? (
-            [...Array(3)].map((_, i) => (
-              <Skeleton key={i} className="h-12 w-12 rounded-full" />
-            ))
+            <div className="flex flex-wrap items-center gap-4">
+              {[...Array(3)].map((_, i) => (
+                <Skeleton key={i} className="h-16 w-16 rounded-full" />
+              ))}
+            </div>
+          ) : people.length === 0 ? (
+            <div className="text-center text-muted-foreground p-4 flex flex-col items-center gap-2">
+              <Users className="h-10 w-10 mb-2" />
+              <p className="font-semibold text-foreground">Remember Important People</p>
+              <p className="text-xs max-w-xs">Keep track of key people. Add notes, details, and photos to remember what's important.</p>
+              <Button onClick={() => handleOpenForm(null)} className="mt-3 h-9">
+                <Plus className="mr-2 h-4 w-4" /> Add First Person
+              </Button>
+            </div>
           ) : (
-            <>
+            <div className="flex flex-wrap items-center justify-center gap-4">
               {people.map(person => (
                 <PersonAvatar
                   key={person.id}
@@ -109,10 +120,10 @@ const PeopleMemoryCard: React.FC = () => {
                   onUpdateAvatar={async (id, file) => { await updatePerson(id, {}, file); }}
                 />
               ))}
-              <Button variant="outline" className="h-12 w-12 rounded-full flex-shrink-0" onClick={() => handleOpenForm(null)}>
-                <Plus className="h-6 w-6" />
+              <Button variant="outline" className="h-16 w-16 rounded-full flex-shrink-0" onClick={() => handleOpenForm(null)}>
+                <Plus className="h-8 w-8" />
               </Button>
-            </>
+            </div>
           )}
         </div>
       </fieldset>
