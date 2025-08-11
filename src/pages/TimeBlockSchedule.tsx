@@ -514,29 +514,34 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
                       </div>
                     </div>
                   </div>
-                  <div className={cn(
-                    "relative mt-6 lg:mt-0 lg:w-[300px] lg:flex-shrink-0",
-                    isTaskPanelCollapsed && "hidden"
-                  )}>
+                  <div className="relative mt-6 lg:mt-0">
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => setIsTaskPanelCollapsed(!isTaskPanelCollapsed)}
-                      className="absolute -left-4 top-1/2 -translate-y-1/2 z-20 bg-background hover:bg-muted rounded-full h-8 w-8 border hidden lg:flex"
+                      className={cn(
+                        "absolute top-1/2 -translate-y-1/2 z-20 bg-background hover:bg-muted rounded-full h-8 w-8 border hidden lg:flex",
+                        isTaskPanelCollapsed ? "-left-10" : "-left-4"
+                      )}
                       aria-label={isTaskPanelCollapsed ? "Show task panel" : "Hide task panel"}
                     >
                       {isTaskPanelCollapsed ? <PanelRightOpen className="h-5 w-5" /> : <PanelRightClose className="h-5 w-5" />}
                     </Button>
-                    <div className="lg:sticky lg:top-4 space-y-4 bg-muted rounded-lg p-4">
-                      <h3 className="text-lg font-semibold">Unscheduled Tasks</h3>
-                      <div className="space-y-2 max-h-[calc(100vh-20rem)] overflow-y-auto p-1">
-                        {unscheduledDoTodayTasks.length > 0 ? (
-                          unscheduledDoTodayTasks.map(task => (
-                            <DraggableScheduleTaskItem key={task.id} task={task} sections={sections} />
-                          ))
-                        ) : (
-                          <p className="text-sm text-muted-foreground text-center py-4">No tasks to schedule.</p>
-                        )}
+                    <div className={cn(
+                      "lg:w-[300px] lg:flex-shrink-0",
+                      isTaskPanelCollapsed && "hidden"
+                    )}>
+                      <div className="lg:sticky lg:top-4 space-y-4 bg-muted rounded-lg p-4">
+                        <h3 className="text-lg font-semibold">Unscheduled Tasks</h3>
+                        <div className="space-y-2 max-h-[calc(100vh-20rem)] overflow-y-auto p-1">
+                          {unscheduledDoTodayTasks.length > 0 ? (
+                            unscheduledDoTodayTasks.map(task => (
+                              <DraggableScheduleTaskItem key={task.id} task={task} sections={sections} />
+                            ))
+                          ) : (
+                            <p className="text-sm text-muted-foreground text-center py-4">No tasks to schedule.</p>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
