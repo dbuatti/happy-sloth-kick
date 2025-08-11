@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useWorkHours } from '@/hooks/useWorkHours';
 import { format, addMinutes, parse, isBefore, getMinutes, getHours, parseISO, isValid } from 'date-fns';
-import { CalendarDays, Clock, Settings, Sparkles, X, PanelRightClose, PanelRightOpen, ZoomIn, ZoomOut } from 'lucide-react';
+import { CalendarDays, Clock, Settings, Sparkles, X, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import DateNavigator from '@/components/DateNavigator';
 import { useAppointments, Appointment, NewAppointmentData } from '@/hooks/useAppointments';
 import AppointmentForm from '@/components/AppointmentForm';
@@ -27,7 +27,6 @@ import TimeBlock from '@/components/TimeBlock';
 import { cn } from '@/lib/utils';
 import DraggableScheduleTaskItem from '@/components/DraggableScheduleTaskItem';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Slider } from '@/components/ui/slider';
 
 interface TimeBlockScheduleProps {
   isDemo?: boolean;
@@ -82,15 +81,8 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
   });
   const [isClearDayDialogOpen, setIsClearDayDialogOpen] = useState(false);
 
-  const [rowHeight, setRowHeight] = useState(() => {
-    const savedHeight = localStorage.getItem('scheduleRowHeight');
-    return savedHeight ? parseInt(savedHeight, 10) : 50;
-  });
-  const [gapHeight] = useState(4);
-
-  useEffect(() => {
-    localStorage.setItem('scheduleRowHeight', rowHeight.toString());
-  }, [rowHeight]);
+  const rowHeight = 50;
+  const gapHeight = 4;
 
   useEffect(() => {
     localStorage.setItem('scheduleTaskPanelCollapsed', JSON.stringify(isTaskPanelCollapsed));
@@ -442,22 +434,6 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
                         ))}
                       </div>
 
-                      <div className="w-[40px] flex-shrink-0 flex flex-col justify-center items-center py-4" style={{
-                        height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`,
-                      }}>
-                        <ZoomIn className="h-4 w-4 text-muted-foreground" />
-                        <Slider
-                          defaultValue={[rowHeight]}
-                          min={20}
-                          max={100}
-                          step={2}
-                          orientation="vertical"
-                          onValueChange={(value) => setRowHeight(value[0])}
-                          className="flex-1 my-2"
-                        />
-                        <ZoomOut className="h-4 w-4 text-muted-foreground" />
-                      </div>
-
                       <div className="flex-1 relative grid" style={{
                         gridTemplateRows: `repeat(${timeBlocks.length}, ${rowHeight}px)`,
                         rowGap: `${gapHeight}px`,
@@ -520,8 +496,8 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
                       size="icon"
                       onClick={() => setIsTaskPanelCollapsed(!isTaskPanelCollapsed)}
                       className={cn(
-                        "absolute top-1/2 -translate-y-1/2 z-20 bg-background hover:bg-muted rounded-full h-8 w-8 border hidden lg:flex",
-                        isTaskPanelCollapsed ? "-left-10" : "-left-4"
+                        "absolute -left-4 top-1/2 -translate-y-1/2 z-20 bg-background hover:bg-muted rounded-full h-8 w-8 border hidden lg:flex",
+                        isTaskPanelCollapsed && "lg:hidden"
                       )}
                       aria-label={isTaskPanelCollapsed ? "Show task panel" : "Hide task panel"}
                     >
