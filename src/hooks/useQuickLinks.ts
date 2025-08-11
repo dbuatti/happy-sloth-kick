@@ -89,21 +89,28 @@ export const useQuickLinks = (props?: { userId?: string }) => {
   const updateQuickLink = async (id: string, updates: Partial<Omit<QuickLink, 'id' | 'user_id' | 'created_at'>> & { imageFile?: File | null }) => {
     if (!userId) return null;
     try {
-      let imageUrl = updates.image_url;
-      if (updates.imageFile) {
+      const { imageFile, ...dbUpdates } = updates;
+      let imageUrl = dbUpdates.image_url;
+
+      if (imageFile) {
         const filePath = `quick_links/${userId}/${uuidv4()}`;
         const { error: uploadError } = await supabase.storage
           .from('devideaimages')
-          .upload(filePath, updates.imageFile);
+          .upload(filePath, imageFile);
         if (uploadError) throw uploadError;
         const { data: urlData } = supabase.storage.from('devideaimages').getPublicUrl(filePath);
         imageUrl = urlData.publicUrl;
       }
       
-      const { imageFile, ...dbUpdates } = updates;
-      if (imageUrl !== undefined) {
-        dbUpdates.image_url = imageUrl;
-      }
+      dbUpdates.image_url = imageUrl;
+
+      // Clean the object to remove any undefined properties before sending
+      Object.keys(dbUpdates).forEach(key => {
+        const typedKey = key as keyof typeof dbUpdates;
+        if (dbUpdates[typedKey] === undefined) {
+          delete dbUpdates[typedKey];
+        }
+      });
 
       const { data, error } = await supabase
         .from('quick_links')
@@ -115,7 +122,8 @@ export const useQuickLinks = (props?: { userId?: string }) => {
       setQuickLinks(prev => prev.map(l => l.id === id ? data : l));
       showSuccess('Quick link updated!');
       return data;
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Update Quick Link Error:", error);
       showError('Failed to update quick link.');
       return null;
     }

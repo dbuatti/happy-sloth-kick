@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +16,7 @@ interface QuickLinkFormProps {
     title: string; 
     url: string; 
     imageFile?: File | null;
+    image_url?: string | null;
     emoji?: string | null;
     backgroundColor?: string | null;
     avatarText?: string | null;
@@ -102,14 +103,33 @@ const QuickLinkForm: React.FC<QuickLinkFormProps> = ({ isOpen, onClose, onSave, 
       return;
     }
     setIsSaving(true);
-    await onSave({ 
+
+    const saveData: Parameters<typeof onSave>[0] = { 
       title, 
-      url, 
-      imageFile: avatarType === 'image' ? imageFile : null,
-      emoji: avatarType === 'emoji' ? emoji : null,
-      backgroundColor: avatarType !== 'image' ? backgroundColor : null,
-      avatarText: avatarType === 'text' ? avatarText : null,
-    });
+      url,
+    };
+
+    if (avatarType === 'image') {
+      saveData.imageFile = imageFile;
+      if (!imageFile) {
+        saveData.image_url = imagePreview;
+      }
+      saveData.emoji = null;
+      saveData.avatarText = null;
+      saveData.backgroundColor = null;
+    } else if (avatarType === 'emoji') {
+      saveData.image_url = null;
+      saveData.emoji = emoji;
+      saveData.avatarText = null;
+      saveData.backgroundColor = backgroundColor;
+    } else if (avatarType === 'text') {
+      saveData.image_url = null;
+      saveData.emoji = null;
+      saveData.avatarText = avatarText;
+      saveData.backgroundColor = backgroundColor;
+    }
+
+    await onSave(saveData);
     setIsSaving(false);
     onClose();
   };
@@ -136,6 +156,9 @@ const QuickLinkForm: React.FC<QuickLinkFormProps> = ({ isOpen, onClose, onSave, 
       <DialogContent onPaste={handlePaste}>
         <DialogHeader>
           <DialogTitle>{initialData ? 'Edit Quick Link' : 'Add Quick Link'}</DialogTitle>
+          <DialogDescription className="sr-only">
+            {initialData ? 'Edit the details of your quick link.' : 'Fill in the details to add a new quick link.'}
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div>
