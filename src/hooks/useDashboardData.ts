@@ -24,7 +24,6 @@ export interface CustomCard {
 }
 
 export interface DashboardSettings {
-  support_link: string | null;
   meditation_notes: string | null;
   dashboard_layout: { [key: string]: boolean } | null;
 }
@@ -33,7 +32,6 @@ const defaultLayout = {
   dailyScheduleVisible: true,
   weeklyFocusVisible: true,
   peopleMemoryVisible: true,
-  supportLinkVisible: true,
   meditationNotesVisible: true,
 };
 
@@ -44,7 +42,7 @@ export const useDashboardData = (props?: { userId?: string }) => {
 
   const [weeklyFocus, setWeeklyFocus] = useState<WeeklyFocus | null>(null);
   const [customCards, setCustomCards] = useState<CustomCard[]>([]);
-  const [settings, setSettings] = useState<DashboardSettings>({ support_link: null, meditation_notes: null, dashboard_layout: defaultLayout });
+  const [settings, setSettings] = useState<DashboardSettings>({ meditation_notes: null, dashboard_layout: defaultLayout });
   const [loading, setLoading] = useState(true);
 
   const weekStartDate = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
@@ -104,13 +102,12 @@ export const useDashboardData = (props?: { userId?: string }) => {
       // Fetch settings
       const { data: settingsData, error: settingsError } = await supabase
         .from('user_settings')
-        .select('support_link, meditation_notes, dashboard_layout')
+        .select('meditation_notes, dashboard_layout')
         .eq('user_id', userId)
         .single();
       if (settingsError && settingsError.code !== 'PGRST116') throw settingsError;
       if (settingsData) {
         setSettings({
-          support_link: settingsData.support_link,
           meditation_notes: settingsData.meditation_notes,
           dashboard_layout: { ...defaultLayout, ...(settingsData.dashboard_layout || {}) },
         });

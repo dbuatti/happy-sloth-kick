@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { CheckCircle2, ListTodo, CalendarDays } from 'lucide-react';
 import WeeklyFocusCard from '@/components/dashboard/WeeklyFocus';
-import SupportLinkCard from '@/components/dashboard/SupportLink';
 import MeditationNotesCard from '@/components/dashboard/MeditationNotes';
 import DailySchedulePreview from '@/components/dashboard/DailySchedulePreview';
 import CustomCard from '@/components/dashboard/CustomCard';
@@ -157,13 +156,6 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
           {customCards.filter(card => card.is_visible).map(card => (
             <CustomCard key={card.id} card={card} />
           ))}
-          {settings?.dashboard_layout?.['supportLinkVisible'] !== false && (
-            <SupportLinkCard 
-              settings={settings} 
-              updateSettings={updateSettings} 
-              loading={dashboardDataLoading} 
-            />
-          )}
           {settings?.dashboard_layout?.['meditationNotesVisible'] !== false && (
             <MeditationNotesCard 
               settings={settings} 

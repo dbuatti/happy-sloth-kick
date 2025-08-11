@@ -35,7 +35,6 @@ const DashboardLayoutSettings: React.FC<DashboardLayoutSettingsProps> = ({
     { key: 'dailyScheduleVisible', label: 'Daily Schedule Preview' },
     { key: 'weeklyFocusVisible', label: "This Week's Focus" },
     { key: 'peopleMemoryVisible', label: 'People Memory' },
-    { key: 'supportLinkVisible', label: 'Support Link' },
     { key: 'meditationNotesVisible', label: 'Meditation Notes' },
   ];
 
