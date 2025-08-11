@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useWorkHours } from '@/hooks/useWorkHours';
 import { format, addMinutes, parse, isBefore, getMinutes, getHours, parseISO, isValid } from 'date-fns';
-import { CalendarDays, Clock, Settings, Sparkles, X, PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { CalendarDays, Clock, Settings, Sparkles, X, PanelRightClose, PanelRightOpen, ZoomIn, ZoomOut } from 'lucide-react';
 import DateNavigator from '@/components/DateNavigator';
 import { useAppointments, Appointment, NewAppointmentData } from '@/hooks/useAppointments';
 import AppointmentForm from '@/components/AppointmentForm';
@@ -27,6 +27,7 @@ import TimeBlock from '@/components/TimeBlock';
 import { cn } from '@/lib/utils';
 import DraggableScheduleTaskItem from '@/components/DraggableScheduleTaskItem';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Slider } from '@/components/ui/slider';
 
 interface TimeBlockScheduleProps {
   isDemo?: boolean;
@@ -80,6 +81,16 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
     }
   });
   const [isClearDayDialogOpen, setIsClearDayDialogOpen] = useState(false);
+
+  const [rowHeight, setRowHeight] = useState(() => {
+    const savedHeight = localStorage.getItem('scheduleRowHeight');
+    return savedHeight ? parseInt(savedHeight, 10) : 50;
+  });
+  const [gapHeight] = useState(4);
+
+  useEffect(() => {
+    localStorage.setItem('scheduleRowHeight', rowHeight.toString());
+  }, [rowHeight]);
 
   useEffect(() => {
     localStorage.setItem('scheduleTaskPanelCollapsed', JSON.stringify(isTaskPanelCollapsed));
@@ -211,9 +222,6 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
   const handleUndoClear = async (appsToRestore: Appointment[]) => {
     await batchAddAppointments(appsToRestore);
   };
-
-  const rowHeight = 50;
-  const gapHeight = 4;
 
   const getAppointmentGridPosition = useCallback((app: Appointment) => {
     if (!app.start_time || !app.end_time) {
@@ -417,7 +425,7 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
               ) : (
                 <div className="grid grid-cols-1 lg:flex lg:gap-6">
                   <div className="flex-1">
-                    <div className="grid grid-cols-[80px_1fr] gap-x-4">
+                    <div className="grid grid-cols-[80px_40px_1fr] gap-x-4">
                       <div className="relative" style={{
                         height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`,
                       }}>
@@ -432,6 +440,22 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
                             </div>
                           )
                         ))}
+                      </div>
+
+                      <div className="flex flex-col justify-center items-center h-full py-4" style={{
+                        height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`,
+                      }}>
+                        <ZoomIn className="h-4 w-4 text-muted-foreground" />
+                        <Slider
+                          defaultValue={[rowHeight]}
+                          min={20}
+                          max={100}
+                          step={2}
+                          orientation="vertical"
+                          onValueChange={(value) => setRowHeight(value[0])}
+                          className="h-full my-2"
+                        />
+                        <ZoomOut className="h-4 w-4 text-muted-foreground" />
                       </div>
 
                       <div className="relative grid" style={{
