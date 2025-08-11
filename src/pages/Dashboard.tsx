@@ -17,7 +17,6 @@ import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import StatCard from '@/components/dashboard/StatCard';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { useTasks, Task } from '@/hooks/useTasks';
-import PomodoroCard from '@/components/dashboard/PomodoroCard';
 import NextTaskCard from '@/components/dashboard/NextTaskCard';
 import TaskOverviewDialog from '@/components/TaskOverviewDialog';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
@@ -107,15 +106,6 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
           demoUserId={demoUserId}
         />
 
-        <div className="mb-6">
-          <NextTaskCard 
-            nextAvailableTask={nextAvailableTask}
-            updateTask={updateTask}
-            onOpenOverview={handleOpenOverview}
-            loading={tasksLoading}
-          />
-        </div>
-
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           {statCards.map(stat => (
             <StatCard
@@ -130,13 +120,22 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
           ))}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          <div className="md:col-span-3">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
             {settings?.dashboard_layout?.['dailyScheduleVisible'] !== false && (
               <DailySchedulePreview />
             )}
+            {customCards.filter(card => card.is_visible).map(card => (
+              <CustomCard key={card.id} card={card} />
+            ))}
           </div>
-          <div className="md:col-span-1">
+          <div className="lg:col-span-1 space-y-6">
+            <NextTaskCard 
+              nextAvailableTask={nextAvailableTask}
+              updateTask={updateTask}
+              onOpenOverview={handleOpenOverview}
+              loading={tasksLoading}
+            />
             {settings?.dashboard_layout?.['weeklyFocusVisible'] !== false && (
               <WeeklyFocusCard 
                 weeklyFocus={weeklyFocus} 
@@ -144,24 +143,17 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
                 loading={dashboardDataLoading} 
               />
             )}
+            {settings?.dashboard_layout?.['peopleMemoryVisible'] !== false && (
+              <PeopleMemoryCard />
+            )}
+            {settings?.dashboard_layout?.['meditationNotesVisible'] !== false && (
+              <MeditationNotesCard 
+                settings={settings} 
+                updateSettings={updateSettings} 
+                loading={dashboardDataLoading} 
+              />
+            )}
           </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <PomodoroCard />
-          {settings?.dashboard_layout?.['peopleMemoryVisible'] !== false && (
-            <PeopleMemoryCard />
-          )}
-          {customCards.filter(card => card.is_visible).map(card => (
-            <CustomCard key={card.id} card={card} />
-          ))}
-          {settings?.dashboard_layout?.['meditationNotesVisible'] !== false && (
-            <MeditationNotesCard 
-              settings={settings} 
-              updateSettings={updateSettings} 
-              loading={dashboardDataLoading} 
-            />
-          )}
         </div>
       </main>
       <footer className="p-4">

@@ -14,10 +14,12 @@ interface StatCardProps {
 
 const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, description, loading, className }) => {
   return (
-    <Card className={cn("transition-all hover:shadow-lg", className)}>
+    <Card className={cn("transition-all hover:shadow-md hover:-translate-y-1", className)}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className="h-5 w-5 text-muted-foreground" />
+        <div className="p-2 bg-primary/10 rounded-lg">
+          <Icon className="h-5 w-5 text-primary" />
+        </div>
       </CardHeader>
       <CardContent>
         {loading ? (
