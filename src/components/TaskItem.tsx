@@ -149,7 +149,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
       await navigator.clipboard.writeText(path);
       showSuccess('Path copied to clipboard!');
     } catch (err) {
-      showError('Failed to copy path.');
+      showError('Could not copy path.');
     }
   };
 
