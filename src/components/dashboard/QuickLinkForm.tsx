@@ -156,7 +156,7 @@ const QuickLinkForm: React.FC<QuickLinkFormProps> = ({ isOpen, onClose, onSave, 
       <DialogContent onPaste={handlePaste}>
         <DialogHeader>
           <DialogTitle>{initialData ? 'Edit Quick Link' : 'Add Quick Link'}</DialogTitle>
-          <DialogDescription className="sr-only">
+          <DialogDescription>
             {initialData ? 'Edit the details of your quick link.' : 'Fill in the details to add a new quick link.'}
           </DialogDescription>
         </DialogHeader>
