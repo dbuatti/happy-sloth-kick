@@ -133,20 +133,26 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            {settings?.dashboard_layout?.['dailyScheduleVisible'] !== false && (
-              <DailySchedulePreview />
-            )}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="md:col-span-2">
+                {settings?.dashboard_layout?.['dailyScheduleVisible'] !== false && (
+                  <DailySchedulePreview />
+                )}
+              </div>
+              <div className="md:col-span-1">
+                {settings?.dashboard_layout?.['weeklyFocusVisible'] !== false && (
+                  <WeeklyFocusCard 
+                    weeklyFocus={weeklyFocus} 
+                    updateWeeklyFocus={updateWeeklyFocus} 
+                    loading={dashboardDataLoading} 
+                  />
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="lg:col-span-1 space-y-6">
             <PomodoroCard />
-            {settings?.dashboard_layout?.['weeklyFocusVisible'] !== false && (
-              <WeeklyFocusCard 
-                weeklyFocus={weeklyFocus} 
-                updateWeeklyFocus={updateWeeklyFocus} 
-                loading={dashboardDataLoading} 
-              />
-            )}
             {settings?.dashboard_layout?.['peopleMemoryVisible'] !== false && (
               <PeopleMemoryCard />
             )}
