@@ -425,8 +425,8 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
               ) : (
                 <div className="grid grid-cols-1 lg:flex lg:gap-6">
                   <div className="flex-1">
-                    <div className="grid grid-cols-[80px_40px_1fr] gap-x-4">
-                      <div className="relative" style={{
+                    <div className="flex gap-x-4">
+                      <div className="w-[80px] flex-shrink-0 relative" style={{
                         height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`,
                       }}>
                         {timeBlocks.map((block, index) => (
@@ -442,7 +442,7 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
                         ))}
                       </div>
 
-                      <div className="flex flex-col justify-center items-center h-full py-4" style={{
+                      <div className="w-[40px] flex-shrink-0 flex flex-col justify-center items-center py-4" style={{
                         height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`,
                       }}>
                         <ZoomIn className="h-4 w-4 text-muted-foreground" />
@@ -453,12 +453,12 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
                           step={2}
                           orientation="vertical"
                           onValueChange={(value) => setRowHeight(value[0])}
-                          className="h-full my-2"
+                          className="flex-1 my-2"
                         />
                         <ZoomOut className="h-4 w-4 text-muted-foreground" />
                       </div>
 
-                      <div className="relative grid" style={{
+                      <div className="flex-1 relative grid" style={{
                         gridTemplateRows: `repeat(${timeBlocks.length}, ${rowHeight}px)`,
                         rowGap: `${gapHeight}px`,
                         height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`,
