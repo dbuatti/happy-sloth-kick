@@ -34,40 +34,34 @@ const QuickLinks: React.FC<QuickLinksProps> = ({ isDemo = false, demoUserId }) =
 
   return (
     <>
-      <div className="flex items-center gap-4 p-2 bg-card rounded-xl shadow-sm border">
+      <div className="flex items-center gap-2">
         {loading ? (
-          [...Array(5)].map((_, i) => (
-            <div key={i} className="flex flex-col items-center gap-1">
-              <Skeleton className="h-16 w-16 rounded-full" />
-              <Skeleton className="h-4 w-12" />
-            </div>
+          [...Array(3)].map((_, i) => (
+            <Skeleton key={i} className="h-10 w-10 rounded-full" />
           ))
         ) : (
           <>
             {quickLinks.map(link => (
               <div key={link.id} className="relative group flex flex-col items-center gap-1 text-center">
                 <a href={link.url} target="_blank" rel="noopener noreferrer">
-                  <Avatar className="h-16 w-16 border-2 border-muted hover:border-primary transition-colors" style={{ backgroundColor: link.image_url ? 'transparent' : link.background_color || undefined }}>
+                  <Avatar className="h-10 w-10 border-2 border-muted hover:border-primary transition-colors" style={{ backgroundColor: link.image_url ? 'transparent' : link.background_color || undefined }}>
                     <AvatarImage src={link.image_url || undefined} alt={link.title} />
-                    <AvatarFallback className="text-2xl text-white">
+                    <AvatarFallback className="text-xl text-white">
                       {link.emoji ? (
                         <span>{link.emoji}</span>
                       ) : link.avatar_text ? (
                         <span className="font-bold">{link.avatar_text}</span>
                       ) : (
-                        <LinkIcon className="h-6 w-6 text-foreground" />
+                        <LinkIcon className="h-5 w-5 text-foreground" />
                       )}
                     </AvatarFallback>
                   </Avatar>
                 </a>
-                <p className="text-xs font-bold w-20 break-words h-8 flex items-center justify-center text-center leading-tight">
-                  {link.title}
-                </p>
                 {!isDemo && (
-                  <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute top-[-4px] right-[-4px] opacity-0 group-hover:opacity-100 transition-opacity">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6">
+                        <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full bg-background/80">
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -85,8 +79,8 @@ const QuickLinks: React.FC<QuickLinksProps> = ({ isDemo = false, demoUserId }) =
               </div>
             ))}
             {!isDemo && (
-              <Button variant="outline" className="h-16 w-16 rounded-full flex-shrink-0" onClick={() => handleOpenForm(null)}>
-                <Plus className="h-6 w-6" />
+              <Button variant="outline" className="h-10 w-10 rounded-full flex-shrink-0" onClick={() => handleOpenForm(null)}>
+                <Plus className="h-5 w-5" />
               </Button>
             )}
           </>
