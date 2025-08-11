@@ -4,6 +4,7 @@ import { Plus, Settings as SettingsIcon } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
+import QuickLinks from './QuickLinks';
 
 interface DashboardHeaderProps {
   onAddCard: () => void;
@@ -56,13 +57,16 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onAddCard, onCustomiz
         )}
         <p className="text-lg text-muted-foreground">Here's your overview for today.</p>
       </div>
-      <div className="flex items-center gap-2 self-end sm:self-auto">
-        <Button onClick={onAddCard} disabled={isDemo}>
-          <Plus className="mr-2 h-4 w-4" /> Add Card
-        </Button>
-        <Button variant="outline" size="icon" onClick={onCustomizeLayout}>
-          <SettingsIcon className="h-4 w-4" />
-        </Button>
+      <div className="flex items-center gap-4 self-end sm:self-auto">
+        <QuickLinks isDemo={isDemo} demoUserId={demoUserId} />
+        <div className="flex items-center gap-2">
+          <Button onClick={onAddCard} disabled={isDemo}>
+            <Plus className="mr-2 h-4 w-4" /> Add Card
+          </Button>
+          <Button variant="outline" size="icon" onClick={onCustomizeLayout}>
+            <SettingsIcon className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );
