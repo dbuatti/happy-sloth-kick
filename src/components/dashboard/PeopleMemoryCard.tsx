@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { usePeopleMemory, Person } from '@/hooks/usePeopleMemory';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Users } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import PersonAvatar from './PersonAvatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -59,31 +58,15 @@ const PeopleMemoryCard: React.FC = () => {
 
   return (
     <>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <Users className="h-5 w-5 text-primary" />
-            People Memory
-          </CardTitle>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleOpenForm(null)}>
-            <Plus className="h-4 w-4" />
-          </Button>
-        </CardHeader>
-        <CardContent>
+      <fieldset className="rounded-xl border-2 border-border p-3">
+        <legend className="px-2 text-sm text-muted-foreground -ml-1 font-medium">People Memory</legend>
+        <div className="flex items-center gap-3 min-h-[40px]">
           {loading ? (
-            <div className="flex flex-wrap gap-4">
-              {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-24 w-24 rounded-full" />)}
-            </div>
-          ) : people.length === 0 ? (
-            <div className="text-center py-4 flex flex-col items-center justify-center h-full bg-muted/50 rounded-lg">
-              <Users className="h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-sm text-muted-foreground">Add people you want to remember to connect with.</p>
-              <Button size="sm" className="mt-4" onClick={() => handleOpenForm(null)}>
-                <Plus className="mr-2 h-4 w-4" /> Add Person
-              </Button>
-            </div>
+            [...Array(3)].map((_, i) => (
+              <Skeleton key={i} className="h-10 w-10 rounded-full" />
+            ))
           ) : (
-            <div className="flex flex-wrap gap-x-4 gap-y-6">
+            <>
               {people.map(person => (
                 <PersonAvatar
                   key={person.id}
@@ -93,10 +76,13 @@ const PeopleMemoryCard: React.FC = () => {
                   onUpdateAvatar={uploadAvatar}
                 />
               ))}
-            </div>
+              <Button variant="outline" className="h-10 w-10 rounded-full flex-shrink-0" onClick={() => handleOpenForm(null)}>
+                <Plus className="h-5 w-5" />
+              </Button>
+            </>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </fieldset>
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent>
