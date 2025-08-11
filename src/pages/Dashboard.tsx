@@ -17,6 +17,11 @@ import DashboardLayoutSettings from '@/components/dashboard/DashboardLayoutSetti
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import StatCard from '@/components/dashboard/StatCard';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
+import { useTasks, Task } from '@/hooks/useTasks';
+import PomodoroCard from '@/components/dashboard/PomodoroCard';
+import NextTaskCard from '@/components/dashboard/NextTaskCard';
+import TaskOverviewDialog from '@/components/TaskOverviewDialog';
+import TaskDetailDialog from '@/components/TaskDetailDialog';
 
 interface DashboardProps {
   isDemo?: boolean;
@@ -37,11 +42,30 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
 
   const { tasksDue, tasksCompleted, appointmentsToday, loading: statsLoading } = useDashboardStats({ userId: demoUserId });
   
+  const {
+    tasks: allTasks,
+    nextAvailableTask,
+    updateTask,
+    deleteTask,
+    sections,
+    allCategories,
+    createSection,
+    updateSection,
+    deleteSection,
+    updateSectionIncludeInFocusMode,
+    loading: tasksLoading,
+  } = useTasks({ viewMode: 'daily', userId: demoUserId });
+
   const [isAddCardOpen, setIsAddCardOpen] = useState(false);
   const [newCardTitle, setNewCardTitle] = useState('');
   const [newCardContent, setNewCardContent] = useState('');
   const [newCardEmoji, setNewCardEmoji] = useState('');
   const [isLayoutSettingsOpen, setIsLayoutSettingsOpen] = useState(false);
+
+  const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
+  const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
+  const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
 
   const handleAddCard = async () => {
     if (!newCardTitle.trim()) return;
@@ -55,6 +79,17 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
     setNewCardContent('');
     setNewCardEmoji('');
     setIsAddCardOpen(false);
+  };
+
+  const handleOpenOverview = (task: Task) => {
+    setTaskToOverview(task);
+    setIsTaskOverviewOpen(true);
+  };
+
+  const handleEditTaskFromOverview = (task: Task) => {
+    setIsTaskOverviewOpen(false);
+    setTaskToEdit(task);
+    setIsTaskDetailOpen(true);
   };
 
   const statCards = [
@@ -72,7 +107,6 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
           isDemo={isDemo}
         />
 
-        {/* Stat Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
           {statCards.map(stat => (
             <StatCard
@@ -87,7 +121,6 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
           ))}
         </div>
 
-        {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {settings?.dashboard_layout?.['dailyScheduleVisible'] !== false && (
             <div className="lg:col-span-2">
@@ -96,6 +129,13 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
           )}
 
           <div className="lg:col-span-1 space-y-6">
+            <PomodoroCard />
+            <NextTaskCard 
+              nextAvailableTask={nextAvailableTask}
+              updateTask={updateTask}
+              onOpenOverview={handleOpenOverview}
+              loading={tasksLoading}
+            />
             {settings?.dashboard_layout?.['weeklyFocusVisible'] !== false && (
               <WeeklyFocusCard 
                 weeklyFocus={weeklyFocus} 
@@ -164,6 +204,35 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
         updateSettings={updateSettings}
         updateCustomCard={updateCustomCard}
       />
+
+      {taskToOverview && (
+        <TaskOverviewDialog
+          task={taskToOverview}
+          isOpen={isTaskOverviewOpen}
+          onClose={() => setIsTaskOverviewOpen(false)}
+          onEditClick={handleEditTaskFromOverview}
+          onUpdate={updateTask}
+          onDelete={deleteTask}
+          sections={sections}
+          allCategories={allCategories}
+          allTasks={allTasks}
+        />
+      )}
+      {taskToEdit && (
+        <TaskDetailDialog
+          task={taskToEdit}
+          isOpen={isTaskDetailOpen}
+          onClose={() => setIsTaskDetailOpen(false)}
+          onUpdate={updateTask}
+          onDelete={deleteTask}
+          sections={sections}
+          allCategories={allCategories}
+          createSection={createSection}
+          updateSection={updateSection}
+          deleteSection={deleteSection}
+          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+        />
+      )}
     </div>
   );
 };
