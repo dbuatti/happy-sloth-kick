@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/Progress";
+import CircularProgress from './CircularProgress';
 import { Play, Pause, RefreshCcw, CheckCircle2, Edit, Target, ListTodo, Clock, Plus, Sparkles, Wind, Home, TreePine, UtensilsCrossed, ScanEye, Armchair, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
@@ -112,7 +112,7 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  const progressValue = focusDuration > 0 ? ((focusDuration - timeRemaining) / focusDuration) * 100 : 0;
+  const progressValue = focusDuration > 0 ? (timeRemaining / focusDuration) * 100 : 0;
 
   const getPriorityDotColor = (priority: string) => {
     switch (priority) {
@@ -210,15 +210,8 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="relative w-40 h-40 mx-auto flex items-center justify-center">
-            <Progress
-              value={progressValue}
-              className="absolute w-full h-full rounded-full bg-muted"
-              indicatorClassName={cn(
-                "transition-all duration-1000 ease-linear",
-                "bg-primary"
-              )}
-            />
-            <div className="relative z-10 text-4xl font-bold text-primary-foreground">
+            <CircularProgress progress={100 - progressValue} />
+            <div className="relative z-10 text-4xl font-bold text-foreground">
               {formatTime(timeRemaining)}
             </div>
           </div>
