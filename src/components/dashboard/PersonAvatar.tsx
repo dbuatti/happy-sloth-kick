@@ -57,15 +57,15 @@ const PersonAvatar: React.FC<PersonAvatarProps> = ({ person, onEdit, onDelete, o
             onDragEnter={handleDragEnter}
             onDragLeave={handleDragLeave}
           >
-            <Avatar className="h-16 w-16 border-2 border-muted">
+            <Avatar className="h-20 w-20 border-4 border-muted">
               <AvatarImage src={person.avatar_url || undefined} alt={person.name} />
-              <AvatarFallback className="text-2xl">
+              <AvatarFallback className="text-3xl">
                 {person.name.split(' ').map(n => n[0]).join('')}
               </AvatarFallback>
             </Avatar>
             {isDragging && (
               <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
-                <UploadCloud className="h-6 w-6 text-white" />
+                <UploadCloud className="h-8 w-8 text-white" />
               </div>
             )}
           </div>

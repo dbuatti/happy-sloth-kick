@@ -97,14 +97,14 @@ const PeopleMemoryCard: React.FC = () => {
           {loading ? (
             <div className="flex flex-wrap items-center gap-4">
               {[...Array(3)].map((_, i) => (
-                <Skeleton key={i} className="h-16 w-16 rounded-full" />
+                <Skeleton key={i} className="h-20 w-20 rounded-full" />
               ))}
             </div>
           ) : people.length === 0 ? (
             <div className="text-center text-muted-foreground p-4 flex flex-col items-center gap-2">
-              <Users className="h-10 w-10 mb-2" />
-              <p className="font-semibold text-foreground">Remember Important People</p>
-              <p className="text-xs max-w-xs">Keep track of key people. Add notes, details, and photos to remember what's important.</p>
+              <Users className="h-16 w-16 mb-2" />
+              <p className="text-lg font-semibold text-foreground">Remember Important People</p>
+              <p className="text-sm max-w-xs">Keep track of key people. Add notes, details, and photos to remember what's important.</p>
               <Button onClick={() => handleOpenForm(null)} className="mt-3 h-9">
                 <Plus className="mr-2 h-4 w-4" /> Add First Person
               </Button>
@@ -120,8 +120,8 @@ const PeopleMemoryCard: React.FC = () => {
                   onUpdateAvatar={async (id, file) => { await updatePerson(id, {}, file); }}
                 />
               ))}
-              <Button variant="outline" className="h-16 w-16 rounded-full flex-shrink-0" onClick={() => handleOpenForm(null)}>
-                <Plus className="h-8 w-8" />
+              <Button variant="outline" className="h-20 w-20 rounded-full flex-shrink-0" onClick={() => handleOpenForm(null)}>
+                <Plus className="h-10 w-10" />
               </Button>
             </div>
           )}
