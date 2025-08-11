@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock, ChevronRight, GripVertical } from 'lucide-react';
+import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock, ChevronRight } from 'lucide-react';
 import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
@@ -11,7 +11,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Input } from './ui/input';
-import { useSortable } from '@dnd-kit/sortable';
 import DoTodaySwitch from './DoTodaySwitch';
 import { showSuccess, showError } from '@/utils/toast';
 import { Appointment } from '@/hooks/useAppointments';
@@ -31,7 +30,6 @@ interface TaskItemProps {
   hasSubtasks?: boolean;
   isExpanded?: boolean;
   toggleTask?: (taskId: string) => void;
-  dragListeners?: ReturnType<typeof useSortable>['listeners'];
   setFocusTask: (taskId: string | null) => Promise<void>;
   isDoToday: boolean;
   toggleDoToday: (task: Task) => void;
@@ -52,7 +50,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
   hasSubtasks = false,
   isExpanded = true,
   toggleTask,
-  dragListeners,
   setFocusTask,
   isDoToday,
   toggleDoToday,
@@ -82,8 +79,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
     }
   }, [isEditing]);
 
-  const handleStartEdit = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent onOpenOverview from firing
+  const handleStartEdit = (e: React.PointerEvent) => {
+    e.stopPropagation();
     if (isOverlay || isDemo) return;
     setIsEditing(true);
   };
@@ -162,7 +159,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   return (
     <div
       className={cn(
-        "relative flex items-center w-full rounded-lg transition-colors duration-200 py-2",
+        "relative flex items-center w-full rounded-lg transition-colors duration-200 py-2 cursor-grab",
         task.status === 'completed' ? "text-muted-foreground bg-task-completed-bg" : "bg-card text-foreground",
         !isDoToday && "opacity-40",
         "group hover:bg-muted/50"
@@ -171,14 +168,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
       {/* Priority Pill */}
       <div className={cn("absolute left-0 top-0 h-full w-1.5 rounded-l-lg", getPriorityDotColor(task.priority))} />
 
-      {/* Drag Handle */}
-      <div className="flex-shrink-0 pl-2" data-no-dnd="true">
-        <Button variant="ghost" size="icon" className="h-8 w-8 cursor-grab opacity-20 group-hover:opacity-100 transition-opacity" {...dragListeners}>
-          <GripVertical className="h-5 w-5 text-muted-foreground" />
-        </Button>
-      </div>
-
-      <div className="flex-shrink-0 pr-1 flex items-center" data-no-dnd="true">
+      <div className="flex-shrink-0 pl-4 pr-1 flex items-center" onPointerDown={(e) => e.stopPropagation()}>
         {hasSubtasks && (
           <Button
             variant="ghost"
@@ -196,7 +186,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
       </div>
 
       {/* Checkbox Area */}
-      <div className="flex-shrink-0 pr-3" data-no-dnd="true">
+      <div className="flex-shrink-0 pr-3" onPointerDown={(e) => e.stopPropagation()}>
         <Checkbox
           key={`${task.id}-${task.status}`}
           checked={task.status === 'completed'}
@@ -211,10 +201,10 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
       {/* Clickable Content Area */}
       <div 
-        className="flex-grow flex items-center space-x-2 cursor-pointer min-w-0"
+        className="flex-grow flex items-center space-x-2 min-w-0"
         onClick={() => !isOverlay && !isEditing && onOpenOverview(task)}
       >
-        <div className="flex-grow min-w-0 w-full" data-no-dnd="true">
+        <div className="flex-grow min-w-0 w-full">
           {isEditing ? (
             <Input
               ref={inputRef}
@@ -223,7 +213,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
               onBlur={handleSaveEdit}
               onKeyDown={handleInputKeyDown}
               className="h-auto text-lg leading-tight p-0 border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full"
-              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
             />
           ) : (
             <>
@@ -233,7 +223,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
                   task.status === 'completed' ? 'line-through' : '',
                   "inline-block cursor-text"
                 )}
-                onClick={handleStartEdit}
+                onPointerDown={handleStartEdit}
               >
                 {task.description}
               </span>
@@ -249,7 +239,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           )}
         </div>
 
-        <div className="flex-shrink-0 flex items-center space-x-2" data-no-dnd="true">
+        <div className="flex-shrink-0 flex items-center space-x-2" onPointerDown={(e) => e.stopPropagation()}>
           {task.link && (
             isUrl(task.link) ? (
               <Tooltip>
@@ -308,7 +298,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
       </div>
 
       {/* Actions Area */}
-      <div className="flex-shrink-0 flex items-center space-x-1 pr-3" data-no-dnd="true">
+      <div className="flex-shrink-0 flex items-center space-x-1 pr-3" onPointerDown={(e) => e.stopPropagation()}>
         {recurringType !== 'none' && (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -332,7 +322,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
             <Button
               variant="ghost"
               className="h-8 w-8 p-0"
-              onClick={(e) => e.stopPropagation()}
               aria-label="More options"
               disabled={isOverlay || isDemo}
             >
@@ -340,7 +329,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+          <DropdownMenuContent align="end">
             <DropdownMenuItem onSelect={() => onOpenOverview(task)}>
               <Edit className="mr-2 h-4 w-4" /> View Details
             </DropdownMenuItem>

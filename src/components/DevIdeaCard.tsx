@@ -1,23 +1,21 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit, Clipboard, Image as ImageIcon, GripVertical, ClipboardCopy, ChevronDown, ChevronUp } from 'lucide-react';
+import { Edit, Clipboard, Image as ImageIcon, ClipboardCopy, ChevronDown, ChevronUp } from 'lucide-react';
 import { DevIdea } from '@/hooks/useDevIdeas';
 import { cn } from '@/lib/utils';
 import { showSuccess, showError } from '@/utils/toast';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
-import { useSortable } from '@dnd-kit/sortable';
 
 interface DevIdeaCardProps {
   idea: DevIdea;
   onEdit: (idea: DevIdea) => void;
-  dragListeners?: ReturnType<typeof useSortable>['listeners'];
 }
 
 const TRUNCATE_LENGTH = 200;
 
-const DevIdeaCard: React.FC<DevIdeaCardProps> = ({ idea, onEdit, dragListeners }) => {
+const DevIdeaCard: React.FC<DevIdeaCardProps> = ({ idea, onEdit }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const getPriorityColor = (priority: string) => {
@@ -81,16 +79,13 @@ const DevIdeaCard: React.FC<DevIdeaCardProps> = ({ idea, onEdit, dragListeners }
 
   return (
     <Card 
-      className={cn("group w-full shadow-md hover:shadow-lg transition-shadow duration-200 border-l-4", getPriorityColor(idea.priority))}
+      className={cn("group w-full shadow-md hover:shadow-lg transition-shadow duration-200 border-l-4 cursor-grab", getPriorityColor(idea.priority))}
     >
       <CardHeader className="pb-2 flex-row items-center justify-between">
         <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="h-7 w-7 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity" {...dragListeners}>
-                <GripVertical className="h-4 w-4" />
-            </Button>
             <CardTitle className="text-lg font-semibold">{idea.title}</CardTitle>
         </div>
-        <div className="flex items-center">
+        <div className="flex items-center" onPointerDown={(e) => e.stopPropagation()}>
           {idea.local_file_path && (
             <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={handleCopyPathClick} title="Copy Local File Path">
               <ClipboardCopy className="h-4 w-4" />
@@ -124,6 +119,7 @@ const DevIdeaCard: React.FC<DevIdeaCardProps> = ({ idea, onEdit, dragListeners }
                   e.stopPropagation();
                   setIsExpanded(!isExpanded);
                 }}
+                onPointerDown={(e) => e.stopPropagation()}
               >
                 {isExpanded ? 'Show Less' : 'Show More'}
                 {isExpanded ? <ChevronUp className="ml-1 h-3 w-3" /> : <ChevronDown className="ml-1 h-3 w-3" />}
