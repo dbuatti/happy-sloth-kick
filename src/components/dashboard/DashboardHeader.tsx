@@ -48,11 +48,11 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onAddCard, onCustomiz
         {loading ? (
           <Skeleton className="h-9 w-48" />
         ) : (
-          <h1 className="text-3xl font-bold">
+          <h1 className="text-4xl font-extrabold tracking-tight">
             Welcome back{firstName ? `, ${firstName}` : ''}!
           </h1>
         )}
-        <p className="text-muted-foreground">Here's your overview for today.</p>
+        <p className="text-lg text-muted-foreground">Here's your overview for today.</p>
       </div>
       <div className="flex items-center gap-2 self-end sm:self-auto">
         <Button onClick={onAddCard} disabled={isDemo}>

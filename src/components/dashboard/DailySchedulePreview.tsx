@@ -32,7 +32,10 @@ const DailySchedulePreview: React.FC = () => {
             <Skeleton className="h-10 w-full" />
           </div>
         ) : appointments.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">No appointments scheduled for today.</p>
+          <div className="text-center py-8 flex flex-col items-center justify-center h-full bg-muted/50 rounded-lg">
+            <CalendarDays className="h-12 w-12 text-muted-foreground mb-4" />
+            <p className="text-sm text-muted-foreground">No appointments scheduled for today.</p>
+          </div>
         ) : (
           <ul className="space-y-2">
             {appointments.map(app => (

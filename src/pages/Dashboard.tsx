@@ -58,9 +58,9 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
   };
 
   const statCards = [
-    { title: "Tasks Due Today", value: tasksDue, icon: ListTodo, description: "tasks remaining for today" },
-    { title: "Tasks Completed", value: tasksCompleted, icon: CheckCircle2, description: "tasks completed today" },
-    { title: "Appointments", value: appointmentsToday, icon: CalendarDays, description: "events scheduled for today" },
+    { title: "Tasks Due Today", value: tasksDue, icon: ListTodo, description: "tasks remaining for today", className: "bg-blue-500/5 dark:bg-blue-500/10 border-blue-500/20" },
+    { title: "Tasks Completed", value: tasksCompleted, icon: CheckCircle2, description: "tasks completed today", className: "bg-green-500/5 dark:bg-green-500/10 border-green-500/20" },
+    { title: "Appointments", value: appointmentsToday, icon: CalendarDays, description: "events scheduled for today", className: "bg-purple-500/5 dark:bg-purple-500/10 border-purple-500/20" },
   ];
 
   return (
@@ -82,6 +82,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
               icon={stat.icon}
               description={stat.description}
               loading={statsLoading}
+              className={stat.className}
             />
           ))}
         </div>

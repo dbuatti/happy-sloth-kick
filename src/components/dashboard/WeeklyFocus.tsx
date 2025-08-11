@@ -59,18 +59,18 @@ const WeeklyFocusCard: React.FC<WeeklyFocusCardProps> = ({ weeklyFocus, updateWe
 
   return (
     <EditableCard title="This Week's Focus" icon={Target} onSave={handleSave} renderEditForm={renderEditForm} isSaving={isSaving}>
-      <ul className="space-y-2 text-sm">
-        <li className="flex items-center gap-2">
-          <span className="font-semibold text-primary">1st:</span>
-          <span className="text-muted-foreground">{weeklyFocus?.primary_focus || 'Not set'}</span>
+      <ul className="space-y-3 text-sm">
+        <li className="flex items-start gap-3">
+          <div className="flex-shrink-0 h-6 w-6 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">1</div>
+          <span className="text-muted-foreground mt-0.5">{weeklyFocus?.primary_focus || 'Not set'}</span>
         </li>
-        <li className="flex items-center gap-2">
-          <span className="font-semibold text-primary">2nd:</span>
-          <span className="text-muted-foreground">{weeklyFocus?.secondary_focus || 'Not set'}</span>
+        <li className="flex items-start gap-3">
+          <div className="flex-shrink-0 h-6 w-6 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">2</div>
+          <span className="text-muted-foreground mt-0.5">{weeklyFocus?.secondary_focus || 'Not set'}</span>
         </li>
-        <li className="flex items-center gap-2">
-          <span className="font-semibold text-primary">3rd:</span>
-          <span className="text-muted-foreground">{weeklyFocus?.tertiary_focus || 'Not set'}</span>
+        <li className="flex items-start gap-3">
+          <div className="flex-shrink-0 h-6 w-6 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">3</div>
+          <span className="text-muted-foreground mt-0.5">{weeklyFocus?.tertiary_focus || 'Not set'}</span>
         </li>
       </ul>
     </EditableCard>

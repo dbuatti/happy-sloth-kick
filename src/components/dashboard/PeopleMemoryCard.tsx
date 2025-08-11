@@ -75,7 +75,13 @@ const PeopleMemoryCard: React.FC = () => {
               {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-24 w-24 rounded-full" />)}
             </div>
           ) : people.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">Add people you want to remember to connect with.</p>
+            <div className="text-center py-4 flex flex-col items-center justify-center h-full bg-muted/50 rounded-lg">
+              <Users className="h-12 w-12 text-muted-foreground mb-4" />
+              <p className="text-sm text-muted-foreground">Add people you want to remember to connect with.</p>
+              <Button size="sm" className="mt-4" onClick={() => handleOpenForm(null)}>
+                <Plus className="mr-2 h-4 w-4" /> Add Person
+              </Button>
+            </div>
           ) : (
             <div className="flex flex-wrap gap-x-4 gap-y-6">
               {people.map(person => (

@@ -685,6 +685,7 @@
     font-weight: 400; /* Default to regular weight for better readability */
     font-size: 16px; /* Increased base font size slightly */
     line-height: 1.6; /* Adjusted line height for better spacing */
+    @apply bg-gradient-to-br from-[hsl(var(--gradient-start-light))] to-[hsl(var(--gradient-end-light))] dark:from-[hsl(var(--gradient-start-dark))] dark:to-[hsl(var(--gradient-end-dark))];
   }
 
   /* Custom checkbox styling to match the image */
