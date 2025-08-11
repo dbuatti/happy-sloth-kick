@@ -44,30 +44,74 @@ export const usePeopleMemory = (props?: { userId?: string }) => {
     fetchPeople();
   }, [fetchPeople]);
 
-  const addPerson = async (personData: { name: string; notes: string | null }) => {
+  const addPerson = async (personData: { name: string; notes: string | null }, avatarFile?: File | null) => {
     if (!userId) return null;
     try {
-      const { data, error } = await supabase
+      const { data: newPerson, error: insertError } = await supabase
         .from('people_memory')
         .insert({ ...personData, user_id: userId })
         .select()
         .single();
-      if (error) throw error;
-      setPeople(prev => [...prev, data]);
-      showSuccess('Person added!');
-      return data;
+      if (insertError) throw insertError;
+
+      if (avatarFile) {
+        const filePath = `people_avatars/${userId}/${newPerson.id}/${uuidv4()}`;
+        const { error: uploadError } = await supabase.storage
+          .from('devideaimages')
+          .upload(filePath, avatarFile);
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage.from('devideaimages').getPublicUrl(filePath);
+        
+        const { data: updatedPerson, error: updateError } = await supabase
+          .from('people_memory')
+          .update({ avatar_url: urlData.publicUrl })
+          .eq('id', newPerson.id)
+          .select()
+          .single();
+        if (updateError) throw updateError;
+
+        setPeople(prev => [...prev, updatedPerson]);
+        showSuccess('Person added with avatar!');
+        return updatedPerson;
+      } else {
+        setPeople(prev => [...prev, newPerson]);
+        showSuccess('Person added!');
+        return newPerson;
+      }
     } catch (error) {
       showError('Failed to add person.');
       return null;
     }
   };
 
-  const updatePerson = async (id: string, updates: Partial<Omit<Person, 'id' | 'user_id' | 'created_at'>>) => {
+  const updatePerson = async (id: string, updates: Partial<Omit<Person, 'id' | 'user_id' | 'created_at'>>, avatarFile?: File | null) => {
     if (!userId) return null;
     try {
+      const finalUpdates = { ...updates };
+
+      if (avatarFile) {
+        const personToUpdate = people.find(p => p.id === id);
+        if (personToUpdate?.avatar_url) {
+          const oldFilePath = personToUpdate.avatar_url.split('/devideaimages/')[1];
+          if (oldFilePath) {
+            await supabase.storage.from('devideaimages').remove([oldFilePath]);
+          }
+        }
+
+        const filePath = `people_avatars/${userId}/${id}/${uuidv4()}`;
+        const { error: uploadError } = await supabase.storage
+          .from('devideaimages')
+          .upload(filePath, avatarFile);
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage.from('devideaimages').getPublicUrl(filePath);
+        finalUpdates.avatar_url = urlData.publicUrl;
+      }
+
       const { data, error } = await supabase
         .from('people_memory')
-        .update(updates)
+        .update(finalUpdates)
         .eq('id', id)
         .select()
         .single();
@@ -95,25 +139,5 @@ export const usePeopleMemory = (props?: { userId?: string }) => {
     }
   };
 
-  const uploadAvatar = async (id: string, file: File) => {
-    if (!userId) return null;
-    try {
-      const filePath = `people_avatars/${userId}/${id}/${uuidv4()}`;
-      const { error: uploadError } = await supabase.storage
-        .from('devideaimages')
-        .upload(filePath, file);
-      if (uploadError) throw uploadError;
-
-      const { data: urlData } = supabase.storage
-        .from('devideaimages')
-        .getPublicUrl(filePath);
-      
-      return await updatePerson(id, { avatar_url: urlData.publicUrl });
-    } catch (error) {
-      showError('Failed to upload avatar.');
-      return null;
-    }
-  };
-
-  return { people, loading, addPerson, updatePerson, deletePerson, uploadAvatar };
+  return { people, loading, addPerson, updatePerson, deletePerson };
 };

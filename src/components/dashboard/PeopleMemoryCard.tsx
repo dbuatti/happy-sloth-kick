@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePeopleMemory, Person } from '@/hooks/usePeopleMemory';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, UploadCloud, X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import PersonAvatar from './PersonAvatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -9,9 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { cn } from '@/lib/utils';
+import { showError } from '@/utils/toast';
 
 const PeopleMemoryCard: React.FC = () => {
-  const { people, loading, addPerson, updatePerson, deletePerson, uploadAvatar } = usePeopleMemory();
+  const { people, loading, addPerson, updatePerson, deletePerson } = usePeopleMemory();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingPerson, setEditingPerson] = useState<Person | null>(null);
   const [name, setName] = useState('');
@@ -19,27 +21,36 @@ const PeopleMemoryCard: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [personToDelete, setPersonToDelete] = useState<string | null>(null);
 
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  useEffect(() => {
+    if (isFormOpen) {
+      setName(editingPerson?.name || '');
+      setNotes(editingPerson?.notes || '');
+      setImageFile(null);
+      setImagePreview(editingPerson?.avatar_url || null);
+    }
+  }, [isFormOpen, editingPerson]);
+
   const handleOpenForm = (person: Person | null) => {
     setEditingPerson(person);
-    setName(person?.name || '');
-    setNotes(person?.notes || '');
     setIsFormOpen(true);
   };
 
   const handleCloseForm = () => {
     setIsFormOpen(false);
     setEditingPerson(null);
-    setName('');
-    setNotes('');
   };
 
   const handleSave = async () => {
     if (!name.trim()) return;
     setIsSaving(true);
     if (editingPerson) {
-      await updatePerson(editingPerson.id, { name, notes });
+      await updatePerson(editingPerson.id, { name, notes }, imageFile);
     } else {
-      await addPerson({ name, notes });
+      await addPerson({ name, notes }, imageFile);
     }
     setIsSaving(false);
     handleCloseForm();
@@ -56,14 +67,36 @@ const PeopleMemoryCard: React.FC = () => {
     }
   };
 
+  const handleFile = (file: File | null) => {
+    if (file && file.type.startsWith('image/')) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    } else if (file) {
+      showError('Please upload a valid image file.');
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => e.preventDefault();
+  const handleDragEnter = () => setIsDragging(true);
+  const handleDragLeave = () => setIsDragging(false);
+
   return (
     <>
       <fieldset className="rounded-xl border-2 border-border p-3">
         <legend className="px-2 text-sm text-muted-foreground -ml-1 font-medium">People Memory</legend>
-        <div className="flex items-center gap-3 min-h-[40px]">
+        <div className="flex items-center gap-3 min-h-[48px]">
           {loading ? (
             [...Array(3)].map((_, i) => (
-              <Skeleton key={i} className="h-10 w-10 rounded-full" />
+              <Skeleton key={i} className="h-12 w-12 rounded-full" />
             ))
           ) : (
             <>
@@ -73,11 +106,11 @@ const PeopleMemoryCard: React.FC = () => {
                   person={person}
                   onEdit={handleOpenForm}
                   onDelete={handleDeleteClick}
-                  onUpdateAvatar={uploadAvatar}
+                  onUpdateAvatar={async (id, file) => { await updatePerson(id, {}, file); }}
                 />
               ))}
-              <Button variant="outline" className="h-10 w-10 rounded-full flex-shrink-0" onClick={() => handleOpenForm(null)}>
-                <Plus className="h-5 w-5" />
+              <Button variant="outline" className="h-12 w-12 rounded-full flex-shrink-0" onClick={() => handleOpenForm(null)}>
+                <Plus className="h-6 w-6" />
               </Button>
             </>
           )}
@@ -90,6 +123,28 @@ const PeopleMemoryCard: React.FC = () => {
             <DialogTitle>{editingPerson ? 'Edit Person' : 'Add Person'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            <div
+              className={cn(
+                "relative border-2 border-dashed rounded-lg p-4 text-center transition-colors h-32 flex items-center justify-center",
+                isDragging ? "border-primary bg-primary/10" : "border-border"
+              )}
+              onDrop={handleDrop} onDragOver={handleDragOver} onDragEnter={handleDragEnter} onDragLeave={handleDragLeave}
+            >
+              {imagePreview ? (
+                <>
+                  <img src={imagePreview} alt="Avatar preview" className="rounded-full h-24 w-24 object-cover" />
+                  <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={() => { setImageFile(null); setImagePreview(null); }}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center space-y-2 text-muted-foreground">
+                  <UploadCloud className="h-8 w-8" />
+                  <p className="text-sm">Drag & drop an image here, or <label htmlFor="avatar-upload" className="text-primary underline cursor-pointer">click to upload</label>.</p>
+                  <Input id="avatar-upload" type="file" accept="image/*" className="sr-only" onChange={(e) => handleFile(e.target.files?.[0] || null)} />
+                </div>
+              )}
+            </div>
             <div>
               <Label>Name</Label>
               <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Jane Doe" />

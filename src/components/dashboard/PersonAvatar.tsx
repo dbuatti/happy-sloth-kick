@@ -57,7 +57,7 @@ const PersonAvatar: React.FC<PersonAvatarProps> = ({ person, onEdit, onDelete, o
             onDragEnter={handleDragEnter}
             onDragLeave={handleDragLeave}
           >
-            <Avatar className="h-10 w-10 border-2 border-muted">
+            <Avatar className="h-12 w-12 border-2 border-muted">
               <AvatarImage src={person.avatar_url || undefined} alt={person.name} />
               <AvatarFallback>
                 {person.name.split(' ').map(n => n[0]).join('')}
