@@ -107,28 +107,27 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
           demoUserId={demoUserId}
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <div className="flex flex-col justify-center">
-            <NextTaskCard 
-              nextAvailableTask={nextAvailableTask}
-              updateTask={updateTask}
-              onOpenOverview={handleOpenOverview}
-              loading={tasksLoading}
+        <div className="mb-6">
+          <NextTaskCard 
+            nextAvailableTask={nextAvailableTask}
+            updateTask={updateTask}
+            onOpenOverview={handleOpenOverview}
+            loading={tasksLoading}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          {statCards.map(stat => (
+            <StatCard
+              key={stat.title}
+              title={stat.title}
+              value={stat.value}
+              icon={stat.icon}
+              description={stat.description}
+              loading={statsLoading}
+              className={stat.className}
             />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {statCards.map(stat => (
-              <StatCard
-                key={stat.title}
-                title={stat.title}
-                value={stat.value}
-                icon={stat.icon}
-                description={stat.description}
-                loading={statsLoading}
-                className={stat.className}
-              />
-            ))}
-          </div>
+          ))}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
