@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Edit, Save, X } from 'lucide-react';
 
@@ -25,36 +24,34 @@ const EditableCard: React.FC<EditableCardProps> = ({ title, icon: Icon, children
   };
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-lg font-semibold flex items-center gap-2">
-          <Icon className="h-5 w-5 text-primary" />
+    <fieldset className="rounded-xl border-2 border-border p-4 h-full">
+      <div className="flex justify-between items-center -mt-2 mb-2">
+        <legend className="px-2 text-sm text-muted-foreground -ml-1 font-medium flex items-center gap-2">
+          <Icon className="h-4 w-4" />
           {title}
-        </CardTitle>
+        </legend>
         {!isEditing && (
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsEditing(true)}>
             <Edit className="h-4 w-4" />
           </Button>
         )}
-      </CardHeader>
-      <CardContent>
-        {isEditing ? (
-          <div className="space-y-4">
-            {renderEditForm(handleSave, handleCancel)}
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" size="sm" onClick={handleCancel} disabled={isSaving}>
-                <X className="h-4 w-4 mr-2" /> Cancel
-              </Button>
-              <Button size="sm" onClick={handleSave} disabled={isSaving}>
-                <Save className="h-4 w-4 mr-2" /> {isSaving ? 'Saving...' : 'Save'}
-              </Button>
-            </div>
+      </div>
+      {isEditing ? (
+        <div className="space-y-4">
+          {renderEditForm(handleSave, handleCancel)}
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={handleCancel} disabled={isSaving}>
+              <X className="h-4 w-4 mr-2" /> Cancel
+            </Button>
+            <Button size="sm" onClick={handleSave} disabled={isSaving}>
+              <Save className="h-4 w-4 mr-2" /> {isSaving ? 'Saving...' : 'Save'}
+            </Button>
           </div>
-        ) : (
-          children
-        )}
-      </CardContent>
-    </Card>
+        </div>
+      ) : (
+        children
+      )}
+    </fieldset>
   );
 };
 
