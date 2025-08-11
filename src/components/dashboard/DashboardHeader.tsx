@@ -4,7 +4,6 @@ import { Plus, Settings as SettingsIcon } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
-import QuickLinks from './QuickLinks';
 
 interface DashboardHeaderProps {
   onAddCard: () => void;
@@ -20,7 +19,8 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onAddCard, onCustomiz
 
   useEffect(() => {
     const fetchProfile = async () => {
-      if (!user) {
+      const userId = demoUserId || user?.id;
+      if (!userId) {
         setLoading(false);
         return;
       }
@@ -29,7 +29,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onAddCard, onCustomiz
         const { data, error } = await supabase
           .from('profiles')
           .select('first_name')
-          .eq('id', user.id)
+          .eq('id', userId)
           .single();
         if (error && error.code !== 'PGRST116') throw error;
         if (data) {
@@ -42,7 +42,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onAddCard, onCustomiz
       }
     };
     fetchProfile();
-  }, [user]);
+  }, [user, demoUserId]);
 
   return (
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
@@ -57,7 +57,6 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onAddCard, onCustomiz
         <p className="text-lg text-muted-foreground">Here's your overview for today.</p>
       </div>
       <div className="flex items-center gap-2 self-end sm:self-auto">
-        <QuickLinks isDemo={isDemo} demoUserId={demoUserId} />
         <Button onClick={onAddCard} disabled={isDemo}>
           <Plus className="mr-2 h-4 w-4" /> Add Card
         </Button>

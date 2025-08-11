@@ -34,58 +34,61 @@ const QuickLinks: React.FC<QuickLinksProps> = ({ isDemo = false, demoUserId }) =
 
   return (
     <>
-      <div className="flex items-center gap-2">
-        {loading ? (
-          [...Array(3)].map((_, i) => (
-            <Skeleton key={i} className="h-10 w-10 rounded-full" />
-          ))
-        ) : (
-          <>
-            {quickLinks.map(link => (
-              <div key={link.id} className="relative group flex flex-col items-center gap-1 text-center">
-                <a href={link.url} target="_blank" rel="noopener noreferrer">
-                  <Avatar className="h-10 w-10 border-2 border-muted hover:border-primary transition-colors" style={{ backgroundColor: link.image_url ? 'transparent' : link.background_color || undefined }}>
-                    <AvatarImage src={link.image_url || undefined} alt={link.title} />
-                    <AvatarFallback className="text-xl text-white">
-                      {link.emoji ? (
-                        <span>{link.emoji}</span>
-                      ) : link.avatar_text ? (
-                        <span className="font-bold">{link.avatar_text}</span>
-                      ) : (
-                        <LinkIcon className="h-5 w-5 text-foreground" />
-                      )}
-                    </AvatarFallback>
-                  </Avatar>
-                </a>
-                {!isDemo && (
-                  <div className="absolute top-[-4px] right-[-4px] opacity-0 group-hover:opacity-100 transition-opacity">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full bg-background/80">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        <DropdownMenuItem onSelect={() => handleOpenForm(link)}>
-                          <Edit className="mr-2 h-4 w-4" /> Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => setLinkToDelete(link.id)} className="text-destructive">
-                          <Trash2 className="mr-2 h-4 w-4" /> Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                )}
-              </div>
-            ))}
-            {!isDemo && (
-              <Button variant="outline" className="h-10 w-10 rounded-full flex-shrink-0" onClick={() => handleOpenForm(null)}>
-                <Plus className="h-5 w-5" />
-              </Button>
-            )}
-          </>
-        )}
-      </div>
+      <fieldset className="rounded-xl border-2 border-border p-3">
+        <legend className="px-2 text-sm text-muted-foreground -ml-1 font-medium">Links</legend>
+        <div className="flex items-center gap-3 min-h-[40px]">
+          {loading ? (
+            [...Array(3)].map((_, i) => (
+              <Skeleton key={i} className="h-10 w-10 rounded-full" />
+            ))
+          ) : (
+            <>
+              {quickLinks.map(link => (
+                <div key={link.id} className="relative group flex flex-col items-center gap-1 text-center">
+                  <a href={link.url} target="_blank" rel="noopener noreferrer">
+                    <Avatar className="h-10 w-10 border-2 border-muted hover:border-primary transition-colors" style={{ backgroundColor: link.image_url ? 'transparent' : link.background_color || undefined }}>
+                      <AvatarImage src={link.image_url || undefined} alt={link.title} />
+                      <AvatarFallback className="text-xl text-white">
+                        {link.emoji ? (
+                          <span>{link.emoji}</span>
+                        ) : link.avatar_text ? (
+                          <span className="font-bold">{link.avatar_text}</span>
+                        ) : (
+                          <LinkIcon className="h-5 w-5 text-foreground" />
+                        )}
+                      </AvatarFallback>
+                    </Avatar>
+                  </a>
+                  {!isDemo && (
+                    <div className="absolute top-[-4px] right-[-4px] opacity-0 group-hover:opacity-100 transition-opacity">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full bg-background/80">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuItem onSelect={() => handleOpenForm(link)}>
+                            <Edit className="mr-2 h-4 w-4" /> Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => setLinkToDelete(link.id)} className="text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  )}
+                </div>
+              ))}
+              {!isDemo && (
+                <Button variant="outline" className="h-10 w-10 rounded-full flex-shrink-0" onClick={() => handleOpenForm(null)}>
+                  <Plus className="h-5 w-5" />
+                </Button>
+              )}
+            </>
+          )}
+        </div>
+      </fieldset>
 
       <QuickLinkForm
         isOpen={isFormOpen}

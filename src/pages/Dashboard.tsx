@@ -21,6 +21,7 @@ import PomodoroCard from '@/components/dashboard/PomodoroCard';
 import NextTaskCard from '@/components/dashboard/NextTaskCard';
 import TaskOverviewDialog from '@/components/TaskOverviewDialog';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
+import QuickLinks from '@/components/dashboard/QuickLinks';
 
 interface DashboardProps {
   isDemo?: boolean;
@@ -106,6 +107,10 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
           isDemo={isDemo}
           demoUserId={demoUserId}
         />
+
+        <div className="mb-6">
+          <QuickLinks isDemo={isDemo} demoUserId={demoUserId} />
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <div className="flex flex-col justify-center">
