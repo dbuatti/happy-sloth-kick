@@ -415,106 +415,106 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
                   <p className="text-sm">Please check your work hour settings. Ensure your start time is before your end time.</p>
                 </div>
               ) : (
-                <div className={cn(
-                  "grid grid-cols-1 transition-all duration-300",
-                  isTaskPanelCollapsed ? "lg:grid-cols-[1fr_auto]" : "lg:grid-cols-[1fr_300px]"
-                )}>
-                  <div className="grid grid-cols-[80px_1fr] gap-x-4">
-                    <div className="relative" style={{
-                      height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`,
-                    }}>
-                      {timeBlocks.map((block, index) => (
-                        getMinutes(block.start) === 0 && (
-                          <div
-                            key={`label-${format(block.start, 'HH:mm')}`}
-                            className="absolute right-4"
-                            style={{ top: `${index * (rowHeight + gapHeight) - 8}px` }}
-                          >
-                            <span className="text-xs text-muted-foreground">{format(block.start, 'h a')}</span>
-                          </div>
-                        )
-                      ))}
-                    </div>
+                <div className="grid grid-cols-1 lg:flex lg:gap-6">
+                  <div className="flex-1">
+                    <div className="grid grid-cols-[80px_1fr] gap-x-4">
+                      <div className="relative" style={{
+                        height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`,
+                      }}>
+                        {timeBlocks.map((block, index) => (
+                          getMinutes(block.start) === 0 && (
+                            <div
+                              key={`label-${format(block.start, 'HH:mm')}`}
+                              className="absolute right-4"
+                              style={{ top: `${index * (rowHeight + gapHeight) - 8}px` }}
+                            >
+                              <span className="text-xs text-muted-foreground">{format(block.start, 'h a')}</span>
+                            </div>
+                          )
+                        ))}
+                      </div>
 
-                    <div className="relative grid" style={{
-                      gridTemplateRows: `repeat(${timeBlocks.length}, ${rowHeight}px)`,
-                      rowGap: `${gapHeight}px`,
-                      height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`,
-                    }}>
-                      {timeBlocks.map((block, index) => (
-                        getMinutes(block.start) === 0 && (
-                          <div
-                            key={`bg-label-${format(block.start, 'HH')}`}
-                            className="absolute inset-x-0 h-full flex items-center justify-center text-[120px] font-bubbly font-bold text-gray-200/50 dark:text-gray-800/50 select-none pointer-events-none"
-                            style={{
-                              top: `${index * (rowHeight + gapHeight)}px`,
-                              height: `${2 * rowHeight + gapHeight}px`,
-                              zIndex: 0,
-                            }}
-                          >
-                            <span>{format(block.start, 'h:00')}</span>
-                          </div>
-                        )
-                      ))}
+                      <div className="relative grid" style={{
+                        gridTemplateRows: `repeat(${timeBlocks.length}, ${rowHeight}px)`,
+                        rowGap: `${gapHeight}px`,
+                        height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`,
+                      }}>
+                        {timeBlocks.map((block, index) => (
+                          getMinutes(block.start) === 0 && (
+                            <div
+                              key={`bg-label-${format(block.start, 'HH')}`}
+                              className="absolute inset-x-0 h-full flex items-center justify-center text-[120px] font-bubbly font-bold text-gray-200/50 dark:text-gray-800/50 select-none pointer-events-none"
+                              style={{
+                                top: `${index * (rowHeight + gapHeight)}px`,
+                                height: `${2 * rowHeight + gapHeight}px`,
+                                zIndex: 0,
+                              }}
+                            >
+                              <span>{format(block.start, 'h:00')}</span>
+                            </div>
+                          )
+                        ))}
 
-                      {timeBlocks.map((block, index) => (
-                        <TimeBlock
-                          key={`block-${format(block.start, 'HH:mm')}`}
-                          block={block}
-                          index={index}
-                          appointmentsWithPositions={appointmentsWithPositions}
-                          isDemo={isDemo}
-                          onAddAppointment={handleOpenAppointmentForm}
-                          onScheduleTask={handleScheduleTask}
-                          unscheduledTasks={unscheduledDoTodayTasks}
-                          sections={sections}
-                          currentDate={currentDate}
-                        />
-                      ))}
-
-                      {appointmentsWithPositions.map((app) => {
-                        const task = app.task_id ? allTasks.find(t => t.id === app.task_id) : undefined;
-                        return (
-                          <DraggableAppointmentCard
-                            key={app.id}
-                            appointment={app}
-                            task={task}
-                            onEdit={handleAppointmentClick}
-                            onUnschedule={handleUnscheduleTask}
-                            gridRowStart={app.gridRowStart}
-                            gridRowEnd={app.gridRowEnd}
-                            overlapOffset={app.overlapOffset}
-                            rowHeight={rowHeight}
-                            gapHeight={gapHeight}
+                        {timeBlocks.map((block, index) => (
+                          <TimeBlock
+                            key={`block-${format(block.start, 'HH:mm')}`}
+                            block={block}
+                            index={index}
+                            appointmentsWithPositions={appointmentsWithPositions}
+                            isDemo={isDemo}
+                            onAddAppointment={handleOpenAppointmentForm}
+                            onScheduleTask={handleScheduleTask}
+                            unscheduledTasks={unscheduledDoTodayTasks}
+                            sections={sections}
+                            currentDate={currentDate}
                           />
-                        );
-                      })}
+                        ))}
+
+                        {appointmentsWithPositions.map((app) => {
+                          const task = app.task_id ? allTasks.find(t => t.id === app.task_id) : undefined;
+                          return (
+                            <DraggableAppointmentCard
+                              key={app.id}
+                              appointment={app}
+                              task={task}
+                              onEdit={handleAppointmentClick}
+                              onUnschedule={handleUnscheduleTask}
+                              gridRowStart={app.gridRowStart}
+                              gridRowEnd={app.gridRowEnd}
+                              overlapOffset={app.overlapOffset}
+                              rowHeight={rowHeight}
+                              gapHeight={gapHeight}
+                            />
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
-                  <div className="relative lg:border-l lg:border-border lg:pl-6">
+                  <div className={cn(
+                    "relative mt-6 lg:mt-0 lg:w-[300px] lg:flex-shrink-0",
+                    isTaskPanelCollapsed && "hidden"
+                  )}>
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => setIsTaskPanelCollapsed(!isTaskPanelCollapsed)}
-                      className="absolute -left-4 top-1/2 -translate-y-1/2 z-20 bg-background hover:bg-muted rounded-full h-8 w-8 border"
+                      className="absolute -left-4 top-1/2 -translate-y-1/2 z-20 bg-background hover:bg-muted rounded-full h-8 w-8 border hidden lg:flex"
                       aria-label={isTaskPanelCollapsed ? "Show task panel" : "Hide task panel"}
                     >
                       {isTaskPanelCollapsed ? <PanelRightOpen className="h-5 w-5" /> : <PanelRightClose className="h-5 w-5" />}
                     </Button>
-                    {!isTaskPanelCollapsed && (
-                      <div className="space-y-4 bg-muted rounded-lg p-4">
-                        <h3 className="text-lg font-semibold">Unscheduled Tasks</h3>
-                        <div className="space-y-2 max-h-[600px] overflow-y-auto p-1">
-                          {unscheduledDoTodayTasks.length > 0 ? (
-                            unscheduledDoTodayTasks.map(task => (
-                              <DraggableScheduleTaskItem key={task.id} task={task} sections={sections} />
-                            ))
-                          ) : (
-                            <p className="text-sm text-muted-foreground text-center py-4">No tasks to schedule.</p>
-                          )}
-                        </div>
+                    <div className="lg:sticky lg:top-4 space-y-4 bg-muted rounded-lg p-4">
+                      <h3 className="text-lg font-semibold">Unscheduled Tasks</h3>
+                      <div className="space-y-2 max-h-[calc(100vh-20rem)] overflow-y-auto p-1">
+                        {unscheduledDoTodayTasks.length > 0 ? (
+                          unscheduledDoTodayTasks.map(task => (
+                            <DraggableScheduleTaskItem key={task.id} task={task} sections={sections} />
+                          ))
+                        ) : (
+                          <p className="text-sm text-muted-foreground text-center py-4">No tasks to schedule.</p>
+                        )}
                       </div>
-                    )}
+                    </div>
                   </div>
                 </div>
               )}
