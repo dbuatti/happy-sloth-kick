@@ -12,6 +12,9 @@ export interface QuickLink {
   image_url: string | null;
   link_order: number | null;
   created_at: string;
+  emoji: string | null;
+  background_color: string | null;
+  avatar_text: string | null;
 }
 
 export const useQuickLinks = (props?: { userId?: string }) => {
@@ -45,7 +48,7 @@ export const useQuickLinks = (props?: { userId?: string }) => {
     fetchQuickLinks();
   }, [fetchQuickLinks]);
 
-  const addQuickLink = async (linkData: { title: string; url: string; imageFile?: File | null }) => {
+  const addQuickLink = async (linkData: { title: string; url: string; imageFile?: File | null; emoji?: string | null; backgroundColor?: string | null; avatarText?: string | null; }) => {
     if (!userId) return null;
     try {
       let imageUrl: string | null = null;
@@ -66,7 +69,10 @@ export const useQuickLinks = (props?: { userId?: string }) => {
           url: linkData.url, 
           image_url: imageUrl,
           user_id: userId,
-          link_order: quickLinks.length 
+          link_order: quickLinks.length,
+          emoji: linkData.emoji,
+          background_color: linkData.backgroundColor,
+          avatar_text: linkData.avatarText,
         })
         .select()
         .single();

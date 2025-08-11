@@ -24,7 +24,7 @@ const QuickLinks: React.FC<QuickLinksProps> = ({ isDemo = false, demoUserId }) =
     setIsFormOpen(true);
   };
 
-  const handleSave = async (data: { title: string; url: string; imageFile?: File | null }) => {
+  const handleSave = async (data: { title: string; url: string; imageFile?: File | null; emoji?: string | null; backgroundColor?: string | null; avatarText?: string | null; }) => {
     if (editingLink) {
       await updateQuickLink(editingLink.id, data);
     } else {
@@ -47,14 +47,22 @@ const QuickLinks: React.FC<QuickLinksProps> = ({ isDemo = false, demoUserId }) =
             {quickLinks.map(link => (
               <div key={link.id} className="relative group flex flex-col items-center gap-1 text-center">
                 <a href={link.url} target="_blank" rel="noopener noreferrer">
-                  <Avatar className="h-16 w-16 border-2 border-muted hover:border-primary transition-colors">
+                  <Avatar className="h-16 w-16 border-2 border-muted hover:border-primary transition-colors" style={{ backgroundColor: link.image_url ? 'transparent' : link.background_color || undefined }}>
                     <AvatarImage src={link.image_url || undefined} alt={link.title} />
-                    <AvatarFallback>
-                      <LinkIcon className="h-6 w-6" />
+                    <AvatarFallback className="text-2xl text-white">
+                      {link.emoji ? (
+                        <span>{link.emoji}</span>
+                      ) : link.avatar_text ? (
+                        <span className="font-bold">{link.avatar_text}</span>
+                      ) : (
+                        <LinkIcon className="h-6 w-6 text-foreground" />
+                      )}
                     </AvatarFallback>
                   </Avatar>
                 </a>
-                <p className="text-xs font-medium w-20 truncate">{link.title}</p>
+                <p className="text-xs font-bold w-20 break-words h-8 flex items-center justify-center text-center leading-tight">
+                  {link.title}
+                </p>
                 {!isDemo && (
                   <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
                     <DropdownMenu>

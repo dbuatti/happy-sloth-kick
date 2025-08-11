@@ -7,13 +7,23 @@ import { QuickLink } from '@/hooks/useQuickLinks';
 import { UploadCloud, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { showError } from '@/utils/toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface QuickLinkFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: { title: string; url: string; imageFile?: File | null }) => Promise<any>;
+  onSave: (data: { 
+    title: string; 
+    url: string; 
+    imageFile?: File | null;
+    emoji?: string | null;
+    backgroundColor?: string | null;
+    avatarText?: string | null;
+  }) => Promise<any>;
   initialData?: QuickLink | null;
 }
+
+const presetColors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899', '#6b7280'];
 
 const QuickLinkForm: React.FC<QuickLinkFormProps> = ({ isOpen, onClose, onSave, initialData }) => {
   const [title, setTitle] = useState('');
@@ -23,12 +33,30 @@ const QuickLinkForm: React.FC<QuickLinkFormProps> = ({ isOpen, onClose, onSave, 
   const [isDragging, setIsDragging] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  const [avatarType, setAvatarType] = useState<'image' | 'emoji' | 'text'>('image');
+  const [emoji, setEmoji] = useState('');
+  const [avatarText, setAvatarText] = useState('');
+  const [backgroundColor, setBackgroundColor] = useState(presetColors[0]);
+
   useEffect(() => {
     if (isOpen) {
       setTitle(initialData?.title || '');
       setUrl(initialData?.url || '');
       setImageFile(null);
       setImagePreview(initialData?.image_url || null);
+      setEmoji(initialData?.emoji || '');
+      setAvatarText(initialData?.avatar_text || '');
+      setBackgroundColor(initialData?.background_color || presetColors[0]);
+
+      if (initialData?.image_url) {
+        setAvatarType('image');
+      } else if (initialData?.emoji) {
+        setAvatarType('emoji');
+      } else if (initialData?.avatar_text) {
+        setAvatarType('text');
+      } else {
+        setAvatarType('image');
+      }
     }
   }, [isOpen, initialData]);
 
@@ -54,20 +82,58 @@ const QuickLinkForm: React.FC<QuickLinkFormProps> = ({ isOpen, onClose, onSave, 
   const handleDragEnter = () => setIsDragging(true);
   const handleDragLeave = () => setIsDragging(false);
 
+  const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
+    const items = event.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const file = items[i].getAsFile();
+        if (file) {
+          handleFile(file);
+          setAvatarType('image');
+        }
+        break;
+      }
+    }
+  };
+
   const handleSave = async () => {
     if (!title.trim() || !url.trim()) {
       showError('Title and URL are required.');
       return;
     }
     setIsSaving(true);
-    await onSave({ title, url, imageFile });
+    await onSave({ 
+      title, 
+      url, 
+      imageFile: avatarType === 'image' ? imageFile : null,
+      emoji: avatarType === 'emoji' ? emoji : null,
+      backgroundColor: avatarType !== 'image' ? backgroundColor : null,
+      avatarText: avatarType === 'text' ? avatarText : null,
+    });
     setIsSaving(false);
     onClose();
   };
 
+  const ColorPalette = () => (
+    <div className="flex flex-wrap gap-2 mt-2">
+      {presetColors.map(color => (
+        <button
+          key={color}
+          type="button"
+          className={cn(
+            "w-8 h-8 rounded-full border-2 transition-all",
+            backgroundColor === color ? 'ring-2 ring-offset-2 ring-primary' : 'border-transparent'
+          )}
+          style={{ backgroundColor: color }}
+          onClick={() => setBackgroundColor(color)}
+        />
+      ))}
+    </div>
+  );
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent onPaste={handlePaste}>
         <DialogHeader>
           <DialogTitle>{initialData ? 'Edit Quick Link' : 'Add Quick Link'}</DialogTitle>
         </DialogHeader>
@@ -81,29 +147,54 @@ const QuickLinkForm: React.FC<QuickLinkFormProps> = ({ isOpen, onClose, onSave, 
             <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://..." />
           </div>
           <div>
-            <Label>Icon</Label>
-            <div
-              className={cn(
-                "relative mt-1 border-2 border-dashed rounded-lg p-4 text-center transition-colors h-32 flex items-center justify-center",
-                isDragging ? "border-primary bg-primary/10" : "border-border"
-              )}
-              onDrop={handleDrop} onDragOver={handleDragOver} onDragEnter={handleDragEnter} onDragLeave={handleDragLeave}
-            >
-              {imagePreview ? (
-                <>
-                  <img src={imagePreview} alt="Preview" className="rounded-full h-24 w-24 object-cover" />
-                  <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={() => { setImageFile(null); setImagePreview(null); }}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </>
-              ) : (
-                <div className="flex flex-col items-center justify-center space-y-2 text-muted-foreground">
-                  <UploadCloud className="h-8 w-8" />
-                  <p className="text-sm">Drag & drop, or <label htmlFor="file-upload" className="text-primary underline cursor-pointer">click to upload</label>.</p>
-                  <Input id="file-upload" type="file" accept="image/*" className="sr-only" onChange={(e) => handleFile(e.target.files?.[0] || null)} />
+            <Label>Icon Type</Label>
+            <Tabs value={avatarType} onValueChange={(value) => setAvatarType(value as any)} className="w-full mt-1">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="image">Image</TabsTrigger>
+                <TabsTrigger value="emoji">Emoji</TabsTrigger>
+                <TabsTrigger value="text">Text</TabsTrigger>
+              </TabsList>
+              <TabsContent value="image" className="mt-2">
+                <div
+                  className={cn(
+                    "relative border-2 border-dashed rounded-lg p-4 text-center transition-colors h-32 flex items-center justify-center",
+                    isDragging ? "border-primary bg-primary/10" : "border-border"
+                  )}
+                  onDrop={handleDrop} onDragOver={handleDragOver} onDragEnter={handleDragEnter} onDragLeave={handleDragLeave}
+                >
+                  {imagePreview ? (
+                    <>
+                      <img src={imagePreview} alt="Preview" className="rounded-full h-24 w-24 object-cover" />
+                      <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={() => { setImageFile(null); setImagePreview(null); }}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center space-y-2 text-muted-foreground">
+                      <UploadCloud className="h-8 w-8" />
+                      <p className="text-sm">Drag, paste, or <label htmlFor="file-upload" className="text-primary underline cursor-pointer">click to upload</label>.</p>
+                      <Input id="file-upload" type="file" accept="image/*" className="sr-only" onChange={(e) => handleFile(e.target.files?.[0] || null)} />
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </TabsContent>
+              <TabsContent value="emoji" className="mt-2">
+                <div className="space-y-2">
+                  <Label>Emoji</Label>
+                  <Input value={emoji} onChange={(e) => setEmoji(e.target.value)} placeholder="😊" maxLength={2} />
+                  <Label>Background Color</Label>
+                  <ColorPalette />
+                </div>
+              </TabsContent>
+              <TabsContent value="text" className="mt-2">
+                <div className="space-y-2">
+                  <Label>Text (1-2 letters)</Label>
+                  <Input value={avatarText} onChange={(e) => setAvatarText(e.target.value)} placeholder="JD" maxLength={2} />
+                  <Label>Background Color</Label>
+                  <ColorPalette />
+                </div>
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
         <DialogFooter>
