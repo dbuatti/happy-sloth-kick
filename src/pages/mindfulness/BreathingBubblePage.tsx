@@ -160,7 +160,7 @@ const BreathingBubblePage: React.FC = () => {
             >
               <AnimatePresence mode="wait">
                 <motion.div
-                  key={phase + timer}
+                  key={phaseIndex}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
