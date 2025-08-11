@@ -131,49 +131,45 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="md:col-span-3">
-                {settings?.dashboard_layout?.['dailyScheduleVisible'] !== false && (
-                  <DailySchedulePreview />
-                )}
-              </div>
-              <div className="md:col-span-1">
-                {settings?.dashboard_layout?.['weeklyFocusVisible'] !== false && (
-                  <WeeklyFocusCard 
-                    weeklyFocus={weeklyFocus} 
-                    updateWeeklyFocus={updateWeeklyFocus} 
-                    loading={dashboardDataLoading} 
-                  />
-                )}
-              </div>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+          <div className="md:col-span-3">
+            {settings?.dashboard_layout?.['dailyScheduleVisible'] !== false && (
+              <DailySchedulePreview />
+            )}
           </div>
+          <div className="md:col-span-1">
+            {settings?.dashboard_layout?.['weeklyFocusVisible'] !== false && (
+              <WeeklyFocusCard 
+                weeklyFocus={weeklyFocus} 
+                updateWeeklyFocus={updateWeeklyFocus} 
+                loading={dashboardDataLoading} 
+              />
+            )}
+          </div>
+        </div>
 
-          <div className="lg:col-span-1 space-y-6">
-            <PomodoroCard />
-            {settings?.dashboard_layout?.['peopleMemoryVisible'] !== false && (
-              <PeopleMemoryCard />
-            )}
-            {customCards.filter(card => card.is_visible).map(card => (
-              <CustomCard key={card.id} card={card} />
-            ))}
-            {settings?.dashboard_layout?.['supportLinkVisible'] !== false && (
-              <SupportLinkCard 
-                settings={settings} 
-                updateSettings={updateSettings} 
-                loading={dashboardDataLoading} 
-              />
-            )}
-            {settings?.dashboard_layout?.['meditationNotesVisible'] !== false && (
-              <MeditationNotesCard 
-                settings={settings} 
-                updateSettings={updateSettings} 
-                loading={dashboardDataLoading} 
-              />
-            )}
-          </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <PomodoroCard />
+          {settings?.dashboard_layout?.['peopleMemoryVisible'] !== false && (
+            <PeopleMemoryCard />
+          )}
+          {customCards.filter(card => card.is_visible).map(card => (
+            <CustomCard key={card.id} card={card} />
+          ))}
+          {settings?.dashboard_layout?.['supportLinkVisible'] !== false && (
+            <SupportLinkCard 
+              settings={settings} 
+              updateSettings={updateSettings} 
+              loading={dashboardDataLoading} 
+            />
+          )}
+          {settings?.dashboard_layout?.['meditationNotesVisible'] !== false && (
+            <MeditationNotesCard 
+              settings={settings} 
+              updateSettings={updateSettings} 
+              loading={dashboardDataLoading} 
+            />
+          )}
         </div>
       </main>
       <footer className="p-4">
