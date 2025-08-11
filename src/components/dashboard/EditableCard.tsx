@@ -26,7 +26,7 @@ const EditableCard: React.FC<EditableCardProps> = ({ title, icon: Icon, children
   return (
     <fieldset className="rounded-xl border-2 border-border p-4 h-full">
       <div className="flex justify-between items-center -mt-2 mb-2">
-        <legend className="px-2 text-sm text-muted-foreground -ml-1 font-medium flex items-center gap-2">
+        <legend className="px-2 text-sm font-medium text-foreground/80 -ml-1 flex items-center gap-2">
           <Icon className="h-4 w-4" />
           {title}
         </legend>
