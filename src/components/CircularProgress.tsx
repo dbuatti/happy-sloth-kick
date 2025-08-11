@@ -34,7 +34,7 @@ const CircularProgress: React.FC<CircularProgressProps> = ({ progress, className
         cx="50"
         cy="50"
         style={{
-          transform: 'rotate(-90deg)',
+          transform: 'scaleX(-1) rotate(-90deg)',
           transformOrigin: '50% 50%',
           transition: 'stroke-dashoffset 1s linear',
         }}

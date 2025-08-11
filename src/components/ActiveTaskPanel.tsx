@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/Progress";
-import { Play, Pause, RefreshCcw, CheckCircle2, Edit, Target, ListTodo, Clock } from 'lucide-react';
+import { CheckCircle2, Edit, Target, ListTodo, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
 import TaskOverviewDialog from './TaskOverviewDialog'; // For opening overview from panel
 import { useAuth } from '@/context/AuthContext'; // Import useAuth
+import PomodoroTimer from './PomodoroTimer'; // Import the new Pomodoro Timer
 
 interface ActiveTaskPanelProps {
   nextAvailableTask: Task | null;
@@ -34,75 +34,9 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
 
   const { playSound } = useSound();
 
-  // Focus Timer State
-  const [focusDuration] = useState(25 * 60); // 25 minutes
-  const [timeRemaining, setTimeRemaining] = useState(focusDuration);
-  const [isRunning, setIsRunning] = useState(false);
-  const [isSessionActive, setIsSessionActive] = useState(false); // To track if a session has started
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-
   // Task Detail/Overview Dialog State
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
-
-  useEffect(() => {
-    setTimeRemaining(focusDuration);
-  }, [focusDuration]);
-
-  useEffect(() => {
-    if (isRunning) {
-      timerRef.current = setInterval(() => {
-        setTimeRemaining(prevTime => {
-          if (prevTime <= 1) {
-            clearInterval(timerRef.current!);
-            setIsRunning(false);
-            setIsSessionActive(false);
-            playSound('alert'); // Alert sound when timer finishes
-            return 0;
-          }
-          return prevTime - 1;
-        });
-      }, 1000);
-    } else {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    }
-
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
-  }, [isRunning, playSound]);
-
-  const startTimer = useCallback(() => {
-    if (timeRemaining > 0) {
-      setIsRunning(true);
-      setIsSessionActive(true);
-      playSound('start');
-    }
-  }, [timeRemaining, playSound]);
-
-  const pauseTimer = useCallback(() => {
-    setIsRunning(false);
-    playSound('pause');
-  }, [playSound]);
-
-  const resetTimer = useCallback(() => {
-    pauseTimer();
-    setTimeRemaining(focusDuration);
-    setIsSessionActive(false);
-    playSound('reset');
-  }, [pauseTimer, focusDuration, playSound]);
-
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
-
-  const progressValue = (timeRemaining / focusDuration) * 100;
 
   const getPriorityDotColor = (priority: string) => {
     switch (priority) {
@@ -156,36 +90,8 @@ const ActiveTaskPanel: React.FC<ActiveTaskPanelProps> = ({
             Dedicated time for deep work.
           </p>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="relative w-40 h-40 mx-auto flex items-center justify-center">
-            <Progress
-              value={progressValue}
-              className="absolute w-full h-full rounded-full bg-muted"
-              indicatorClassName={cn(
-                "transition-all duration-1000 ease-linear",
-                "bg-primary"
-              )}
-            />
-            <div className="relative z-10 text-4xl font-bold text-primary-foreground">
-              {formatTime(timeRemaining)}
-            </div>
-          </div>
-          <div className="flex justify-center space-x-2">
-            <Button
-              size="sm"
-              onClick={isRunning ? pauseTimer : startTimer}
-              className={cn(
-                "w-24 h-9 text-base",
-                isRunning ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90"
-              )}
-              disabled={timeRemaining === 0 && isSessionActive}
-            >
-              {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-            </Button>
-            <Button size="sm" variant="outline" onClick={resetTimer} className="w-24 h-9 text-base">
-              <RefreshCcw className="h-4 w-4" /> Reset
-            </Button>
-          </div>
+        <CardContent className="space-y-4 py-4">
+          <PomodoroTimer />
         </CardContent>
       </Card>
 
