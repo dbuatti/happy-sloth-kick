@@ -35,6 +35,7 @@ import { Appointment } from '@/hooks/useAppointments';
 
 interface TaskListProps {
   tasks: Task[];
+  processedTasks: Task[];
   filteredTasks: Task[];
   loading: boolean;
   handleAddTask: (taskData: any) => Promise<any>;
@@ -69,6 +70,7 @@ interface TaskListProps {
 const TaskList: React.FC<TaskListProps> = (props) => {
   const {
     tasks,
+    processedTasks,
     filteredTasks,
     loading,
     handleAddTask,
@@ -119,7 +121,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     })
   );
 
-  const tasksMap = useMemo(() => new Map(tasks.map(task => [task.id, task])), [tasks]);
+  const tasksMap = useMemo(() => new Map(processedTasks.map(task => [task.id, task])), [processedTasks]);
   const getTaskById = useCallback((id: UniqueIdentifier | null) => {
       if (!id) return undefined;
       return tasksMap.get(String(id));
@@ -180,7 +182,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     if (isSectionHeaderId(event.active.id)) {
       setActiveItemData(allSortableSections.find(s => s.id === event.active.id) || null);
     } else {
-      setActiveItemData(tasks.find(t => t.id === event.active.id) || null);
+      setActiveItemData(processedTasks.find(t => t.id === event.active.id) || null);
     }
   };
 

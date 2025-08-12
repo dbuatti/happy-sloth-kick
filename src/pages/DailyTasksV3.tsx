@@ -33,6 +33,7 @@ const DailyTasksV3: React.FC<DailyTasksV3Props> = ({ isDemo = false, demoUserId 
 
   const {
     tasks,
+    processedTasks,
     filteredTasks,
     nextAvailableTask,
     updateTask,
@@ -217,6 +218,7 @@ const DailyTasksV3: React.FC<DailyTasksV3Props> = ({ isDemo = false, demoUserId 
               <div className="flex-1 overflow-y-auto">
                 <TaskList
                   tasks={tasks}
+                  processedTasks={processedTasks}
                   filteredTasks={filteredTasks}
                   loading={tasksLoading}
                   handleAddTask={handleAddTask}

@@ -1209,6 +1209,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
 
   return {
     tasks,
+    processedTasks,
     filteredTasks: finalFilteredTasks,
     nextAvailableTask,
     loading,
