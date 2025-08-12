@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { showError, showSuccess } from '@/utils/toast';
+import { showError } from '@/utils/toast';
 import { format } from 'date-fns';
 
 export interface SleepRecord {
@@ -34,6 +34,7 @@ export const useSleepRecords = ({ selectedDate, userId: propUserId }: UseSleepRe
   const userId = propUserId || user?.id;
   const [sleepRecord, setSleepRecord] = useState<SleepRecord | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   const formattedDate = format(selectedDate, 'yyyy-MM-dd');
 
@@ -71,9 +72,9 @@ export const useSleepRecords = ({ selectedDate, userId: propUserId }: UseSleepRe
   const saveSleepRecord = useCallback(async (dataToSave: NewSleepRecordData) => {
     if (!userId) {
       showError('User not authenticated.');
-      return false;
+      return;
     }
-    setLoading(true);
+    setIsSaving(true);
     try {
       const payload = {
         ...dataToSave,
@@ -81,28 +82,23 @@ export const useSleepRecords = ({ selectedDate, userId: propUserId }: UseSleepRe
         date: formattedDate,
       };
 
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('sleep_records')
-        .upsert(payload, { onConflict: 'user_id, date' })
-        .select()
-        .single();
+        .upsert(payload, { onConflict: 'user_id, date' });
 
       if (error) throw error;
-      setSleepRecord(data);
-      showSuccess('Sleep record saved successfully!');
-      return true;
     } catch (error: any) {
       console.error('Error saving sleep record:', error.message);
       showError('Failed to save sleep record.');
-      return false;
     } finally {
-      setLoading(false);
+      setTimeout(() => setIsSaving(false), 500);
     }
   }, [userId, formattedDate]);
 
   return {
     sleepRecord,
     loading,
+    isSaving,
     saveSleepRecord,
     fetchSleepRecord,
   };

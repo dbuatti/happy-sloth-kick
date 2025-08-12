@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,10 +8,9 @@ import { useSleepRecords, NewSleepRecordData } from '@/hooks/useSleepRecords';
 import { format, addDays } from 'date-fns';
 import { Moon, Bed, AlarmClock, LogOut, Hourglass, ListX, Clock, Goal } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useSound } from '@/context/SoundContext';
 import { useAuth } from '@/context/AuthContext';
 import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
-import { Button } from '@/components/ui/button';
+import { useDebounce } from '@/hooks/useDebounce';
 
 interface SleepTrackerProps {
   currentDate: Date;
@@ -23,8 +22,7 @@ interface SleepTrackerProps {
 const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate, isDemo = false, demoUserId }) => {
   useAuth(); 
 
-  const { playSound } = useSound();
-  const { sleepRecord, loading, saveSleepRecord } = useSleepRecords({ selectedDate: currentDate, userId: demoUserId });
+  const { sleepRecord, loading, isSaving, saveSleepRecord } = useSleepRecords({ selectedDate: currentDate, userId: demoUserId });
 
   const [bedTime, setBedTime] = useState<string>('');
   const [lightsOffTime, setLightsOffTime] = useState<string>('');
@@ -35,11 +33,11 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
   const [sleepInterruptionsDurationMinutes, setSleepInterruptionsDurationMinutes] = useState<number | ''>('');
   const [timesLeftBedCount, setTimesLeftBedCount] = useState<number | ''>('');
   const [plannedWakeUpTime, setPlannedWakeUpTime] = useState<string>('');
-
-  const [isSaving, setIsSaving] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   useEffect(() => {
     if (!loading) {
+      setIsInitialLoad(true);
       setBedTime(sleepRecord?.bed_time ? sleepRecord.bed_time.substring(0, 5) : '');
       setLightsOffTime(sleepRecord?.lights_off_time ? sleepRecord.lights_off_time.substring(0, 5) : '');
       setWakeUpTime(sleepRecord?.wake_up_time ? sleepRecord.wake_up_time.substring(0, 5) : '');
@@ -49,8 +47,34 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
       setSleepInterruptionsDurationMinutes(sleepRecord?.sleep_interruptions_duration_minutes ?? '');
       setTimesLeftBedCount(sleepRecord?.times_left_bed_count ?? '');
       setPlannedWakeUpTime(sleepRecord?.planned_wake_up_time ? sleepRecord.planned_wake_up_time.substring(0, 5) : '');
+      setTimeout(() => setIsInitialLoad(false), 100);
     }
   }, [sleepRecord, loading]);
+
+  const formState = useMemo(() => ({
+    bed_time: bedTime || null,
+    lights_off_time: lightsOffTime || null,
+    wake_up_time: wakeUpTime || null,
+    get_out_of_bed_time: getOutOfBedTime || null,
+    time_to_fall_asleep_minutes: timeToFallAsleepMinutes === '' ? null : Number(timeToFallAsleepMinutes),
+    sleep_interruptions_count: sleepInterruptionsCount === '' ? null : Number(sleepInterruptionsCount),
+    sleep_interruptions_duration_minutes: sleepInterruptionsDurationMinutes === '' ? null : Number(sleepInterruptionsDurationMinutes),
+    times_left_bed_count: timesLeftBedCount === '' ? null : Number(timesLeftBedCount),
+    planned_wake_up_time: plannedWakeUpTime || null,
+  }), [bedTime, lightsOffTime, wakeUpTime, getOutOfBedTime, timeToFallAsleepMinutes, sleepInterruptionsCount, sleepInterruptionsDurationMinutes, timesLeftBedCount, plannedWakeUpTime]);
+
+  const debouncedFormState = useDebounce(formState, 1500);
+
+  useEffect(() => {
+    if (isInitialLoad || isDemo) {
+      return;
+    }
+    const dataToSave: NewSleepRecordData = {
+      date: format(currentDate, 'yyyy-MM-dd'),
+      ...debouncedFormState,
+    };
+    saveSleepRecord(dataToSave);
+  }, [debouncedFormState, isInitialLoad, isDemo, currentDate, saveSleepRecord]);
 
   const handlePreviousDay = () => {
     setCurrentDate(prevDate => addDays(prevDate, -1));
@@ -69,28 +93,6 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
     'arrowright': handleNextDay,
   };
   useKeyboardShortcuts(shortcuts);
-
-  const handleSave = async () => {
-    if (isSaving || isDemo) return;
-    setIsSaving(true);
-    const dataToSave: NewSleepRecordData = {
-      date: format(currentDate, 'yyyy-MM-dd'),
-      bed_time: bedTime || null,
-      lights_off_time: lightsOffTime || null,
-      wake_up_time: wakeUpTime || null,
-      get_out_of_bed_time: getOutOfBedTime || null,
-      time_to_fall_asleep_minutes: timeToFallAsleepMinutes === '' ? null : Number(timeToFallAsleepMinutes),
-      sleep_interruptions_count: sleepInterruptionsCount === '' ? null : Number(sleepInterruptionsCount),
-      sleep_interruptions_duration_minutes: sleepInterruptionsDurationMinutes === '' ? null : Number(sleepInterruptionsDurationMinutes),
-      times_left_bed_count: timesLeftBedCount === '' ? null : Number(timesLeftBedCount),
-      planned_wake_up_time: plannedWakeUpTime || null,
-    };
-    const success = await saveSleepRecord(dataToSave);
-    if (success) {
-      playSound('success');
-    }
-    setIsSaving(false);
-  };
 
   return (
     <div className="flex-1 flex flex-col">
@@ -251,9 +253,6 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
                     className="h-9 text-base"
                   />
                 </div>
-                <Button onClick={handleSave} disabled={isSaving || isDemo} className="w-full h-10 text-base mt-4">
-                  {isSaving ? 'Saving...' : 'Save Sleep Record'}
-                </Button>
               </div>
             )}
           </CardContent>
