@@ -137,7 +137,7 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
                     type="time"
                     value={bedTime}
                     onChange={(e) => setBedTime(e.target.value)}
-                    disabled={isSaving || isDemo}
+                    disabled={isDemo}
                     className="h-9 text-base"
                   />
                 </div>
@@ -150,7 +150,7 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
                     type="time"
                     value={lightsOffTime}
                     onChange={(e) => setLightsOffTime(e.target.value)}
-                    disabled={isSaving || isDemo}
+                    disabled={isDemo}
                     className="h-9 text-base"
                   />
                 </div>
@@ -165,7 +165,7 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
                     onChange={(e) => setTimeToFallAsleepMinutes(e.target.value === '' ? '' : Number(e.target.value))}
                     placeholder="e.g., 15"
                     min="0"
-                    disabled={isSaving || isDemo}
+                    disabled={isDemo}
                     className="h-9 text-base"
                   />
                 </div>
@@ -180,7 +180,7 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
                     onChange={(e) => setSleepInterruptionsCount(e.target.value === '' ? '' : Number(e.target.value))}
                     placeholder="e.g., 2"
                     min="0"
-                    disabled={isSaving || isDemo}
+                    disabled={isDemo}
                     className="h-9 text-base"
                   />
                 </div>
@@ -195,7 +195,7 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
                     onChange={(e) => setSleepInterruptionsDurationMinutes(e.target.value === '' ? '' : Number(e.target.value))}
                     placeholder="e.g., 30"
                     min="0"
-                    disabled={isSaving || isDemo}
+                    disabled={isDemo}
                     className="h-9 text-base"
                   />
                 </div>
@@ -210,7 +210,7 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
                     onChange={(e) => setTimesLeftBedCount(e.target.value === '' ? '' : Number(e.target.value))}
                     placeholder="e.g., 1"
                     min="0"
-                    disabled={isSaving || isDemo}
+                    disabled={isDemo}
                     className="h-9 text-base"
                   />
                 </div>
@@ -223,7 +223,7 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
                     type="time"
                     value={wakeUpTime}
                     onChange={(e) => setWakeUpTime(e.target.value)}
-                    disabled={isSaving || isDemo}
+                    disabled={isDemo}
                     className="h-9 text-base"
                   />
                 </div>
@@ -236,7 +236,7 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
                     type="time"
                     value={plannedWakeUpTime}
                     onChange={(e) => setPlannedWakeUpTime(e.target.value)}
-                    disabled={isSaving || isDemo}
+                    disabled={isDemo}
                     className="h-9 text-base"
                   />
                 </div>
@@ -249,7 +249,7 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
                     type="time"
                     value={getOutOfBedTime}
                     onChange={(e) => setGetOutOfBedTime(e.target.value)}
-                    disabled={isSaving || isDemo}
+                    disabled={isDemo}
                     className="h-9 text-base"
                   />
                 </div>
