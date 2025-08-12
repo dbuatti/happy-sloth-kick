@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 
 interface SoundContextType {
   isSoundEnabled: boolean;
@@ -8,34 +8,65 @@ interface SoundContextType {
 
 const SoundContext = createContext<SoundContextType | undefined>(undefined);
 
-// Define configurations for generic computer-generated sounds
-const soundConfig = {
-  success: { frequency: 880, type: 'sine' as OscillatorType, duration: 0.1 }, // A short, high-pitched tone
-  pause: { frequency: 440, type: 'sine' as OscillatorType, duration: 0.1 },    // A short, mid-range tone
-  reset: { frequency: 220, type: 'sine' as OscillatorType, duration: 0.1 },    // A short, low-pitched tone
-  alert: { frequency: 660, type: 'triangle' as OscillatorType, duration: 0.2, repeat: 2 }, // A slightly longer, distinct tone
-  start: { frequency: 550, type: 'sine' as OscillatorType, duration: 0.1 },    // A short, mid-high tone
-  complete: { frequency: 770, type: 'sine' as OscillatorType, duration: 0.3 }, // A slightly longer, satisfying tone
-  delete: { frequency: 110, type: 'sawtooth' as OscillatorType, duration: 0.15 }, // A short, descending tone
-  move: { frequency: 330, type: 'square' as OscillatorType, duration: 0.05 },  // A very short, subtle click/tone
-  focus: { frequency: 150, type: 'sine' as OscillatorType, duration: 0.5 },    // A sustained, low, calming tone
+interface SoundConfigItem {
+  frequency: number;
+  type: OscillatorType;
+  duration: number;
+  repeat?: number;
+}
+
+const soundConfig: Record<string, SoundConfigItem> = {
+  success: { frequency: 880, type: 'sine', duration: 0.1 },
+  pause: { frequency: 440, type: 'sine', duration: 0.1 },
+  reset: { frequency: 220, type: 'sine', duration: 0.1 },
+  alert: { frequency: 660, type: 'triangle', duration: 0.2, repeat: 2 },
+  start: { frequency: 550, type: 'sine', duration: 0.1 },
+  complete: { frequency: 770, type: 'sine', duration: 0.3 },
+  delete: { frequency: 110, type: 'sawtooth', duration: 0.15 },
+  move: { frequency: 330, type: 'square', duration: 0.05 },
+  focus: { frequency: 150, type: 'sine', duration: 0.5 },
 };
 
-// Function to generate and play a sound using Web Audio API
-const generateSound = (config: { frequency: number; type: OscillatorType; duration: number; repeat?: number }) => {
-  try {
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    
+export const SoundProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [isSoundEnabled, setIsSoundEnabled] = useState(true);
+  const audioContextRef = useRef<AudioContext | null>(null);
+
+  const getAudioContext = useCallback(() => {
+    if (!window.AudioContext && !(window as any).webkitAudioContext) {
+      console.warn('Web Audio API is not supported in this browser.');
+      return null;
+    }
+    if (!audioContextRef.current) {
+      try {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      } catch (e) {
+        console.error("Could not create AudioContext:", e);
+        return null;
+      }
+    }
+    if (audioContextRef.current.state === 'suspended') {
+      audioContextRef.current.resume();
+    }
+    return audioContextRef.current;
+  }, []);
+
+  const playSound = useCallback((soundName: keyof typeof soundConfig) => {
+    if (!isSoundEnabled) return;
+
+    const audioContext = getAudioContext();
+    if (!audioContext) return;
+
+    const config = soundConfig[soundName];
+    if (!config) {
+      console.warn(`Sound "${soundName}" not found.`);
+      return;
+    }
+
     let playCount = 0;
     const repeatCount = config.repeat || 1;
 
     const playSingleSound = () => {
-      if (playCount >= repeatCount) {
-        if (audioContext.state !== 'closed') {
-          audioContext.close();
-        }
-        return;
-      }
+      if (playCount >= repeatCount) return;
 
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
@@ -54,40 +85,18 @@ const generateSound = (config: { frequency: number; type: OscillatorType; durati
       oscillator.onended = () => {
         playCount++;
         if (playCount < repeatCount) {
-          setTimeout(playSingleSound, 100); // Delay between repeats
-        } else {
-          if (audioContext.state !== 'closed') {
-            audioContext.close();
-          }
+          setTimeout(playSingleSound, 100);
         }
       };
     };
 
     playSingleSound();
-
-  } catch (error) {
-    console.warn('Error generating audio:', error);
-    // This catch is important for handling user gesture requirements in browsers
-  }
-};
-
-export const SoundProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isSoundEnabled, setIsSoundEnabled] = useState(true);
+  }, [isSoundEnabled, getAudioContext]);
 
   const toggleSound = useCallback(() => {
+    getAudioContext(); 
     setIsSoundEnabled(prev => !prev);
-  }, []);
-
-  const playSound = useCallback((soundName: keyof typeof soundConfig) => {
-    if (isSoundEnabled) {
-      const config = soundConfig[soundName];
-      if (config) {
-        generateSound(config);
-      } else {
-        console.warn(`Sound "${soundName}" not found in soundConfig.`);
-      }
-    }
-  }, [isSoundEnabled]);
+  }, [getAudioContext]);
 
   return (
     <SoundContext.Provider value={{ isSoundEnabled, toggleSound, playSound }}>
