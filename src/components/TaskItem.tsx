@@ -298,13 +298,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
       </div>
 
       {/* Actions Area */}
-      <div className="flex-shrink-0 flex items-center space-x-1 pr-3" onPointerDown={(e) => e.stopPropagation()}>
+      <div className="flex-shrink-0 flex items-center gap-1 pr-3" onPointerDown={(e) => e.stopPropagation()}>
         {recurringType !== 'none' && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className="inline-flex items-center flex-shrink-0">
+              <div className="h-8 w-8 flex items-center justify-center" aria-label="Recurring task">
                 <Repeat className="h-4 w-4 text-muted-foreground" />
-              </span>
+              </div>
             </TooltipTrigger>
             <TooltipContent>
               <p>Recurring: {recurringType.charAt(0).toUpperCase() + recurringType.slice(1)}</p>
