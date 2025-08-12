@@ -48,7 +48,7 @@ interface TaskListProps {
   updateSection: (sectionId: string, newName: string) => Promise<void>;
   deleteSection: (sectionId: string) => Promise<void>;
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
-  updateTaskParentAndOrder: (activeId: string, newParentId: string | null, newSectionId: string | null, overId: string | null) => Promise<void>;
+  updateTaskParentAndOrder: (activeId: string, newParentId: string | null, newSectionId: string | null, overId: string | null, isDraggingDown: boolean) => Promise<void>;
   reorderSections: (activeId: string, overId: string) => Promise<void>;
   allCategories: Category[];
   setIsAddTaskOpen: (open: boolean) => void;
@@ -187,7 +187,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
+    const { active, over, delta } = event;
 
     if (!over || active.id === over.id) {
       setActiveId(null);
@@ -207,7 +207,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     }
 
     const draggedTask = getTaskById(active.id);
-    if (!draggedTask) {
+    if (!draggedTask && !active.id.toString().startsWith('virtual-')) {
       setActiveId(null);
       setActiveItemData(null);
       return;
@@ -218,23 +218,25 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     let overId: string | null = null;
 
     if (isSectionHeaderId(over.id)) {
-      const sectionId = over.id === 'no-section-header' ? null : String(over.id);
-      newParentId = null;
-      newSectionId = sectionId;
-      overId = null;
+      newSectionId = over.id === 'no-section-header' ? null : String(over.id);
     } else {
-      const overTask = getTaskById(over.id);
-      if (!overTask) {
-        setActiveId(null);
-        setActiveItemData(null);
-        return;
+      const overTask = getTaskById(over.id) || processedTasks.find(t => t.id === over.id);
+      if (overTask) {
+        newParentId = overTask.parent_task_id;
+        newSectionId = overTask.section_id;
+        overId = overTask.id;
       }
-      newParentId = overTask.parent_task_id;
-      newSectionId = overTask.section_id;
-      overId = overTask.id;
     }
+    
+    const isDraggingDown = delta.y > 0;
 
-    await updateTaskParentAndOrder(draggedTask.id, newParentId, newSectionId, overId);
+    await updateTaskParentAndOrder(
+      String(active.id), 
+      newParentId, 
+      newSectionId, 
+      overId,
+      isDraggingDown
+    );
     setActiveId(null);
     setActiveItemData(null);
   };

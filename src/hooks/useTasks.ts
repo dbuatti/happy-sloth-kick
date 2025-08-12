@@ -839,7 +839,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
     }
   }, [userId, sections]);
 
-  const updateTaskParentAndOrder = useCallback(async (activeId: string, newParentId: string | null, newSectionId: string | null, overId: string | null) => {
+  const updateTaskParentAndOrder = useCallback(async (activeId: string, newParentId: string | null, newSectionId: string | null, overId: string | null, isDraggingDown: boolean) => {
     if (!userId) {
         showError('User not authenticated.');
         return;
@@ -938,7 +938,14 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
         }
     }
 
-    const overIndex = effectiveOverId ? destinationSiblings.findIndex(t => t.id === effectiveOverId) : -1;
+    let overIndex = effectiveOverId ? destinationSiblings.findIndex(t => t.id === effectiveOverId) : -1;
+    
+    const isSameContext = activeTask.parent_task_id === newParentId && activeTask.section_id === newSectionId;
+
+    if (overIndex !== -1 && isSameContext && isDraggingDown) {
+        overIndex += 1;
+    }
+
     const newIndex = overIndex !== -1 ? overIndex : destinationSiblings.length;
     
     const newDestinationSiblings = [...destinationSiblings];
