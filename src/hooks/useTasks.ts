@@ -853,13 +853,13 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
     }
     
     const originalTasks = [...tasks];
-    const activeTask = tasks.find(t => t.id === activeId);
+    const activeTask = originalTasks.find(t => t.id === activeId);
     if (!activeTask) {
         console.error('[DnD Error] Active task not found');
         return;
     }
 
-    let tempTasks = tasks.filter(t => t.id !== activeId);
+    let tempTasks = originalTasks.filter(t => t.id !== activeId);
     const updatedActiveTask = { ...activeTask, parent_task_id: newParentId, section_id: newSectionId };
 
     let insertionIndex = -1;
@@ -868,17 +868,18 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
         const overIndexInOriginal = originalTasks.findIndex(t => t.id === overId);
         insertionIndex = tempTasks.findIndex(t => t.id === overId);
 
-        if (oldIndex !== -1 && overIndexInOriginal !== -1 && oldIndex < overIndexInOriginal && activeTask.parent_task_id === newParentId && activeTask.section_id === newSectionId) {
+        if (oldIndex !== -1 && overIndexInOriginal !== -1 && oldIndex < overIndexInOriginal) {
             insertionIndex += 1;
         }
-        console.log(`[DnD Logic] Found overId '${overId}'. oldIndex: ${oldIndex}, overIndexOriginal: ${overIndexInOriginal}, Calculated insertionIndex: ${insertionIndex}`);
     } else {
-        const firstTaskInNewLocation = tempTasks.find(t => t.section_id === newSectionId && t.parent_task_id === newParentId);
-        if (firstTaskInNewLocation) {
-            insertionIndex = tempTasks.indexOf(firstTaskInNewLocation);
-            console.log(`[DnD Logic] No overId. Found first task in new location '${firstTaskInNewLocation.id}'. Calculated insertionIndex: ${insertionIndex}`);
+        const tasksInNewLocation = tempTasks
+            .filter(t => t.section_id === newSectionId && t.parent_task_id === newParentId)
+            .sort((a, b) => (a.order || 0) - (b.order || 0));
+        if (tasksInNewLocation.length > 0) {
+            const lastTask = tasksInNewLocation[tasksInNewLocation.length - 1];
+            insertionIndex = tempTasks.indexOf(lastTask) + 1;
         } else {
-            console.log(`[DnD Logic] No overId and no tasks in new location. Will push to end.`);
+            insertionIndex = -1;
         }
     }
 
@@ -929,13 +930,12 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
         if (updatesForDb.length > 0) {
             const { error } = await supabase.rpc('update_tasks_order', { updates: updatesForDb });
             if (error) {
-              console.error('[DnD DB Error] Supabase rpc error details:', JSON.stringify(error, null, 2));
+              console.error('[DnD DB Error] Full error object in catch block:', error);
               throw error;
             }
         }
         showSuccess('Task moved!');
     } catch (e: any) {
-        console.error('[DnD DB Error] Full error object in catch block:', e);
         showError(`Failed to move task. Check console for details. Message: ${e.message}`);
         setTasks(originalTasks);
     } finally {
