@@ -20,6 +20,8 @@ import { useTasks, Task } from '@/hooks/useTasks';
 import NextTaskCard from '@/components/dashboard/NextTaskCard';
 import TaskOverviewDialog from '@/components/TaskOverviewDialog';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
+import FullScreenFocusView from '@/components/FullScreenFocusView';
+import { AnimatePresence } from 'framer-motion';
 
 interface DashboardProps {
   isDemo?: boolean;
@@ -64,6 +66,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+  const [isFocusViewOpen, setIsFocusViewOpen] = useState(false);
 
   const handleAddCard = async () => {
     if (!newCardTitle.trim()) return;
@@ -88,6 +91,12 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
     setIsTaskOverviewOpen(false);
     setTaskToEdit(task);
     setIsTaskDetailOpen(true);
+  };
+
+  const handleOpenFocusView = () => {
+    if (nextAvailableTask) {
+      setIsFocusViewOpen(true);
+    }
   };
 
   const statCards = [
@@ -135,6 +144,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
               updateTask={updateTask}
               onOpenOverview={handleOpenOverview}
               loading={tasksLoading}
+              onFocusViewOpen={handleOpenFocusView}
             />
             {settings?.dashboard_layout?.['weeklyFocusVisible'] !== false && (
               <WeeklyFocusCard 
@@ -223,6 +233,14 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
         />
       )}
+      <AnimatePresence>
+        {isFocusViewOpen && nextAvailableTask && (
+          <FullScreenFocusView
+            taskDescription={nextAvailableTask.description}
+            onClose={() => setIsFocusViewOpen(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

@@ -10,9 +10,10 @@ interface NextTaskCardProps {
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   onOpenOverview: (task: Task) => void;
   loading: boolean;
+  onFocusViewOpen: () => void;
 }
 
-const NextTaskCard: React.FC<NextTaskCardProps> = ({ nextAvailableTask, updateTask, onOpenOverview, loading }) => {
+const NextTaskCard: React.FC<NextTaskCardProps> = ({ nextAvailableTask, updateTask, onOpenOverview, loading, onFocusViewOpen }) => {
   const getPriorityDotColor = (priority: string) => {
     switch (priority) {
       case 'urgent': return 'bg-priority-urgent';
@@ -23,14 +24,25 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ nextAvailableTask, updateTa
     }
   };
 
-  const handleMarkComplete = async () => {
+  const handleMarkComplete = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (nextAvailableTask) {
       await updateTask(nextAvailableTask.id, { status: 'completed' });
     }
   };
 
+  const handleOpenOverviewClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (nextAvailableTask) {
+      onOpenOverview(nextAvailableTask);
+    }
+  };
+
   return (
-    <fieldset className="rounded-xl border-2 border-border p-4 min-h-[150px] flex flex-col justify-center">
+    <fieldset 
+      className="rounded-xl border-2 border-border p-4 min-h-[150px] flex flex-col justify-center cursor-pointer"
+      onClick={onFocusViewOpen}
+    >
       <legend className="px-2 text-sm font-medium text-foreground/80 -ml-1 flex items-center gap-2">
         <Target className="h-4 w-4" />
         Your Next Task
@@ -54,7 +66,7 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ nextAvailableTask, updateTa
               <Button size="sm" onClick={handleMarkComplete}>
                 <CheckCircle2 className="mr-2 h-4 w-4" /> Done
               </Button>
-              <Button size="sm" variant="outline" onClick={() => onOpenOverview(nextAvailableTask)}>
+              <Button size="sm" variant="outline" onClick={handleOpenOverviewClick}>
                 <Edit className="mr-2 h-4 w-4" /> Details
               </Button>
             </div>
