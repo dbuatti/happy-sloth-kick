@@ -109,11 +109,9 @@ const TaskList: React.FC<TaskListProps> = (props) => {
   const sensors = useSensors(
     useSensor(MouseSensor, {
       // No activation constraint, drag starts instantly
-      enabled: !isDemo,
     }),
     useSensor(TouchSensor, {
       // No activation constraint, drag starts instantly
-      enabled: !isDemo,
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
