@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess } from '@/utils/toast';
 import { useReminders } from '@/context/ReminderContext';
 import { v4 as uuidv4 } from 'uuid';
-import { isSameDay, parseISO, isValid, isBefore, format, setHours, setMinutes, getHours, getMinutes, isAfter, startOfDay } from 'date-fns';
+import { isSameDay, parseISO, isValid, isBefore, format, setHours, setMinutes, getHours, getMinutes, isAfter, startOfDay, addDays } from 'date-fns';
 import { arrayMove } from '@dnd-kit/sortable';
 import { useSettings } from '@/context/SettingsContext';
 
@@ -991,14 +991,18 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
       }
     }
 
-    if (userSettings?.hide_future_tasks && viewMode === 'daily') {
+    if (userSettings && userSettings.future_tasks_days_visible !== -1 && viewMode === 'daily') {
+      const visibilityDays = userSettings.future_tasks_days_visible;
       const today = startOfDay(effectiveCurrentDate);
+      const futureLimit = addDays(today, visibilityDays);
+
       filtered = filtered.filter(task => {
         if (!task.due_date) {
           return true; // Always show tasks without a due date
         }
         const dueDate = startOfDay(parseISO(task.due_date));
-        return !isAfter(dueDate, today);
+        // Show if due date is today or in the past, or within the visibility window
+        return !isAfter(dueDate, futureLimit);
       });
     }
 
@@ -1012,7 +1016,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
     sectionFilter,
     viewMode,
     effectiveCurrentDate,
-    userSettings?.hide_future_tasks,
+    userSettings,
   ]);
 
   const setFocusTask = useCallback(async (taskId: string | null) => {

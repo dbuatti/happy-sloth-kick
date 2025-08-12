@@ -7,7 +7,7 @@ export interface UserSettings {
   user_id: string;
   project_tracker_title: string;
   focused_task_id: string | null;
-  hide_future_tasks: boolean;
+  future_tasks_days_visible: number;
   meditation_notes: string | null;
   dashboard_layout: any | null; // jsonb can be any
   visible_pages?: Record<string, boolean>;
@@ -17,7 +17,7 @@ export interface UserSettings {
 const defaultSettings: Omit<UserSettings, 'user_id'> = {
   project_tracker_title: 'Project Balance Tracker',
   focused_task_id: null,
-  hide_future_tasks: false,
+  future_tasks_days_visible: 7,
   meditation_notes: null,
   dashboard_layout: null,
   visible_pages: {},

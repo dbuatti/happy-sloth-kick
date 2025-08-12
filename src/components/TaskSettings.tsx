@@ -1,17 +1,28 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useSettings } from '@/context/SettingsContext';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const TaskSettings: React.FC = () => {
   const { settings, loading, updateSettings } = useSettings();
 
-  const handleToggleHideFutureTasks = (checked: boolean) => {
-    updateSettings({ hide_future_tasks: checked });
+  const handleVisibilityChange = (value: string) => {
+    updateSettings({ future_tasks_days_visible: parseInt(value, 10) });
   };
+
+  const visibilityOptions = [
+    { value: '0', label: 'Today Only' },
+    { value: '3', label: 'Next 3 Days' },
+    { value: '7', label: 'Next 7 Days' },
+    { value: '30', label: 'Next 30 Days' },
+    { value: '-1', label: 'All Future Tasks' },
+  ];
+
+  const currentValue = settings?.future_tasks_days_visible?.toString() ?? '7';
+  const currentLabel = visibilityOptions.find(opt => opt.value === currentValue)?.label || 'Next 7 Days';
 
   if (loading) {
     return (
@@ -38,19 +49,24 @@ const TaskSettings: React.FC = () => {
       </CardHeader>
       <CardContent className="pt-0">
         <div className="flex items-center justify-between">
-          <Label htmlFor="hide-future-tasks-toggle" className="text-base font-medium flex items-center gap-2">
-            {settings?.hide_future_tasks ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            Hide Future-Dated Tasks
+          <Label htmlFor="future-tasks-visibility" className="text-base font-medium flex items-center gap-2">
+            Show Future Tasks For
           </Label>
-          <Switch
-            id="hide-future-tasks-toggle"
-            checked={settings?.hide_future_tasks || false}
-            onCheckedChange={handleToggleHideFutureTasks}
-            aria-label="Toggle hiding future-dated tasks"
-          />
+          <Select value={currentValue} onValueChange={handleVisibilityChange}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select visibility" />
+            </SelectTrigger>
+            <SelectContent>
+              {visibilityOptions.map(option => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <p className="text-xs text-muted-foreground mt-1">
-          When enabled, tasks with a due date in the future will not appear in your daily list.
+          Currently showing tasks for: {currentLabel}.
         </p>
       </CardContent>
     </Card>
