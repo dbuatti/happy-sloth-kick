@@ -16,7 +16,7 @@ import {
   UniqueIdentifier,
   MouseSensor,
   TouchSensor,
-  closestCenter,
+  pointerWithin,
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -253,7 +253,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
       ) : (
         <DndContext
           sensors={sensors}
-          collisionDetection={closestCenter}
+          collisionDetection={pointerWithin}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >

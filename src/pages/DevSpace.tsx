@@ -7,7 +7,7 @@ import { useDevIdeas, DevIdea } from '@/hooks/useDevIdeas';
 import DevIdeaCard from '@/components/DevIdeaCard';
 import DevIdeaForm from '@/components/DevIdeaForm';
 import { Skeleton } from '@/components/ui/skeleton';
-import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, useSensor, useSensors, closestCenter } from '@dnd-kit/core';
+import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, useSensor, useSensors, pointerWithin } from '@dnd-kit/core';
 import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import SortableDevIdeaCard from '@/components/SortableDevIdeaCard';
 import { useDroppable } from '@dnd-kit/core';
@@ -137,7 +137,7 @@ const DevSpace: React.FC<DevSpaceProps> = ({ isDemo = false, demoUserId }) => {
   useKeyboardShortcuts(shortcuts);
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+    <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="flex-1 flex flex-col">
         <main className="flex-grow p-4">
           <div className="flex justify-between items-center mb-6">
