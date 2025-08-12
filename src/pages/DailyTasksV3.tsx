@@ -168,7 +168,6 @@ const DailyTasksV3: React.FC<DailyTasksV3Props> = ({ isDemo = false, demoUserId 
     if (nextAvailableTask) {
       await updateTask(nextAvailableTask.id, { status: 'completed' });
       playSound('success');
-      setIsFocusViewOpen(false);
     }
   };
 
