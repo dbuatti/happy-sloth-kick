@@ -903,49 +903,55 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
 
     const originalTasks = [...tasksForOperation];
     const activeTask = originalTasks.find(t => t.id === finalActiveId);
-    if (!activeTask) {
-        console.error('[DnD Error] Active task not found:', finalActiveId);
-        return;
-    }
+    if (!activeTask) return;
 
-    const oldIndex = originalTasks.findIndex(t => t.id === finalActiveId);
-    const newIndex = overId ? originalTasks.findIndex(t => t.id === overId) : originalTasks.length;
-    
-    let optimisticallyReorderedTasks = arrayMove(originalTasks, oldIndex, newIndex);
-    optimisticallyReorderedTasks = optimisticallyReorderedTasks.map(t => 
-        t.id === finalActiveId 
-        ? { ...t, parent_task_id: newParentId, section_id: newSectionId } 
-        : t
-    );
-    setTasks(optimisticallyReorderedTasks);
+    const updatesForDb: Pick<Task, 'id' | 'order' | 'parent_task_id' | 'section_id'>[] = [];
+    const originalTasksMap = new Map(originalTasks.map(t => [t.id, t]));
 
-    const updatesForDb: Partial<Omit<Task, 'user_id'>>[] = [];
-    const groupsToUpdate = new Map<string, Task[]>();
+    const sourceSiblings = originalTasks.filter(t => 
+        t.parent_task_id === activeTask.parent_task_id && 
+        t.section_id === activeTask.section_id && 
+        t.id !== finalActiveId
+    ).sort((a, b) => (a.order || 0) - (b.order || 0));
 
-    const sourceGroupKey = `${activeTask.parent_task_id || 'root'}-${activeTask.section_id || 'no-section'}`;
-    const destinationGroupKey = `${newParentId || 'root'}-${newSectionId || 'no-section'}`;
-    groupsToUpdate.set(sourceGroupKey, []);
-    if (sourceGroupKey !== destinationGroupKey) {
-        groupsToUpdate.set(destinationGroupKey, []);
-    }
+    let destinationSiblings = originalTasks.filter(t => 
+        t.parent_task_id === newParentId && 
+        t.section_id === newSectionId &&
+        t.id !== finalActiveId
+    ).sort((a, b) => (a.order || 0) - (b.order || 0));
 
-    optimisticallyReorderedTasks.forEach(t => {
-        const taskGroupKey = `${t.parent_task_id || 'root'}-${t.section_id || 'no-section'}`;
-        if (groupsToUpdate.has(taskGroupKey)) {
-            groupsToUpdate.get(taskGroupKey)!.push(t);
-        }
+    const overIndex = overId ? destinationSiblings.findIndex(t => t.id === overId) : -1;
+    const newIndex = overIndex !== -1 ? overIndex : destinationSiblings.length;
+    destinationSiblings.splice(newIndex, 0, { ...activeTask, parent_task_id: newParentId, section_id: newSectionId });
+
+    destinationSiblings.forEach((task, index) => {
+        updatesForDb.push({
+            id: task.id,
+            order: index,
+            parent_task_id: newParentId,
+            section_id: newSectionId,
+        });
     });
 
-    groupsToUpdate.forEach(group => {
-        group.forEach((task, index) => {
+    if (activeTask.parent_task_id !== newParentId || activeTask.section_id !== newSectionId) {
+        sourceSiblings.forEach((task, index) => {
             updatesForDb.push({
                 id: task.id,
                 order: index,
-                parent_task_id: task.parent_task_id,
-                section_id: task.section_id,
+                parent_task_id: activeTask.parent_task_id,
+                section_id: activeTask.section_id,
             });
         });
+    }
+
+    const updatedTasksMap = new Map(originalTasksMap);
+    updatesForDb.forEach(update => {
+        const taskToUpdate = updatedTasksMap.get(update.id);
+        if (taskToUpdate) {
+            updatedTasksMap.set(update.id, { ...taskToUpdate, ...update });
+        }
     });
+    setTasks(Array.from(updatedTasksMap.values()));
 
     const updatedIds = updatesForDb.map(t => t.id!);
     updatedIds.forEach(id => inFlightUpdatesRef.current.add(id));
