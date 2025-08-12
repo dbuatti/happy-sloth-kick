@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MadeWithDyad } from "@/components/made-with-dyad";
 import DateNavigator from '@/components/DateNavigator';
 import { useSleepRecords, NewSleepRecordData } from '@/hooks/useSleepRecords';
 import { format, addDays } from 'date-fns';
@@ -258,9 +257,6 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
           </CardContent>
         </Card>
       </main>
-      <footer className="p-4">
-        <MadeWithDyad />
-      </footer>
     </div>
   );
 };

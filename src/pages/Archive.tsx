@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MadeWithDyad } from "@/components/made-with-dyad";
 import { Archive as ArchiveIcon } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTasks, Task } from '@/hooks/useTasks';
@@ -122,9 +121,6 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
           </CardContent>
         </Card>
       </main>
-      <footer className="p-4">
-        <MadeWithDyad />
-      </footer>
       {taskToOverview && (
         <TaskOverviewDialog
           task={taskToOverview}
