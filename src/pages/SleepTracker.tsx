@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useSound } from '@/context/SoundContext';
 import { useAuth } from '@/context/AuthContext';
 import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
+import { Button } from '@/components/ui/button';
 
 interface SleepTrackerProps {
   currentDate: Date;
@@ -69,7 +70,7 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
   };
   useKeyboardShortcuts(shortcuts);
 
-  const handleAutoSave = async () => {
+  const handleSave = async () => {
     if (isSaving || isDemo) return;
     setIsSaving(true);
     const dataToSave: NewSleepRecordData = {
@@ -134,7 +135,6 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
                     type="time"
                     value={bedTime}
                     onChange={(e) => setBedTime(e.target.value)}
-                    onBlur={handleAutoSave}
                     disabled={isSaving || isDemo}
                     className="h-9 text-base"
                   />
@@ -148,7 +148,6 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
                     type="time"
                     value={lightsOffTime}
                     onChange={(e) => setLightsOffTime(e.target.value)}
-                    onBlur={handleAutoSave}
                     disabled={isSaving || isDemo}
                     className="h-9 text-base"
                   />
@@ -162,7 +161,6 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
                     type="number"
                     value={timeToFallAsleepMinutes}
                     onChange={(e) => setTimeToFallAsleepMinutes(e.target.value === '' ? '' : Number(e.target.value))}
-                    onBlur={handleAutoSave}
                     placeholder="e.g., 15"
                     min="0"
                     disabled={isSaving || isDemo}
@@ -178,7 +176,6 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
                     type="number"
                     value={sleepInterruptionsCount}
                     onChange={(e) => setSleepInterruptionsCount(e.target.value === '' ? '' : Number(e.target.value))}
-                    onBlur={handleAutoSave}
                     placeholder="e.g., 2"
                     min="0"
                     disabled={isSaving || isDemo}
@@ -194,7 +191,6 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
                     type="number"
                     value={sleepInterruptionsDurationMinutes}
                     onChange={(e) => setSleepInterruptionsDurationMinutes(e.target.value === '' ? '' : Number(e.target.value))}
-                    onBlur={handleAutoSave}
                     placeholder="e.g., 30"
                     min="0"
                     disabled={isSaving || isDemo}
@@ -210,7 +206,6 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
                     type="number"
                     value={timesLeftBedCount}
                     onChange={(e) => setTimesLeftBedCount(e.target.value === '' ? '' : Number(e.target.value))}
-                    onBlur={handleAutoSave}
                     placeholder="e.g., 1"
                     min="0"
                     disabled={isSaving || isDemo}
@@ -226,7 +221,6 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
                     type="time"
                     value={wakeUpTime}
                     onChange={(e) => setWakeUpTime(e.target.value)}
-                    onBlur={handleAutoSave}
                     disabled={isSaving || isDemo}
                     className="h-9 text-base"
                   />
@@ -240,7 +234,6 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
                     type="time"
                     value={plannedWakeUpTime}
                     onChange={(e) => setPlannedWakeUpTime(e.target.value)}
-                    onBlur={handleAutoSave}
                     disabled={isSaving || isDemo}
                     className="h-9 text-base"
                   />
@@ -254,11 +247,13 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
                     type="time"
                     value={getOutOfBedTime}
                     onChange={(e) => setGetOutOfBedTime(e.target.value)}
-                    onBlur={handleAutoSave}
                     disabled={isSaving || isDemo}
                     className="h-9 text-base"
                   />
                 </div>
+                <Button onClick={handleSave} disabled={isSaving || isDemo} className="w-full h-10 text-base mt-4">
+                  {isSaving ? 'Saving...' : 'Save Sleep Record'}
+                </Button>
               </div>
             )}
           </CardContent>
