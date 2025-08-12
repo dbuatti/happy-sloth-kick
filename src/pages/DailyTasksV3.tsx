@@ -15,6 +15,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import AddTaskForm from '@/components/AddTaskForm';
 import { useAllAppointments } from '@/hooks/useAllAppointments';
 import { Appointment } from '@/hooks/useAppointments';
+import FullScreenFocusView from '@/components/FullScreenFocusView';
+import { AnimatePresence } from 'framer-motion';
 
 
 const getUTCStartOfDay = (date: Date) => {
@@ -89,6 +91,7 @@ const DailyTasksV3: React.FC<DailyTasksV3Props> = ({ isDemo = false, demoUserId 
   const [isFocusPanelOpen, setIsFocusPanelOpen] = useState(false);
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
   const [prefilledTaskData, setPrefilledTaskData] = useState<Partial<Task> | null>(null);
+  const [isFocusViewOpen, setIsFocusViewOpen] = useState(false);
 
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() => {
     try {
@@ -152,6 +155,12 @@ const DailyTasksV3: React.FC<DailyTasksV3Props> = ({ isDemo = false, demoUserId 
     handleOpenDetail(task);
   };
 
+  const handleOpenFocusView = () => {
+    if (nextAvailableTask) {
+      setIsFocusViewOpen(true);
+    }
+  };
+
   const shortcuts: ShortcutMap = {
     'arrowleft': () => setCurrentDate(prevDate => getUTCStartOfDay(addDays(prevDate, -1))),
     'arrowright': () => setCurrentDate(prevDate => getUTCStartOfDay(addDays(prevDate, 1))),
@@ -200,6 +209,7 @@ const DailyTasksV3: React.FC<DailyTasksV3Props> = ({ isDemo = false, demoUserId 
             dailyProgress={dailyProgress}
             isDemo={isDemo}
             toggleDoToday={toggleDoToday}
+            onOpenFocusView={handleOpenFocusView}
           />
 
           <Card className="flex-1 flex flex-col rounded-none shadow-none border-0">
@@ -334,6 +344,15 @@ const DailyTasksV3: React.FC<DailyTasksV3Props> = ({ isDemo = false, demoUserId 
           />
         </DialogContent>
       </Dialog>
+
+      <AnimatePresence>
+        {isFocusViewOpen && nextAvailableTask && (
+          <FullScreenFocusView
+            taskDescription={nextAvailableTask.description}
+            onClose={() => setIsFocusViewOpen(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

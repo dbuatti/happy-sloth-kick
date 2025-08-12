@@ -55,6 +55,7 @@ interface DailyTasksHeaderProps {
   };
   isDemo?: boolean;
   toggleDoToday: (task: Task) => void;
+  onOpenFocusView: () => void;
 }
 
 const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
@@ -89,6 +90,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   isDemo = false,
   toggleDoToday,
   doTodayOffIds,
+  onOpenFocusView,
 }) => {
   useDailyTaskCount(); 
   const { playSound } = useSound();
@@ -187,7 +189,8 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
     }
   };
 
-  const handleMarkNextTaskComplete = async () => {
+  const handleMarkNextTaskComplete = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (nextAvailableTask) {
       await updateTask(nextAvailableTask.id, { status: 'completed' });
       playSound('success');
@@ -272,7 +275,10 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         </div>
       </div>
 
-      <div className="bg-card p-6 mx-4 rounded-xl shadow-lg mb-4 flex flex-col items-center text-center">
+      <div
+        className="bg-card p-6 mx-4 rounded-xl shadow-lg mb-4 flex flex-col items-center text-center cursor-pointer"
+        onClick={onOpenFocusView}
+      >
         <div className="w-full flex justify-center items-center mb-3 relative">
           <h3 className="text-xl font-bold text-primary flex items-center gap-2">
             <Target className="h-6 w-6" /> Your Next Task
@@ -301,7 +307,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
               <Button onClick={handleMarkNextTaskComplete} className="h-11 px-6 text-base sm:h-12 sm:px-8 sm:text-lg" disabled={isDemo}>
                 <CheckCircle2 className="mr-2 h-5 w-5" /> Mark Done
               </Button>
-              <Button variant="outline" onClick={() => onOpenOverview(nextAvailableTask)} className="h-11 px-6 text-base sm:h-12 sm:px-8 sm:text-lg">
+              <Button variant="outline" onClick={(e) => { e.stopPropagation(); onOpenOverview(nextAvailableTask); }} className="h-11 px-6 text-base sm:h-12 sm:px-8 sm:text-lg">
                 <Edit className="mr-2 h-5 w-5" /> Details
               </Button>
             </div>
