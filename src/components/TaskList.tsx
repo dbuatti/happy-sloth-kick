@@ -187,11 +187,11 @@ const TaskList: React.FC<TaskListProps> = (props) => {
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over, delta } = event;
+    setActiveId(null);
+    setActiveItemData(null);
+    const { active, over } = event;
 
     if (!over || active.id === over.id) {
-      setActiveId(null);
-      setActiveItemData(null);
       return;
     }
 
@@ -201,15 +201,11 @@ const TaskList: React.FC<TaskListProps> = (props) => {
       if (a !== 'no-section-header' && b !== 'no-section-header') {
         await reorderSections(a, b);
       }
-      setActiveId(null);
-      setActiveItemData(null);
       return;
     }
 
     const draggedTask = getTaskById(active.id);
     if (!draggedTask && !active.id.toString().startsWith('virtual-')) {
-      setActiveId(null);
-      setActiveItemData(null);
       return;
     }
 
@@ -228,7 +224,9 @@ const TaskList: React.FC<TaskListProps> = (props) => {
       }
     }
     
-    const isDraggingDown = delta.y > 0;
+    const activeIndex = allVisibleItemIds.indexOf(active.id);
+    const overIndex = allVisibleItemIds.indexOf(over.id);
+    const isDraggingDown = activeIndex < overIndex;
 
     await updateTaskParentAndOrder(
       String(active.id), 
@@ -237,8 +235,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
       overId,
       isDraggingDown
     );
-    setActiveId(null);
-    setActiveItemData(null);
   };
 
   const openAddTaskForSection = (sectionId: string | null) => {

@@ -940,9 +940,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
 
     let overIndex = effectiveOverId ? destinationSiblings.findIndex(t => t.id === effectiveOverId) : -1;
     
-    const isSameContext = activeTask.parent_task_id === newParentId && activeTask.section_id === newSectionId;
-
-    if (overIndex !== -1 && isSameContext && isDraggingDown) {
+    if (overIndex !== -1 && isDraggingDown) {
         overIndex += 1;
     }
 
