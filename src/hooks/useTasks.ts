@@ -921,7 +921,24 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
         t.id !== finalActiveId
     ).sort((a, b) => (a.order || 0) - (b.order || 0));
 
-    const overIndex = overId ? destinationSiblings.findIndex(t => t.id === overId) : -1;
+    let effectiveOverId = overId;
+    if (overId && overId.toString().startsWith('virtual-')) {
+        const overTaskIndex = processedTasks.findIndex(t => t.id === overId);
+        if (overTaskIndex !== -1) {
+            const nextRealTask = processedTasks
+                .slice(overTaskIndex)
+                .find(t => 
+                    !t.id.toString().startsWith('virtual-') &&
+                    t.parent_task_id === newParentId &&
+                    t.section_id === newSectionId
+                );
+            effectiveOverId = nextRealTask ? nextRealTask.id : null;
+        } else {
+            effectiveOverId = null;
+        }
+    }
+
+    const overIndex = effectiveOverId ? destinationSiblings.findIndex(t => t.id === effectiveOverId) : -1;
     const newIndex = overIndex !== -1 ? overIndex : destinationSiblings.length;
     
     const newDestinationSiblings = [...destinationSiblings];
