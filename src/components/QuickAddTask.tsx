@@ -43,6 +43,12 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({ sectionId, onAddTask, defau
         onChange={(e) => setDescription(e.target.value)}
         className="h-8 border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 text-base"
         disabled={isSaving || isDemo}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSubmit(e);
+          }
+        }}
       />
     </form>
   );

@@ -162,6 +162,12 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
                 onChange={(e) => setQuickAddTaskDescription(e.target.value)}
                 className="flex-1 h-9 text-base"
                 disabled={isAddingQuickTask}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleQuickAddTask(e as any);
+                  }
+                }}
               />
               <Button type="submit" className="whitespace-nowrap h-9 text-base" disabled={isAddingQuickTask || !quickAddTaskDescription.trim()}>
                 {isAddingQuickTask ? <span className="animate-spin h-4 w-4 border-b-2 border-primary rounded-full" /> : <Sparkles className="h-4 w-4" />}

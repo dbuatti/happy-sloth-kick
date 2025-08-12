@@ -328,7 +328,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
             onChange={(e) => setQuickAddTaskDescription(e.target.value)}
             className="flex-1 h-10 text-base"
             onKeyDown={(e) => {
-              if (e.key === 'Enter') {
+              if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 handleQuickAdd();
               }
