@@ -856,6 +856,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
     let tasksForOperation = [...tasks];
     let finalActiveId = activeId;
     const isVirtual = activeId.toString().startsWith('virtual-');
+    let activeTask: Task | undefined;
 
     if (isVirtual) {
         console.log('[DnD] Dragged item is a VIRTUAL task. Creating a real instance...');
@@ -900,27 +901,32 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
             inFlightUpdatesRef.current.delete(newInstanceId);
             return;
         }
-        console.log('[DnD Success] Created new task instance:', dbTask);
-        tasksForOperation.push({ ...dbTask, category_color: virtualTask.category_color });
+        
+        const newTaskWithColor = { ...dbTask, category_color: virtualTask.category_color };
+        console.log('[DnD Success] Created new task instance:', newTaskWithColor);
+        
+        tasksForOperation.push(newTaskWithColor);
+        activeTask = newTaskWithColor;
+
+    } else {
+        activeTask = tasksForOperation.find(t => t.id === finalActiveId);
     }
 
-    const originalTasks = [...tasksForOperation];
-    const activeTask = originalTasks.find(t => t.id === finalActiveId);
     if (!activeTask) {
-        console.error('[DnD Error] Active task not found in state:', finalActiveId);
+        console.error('[DnD Error] Active task could not be found or created:', finalActiveId);
         return;
     }
 
-    const updatesForDb: Pick<Task, 'id' | 'order' | 'parent_task_id' | 'section_id'>[] = [];
-    const originalTasksMap = new Map(originalTasks.map(t => [t.id, t]));
+    const originalTasks = [...tasksForOperation];
+    const updatesForDb: { id: string; order: number; parent_task_id: string | null; section_id: string | null; }[] = [];
 
-    const sourceSiblings = originalTasks.filter(t => 
-        t.parent_task_id === activeTask.parent_task_id && 
-        t.section_id === activeTask.section_id && 
+    const sourceSiblings = tasksForOperation.filter(t => 
+        t.parent_task_id === activeTask!.parent_task_id && 
+        t.section_id === activeTask!.section_id && 
         t.id !== finalActiveId
     ).sort((a, b) => (a.order || 0) - (b.order || 0));
 
-    let destinationSiblings = originalTasks.filter(t => 
+    let destinationSiblings = tasksForOperation.filter(t => 
         t.parent_task_id === newParentId && 
         t.section_id === newSectionId &&
         t.id !== finalActiveId
@@ -928,9 +934,11 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
 
     const overIndex = overId ? destinationSiblings.findIndex(t => t.id === overId) : -1;
     const newIndex = overIndex !== -1 ? overIndex : destinationSiblings.length;
-    destinationSiblings.splice(newIndex, 0, { ...activeTask, parent_task_id: newParentId, section_id: newSectionId });
+    
+    const newDestinationSiblings = [...destinationSiblings];
+    newDestinationSiblings.splice(newIndex, 0, { ...activeTask, parent_task_id: newParentId, section_id: newSectionId });
 
-    destinationSiblings.forEach((task, index) => {
+    newDestinationSiblings.forEach((task, index) => {
         updatesForDb.push({
             id: task.id,
             order: index,
@@ -944,13 +952,13 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
             updatesForDb.push({
                 id: task.id,
                 order: index,
-                parent_task_id: activeTask.parent_task_id,
-                section_id: activeTask.section_id,
+                parent_task_id: activeTask!.parent_task_id,
+                section_id: activeTask!.section_id,
             });
         });
     }
 
-    const updatedTasksMap = new Map(originalTasksMap);
+    const updatedTasksMap = new Map(originalTasks.map(t => [t.id, t]));
     updatesForDb.forEach(update => {
         const taskToUpdate = updatedTasksMap.get(update.id);
         if (taskToUpdate) {
