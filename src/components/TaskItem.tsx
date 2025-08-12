@@ -79,7 +79,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
     }
   }, [isEditing]);
 
-  const handleStartEdit = (e: React.PointerEvent) => {
+  const handleStartEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isOverlay || isDemo) return;
     setIsEditing(true);
@@ -223,7 +223,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
                   task.status === 'completed' ? 'line-through' : '',
                   "inline-block cursor-text"
                 )}
-                onPointerDown={handleStartEdit}
+                onClick={handleStartEdit}
               >
                 {task.description}
               </span>
