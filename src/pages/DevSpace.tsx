@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Lightbulb, Zap, CheckCircle2 } from 'lucide-react';
-import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useDevIdeas, DevIdea } from '@/hooks/useDevIdeas';
 import DevIdeaCard from '@/components/DevIdeaCard';
 import DevIdeaForm from '@/components/DevIdeaForm';
@@ -163,9 +162,6 @@ const DevSpace: React.FC<DevSpaceProps> = ({ isDemo = false, demoUserId }) => {
             ))}
           </div>
         </main>
-        <footer className="p-4">
-          <MadeWithDyad />
-        </footer>
 
         <DevIdeaForm
           isOpen={isFormOpen}

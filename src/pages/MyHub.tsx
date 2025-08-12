@@ -1,6 +1,5 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MadeWithDyad } from "@/components/made-with-dyad";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Settings as SettingsIcon, BarChart3, Archive as ArchiveIcon, HelpCircle } from 'lucide-react';
 import Settings from './Settings'; // Import new Settings page
@@ -54,9 +53,6 @@ const MyHub: React.FC<MyHubProps> = ({ isDemo = false, demoUserId }) => {
           </CardContent>
         </Card>
       </main>
-      <footer className="p-4">
-        <MadeWithDyad />
-      </footer>
     </div>
   );
 };

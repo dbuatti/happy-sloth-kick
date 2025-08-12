@@ -5,7 +5,6 @@ import { Progress } from "@/components/Progress";
 import { Play, Pause, RefreshCcw, Armchair, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSound } from '@/context/SoundContext';
-import { MadeWithDyad } from '@/components/made-with-dyad';
 
 interface PMRStep {
   part: string;
@@ -231,9 +230,6 @@ const ProgressiveMuscleRelaxationPage: React.FC = () => {
           </CardContent>
         </Card>
       </main>
-      <footer className="p-4">
-        <MadeWithDyad />
-      </footer>
     </div>
   );
 };

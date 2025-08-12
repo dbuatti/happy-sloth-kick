@@ -5,7 +5,6 @@ import { Progress } from "@/components/Progress";
 import { Play, Pause, RefreshCcw, ScanEye, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSound } from '@/context/SoundContext';
-import { MadeWithDyad } from '@/components/made-with-dyad';
 
 interface BodyScanStep {
   part: string;
@@ -189,9 +188,6 @@ const BodyScanMeditationPage: React.FC = () => {
           </CardContent>
         </Card>
       </main>
-      <footer className="p-4">
-        <MadeWithDyad />
-      </footer>
     </div>
   );
 };

@@ -17,8 +17,8 @@ import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { ReminderProvider } from "@/context/ReminderContext.tsx";
 import { SoundProvider } from "@/context/SoundContext";
 import { Sidebar } from "./components/Sidebar";
-import AuthComponent from "@/components/AuthComponent";
-import FloatingTimer from "@/components/FloatingTimer";
+import AuthPage from "./pages/AuthPage";
+import FloatingTimer from "./components/FloatingTimer";
 import DevSpace from "./pages/DevSpace";
 import { TimerProvider } from "./context/TimerContext";
 import TaskCalendar from "./pages/TaskCalendar";
@@ -159,7 +159,7 @@ const AppContent = () => {
         ) : (
           <Routes>
             <Route path="/" element={<LandingPage />} />
-            <Route path="/auth" element={<AuthComponent />} />
+            <Route path="/auth" element={<AuthPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         )}

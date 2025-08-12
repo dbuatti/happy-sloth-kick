@@ -4,7 +4,6 @@ import { Calendar } from "@/components/ui/calendar";
 import { useTasks, Task } from '@/hooks/useTasks';
 import { format, parseISO, startOfDay } from 'date-fns';
 import { CalendarDays, ListTodo } from 'lucide-react';
-import { MadeWithDyad } from "@/components/made-with-dyad";
 import TaskItem from '@/components/TaskItem';
 import TaskOverviewDialog from '@/components/TaskOverviewDialog';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -162,9 +161,6 @@ const TaskCalendar: React.FC<TaskCalendarProps> = ({ isDemo = false, demoUserId 
           </CardContent>
         </Card>
       </main>
-      <footer className="p-4">
-        <MadeWithDyad />
-      </footer>
       {taskToOverview && (
         <TaskOverviewDialog
           task={taskToOverview}

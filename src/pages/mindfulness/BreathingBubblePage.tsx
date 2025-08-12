@@ -5,7 +5,6 @@ import { Play, Pause, RefreshCcw, Wind } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSound } from '@/context/SoundContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MadeWithDyad } from '@/components/made-with-dyad';
 import { useAuth } from '@/context/AuthContext';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -184,9 +183,6 @@ const BreathingBubblePage: React.FC = () => {
           </div>
         </CardContent>
       </Card>
-      <footer className="p-4">
-        <MadeWithDyad />
-      </footer>
     </div>
   );
 };

@@ -5,7 +5,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Play, Pause, RefreshCcw, Lightbulb, Laugh, MessageSquare, Repeat, Cloud, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSound } from '@/context/SoundContext';
-import { MadeWithDyad } from '@/components/made-with-dyad';
 import { useAuth } from '@/context/AuthContext'; // Re-introduced useAuth
 
 type DiffusionTechnique = 'none' | 'funny-voice' | 'having-thought' | 'repeat' | 'floating-away';
@@ -221,9 +220,6 @@ const ThoughtDiffusionToolPage: React.FC = () => {
           </CardContent>
         </Card>
       </main>
-      <footer className="p-4">
-        <MadeWithDyad />
-      </footer>
     </div>
   );
 };

@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Plus, Edit, Trash2, Sparkles, RefreshCcw, Lightbulb, RotateCcw, LayoutGrid, CheckCircle2, Minus, Link as LinkIcon, StickyNote } from 'lucide-react';
-import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useProjects, Project } from '@/hooks/useProjects';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/Progress';
@@ -475,10 +474,6 @@ const ProjectBalanceTracker: React.FC<ProjectBalanceTrackerProps> = ({ isDemo = 
           </CardContent>
         </Card>
       </main>
-      <footer className="p-4">
-        <MadeWithDyad />
-      </footer>
-
       <AlertDialog open={showConfirmDeleteDialog} onOpenChange={setShowConfirmDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>

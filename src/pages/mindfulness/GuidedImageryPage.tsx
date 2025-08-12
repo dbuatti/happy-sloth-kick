@@ -6,7 +6,6 @@ import { Play, Pause, RefreshCcw, Mountain, Home, TreePine, Sparkles } from 'luc
 import { cn } from '@/lib/utils';
 import { useSound } from '@/context/SoundContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MadeWithDyad } from '@/components/made-with-dyad';
 import { useAuth } from '@/context/AuthContext'; // Re-introduced useAuth
 
 interface ImageryTheme {
@@ -248,9 +247,6 @@ const GuidedImageryPage: React.FC = () => {
           </CardContent>
         </Card>
       </main>
-      <footer className="p-4">
-        <MadeWithDyad />
-      </footer>
     </div>
   );
 };

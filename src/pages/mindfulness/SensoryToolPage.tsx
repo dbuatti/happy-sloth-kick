@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Eye, Hand, Ear, Soup, Utensils, RefreshCcw, Sparkles } from 'lucide-react';
 import { useSound } from '@/context/SoundContext';
-import { MadeWithDyad } from '@/components/made-with-dyad';
 import { useAuth } from '@/context/AuthContext'; // Re-introduced useAuth
 
 const SensoryToolPage: React.FC = () => {
@@ -129,9 +128,6 @@ const SensoryToolPage: React.FC = () => {
           </CardContent>
         </Card>
       </main>
-      <footer className="p-4">
-        <MadeWithDyad />
-      </footer>
     </div>
   );
 };

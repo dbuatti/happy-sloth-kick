@@ -6,7 +6,6 @@ import { Play, Pause, RefreshCcw, UtensilsCrossed } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSound } from '@/context/SoundContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MadeWithDyad } from '@/components/made-with-dyad';
 import { useAuth } from '@/context/AuthContext'; // Re-introduced useAuth
 
 const MindfulEatingGuidePage: React.FC = () => {
@@ -160,9 +159,6 @@ const MindfulEatingGuidePage: React.FC = () => {
           </CardContent>
         </Card>
       </main>
-      <footer className="p-4">
-        <MadeWithDyad />
-      </footer>
     </div>
   );
 };

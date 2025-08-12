@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useTasks, Task } from '@/hooks/useTasks';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import FocusToolsPanel from '@/components/FocusToolsPanel';
@@ -50,9 +49,6 @@ const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
           />
         </div>
       </main>
-      <footer className="p-4">
-        <MadeWithDyad />
-      </footer>
       {taskToEdit && (
         <TaskDetailDialog
           task={taskToEdit}

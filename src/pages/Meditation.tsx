@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/Progress";
 import { Play, Pause, RotateCcw, Leaf } from 'lucide-react';
-import { MadeWithDyad } from "@/components/made-with-dyad";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from '@/lib/utils';
 import { useSound } from '@/context/SoundContext';
@@ -148,9 +147,6 @@ const Meditation: React.FC = () => {
           </div>
         </CardContent>
       </Card>
-      <footer className="p-4">
-        <MadeWithDyad />
-      </footer>
     </div>
   );
 };
