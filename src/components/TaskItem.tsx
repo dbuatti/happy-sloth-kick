@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock, ChevronRight, GripVertical } from 'lucide-react';
+import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock, ChevronRight } from 'lucide-react';
 import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
@@ -14,7 +14,6 @@ import { Input } from './ui/input';
 import DoTodaySwitch from './DoTodaySwitch';
 import { showSuccess, showError } from '@/utils/toast';
 import { Appointment } from '@/hooks/useAppointments';
-import { useSortable } from '@dnd-kit/sortable';
 
 interface TaskItemProps {
   task: Task;
@@ -36,7 +35,6 @@ interface TaskItemProps {
   toggleDoToday: (task: Task) => void;
   scheduledTasksMap: Map<string, Appointment>;
   isDemo?: boolean;
-  dragListeners?: ReturnType<typeof useSortable>['listeners'];
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -57,7 +55,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
   toggleDoToday,
   scheduledTasksMap,
   isDemo = false,
-  dragListeners,
 }) => {
   useAuth(); 
   const { playSound } = useSound();
@@ -162,7 +159,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   return (
     <div
       className={cn(
-        "relative flex items-center w-full rounded-lg transition-colors duration-200 py-2",
+        "relative flex items-center w-full rounded-lg transition-colors duration-200 py-2 pl-4",
         task.status === 'completed' ? "text-muted-foreground bg-task-completed-bg" : "bg-card text-foreground",
         !isDoToday && "opacity-40",
         "group hover:bg-muted/50"
@@ -170,11 +167,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
     >
       {/* Priority Pill */}
       <div className={cn("absolute left-0 top-0 h-full w-1.5 rounded-l-lg", getPriorityDotColor(task.priority))} />
-
-      {/* Drag Handle */}
-      <div {...dragListeners} className="flex-shrink-0 pl-2 cursor-grab touch-none" onPointerDown={(e) => e.stopPropagation()}>
-        <GripVertical className="h-5 w-5 text-muted-foreground" />
-      </div>
 
       <div className="flex-shrink-0 pr-1 flex items-center" onPointerDown={(e) => e.stopPropagation()}>
         {hasSubtasks && (

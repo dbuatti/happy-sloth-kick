@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { ListTodo, ChevronsDownUp } from 'lucide-react';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Skeleton } from '@/components/ui/skeleton';
 
 import {
@@ -14,8 +14,7 @@ import {
   DragStartEvent,
   DragOverlay,
   UniqueIdentifier,
-  MouseSensor,
-  TouchSensor,
+  PointerSensor,
   closestCorners,
 } from '@dnd-kit/core';
 import {
@@ -109,11 +108,10 @@ const TaskList: React.FC<TaskListProps> = (props) => {
   const [activeItemData, setActiveItemData] = useState<Task | TaskSection | null>(null);
 
   const sensors = useSensors(
-    useSensor(MouseSensor, {
-      // No activation constraint, drag starts instantly
-    }),
-    useSensor(TouchSensor, {
-      // No activation constraint, drag starts instantly
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // User must move 8px before a drag starts
+      },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
