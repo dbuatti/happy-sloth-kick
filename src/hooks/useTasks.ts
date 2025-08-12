@@ -318,6 +318,9 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
         }
 
         if (!relevantInstance) {
+          const mostRecentRealInstance = sortedInstances.find(t => isBefore(getUTCStartOfDay(parseISO(t.created_at)), todayStart));
+          const baseTaskForVirtual = mostRecentRealInstance || templateTask;
+
           const templateCreatedAt = parseISO(templateTask.created_at);
           const isDailyMatch = templateTask.recurring_type === 'daily';
           const isWeeklyMatch = templateTask.recurring_type === 'weekly' && todayStart.getUTCDay() === templateCreatedAt.getUTCDay();
@@ -325,15 +328,14 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
 
           if ((isDailyMatch || isWeeklyMatch || isMonthlyMatch) && templateTask.status !== 'archived') {
             const virtualTask: Task = {
-              ...templateTask,
+              ...baseTaskForVirtual,
               id: `virtual-${templateTask.id}-${format(todayStart, 'yyyy-MM-dd')}`,
               created_at: todayStart.toISOString(),
               status: 'to-do',
               original_task_id: templateTask.id,
-              notes: null,
-              remind_at: templateTask.remind_at ? format(setHours(setMinutes(todayStart, getMinutes(parseISO(templateTask.remind_at))), getHours(parseISO(templateTask.remind_at))), 'yyyy-MM-ddTHH:mm:ssZ') : null,
-              due_date: templateTask.due_date ? todayStart.toISOString() : null,
-              category_color: categoriesMapLocal.get(templateTask.category) || 'gray',
+              remind_at: baseTaskForVirtual.remind_at ? format(setHours(setMinutes(todayStart, getMinutes(parseISO(baseTaskForVirtual.remind_at))), getHours(parseISO(baseTaskForVirtual.remind_at))), 'yyyy-MM-ddTHH:mm:ssZ') : null,
+              due_date: baseTaskForVirtual.due_date ? todayStart.toISOString() : null,
+              category_color: categoriesMapLocal.get(baseTaskForVirtual.category) || 'gray',
             };
             allProcessedTasks.push(virtualTask);
           }
