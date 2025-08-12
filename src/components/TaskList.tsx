@@ -7,7 +7,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 import {
   DndContext,
-  closestCenter,
   KeyboardSensor,
   PointerSensor,
   useSensor,
@@ -16,6 +15,7 @@ import {
   DragStartEvent,
   DragOverlay,
   UniqueIdentifier,
+  pointerWithin,
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -252,7 +252,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
       ) : (
         <DndContext
           sensors={sensors}
-          collisionDetection={closestCenter}
+          collisionDetection={pointerWithin}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >

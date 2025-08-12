@@ -851,99 +851,120 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
         showError('User not authenticated.');
         return;
     }
-    
-    const originalTasks = [...tasks];
-    const activeTask = originalTasks.find(t => t.id === activeId);
+
+    let tasksForOperation = [...tasks];
+    let finalActiveId = activeId;
+    const isVirtual = activeId.toString().startsWith('virtual-');
+
+    if (isVirtual) {
+        const virtualTask = processedTasks.find(t => t.id === activeId);
+        if (!virtualTask) {
+            console.error('[DnD Error] Virtual task not found');
+            return;
+        }
+        const newInstanceId = uuidv4();
+        finalActiveId = newInstanceId;
+        inFlightUpdatesRef.current.add(newInstanceId);
+
+        const newInstanceData = {
+            id: newInstanceId,
+            user_id: userId,
+            description: virtualTask.description,
+            status: 'to-do' as const,
+            recurring_type: 'none' as const,
+            created_at: new Date().toISOString(),
+            category: virtualTask.category,
+            priority: virtualTask.priority,
+            due_date: virtualTask.due_date,
+            notes: virtualTask.notes,
+            remind_at: virtualTask.remind_at,
+            section_id: newSectionId,
+            order: 0, // Placeholder order
+            original_task_id: virtualTask.original_task_id || virtualTask.id.replace(/^virtual-/, '').split(/-\d{4}-\d{2}-\d{2}$/)[0],
+            parent_task_id: newParentId,
+            link: virtualTask.link,
+            image_url: virtualTask.image_url,
+        };
+
+        const { data: dbTask, error: insertError } = await supabase
+            .from('tasks')
+            .insert(cleanTaskForDb(newInstanceData))
+            .select('*')
+            .single();
+
+        if (insertError) {
+            showError('Failed to create an instance of the recurring task.');
+            inFlightUpdatesRef.current.delete(newInstanceId);
+            return;
+        }
+        
+        tasksForOperation.push({ ...dbTask, category_color: virtualTask.category_color });
+    }
+
+    const originalTasks = [...tasksForOperation];
+    const activeTask = originalTasks.find(t => t.id === finalActiveId);
     if (!activeTask) {
-        console.error('[DnD Error] Active task not found');
+        console.error('[DnD Error] Active task not found:', finalActiveId);
         return;
     }
 
-    let tempTasks = originalTasks.filter(t => t.id !== activeId);
-    const updatedActiveTask = { ...activeTask, parent_task_id: newParentId, section_id: newSectionId };
-
-    let insertionIndex = -1;
-    if (overId) {
-        const oldIndex = originalTasks.findIndex(t => t.id === activeId);
-        const overIndexInOriginal = originalTasks.findIndex(t => t.id === overId);
-        insertionIndex = tempTasks.findIndex(t => t.id === overId);
-
-        if (oldIndex !== -1 && overIndexInOriginal !== -1 && oldIndex < overIndexInOriginal) {
-            insertionIndex += 1;
-        }
-    } else {
-        const tasksInNewLocation = tempTasks
-            .filter(t => t.section_id === newSectionId && t.parent_task_id === newParentId)
-            .sort((a, b) => (a.order || 0) - (b.order || 0));
-        if (tasksInNewLocation.length > 0) {
-            const lastTask = tasksInNewLocation[tasksInNewLocation.length - 1];
-            insertionIndex = tempTasks.indexOf(lastTask) + 1;
-        } else {
-            insertionIndex = -1;
-        }
-    }
-
-    if (insertionIndex !== -1) {
-        tempTasks.splice(insertionIndex, 0, updatedActiveTask);
-    } else {
-        tempTasks.push(updatedActiveTask);
-    }
+    const oldIndex = originalTasks.findIndex(t => t.id === finalActiveId);
+    const newIndex = overId ? originalTasks.findIndex(t => t.id === overId) : originalTasks.length;
+    
+    let optimisticallyReorderedTasks = arrayMove(originalTasks, oldIndex, newIndex);
+    optimisticallyReorderedTasks = optimisticallyReorderedTasks.map(t => 
+        t.id === finalActiveId 
+        ? { ...t, parent_task_id: newParentId, section_id: newSectionId } 
+        : t
+    );
+    setTasks(optimisticallyReorderedTasks);
 
     const updatesForDb: Partial<Omit<Task, 'user_id'>>[] = [];
     const groupsToUpdate = new Map<string, Task[]>();
 
-    tempTasks.forEach(t => {
-        const key = `${t.parent_task_id || 'root'}-${t.section_id || 'no-section'}`;
-        if (!groupsToUpdate.has(key)) groupsToUpdate.set(key, []);
-        groupsToUpdate.get(key)!.push(t);
+    const sourceGroupKey = `${activeTask.parent_task_id || 'root'}-${activeTask.section_id || 'no-section'}`;
+    const destinationGroupKey = `${newParentId || 'root'}-${newSectionId || 'no-section'}`;
+    groupsToUpdate.set(sourceGroupKey, []);
+    if (sourceGroupKey !== destinationGroupKey) {
+        groupsToUpdate.set(destinationGroupKey, []);
+    }
+
+    optimisticallyReorderedTasks.forEach(t => {
+        const taskGroupKey = `${t.parent_task_id || 'root'}-${t.section_id || 'no-section'}`;
+        if (groupsToUpdate.has(taskGroupKey)) {
+            groupsToUpdate.get(taskGroupKey)!.push(t);
+        }
     });
 
-    const originalTasksMap = new Map(originalTasks.map(t => [t.id, t]));
     groupsToUpdate.forEach(group => {
         group.forEach((task, index) => {
-            const originalTask = originalTasksMap.get(task.id);
-            if (!originalTask || originalTask.order !== index || originalTask.parent_task_id !== task.parent_task_id || originalTask.section_id !== task.section_id) {
-                updatesForDb.push({
-                    id: task.id,
-                    order: index,
-                    parent_task_id: task.parent_task_id,
-                    section_id: task.section_id,
-                });
-            }
+            updatesForDb.push({
+                id: task.id,
+                order: index,
+                parent_task_id: task.parent_task_id,
+                section_id: task.section_id,
+            });
         });
-    });
-
-    const updatesMap = new Map(updatesForDb.map(u => [u.id, u]));
-    const finalUiTasks = tempTasks.map(t => {
-        if (updatesMap.has(t.id)) {
-            return { ...t, ...updatesMap.get(t.id) };
-        }
-        return t;
     });
 
     const updatedIds = updatesForDb.map(t => t.id!);
     updatedIds.forEach(id => inFlightUpdatesRef.current.add(id));
 
-    setTasks(finalUiTasks);
-
     try {
         if (updatesForDb.length > 0) {
             const { error } = await supabase.rpc('update_tasks_order', { updates: updatesForDb });
-            if (error) {
-              console.error('[DnD DB Error] Full error object in catch block:', error);
-              throw error;
-            }
+            if (error) throw error;
         }
         showSuccess('Task moved!');
     } catch (e: any) {
-        showError(`Failed to move task. Check console for details. Message: ${e.message}`);
+        showError(`Failed to move task: ${e.message}`);
         setTasks(originalTasks);
     } finally {
         setTimeout(() => {
             updatedIds.forEach(id => inFlightUpdatesRef.current.delete(id));
         }, 1500);
     }
-  }, [userId, tasks]);
+}, [userId, tasks, processedTasks]);
 
   const finalFilteredTasks = useMemo(() => {
     let filtered = processedTasks;
