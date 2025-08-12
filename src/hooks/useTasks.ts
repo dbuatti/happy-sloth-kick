@@ -16,6 +16,7 @@ export interface Task {
   status: 'to-do' | 'completed' | 'skipped' | 'archived';
   recurring_type: 'none' | 'daily' | 'weekly' | 'monthly';
   created_at: string;
+  updated_at: string;
   user_id: string;
   category: string;
   category_color: string;
@@ -155,7 +156,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
 
       const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
-        .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link, image_url')
+        .select('id, description, status, recurring_type, created_at, updated_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link, image_url')
         .eq('user_id', currentUserId)
         .order('section_id', { ascending: true, nullsFirst: true })
         .order('order', { ascending: true });
@@ -410,6 +411,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
         id: newTaskClientSideId,
         user_id: userId,
         created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
         status: newTaskData.status || 'to-do',
         recurring_type: newTaskData.recurring_type || 'none',
         category: newTaskData.category,
@@ -432,7 +434,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
       const { data, error } = await supabase
         .from('tasks')
         .insert(cleanTaskForDb(newTaskForUI))
-        .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link, image_url')
+        .select('id, description, status, recurring_type, created_at, updated_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link, image_url')
         .single();
 
       if (error) throw error;
@@ -486,6 +488,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
             status: updates.status ?? 'to-do',
             recurring_type: 'none',
             created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
             category: updates.category ?? virtualTask.category,
             priority: updates.priority ?? virtualTask.priority,
             due_date: updates.due_date !== undefined ? updates.due_date : virtualTask.due_date,
@@ -504,7 +507,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
         const { data, error } = await supabase
             .from('tasks')
             .insert(cleanTaskForDb(newInstanceDataForUI))
-            .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link, image_url')
+            .select('id, description, status, recurring_type, created_at, updated_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link, image_url')
             .single();
 
         if (error) throw error;
@@ -527,7 +530,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
         .update(cleanTaskForDb(updates))
         .eq('id', taskId)
         .eq('user_id', userId)
-        .select('id, description, status, recurring_type, created_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link, image_url')
+        .select('id, description, status, recurring_type, created_at, updated_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link, image_url')
         .single();
 
       if (error) throw error;
@@ -1009,8 +1012,16 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
       filtered = filtered.filter(task => {
         const taskCreatedAt = getUTCStartOfDay(parseISO(task.created_at));
         const isCreatedOnThisDay = isSameDay(taskCreatedAt, effectiveCurrentDate);
+
         const isCarryOver = isBefore(taskCreatedAt, effectiveCurrentDate) && task.status === 'to-do';
-        return isCreatedOnThisDay || isCarryOver;
+
+        let wasCompletedToday = false;
+        if (task.status === 'completed' && task.updated_at) {
+            const taskUpdatedAt = getUTCStartOfDay(parseISO(task.updated_at));
+            wasCompletedToday = isSameDay(taskUpdatedAt, effectiveCurrentDate);
+        }
+
+        return isCreatedOnThisDay || isCarryOver || wasCompletedToday;
       });
     }
 
