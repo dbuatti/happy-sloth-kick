@@ -852,19 +852,70 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
         return;
     }
     
-    const originalTasks = [...tasks];
-    const activeTask = originalTasks.find(t => t.id === activeId);
+    let finalActiveId = activeId;
+    let tasksForOperation = [...tasks];
+    let isVirtual = activeId.toString().startsWith('virtual-');
+
+    if (isVirtual) {
+        const virtualTask = processedTasks.find(t => t.id === activeId);
+        if (!virtualTask) {
+            console.error('[DnD Error] Virtual task not found in processed tasks');
+            return;
+        }
+
+        const newInstanceId = uuidv4();
+        finalActiveId = newInstanceId;
+        inFlightUpdatesRef.current.add(newInstanceId);
+
+        const newInstanceData: Omit<Task, 'category_color'> = {
+            id: newInstanceId,
+            user_id: userId,
+            description: virtualTask.description,
+            status: 'to-do',
+            recurring_type: 'none',
+            created_at: new Date().toISOString(),
+            category: virtualTask.category,
+            priority: virtualTask.priority,
+            due_date: virtualTask.due_date,
+            notes: virtualTask.notes,
+            remind_at: virtualTask.remind_at,
+            section_id: newSectionId,
+            order: 0,
+            original_task_id: virtualTask.original_task_id || virtualTask.id.replace(/^virtual-/, '').split(/-\d{4}-\d{2}-\d{2}$/)[0],
+            parent_task_id: newParentId,
+            link: virtualTask.link,
+            image_url: virtualTask.image_url,
+        };
+
+        const { data: dbTask, error: insertError } = await supabase
+            .from('tasks')
+            .insert(cleanTaskForDb(newInstanceData))
+            .select('*')
+            .single();
+
+        if (insertError) {
+            showError('Failed to create an instance of the recurring task.');
+            inFlightUpdatesRef.current.delete(newInstanceId);
+            return;
+        }
+        
+        tasksForOperation.push({ ...dbTask, category_color: virtualTask.category_color });
+    }
+    
+    const originalTasks = [...tasksForOperation];
+    const activeTask = originalTasks.find(t => t.id === finalActiveId);
     if (!activeTask) {
-        console.error('[DnD Error] Active task not found');
+        console.error('[DnD Error] Active task not found after potential virtualization:', finalActiveId);
+        if (isVirtual) inFlightUpdatesRef.current.delete(finalActiveId);
         return;
     }
 
-    let tempTasks = originalTasks.filter(t => t.id !== activeId);
+    let tempTasks = originalTasks.filter(t => t.id !== finalActiveId);
     const updatedActiveTask = { ...activeTask, parent_task_id: newParentId, section_id: newSectionId };
 
     let insertionIndex = -1;
     if (overId) {
-        const oldIndex = originalTasks.findIndex(t => t.id === activeId);
+        const oldIndex = originalTasks.findIndex(t => t.id === finalActiveId);
         const overIndexInOriginal = originalTasks.findIndex(t => t.id === overId);
         insertionIndex = tempTasks.findIndex(t => t.id === overId);
 
@@ -941,9 +992,10 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
     } finally {
         setTimeout(() => {
             updatedIds.forEach(id => inFlightUpdatesRef.current.delete(id));
+            if (isVirtual) inFlightUpdatesRef.current.delete(finalActiveId);
         }, 1500);
     }
-  }, [userId, tasks]);
+  }, [userId, tasks, processedTasks]);
 
   const finalFilteredTasks = useMemo(() => {
     let filtered = processedTasks;
