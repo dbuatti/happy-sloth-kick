@@ -205,13 +205,6 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
         { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${userId}` },
         (payload) => {
           const newOrOldTask = (payload.new || payload.old) as Task;
-          console.log('[RT Task Event]', { 
-            eventType: payload.eventType, 
-            id: newOrOldTask.id, 
-            inFlight: inFlightUpdatesRef.current.has(newOrOldTask.id), 
-            inFlightRef: Array.from(inFlightUpdatesRef.current) 
-          });
-
           if (inFlightUpdatesRef.current.has(newOrOldTask.id)) return;
 
           const categoryColor = categoriesMapRef.current.get(newOrOldTask.category) || 'gray';
@@ -847,7 +840,6 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
   }, [userId, sections]);
 
   const updateTaskParentAndOrder = useCallback(async (activeId: string, newParentId: string | null, newSectionId: string | null, overId: string | null) => {
-    console.log('[DnD Start]', { activeId, newParentId, newSectionId, overId });
     if (!userId) {
         showError('User not authenticated.');
         return;
@@ -859,7 +851,6 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
     let activeTask: Task | undefined;
 
     if (isVirtual) {
-        console.log('[DnD] Dragged item is a VIRTUAL task. Creating a real instance...');
         const virtualTask = processedTasks.find(t => t.id === activeId);
         if (!virtualTask) {
             console.error('[DnD Error] Virtual task not found');
@@ -903,8 +894,6 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
         }
         
         const newTaskWithColor = { ...dbTask, category_color: virtualTask.category_color };
-        console.log('[DnD Success] Created new task instance:', newTaskWithColor);
-        
         tasksForOperation.push(newTaskWithColor);
         activeTask = newTaskWithColor;
 
@@ -969,21 +958,16 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
 
     const updatedIds = updatesForDb.map(t => t.id!);
     updatedIds.forEach(id => inFlightUpdatesRef.current.add(id));
-    console.log('[DnD] Calculated updates for DB:', updatesForDb);
 
     try {
         if (updatesForDb.length > 0) {
-            console.log('[DnD] Calling RPC "update_tasks_order"...');
             const { error } = await supabase.rpc('update_tasks_order', { updates: updatesForDb });
             if (error) {
-                console.error('[DnD Error] RPC call failed:', error);
                 throw error;
             }
-            console.log('[DnD Success] RPC call successful.');
         }
         showSuccess('Task moved!');
     } catch (e: any) {
-        console.error('[DnD Error] Catch block:', e);
         showError(`Failed to move task: ${e.message}`);
         setTasks(originalTasks);
     } finally {
