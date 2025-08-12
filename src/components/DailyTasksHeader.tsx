@@ -119,6 +119,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         showError('AI suggestions failed. Please add task details manually.');
         setPrefilledTaskData({ description });
         setIsAddTaskDialogOpen(true);
+        setQuickAddTaskDescription('');
         return;
       }
 
@@ -147,6 +148,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
       showError('An error occurred. Please add task details manually.');
       setPrefilledTaskData({ description });
       setIsAddTaskDialogOpen(true);
+      setQuickAddTaskDescription('');
     }
   };
 

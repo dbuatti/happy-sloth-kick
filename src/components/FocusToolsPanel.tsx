@@ -98,6 +98,7 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
     if (!suggestions) {
       showError('Failed to get AI suggestions. Please try again.');
       setIsAddingQuickTask(false);
+      setQuickAddTaskDescription('');
       return;
     }
     const suggestedCategoryId = allCategories.find(cat => cat.name.toLowerCase() === suggestions.category.toLowerCase())?.id || allCategories.find(cat => cat.name.toLowerCase() === 'general')?.id || allCategories[0]?.id || '';
