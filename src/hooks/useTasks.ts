@@ -449,7 +449,9 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
       console.error('useTasks: Error adding task to DB:', e.message);
       return false;
     } finally {
-      inFlightUpdatesRef.current.delete(newTaskClientSideId);
+      setTimeout(() => {
+        inFlightUpdatesRef.current.delete(newTaskClientSideId);
+      }, 1500);
     }
   }, [userId, tasks, addReminder]);
 
@@ -548,7 +550,9 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
       }
       return null;
     } finally {
-      inFlightUpdatesRef.current.delete(idToTrack);
+      setTimeout(() => {
+        inFlightUpdatesRef.current.delete(idToTrack);
+      }, 1500);
     }
   }, [userId, tasks, processedTasks, addReminder, dismissReminder]);
 
@@ -558,6 +562,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
       return;
     }
     const originalTasks = [...tasks];
+    let idsToDelete: string[] = [];
     try {
       const taskToDelete: Task | undefined = tasks.find(t => t.id === taskId);
       if (!taskToDelete) return;
@@ -573,7 +578,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
         }
       }
 
-      let idsToDelete = [taskId];
+      idsToDelete = [taskId];
       const subIds = tasks.filter(t => t.parent_task_id === taskId).map(t => t.id);
       idsToDelete = [...idsToDelete, ...subIds];
       if (taskToDelete.recurring_type !== 'none' && taskToDelete.original_task_id === null) {
@@ -593,17 +598,9 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
       console.error(`useTasks: Error deleting task(s) from DB:`, e.message);
       setTasks(originalTasks);
     } finally {
-      const taskToDelete: Task | undefined = originalTasks.find(t => t.id === taskId);
-      if (taskToDelete) {
-        let idsToDelete = [taskId];
-        const subIds = originalTasks.filter(t => t.parent_task_id === taskId).map(t => t.id);
-        idsToDelete = [...idsToDelete, ...subIds];
-        if (taskToDelete.recurring_type !== 'none' && taskToDelete.original_task_id === null) {
-          const inst = originalTasks.filter(t => t.original_task_id === taskId).map(t => t.id);
-          idsToDelete = [...idsToDelete, ...inst];
-        }
+      setTimeout(() => {
         idsToDelete.forEach(id => inFlightUpdatesRef.current.delete(id));
-      }
+      }, 1500);
     }
   }, [userId, tasks, dismissReminder]);
 
@@ -635,7 +632,9 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
       console.error(`useTasks: Error during bulk update for tasks ${ids.join(', ')}:`, e.message);
       setTasks(original);
     } finally {
-      ids.forEach(id => inFlightUpdatesRef.current.delete(id));
+      setTimeout(() => {
+        ids.forEach(id => inFlightUpdatesRef.current.delete(id));
+      }, 1500);
     }
   }, [tasks, userId]);
 
@@ -675,7 +674,9 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
       setTasks(originalTasks);
       return false;
     } finally {
-      ids.forEach(id => inFlightUpdatesRef.current.delete(id));
+      setTimeout(() => {
+        ids.forEach(id => inFlightUpdatesRef.current.delete(id));
+      }, 1500);
     }
   }, [userId, tasks, dismissReminder]);
 
@@ -835,7 +836,9 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
       console.error('useTasks: Error reordering sections:', e.message);
       setSections(sections);
     } finally {
-      updatedIds.forEach(id => inFlightUpdatesRef.current.delete(id));
+      setTimeout(() => {
+        updatedIds.forEach(id => inFlightUpdatesRef.current.delete(id));
+      }, 1500);
     }
   }, [userId, sections]);
 
