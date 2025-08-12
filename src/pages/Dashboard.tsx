@@ -22,6 +22,7 @@ import TaskOverviewDialog from '@/components/TaskOverviewDialog';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import FullScreenFocusView from '@/components/FullScreenFocusView';
 import { AnimatePresence } from 'framer-motion';
+import { useSound } from '@/context/SoundContext';
 
 interface DashboardProps {
   isDemo?: boolean;
@@ -56,6 +57,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
     loading: tasksLoading,
   } = useTasks({ viewMode: 'daily', userId: demoUserId });
 
+  const { playSound } = useSound();
   const [isAddCardOpen, setIsAddCardOpen] = useState(false);
   const [newCardTitle, setNewCardTitle] = useState('');
   const [newCardContent, setNewCardContent] = useState('');
@@ -96,6 +98,14 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
   const handleOpenFocusView = () => {
     if (nextAvailableTask) {
       setIsFocusViewOpen(true);
+    }
+  };
+
+  const handleMarkDoneFromFocusView = async () => {
+    if (nextAvailableTask) {
+      await updateTask(nextAvailableTask.id, { status: 'completed' });
+      playSound('success');
+      setIsFocusViewOpen(false);
     }
   };
 
@@ -238,6 +248,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
           <FullScreenFocusView
             taskDescription={nextAvailableTask.description}
             onClose={() => setIsFocusViewOpen(false)}
+            onMarkDone={handleMarkDoneFromFocusView}
           />
         )}
       </AnimatePresence>

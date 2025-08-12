@@ -17,6 +17,7 @@ import { useAllAppointments } from '@/hooks/useAllAppointments';
 import { Appointment } from '@/hooks/useAppointments';
 import FullScreenFocusView from '@/components/FullScreenFocusView';
 import { AnimatePresence } from 'framer-motion';
+import { useSound } from '@/context/SoundContext';
 
 
 const getUTCStartOfDay = (date: Date) => {
@@ -30,6 +31,7 @@ interface DailyTasksV3Props {
 
 const DailyTasksV3: React.FC<DailyTasksV3Props> = ({ isDemo = false, demoUserId }) => {
   const { user } = useAuth();
+  const { playSound } = useSound();
 
   const {
     tasks,
@@ -159,6 +161,14 @@ const DailyTasksV3: React.FC<DailyTasksV3Props> = ({ isDemo = false, demoUserId 
   const handleOpenFocusView = () => {
     if (nextAvailableTask) {
       setIsFocusViewOpen(true);
+    }
+  };
+
+  const handleMarkDoneFromFocusView = async () => {
+    if (nextAvailableTask) {
+      await updateTask(nextAvailableTask.id, { status: 'completed' });
+      playSound('success');
+      setIsFocusViewOpen(false);
     }
   };
 
@@ -352,6 +362,7 @@ const DailyTasksV3: React.FC<DailyTasksV3Props> = ({ isDemo = false, demoUserId 
           <FullScreenFocusView
             taskDescription={nextAvailableTask.description}
             onClose={() => setIsFocusViewOpen(false)}
+            onMarkDone={handleMarkDoneFromFocusView}
           />
         )}
       </AnimatePresence>
