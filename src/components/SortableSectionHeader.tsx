@@ -97,7 +97,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "group",
+        "group select-none",
         isDragging && !isOverlay ? "" : "rounded-xl",
         isOverlay ? "shadow-xl ring-2 ring-primary bg-card" : "",
       )}

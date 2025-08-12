@@ -75,7 +75,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "relative last:border-b-0 group",
+        "relative last:border-b-0 group select-none",
         isOverlay ? "shadow-xl ring-2 ring-primary bg-card rounded-lg" : "",
         level > 0 ? "border-l border-l-primary/50" : "",
         "flex items-center"

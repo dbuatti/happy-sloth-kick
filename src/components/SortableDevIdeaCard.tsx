@@ -31,6 +31,7 @@ const SortableDevIdeaCard: React.FC<SortableDevIdeaCardProps> = ({ idea, onEdit 
         style={style} 
         {...attributes} 
         {...listeners}
+        className="select-none"
     >
         <DevIdeaCard idea={idea} onEdit={onEdit} />
     </div>

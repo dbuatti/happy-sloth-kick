@@ -38,7 +38,7 @@ const DraggableAppointmentCard: React.FC<DraggableAppointmentCardProps> = (props
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="cursor-grab touch-none">
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="cursor-grab touch-none select-none">
       <AppointmentCard {...props} />
     </div>
   );
