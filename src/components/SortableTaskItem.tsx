@@ -81,7 +81,6 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         "flex items-center"
       )}
       {...attributes}
-      {...listeners}
     >
       <div className="flex-1"> {/* This div now contains the TaskItem and subtasks */}
         <TaskItem
@@ -97,6 +96,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           toggleDoToday={toggleDoToday}
           scheduledTasksMap={scheduledTasksMap}
           isDemo={isDemo}
+          dragListeners={listeners}
         />
         {isExpanded && directSubtasks.length > 0 && (
           <ul className="list-none mt-1.5 space-y-1.5">
