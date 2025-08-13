@@ -51,7 +51,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onAddCard, onCustomiz
         {loading ? (
           <Skeleton className="h-9 w-48" />
         ) : (
-          <h1 className="text-4xl font-extrabold tracking-tight">
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
             Welcome back{firstName ? `, ${firstName}` : ''}!
           </h1>
         )}

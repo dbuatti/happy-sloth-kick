@@ -59,7 +59,7 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ nextAvailableTask, updateTa
         ) : nextAvailableTask ? (
           <div className="flex flex-col items-center text-center space-y-3">
             <div className={cn("w-3 h-3 rounded-full", getPriorityDotColor(nextAvailableTask.priority))} />
-            <p className="text-xl font-bold leading-tight text-foreground">
+            <p className="text-xl sm:text-2xl font-bold leading-tight text-foreground line-clamp-2">
               {nextAvailableTask.description}
             </p>
             <div className="flex space-x-2">

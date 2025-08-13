@@ -84,7 +84,7 @@ const CustomCard: React.FC<CustomCardProps> = ({ card }) => {
       <EditableCard title={card.title} icon={StickyNote} onSave={handleSave} renderEditForm={renderEditForm} isSaving={isSaving}>
         <div className="flex items-start gap-4">
           {card.emoji && <span className="text-2xl">{card.emoji}</span>}
-          <p className="text-sm text-muted-foreground whitespace-pre-wrap flex-1">
+          <p className="text-sm text-muted-foreground whitespace-pre-wrap flex-1 break-words">
             {renderContentWithLinks(card.content)}
           </p>
         </div>

@@ -40,8 +40,8 @@ const DailySchedulePreview: React.FC = () => {
                 <p>{format(parseISO(`2000-01-01T${app.start_time}`), 'h:mm a')}</p>
                 <p>{format(parseISO(`2000-01-01T${app.end_time}`), 'h:mm a')}</p>
               </div>
-              <div className="flex-1">
-                <p className="font-semibold text-sm flex items-center gap-1.5">
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm flex items-center gap-1.5 truncate">
                   {app.task_id && <ListTodo className="h-3.5 w-3.5 flex-shrink-0" />}
                   {app.title}
                 </p>
