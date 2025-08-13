@@ -353,18 +353,31 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
     }
 
     const tasksForToday = processedTasks.filter(task => {
-      const taskDueDate = task.due_date ? getUTCStartOfDay(parseISO(task.due_date)) : null;
-      const taskCreatedAt = getUTCStartOfDay(parseISO(task.created_at));
-      const isCreatedOnThisDay = isSameDay(taskCreatedAt, effectiveCurrentDate);
-      
-      if (taskDueDate) {
-        const isDueOnThisDay = isSameDay(taskDueDate, effectiveCurrentDate);
-        const isOverdue = isBefore(taskDueDate, effectiveCurrentDate) && task.status === 'to-do';
-        return isCreatedOnThisDay || isDueOnThisDay || isOverdue;
-      } else {
-        const isCarryOver = isBefore(taskCreatedAt, effectiveCurrentDate) && task.status === 'to-do';
-        return isCreatedOnThisDay || isCarryOver;
-      }
+        // Condition 1: Was completed today
+        if (task.status === 'completed' && task.updated_at) {
+            const updatedAt = getUTCStartOfDay(parseISO(task.updated_at));
+            if (isSameDay(updatedAt, effectiveCurrentDate)) {
+                return true;
+            }
+        }
+
+        // Condition 2: Is a relevant 'to-do' task
+        if (task.status === 'to-do') {
+            const createdAt = getUTCStartOfDay(parseISO(task.created_at));
+            const dueDate = task.due_date ? getUTCStartOfDay(parseISO(task.due_date)) : null;
+
+            // Due on or before today
+            if (dueDate && !isAfter(dueDate, effectiveCurrentDate)) {
+                return true;
+            }
+            
+            // No due date, created on or before today
+            if (!dueDate && !isAfter(createdAt, effectiveCurrentDate)) {
+                return true;
+            }
+        }
+
+        return false;
     });
 
     const focusModeSectionIds = new Set(sections.filter(s => s.include_in_focus_mode).map(s => s.id));
@@ -1013,18 +1026,31 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
 
     if (viewMode === 'daily') {
       filtered = filtered.filter(task => {
-        const taskCreatedAt = getUTCStartOfDay(parseISO(task.created_at));
-        const isCreatedOnThisDay = isSameDay(taskCreatedAt, effectiveCurrentDate);
-
-        const isCarryOver = isBefore(taskCreatedAt, effectiveCurrentDate) && task.status === 'to-do';
-
-        let wasCompletedToday = false;
+        // Condition 1: Was completed today
         if (task.status === 'completed' && task.updated_at) {
-            const taskUpdatedAt = getUTCStartOfDay(parseISO(task.updated_at));
-            wasCompletedToday = isSameDay(taskUpdatedAt, effectiveCurrentDate);
+            const updatedAt = getUTCStartOfDay(parseISO(task.updated_at));
+            if (isSameDay(updatedAt, effectiveCurrentDate)) {
+                return true;
+            }
         }
 
-        return isCreatedOnThisDay || isCarryOver || wasCompletedToday;
+        // Condition 2: Is a relevant 'to-do' task
+        if (task.status === 'to-do') {
+            const createdAt = getUTCStartOfDay(parseISO(task.created_at));
+            const dueDate = task.due_date ? getUTCStartOfDay(parseISO(task.due_date)) : null;
+
+            // Due on or before today
+            if (dueDate && !isAfter(dueDate, effectiveCurrentDate)) {
+                return true;
+            }
+            
+            // No due date, created on or before today
+            if (!dueDate && !isAfter(createdAt, effectiveCurrentDate)) {
+                return true;
+            }
+        }
+
+        return false;
       });
     }
 
