@@ -353,8 +353,8 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
     }
 
     const tasksForToday = processedTasks.filter(task => {
-        // Condition 1: Was completed today
-        if (task.status === 'completed' && task.updated_at) {
+        // Condition 1: Was completed or archived today
+        if ((task.status === 'completed' || task.status === 'archived') && task.updated_at) {
             const updatedAt = getUTCStartOfDay(parseISO(task.updated_at));
             if (isSameDay(updatedAt, effectiveCurrentDate)) {
                 return true;
@@ -1026,8 +1026,8 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
 
     if (viewMode === 'daily') {
       filtered = filtered.filter(task => {
-        // Condition 1: Was completed today
-        if (task.status === 'completed' && task.updated_at) {
+        // Condition 1: Was completed or archived today
+        if ((task.status === 'completed' || task.status === 'archived') && task.updated_at) {
             const updatedAt = getUTCStartOfDay(parseISO(task.updated_at));
             if (isSameDay(updatedAt, effectiveCurrentDate)) {
                 return true;
