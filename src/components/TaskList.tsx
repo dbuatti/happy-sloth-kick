@@ -334,14 +334,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                           isDemo={isDemo}
                         />
                       </div>
-                      {topLevelTasksInSection.length === 0 && (
-                        <div className="text-center text-foreground/80 dark:text-foreground/80 py-6 rounded-xl border-dashed border-border bg-muted/30" data-no-dnd="true">
-                          <div className="flex items-center justify-center gap-2 mb-4">
-                            <ListTodo className="h-7 w-7" />
-                            <p className="text-xl font-medium">No tasks in this section yet.</p>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>
