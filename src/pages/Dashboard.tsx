@@ -23,6 +23,23 @@ import TaskDetailDialog from '@/components/TaskDetailDialog';
 import FullScreenFocusView from '@/components/FullScreenFocusView';
 import { AnimatePresence } from 'framer-motion';
 import { useSound } from '@/context/SoundContext';
+import {
+  DndContext,
+  DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCorners,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  arrayMove,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { createPortal } from 'react-dom';
+import SortableCustomCard from '@/components/dashboard/SortableCustomCard';
 
 interface DashboardProps {
   isDemo?: boolean;
@@ -39,6 +56,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
     updateSettings, 
     loading: dashboardDataLoading,
     updateCustomCard,
+    reorderCustomCards, // New function from hook
   } = useDashboardData({ userId: demoUserId });
 
   const { tasksDue, tasksCompleted, appointmentsToday, loading: statsLoading } = useDashboardStats({ userId: demoUserId });
@@ -69,6 +87,16 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
   const [isFocusViewOpen, setIsFocusViewOpen] = useState(false);
+
+  const [activeDragItem, setActiveDragItem] = useState<any>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // User must move 8px before a drag starts
+      },
+    })
+  );
 
   const handleAddCard = async () => {
     if (!newCardTitle.trim()) return;
@@ -108,6 +136,28 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
     }
   };
 
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveDragItem(customCards.find(card => card.id === event.active.id) || null);
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    setActiveDragItem(null);
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const oldIndex = customCards.findIndex(card => card.id === active.id);
+    const newIndex = customCards.findIndex(card => card.id === over.id);
+
+    if (oldIndex !== -1 && newIndex !== -1) {
+      const newOrderedCards = arrayMove(customCards, oldIndex, newIndex);
+      // The reorderCustomCards function already handles the optimistic update internally.
+      await reorderCustomCards(newOrderedCards.map(card => card.id));
+    }
+  };
+
   const statCards = [
     { title: "Tasks Due Today", value: tasksDue, icon: ListTodo, description: "tasks remaining for today", className: "bg-blue-500/5 dark:bg-blue-500/10 border-blue-500/20" },
     { title: "Tasks Completed", value: tasksCompleted, icon: CheckCircle2, description: "tasks completed today", className: "bg-green-500/5 dark:bg-green-500/10 border-green-500/20" },
@@ -115,143 +165,155 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
   ];
 
   return (
-    <div className="flex-1 flex flex-col">
-      <main className="flex-grow p-4 md:p-6">
-        <DashboardHeader
-          onAddCard={() => setIsAddCardOpen(true)}
-          onCustomizeLayout={() => setIsLayoutSettingsOpen(true)}
-          isDemo={isDemo}
-          demoUserId={demoUserId}
-        />
+    <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <div className="flex-1 flex flex-col">
+        <main className="flex-grow p-4 md:p-6">
+          <DashboardHeader
+            onAddCard={() => setIsAddCardOpen(true)}
+            onCustomizeLayout={() => setIsLayoutSettingsOpen(true)}
+            isDemo={isDemo}
+            demoUserId={demoUserId}
+          />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          {statCards.map(stat => (
-            <StatCard
-              key={stat.title}
-              title={stat.title}
-              value={stat.value}
-              icon={stat.icon}
-              description={stat.description}
-              loading={statsLoading}
-              className={stat.className}
-            />
-          ))}
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            {settings?.dashboard_layout?.['dailyScheduleVisible'] !== false && (
-              <DailySchedulePreview />
-            )}
-            {customCards.filter(card => card.is_visible).map(card => (
-              <CustomCard key={card.id} card={card} />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            {statCards.map(stat => (
+              <StatCard
+                key={stat.title}
+                title={stat.title}
+                value={stat.value}
+                icon={stat.icon}
+                description={stat.description}
+                loading={statsLoading}
+                className={stat.className}
+              />
             ))}
           </div>
-          <div className="lg:col-span-1 space-y-6">
-            <NextTaskCard 
-              nextAvailableTask={nextAvailableTask}
-              updateTask={updateTask}
-              onOpenOverview={handleOpenOverview}
-              loading={tasksLoading}
-              onFocusViewOpen={handleOpenFocusView}
-            />
-            {settings?.dashboard_layout?.['weeklyFocusVisible'] !== false && (
-              <WeeklyFocusCard 
-                weeklyFocus={weeklyFocus} 
-                updateWeeklyFocus={updateWeeklyFocus} 
-                loading={dashboardDataLoading} 
-              />
-            )}
-            {settings?.dashboard_layout?.['peopleMemoryVisible'] !== false && (
-              <PeopleMemoryCard />
-            )}
-            {settings?.dashboard_layout?.['meditationNotesVisible'] !== false && (
-              <MeditationNotesCard 
-                settings={settings} 
-                updateSettings={updateSettings} 
-                loading={dashboardDataLoading} 
-              />
-            )}
-          </div>
-        </div>
-      </main>
-      <footer className="p-4">
-        <MadeWithDyad />
-      </footer>
 
-      <Dialog open={isAddCardOpen} onOpenChange={setIsAddCardOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add Custom Card</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <Label>Title</Label>
-              <Input value={newCardTitle} onChange={(e) => setNewCardTitle(e.target.value)} placeholder="e.g., Things to Remember" />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+              {settings?.dashboard_layout?.['dailyScheduleVisible'] !== false && (
+                <DailySchedulePreview />
+              )}
+              <SortableContext items={customCards.map(card => card.id)} strategy={verticalListSortingStrategy}>
+                {customCards.filter(card => card.is_visible).map(card => (
+                  <SortableCustomCard key={card.id} card={card} />
+                ))}
+              </SortableContext>
             </div>
-            <div>
-              <Label>Emoji (Optional)</Label>
-              <Input value={newCardEmoji} onChange={(e) => setNewCardEmoji(e.target.value)} placeholder="🍊" maxLength={2} />
-            </div>
-            <div>
-              <Label>Content</Label>
-              <Textarea value={newCardContent} onChange={(e) => setNewCardContent(e.target.value)} placeholder="e.g., You have an orange" />
+            <div className="lg:col-span-1 space-y-6">
+              <NextTaskCard 
+                nextAvailableTask={nextAvailableTask}
+                updateTask={updateTask}
+                onOpenOverview={handleOpenOverview}
+                loading={tasksLoading}
+                onFocusViewOpen={handleOpenFocusView}
+              />
+              {settings?.dashboard_layout?.['weeklyFocusVisible'] !== false && (
+                <WeeklyFocusCard 
+                  weeklyFocus={weeklyFocus} 
+                  updateWeeklyFocus={updateWeeklyFocus} 
+                  loading={dashboardDataLoading} 
+                />
+              )}
+              {settings?.dashboard_layout?.['peopleMemoryVisible'] !== false && (
+                <PeopleMemoryCard />
+              )}
+              {settings?.dashboard_layout?.['meditationNotesVisible'] !== false && (
+                <MeditationNotesCard 
+                  settings={settings} 
+                  updateSettings={updateSettings} 
+                  loading={dashboardDataLoading} 
+                />
+              )}
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddCardOpen(false)}>Cancel</Button>
-            <Button onClick={handleAddCard}>Add Card</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </main>
+        <footer className="p-4">
+          <MadeWithDyad />
+        </footer>
 
-      <DashboardLayoutSettings
-        isOpen={isLayoutSettingsOpen}
-        onClose={() => setIsLayoutSettingsOpen(false)}
-        settings={settings}
-        customCards={customCards}
-        updateSettings={updateSettings}
-        updateCustomCard={updateCustomCard}
-      />
+        <Dialog open={isAddCardOpen} onOpenChange={setIsAddCardOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Custom Card</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div>
+                <Label>Title</Label>
+                <Input value={newCardTitle} onChange={(e) => setNewCardTitle(e.target.value)} placeholder="e.g., Things to Remember" />
+              </div>
+              <div>
+                <Label>Emoji (Optional)</Label>
+                <Input value={newCardEmoji} onChange={(e) => setNewCardEmoji(e.target.value)} maxLength={2} />
+              </div>
+              <div>
+                <Label>Content</Label>
+                <Textarea value={newCardContent} onChange={(e) => setNewCardContent(e.target.value)} placeholder="e.g., You have an orange" />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsAddCardOpen(false)}>Cancel</Button>
+              <Button onClick={handleAddCard}>Add Card</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
-      {taskToOverview && (
-        <TaskOverviewDialog
-          task={taskToOverview}
-          isOpen={isTaskOverviewOpen}
-          onClose={() => setIsTaskOverviewOpen(false)}
-          onEditClick={handleEditTaskFromOverview}
-          onUpdate={updateTask}
-          onDelete={deleteTask}
-          sections={sections}
-          allCategories={allCategories}
-          allTasks={allTasks}
+        <DashboardLayoutSettings
+          isOpen={isLayoutSettingsOpen}
+          onClose={() => setIsLayoutSettingsOpen(false)}
+          settings={settings}
+          customCards={customCards}
+          updateSettings={updateSettings}
+          updateCustomCard={updateCustomCard}
         />
-      )}
-      {taskToEdit && (
-        <TaskDetailDialog
-          task={taskToEdit}
-          isOpen={isTaskDetailOpen}
-          onClose={() => setIsTaskDetailOpen(false)}
-          onUpdate={updateTask}
-          onDelete={deleteTask}
-          sections={sections}
-          allCategories={allCategories}
-          createSection={createSection}
-          updateSection={updateSection}
-          deleteSection={deleteSection}
-          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-        />
-      )}
-      <AnimatePresence>
-        {isFocusViewOpen && nextAvailableTask && (
-          <FullScreenFocusView
-            taskDescription={nextAvailableTask.description}
-            onClose={() => setIsFocusViewOpen(false)}
-            onMarkDone={handleMarkDoneFromFocusView}
+
+        {taskToOverview && (
+          <TaskOverviewDialog
+            task={taskToOverview}
+            isOpen={isTaskOverviewOpen}
+            onClose={() => setIsTaskOverviewOpen(false)}
+            onEditClick={handleEditTaskFromOverview}
+            onUpdate={updateTask}
+            onDelete={deleteTask}
+            sections={sections}
+            allCategories={allCategories}
+            allTasks={allTasks}
           />
         )}
-      </AnimatePresence>
-    </div>
+        {taskToEdit && (
+          <TaskDetailDialog
+            task={taskToEdit}
+            isOpen={isTaskDetailOpen}
+            onClose={() => setIsTaskDetailOpen(false)}
+            onUpdate={updateTask}
+            onDelete={deleteTask}
+            sections={sections}
+            allCategories={allCategories}
+            createSection={createSection}
+            updateSection={updateSection}
+            deleteSection={deleteSection}
+            updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+          />
+        )}
+        <AnimatePresence>
+          {isFocusViewOpen && nextAvailableTask && (
+            <FullScreenFocusView
+              taskDescription={nextAvailableTask.description}
+              onClose={() => setIsFocusViewOpen(false)}
+              onMarkDone={handleMarkDoneFromFocusView}
+            />
+          )}
+        </AnimatePresence>
+      </div>
+      {createPortal(
+        <DragOverlay>
+          {activeDragItem ? (
+            <CustomCard card={activeDragItem} isOverlay />
+          ) : null}
+        </DragOverlay>,
+        document.body
+      )}
+    </DndContext>
   );
 };
 

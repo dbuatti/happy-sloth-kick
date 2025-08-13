@@ -6,12 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Button } from '../ui/button';
+import { cn } from '@/lib/utils';
 
 interface CustomCardProps {
   card: CustomCardType;
+  isOverlay?: boolean; // New prop for drag overlay
 }
 
-const CustomCard: React.FC<CustomCardProps> = ({ card }) => {
+const CustomCard: React.FC<CustomCardProps> = ({ card, isOverlay = false }) => {
   const { updateCustomCard, deleteCustomCard } = useDashboardData();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -80,7 +82,7 @@ const CustomCard: React.FC<CustomCardProps> = ({ card }) => {
   };
 
   return (
-    <div className="relative group">
+    <div className={cn("relative group", isOverlay && "shadow-xl ring-2 ring-primary bg-card rounded-xl")}>
       <EditableCard title={card.title} icon={StickyNote} onSave={handleSave} renderEditForm={renderEditForm} isSaving={isSaving}>
         <div className="flex items-start gap-4">
           {card.emoji && <span className="text-2xl">{card.emoji}</span>}
@@ -89,9 +91,11 @@ const CustomCard: React.FC<CustomCardProps> = ({ card }) => {
           </p>
         </div>
       </EditableCard>
-      <Button variant="destructive" size="icon" className="absolute -top-2 -right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={handleDelete}>
-        <Trash2 className="h-3 w-3" />
-      </Button>
+      {!isOverlay && (
+        <Button variant="destructive" size="icon" className="absolute -top-2 -right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={handleDelete}>
+          <Trash2 className="h-3 w-3" />
+        </Button>
+      )}
     </div>
   );
 };

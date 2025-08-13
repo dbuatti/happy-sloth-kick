@@ -202,6 +202,37 @@ export const useDashboardData = (props?: { userId?: string }) => {
     }
   };
 
+  const reorderCustomCards = useCallback(async (orderedCardIds: string[]) => {
+    if (!userId) {
+      showError('User not authenticated.');
+      return;
+    }
+    const updates = orderedCardIds.map((id, index) => ({
+      id,
+      card_order: index,
+      user_id: userId, // Ensure user_id is included for RLS
+    }));
+
+    // Optimistic update
+    setCustomCards(prev => {
+      const newOrderMap = new Map(updates.map(u => [u.id, u.card_order]));
+      return [...prev].sort((a, b) => (newOrderMap.get(a.id) || 0) - (newOrderMap.get(b.id) || 0));
+    });
+
+    try {
+      const { error } = await supabase
+        .from('custom_dashboard_cards')
+        .upsert(updates, { onConflict: 'id' }); // Use upsert with onConflict on 'id'
+      if (error) throw error;
+      showSuccess('Cards reordered!');
+    } catch (error: any) {
+      showError('Failed to reorder cards.');
+      console.error('Error reordering custom cards:', error.message);
+      // Revert optimistic update if error occurs
+      fetchData(); 
+    }
+  }, [userId, fetchData]);
+
   return {
     loading,
     weeklyFocus,
@@ -212,5 +243,6 @@ export const useDashboardData = (props?: { userId?: string }) => {
     addCustomCard,
     updateCustomCard,
     deleteCustomCard,
+    reorderCustomCards, // Export the new function
   };
 };
