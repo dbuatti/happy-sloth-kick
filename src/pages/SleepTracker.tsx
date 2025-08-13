@@ -19,9 +19,10 @@ interface SleepTrackerProps {
 }
 
 const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate, isDemo = false, demoUserId }) => {
-  useAuth(); 
+  const { user } = useAuth(); 
+  const userId = demoUserId || user?.id;
 
-  const { sleepRecord, loading, isSaving, saveSleepRecord } = useSleepRecords({ selectedDate: currentDate, userId: demoUserId });
+  const { sleepRecord, loading, isSaving, saveSleepRecord } = useSleepRecords({ selectedDate: currentDate, userId: userId });
 
   const [bedTime, setBedTime] = useState<string>('');
   const [lightsOffTime, setLightsOffTime] = useState<string>('');
@@ -32,24 +33,9 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
   const [sleepInterruptionsDurationMinutes, setSleepInterruptionsDurationMinutes] = useState<number | ''>('');
   const [timesLeftBedCount, setTimesLeftBedCount] = useState<number | ''>('');
   const [plannedWakeUpTime, setPlannedWakeUpTime] = useState<string>('');
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isFormInitialized, setIsFormInitialized] = useState(false);
 
-  useEffect(() => {
-    if (!loading) {
-      setIsInitialLoad(true);
-      setBedTime(sleepRecord?.bed_time ? sleepRecord.bed_time.substring(0, 5) : '');
-      setLightsOffTime(sleepRecord?.lights_off_time ? sleepRecord.lights_off_time.substring(0, 5) : '');
-      setWakeUpTime(sleepRecord?.wake_up_time ? sleepRecord.wake_up_time.substring(0, 5) : '');
-      setGetOutOfBedTime(sleepRecord?.get_out_of_bed_time ? sleepRecord.get_out_of_bed_time.substring(0, 5) : '');
-      setTimeToFallAsleepMinutes(sleepRecord?.time_to_fall_asleep_minutes ?? '');
-      setSleepInterruptionsCount(sleepRecord?.sleep_interruptions_count ?? '');
-      setSleepInterruptionsDurationMinutes(sleepRecord?.sleep_interruptions_duration_minutes ?? '');
-      setTimesLeftBedCount(sleepRecord?.times_left_bed_count ?? '');
-      setPlannedWakeUpTime(sleepRecord?.planned_wake_up_time ? sleepRecord.planned_wake_up_time.substring(0, 5) : '');
-      setTimeout(() => setIsInitialLoad(false), 100);
-    }
-  }, [sleepRecord, loading]);
-
+  // Memoize the current form state
   const formState = useMemo(() => ({
     bed_time: bedTime || null,
     lights_off_time: lightsOffTime || null,
@@ -64,16 +50,55 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
 
   const debouncedFormState = useDebounce(formState, 1500);
 
+  // Effect to populate form fields when sleepRecord or loading state changes
   useEffect(() => {
-    if (isInitialLoad || isDemo) {
+    if (!loading) {
+      setBedTime(sleepRecord?.bed_time ? sleepRecord.bed_time.substring(0, 5) : '');
+      setLightsOffTime(sleepRecord?.lights_off_time ? sleepRecord.lights_off_time.substring(0, 5) : '');
+      setWakeUpTime(sleepRecord?.wake_up_time ? sleepRecord.wake_up_time.substring(0, 5) : '');
+      setGetOutOfBedTime(sleepRecord?.get_out_of_bed_time ? sleepRecord.get_out_of_bed_time.substring(0, 5) : '');
+      setTimeToFallAsleepMinutes(sleepRecord?.time_to_fall_asleep_minutes ?? '');
+      setSleepInterruptionsCount(sleepRecord?.sleep_interruptions_count ?? '');
+      setSleepInterruptionsDurationMinutes(sleepRecord?.sleep_interruptions_duration_minutes ?? '');
+      setTimesLeftBedCount(sleepRecord?.times_left_bed_count ?? '');
+      setPlannedWakeUpTime(sleepRecord?.planned_wake_up_time ? sleepRecord.planned_wake_up_time.substring(0, 5) : '');
+      setIsFormInitialized(true); // Mark form as initialized after populating
+    }
+  }, [sleepRecord, loading]);
+
+  // Effect to save debounced form state to database
+  useEffect(() => {
+    // Only save if form is initialized, not in demo mode, user is authenticated, and not currently loading/re-fetching data
+    if (!isFormInitialized || isDemo || !userId || loading) {
       return;
     }
+
+    // Create a comparable object from the current sleepRecord to check for actual changes
+    const currentRecordAsFormState = {
+      bed_time: sleepRecord?.bed_time ? sleepRecord.bed_time.substring(0, 5) : null,
+      lights_off_time: sleepRecord?.lights_off_time ? sleepRecord.lights_off_time.substring(0, 5) : null,
+      wake_up_time: sleepRecord?.wake_up_time ? sleepRecord.wake_up_time.substring(0, 5) : null,
+      get_out_of_bed_time: sleepRecord?.get_out_of_bed_time ? sleepRecord.get_out_of_bed_time.substring(0, 5) : null,
+      time_to_fall_asleep_minutes: sleepRecord?.time_to_fall_asleep_minutes ?? null,
+      sleep_interruptions_count: sleepRecord?.sleep_interruptions_count ?? null,
+      sleep_interruptions_duration_minutes: sleepRecord?.sleep_interruptions_duration_minutes ?? null,
+      times_left_bed_count: sleepRecord?.times_left_bed_count ?? null,
+      planned_wake_up_time: sleepRecord?.planned_wake_up_time ? sleepRecord.planned_wake_up_time.substring(0, 5) : null,
+    };
+
+    // Perform a deep comparison to avoid unnecessary saves
+    const areStatesEqual = JSON.stringify(debouncedFormState) === JSON.stringify(currentRecordAsFormState);
+
+    if (areStatesEqual) {
+      return; // No changes, no need to save
+    }
+
     const dataToSave: NewSleepRecordData = {
       date: format(currentDate, 'yyyy-MM-dd'),
       ...debouncedFormState,
     };
     saveSleepRecord(dataToSave);
-  }, [debouncedFormState, isInitialLoad, isDemo, currentDate, saveSleepRecord]);
+  }, [debouncedFormState, isFormInitialized, isDemo, userId, loading, currentDate, saveSleepRecord, sleepRecord]);
 
   const handlePreviousDay = () => {
     setCurrentDate(prevDate => addDays(prevDate, -1));
