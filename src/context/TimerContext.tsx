@@ -14,7 +14,7 @@ interface TimerContextType {
 const TimerContext = createContext<TimerContextType | undefined>(undefined);
 
 export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { playSound } = useSound();
+  const { playSound, requestNotificationPermission } = useSound();
   const [duration, setDuration] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
@@ -30,7 +30,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setTimeRemaining(0);
         setIsRunning(false);
         if (timerRef.current) clearInterval(timerRef.current);
-        playSound('alert');
+        playSound('alert'); // This will now try to send a notification
       } else {
         setTimeRemaining(remaining);
       }
@@ -53,7 +53,10 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
   }, [isRunning, tick]);
 
-  const startTimer = useCallback((minutes: number) => {
+  const startTimer = useCallback(async (minutes: number) => { // Made async to await permission
+    // Request notification permission when timer starts
+    await requestNotificationPermission();
+
     const seconds = minutes * 60;
     setDuration(seconds);
     setTimeRemaining(seconds);
@@ -62,7 +65,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsRunning(true);
     setIsTimerActive(true);
     playSound('start');
-  }, [playSound]);
+  }, [playSound, requestNotificationPermission]);
 
   const togglePause = useCallback(() => {
     setIsRunning(prev => {
