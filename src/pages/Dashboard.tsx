@@ -40,6 +40,7 @@ import {
 } from '@dnd-kit/sortable';
 import { createPortal } from 'react-dom';
 import SortableCustomCard from '@/components/dashboard/SortableCustomCard';
+import DailyBriefingCard from '@/components/dashboard/DailyBriefingCard'; // Import new component
 
 interface DashboardProps {
   isDemo?: boolean;
@@ -153,7 +154,6 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
 
     if (oldIndex !== -1 && newIndex !== -1) {
       const newOrderedCards = arrayMove(customCards, oldIndex, newIndex);
-      // The reorderCustomCards function already handles the optimistic update internally.
       await reorderCustomCards(newOrderedCards.map(card => card.id));
     }
   };
@@ -191,6 +191,9 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
+              {settings?.dashboard_layout?.['dailyBriefingVisible'] !== false && (
+                <DailyBriefingCard isDemo={isDemo} demoUserId={demoUserId} />
+              )}
               {settings?.dashboard_layout?.['dailyScheduleVisible'] !== false && (
                 <DailySchedulePreview />
               )}
@@ -244,7 +247,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
               </div>
               <div>
                 <Label>Emoji (Optional)</Label>
-                <Input value={newCardEmoji} onChange={(e) => setNewCardEmoji(e.target.value)} maxLength={2} />
+                <Input value={newCardEmoji} onChange={(e) => setNewCardEmoji(e.target.value)} placeholder="🍊" maxLength={2} />
               </div>
               <div>
                 <Label>Content</Label>

@@ -58,3 +58,24 @@ export const parseAppointmentText = async (
     return null;
   }
 };
+
+export const getDailyBriefing = async (
+  userId: string,
+  currentDate: Date
+): Promise<string | null> => {
+  try {
+    const { data, error } = await supabase.functions.invoke('daily-briefing', {
+      body: { userId, currentDate: currentDate.toISOString().split('T')[0] },
+    });
+
+    if (error) {
+      console.error('Error invoking daily-briefing Edge Function:', error);
+      throw new Error(error.message);
+    }
+
+    return data.briefing;
+  } catch (error: any) {
+    console.error('Failed to get daily briefing:', error.message);
+    return null;
+  }
+};

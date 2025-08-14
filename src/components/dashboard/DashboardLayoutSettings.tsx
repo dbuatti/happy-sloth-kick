@@ -32,6 +32,7 @@ const DashboardLayoutSettings: React.FC<DashboardLayoutSettingsProps> = ({
   };
 
   const builtInCards = [
+    { key: 'dailyBriefingVisible', label: 'Daily Briefing' }, // New entry
     { key: 'dailyScheduleVisible', label: 'Daily Schedule Preview' },
     { key: 'weeklyFocusVisible', label: "This Week's Focus" },
     { key: 'peopleMemoryVisible', label: 'People Memory' },

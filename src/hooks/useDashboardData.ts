@@ -33,6 +33,7 @@ const defaultLayout = {
   weeklyFocusVisible: true,
   peopleMemoryVisible: true,
   meditationNotesVisible: true,
+  dailyBriefingVisible: true, // New setting for daily briefing card
 };
 
 export const useDashboardData = (props?: { userId?: string }) => {
