@@ -1,5 +1,4 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sparkles } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getDailyBriefing } from '@/integrations/supabase/api';

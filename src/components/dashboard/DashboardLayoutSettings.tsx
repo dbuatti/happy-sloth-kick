@@ -3,14 +3,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { useDashboardData, CustomCard, DashboardSettings } from '@/hooks/useDashboardData';
+import { useDashboardData, CustomCard } from '@/hooks/useDashboardData';
+import { UserSettings } from '@/hooks/useUserSettings'; // Import UserSettings type
 
 interface DashboardLayoutSettingsProps {
   isOpen: boolean;
   onClose: () => void;
-  settings: DashboardSettings;
+  settings: UserSettings | null; // Updated to UserSettings | null
   customCards: CustomCard[];
-  updateSettings: ReturnType<typeof useDashboardData>['updateSettings'];
+  updateSettings: ReturnType<typeof useDashboardData>['updateSettings']; // Updated to match useDashboardData's updateSettings
   updateCustomCard: ReturnType<typeof useDashboardData>['updateCustomCard'];
 }
 
@@ -23,7 +24,9 @@ const DashboardLayoutSettings: React.FC<DashboardLayoutSettingsProps> = ({
   updateCustomCard,
 }) => {
   const handleToggleBuiltIn = (cardKey: string, checked: boolean) => {
+    if (!settings) return; // Ensure settings is not null
     const newLayout = { ...settings.dashboard_layout, [cardKey]: checked };
+    // Ensure updates match the Partial<Omit<UserSettings, 'user_id'>> expected by useSettings
     updateSettings({ dashboard_layout: newLayout });
   };
 
@@ -32,7 +35,7 @@ const DashboardLayoutSettings: React.FC<DashboardLayoutSettingsProps> = ({
   };
 
   const builtInCards = [
-    { key: 'dailyBriefingVisible', label: 'Daily Briefing' }, // New entry
+    { key: 'dailyBriefingVisible', label: 'Daily Briefing' },
     { key: 'dailyScheduleVisible', label: 'Daily Schedule Preview' },
     { key: 'weeklyFocusVisible', label: "This Week's Focus" },
     { key: 'peopleMemoryVisible', label: 'People Memory' },
@@ -52,7 +55,7 @@ const DashboardLayoutSettings: React.FC<DashboardLayoutSettingsProps> = ({
               <Label htmlFor={`toggle-${key}`}>{label}</Label>
               <Switch
                 id={`toggle-${key}`}
-                checked={settings.dashboard_layout?.[key] !== false}
+                checked={settings?.dashboard_layout?.[key] !== false} // Safely access layout property
                 onCheckedChange={(checked) => handleToggleBuiltIn(key, checked)}
               />
             </div>

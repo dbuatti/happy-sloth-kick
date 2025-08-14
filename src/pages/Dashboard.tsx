@@ -40,7 +40,11 @@ import {
 } from '@dnd-kit/sortable';
 import { createPortal } from 'react-dom';
 import SortableCustomCard from '@/components/dashboard/SortableCustomCard';
-import DailyBriefingCard from '@/components/dashboard/DailyBriefingCard'; // Import new component
+import DailyBriefingCard from '@/components/dashboard/DailyBriefingCard';
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "react-resizable-panels/lib"; // Corrected import path
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useSettings } from '@/context/SettingsContext';
+
 
 interface DashboardProps {
   isDemo?: boolean;
@@ -53,12 +57,12 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
     addCustomCard, 
     weeklyFocus, 
     updateWeeklyFocus, 
-    settings, 
-    updateSettings, 
     loading: dashboardDataLoading,
     updateCustomCard,
-    reorderCustomCards, // New function from hook
+    reorderCustomCards,
   } = useDashboardData({ userId: demoUserId });
+
+  const { settings, updateSettings } = useSettings({ userId: demoUserId }); // useSettings now accepts userId
 
   const { tasksDue, tasksCompleted, appointmentsToday, loading: statsLoading } = useDashboardStats({ userId: demoUserId });
   
@@ -90,6 +94,8 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
   const [isFocusViewOpen, setIsFocusViewOpen] = useState(false);
 
   const [activeDragItem, setActiveDragItem] = useState<any>(null);
+
+  const isMobile = useIsMobile();
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -158,11 +164,19 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
     }
   };
 
+  const handlePanelLayoutChange = (sizes: number[]) => {
+    if (settings) {
+      updateSettings({ dashboard_panel_sizes: sizes });
+    }
+  };
+
   const statCards = [
     { title: "Tasks Due Today", value: tasksDue, icon: ListTodo, description: "tasks remaining for today", className: "bg-blue-500/5 dark:bg-blue-500/10 border-blue-500/20" },
     { title: "Tasks Completed", value: tasksCompleted, icon: CheckCircle2, description: "tasks completed today", className: "bg-green-500/5 dark:bg-green-500/10 border-green-500/20" },
     { title: "Appointments", value: appointmentsToday, icon: CalendarDays, description: "events scheduled for today", className: "bg-purple-500/5 dark:bg-purple-500/10 border-purple-500/20" },
   ];
+
+  const defaultPanelSizes = settings?.dashboard_panel_sizes || [66, 34];
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
@@ -189,47 +203,100 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
             ))}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-6">
-              {settings?.dashboard_layout?.['dailyBriefingVisible'] !== false && (
-                <DailyBriefingCard isDemo={isDemo} demoUserId={demoUserId} />
-              )}
-              {settings?.dashboard_layout?.['dailyScheduleVisible'] !== false && (
-                <DailySchedulePreview />
-              )}
-              <SortableContext items={customCards.map(card => card.id)} strategy={verticalListSortingStrategy}>
-                {customCards.filter(card => card.is_visible).map(card => (
-                  <SortableCustomCard key={card.id} card={card} />
-                ))}
-              </SortableContext>
-            </div>
-            <div className="lg:col-span-1 space-y-6">
-              <NextTaskCard 
-                nextAvailableTask={nextAvailableTask}
-                updateTask={updateTask}
-                onOpenOverview={handleOpenOverview}
-                loading={tasksLoading}
-                onFocusViewOpen={handleOpenFocusView}
-              />
-              {settings?.dashboard_layout?.['weeklyFocusVisible'] !== false && (
-                <WeeklyFocusCard 
-                  weeklyFocus={weeklyFocus} 
-                  updateWeeklyFocus={updateWeeklyFocus} 
-                  loading={dashboardDataLoading} 
+          {isMobile ? (
+            <div className="grid grid-cols-1 gap-6">
+              <div className="space-y-6">
+                {settings?.dashboard_layout?.['dailyBriefingVisible'] !== false && (
+                  <DailyBriefingCard isDemo={isDemo} demoUserId={demoUserId} />
+                )}
+                {settings?.dashboard_layout?.['dailyScheduleVisible'] !== false && (
+                  <DailySchedulePreview />
+                )}
+                <SortableContext items={customCards.map(card => card.id)} strategy={verticalListSortingStrategy}>
+                  {customCards.filter(card => card.is_visible).map(card => (
+                    <SortableCustomCard key={card.id} card={card} />
+                  ))}
+                </SortableContext>
+              </div>
+              <div className="space-y-6">
+                <NextTaskCard 
+                  nextAvailableTask={nextAvailableTask}
+                  updateTask={updateTask}
+                  onOpenOverview={handleOpenOverview}
+                  loading={tasksLoading}
+                  onFocusViewOpen={handleOpenFocusView}
                 />
-              )}
-              {settings?.dashboard_layout?.['peopleMemoryVisible'] !== false && (
-                <PeopleMemoryCard />
-              )}
-              {settings?.dashboard_layout?.['meditationNotesVisible'] !== false && (
-                <MeditationNotesCard 
-                  settings={settings} 
-                  updateSettings={updateSettings} 
-                  loading={dashboardDataLoading} 
-                />
-              )}
+                {settings?.dashboard_layout?.['weeklyFocusVisible'] !== false && (
+                  <WeeklyFocusCard 
+                    weeklyFocus={weeklyFocus} 
+                    updateWeeklyFocus={updateWeeklyFocus} 
+                    loading={dashboardDataLoading} 
+                  />
+                )}
+                {settings?.dashboard_layout?.['peopleMemoryVisible'] !== false && (
+                  <PeopleMemoryCard />
+                )}
+                {settings?.dashboard_layout?.['meditationNotesVisible'] !== false && (
+                  <MeditationNotesCard 
+                    settings={settings} 
+                    updateSettings={updateSettings} 
+                    loading={dashboardDataLoading} 
+                  />
+                )}
+              </div>
             </div>
-          </div>
+          ) : (
+            <ResizablePanelGroup
+              direction="horizontal"
+              className="min-h-[600px] rounded-lg border"
+              onLayout={handlePanelLayoutChange}
+            >
+              <ResizablePanel defaultSize={defaultPanelSizes[0]} minSize={30}>
+                <div className="flex h-full flex-col p-4 space-y-6">
+                  {settings?.dashboard_layout?.['dailyBriefingVisible'] !== false && (
+                    <DailyBriefingCard isDemo={isDemo} demoUserId={demoUserId} />
+                  )}
+                  {settings?.dashboard_layout?.['dailyScheduleVisible'] !== false && (
+                    <DailySchedulePreview />
+                  )}
+                  <SortableContext items={customCards.map(card => card.id)} strategy={verticalListSortingStrategy}>
+                    {customCards.filter(card => card.is_visible).map(card => (
+                      <SortableCustomCard key={card.id} card={card} />
+                    ))}
+                  </SortableContext>
+                </div>
+              </ResizablePanel>
+              <ResizableHandle withHandle />
+              <ResizablePanel defaultSize={defaultPanelSizes[1]} minSize={20}>
+                <div className="flex h-full flex-col p-4 space-y-6">
+                  <NextTaskCard 
+                    nextAvailableTask={nextAvailableTask}
+                    updateTask={updateTask}
+                    onOpenOverview={handleOpenOverview}
+                    loading={tasksLoading}
+                    onFocusViewOpen={handleOpenFocusView}
+                  />
+                  {settings?.dashboard_layout?.['weeklyFocusVisible'] !== false && (
+                    <WeeklyFocusCard 
+                      weeklyFocus={weeklyFocus} 
+                      updateWeeklyFocus={updateWeeklyFocus} 
+                      loading={dashboardDataLoading} 
+                    />
+                  )}
+                  {settings?.dashboard_layout?.['peopleMemoryVisible'] !== false && (
+                    <PeopleMemoryCard />
+                  )}
+                  {settings?.dashboard_layout?.['meditationNotesVisible'] !== false && (
+                    <MeditationNotesCard 
+                      settings={settings} 
+                      updateSettings={updateSettings} 
+                      loading={dashboardDataLoading} 
+                    />
+                  )}
+                </div>
+              </ResizablePanel>
+            </ResizablePanelGroup>
+          )}
         </main>
         <footer className="p-4">
           <MadeWithDyad />

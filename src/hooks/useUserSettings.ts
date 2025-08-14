@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess } from '@/utils/toast';
 
+
 export interface UserSettings {
   user_id: string;
   project_tracker_title: string;
@@ -12,6 +13,7 @@ export interface UserSettings {
   dashboard_layout: any | null; // jsonb can be any
   visible_pages?: Record<string, boolean>;
   schedule_show_focus_tasks_only: boolean;
+  dashboard_panel_sizes: number[] | null; // New: Stores the sizes of resizable panels
 }
 
 const defaultSettings: Omit<UserSettings, 'user_id'> = {
@@ -22,6 +24,7 @@ const defaultSettings: Omit<UserSettings, 'user_id'> = {
   dashboard_layout: null,
   visible_pages: {},
   schedule_show_focus_tasks_only: true,
+  dashboard_panel_sizes: [66, 34], // Default sizes for the two main dashboard panels
 };
 
 export const useUserSettings = (props?: { userId?: string }) => {
@@ -53,6 +56,8 @@ export const useUserSettings = (props?: { userId?: string }) => {
         setSettings({
           ...defaultSettings,
           ...data,
+          dashboard_layout: { ...defaultSettings.dashboard_layout, ...(data.dashboard_layout || {}) },
+          dashboard_panel_sizes: data.dashboard_panel_sizes || defaultSettings.dashboard_panel_sizes,
         });
       } else {
         // If in demo mode, don't try to insert. Just use defaults.
