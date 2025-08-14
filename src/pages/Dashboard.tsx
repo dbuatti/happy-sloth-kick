@@ -41,7 +41,7 @@ import {
 import { createPortal } from 'react-dom';
 import SortableCustomCard from '@/components/dashboard/SortableCustomCard';
 import DailyBriefingCard from '@/components/dashboard/DailyBriefingCard';
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "react-resizable-panels/lib"; // Corrected import path
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "react-resizable-panels"; // Corrected import path
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSettings } from '@/context/SettingsContext';
 
@@ -62,7 +62,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
     reorderCustomCards,
   } = useDashboardData({ userId: demoUserId });
 
-  const { settings, updateSettings } = useSettings({ userId: demoUserId }); // useSettings now accepts userId
+  const { settings, updateSettings } = useSettings(); // useSettings now accepts userId
 
   const { tasksDue, tasksCompleted, appointmentsToday, loading: statsLoading } = useDashboardStats({ userId: demoUserId });
   

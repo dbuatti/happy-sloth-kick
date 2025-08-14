@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { DashboardSettings, useDashboardData } from '@/hooks/useDashboardData';
+import { useDashboardData } from '@/hooks/useDashboardData';
 import EditableCard from './EditableCard';
 import { Leaf } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,7 +9,7 @@ import { UserSettings } from '@/hooks/useUserSettings'; // Import UserSettings t
 
 interface MeditationNotesCardProps {
   settings: UserSettings | null; // Updated to UserSettings | null
-  updateSettings: ReturnType<typeof useDashboardData>['updateSettings']; // Updated to match useDashboardData's updateSettings
+  updateSettings: (updates: Partial<Omit<UserSettings, 'user_id'>>) => Promise<boolean>; // Updated to match useUserSettings's updateSettings
   loading: boolean;
 }
 

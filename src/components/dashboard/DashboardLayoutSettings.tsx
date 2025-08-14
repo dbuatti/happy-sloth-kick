@@ -11,7 +11,7 @@ interface DashboardLayoutSettingsProps {
   onClose: () => void;
   settings: UserSettings | null; // Updated to UserSettings | null
   customCards: CustomCard[];
-  updateSettings: ReturnType<typeof useDashboardData>['updateSettings']; // Updated to match useDashboardData's updateSettings
+  updateSettings: (updates: Partial<Omit<UserSettings, 'user_id'>>) => Promise<boolean>; // Updated to match useUserSettings's updateSettings
   updateCustomCard: ReturnType<typeof useDashboardData>['updateCustomCard'];
 }
 
