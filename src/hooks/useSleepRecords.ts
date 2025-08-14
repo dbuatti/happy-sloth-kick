@@ -82,11 +82,18 @@ export const useSleepRecords = ({ selectedDate, userId: propUserId }: UseSleepRe
         date: formattedDate,
       };
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('sleep_records')
-        .upsert(payload, { onConflict: 'user_id, date' });
+        .upsert(payload, { onConflict: 'user_id, date' })
+        .select()
+        .single();
 
       if (error) throw error;
+      
+      // Update local state with the data that was just saved.
+      // This is crucial for the comparison logic in the component to work correctly after a save.
+      setSleepRecord(data);
+
     } catch (error: any) {
       console.error('Error saving sleep record:', error.message);
       showError('Failed to save sleep record.');

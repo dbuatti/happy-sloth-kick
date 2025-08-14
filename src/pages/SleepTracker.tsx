@@ -9,7 +9,6 @@ import { Moon, Bed, AlarmClock, LogOut, Hourglass, ListX, Clock, Goal } from 'lu
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/context/AuthContext';
 import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
-import { useDebounce } from '@/hooks/useDebounce';
 
 interface SleepTrackerProps {
   currentDate: Date;
@@ -48,8 +47,6 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
     planned_wake_up_time: plannedWakeUpTime || null,
   }), [bedTime, lightsOffTime, wakeUpTime, getOutOfBedTime, timeToFallAsleepMinutes, sleepInterruptionsCount, sleepInterruptionsDurationMinutes, timesLeftBedCount, plannedWakeUpTime]);
 
-  const debouncedFormState = useDebounce(formState, 1500);
-
   // Effect to populate form fields when sleepRecord or loading state changes
   useEffect(() => {
     if (!loading) {
@@ -66,39 +63,38 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
     }
   }, [sleepRecord, loading]);
 
-  // Effect to save debounced form state to database
+  // Effect to save form state to database with a debounce
   useEffect(() => {
-    // Only save if form is initialized, not in demo mode, user is authenticated, and not currently loading/re-fetching data
     if (!isFormInitialized || isDemo || !userId || loading) {
       return;
     }
 
-    // Create a comparable object from the current sleepRecord to check for actual changes
-    const currentRecordAsFormState = {
-      bed_time: sleepRecord?.bed_time ? sleepRecord.bed_time.substring(0, 5) : null,
-      lights_off_time: sleepRecord?.lights_off_time ? sleepRecord.lights_off_time.substring(0, 5) : null,
-      wake_up_time: sleepRecord?.wake_up_time ? sleepRecord.wake_up_time.substring(0, 5) : null,
-      get_out_of_bed_time: sleepRecord?.get_out_of_bed_time ? sleepRecord.get_out_of_bed_time.substring(0, 5) : null,
-      time_to_fall_asleep_minutes: sleepRecord?.time_to_fall_asleep_minutes ?? null,
-      sleep_interruptions_count: sleepRecord?.sleep_interruptions_count ?? null,
-      sleep_interruptions_duration_minutes: sleepRecord?.sleep_interruptions_duration_minutes ?? null,
-      times_left_bed_count: sleepRecord?.times_left_bed_count ?? null,
-      planned_wake_up_time: sleepRecord?.planned_wake_up_time ? sleepRecord.planned_wake_up_time.substring(0, 5) : null,
+    const handler = setTimeout(() => {
+      const currentRecordAsFormState = {
+        bed_time: sleepRecord?.bed_time ? sleepRecord.bed_time.substring(0, 5) : null,
+        lights_off_time: sleepRecord?.lights_off_time ? sleepRecord.lights_off_time.substring(0, 5) : null,
+        wake_up_time: sleepRecord?.wake_up_time ? sleepRecord.wake_up_time.substring(0, 5) : null,
+        get_out_of_bed_time: sleepRecord?.get_out_of_bed_time ? sleepRecord.get_out_of_bed_time.substring(0, 5) : null,
+        time_to_fall_asleep_minutes: sleepRecord?.time_to_fall_asleep_minutes ?? null,
+        sleep_interruptions_count: sleepRecord?.sleep_interruptions_count ?? null,
+        sleep_interruptions_duration_minutes: sleepRecord?.sleep_interruptions_duration_minutes ?? null,
+        times_left_bed_count: sleepRecord?.times_left_bed_count ?? null,
+        planned_wake_up_time: sleepRecord?.planned_wake_up_time ? sleepRecord.planned_wake_up_time.substring(0, 5) : null,
+      };
+
+      if (JSON.stringify(formState) !== JSON.stringify(currentRecordAsFormState)) {
+        const dataToSave: NewSleepRecordData = {
+          date: format(currentDate, 'yyyy-MM-dd'),
+          ...formState,
+        };
+        saveSleepRecord(dataToSave);
+      }
+    }, 1500);
+
+    return () => {
+      clearTimeout(handler);
     };
-
-    // Perform a deep comparison to avoid unnecessary saves
-    const areStatesEqual = JSON.stringify(debouncedFormState) === JSON.stringify(currentRecordAsFormState);
-
-    if (areStatesEqual) {
-      return; // No changes, no need to save
-    }
-
-    const dataToSave: NewSleepRecordData = {
-      date: format(currentDate, 'yyyy-MM-dd'),
-      ...debouncedFormState,
-    };
-    saveSleepRecord(dataToSave);
-  }, [debouncedFormState, isFormInitialized, isDemo, userId, loading, currentDate, saveSleepRecord, sleepRecord]);
+  }, [formState, isFormInitialized, isDemo, userId, loading, currentDate, saveSleepRecord, sleepRecord]);
 
   const handlePreviousDay = () => {
     setCurrentDate(prevDate => addDays(prevDate, -1));
