@@ -1,35 +1,58 @@
 import React from 'react';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { useSettings, UserSettings } from '@/context/SettingsContext'; // Import UserSettings
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { useSettings } from '@/context/SettingsContext';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Filter } from 'lucide-react';
 
-interface ScheduleSettingsProps {
-  settings: UserSettings | null;
-  updateSettings: (updates: Partial<Omit<UserSettings, 'user_id'>>) => Promise<boolean>;
-}
+const ScheduleSettings: React.FC = () => {
+  const { settings, loading, updateSettings } = useSettings();
 
-const ScheduleSettings: React.FC<ScheduleSettingsProps> = ({ settings, updateSettings }) => {
   const handleToggle = (checked: boolean) => {
-    updateSettings({ schedule_show_focus_tasks_only: checked }); // Corrected property name
+    updateSettings({ schedule_show_focus_tasks_only: checked });
   };
 
-  return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-semibold">Schedule View Options</h3>
-      <p className="text-sm text-muted-foreground">Customize how tasks are displayed in your schedule view.</p>
+  if (loading) {
+    return (
+      <Card className="w-full shadow-lg rounded-xl">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-2xl font-bold flex items-center gap-2">
+            <Filter className="h-6 w-6 text-primary" /> Schedule Options
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <Skeleton className="h-10 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
 
-      <div className="flex items-center justify-between">
-        <Label htmlFor="schedule-focus-toggle">Show only Focus Mode tasks</Label>
-        <Switch
-          id="schedule-focus-toggle"
-          checked={settings?.schedule_show_focus_tasks_only ?? true} // Corrected property name
-          onCheckedChange={handleToggle}
-        />
-      </div>
-      <p className="text-sm text-muted-foreground">
-        When enabled, only tasks from sections marked for "Focus Mode" will appear in the unscheduled tasks list.
-      </p>
-    </div>
+  return (
+    <Card className="w-full shadow-lg rounded-xl">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-2xl font-bold flex items-center gap-2">
+          <Filter className="h-6 w-6 text-primary" /> Schedule Options
+        </CardTitle>
+        <p className="text-sm text-muted-foreground">Customize your time-blocking experience.</p>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="flex items-center justify-between">
+          <Label htmlFor="schedule-focus-toggle" className="text-base font-medium flex items-center gap-2">
+            Only show 'Focus Mode' tasks
+          </Label>
+          <Switch
+            id="schedule-focus-toggle"
+            checked={settings?.schedule_show_focus_tasks_only ?? true}
+            onCheckedChange={handleToggle}
+            aria-label="Toggle showing only focus mode tasks in schedule"
+          />
+        </div>
+        <p className="text-xs text-muted-foreground mt-1">
+          When enabled, the task list in the schedule view will only show tasks from sections included in Focus Mode.
+        </p>
+      </CardContent>
+    </Card>
   );
 };
 

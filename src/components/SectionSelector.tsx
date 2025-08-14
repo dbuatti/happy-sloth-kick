@@ -1,26 +1,33 @@
-import React, { useState } from 'react';
+import { Label } from "@/components/ui/label";
+import { FolderOpen, Plus } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+// Removed useAuth as it's not directly used in this component
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
-import ManageSectionsDialog from './ManageSectionsDialog';
-import { Section } from '@/hooks/useTasks'; // Changed from TaskSection to Section
+import ManageSectionsDialog from './ManageSectionsDialog'; // Import the new dialog
+
+interface TaskSection {
+  id: string;
+  name: string;
+  user_id: string;
+  order: number | null;
+  include_in_focus_mode: boolean; // Added for consistency
+}
 
 interface SectionSelectorProps {
-  sections: Section[];
-  value: string | undefined | null; // Allow null for no section
-  onChange: (sectionId: string | null) => void; // Changed to string | null
-  disabled?: boolean;
-  createSection: (name: string) => Promise<Section | null>; // Updated return type
-  updateSection: (sectionId: string, updates: Partial<Omit<Section, 'id' | 'user_id'>>) => Promise<boolean>; // Updated type
-  deleteSection: (sectionId: string) => Promise<boolean>; // Updated type
-  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<boolean>; // Updated type
+  value: string | null;
+  onChange: (sectionId: string | null) => void;
+  sections: TaskSection[];
+  createSection: (name: string) => Promise<void>;
+  updateSection: (sectionId: string, newName: string) => Promise<void>;
+  deleteSection: (sectionId: string) => Promise<void>;
+  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
 }
 
 const SectionSelector: React.FC<SectionSelectorProps> = ({
-  sections,
   value,
   onChange,
-  disabled,
+  sections,
   createSection,
   updateSection,
   deleteSection,
@@ -31,27 +38,35 @@ const SectionSelector: React.FC<SectionSelectorProps> = ({
   const selectedSection = sections.find(sec => sec.id === value);
 
   return (
-    <>
-      <div className="flex items-center gap-2">
-        <Select value={value ?? 'no-section'} onValueChange={(val) => onChange(val === 'no-section' ? null : val)} disabled={disabled}>
-          <SelectTrigger aria-label="Select section" className="flex-grow h-9 text-base">
-            <SelectValue placeholder="Select section">
-              {selectedSection ? selectedSection.name : "No Section"}
-            </SelectValue>
+    <div className="space-y-2">
+      <Label>Section</Label>
+      <div className="flex space-x-2">
+        <Select value={value || "no-section-option"} onValueChange={(val) => onChange(val === "no-section-option" ? null : val)}>
+          <SelectTrigger className="flex-1 h-9">
+            <SelectValue placeholder="Select section" />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="no-section">No Section</SelectItem>
-            {sections.map(section => (
-              <SelectItem key={section.id} value={section.id}>
-                {section.name}
-              </SelectItem>
-            ))}
+          <SelectContent className="z-[9999]">
+            <SelectItem value="no-section-option">No Section</SelectItem>
+            {sections.length > 0 && (
+              sections.map(section => (
+                <SelectItem key={section.id} value={section.id}>
+                  {section.name}
+                </SelectItem>
+              ))
+            )}
           </SelectContent>
         </Select>
-        <Button variant="outline" size="icon" onClick={() => setIsManageSectionsOpen(true)} disabled={disabled}>
-          <Plus className="h-4 w-4" />
+        <Button type="button" size="icon" variant="outline" className="h-9 w-9" onClick={() => setIsManageSectionsOpen(true)}>
+          <Plus className="h-3.5 w-3.5" />
         </Button>
       </div>
+      
+      {selectedSection && (
+        <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+          <FolderOpen className="h-3.5 w-3.5" />
+          <span>{selectedSection.name}</span>
+        </div>
+      )}
 
       <ManageSectionsDialog
         isOpen={isManageSectionsOpen}
@@ -62,7 +77,7 @@ const SectionSelector: React.FC<SectionSelectorProps> = ({
         deleteSection={deleteSection}
         updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
       />
-    </>
+    </div>
   );
 };
 

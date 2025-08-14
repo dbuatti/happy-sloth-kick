@@ -37,6 +37,7 @@ import {
   SortableContext,
   arrayMove,
   verticalListSortingStrategy,
+
 } from '@dnd-kit/sortable';
 import { createPortal } from 'react-dom';
 import SortableCustomCard from '@/components/dashboard/SortableCustomCard';
@@ -78,11 +79,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
     deleteSection,
     updateSectionIncludeInFocusMode,
     loading: tasksLoading,
-  } = useTasks({
-    viewMode: 'daily',
-    userId: demoUserId,
-    showFutureTasksForDays: settings?.show_future_tasks_for_days, // Pass the setting here
-  });
+  } = useTasks({ viewMode: 'daily', userId: demoUserId });
 
   const { playSound } = useSound();
   const [isAddCardOpen, setIsAddCardOpen] = useState(false);
@@ -319,6 +316,10 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
               <div>
                 <Label>Emoji (Optional)</Label>
                 <Input value={newCardEmoji} onChange={(e) => setNewCardEmoji(e.target.value)} placeholder="🍊" maxLength={2} />
+              </div>
+              <div>
+                <Label>Content</Label>
+                <Textarea value={newCardContent} onChange={(e) => setNewCardContent(e.target.value)} placeholder="e.g., You have an orange" />
               </div>
             </div>
             <DialogFooter>

@@ -1,49 +1,75 @@
 import React from 'react';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { useSettings, UserSettings } from '@/context/SettingsContext'; // Import UserSettings
-import { pages } from '@/config/pages'; // Assuming pages config exists
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { useSettings } from '@/context/SettingsContext';
+import { Skeleton } from '@/components/ui/skeleton';
+import { navItems } from '@/lib/navItems';
+import { LayoutDashboard } from 'lucide-react';
 
-interface PageToggleSettingsProps {
-  settings: UserSettings | null;
-  updateSettings: (updates: Partial<Omit<UserSettings, 'user_id'>>) => Promise<boolean>;
-}
+const PageToggleSettings: React.FC = () => {
+  const { settings, loading, updateSettings } = useSettings();
 
-const PageToggleSettings: React.FC<PageToggleSettingsProps> = ({ settings, updateSettings }) => {
-  const handleTogglePageVisibility = (path: string, checked: boolean) => {
+  const toggleablePages = navItems.filter(item => item.toggleable);
+
+  const handleToggle = (path: string, checked: boolean) => {
     const newVisiblePages = {
-      ...(settings?.visible_pages || {}), // Access visible_pages from settings
+      ...(settings?.visible_pages || {}),
       [path]: checked,
     };
-    updateSettings({ visible_pages: newVisiblePages }); // Correctly updates visible_pages
+    updateSettings({ visible_pages: newVisiblePages });
   };
 
-  return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-semibold">Page Visibility</h3>
-      <p className="text-sm text-muted-foreground">Control which pages are visible in the sidebar.</p>
+  if (loading) {
+    return (
+      <Card className="w-full shadow-lg rounded-xl">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-2xl font-bold flex items-center gap-2">
+            <LayoutDashboard className="h-6 w-6 text-primary" /> Page Visibility
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <Skeleton key={i} className="h-10 w-full" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
-      <div className="grid gap-4">
-        {pages.map((page) => {
-          if (!page.toggleable) return null; // Only show toggleable pages
-          const Icon = page.icon;
-          const isVisible = settings?.visible_pages?.[page.path] !== false; // Access visible_pages from settings
-          return (
-            <div key={page.path} className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {Icon && <Icon className="h-5 w-5 text-muted-foreground" />}
-                <Label htmlFor={`toggle-${page.path}`}>{page.name}</Label>
+  return (
+    <Card className="w-full shadow-lg rounded-xl">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-2xl font-bold flex items-center gap-2">
+          <LayoutDashboard className="h-6 w-6 text-primary" /> Page Visibility
+        </CardTitle>
+        <p className="text-sm text-muted-foreground">Choose which tools to show in your sidebar.</p>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="space-y-4">
+          {toggleablePages.map(page => {
+            const Icon = page.icon;
+            const isVisible = settings?.visible_pages?.[page.path] !== false;
+            return (
+              <div key={page.path} className="flex items-center justify-between">
+                <Label htmlFor={`toggle-${page.path}`} className="text-base font-medium flex items-center gap-2">
+                  <Icon className="h-4 w-4" />
+                  {page.name}
+                </Label>
+                <Switch
+                  id={`toggle-${page.path}`}
+                  checked={isVisible}
+                  onCheckedChange={(checked) => handleToggle(page.path, checked)}
+                  aria-label={`Toggle visibility for ${page.name}`}
+                />
               </div>
-              <Switch
-                id={`toggle-${page.path}`}
-                checked={isVisible}
-                onCheckedChange={(checked) => handleTogglePageVisibility(page.path, checked)}
-              />
-            </div>
-          );
-        })}
-      </div>
-    </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

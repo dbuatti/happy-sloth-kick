@@ -1,340 +1,496 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Clock, ImagePlus, XCircle } from "lucide-react";
-import { format, parseISO, isValid, setHours, setMinutes } from "date-fns";
-import { Calendar } from "@/components/ui/calendar";
-import { cn } from '@/lib/utils';
-import CategorySelector from './CategorySelector';
+import { Calendar, BellRing, Lightbulb, UploadCloud, X } from 'lucide-react';
+import { cn } from "@/lib/utils";
+import CategorySelector from "./CategorySelector";
+import PrioritySelector from "./PrioritySelector";
+import SectionSelector from "./SectionSelector";
+import { format, setHours, setMinutes, parseISO, isValid } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Task, Section, Category } from '@/hooks/useTasks'; // Changed TaskSection to Section
+import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { suggestTaskDetails } from '@/integrations/supabase/api';
+import { showError } from '@/utils/toast';
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/lib/supabaseClient';
-import { showError, showLoading, dismissToast } from '@/utils/toast';
-import { getPriorityColor } from '@/utils/taskUtils';
+import { v4 as uuidv4 } from 'uuid';
+import { supabase } from '@/integrations/supabase/client';
 
-// Define form schema with Zod
-const formSchema = z.object({
-  description: z.string().min(1, { message: "Description is required." }),
-  category_id: z.string().nullable().optional(), // Changed to category_id
-  priority: z.enum(['low', 'medium', 'high']).default('medium'),
-  dueDate: z.date().nullable().optional(),
-  notes: z.string().nullable().optional(),
-  remindAtDate: z.date().nullable().optional(),
-  remindAtTime: z.string().nullable().optional(),
-  section_id: z.string().nullable().optional(), // Changed to section_id
-  recurringType: z.enum(['none', 'daily', 'weekly', 'monthly']).default('none'),
-  parent_task_id: z.string().nullable().optional(),
-  link: z.string().nullable().optional(),
+const taskFormSchema = z.object({
+  description: z.string().min(1, { message: 'Task description is required.' }).max(255, { message: 'Description must be 255 characters or less.' }),
+  category: z.string().min(1, { message: 'Category is required.' }),
+  priority: z.string().min(1, { message: 'Priority is required.' }),
+  dueDate: z.date().nullable().optional().transform(v => v ?? null),
+  notes: z.string().max(500, { message: 'Notes must be 500 characters or less.' }).nullable().optional().transform(v => v ?? null),
+  remindAtDate: z.date().nullable().optional().transform(v => v ?? null),
+  remindAtTime: z.string().optional(),
+  sectionId: z.string().nullable().optional().transform(v => v ?? null),
+  recurringType: z.enum(['none', 'daily', 'weekly', 'monthly']),
+  parentTaskId: z.string().nullable().optional().transform(v => v ?? null),
+  link: z.string().optional().transform((val) => {
+    if (!val || val.trim() === '') return null;
+    const trimmedVal = val.trim();
+    if (trimmedVal.startsWith('/') || trimmedVal.startsWith('~') || trimmedVal.startsWith('file:')) {
+        return trimmedVal;
+    }
+    if (!/^https?:\/\//i.test(trimmedVal) && trimmedVal.includes('.')) {
+        return `https://${trimmedVal}`;
+    }
+    return trimmedVal;
+  }).nullable(),
   image_url: z.string().nullable().optional(),
+}).superRefine((data, ctx) => {
+  if (data.remindAtDate) {
+    if (!data.remindAtTime || data.remindAtTime.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Reminder time is required if a reminder date is set.',
+        path: ['remindAtTime'],
+      });
+    } else {
+      const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+      if (!timeRegex.test(data.remindAtTime)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Invalid time format (HH:MM).',
+          path: ['remindAtTime'],
+        });
+      }
+    }
+  } else {
+    if (data.remindAtTime && data.remindAtTime.trim() !== "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Cannot set a reminder time without a reminder date.',
+        path: ['remindAtTime'],
+      });
+    }
+  }
 });
 
-type TaskFormValues = z.infer<typeof formSchema>;
+type TaskFormData = z.infer<typeof taskFormSchema>;
 
 interface TaskFormProps {
   initialData?: Task | null;
-  sections: Section[]; // Changed TaskSection to Section
+  onSave: (taskData: {
+    description: string;
+    category: string;
+    priority: string;
+    due_date: string | null;
+    notes: string | null;
+    remind_at: string | null;
+    section_id: string | null;
+    recurring_type: 'none' | 'daily' | 'weekly' | 'monthly';
+    parent_task_id: string | null;
+    link: string | null;
+    image_url: string | null;
+  }) => Promise<any>;
+  onCancel: () => void;
+  sections: TaskSection[];
   allCategories: Category[];
-  onSave: (data: Omit<Task, 'id' | 'user_id' | 'created_at' | 'order' | 'status'>) => Promise<Task | null | boolean>; // Adjusted return type
-  onCancel?: () => void;
-  isSaving?: boolean;
-  isSuggesting?: boolean;
-  currentDate?: Date; // For setting default due date
+  autoFocus?: boolean;
+  preselectedSectionId?: string | null;
+  parentTaskId?: string | null;
+  currentDate?: Date;
+  createSection: (name: string) => Promise<void>;
+  updateSection: (sectionId: string, newName: string) => Promise<void>;
+  deleteSection: (sectionId: string) => Promise<void>;
+  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
 }
 
 const TaskForm: React.FC<TaskFormProps> = ({
   initialData,
-  sections,
-  allCategories,
   onSave,
   onCancel,
-  isSaving = false,
-  isSuggesting = false,
+  sections,
+  allCategories,
+  autoFocus = false,
+  preselectedSectionId = null,
+  parentTaskId = null,
   currentDate = new Date(),
+  createSection,
+  updateSection,
+  deleteSection,
+  updateSectionIncludeInFocusMode,
 }) => {
   const { user } = useAuth();
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSuggesting, setIsSuggesting] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
-  const defaultValues: Partial<TaskFormValues> = {
-    description: '',
-    category_id: undefined, // Changed to category_id
-    priority: 'medium',
-    dueDate: null,
-    notes: null,
-    remindAtDate: null,
-    remindAtTime: '',
-    section_id: null, // Changed to section_id
-    recurringType: 'none',
-    parent_task_id: null,
-    link: null,
-    image_url: null,
-  };
-
-  const form = useForm<TaskFormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: defaultValues,
+  const form = useForm<TaskFormData>({
+    resolver: zodResolver(taskFormSchema),
+    defaultValues: {
+      description: '',
+      category: '',
+      priority: 'medium',
+      dueDate: null,
+      notes: null,
+      remindAtDate: null,
+      remindAtTime: '',
+      sectionId: preselectedSectionId,
+      recurringType: 'none',
+      parentTaskId: parentTaskId ?? null,
+      link: null,
+      image_url: null,
+    },
   });
 
+  const { register, handleSubmit, control, reset, setValue, watch, formState: { errors } } = form;
+
+  const description = watch('description');
+  const remindAtDate = watch('remindAtDate');
+
   useEffect(() => {
+    const generalCategory = allCategories.find(cat => cat.name.toLowerCase() === 'general');
+    const defaultValues = {
+      description: '',
+      category: generalCategory?.id || allCategories[0]?.id || '',
+      priority: 'medium',
+      dueDate: null,
+      notes: null,
+      remindAtDate: null,
+      remindAtTime: '',
+      sectionId: preselectedSectionId,
+      recurringType: 'none' as const,
+      parentTaskId: parentTaskId ?? null,
+      link: null,
+      image_url: null,
+    };
+
     if (initialData) {
-      form.reset({
+      reset({
+        ...defaultValues,
         description: initialData.description || '',
-        category_id: initialData.category_id, // Changed to category_id
+        category: initialData.category || defaultValues.category,
         priority: initialData.priority || 'medium',
         dueDate: initialData.due_date ? parseISO(initialData.due_date) : null,
         notes: initialData.notes || null,
         remindAtDate: initialData.remind_at ? parseISO(initialData.remind_at) : null,
         remindAtTime: initialData.remind_at ? format(parseISO(initialData.remind_at), 'HH:mm') : '',
-        section_id: initialData.section_id, // Changed to section_id
+        sectionId: initialData.section_id,
         recurringType: initialData.recurring_type || 'none',
-        parent_task_id: initialData.parent_task_id,
+        parentTaskId: initialData.parent_task_id,
         link: initialData.link ?? null,
         image_url: initialData.image_url ?? null,
       });
       setImagePreview(initialData.image_url || null);
     } else {
-      form.reset({
-        ...defaultValues,
-        dueDate: currentDate, // Set default due date to current date for new tasks
-      });
+      reset(defaultValues);
       setImagePreview(null);
-      setImageFile(null);
     }
-  }, [initialData, form, currentDate]);
+    setImageFile(null);
+  }, [initialData, preselectedSectionId, parentTaskId, allCategories, reset]);
 
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (!user?.id) {
-      showError('User not authenticated for image upload.');
+  const handleSuggest = useCallback(async () => {
+    if (!description.trim()) {
+      showError('Please enter a task description to get suggestions.');
       return;
     }
-
-    setUploadingImage(true);
-    const toastId = showLoading('Uploading image...');
-
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${uuidv4()}.${fileExt}`;
-    const filePath = `${user.id}/taskimages/${fileName}`;
-
+    setIsSuggesting(true);
     try {
-      const { error: uploadError } = await supabase.storage
-        .from('task-attachments')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false,
-        });
+      const categoriesForAI = allCategories.map(cat => ({ id: cat.id, name: cat.name }));
+      const suggestions = await suggestTaskDetails(description, categoriesForAI, currentDate);
 
-      if (uploadError) throw uploadError;
+      if (suggestions) {
+        setValue('description', suggestions.cleanedDescription);
+        setValue('priority', suggestions.priority);
+        setValue('category', suggestions.category);
+        
+        if (suggestions.dueDate) {
+          setValue('dueDate', parseISO(suggestions.dueDate));
+        } else {
+          setValue('dueDate', null);
+        }
 
-      const { data: publicUrlData } = supabase.storage
-        .from('task-attachments')
-        .getPublicUrl(filePath);
+        if (suggestions.remindAt) {
+          const parsedRemindAt = parseISO(suggestions.remindAt);
+          if (isValid(parsedRemindAt)) {
+            setValue('remindAtDate', parsedRemindAt);
+            setValue('remindAtTime', format(parsedRemindAt, 'HH:mm'));
+          }
+        }
 
-      if (publicUrlData?.publicUrl) {
-        setImagePreview(publicUrlData.publicUrl);
-        setImageFile(file);
-        form.setValue('image_url', publicUrlData.publicUrl);
-        dismissToast(toastId);
-      } else {
-        throw new Error('Failed to get public URL.');
+        const suggestedSection = sections.find(s => s.name.toLowerCase() === suggestions.section?.toLowerCase());
+        if (suggestedSection) {
+          setValue('sectionId', suggestedSection.id);
+        } else {
+          setValue('sectionId', null);
+        }
+        setValue('link', suggestions.link || null);
+        setValue('notes', suggestions.notes || null);
       }
-    } catch (error: any) {
-      console.error('Error uploading image:', error.message);
-      showError(`Image upload failed: ${error.message}`);
-      setImagePreview(null);
-      setImageFile(null);
-      form.setValue('image_url', null);
+    } catch (error) {
+      console.error('Error getting AI suggestions:', error);
+      showError('Failed to get AI suggestions. Please try again.');
     } finally {
-      setUploadingImage(false);
-      dismissToast(toastId);
+      setIsSuggesting(false);
+    }
+  }, [description, allCategories, sections, setValue, currentDate]);
+
+  const handleFile = (file: File | null) => {
+    if (file && file.type.startsWith('image/')) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    } else {
+      showError('Please upload a valid image file.');
     }
   };
 
-  const handleRemoveImage = async () => {
-    if (!user?.id) return;
+  const handlePaste = (event: React.ClipboardEvent<HTMLFormElement>) => {
+    const items = event.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const file = items[i].getAsFile();
+        handleFile(file);
+        break;
+      }
+    }
+  };
 
-    // If there was an initial image and we're removing it, delete from storage
-    if (initialData?.image_url && imagePreview === initialData.image_url) { // Only delete if it's the original image
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragging(false);
+    if (event.dataTransfer.files && event.dataTransfer.files[0]) {
+      handleFile(event.dataTransfer.files[0]);
+    }
+  };
+
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
+  const handleDragEnter = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleRemoveImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+  };
+
+  const onSubmit = async (data: TaskFormData) => {
+    let finalRemindAt: Date | null = null;
+    if (data.remindAtDate && data.remindAtTime && data.remindAtTime.trim() !== "") {
+      const [hours, minutes] = data.remindAtTime.split(':').map(Number);
+      finalRemindAt = setMinutes(setHours(data.remindAtDate, hours), minutes);
+    }
+
+    setIsSaving(true);
+
+    let imageUrlToSave = initialData?.image_url || null;
+
+    if (imagePreview === null && initialData?.image_url) {
+      imageUrlToSave = null;
       try {
         const imagePath = initialData.image_url.split('/taskimages/')[1];
         if (imagePath) {
-          const { error } = await supabase.storage
-            .from('task-attachments')
-            .remove([`${user.id}/taskimages/${imagePath}`]);
-          if (error) console.error('Error deleting old image:', error);
+          await supabase.storage.from('taskimages').remove([imagePath]);
         }
-      } catch (e) {
-        console.error('Error parsing image URL for deletion:', e);
+      } catch (imgErr) {
+        console.error("Failed to delete old image:", imgErr);
       }
     }
 
-    setImagePreview(null);
-    setImageFile(null);
-    form.setValue('image_url', null);
-  };
+    if (imageFile) {
+      if (!user) {
+        showError("You must be logged in to upload images.");
+        setIsSaving(false);
+        return;
+      }
+      const filePath = `${user.id}/${uuidv4()}`;
+      const { error: uploadError } = await supabase.storage
+        .from('taskimages')
+        .upload(filePath, imageFile);
 
-  const onSubmit = async (values: TaskFormValues) => {
-    let remindAtISO: string | null = null;
-    if (values.remindAtDate && values.remindAtTime) {
-      const [hours, minutes] = values.remindAtTime.split(':').map(Number);
-      let combinedDateTime = setHours(values.remindAtDate, hours);
-      combinedDateTime = setMinutes(combinedDateTime, minutes);
-      remindAtISO = combinedDateTime.toISOString();
+      if (uploadError) {
+        showError(`Image upload failed: ${uploadError.message}`);
+        setIsSaving(false);
+        return;
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('taskimages')
+        .getPublicUrl(filePath);
+      
+      imageUrlToSave = urlData.publicUrl;
     }
 
-    const taskData: Omit<Task, 'id' | 'user_id' | 'created_at' | 'order' | 'status'> = {
-      description: values.description,
-      priority: values.priority,
-      due_date: values.dueDate ? values.dueDate.toISOString() : undefined, // Changed to undefined for optional
-      notes: values.notes,
-      remind_at: remindAtISO,
-      category_id: values.category_id, // Changed to category_id
-      section_id: values.section_id, // Changed to section_id
-      recurring_type: values.recurringType,
-      parent_task_id: values.parent_task_id,
-      link: values.link,
-      image_url: values.image_url,
-    };
+    const success = await onSave({
+      description: data.description.trim(),
+      category: data.category,
+      priority: data.priority,
+      due_date: data.dueDate ? format(data.dueDate, 'yyyy-MM-dd') : null,
+      notes: data.notes,
+      remind_at: finalRemindAt ? finalRemindAt.toISOString() : null,
+      section_id: data.sectionId,
+      recurring_type: data.recurringType,
+      parent_task_id: data.parentTaskId,
+      link: data.link,
+      image_url: imageUrlToSave,
+    });
+    setIsSaving(false);
+    if (success) {
+      onCancel();
+    }
+    return success;
+  };
 
-    await onSave(taskData);
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    if (event.key === 'Enter' && !event.shiftKey && description.trim()) {
+      event.preventDefault();
+      if (form.formState.isValid) {
+        handleSubmit(onSubmit)();
+      } else {
+        form.trigger();
+      }
+    }
   };
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-      <Controller
-        name="description"
-        control={form.control}
-        render={({ field, fieldState }) => (
-          <div>
-            <Label htmlFor="description">Description</Label>
-            <Input id="description" {...field} disabled={isSaving || isSuggesting} />
-            {fieldState.error && <p className="text-red-500 text-sm mt-1">{fieldState.error.message}</p>}
-          </div>
-        )}
-      />
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Controller
-          name="priority"
-          control={form.control}
-          render={({ field }) => (
-            <div>
-              <Label htmlFor="priority">Priority</Label>
-              <Select value={field.value} onValueChange={field.onChange} disabled={isSaving || isSuggesting}>
-                <SelectTrigger aria-label="Select priority" className="h-9 text-base">
-                  <div className="flex items-center gap-2">
-                    <span className={cn("h-2 w-2 rounded-full", getPriorityColor(field.value))} />
-                    <SelectValue placeholder="Select priority" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">
-                    <div className="flex items-center gap-2">
-                      <span className={cn("h-2 w-2 rounded-full", getPriorityColor('low'))} />
-                      Low
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="medium">
-                    <div className="flex items-center gap-2">
-                      <span className={cn("h-2 w-2 rounded-full", getPriorityColor('medium'))} />
-                      Medium
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="high">
-                    <div className="flex items-center gap-2">
-                      <span className={cn("h-2 w-2 rounded-full", getPriorityColor('high'))} />
-                      High
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-        />
-
-        <Controller
-          name="category_id"
-          control={form.control}
-          render={({ field }) => (
-            <div>
-              <Label htmlFor="category">Category</Label>
-              <CategorySelector
-                categories={allCategories}
-                value={field.value} // Can be string | null | undefined
-                onChange={(val) => field.onChange(val)} // onChange now directly accepts string | null
-                disabled={isSaving || isSuggesting}
-              />
-            </div>
-          )}
-        />
+    <form onSubmit={handleSubmit(onSubmit)} onPaste={handlePaste} className="space-y-3 py-3">
+      <div>
+        <Label htmlFor="task-description">Task Description</Label>
+        <div className="flex gap-1.5">
+          <Input
+            id="task-description"
+            placeholder="Task description (e.g., 'Buy groceries by tomorrow high priority at 6pm personal')"
+            {...register('description')}
+            onKeyDown={handleKeyDown}
+            disabled={isSaving || isSuggesting}
+            autoFocus={autoFocus}
+            className="flex-1 h-9 text-base"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={handleSuggest}
+            disabled={isSaving || isSuggesting || !description.trim()}
+            title="Suggest details from description"
+            aria-label="Suggest task details"
+            className="h-9 w-9"
+          >
+            {isSuggesting ? (
+              <span className="animate-spin h-3.5 w-3.5 border-b-2 border-primary rounded-full" />
+            ) : (
+              <Lightbulb className="h-3.5 w-3.5" />
+            )}
+          </Button>
+        </div>
+        {errors.description && <p className="text-destructive text-sm mt-1">{errors.description.message}</p>}
       </div>
 
-      <Controller
-        name="dueDate"
-        control={form.control}
-        render={({ field }) => (
-          <div>
-            <Label htmlFor="dueDate">Due Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "w-full justify-start text-left font-normal h-9",
-                    !field.value && "text-muted-foreground"
-                  )}
-                  disabled={isSaving || isSuggesting}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={field.value || undefined}
-                  onSelect={field.onChange}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
+      <div 
+        className={cn(
+          "relative border-2 border-dashed rounded-lg p-4 text-center transition-colors",
+          isDragging ? "border-primary bg-primary/10" : "border-border"
+        )}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+      >
+        {imagePreview ? (
+          <>
+            <img src={imagePreview} alt="Preview" className="rounded-md max-h-40 mx-auto" />
+            <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-6 w-6 bg-background/50 hover:bg-background/80" onClick={handleRemoveImage}>
+              <X className="h-4 w-4" />
+            </Button>
+          </>
+        ) : (
+          <div className="flex flex-col items-center justify-center space-y-2 text-muted-foreground">
+            <UploadCloud className="h-8 w-8" />
+            <p>Drag & drop, paste, or click to upload an image.</p>
+            <Input type="file" accept="image/*" className="sr-only" id="file-upload" onChange={(e) => handleFile(e.target.files?.[0] || null)} />
+            <Label htmlFor="file-upload" className="text-primary underline cursor-pointer">
+              click to upload
+            </Label>
           </div>
         )}
-      />
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         <Controller
-          name="remindAtDate"
-          control={form.control}
+          control={control}
+          name="category"
           render={({ field }) => (
-            <div>
-              <Label htmlFor="remindAtDate">Reminder Date</Label>
+            <CategorySelector value={field.value} onChange={field.onChange} categories={allCategories} />
+          )}
+        />
+        {errors.category && <p className="text-destructive text-sm mt-1">{errors.category.message}</p>}
+
+        <Controller
+          control={control}
+          name="priority"
+          render={({ field }) => (
+            <PrioritySelector value={field.value} onChange={field.onChange} />
+          )}
+        />
+        {errors.priority && <p className="text-destructive text-sm mt-1">{errors.priority.message}</p>}
+      </div>
+
+      <div>
+        <Controller
+          control={control}
+          name="sectionId"
+          render={({ field }) => (
+            <SectionSelector
+              value={field.value}
+              onChange={field.onChange}
+              sections={sections}
+              createSection={createSection}
+              updateSection={updateSection}
+              deleteSection={deleteSection}
+              updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+            />
+          )}
+        />
+        {errors.sectionId && <p className="text-destructive text-sm mt-1">{errors.sectionId.message}</p>}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <div>
+          <Label>Due Date</Label>
+          <Controller
+            control={control}
+            name="dueDate"
+            render={({ field }) => (
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
-                    variant={"outline"}
+                    variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal h-9",
+                      "w-full justify-start text-left font-normal h-9 text-base",
                       !field.value && "text-muted-foreground"
                     )}
                     disabled={isSaving || isSuggesting}
+                    aria-label="Select due date"
                   >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    <Calendar className="mr-2 h-3.5 w-3.5" />
                     {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
-                  <Calendar
+                  <CalendarComponent
                     mode="single"
                     selected={field.value || undefined}
                     onSelect={field.onChange}
@@ -342,145 +498,110 @@ const TaskForm: React.FC<TaskFormProps> = ({
                   />
                 </PopoverContent>
               </Popover>
-            </div>
-          )}
-        />
-        <Controller
-          name="remindAtTime"
-          control={form.control}
-          render={({ field }) => (
-            <div>
-              <Label htmlFor="remindAtTime">Reminder Time</Label>
-              <div className="relative">
-                <Input
-                  id="remindAtTime"
-                  type="time"
-                  value={field.value || ''}
-                  onChange={field.onChange}
-                  className="pr-8 h-9"
-                  disabled={isSaving || isSuggesting}
-                />
-                <Clock className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              </div>
-            </div>
-          )}
-        />
+            )}
+          />
+          {errors.dueDate && <p className="text-destructive text-sm mt-1">{errors.dueDate.message}</p>}
+        </div>
+
+        <div>
+          <Label>Recurring</Label>
+          <Controller
+            control={control}
+            name="recurringType"
+            render={({ field }) => (
+              <Select value={field.value} onValueChange={field.onChange} disabled={!!initialData?.parent_task_id || isSaving || isSuggesting}>
+                <SelectTrigger aria-label="Select recurrence type" className="h-9 text-base">
+                  <SelectValue placeholder="Select recurrence" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="daily">Daily</SelectItem>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
+          {errors.recurringType && <p className="text-destructive text-sm mt-1">{errors.recurringType.message}</p>}
+        </div>
       </div>
-
-      <Controller
-        name="section_id"
-        control={form.control}
-        render={({ field }) => (
-          <div>
-            <Label htmlFor="section">Section</Label>
-            <Select value={field.value || 'no-section'} onValueChange={(val) => field.onChange(val === 'no-section' ? null : val)} disabled={isSaving || isSuggesting}>
-              <SelectTrigger aria-label="Select section" className="h-9 text-base">
-                <SelectValue placeholder="Select section">
-                  {field.value ? sections.find(s => s.id === field.value)?.name : "No Section"}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="no-section">No Section</SelectItem>
-                {sections.map(section => (
-                  <SelectItem key={section.id} value={section.id}>
-                    {section.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-      />
-
-      <Controller
-        name="recurringType"
-        control={form.control}
-        render={({ field }) => (
-          <div>
-            <Label htmlFor="recurringType">Recurrence</Label>
-            <Select value={field.value} onValueChange={field.onChange} disabled={!!initialData?.parent_task_id || isSaving || isSuggesting}>
-              <SelectTrigger aria-label="Select recurrence type" className="h-9 text-base">
-                <SelectValue placeholder="Select recurrence type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">None</SelectItem>
-                <SelectItem value="daily">Daily</SelectItem>
-                <SelectItem value="weekly">Weekly</SelectItem>
-                <SelectItem value="monthly">Monthly</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-      />
-
-      <Controller
-        name="link"
-        control={form.control}
-        render={({ field }) => (
-          <div>
-            <Label htmlFor="link">Link / Path</Label>
-            <Input id="link" {...field} disabled={isSaving || isSuggesting} />
-          </div>
-        )}
-      />
 
       <div>
-        <Label htmlFor="image-upload">Image Attachment</Label>
-        {imagePreview ? (
-          <div className="relative w-full h-48 border rounded-md flex items-center justify-center overflow-hidden">
-            <img src={imagePreview} alt="Preview" className="max-h-full max-w-full object-contain" />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="absolute top-2 right-2 rounded-full bg-background/80 hover:bg-background"
-              onClick={handleRemoveImage}
-              disabled={isSaving || isSuggesting || uploadingImage}
-            >
-              <XCircle className="h-5 w-5 text-red-500" />
-            </Button>
-          </div>
-        ) : (
-          <div className="relative w-full h-24 border-2 border-dashed rounded-md flex items-center justify-center cursor-pointer hover:border-primary transition-colors">
-            <Input
-              id="image-upload"
-              type="file"
-              accept="image/*"
-              className="absolute inset-0 opacity-0 cursor-pointer"
-              onChange={handleImageUpload}
-              disabled={isSaving || isSuggesting || uploadingImage}
-            />
-            {uploadingImage ? (
-              <span className="text-muted-foreground">Uploading...</span>
-            ) : (
-              <div className="flex flex-col items-center text-muted-foreground">
-                <ImagePlus className="h-6 w-6" />
-                <span>Add Image</span>
-              </div>
+        <Label>Reminder</Label>
+        <div className="flex gap-2">
+          <Controller
+            control={control}
+            name="remindAtDate"
+            render={({ field }) => (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "flex-1 justify-start text-left font-normal h-9 text-base",
+                      !field.value && "text-muted-foreground"
+                    )}
+                    disabled={isSaving || isSuggesting}
+                    aria-label="Set reminder date"
+                  >
+                    <BellRing className="mr-2 h-3.5 w-3.5" />
+                    {field.value ? format(field.value, "PPP") : <span>Set reminder date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <CalendarComponent
+                    mode="single"
+                    selected={field.value || undefined}
+                    onSelect={field.onChange}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             )}
-          </div>
-        )}
+          />
+          <Input
+            type="time"
+            {...register('remindAtTime')}
+            className="w-24 h-9 text-base"
+            disabled={isSaving || isSuggesting || !remindAtDate}
+            aria-label="Set reminder time"
+          />
+        </div>
+        {errors.remindAtDate && <p className="text-destructive text-sm mt-1">{errors.remindAtDate.message}</p>}
+        {errors.remindAtTime && <p className="text-destructive text-sm mt-1">{errors.remindAtTime.message}</p>}
       </div>
 
-      <Controller
-        name="notes"
-        control={form.control}
-        render={({ field }) => (
-          <div>
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea id="notes" {...field} disabled={isSaving || isSuggesting} />
-          </div>
-        )}
-      />
+      <div>
+        <Label htmlFor="task-link">Link / File Path (Optional)</Label>
+        <Input
+          id="task-link"
+          placeholder="URL or local file path (e.g., /Users/...)"
+          {...register('link')}
+          disabled={isSaving || isSuggesting}
+          className="h-9 text-base"
+        />
+        {errors.link && <p className="text-destructive text-sm mt-1">{errors.link.message}</p>}
+      </div>
 
-      <div className="flex justify-end gap-2">
-        {onCancel && (
-          <Button type="button" variant="outline" onClick={onCancel} disabled={isSaving || isSuggesting}>
-            Cancel
-          </Button>
-        )}
-        <Button type="submit" disabled={isSaving || isSuggesting || uploadingImage}>
-          {isSaving ? 'Saving...' : initialData ? 'Save Changes' : 'Add Task'}
+      <div>
+        <Label htmlFor="task-notes">Notes</Label>
+        <Textarea
+          id="task-notes"
+          placeholder="Add notes about this task..."
+          {...register('notes')}
+          rows={2}
+          disabled={isSaving || isSuggesting}
+          className="min-h-[60px] text-base"
+        />
+        {errors.notes && <p className="text-destructive text-sm mt-1">{errors.notes.message}</p>}
+      </div>
+
+      <div className="flex justify-end space-x-1.5 mt-3">
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isSaving || isSuggesting} className="h-9 text-base">
+          Cancel
+        </Button>
+        <Button type="submit" disabled={isSaving || isSuggesting || (!form.formState.isValid && form.formState.isSubmitted)} className="h-9 text-base">
+          {isSaving ? 'Saving...' : (initialData ? 'Save Changes' : 'Add Task')}
         </Button>
       </div>
     </form>
