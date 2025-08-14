@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useDashboardData } from '@/hooks/useDashboardData';
 import EditableCard from './EditableCard';
 import { Leaf } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';

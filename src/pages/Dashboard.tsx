@@ -37,11 +37,12 @@ import {
   SortableContext,
   arrayMove,
   verticalListSortingStrategy,
+
 } from '@dnd-kit/sortable';
 import { createPortal } from 'react-dom';
 import SortableCustomCard from '@/components/dashboard/SortableCustomCard';
 import DailyBriefingCard from '@/components/dashboard/DailyBriefingCard';
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "react-resizable-panels"; // Corrected import path
+import { PanelGroup, Panel, PanelResizeHandle } from "react-resizable-panels";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSettings } from '@/context/SettingsContext';
 
@@ -62,7 +63,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
     reorderCustomCards,
   } = useDashboardData({ userId: demoUserId });
 
-  const { settings, updateSettings } = useSettings(); // useSettings now accepts userId
+  const { settings, updateSettings } = useSettings();
 
   const { tasksDue, tasksCompleted, appointmentsToday, loading: statsLoading } = useDashboardStats({ userId: demoUserId });
   
@@ -246,12 +247,12 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
               </div>
             </div>
           ) : (
-            <ResizablePanelGroup
+            <PanelGroup
               direction="horizontal"
               className="min-h-[600px] rounded-lg border"
               onLayout={handlePanelLayoutChange}
             >
-              <ResizablePanel defaultSize={defaultPanelSizes[0]} minSize={30}>
+              <Panel defaultSize={defaultPanelSizes[0]} minSize={30}>
                 <div className="flex h-full flex-col p-4 space-y-6">
                   {settings?.dashboard_layout?.['dailyBriefingVisible'] !== false && (
                     <DailyBriefingCard isDemo={isDemo} demoUserId={demoUserId} />
@@ -265,9 +266,9 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
                     ))}
                   </SortableContext>
                 </div>
-              </ResizablePanel>
-              <ResizableHandle withHandle />
-              <ResizablePanel defaultSize={defaultPanelSizes[1]} minSize={20}>
+              </Panel>
+              <PanelResizeHandle />
+              <Panel defaultSize={defaultPanelSizes[1]} minSize={20}>
                 <div className="flex h-full flex-col p-4 space-y-6">
                   <NextTaskCard 
                     nextAvailableTask={nextAvailableTask}
@@ -294,8 +295,8 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
                     />
                   )}
                 </div>
-              </ResizablePanel>
-            </ResizablePanelGroup>
+              </Panel>
+            </PanelGroup>
           )}
         </main>
         <footer className="p-4">
