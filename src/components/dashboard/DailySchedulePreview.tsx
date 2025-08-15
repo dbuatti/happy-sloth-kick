@@ -8,7 +8,7 @@ import { Button } from '../ui/button';
 
 const DailySchedulePreview: React.FC = () => {
   const [today] = useState(new Date());
-  const { appointments, loading } = useAppointments(today);
+  const { appointments, loading } = useAppointments({ startDate: today, endDate: today });
 
   return (
     <fieldset className="rounded-xl border-2 border-border p-4 h-full">

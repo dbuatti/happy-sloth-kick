@@ -1,11 +1,11 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, useSensor, useSensors, closestCorners } from '@dnd-kit/core';
 import { createPortal } from 'react-dom';
-import { format, addMinutes, parse, isBefore, getMinutes, getHours, parseISO, isValid, startOfWeek, addDays, isSameDay } from 'date-fns';
+import { format, addMinutes, parse, isBefore, getMinutes, getHours, parseISO, isValid, startOfWeek, addDays, isSameDay, setHours, setMinutes, isAfter } from 'date-fns';
 import { CardContent } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
-import { Clock, Settings, Sparkles, X } from 'lucide-react';
-import { useWorkHours, WorkHour, allDaysOfWeek } from '@/hooks/useWorkHours';
+import { Sparkles, X, PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { useWorkHours, allDaysOfWeek } from '@/hooks/useWorkHours';
 import { useAppointments, Appointment, NewAppointmentData } from '@/hooks/useAppointments';
 import { useTasks, Task, TaskSection, Category } from '@/hooks/useTasks';
 import { useSettings } from '@/context/SettingsContext';
@@ -23,6 +23,8 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import TimeBlockActionMenu from './TimeBlockActionMenu';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
 
 interface WeeklyScheduleGridProps {
   currentWeekStart: Date;
@@ -213,11 +215,8 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
       return { gridRowStart: 1, gridRowEnd: 1, gridColumn: dayIndex + 2, overlapOffset: 0 };
     }
 
-    const workStartTime = parse(workHoursForDay.start_time, 'HH:mm:ss', parseISO(app.date));
-
     const startMinutes = (getHours(appStartTime) * 60) + getMinutes(appStartTime);
     const endMinutes = (getHours(appEndTime) * 60) + getMinutes(appEndTime);
-    const workStartMinutes = (getHours(workStartTime) * 60) + getMinutes(workStartTime);
 
     const gridRowStart = Math.floor((startMinutes - (MIN_HOUR * 60)) / 30) + 1;
     const gridRowEnd = Math.ceil((endMinutes - (MIN_HOUR * 60)) / 30) + 1;
@@ -359,14 +358,6 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
       });
     }
   };
-
-  const timeLabels = useMemo(() => {
-    const labels = [];
-    for (let h = MIN_HOUR; h < MAX_HOUR; h++) {
-      labels.push(format(setHours(currentWeekStart, h), 'h a'));
-    }
-    return labels;
-  }, [currentWeekStart]);
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
@@ -616,7 +607,7 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
             const endTime = activeDragItem.appointment.end_time ? parseISO(`2000-01-01T${activeDragItem.appointment.end_time}`) : null;
             return (
               <div className="rounded-lg p-2 shadow-md text-white" style={{ backgroundColor: activeDragItem.appointment.color, width: '200px' }}>
-                <h4 className="font-semibold text-sm truncate">{activeDragItem.title}</h4>
+                <h4 className="font-semibold text-sm truncate">{activeDragItem.appointment.title}</h4>
                 <p className="text-xs opacity-90">
                   {startTime && endTime && isValid(startTime) && isValid(endTime) ? `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}` : 'Invalid time'}
                 </p>
