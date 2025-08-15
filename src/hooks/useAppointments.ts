@@ -21,9 +21,15 @@ export interface Appointment {
 export type NewAppointmentData = Omit<Appointment, 'id' | 'user_id' | 'created_at' | 'updated_at'>;
 export type UpdateAppointmentData = Partial<NewAppointmentData>;
 
-export const useAppointments = (currentDate: Date) => {
+interface UseAppointmentsProps {
+  startDate: Date;
+  endDate: Date;
+  userId?: string;
+}
+
+export const useAppointments = ({ startDate, endDate, userId: propUserId }: UseAppointmentsProps) => {
   const { user } = useAuth();
-  const userId = user?.id;
+  const userId = propUserId || user?.id;
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -35,15 +41,16 @@ export const useAppointments = (currentDate: Date) => {
     }
     setLoading(true);
     try {
-      const startOfCurrentDay = format(startOfDay(currentDate), 'yyyy-MM-dd');
-      const endOfCurrentDay = format(endOfDay(currentDate), 'yyyy-MM-dd');
+      const startOfRange = format(startOfDay(startDate), 'yyyy-MM-dd');
+      const endOfRange = format(endOfDay(endDate), 'yyyy-MM-dd');
 
       const { data, error } = await supabase
         .from('schedule_appointments')
         .select('*')
         .eq('user_id', userId)
-        .gte('date', startOfCurrentDay)
-        .lte('date', endOfCurrentDay)
+        .gte('date', startOfRange)
+        .lte('date', endOfRange)
+        .order('date', { ascending: true })
         .order('start_time', { ascending: true });
 
       if (error) throw error;
@@ -54,7 +61,7 @@ export const useAppointments = (currentDate: Date) => {
     } finally {
       setLoading(false);
     }
-  }, [userId, currentDate]);
+  }, [userId, startDate, endDate]);
 
   useEffect(() => {
     fetchAppointments();
@@ -140,12 +147,16 @@ export const useAppointments = (currentDate: Date) => {
     }
   }, [userId]);
 
-  const clearDayAppointments = useCallback(async () => {
-    if (!userId || appointments.length === 0) {
+  const clearDayAppointments = useCallback(async (dateToClear: Date) => {
+    if (!userId) {
       return [];
     }
-    const appointmentsToDelete = [...appointments];
-    setAppointments([]); // Optimistic update
+    const formattedDateToClear = format(dateToClear, 'yyyy-MM-dd');
+    const appointmentsToDelete = appointments.filter(app => app.date === formattedDateToClear);
+    if (appointmentsToDelete.length === 0) {
+      return [];
+    }
+    setAppointments(prev => prev.filter(app => app.date !== formattedDateToClear)); // Optimistic update
 
     try {
       const idsToDelete = appointmentsToDelete.map(app => app.id);
@@ -160,7 +171,8 @@ export const useAppointments = (currentDate: Date) => {
       return appointmentsToDelete;
     } catch (error: any) {
       showError('Failed to clear day.');
-      setAppointments(appointmentsToDelete); // Revert optimistic update
+      // Revert optimistic update
+      setAppointments(prev => [...prev, ...appointmentsToDelete].sort((a, b) => a.start_time.localeCompare(b.start_time)));
       return [];
     }
   }, [userId, appointments]);

@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess } from '@/utils/toast'; // Added showSuccess and showError
 
-interface WorkHour {
+export interface WorkHour {
   id?: string; // Optional for existing records
   day_of_week: string;
   start_time: string;
@@ -27,7 +27,7 @@ const defaultTime = {
   end: '17:00',
 };
 
-const allDaysOfWeek = [
+export const allDaysOfWeek = [
   { id: 'monday', name: 'Monday' },
   { id: 'tuesday', name: 'Tuesday' },
   { id: 'wednesday', name: 'Wednesday' },

@@ -20,8 +20,8 @@ interface TimeBlockProps {
 
 const TimeBlock: React.FC<TimeBlockProps> = ({ block, index, appointmentsWithPositions, isDemo, onAddAppointment, onScheduleTask, unscheduledTasks, sections, currentDate }) => {
   const { setNodeRef, isOver } = useDroppable({
-    id: `block-${format(block.start, 'HH:mm')}`,
-    data: { type: 'time-block', time: block.start },
+    id: `block-${format(block.start, 'HH:mm')}-${format(currentDate, 'yyyy-MM-dd')}`, // Unique ID per day
+    data: { type: 'time-block', time: block.start, date: currentDate }, // Pass date in data
   });
 
   const isBlockOccupied = appointmentsWithPositions.some(app => {

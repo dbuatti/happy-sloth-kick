@@ -15,6 +15,7 @@ interface DraggableAppointmentCardProps {
   overlapOffset: number;
   rowHeight: number;
   gapHeight: number;
+  style?: React.CSSProperties; // Make style prop optional
 }
 
 const DraggableAppointmentCard: React.FC<DraggableAppointmentCardProps> = (props) => {
@@ -33,12 +34,13 @@ const DraggableAppointmentCard: React.FC<DraggableAppointmentCardProps> = (props
     },
   });
 
-  const style = {
+  const draggableStyle = {
     opacity: isDragging ? 0.5 : 1,
+    ...props.style, // Merge passed style with draggable style
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="cursor-grab touch-none select-none">
+    <div ref={setNodeRef} style={draggableStyle} {...attributes} {...listeners} className="cursor-grab touch-none select-none">
       <AppointmentCard {...props} />
     </div>
   );
