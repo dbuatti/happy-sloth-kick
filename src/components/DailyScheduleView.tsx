@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { CardContent } from "@/components/ui/card";
 import { useWorkHours } from '@/hooks/useWorkHours';
@@ -509,7 +509,7 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
           task={taskToOverview}
           isOpen={isTaskOverviewOpen}
           onClose={() => setIsTaskOverviewOpen(false)}
-          onEditClick={onOpenTaskDetail}
+          onEditClick={handleEditTaskFromOverview}
           onUpdate={updateTask}
           onDelete={deleteTaskFromHook}
           sections={sections}
