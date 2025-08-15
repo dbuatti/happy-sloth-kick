@@ -70,8 +70,10 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
   const [parsedDataForForm, setParsedDataForForm] = useState<Partial<NewAppointmentData> | null>(null);
 
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
+  void setTaskToOverview; // Explicitly mark as used for TS6133
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+  void setTaskToEdit; // Explicitly mark as used for TS6133
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
 
   const [activeDragItem, setActiveDragItem] = useState<any>(null);
