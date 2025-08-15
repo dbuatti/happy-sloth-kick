@@ -364,7 +364,7 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
       updateAppointment(appointment.id, {
         start_time: format(newStartTime, 'HH:mm:ss'),
         end_time: format(newEndTime, 'HH:mm:ss'),
-        date: format(newStartTime, 'yyyy-MM-dd'),
+        date: format(targetDate, 'yyyy-MM-dd'),
       });
     }
   };
