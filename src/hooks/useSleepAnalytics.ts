@@ -31,7 +31,9 @@ interface SleepAnalyticsData {
   sleepInterruptionsDurationMinutes: number;
   wakeUpVarianceMinutes: number; // Difference between planned and actual wake up
   bedTimeValue: number | null; // For charting
+  lightsOffTimeValue: number | null; // For charting
   wakeUpTimeValue: number | null; // For charting
+  getOutOfBedTimeValue: number | null; // For charting
 }
 
 interface UseSleepAnalyticsProps {
@@ -68,29 +70,28 @@ export const useSleepAnalytics = ({ startDate, endDate, userId: propUserId }: Us
 
       if (error) throw error;
 
-      const processedData: SleepAnalyticsData[] = (data || []).map(record => {
+      // Filter out incomplete records before processing
+      const validRecords = (data || []).filter(record => {
+        return record.bed_time && record.lights_off_time && record.wake_up_time && record.get_out_of_bed_time;
+      });
+
+      const processedData: SleepAnalyticsData[] = validRecords.map(record => {
         const recordDate = parseISO(record.date);
         
-        let bedTime: Date | null = null;
-        let wakeUpTime: Date | null = null;
-        let getOutOfBedTime: Date | null = null;
-        let plannedWakeUpTime: Date | null = null;
+        // Parse times, handling overnight logic for bed_time and lights_off_time
+        let bedTime = parseISO(`${record.date}T${record.bed_time}`);
+        if (bedTime.getHours() >= 12) { // If bed time is 12 PM or later, it's for the previous calendar day's sleep record
+            bedTime = addMinutes(bedTime, -1440); // Subtract 24 hours
+        }
+        
+        let lightsOffTime = parseISO(`${record.date}T${record.lights_off_time}`);
+        if (lightsOffTime.getHours() >= 12) { // Same logic for lights off time
+            lightsOffTime = addMinutes(lightsOffTime, -1440);
+        }
 
-        if (record.bed_time) {
-          bedTime = parseISO(`${record.date}T${record.bed_time}`);
-          if (bedTime.getHours() >= 12) {
-            bedTime = addMinutes(bedTime, -1440);
-          }
-        }
-        if (record.wake_up_time) {
-          wakeUpTime = parseISO(`${record.date}T${record.wake_up_time}`);
-        }
-        if (record.get_out_of_bed_time) {
-          getOutOfBedTime = parseISO(`${record.date}T${record.get_out_of_bed_time}`);
-        }
-        if (record.planned_wake_up_time) {
-          plannedWakeUpTime = parseISO(`${record.date}T${record.planned_wake_up_time}`);
-        }
+        const wakeUpTime = parseISO(`${record.date}T${record.wake_up_time}`);
+        const getOutOfBedTime = parseISO(`${record.date}T${record.get_out_of_bed_time}`);
+        const plannedWakeUpTime = record.planned_wake_up_time ? parseISO(`${record.date}T${record.planned_wake_up_time}`) : null;
 
         let timeInBedMinutes = 0;
         if (bedTime && getOutOfBedTime && isValid(bedTime) && isValid(getOutOfBedTime)) {
@@ -102,9 +103,8 @@ export const useSleepAnalytics = ({ startDate, endDate, userId: propUserId }: Us
         const sleepInterruptionsCount = record.sleep_interruptions_count ?? 0;
 
         let totalSleepMinutes = 0;
-        if (wakeUpTime && bedTime && isValid(wakeUpTime) && isValid(bedTime)) {
-          const grossSleepPeriod = differenceInMinutes(wakeUpTime, bedTime);
-          totalSleepMinutes = grossSleepPeriod - timeToFallAsleepMinutes - sleepInterruptionsDurationMinutes;
+        if (wakeUpTime && lightsOffTime && isValid(wakeUpTime) && isValid(lightsOffTime)) {
+          totalSleepMinutes = differenceInMinutes(wakeUpTime, lightsOffTime) - sleepInterruptionsDurationMinutes;
         }
 
         let sleepEfficiency = 0;
@@ -117,20 +117,14 @@ export const useSleepAnalytics = ({ startDate, endDate, userId: propUserId }: Us
           wakeUpVarianceMinutes = differenceInMinutes(wakeUpTime, plannedWakeUpTime);
         }
 
-        let bedTimeValue = null;
-        if (bedTime && isValid(bedTime)) {
-            let hours = getHours(bedTime);
-            const minutes = getMinutes(bedTime);
-            if (hours > 12) hours -= 24; // Represent PM times as negative hours from midnight
-            bedTimeValue = hours + minutes / 60;
-        }
-
-        let wakeUpTimeValue = null;
-        if (wakeUpTime && isValid(wakeUpTime)) {
-            const hours = getHours(wakeUpTime);
-            const minutes = getMinutes(wakeUpTime);
-            wakeUpTimeValue = hours + minutes / 60;
-        }
+        // Normalize times for charting (e.g., 6 PM as -6, midnight as 0, 6 AM as 6, 12 PM as 12)
+        const normalizeTimeForChart = (time: Date | null) => {
+            if (!time || !isValid(time)) return null;
+            let hours = getHours(time);
+            const minutes = getMinutes(time);
+            if (hours >= 18) hours -= 24; // Times from 6 PM to midnight become -6 to 0
+            return hours + minutes / 60;
+        };
 
         return {
           date: format(recordDate, 'MMM dd'),
@@ -141,8 +135,10 @@ export const useSleepAnalytics = ({ startDate, endDate, userId: propUserId }: Us
           sleepInterruptionsCount: Math.max(0, sleepInterruptionsCount),
           sleepInterruptionsDurationMinutes: Math.max(0, sleepInterruptionsDurationMinutes),
           wakeUpVarianceMinutes: wakeUpVarianceMinutes,
-          bedTimeValue,
-          wakeUpTimeValue,
+          bedTimeValue: normalizeTimeForChart(bedTime),
+          lightsOffTimeValue: normalizeTimeForChart(lightsOffTime),
+          wakeUpTimeValue: normalizeTimeForChart(wakeUpTime),
+          getOutOfBedTimeValue: normalizeTimeForChart(getOutOfBedTime),
         };
       });
       setAnalyticsData(processedData);

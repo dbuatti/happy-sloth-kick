@@ -70,24 +70,18 @@ const SleepDashboard: React.FC<SleepDashboardProps> = ({ dateRange, setDateRange
     return `${hours}h ${minutes}m`;
   };
 
+  // Formatter for Y-axis and tooltips for time values (e.g., -6 for 6 PM, 0 for midnight, 6 for 6 AM)
   const timeAxisFormatter = (value: number) => {
-    const hour = Math.floor(value);
-    const minute = Math.round((value % 1) * 60);
-    let displayHour = hour;
-    if (hour < 0) displayHour += 24;
-    if (hour > 24) displayHour -= 24;
-    
-    const date = new Date(2000, 0, 1, displayHour, minute);
+    let displayHour = value;
+    if (value < 0) displayHour += 24; // Convert negative hours back to 24-hour format for formatting
+    const date = new Date(2000, 0, 1, displayHour, 0); // Use 0 minutes for axis labels
     return format(date, 'h a');
   };
 
   const timeTooltipFormatter = (value: number) => {
-    const hour = Math.floor(value);
+    let displayHour = Math.floor(value);
     const minute = Math.round((value % 1) * 60);
-    let displayHour = hour;
-    if (hour < 0) displayHour += 24;
-    if (hour > 24) displayHour -= 24;
-    
+    if (value < 0) displayHour += 24;
     const date = new Date(2000, 0, 1, displayHour, minute);
     return format(date, 'h:mm a');
   };
@@ -155,7 +149,7 @@ const SleepDashboard: React.FC<SleepDashboardProps> = ({ dateRange, setDateRange
             ) : analyticsData.length === 0 ? (
               <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
                 <Moon className="h-12 w-12 text-muted-foreground" />
-                <p className="text-lg font-medium mb-2">No sleep records found for this period.</p>
+                <p className="text-lg font-medium mb-2">No complete sleep records found for this period.</p>
                 <p className="text-sm">Log your sleep in the Sleep Tracker to see insights here!</p>
               </div>
             ) : (
@@ -213,7 +207,7 @@ const SleepDashboard: React.FC<SleepDashboardProps> = ({ dateRange, setDateRange
                   </Card>
                   <Card className="rounded-xl">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Avg. Wake Time</CardTitle>
+                      <CardTitle className="text-sm font-medium">Avg. Interruption Duration</CardTitle>
                       <Clock className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
@@ -275,7 +269,7 @@ const SleepDashboard: React.FC<SleepDashboardProps> = ({ dateRange, setDateRange
                   <TabsContent value="times" className="mt-4">
                     <Card className="rounded-xl">
                       <CardHeader>
-                        <h3 className="text-lg font-semibold mb-3">Bed Time & Wake Time Trend</h3>
+                        <h3 className="text-lg font-semibold mb-3">Sleep Times Trend (6 PM to 12 PM)</h3>
                       </CardHeader>
                       <CardContent>
                         <div className="h-80">
@@ -283,10 +277,12 @@ const SleepDashboard: React.FC<SleepDashboardProps> = ({ dateRange, setDateRange
                             <LineChart data={analyticsData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
                               <CartesianGrid strokeDasharray="3 3" />
                               <XAxis dataKey="date" />
-                              <YAxis tickFormatter={timeAxisFormatter} domain={[-4, 12]} />
+                              <YAxis tickFormatter={timeAxisFormatter} domain={[-6, 12]} /> {/* -6 for 6 PM, 0 for midnight, 12 for 12 PM */}
                               <Tooltip formatter={timeTooltipFormatter} />
                               <Line type="monotone" dataKey="bedTimeValue" name="Bed Time" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
-                              <Line type="monotone" dataKey="wakeUpTimeValue" name="Wake Time" stroke="hsl(var(--accent))" strokeWidth={2} dot={false} />
+                              <Line type="monotone" dataKey="lightsOffTimeValue" name="Lights Off" stroke="hsl(var(--accent))" strokeWidth={2} dot={false} />
+                              <Line type="monotone" dataKey="wakeUpTimeValue" name="Wake Time" stroke="hsl(var(--destructive))" strokeWidth={2} dot={false} />
+                              <Line type="monotone" dataKey="getOutOfBedTimeValue" name="Got Out of Bed" stroke="hsl(var(--secondary))" strokeWidth={2} dot={false} />
                             </LineChart>
                           </ResponsiveContainer>
                         </div>
