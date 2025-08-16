@@ -221,7 +221,7 @@ const DailyTasksV3: React.FC<DailyTasksV3Props> = ({ isDemo = false, demoUserId 
             onOpenFocusView={handleOpenFocusView}
           />
 
-          <Card className="flex-1 flex flex-col rounded-none shadow-none border-0">
+          <Card className="flex-1 flex flex-col rounded-none shadow-none border-0 relative z-[1]">
             <CardContent className="p-4 flex-1 flex flex-col">
               <div className="flex-1 overflow-y-auto">
                 <TaskList
@@ -263,7 +263,7 @@ const DailyTasksV3: React.FC<DailyTasksV3Props> = ({ isDemo = false, demoUserId 
         </div>
       </main>
 
-      <footer className="p-4">
+      <footer className="p-4 relative z-[0]">
         <p>&copy; {new Date().getFullYear()} TaskMaster. All rights reserved.</p>
       </footer>
 

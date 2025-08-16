@@ -204,7 +204,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
           </div>
 
           {isMobile ? (
-            <div className="grid grid-cols-1 gap-6">
+            <div className="grid grid-cols-1 gap-6 relative z-[1]">
               <div className="space-y-6">
                 {settings?.dashboard_layout?.['dailyBriefingVisible'] !== false && (
                   <DailyBriefingCard isDemo={isDemo} demoUserId={demoUserId} />
@@ -248,7 +248,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
           ) : (
             <PanelGroup
               direction="horizontal"
-              className="min-h-[600px] rounded-lg border"
+              className="min-h-[600px] rounded-lg border relative z-[1]"
               onLayout={handlePanelLayoutChange}
             >
               <Panel defaultSize={defaultPanelSizes[0]} minSize={30}>
@@ -298,7 +298,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
             </PanelGroup>
           )}
         </main>
-        <footer className="p-4">
+        <footer className="p-4 relative z-[0]">
           <p>&copy; {new Date().getFullYear()} TaskMaster. All rights reserved.</p>
         </footer>
 
