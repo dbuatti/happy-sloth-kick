@@ -1,6 +1,4 @@
 import React from 'react';
-// Removed Card, CardContent, CardHeader, CardTitle as they are not directly used here
-import { MadeWithDyad } from "@/components/made-with-dyad";
 import { Eye, Wind, Sparkles, UtensilsCrossed, ScanEye, MessageSquare, Armchair } from 'lucide-react';
 import MindfulnessToolCard from '@/components/MindfulnessToolCard'; // Import the new card component
 import WorryJournal from '@/components/WorryJournal';
@@ -67,7 +65,7 @@ const MindfulnessTools: React.FC<MindfulnessToolsProps> = ({ isDemo = false }) =
         </div>
       </main>
       <footer className="p-4">
-        <MadeWithDyad />
+        <p>&copy; {new Date().getFullYear()} TaskMaster. All rights reserved.</p>
       </footer>
     </div>
   );

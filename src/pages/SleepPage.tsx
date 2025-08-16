@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MadeWithDyad } from "@/components/made-with-dyad";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Moon, BarChart3, Bed, BookOpen, BookText } from 'lucide-react';
 import SleepTracker from './SleepTracker';
@@ -67,7 +66,7 @@ const SleepPage: React.FC<SleepPageProps> = ({ isDemo = false, demoUserId }) => 
         </Card>
       </main>
       <footer className="p-4">
-        <MadeWithDyad />
+        <p>&copy; {new Date().getFullYear()} TaskMaster. All rights reserved.</p>
       </footer>
     </div>
   );

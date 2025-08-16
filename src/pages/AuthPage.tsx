@@ -1,6 +1,5 @@
 import React from 'react';
 import AuthComponent from '@/components/AuthComponent';
-import { MadeWithDyad } from '@/components/made-with-dyad';
 
 const AuthPage: React.FC = () => {
   return (
@@ -12,7 +11,7 @@ const AuthPage: React.FC = () => {
         <AuthComponent />
       </main>
       <footer className="p-6 text-center text-muted-foreground">
-        <MadeWithDyad />
+        <p>&copy; {new Date().getFullYear()} TaskMaster. All rights reserved.</p>
       </footer>
     </div>
   );

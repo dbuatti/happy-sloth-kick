@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { MadeWithDyad } from '@/components/made-with-dyad';
 import { CheckCircle2, Sparkles, LayoutDashboard, CalendarDays } from 'lucide-react';
 
 const LandingPage: React.FC = () => {
@@ -71,7 +70,6 @@ const LandingPage: React.FC = () => {
 
       <footer className="p-6 text-center text-muted-foreground">
         <p>&copy; {new Date().getFullYear()} TaskMaster. All rights reserved.</p>
-        <MadeWithDyad />
       </footer>
     </div>
   );

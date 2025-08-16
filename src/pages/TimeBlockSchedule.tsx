@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { MadeWithDyad } from "@/components/made-with-dyad";
 import { CalendarDays } from 'lucide-react';
 import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
@@ -117,7 +116,7 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
         </Card>
       </main>
       <footer className="p-4">
-        <MadeWithDyad />
+        <p>&copy; {new Date().getFullYear()} TaskMaster. All rights reserved.</p>
       </footer>
       {taskToOverview && (
         <TaskOverviewDialog

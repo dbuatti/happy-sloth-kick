@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { MadeWithDyad } from "@/components/made-with-dyad";
 import { CheckCircle2, ListTodo, CalendarDays } from 'lucide-react';
 import WeeklyFocusCard from '@/components/dashboard/WeeklyFocus';
 import MeditationNotesCard from '@/components/dashboard/MeditationNotes';
@@ -300,7 +299,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
           )}
         </main>
         <footer className="p-4">
-          <MadeWithDyad />
+          <p>&copy; {new Date().getFullYear()} TaskMaster. All rights reserved.</p>
         </footer>
 
         <Dialog open={isAddCardOpen} onOpenChange={setIsAddCardOpen}>

@@ -1,6 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import TaskList from '@/components/TaskList';
-import { MadeWithDyad } from '@/components/made-with-dyad';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import TaskOverviewDialog from '@/components/TaskOverviewDialog';
 import { useTasks, Task } from '@/hooks/useTasks';
@@ -265,7 +264,7 @@ const DailyTasksV3: React.FC<DailyTasksV3Props> = ({ isDemo = false, demoUserId 
       </main>
 
       <footer className="p-4">
-        <MadeWithDyad />
+        <p>&copy; {new Date().getFullYear()} TaskMaster. All rights reserved.</p>
       </footer>
 
       <CommandPalette
