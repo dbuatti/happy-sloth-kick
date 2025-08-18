@@ -311,45 +311,46 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                     isOverlay={false}
                   />
 
-                  {isExpanded && (
-                    <div className="mt-3 space-y-1.5">
-                      <ul className="list-none space-y-1.5">
-                        {topLevelTasksInSection.length > 0 && topLevelTasksInSection.map(task => (
-                          <SortableTaskItem
-                            key={task.id}
-                            task={task}
-                            onStatusChange={async (taskId, newStatus) => updateTask(taskId, { status: newStatus })}
-                            onDelete={deleteTask}
-                            onUpdate={updateTask}
-                            sections={sections}
-                            onOpenOverview={onOpenOverview}
-                            currentDate={currentDate}
-                            onMoveUp={async () => {}}
-                            onMoveDown={async () => {}}
-                            level={0}
-                            allTasks={tasks}
-                            isOverlay={false}
-                            expandedTasks={expandedTasks}
-                            toggleTask={toggleTask}
-                            setFocusTask={setFocusTask}
-                            isDoToday={!doTodayOffIds.has(task.original_task_id || task.id)}
-                            toggleDoToday={toggleDoToday}
-                            doTodayOffIds={doTodayOffIds}
-                            scheduledTasksMap={scheduledTasksMap}
-                            isDemo={isDemo}
-                          />
-                        ))}
-                      </ul>
-                      <div className="mt-2" data-no-dnd="true">
-                        <QuickAddTask
-                          sectionId={currentSection.id === 'no-section-header' ? null : currentSection.id}
-                          onAddTask={async (data) => { await handleAddTask(data); }}
-                          defaultCategoryId={defaultCategory?.id || ''}
+                  <div className={cn(
+                    "mt-3 space-y-1.5 overflow-hidden transition-all duration-300 ease-in-out",
+                    isExpanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0" // Apply max-height and opacity for smooth transition
+                  )}>
+                    <ul className="list-none space-y-1.5">
+                      {topLevelTasksInSection.length > 0 && topLevelTasksInSection.map(task => (
+                        <SortableTaskItem
+                          key={task.id}
+                          task={task}
+                          onStatusChange={async (taskId, newStatus) => updateTask(taskId, { status: newStatus })}
+                          onDelete={deleteTask}
+                          onUpdate={updateTask}
+                          sections={sections}
+                          onOpenOverview={onOpenOverview}
+                          currentDate={currentDate}
+                          onMoveUp={async () => {}}
+                          onMoveDown={async () => {}}
+                          level={0}
+                          allTasks={tasks}
+                          isOverlay={false}
+                          expandedTasks={expandedTasks}
+                          toggleTask={toggleTask}
+                          setFocusTask={setFocusTask}
+                          isDoToday={!doTodayOffIds.has(task.original_task_id || task.id)}
+                          toggleDoToday={toggleDoToday}
+                          doTodayOffIds={doTodayOffIds}
+                          scheduledTasksMap={scheduledTasksMap}
                           isDemo={isDemo}
                         />
-                      </div>
+                      ))}
+                    </ul>
+                    <div className="mt-2" data-no-dnd="true">
+                      <QuickAddTask
+                        sectionId={currentSection.id === 'no-section-header' ? null : currentSection.id}
+                        onAddTask={async (data) => { await handleAddTask(data); }}
+                        defaultCategoryId={defaultCategory?.id || ''}
+                        isDemo={isDemo}
+                      />
                     </div>
-                  )}
+                  </div>
                 </div>
               );
             })}
