@@ -269,7 +269,7 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
     const category = allCategories.find(c => c.id === task.category);
 
     const newAppointment: NewAppointmentData = {
-      title: task.description,
+      title: task.description || '', // Ensure title is string
       description: task.notes,
       date: format(currentDate, 'yyyy-MM-dd'),
       start_time: format(blockStart, 'HH:mm:ss'),

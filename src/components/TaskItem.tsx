@@ -60,7 +60,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const { playSound } = useSound();
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [editText, setEditText] = useState(task.description);
+  const [editText, setEditText] = useState(task.description || ''); // Initialize with empty string if null
   const inputRef = useRef<HTMLInputElement>(null);
 
   const scheduledAppointment = useMemo(() => scheduledTasksMap.get(task.id), [scheduledTasksMap, task.id]);
@@ -86,14 +86,14 @@ const TaskItem: React.FC<TaskItemProps> = ({
   };
 
   const handleSaveEdit = async () => {
-    if (editText.trim() && editText.trim() !== task.description) {
+    if (editText.trim() && editText.trim() !== (task.description || '')) { // Add null check for task.description
       await onUpdate(task.id, { description: editText.trim() });
     }
     setIsEditing(false);
   };
 
   const handleCancelEdit = () => {
-    setEditText(task.description);
+    setEditText(task.description || ''); // Reset to original description or empty string
     setIsEditing(false);
   };
 
@@ -208,7 +208,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           {isEditing ? (
             <Input
               ref={inputRef}
-              value={editText}
+              value={editText || ''} // Ensure value is always a string
               onChange={(e) => setEditText(e.target.value)}
               onBlur={handleSaveEdit}
               onKeyDown={handleInputKeyDown}
@@ -388,10 +388,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
                         {section.name}
                       </DropdownMenuItem>
                     ))}
-                  </>
-                )}
-              </DropdownMenuSubContent>
-            </DropdownMenuSub>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={() => { onDelete(task.id); playSound('alert'); }} className="text-destructive focus:text-destructive">
               <Trash2 className="mr-2 h-4 w-4" /> Delete

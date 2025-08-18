@@ -256,7 +256,7 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
       for (let i = 0; i < appsForThisDay.length; i++) {
         for (let j = i + 1; j < appsForThisDay.length; j++) {
           const appA = appsForThisDay[i];
-          const appB = appsForThisDay[j];
+          const appB = appsForDates[j];
 
           const overlaps = (appA.gridRowStart < appB.gridRowEnd && appB.gridRowStart < appA.gridRowEnd);
 
@@ -295,7 +295,7 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
     const category = allCategories.find(c => c.id === task.category);
 
     const newAppointment: NewAppointmentData = {
-      title: task.description,
+      title: task.description || '', // Ensure title is string
       description: task.notes,
       date: format(targetDate, 'yyyy-MM-dd'),
       start_time: format(blockStart, 'HH:mm:ss'),

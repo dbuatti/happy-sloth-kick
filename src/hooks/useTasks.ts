@@ -12,7 +12,7 @@ import { useSettings } from '@/context/SettingsContext';
 
 export interface Task {
   id: string;
-  description: string;
+  description: string | null; // Changed to allow null
   status: 'to-do' | 'completed' | 'skipped' | 'archived';
   recurring_type: 'none' | 'daily' | 'weekly' | 'monthly';
   created_at: string;
@@ -510,16 +510,16 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
         idToTrack = newInstanceId;
         inFlightUpdatesRef.current.add(newInstanceId);
 
-        const newInstanceData: Omit<Task, 'category_color'> = { // Renamed to newInstanceData
+        const newInstanceData: Omit<Task, 'category_color'> = { // Corrected variable name
             id: newInstanceId,
             user_id: userId,
-            description: updates.description ?? virtualTask.description,
-            status: updates.status ?? 'to-do',
-            recurring_type: 'none',
+            description: updates.description !== undefined ? updates.description : virtualTask.description,
+            status: updates.status ?? virtualTask.status,
+            recurring_type: 'none' as const,
             created_at: virtualTask.created_at,
             updated_at: new Date().toISOString(),
-            category: updates.category ?? virtualTask.category,
-            priority: updates.priority ?? virtualTask.priority,
+            category: updates.category !== undefined ? updates.category : virtualTask.category,
+            priority: updates.priority !== undefined ? updates.priority : virtualTask.priority,
             due_date: updates.due_date !== undefined ? updates.due_date : virtualTask.due_date,
             notes: updates.notes !== undefined ? updates.notes : virtualTask.notes,
             remind_at: updates.remind_at !== undefined ? updates.remind_at : virtualTask.remind_at,
@@ -904,19 +904,19 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
             id: newInstanceId,
             user_id: userId,
             description: virtualTask.description,
-            status: 'to-do' as const,
+            status: virtualTask.status,
             recurring_type: 'none' as const,
             created_at: virtualTask.created_at,
             updated_at: new Date().toISOString(),
-            category: updates.category ?? virtualTask.category,
-            priority: updates.priority ?? virtualTask.priority,
-            due_date: updates.due_date !== undefined ? updates.due_date : virtualTask.due_date,
-            notes: updates.notes !== undefined ? updates.notes : virtualTask.notes,
-            remind_at: updates.remind_at !== undefined ? updates.remind_at : virtualTask.remind_at,
+            category: virtualTask.category,
+            priority: virtualTask.priority,
+            due_date: virtualTask.due_date,
+            notes: virtualTask.notes,
+            remind_at: virtualTask.remind_at,
             section_id: newSectionId,
             order: 0, // Placeholder order
             original_task_id: virtualTask.original_task_id || virtualTask.id.replace(/^virtual-/, '').split(/-\d{4}-\d{2}-\d{2}$/)[0],
-            parent_task_id: virtualTask.parent_task_id,
+            parent_task_id: newParentId,
             link: virtualTask.link,
             image_url: virtualTask.image_url,
         };
@@ -931,12 +931,12 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
             console.error('[DnD Error] Failed to insert new task instance:', insertError);
             showError('Failed to create an instance of the recurring task.');
             inFlightUpdatesRef.current.delete(newInstanceId);
-            return null;
+            return null; // Return null here
         }
         
         // Push the new task with its color to the local state for immediate UI update
         setTasks(prev => [...prev, { ...dbTask, category_color: virtualTask.category_color }]);
-        showSuccess('Task updated!');
+        showSuccess('Task moved!');
         
         if (dbTask.remind_at && dbTask.status === 'to-do') {
             const d = parseISO(dbTask.remind_at);
@@ -1065,7 +1065,7 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
 
     if (searchFilter) {
       filtered = filtered.filter(task =>
-        task.description.toLowerCase().includes(searchFilter.toLowerCase()) ||
+        task.description?.toLowerCase().includes(searchFilter.toLowerCase()) || // Added null check
         task.notes?.toLowerCase().includes(searchFilter.toLowerCase()) ||
         task.link?.toLowerCase().includes(searchFilter.toLowerCase())
       );

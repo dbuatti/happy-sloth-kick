@@ -354,7 +354,7 @@ const DailyTasksV3: React.FC<DailyTasksV3Props> = ({ isDemo = false, demoUserId 
       <AnimatePresence>
         {isFocusViewOpen && nextAvailableTask && (
           <FullScreenFocusView
-            taskDescription={nextAvailableTask.description}
+            taskDescription={nextAvailableTask.description || ''} // Ensure description is string
             onClose={() => setIsFocusViewOpen(false)}
             onMarkDone={handleMarkDoneFromFocusView}
           />

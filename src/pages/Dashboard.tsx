@@ -368,7 +368,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
         <AnimatePresence>
           {isFocusViewOpen && nextAvailableTask && (
             <FullScreenFocusView
-              taskDescription={nextAvailableTask.description}
+              taskDescription={nextAvailableTask.description || ''} // Ensure description is string
               onClose={() => setIsFocusViewOpen(false)}
               onMarkDone={handleMarkDoneFromFocusView}
             />
