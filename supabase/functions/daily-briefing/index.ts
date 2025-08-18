@@ -18,6 +18,7 @@ interface Task {
   recurring_type: 'none' | 'daily' | 'weekly' | 'monthly';
   original_task_id: string | null;
   updated_at: string;
+  created_at: string; // Added created_at
 }
 
 interface Appointment {
@@ -45,11 +46,11 @@ serve(async (req: Request) => { // Explicitly type 'req'
   }
 
   try {
-    const { userId, currentDate } = await req.json();
-    console.log("Daily Briefing: Received request:", { userId, currentDate });
+    const { userId, localDayStartISO, localDayEndISO } = await req.json(); // Receive new parameters
+    console.log("Daily Briefing: Received request:", { userId, localDayStartISO, localDayEndISO });
 
-    if (!userId || !currentDate) {
-      return new Response(JSON.stringify({ error: 'User ID and current date are required.' }), {
+    if (!userId || !localDayStartISO || !localDayEndISO) {
+      return new Response(JSON.stringify({ error: 'User ID and local day boundaries are required.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
       });
@@ -74,17 +75,17 @@ serve(async (req: Request) => { // Explicitly type 'req'
       },
     });
 
-    const today = new Date(currentDate);
-    const todayStart = new Date(today.setUTCHours(0, 0, 0, 0)).toISOString();
-    // const todayEnd = new Date(today.setUTCHours(23, 59, 59, 999)).toISOString(); // Removed: value is never read
-    const todayDateString = currentDate; // YYYY-MM-DD
+    const todayDateString = localDayStartISO.split('T')[0]; // YYYY-MM-DD from client's local day start
 
-    // Fetch data
-    const [tasksRes, appointmentsRes, weeklyFocusRes, sleepRecordRes] = await Promise.all([
-      supabaseAdmin.from('tasks')
-        .select('description, status, priority, due_date, section_id, recurring_type, original_task_id, updated_at') // Added updated_at for completedTasks filter
-        .eq('user_id', userId)
-        .or(`due_date.eq.${todayDateString},created_at.gte.${todayStart},updated_at.gte.${todayStart}`),
+    // Fetch ALL tasks for the user to ensure all relevant tasks (overdue, completed on local day) are available for filtering
+    const { data: allTasksData, error: tasksError } = await supabaseAdmin.from('tasks')
+      .select('description, status, priority, due_date, section_id, recurring_type, original_task_id, updated_at, created_at')
+      .eq('user_id', userId);
+    if (tasksError) throw tasksError;
+    const allTasks: Task[] = allTasksData || [];
+
+    // Fetch appointments, weekly focus, sleep record (these are already date-string based or single-record)
+    const [appointmentsRes, weeklyFocusRes, sleepRecordRes] = await Promise.all([
       supabaseAdmin.from('schedule_appointments')
         .select('title, start_time, end_time')
         .eq('user_id', userId)
@@ -93,7 +94,7 @@ serve(async (req: Request) => { // Explicitly type 'req'
       supabaseAdmin.from('weekly_focus')
         .select('primary_focus, secondary_focus, tertiary_focus')
         .eq('user_id', userId)
-        .eq('week_start_date', todayDateString.substring(0, 10)) // Assuming week_start_date is YYYY-MM-DD
+        .eq('week_start_date', todayDateString)
         .maybeSingle(),
       supabaseAdmin.from('sleep_records')
         .select('bed_time, wake_up_time, time_to_fall_asleep_minutes, sleep_interruptions_duration_minutes')
@@ -102,23 +103,44 @@ serve(async (req: Request) => { // Explicitly type 'req'
         .maybeSingle(),
     ]);
 
-    if (tasksRes.error) throw tasksRes.error;
     if (appointmentsRes.error) throw appointmentsRes.error;
     if (weeklyFocusRes.error) throw weeklyFocusRes.error;
     if (sleepRecordRes.error) throw sleepRecordRes.error;
 
-    const tasks: Task[] = tasksRes.data || [];
     const appointments: Appointment[] = appointmentsRes.data || [];
     const weeklyFocus: WeeklyFocus | null = weeklyFocusRes.data;
     const sleepRecord: SleepRecord | null = sleepRecordRes.data;
 
-    // Process tasks for AI prompt
-    const pendingTasks = tasks.filter((t: Task) => t.status === 'to-do' && (t.due_date === todayDateString || !t.due_date));
-    const completedTasks = tasks.filter((t: Task) => (t.status === 'completed' || t.status === 'archived') && new Date(t.updated_at).toISOString().split('T')[0] === todayDateString);
-    const overdueTasks = tasks.filter((t: Task) => t.status === 'to-do' && t.due_date && new Date(t.due_date) < new Date(todayDateString));
+    // Filter tasks for AI prompt based on the fetched data and local day boundaries
+    const pendingTasks: Task[] = [];
+    const completedTasks: Task[] = [];
+    const overdueTasks: Task[] = [];
+
+    allTasks.forEach(t => {
+      const taskUpdatedAt = t.updated_at ? new Date(t.updated_at) : null;
+      const taskCreatedAt = t.created_at ? new Date(t.created_at) : null;
+      const taskDueDate = t.due_date ? new Date(t.due_date + 'T00:00:00Z') : null; // Treat due_date as UTC midnight for comparison
+
+      // Check if task's updated_at or created_at falls within the client's local day (in UTC)
+      const isUpdatedTodayLocal = taskUpdatedAt && taskUpdatedAt.toISOString() >= localDayStartISO && taskUpdatedAt.toISOString() <= localDayEndISO;
+      const isCreatedTodayLocal = taskCreatedAt && taskCreatedAt.toISOString() >= localDayStartISO && taskCreatedAt.toISOString() <= localDayEndISO;
+      const isDueTodayLocal = taskDueDate && taskDueDate.toISOString().split('T')[0] === todayDateString; // Compare YYYY-MM-DD strings
+
+      if (t.status === 'completed' || t.status === 'archived') {
+        if (isUpdatedTodayLocal) { // Only count if updated today (local time)
+          completedTasks.push(t);
+        }
+      } else if (t.status === 'to-do') {
+        if (taskDueDate && taskDueDate.toISOString().split('T')[0] < todayDateString) { // Overdue
+          overdueTasks.push(t);
+        } else if (isDueTodayLocal || isCreatedTodayLocal || isUpdatedTodayLocal) { // Pending for today (due today, created today, or updated today)
+          pendingTasks.push(t);
+        }
+      }
+    });
 
     const prompt = `Generate a concise, encouraging, and actionable daily briefing for a user based on their productivity data.
-    Today's date: ${currentDate}
+    Today's date (client local time): ${todayDateString}
 
     Here's the user's data:
     - Pending tasks for today: ${JSON.stringify(pendingTasks.map((t: Task) => ({ description: t.description, priority: t.priority, due_date: t.due_date })))}

@@ -1,4 +1,5 @@
 import { supabase } from './client';
+import { startOfDay, endOfDay } from 'date-fns'; // Corrected import statement
 
 interface CategoryForAI {
   id: string;
@@ -65,7 +66,11 @@ export const getDailyBriefing = async (
 ): Promise<string | null> => {
   try {
     const { data, error } = await supabase.functions.invoke('daily-briefing', {
-      body: { userId, currentDate: currentDate.toISOString().split('T')[0] },
+      body: {
+        userId,
+        localDayStartISO: startOfDay(currentDate).toISOString(), // Send local day start in UTC
+        localDayEndISO: endOfDay(currentDate).toISOString(),     // Send local day end in UTC
+      },
     });
 
     if (error) {
