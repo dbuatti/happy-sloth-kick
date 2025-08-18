@@ -114,7 +114,7 @@ serve(async (req: Request) => { // Explicitly type 'req'
 
     // Process tasks for AI prompt
     const pendingTasks = tasks.filter((t: Task) => t.status === 'to-do' && (t.due_date === todayDateString || !t.due_date));
-    const completedTasks = tasks.filter((t: Task) => t.status === 'completed' && new Date(t.updated_at).toISOString().split('T')[0] === todayDateString);
+    const completedTasks = tasks.filter((t: Task) => (t.status === 'completed' || t.status === 'archived') && new Date(t.updated_at).toISOString().split('T')[0] === todayDateString);
     const overdueTasks = tasks.filter((t: Task) => t.status === 'to-do' && t.due_date && new Date(t.due_date) < new Date(todayDateString));
 
     const prompt = `Generate a concise, encouraging, and actionable daily briefing for a user based on their productivity data.
