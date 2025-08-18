@@ -256,7 +256,7 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
       for (let i = 0; i < appsForThisDay.length; i++) {
         for (let j = i + 1; j < appsForThisDay.length; j++) {
           const appA = appsForThisDay[i];
-          const appB = appsForDates[j];
+          const appB = appsForThisDay[j]; // Corrected: was appsForDates[j]
 
           const overlaps = (appA.gridRowStart < appB.gridRowEnd && appB.gridRowStart < appA.gridRowEnd);
 

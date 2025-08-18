@@ -388,8 +388,10 @@ const TaskItem: React.FC<TaskItemProps> = ({
                         {section.name}
                       </DropdownMenuItem>
                     ))}
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
+                  </>
+                )}
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={() => { onDelete(task.id); playSound('alert'); }} className="text-destructive focus:text-destructive">
               <Trash2 className="mr-2 h-4 w-4" /> Delete
