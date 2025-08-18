@@ -4,7 +4,7 @@ import TaskDetailDialog from '@/components/TaskDetailDialog';
 import TaskOverviewDialog from '@/components/TaskOverviewDialog';
 import { useTasks, Task } from '@/hooks/useTasks';
 import { useAuth } from '@/context/AuthContext';
-import { addDays } from 'date-fns';
+import { addDays, startOfDay } from 'date-fns';
 import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
 import CommandPalette from '@/components/CommandPalette';
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,10 +18,6 @@ import FullScreenFocusView from '@/components/FullScreenFocusView';
 import { AnimatePresence } from 'framer-motion';
 import { useSound } from '@/context/SoundContext';
 
-
-const getUTCStartOfDay = (date: Date) => {
-  return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-};
 
 interface DailyTasksV3Props {
   isDemo?: boolean;
@@ -69,7 +65,7 @@ const DailyTasksV3: React.FC<DailyTasksV3Props> = ({ isDemo = false, demoUserId 
     toggleDoToday,
     toggleAllDoToday,
     dailyProgress,
-  } = useTasks({ viewMode: 'daily', userId: demoUserId });
+  } = useTasks({ viewMode: 'daily', userId: demoUserId, currentDate: new Date() }); // Pass new Date() as propCurrentDate
 
   const { appointments: allAppointments } = useAllAppointments();
 
@@ -171,9 +167,9 @@ const DailyTasksV3: React.FC<DailyTasksV3Props> = ({ isDemo = false, demoUserId 
   };
 
   const shortcuts: ShortcutMap = {
-    'arrowleft': () => setCurrentDate(prevDate => getUTCStartOfDay(addDays(prevDate, -1))),
-    'arrowright': () => setCurrentDate(prevDate => getUTCStartOfDay(addDays(prevDate, 1))),
-    't': () => setCurrentDate(getUTCStartOfDay(new Date())),
+    'arrowleft': () => setCurrentDate(prevDate => startOfDay(addDays(prevDate, -1))),
+    'arrowright': () => setCurrentDate(prevDate => startOfDay(addDays(prevDate, 1))),
+    't': () => setCurrentDate(startOfDay(new Date())),
     '/': (e) => { e.preventDefault(); },
     'cmd+k': (e) => { e.preventDefault(); setIsCommandPaletteOpen(prev => !prev); },
   };
