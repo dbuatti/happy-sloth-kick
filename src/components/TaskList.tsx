@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { ChevronsDownUp } from 'lucide-react';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
@@ -239,6 +239,20 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     setPreselectedSectionId(sectionId);
     setIsAddTaskOpenLocal(true);
   };
+
+  // Effect to automatically collapse sections when all tasks are completed
+  useEffect(() => {
+    allSortableSections.forEach(section => {
+      const topLevelTasksInSection = filteredTasks
+        .filter(t => t.parent_task_id === null && (t.section_id === section.id || (t.section_id === null && section.id === 'no-section-header')))
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
+      const remainingTasksCount = topLevelTasksInSection.filter(t => t.status === 'to-do').length;
+
+      if (remainingTasksCount === 0 && (expandedSections[section.id] ?? true)) { // Check if it's currently expanded
+        toggleSection(section.id);
+      }
+    });
+  }, [filteredTasks, sections, allSortableSections, expandedSections, toggleSection]);
 
   return (
     <>
