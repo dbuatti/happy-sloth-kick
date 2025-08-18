@@ -671,3 +671,13 @@
 .quick-add-bar.stuck {
   @apply shadow-lg;
 }
+
+@keyframes breathe-in {
+  from { transform: scale(0.7); }
+  to { transform: scale(1.2); }
+}
+
+@keyframes breathe-out {
+  from { transform: scale(1.2); }
+  to { transform: scale(0.7); }
+}

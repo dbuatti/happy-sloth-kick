@@ -35,7 +35,7 @@ const NavigationLinks = ({ onLinkClick, isDemo, demoUserId }: { onLinkClick?: ()
   });
 
   return (
-    <nav className="flex-1 px-2 space-y-0.5">
+    <nav className="flex-1 px-3 space-y-1">
       {visibleNavItems.map((item) => {
         const path = isDemo ? (item.path === '/dashboard' ? '/demo' : `/demo${item.path}`) : item.path;
         const isActive = location.pathname === path;
@@ -45,7 +45,7 @@ const NavigationLinks = ({ onLinkClick, isDemo, demoUserId }: { onLinkClick?: ()
             key={item.path}
             to={path}
             className={cn(
-              "flex items-center space-x-2 px-2 py-1.5 rounded-md transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+              "flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
               isActive
                 ? 'bg-primary text-primary-foreground shadow-sm'
                 : 'text-foreground/80 hover:bg-muted hover:text-foreground'
@@ -55,7 +55,7 @@ const NavigationLinks = ({ onLinkClick, isDemo, demoUserId }: { onLinkClick?: ()
             <Icon className="h-4 w-4" />
             <span className="font-medium text-sm">{item.name}</span>
             {item.showCount && !countLoading && dailyTaskCount > 0 && (
-              <Badge className="ml-auto px-2 py-0.5 text-xs rounded-full bg-primary-foreground text-primary flex-shrink-0">
+              <Badge className="ml-auto px-2.5 py-1 text-xs rounded-full bg-primary-foreground text-primary flex-shrink-0">
                 {dailyTaskCount}
               </Badge>
             )}
@@ -75,34 +75,34 @@ export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false, demo
   if (isMobile) {
     return (
       <div className="min-h-screen flex flex-col">
-        <header className="flex items-center justify-between p-3 bg-card/80 backdrop-blur shadow-sm sticky top-0 z-50">
+        <header className="flex items-center justify-between p-4 bg-card/80 backdrop-blur shadow-sm sticky top-0 z-50">
           <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label="Open menu" className="h-8 w-8">
+              <Button variant="ghost" size="icon" aria-label="Open menu" className="h-9 w-9">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
             <SheetContent
               side="left"
-              className="w-60 bg-card flex flex-col"
+              className="w-64 bg-card flex flex-col"
               onPointerDownOutside={(e) => {
                 if (e.target instanceof HTMLElement && e.target.closest('[data-radix-popper-content-wrapper]')) {
                   e.preventDefault();
                 }
               }}
             >
-              <div className="p-3 flex justify-between items-center">
+              <div className="p-4 flex justify-between items-center">
                 <Link to={isDemo ? '/demo' : '/dashboard'} className="hover:opacity-80 transition-opacity">
-                  <h1 className="text-xl font-bold">TaskMaster</h1>
+                  <h1 className="text-2xl font-bubbly">TaskMaster</h1>
                 </Link>
               </div>
               <NavigationLinks onLinkClick={() => setIsSheetOpen(false)} isDemo={isDemo} demoUserId={demoUserId} />
-              <div className="p-3 border-t border-border flex justify-between items-center">
+              <div className="p-4 border-t border-border flex justify-between items-center">
                 <p className="text-xs text-muted-foreground">
                   &copy; {new Date().getFullYear()} TaskMaster
                 </p>
                 <div className="flex items-center space-x-1">
-                  <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"} className="h-7 w-7">
+                  <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"} className="h-8 w-8">
                     {isSoundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
                   </Button>
                   <ThemeSelector />
@@ -111,10 +111,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false, demo
             </SheetContent>
           </Sheet>
           <Link to={isDemo ? '/demo' : '/dashboard'} className="hover:opacity-80 transition-opacity">
-            <h1 className="text-xl font-bold">TaskMaster</h1>
+            <h1 className="text-2xl font-bubbly">TaskMaster</h1>
           </Link>
           <div className="flex items-center space-x-1">
-            <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"} className="h-7 w-7">
+            <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"} className="h-8 w-8">
               {isSoundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
             </Button>
             <ThemeSelector />
@@ -129,19 +129,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false, demo
 
   return (
     <div className="h-screen flex overflow-hidden bg-background">
-      <div className="w-60 bg-card/80 backdrop-blur shadow-md h-full flex flex-col flex-shrink-0">
-        <div className="p-3 flex justify-between items-center">
+      <div className="w-64 bg-card/80 backdrop-blur shadow-md h-full flex flex-col flex-shrink-0">
+        <div className="p-4 flex justify-between items-center">
           <Link to={isDemo ? '/demo' : '/dashboard'} className="hover:opacity-80 transition-opacity">
-            <h1 className="text-xl font-bold">TaskMaster</h1>
+            <h1 className="text-2xl font-bubbly">TaskMaster</h1>
           </Link>
         </div>
         <NavigationLinks isDemo={isDemo} demoUserId={demoUserId} />
-        <div className="p-3 border-t border-border flex justify-between items-center">
+        <div className="p-4 border-t border-border flex justify-between items-center">
           <p className="text-xs text-muted-foreground">
             &copy; {new Date().getFullYear()} TaskMaster
           </p>
           <div className="flex items-center space-x-1">
-            <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"} className="h-7 w-7">
+            <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"} className="h-8 w-8">
               {isSoundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
             </Button>
             <ThemeSelector />
