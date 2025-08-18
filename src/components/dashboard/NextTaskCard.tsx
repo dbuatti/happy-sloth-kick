@@ -1,9 +1,11 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Edit, Target } from 'lucide-react';
+import { CheckCircle2, Edit, Target, Link as LinkIcon, ClipboardCopy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Task } from '@/hooks/useTasks';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { showSuccess, showError } from '@/utils/toast';
 
 interface NextTaskCardProps {
   nextAvailableTask: Task | null;
@@ -38,6 +40,18 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ nextAvailableTask, updateTa
     }
   };
 
+  const isUrl = (path: string) => path.startsWith('http://') || path.startsWith('https://');
+
+  const handleCopyPath = async (e: React.MouseEvent, path: string) => {
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(path);
+      showSuccess('Path copied to clipboard!');
+    } catch (err) {
+      showError('Could not copy path.');
+    }
+  };
+
   return (
     <fieldset 
       className="rounded-xl border-2 border-border p-4 min-h-[150px] flex flex-col justify-center cursor-pointer"
@@ -62,6 +76,46 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ nextAvailableTask, updateTa
             <p className="text-xl sm:text-2xl font-bold leading-tight text-foreground line-clamp-2">
               {nextAvailableTask.description}
             </p>
+            {nextAvailableTask.link && (
+              <div className="flex items-center justify-center gap-1 text-sm text-muted-foreground">
+                {isUrl(nextAvailableTask.link) ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <a
+                        href={nextAvailableTask.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-primary hover:underline"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <LinkIcon className="h-4 w-4" />
+                        <span className="truncate max-w-[150px]">{nextAvailableTask.link}</span>
+                      </a>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Open link: {nextAvailableTask.link}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-auto p-1 flex items-center gap-1 text-muted-foreground hover:text-primary"
+                        onClick={(e) => handleCopyPath(e, nextAvailableTask.link!)}
+                      >
+                        <ClipboardCopy className="h-4 w-4" />
+                        <span className="truncate max-w-[150px]">{nextAvailableTask.link}</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Copy path: {nextAvailableTask.link}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
+            )}
             <div className="flex space-x-2">
               <Button size="sm" onClick={handleMarkComplete}>
                 <CheckCircle2 className="mr-2 h-4 w-4" /> Done
