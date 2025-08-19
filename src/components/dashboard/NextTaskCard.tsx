@@ -6,6 +6,7 @@ import { Task } from '@/hooks/useTasks';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { showSuccess, showError } from '@/utils/toast';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"; // Import Card components
 
 interface NextTaskCardProps {
   nextAvailableTask: Task | null;
@@ -53,15 +54,16 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ nextAvailableTask, updateTa
   };
 
   return (
-    <fieldset 
-      className="rounded-xl border-2 border-border p-4 min-h-[150px] flex flex-col justify-center cursor-pointer"
+    <Card
+      className="h-full shadow-lg rounded-xl flex flex-col justify-center cursor-pointer" // Adjusted classes
       onClick={onFocusViewOpen}
     >
-      <legend className="px-2 text-sm font-medium text-foreground/80 -ml-1 flex items-center gap-2">
-        <Target className="h-4 w-4" />
-        Your Next Task
-      </legend>
-      <div className="flex-grow flex items-center justify-center">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-xl font-bold flex items-center justify-center gap-2">
+          <Target className="h-5 w-5" /> Your Next Task
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex-grow flex items-center justify-center pt-0"> {/* Adjusted padding */}
         {loading ? (
           <div className="space-y-3 w-full flex flex-col items-center">
             <Skeleton className="h-6 w-3/4" />
@@ -130,8 +132,8 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ nextAvailableTask, updateTa
             No pending tasks for today. Great job!
           </div>
         )}
-      </div>
-    </fieldset>
+      </CardContent>
+    </Card>
   );
 };
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { usePeopleMemory, Person } from '@/hooks/usePeopleMemory';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'; // Import Card components
 import { Button } from '@/components/ui/button';
 import { Plus, UploadCloud, X, Users } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import { showError } from '@/utils/toast';
+import { usePeopleMemory, Person } from '@/hooks/usePeopleMemory';
 
 const PeopleMemoryCard: React.FC = () => {
   const { people, loading, addPerson, updatePerson, deletePerson } = usePeopleMemory();
@@ -91,12 +92,13 @@ const PeopleMemoryCard: React.FC = () => {
 
   return (
     <>
-      <fieldset className="rounded-xl border-2 border-border p-4 min-h-[150px] flex flex-col">
-        <legend className="px-2 text-sm font-medium text-foreground/80 -ml-1 flex items-center gap-2">
-          <Users className="h-4 w-4" />
-          People Memory
-        </legend>
-        <div className="flex-grow flex items-center justify-center">
+      <Card className="h-full shadow-lg rounded-xl"> {/* Changed from fieldset to Card */}
+        <CardHeader className="pb-2"> {/* Adjusted padding */}
+          <CardTitle className="text-xl font-bold flex items-center justify-center gap-2"> {/* Adjusted font size and alignment */}
+            <Users className="h-5 w-5 text-primary" /> People Memory
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex-grow flex items-center justify-center pt-0"> {/* Adjusted padding */}
           {loading ? (
             <div className="flex flex-wrap items-center gap-4">
               {[...Array(3)].map((_, i) => (
@@ -119,8 +121,8 @@ const PeopleMemoryCard: React.FC = () => {
               </Button>
             </div>
           )}
-        </div>
-      </fieldset>
+        </CardContent>
+      </Card>
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent>
