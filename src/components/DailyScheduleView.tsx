@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { CardContent } from "@/components/ui/card";
-import { useWorkHours } from '@/hooks/useWorkHours';
-import { format, addMinutes, parse, isBefore, getMinutes, getHours, parseISO, isValid, setHours, setMinutes, isAfter } from 'date-fns';
+import { useWorkHours, WorkHour } from '@/hooks/useWorkHours'; // Import WorkHour type
+import { format, addMinutes, parse, isBefore, getMinutes, getHours, parseISO, isValid, setHours, setMinutes } from 'date-fns';
 import { Sparkles, X, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import DateNavigator from '@/components/DateNavigator';
 import { useAppointments, Appointment, NewAppointmentData } from '@/hooks/useAppointments';
@@ -25,7 +25,6 @@ import DraggableScheduleTaskItem from '@/components/DraggableScheduleTaskItem';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import TimeBlockActionMenu from '@/components/TimeBlockActionMenu';
-import { allDaysOfWeek } from '@/hooks/useWorkHours'; // Import allDaysOfWeek
 
 interface DailyScheduleViewProps {
   currentDate: Date;
@@ -47,8 +46,8 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
   onOpenTaskDetail,
   onOpenTaskOverview,
 }) => {
-  const { workHours: singleDayWorkHoursRaw, loading: workHoursLoading, saveWorkHours } = useWorkHours({ date: currentDate, userId: demoUserId });
-  const singleDayWorkHours = Array.isArray(singleDayWorkHoursRaw) ? null : singleDayWorkHoursRaw;
+  const { workHours, loading: workHoursLoading, saveWorkHours } = useWorkHours({ date: currentDate, userId: demoUserId });
+  const singleDayWorkHours = workHours as WorkHour | null; // Explicitly cast to WorkHour | null
 
   const { appointments, loading: appointmentsLoading, addAppointment, updateAppointment, deleteAppointment, clearDayAppointments, batchAddAppointments } = useAppointments({ startDate: currentDate, endDate: currentDate });
   const { 
@@ -113,8 +112,8 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
     const appStartTime = parse(data.start_time, 'HH:mm:ss', currentDate);
     const appEndTime = parse(data.end_time, 'HH:mm:ss', currentDate);
 
-    const currentMinHour = workHoursForCurrentDay?.enabled ? getHours(parse(workHoursForCurrentDay.start_time, 'HH:mm:ss', currentDate)) : 0;
-    const currentMaxHour = workHoursForCurrentDay?.enabled ? getHours(parse(workHoursForCurrentDay.end_time, 'HH:mm:ss', currentDate)) : 24;
+    const currentMinHour = singleDayWorkHours?.enabled ? getHours(parse(singleDayWorkHours.start_time, 'HH:mm:ss', currentDate)) : 0;
+    const currentMaxHour = singleDayWorkHours?.enabled ? getHours(parse(singleDayWorkHours.end_time, 'HH:mm:ss', currentDate)) : 24;
 
     const appStartHour = getHours(appStartTime);
     const appEndHour = getHours(appEndTime) + (getMinutes(appEndTime) > 0 ? 1 : 0); // Round up to next hour if minutes exist
@@ -139,9 +138,9 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
   };
 
   const confirmExtendHours = async () => {
-    if (newHoursToExtend && workHoursForCurrentDay) {
+    if (newHoursToExtend && singleDayWorkHours) {
       const updatedWorkHours = {
-        ...workHoursForCurrentDay,
+        ...singleDayWorkHours,
         start_time: format(setHours(currentDate, newHoursToExtend.min), 'HH:mm:ss'),
         end_time: format(setHours(currentDate, newHoursToExtend.max), 'HH:mm:ss'),
         enabled: true, // Ensure work hours are enabled if extended
@@ -221,7 +220,7 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
       return { gridRowStart: 1, gridRowEnd: 1, overlapOffset: 0 };
     }
 
-    const minHourMinutes = workHoursForCurrentDay?.enabled ? (getHours(parse(workHoursForCurrentDay.start_time, 'HH:mm:ss', currentDate)) * 60) : 0;
+    const minHourMinutes = singleDayWorkHours?.enabled ? (getHours(parse(singleDayWorkHours.start_time, 'HH:mm:ss', currentDate)) * 60) : 0;
 
     const startMinutes = (getHours(appStartTime) * 60) + getMinutes(appStartTime);
     const endMinutes = (getHours(appEndTime) * 60) + getMinutes(appEndTime);
@@ -230,12 +229,12 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
     const gridRowEnd = Math.ceil((endMinutes - minHourMinutes) / 30) + 1;
 
     return { gridRowStart, gridRowEnd };
-  }, [currentDate, workHoursForCurrentDay]);
+  }, [currentDate, singleDayWorkHours]);
 
   const timeBlocks = useMemo(() => {
     const blocks = [];
-    const minHour = workHoursForCurrentDay?.enabled ? getHours(parse(workHoursForCurrentDay.start_time, 'HH:mm:ss', currentDate)) : 0;
-    const maxHour = workHoursForCurrentDay?.enabled ? getHours(parse(workHoursForCurrentDay.end_time, 'HH:mm:ss', currentDate)) : 24;
+    const minHour = singleDayWorkHours?.enabled ? getHours(parse(singleDayWorkHours.start_time, 'HH:mm:ss', currentDate)) : 0;
+    const maxHour = singleDayWorkHours?.enabled ? getHours(parse(singleDayWorkHours.end_time, 'HH:mm:ss', currentDate)) : 24;
 
     let currentTime = setHours(setMinutes(currentDate, 0), minHour);
     const endTime = setHours(setMinutes(currentDate, 0), maxHour);
@@ -250,7 +249,7 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
       currentTime = blockEnd;
     }
     return blocks;
-  }, [currentDate, workHoursForCurrentDay]);
+  }, [currentDate, singleDayWorkHours]);
 
   const appointmentsWithPositions = useMemo(() => {
     const positionedApps = appointments.map(app => ({
