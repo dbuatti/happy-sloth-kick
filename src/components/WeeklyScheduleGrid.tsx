@@ -385,9 +385,9 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:flex lg:gap-6">
-            <div className="flex-1 overflow-x-auto">
-              <div className="grid border rounded-lg" style={{
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] lg:gap-6"> {/* Changed to grid layout */}
+            <div className="flex-1 overflow-x-auto"> {/* Added overflow-x-auto here */}
+              <div className="grid border rounded-lg min-w-max" style={{ // Added min-w-max
                 gridTemplateColumns: `80px repeat(7, minmax(120px, 1fr))`,
                 gridTemplateRows: `auto repeat(${timeBlocks.length}, ${rowHeight}px)`,
                 rowGap: `${gapHeight}px`,

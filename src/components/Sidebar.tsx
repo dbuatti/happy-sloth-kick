@@ -111,7 +111,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false, demo
             </SheetContent>
           </Sheet>
           <Link to={isDemo ? '/demo' : '/dashboard'} className="hover:opacity-80 transition-opacity">
-            <h1 className="text-2xl font-bubbly">TaskMaster</h1>
+            <h1 className="text-xl font-bubbly sm:text-2xl">TaskMaster</h1> {/* Reduced font size for mobile */}
           </Link>
           <div className="flex items-center space-x-1">
             <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"} className="h-8 w-8">

@@ -23,8 +23,8 @@ import DraggableAppointmentCard from '@/components/DraggableAppointmentCard';
 import { cn } from '@/lib/utils';
 import DraggableScheduleTaskItem from '@/components/DraggableScheduleTaskItem';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"; // Added missing imports
-import TimeBlockActionMenu from '@/components/TimeBlockActionMenu'; // Ensure this is correctly imported
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import TimeBlockActionMenu from '@/components/TimeBlockActionMenu';
 
 interface DailyScheduleViewProps {
   currentDate: Date;
@@ -353,9 +353,9 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:flex lg:gap-6">
-            <div className="flex-1">
-              <div className="flex gap-x-4">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] lg:gap-6"> {/* Changed to grid layout */}
+            <div className="flex-1 overflow-x-auto"> {/* Added overflow-x-auto here */}
+              <div className="flex gap-x-4 min-w-max"> {/* Added min-w-max to ensure content doesn't shrink */}
                 <div className="w-[80px] flex-shrink-0 relative" style={{
                   height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`,
                 }}>
@@ -376,6 +376,7 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                   gridTemplateRows: `repeat(${timeBlocks.length}, ${rowHeight}px)`,
                   rowGap: `${gapHeight}px`,
                   height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`,
+                  minWidth: 'calc(100% - 80px)', // Ensure it takes up remaining space, but allows scrolling
                 }}>
                   {timeBlocks.map((block, index) => {
                     const isWithinWorkHours = singleDayWorkHours?.enabled &&
@@ -430,6 +431,7 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                 </div>
               </div>
             </div>
+            {/* Task panel moved outside the flex-1 schedule container, now in its own grid column */}
             <div className="relative mt-6 lg:mt-0">
               <Button
                 variant="ghost"
@@ -521,7 +523,7 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
             <Textarea
               id="text-to-parse"
               value={textToParse}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) => setTextToParse(e.target.value)}
               rows={10}
               placeholder="Paste text here..."
               disabled={isParsing}
