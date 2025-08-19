@@ -1,12 +1,9 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { CalendarDays } from 'lucide-react';
 import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import DailyScheduleView from '@/components/DailyScheduleView';
-import WeeklyScheduleGrid from '@/components/WeeklyScheduleGrid';
 import { Task, useTasks } from '@/hooks/useTasks';
-import { startOfWeek, addWeeks } from 'date-fns';
 import TaskOverviewDialog from '@/components/TaskOverviewDialog';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import { useSettings } from '@/context/SettingsContext';
@@ -17,12 +14,9 @@ interface TimeBlockScheduleProps {
 }
 
 const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, demoUserId }) => {
-  // Removed `settings` and `updateSettings` as they are no longer directly used here.
   useSettings(); 
 
-  const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('daily');
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 })); // Monday as start of week
 
   // Fetch allTasks here to pass to TaskDetailDialog
   const {
@@ -68,60 +62,36 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
     });
   }, []);
 
-  const handlePreviousWeek = useCallback(() => {
-    setCurrentWeekStart(prevWeekStart => addWeeks(prevWeekStart, -1));
-  }, []);
-
-  const handleNextWeek = useCallback(() => {
-    setCurrentWeekStart(prevWeekStart => addWeeks(prevWeekStart, 1));
-  }, []);
-
   const handleGoToToday = useCallback(() => {
     setCurrentDate(new Date());
-    setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }));
   }, []);
 
   const shortcuts: ShortcutMap = useMemo(() => ({
-    'arrowleft': viewMode === 'daily' ? handlePreviousDay : handlePreviousWeek,
-    'arrowright': viewMode === 'daily' ? handleNextDay : handleNextWeek,
+    'arrowleft': handlePreviousDay,
+    'arrowright': handleNextDay,
     't': handleGoToToday,
-  }), [viewMode, handlePreviousDay, handleNextDay, handlePreviousWeek, handleNextWeek, handleGoToToday]);
+  }), [handlePreviousDay, handleNextDay, handleGoToToday]);
   
   useKeyboardShortcuts(shortcuts);
 
   return (
     <div className="flex-1 flex flex-col">
-      <main className="flex-grow p-4 bg-red-500">
+      <main className="flex-grow p-4">
         <Card className="w-full max-w-6xl mx-auto shadow-lg rounded-xl p-4">
           <CardHeader className="pb-2">
             <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
-              <CalendarDays className="h-7 w-7" /> Dynamic Schedule
+              <CalendarDays className="h-7 w-7" /> Daily Schedule
             </CardTitle>
           </CardHeader>
-          <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'daily' | 'weekly')} className="w-full mt-4">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="daily">Daily View</TabsTrigger>
-              <TabsTrigger value="weekly">Weekly View</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="daily" className="mt-4 pt-6">
-              <DailyScheduleView
-                currentDate={currentDate}
-                setCurrentDate={setCurrentDate}
-                isDemo={isDemo}
-                demoUserId={demoUserId}
-                onOpenTaskOverview={handleOpenTaskOverview}
-              />
-            </TabsContent>
-            <TabsContent value="weekly" className="mt-4 pt-6">
-              <WeeklyScheduleGrid
-                currentWeekStart={currentWeekStart}
-                isDemo={isDemo}
-                demoUserId={demoUserId}
-                onOpenTaskOverview={handleOpenTaskOverview}
-              />
-            </TabsContent>
-          </Tabs>
+          <CardContent className="pt-0">
+            <DailyScheduleView
+              currentDate={currentDate}
+              setCurrentDate={setCurrentDate}
+              isDemo={isDemo}
+              demoUserId={demoUserId}
+              onOpenTaskOverview={handleOpenTaskOverview}
+            />
+          </CardContent>
         </Card>
       </main>
       <footer className="p-4">
@@ -137,7 +107,7 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
           onDelete={deleteTask}
           sections={sections}
           allCategories={allCategories}
-          allTasks={allTasks as Task[]} // Cast to Task[]
+          allTasks={allTasks as Task[]}
         />
       )}
       {taskToEdit && (
@@ -153,7 +123,7 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
           updateSection={updateSection}
           deleteSection={deleteSection}
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-          allTasks={allTasks as Task[]} // Cast to Task[]
+          allTasks={allTasks as Task[]}
         />
       )}
     </div>
