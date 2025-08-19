@@ -55,6 +55,7 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
     deleteTask: deleteTaskFromHook,
     createSection,
     updateSection,
+    deleteSection,
     updateSectionIncludeInFocusMode
   } = useTasks({ currentDate, userId: demoUserId });
   const { settings } = useSettings();
@@ -531,7 +532,7 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
           updateSection={updateSection}
           deleteSection={deleteSection}
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-          allTasks={allTasks} {/* Added allTasks prop */}
+          allTasks={allTasks}
         />
       )}
       <Dialog open={isParsingDialogOpen} onOpenChange={setIsParsingDialogOpen}>
