@@ -382,7 +382,7 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <>
+      <React.Fragment>
         <CardContent className="pt-0">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-4">
             <DateNavigator
@@ -638,7 +638,7 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </>
+      </React.Fragment>
     </DndContext>
   );
 };
