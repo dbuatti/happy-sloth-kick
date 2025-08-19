@@ -18,7 +18,7 @@ import DraggableAppointmentCard from '@/components/DraggableAppointmentCard';
 import DraggableScheduleTaskItem from '@/components/DraggableScheduleTaskItem';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from "@/components/ui/label";
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -283,7 +283,7 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
 
     const gridRowStart = Math.floor(startMinutesFromMidnight / 30) + 1;
     const gridRowEnd = Math.ceil(endMinutesFromMidnight / 30) + 1;
-    const gridColumn = dayIndex + 2; // +2 because column 1 is for time labels
+    const gridColumn = dayIndex + 1; // Adjusted to 1-based index for columns
 
     return { gridRowStart, gridRowEnd, gridColumn };
   }, []);
@@ -303,7 +303,7 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
     const finalApps = positionedApps.map(app => ({ ...app, overlapOffset: 0 }));
 
     daysInWeek.forEach((_, dayIndex) => {
-      const appsForThisDay = finalApps.filter(app => app.gridColumn === dayIndex + 2)
+      const appsForThisDay = finalApps.filter(app => app.gridColumn === dayIndex + 1)
                                       .sort((a, b) => a.gridRowStart - b.gridRowStart);
       
       for (let i = 0; i < appsForThisDay.length; i++) {
@@ -441,12 +441,11 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] lg:gap-6">
             <div className="flex-1 overflow-x-auto">
               <div className="grid border rounded-lg min-w-max" style={{
-                gridTemplateColumns: `80px repeat(7, minmax(120px, 1fr))`,
+                gridTemplateColumns: `repeat(7, minmax(120px, 1fr))`, // Removed 80px column
                 gridTemplateRows: `auto repeat(${timeBlocks.length}, ${rowHeight}px)`,
                 rowGap: `${gapHeight}px`,
               }}>
-                {/* Header Row: Time Labels and Days */}
-                <div className="sticky left-0 bg-card z-10 p-2 border-b border-r font-semibold text-sm"></div>
+                {/* Header Row: Days */}
                 {daysInWeek.map((day, index) => (
                   <div key={index} className="p-2 border-b text-center font-semibold text-sm flex flex-col items-center justify-center bg-muted/30">
                     <span>{format(day, 'EEE')}</span>
@@ -457,19 +456,6 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
                       </Button>
                     )}
                   </div>
-                ))}
-
-                {/* Time Labels Column */}
-                {timeBlocks.map((block, index) => (
-                  getMinutes(block.start) === 0 && (
-                    <div
-                      key={`time-label-${format(block.start, 'HH:mm')}`}
-                      className="sticky left-0 bg-card z-10 text-right pr-2 flex items-center justify-end border-r"
-                      style={{ gridRow: `${index + 2} / span 2`, height: `${2 * rowHeight + gapHeight}px` }}
-                    >
-                      <span className="text-xl font-bubbly text-muted-foreground">{format(block.start, 'h a')}</span>
-                    </div>
-                  )
                 ))}
 
                 {/* Grid Cells for each day and time block */}
@@ -500,20 +486,26 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
                       <div
                         key={`${format(day, 'yyyy-MM-dd')}-${format(block.start, 'HH:mm')}`}
                         className={cn(
-                          "relative border-t border-l",
+                          "relative h-full w-full border-t border-l",
                           isWorkDayEnabled ? "bg-background/50" : "bg-muted/20",
                           isWithinWorkHours ? "hover:bg-primary/10" : "",
                           "border-gray-200/80 dark:border-gray-700/80"
                         )}
                         style={{
-                          gridColumn: dayIndex + 2,
-                          gridRow: blockIndex + 2,
+                          gridColumn: dayIndex + 1, // Adjusted to 1-based index for columns
+                          gridRow: blockIndex + 2, // +2 because row 1 is for day headers
                           height: `${rowHeight}px`,
                           zIndex: 1,
                           display: isWithinWorkHours ? 'block' : 'none', // Hide blocks outside work hours
                         }}
                       >
                         <div className="absolute top-1/2 w-full border-b border-dashed border-gray-200/50 dark:border-gray-700/50" />
+                        {/* Time label as background element, only in the first column */}
+                        {dayIndex === 0 && getMinutes(block.start) === 0 && (
+                          <span className="absolute right-full mr-4 text-xl font-bubbly text-muted-foreground whitespace-nowrap -translate-y-1/2" style={{ zIndex: 0 }}>
+                            {format(block.start, 'h a')}
+                          </span>
+                        )}
                         {!isBlockOccupied && !isDemo && (
                           <Popover>
                             <PopoverTrigger asChild>
@@ -538,20 +530,6 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
                 {/* Appointments */}
                 {appointmentsWithPositions.map((app) => {
                   const task = app.task_id ? allTasks.find(t => t.id === app.task_id) : undefined;
-                  const appDay = parseISO(app.date);
-                  const dayOfWeek = appDay.getDay();
-                  const workHoursForAppDay = allWorkHours.find(wh => wh.day_of_week === allDaysOfWeek[dayOfWeek].id);
-                  const isWorkDayEnabled = workHoursForAppDay?.enabled;
-
-                  const minHour = workHoursForAppDay?.enabled ? getHours(parse(workHoursForAppDay.start_time, 'HH:mm:ss', appDay)) : 0;
-                  const maxHour = workHoursForAppDay?.enabled ? getHours(parse(workHoursForAppDay.end_time, 'HH:mm:ss', appDay)) : 24;
-
-                  const appStartHour = getHours(parse(app.start_time, 'HH:mm:ss', appDay));
-                  const appEndHour = getHours(parse(app.end_time, 'HH:mm:ss', appDay));
-
-                  const isWithinWorkHoursRange = isWorkDayEnabled && 
-                    appStartHour >= minHour && appEndHour <= maxHour;
-
                   return (
                     <DraggableAppointmentCard
                       key={app.id}
@@ -571,7 +549,6 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
                         width: `calc(100% - ${app.overlapOffset * 10}px)`,
                         backgroundColor: app.color,
                         zIndex: 10 + app.overlapOffset,
-                        display: isWithinWorkHoursRange ? 'block' : 'none', // Hide appointments outside work hours
                       }}
                     />
                   );
@@ -709,7 +686,7 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure you want to clear the day?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action will remove all appointments for {dayToClear ? format(dayToClear, 'MMMM d, yyyy') : 'the selected day'}. This cannot be undone immediately, but you can undo it from the toast notification.
+              This action will remove all appointments for {currentDate ? format(currentDate, 'MMMM d, yyyy') : 'the selected day'}. This cannot be undone immediately, but you can undo it from the toast notification.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -724,7 +701,7 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
           <AlertDialogHeader>
             <AlertDialogTitle>Extend Work Hours?</AlertDialogTitle>
             <AlertDialogDescription>
-              This appointment falls outside your current work hours for {format(selectedDateForNew, 'EEEE, MMM d')}. Would you like to extend your work hours to {newHoursToExtend ? `${format(setHours(selectedDateForNew, newHoursToExtend.min), 'h a')} - ${format(setHours(selectedDateForNew, newHoursToExtend.max), 'h a')}` : 'fit it'}?
+              This appointment falls outside your current work hours for {format(currentDate, 'EEEE, MMM d')}. Would you like to extend your work hours to {newHoursToExtend ? `${format(setHours(currentDate, newHoursToExtend.min), 'h a')} - ${format(setHours(currentDate, newHoursToExtend.max), 'h a')}` : 'fit it'}?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -741,4 +718,4 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
   );
 };
 
-export default WeeklyScheduleGrid;
+export default DailyScheduleView;

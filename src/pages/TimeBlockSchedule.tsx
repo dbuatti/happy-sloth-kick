@@ -104,7 +104,7 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
               <TabsTrigger value="weekly">Weekly View</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="daily" className="mt-4">
+            <TabsContent value="daily" className="mt-4 pt-6">
               <DailyScheduleView
                 currentDate={currentDate}
                 setCurrentDate={setCurrentDate}
@@ -114,7 +114,7 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
                 onOpenTaskOverview={handleOpenTaskOverview}
               />
             </TabsContent>
-            <TabsContent value="weekly" className="mt-4">
+            <TabsContent value="weekly" className="mt-4 pt-6">
               <WeeklyScheduleGrid
                 currentWeekStart={currentWeekStart}
                 isDemo={isDemo}

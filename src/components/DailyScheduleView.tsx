@@ -408,30 +408,13 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] lg:gap-6">
             <div className="flex-1 overflow-x-auto">
-              <div className="flex gap-x-4 min-w-max">
-                <div className="w-[80px] flex-shrink-0 relative" style={{
-                  height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`,
-                }}>
-                  {timeBlocks.map((block, index) => (
-                    getMinutes(block.start) === 0 && (
-                      <div
-                        key={`label-${format(block.start, 'HH:mm')}`}
-                        className="absolute right-0 text-right pr-2"
-                        style={{ top: `${index * (rowHeight + gapHeight) - 8}px` }}
-                      >
-                        <span className="text-xl font-bubbly text-muted-foreground">{format(block.start, 'h a')}</span>
-                      </div>
-                    )
-                  ))}
-                </div>
-
-                <div className="flex-1 relative grid" style={{
-                  gridTemplateRows: `repeat(${timeBlocks.length}, ${rowHeight}px)`,
-                  rowGap: `${gapHeight}px`,
-                  height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`,
-                  minWidth: 'calc(100% - 80px)',
-                }}>
-                  {timeBlocks.map((block, index) => {
+              <div className="relative grid border rounded-lg min-w-max" style={{
+                gridTemplateColumns: `1fr`,
+                gridTemplateRows: `repeat(${timeBlocks.length}, ${rowHeight}px)`,
+                rowGap: `${gapHeight}px`,
+                minWidth: 'calc(100% - 80px)',
+              }}>
+                {timeBlocks.map((block, index) => {
                     const isBlockOccupied = appointmentsWithPositions.some(app => {
                       if (!app.start_time || !app.end_time) return false;
                       const appStart = parse(app.start_time, 'HH:mm:ss', currentDate);
@@ -449,6 +432,12 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                         style={{ gridRow: `${index + 1}`, zIndex: 1 }}
                       >
                         <div className="absolute top-1/2 w-full border-b border-dashed border-gray-200/50 dark:border-gray-700/50" />
+                        {/* Time label as background element */}
+                        {getMinutes(block.start) === 0 && (
+                          <span className="absolute right-full mr-4 text-xl font-bubbly text-muted-foreground whitespace-nowrap -translate-y-1/2" style={{ zIndex: 0 }}>
+                            {format(block.start, 'h a')}
+                          </span>
+                        )}
                         {!isBlockOccupied && !isDemo && (
                           <Popover>
                             <PopoverTrigger asChild>
