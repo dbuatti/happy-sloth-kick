@@ -34,12 +34,7 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
     filteredTasks: allDayTasks,
     allCategories,
     sections,
-    updateTask,
-    deleteTask: deleteTaskFromHook,
-    createSection,
-    updateSection,
-    deleteSection,
-    updateSectionIncludeInFocusMode
+    // Removed updateTask, deleteTaskFromHook, createSection, updateSection, deleteSection, updateSectionIncludeInFocusMode
    } = useTasks({ currentDate: currentWeekStart, userId: demoUserId });
   const { settings } = useSettings();
 
@@ -99,12 +94,6 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
         allDayTasks={allDayTasks}
         allCategories={allCategories}
         sections={sections}
-        updateTask={updateTask}
-        deleteTaskFromHook={deleteTaskFromHook}
-        createSection={createSection}
-        updateSection={updateSection}
-        deleteSection={deleteSection}
-        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
         settings={settings}
         isLoading={workHoursLoading || appointmentsLoading}
       />

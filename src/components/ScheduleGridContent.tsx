@@ -26,7 +26,9 @@ import TimeBlockActionMenu from '@/components/TimeBlockActionMenu';
 
 interface ScheduleGridContentProps {
   isDemo?: boolean;
-  onOpenTaskOverview: (task: Task) => void; // Kept for passing to handleAppointmentClick
+  demoUserId?: string; // Re-added
+  onOpenTaskDetail: (task: Task) => void; // Re-added
+  onOpenTaskOverview: (task: Task) => void;
 
   // Data from parent view (Daily/Weekly)
   currentViewDate: Date; // The date representing the current view (e.g., selected day or start of week)
@@ -58,6 +60,8 @@ const gapHeight = 4;
 
 const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
   isDemo = false,
+  demoUserId, // Re-added
+  onOpenTaskDetail, // Re-added
   onOpenTaskOverview,
   currentViewDate,
   daysInGrid,
@@ -74,7 +78,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
   allDayTasks,
   allCategories,
   sections,
-  // Removed updateTask, deleteTaskFromHook, createSection, updateSection, deleteSection, updateSectionIncludeInFocusMode
+  // Removed updateTask, deleteTaskFromHook, createSection, updateSection, deleteSection, updateSectionIncludeInFocusMode from destructuring
   settings,
   isLoading,
 }) => {
@@ -201,6 +205,12 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
     } else {
       handleEditAppointment(appointment);
     }
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleEditTaskFromOverview = (task: Task) => {
+    // This function is now a passthrough to the parent's onOpenTaskDetail
+    onOpenTaskDetail(task);
   };
 
   const handleDeleteAppointment = async (id: string) => {
@@ -419,6 +429,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
                 {/* Header Row: Days */}
                 {daysInGrid.map((day, index) => {
                   const workHoursForDay = getWorkHoursForDay(day);
+                  // eslint-disable-next-line @typescript-eslint/no-unused-vars
                   const isWorkDayEnabled = workHoursForDay?.enabled;
                   return (
                     <div key={index} className="p-2 border-b text-center font-semibold text-sm flex flex-col items-center justify-center bg-muted/30">

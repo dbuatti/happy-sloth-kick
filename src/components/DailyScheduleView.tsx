@@ -34,12 +34,7 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
     filteredTasks: allDayTasks, 
     allCategories, 
     sections, 
-    updateTask, 
-    deleteTask: deleteTaskFromHook,
-    createSection,
-    updateSection,
-    deleteSection,
-    updateSectionIncludeInFocusMode
+    // Removed unused destructured variables from useTasks
   } = useTasks({ currentDate, userId: demoUserId });
   const { settings } = useSettings();
 
@@ -80,7 +75,7 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
       />
       <ScheduleGridContent
         isDemo={isDemo}
-        // Removed demoUserId as it's not directly used in ScheduleGridContent
+        demoUserId={demoUserId}
         onOpenTaskDetail={onOpenTaskDetail}
         onOpenTaskOverview={onOpenTaskOverview}
         currentViewDate={currentDate}
@@ -98,7 +93,6 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
         allDayTasks={allDayTasks}
         allCategories={allCategories}
         sections={sections}
-        // Removed updateTask, deleteTaskFromHook, createSection, updateSection, deleteSection, updateSectionIncludeInFocusMode
         settings={settings}
         isLoading={workHoursLoading || appointmentsLoading}
       />
