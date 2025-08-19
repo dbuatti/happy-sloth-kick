@@ -1,9 +1,9 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { CardContent } from "@/components/ui/card";
 import { useWorkHours } from '@/hooks/useWorkHours';
-import { format, addMinutes, parse, isBefore, getMinutes, getHours, parseISO, isValid } from 'date-fns';
-import { Clock, Settings, Sparkles, X, PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { format, addMinutes, parse, isBefore, getMinutes, getHours, parseISO, isValid, setHours, setMinutes, isAfter } from 'date-fns';
+import { Sparkles, X, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import DateNavigator from '@/components/DateNavigator';
 import { useAppointments, Appointment, NewAppointmentData } from '@/hooks/useAppointments';
 import AppointmentForm from '@/components/AppointmentForm';
@@ -20,10 +20,11 @@ import { useSettings } from '@/context/SettingsContext';
 import { toast } from 'sonner';
 import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, useSensor, useSensors, closestCorners } from '@dnd-kit/core';
 import DraggableAppointmentCard from '@/components/DraggableAppointmentCard';
-import TimeBlock from '@/components/TimeBlock';
 import { cn } from '@/lib/utils';
 import DraggableScheduleTaskItem from '@/components/DraggableScheduleTaskItem';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"; // Added missing imports
+import TimeBlockActionMenu from '@/components/TimeBlockActionMenu'; // Ensure this is correctly imported
 
 interface DailyScheduleViewProps {
   currentDate: Date;
@@ -33,6 +34,11 @@ interface DailyScheduleViewProps {
   onOpenTaskDetail: (task: Task) => void;
   onOpenTaskOverview: (task: Task) => void;
 }
+
+const rowHeight = 50;
+const gapHeight = 4;
+const MIN_HOUR = 0; // 00:00
+const MAX_HOUR = 24; // 24:00 (end of day)
 
 const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
   currentDate,
@@ -87,13 +93,6 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
     }
   });
   const [isClearDayDialogOpen, setIsClearDayDialogOpen] = useState(false);
-
-  const rowHeight = 50;
-  const gapHeight = 4;
-
-  useEffect(() => {
-    localStorage.setItem('scheduleTaskPanelCollapsed', JSON.stringify(isTaskPanelCollapsed));
-  }, [isTaskPanelCollapsed]);
 
   const sensors = useSensors(useSensor(PointerSensor, {
     activationConstraint: {
@@ -170,39 +169,25 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
     const appStartTime = parse(app.start_time, 'HH:mm:ss', currentDate);
     const appEndTime = parse(app.end_time, 'HH:mm:ss', currentDate);
 
-    const workHours = singleDayWorkHours;
-
-    if (!workHours || !workHours.enabled || isNaN(appStartTime.getTime()) || isNaN(appEndTime.getTime())) {
+    if (isNaN(appStartTime.getTime()) || isNaN(appEndTime.getTime())) {
       return { gridRowStart: 1, gridRowEnd: 1, overlapOffset: 0 };
     }
 
-    const workStartTime = parse(workHours.start_time, 'HH:mm:ss', currentDate);
-
     const startMinutes = (getHours(appStartTime) * 60) + getMinutes(appStartTime);
     const endMinutes = (getHours(appEndTime) * 60) + getMinutes(appEndTime);
-    const workStartMinutes = (getHours(workStartTime) * 60) + getMinutes(workStartTime);
+    const minHourMinutes = MIN_HOUR * 60;
 
-    const gridRowStart = Math.floor((startMinutes - workStartMinutes) / 30) + 1;
-    const gridRowEnd = Math.ceil((endMinutes - workStartMinutes) / 30) + 1;
+    const gridRowStart = Math.floor((startMinutes - minHourMinutes) / 30) + 1;
+    const gridRowEnd = Math.ceil((endMinutes - minHourMinutes) / 30) + 1;
 
     return { gridRowStart, gridRowEnd };
-  }, [singleDayWorkHours, currentDate]);
+  }, [currentDate]);
 
   const timeBlocks = useMemo(() => {
-    const workHours = singleDayWorkHours;
-
-    if (!workHours || !workHours.enabled) return [];
-
-    const startTime = parse(workHours.start_time, 'HH:mm:ss', currentDate);
-    const endTime = parse(workHours.end_time, 'HH:mm:ss', currentDate);
-
-    if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
-      console.error("Error parsing start or end time. Check format:", workHours.start_time, workHours.end_time);
-      return [];
-    }
-
     const blocks = [];
-    let currentTime = startTime;
+    let currentTime = setHours(setMinutes(currentDate, 0), MIN_HOUR);
+    const endTime = setHours(setMinutes(currentDate, 0), MAX_HOUR);
+
     while (isBefore(currentTime, endTime)) {
       const blockStart = currentTime;
       const blockEnd = addMinutes(currentTime, 30);
@@ -213,7 +198,7 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
       currentTime = blockEnd;
     }
     return blocks;
-  }, [singleDayWorkHours, currentDate]);
+  }, [currentDate]);
 
   const appointmentsWithPositions = useMemo(() => {
     const positionedApps = appointments.map(app => ({
@@ -367,20 +352,6 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
           </div>
-        ) : (!singleDayWorkHours || !singleDayWorkHours.enabled) ? (
-          <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
-            <Clock className="h-16 w-16 text-muted-foreground mb-4" />
-            <p className="text-xl font-medium mb-2">No work hours set or enabled for this day.</p>
-            <p className="text-md">Please go to <a href="/my-hub" className="text-blue-500 hover:underline flex items-center gap-1">
-              <Settings className="h-4 w-4" /> My Hub (Settings tab)
-            </a> to define your work hours to start scheduling!</p>
-          </div>
-        ) : timeBlocks.length === 0 ? (
-          <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
-            <Clock className="h-16 w-16 text-muted-foreground mb-4" />
-            <p className="text-xl font-medium mb-2">No time blocks generated for this day.</p>
-            <p className="text-sm">Please check your work hour settings. Ensure your start time is before your end time.</p>
-          </div>
         ) : (
           <div className="grid grid-cols-1 lg:flex lg:gap-6">
             <div className="flex-1">
@@ -406,36 +377,38 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                   rowGap: `${gapHeight}px`,
                   height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`,
                 }}>
-                  {timeBlocks.map((block, index) => (
-                    getMinutes(block.start) === 0 && (
-                      <div
-                        key={`bg-label-${format(block.start, 'HH')}`}
-                        className="absolute inset-x-0 h-full flex items-center justify-center text-[120px] font-bubbly font-bold text-gray-200/50 dark:text-gray-800/50 select-none pointer-events-none"
-                        style={{
-                          top: `${index * (rowHeight + gapHeight)}px`,
-                          height: `${2 * rowHeight + gapHeight}px`,
-                          zIndex: 0,
-                        }}
-                      >
-                        <span>{format(block.start, 'h:00')}</span>
-                      </div>
-                    )
-                  ))}
+                  {timeBlocks.map((block, index) => {
+                    const isWithinWorkHours = singleDayWorkHours?.enabled &&
+                      isAfter(block.start, parse(singleDayWorkHours.start_time, 'HH:mm:ss', currentDate)) &&
+                      isBefore(block.end, parse(singleDayWorkHours.end_time, 'HH:mm:ss', currentDate));
 
-                  {timeBlocks.map((block, index) => (
-                    <TimeBlock
-                      key={`block-${format(block.start, 'HH:mm')}`}
-                      block={block}
-                      index={index}
-                      appointmentsWithPositions={appointmentsWithPositions}
-                      isDemo={isDemo}
-                      onAddAppointment={handleOpenAppointmentForm}
-                      onScheduleTask={handleScheduleTask}
-                      unscheduledTasks={unscheduledDoTodayTasks}
-                      sections={sections}
-                      currentDate={currentDate}
-                    />
-                  ))}
+                    return (
+                      <div
+                        key={`block-${format(block.start, 'HH:mm')}`}
+                        className={cn(
+                          "relative h-full w-full border-t border-gray-200/80 dark:border-gray-700/80",
+                          isWithinWorkHours ? "bg-background/50" : "bg-muted/20"
+                        )}
+                        style={{ gridRow: `${index + 1}`, zIndex: 1 }}
+                      >
+                        <div className="absolute top-1/2 w-full border-b border-dashed border-gray-200/50 dark:border-gray-700/50" />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <div className="absolute inset-0 cursor-pointer rounded-lg hover:bg-muted/50 transition-colors" />
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-1">
+                            <TimeBlockActionMenu
+                              block={block}
+                              onAddAppointment={() => handleOpenAppointmentForm(block)}
+                              onScheduleTask={handleScheduleTask}
+                              unscheduledTasks={unscheduledDoTodayTasks}
+                              sections={sections}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                    );
+                  })}
 
                   {appointmentsWithPositions.map((app) => {
                     const task = app.task_id ? allTasks.find(t => t.id === app.task_id) : undefined;
@@ -548,7 +521,7 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
             <Textarea
               id="text-to-parse"
               value={textToParse}
-              onChange={(e) => setTextToParse(e.target.value)}
+              onChange={(e) => setText(e.target.value)}
               rows={10}
               placeholder="Paste text here..."
               disabled={isParsing}
