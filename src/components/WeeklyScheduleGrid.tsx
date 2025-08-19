@@ -18,7 +18,7 @@ import DraggableAppointmentCard from '@/components/DraggableAppointmentCard';
 import DraggableScheduleTaskItem from '@/components/DraggableScheduleTaskItem';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Textarea } from '@/components/ui/textarea';
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -530,6 +530,20 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
                 {/* Appointments */}
                 {appointmentsWithPositions.map((app) => {
                   const task = app.task_id ? allTasks.find(t => t.id === app.task_id) : undefined;
+                  const appDay = parseISO(app.date);
+                  const dayOfWeek = appDay.getDay();
+                  const workHoursForAppDay = allWorkHours.find(wh => wh.day_of_week === allDaysOfWeek[dayOfWeek].id);
+                  const isWorkDayEnabled = workHoursForAppDay?.enabled;
+
+                  const minHour = workHoursForAppDay?.enabled ? getHours(parse(workHoursForAppDay.start_time, 'HH:mm:ss', appDay)) : 0;
+                  const maxHour = workHoursForAppDay?.enabled ? getHours(parse(workHoursForAppDay.end_time, 'HH:mm:ss', appDay)) : 24;
+
+                  const appStartHour = getHours(parse(app.start_time, 'HH:mm:ss', appDay));
+                  const appEndHour = getHours(parse(app.end_time, 'HH:mm:ss', appDay));
+
+                  const isWithinWorkHoursRange = isWorkDayEnabled && 
+                    appStartHour >= minHour && appEndHour <= maxHour;
+
                   return (
                     <DraggableAppointmentCard
                       key={app.id}
@@ -549,6 +563,7 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
                         width: `calc(100% - ${app.overlapOffset * 10}px)`,
                         backgroundColor: app.color,
                         zIndex: 10 + app.overlapOffset,
+                        display: isWithinWorkHoursRange ? 'block' : 'none', // Hide appointments outside work hours
                       }}
                     />
                   );
@@ -686,7 +701,7 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure you want to clear the day?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action will remove all appointments for {currentDate ? format(currentDate, 'MMMM d, yyyy') : 'the selected day'}. This cannot be undone immediately, but you can undo it from the toast notification.
+              This action will remove all appointments for {dayToClear ? format(dayToClear, 'MMMM d, yyyy') : 'the selected day'}. This cannot be undone immediately, but you can undo it from the toast notification.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -701,7 +716,7 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
           <AlertDialogHeader>
             <AlertDialogTitle>Extend Work Hours?</AlertDialogTitle>
             <AlertDialogDescription>
-              This appointment falls outside your current work hours for {format(currentDate, 'EEEE, MMM d')}. Would you like to extend your work hours to {newHoursToExtend ? `${format(setHours(currentDate, newHoursToExtend.min), 'h a')} - ${format(setHours(currentDate, newHoursToExtend.max), 'h a')}` : 'fit it'}?
+              This appointment falls outside your current work hours for {format(selectedDateForNew, 'EEEE, MMM d')}. Would you like to extend your work hours to {newHoursToExtend ? `${format(setHours(selectedDateForNew, newHoursToExtend.min), 'h a')} - ${format(setHours(selectedDateForNew, newHoursToExtend.max), 'h a')}` : 'fit it'}?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -718,4 +733,4 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
   );
 };
 
-export default DailyScheduleView;
+export default WeeklyScheduleGrid;
