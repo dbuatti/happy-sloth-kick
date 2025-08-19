@@ -385,15 +385,15 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] lg:gap-6"> {/* Changed to grid layout */}
-            <div className="flex-1 overflow-x-auto"> {/* Added overflow-x-auto here */}
-              <div className="grid border rounded-lg min-w-max" style={{ // Added min-w-max
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] lg:gap-6">
+            <div className="flex-1 overflow-x-auto">
+              <div className="grid border rounded-lg min-w-max" style={{
                 gridTemplateColumns: `80px repeat(7, minmax(120px, 1fr))`,
                 gridTemplateRows: `auto repeat(${timeBlocks.length}, ${rowHeight}px)`,
                 rowGap: `${gapHeight}px`,
               }}>
                 {/* Header Row: Time Labels and Days */}
-                <div className="sticky left-0 bg-card z-10 p-2 border-b border-r font-semibold text-sm"></div> {/* Empty corner */}
+                <div className="sticky left-0 bg-card z-10 p-2 border-b border-r font-semibold text-sm"></div>
                 {daysInWeek.map((day, index) => (
                   <div key={index} className="p-2 border-b text-center font-semibold text-sm flex flex-col items-center justify-center bg-muted/30">
                     <span>{format(day, 'EEE')}</span>
@@ -412,7 +412,7 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
                     <div
                       key={`time-label-${format(block.start, 'HH:mm')}`}
                       className="sticky left-0 bg-card z-10 text-right pr-2 flex items-center justify-end border-r"
-                      style={{ gridRow: `${index + 2} / span 2`, height: `${2 * rowHeight + gapHeight}px` }} // Span 2 rows for hour label
+                      style={{ gridRow: `${index + 2} / span 2`, height: `${2 * rowHeight + gapHeight}px` }}
                     >
                       <span className="text-xs text-muted-foreground">{format(block.start, 'h a')}</span>
                     </div>
@@ -443,32 +443,28 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
                           "border-gray-200/80 dark:border-gray-700/80"
                         )}
                         style={{
-                          gridColumn: dayIndex + 2, // +2 for time label column
-                          gridRow: blockIndex + 2, // +2 for header row
+                          gridColumn: dayIndex + 2,
+                          gridRow: blockIndex + 2,
                           height: `${rowHeight}px`,
                           zIndex: 1,
                         }}
                       >
                         <div className="absolute top-1/2 w-full border-b border-dashed border-gray-200/50 dark:border-gray-700/50" />
-                        {!isDemo && isWithinWorkHours && (
-                          <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-                            <div className="absolute inset-0 cursor-pointer rounded-lg hover:bg-muted/50 transition-colors">
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <div className="absolute inset-0" />
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-1">
-                                  <TimeBlockActionMenu
-                                    block={{ start: blockStartWithDate, end: blockEndWithDate }}
-                                    onAddAppointment={(b) => handleOpenAppointmentForm(b, day)}
-                                    onScheduleTask={(taskId, bStart) => handleScheduleTask(taskId, bStart, day)}
-                                    unscheduledTasks={unscheduledDoTodayTasks}
-                                    sections={sections}
-                                  />
-                                </PopoverContent>
-                              </Popover>
-                            </div>
-                          </DndContext>
+                        {!isDemo && (
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <div className="absolute inset-0 cursor-pointer rounded-lg hover:bg-muted/50 transition-colors" />
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-1">
+                              <TimeBlockActionMenu
+                                block={{ start: blockStartWithDate, end: blockEndWithDate }}
+                                onAddAppointment={(b) => handleOpenAppointmentForm(b, day)}
+                                onScheduleTask={(taskId, bStart) => handleScheduleTask(taskId, bStart, day)}
+                                unscheduledTasks={unscheduledDoTodayTasks}
+                                sections={sections}
+                              />
+                            </PopoverContent>
+                          </Popover>
                         )}
                       </div>
                     );
