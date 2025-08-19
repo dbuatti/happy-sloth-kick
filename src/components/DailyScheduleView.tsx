@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import { CardContent } from "@/components/ui/card";
 import { useWorkHours, WorkHour } from '@/hooks/useWorkHours';
-import { addMinutes, parse, getHours, setHours, setMinutes } from 'date-fns';
 import DateNavigator from '@/components/DateNavigator';
 import { useAppointments } from '@/hooks/useAppointments';
 import { useTasks, Task } from '@/hooks/useTasks';
@@ -13,7 +12,6 @@ interface DailyScheduleViewProps {
   setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
   isDemo?: boolean;
   demoUserId?: string;
-  // Removed onOpenTaskDetail as it's not directly used here or passed down
   onOpenTaskOverview: (task: Task) => void;
 }
 
@@ -22,7 +20,6 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
   setCurrentDate,
   isDemo = false,
   demoUserId,
-  // Removed onOpenTaskDetail from destructuring
   onOpenTaskOverview,
 }) => {
   const { workHours, loading: workHoursLoading, saveWorkHours } = useWorkHours({ date: currentDate, userId: demoUserId });
@@ -36,26 +33,6 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
     sections, 
   } = useTasks({ currentDate, userId: demoUserId });
   const { settings } = useSettings();
-
-  const timeBlocks = useMemo(() => {
-    const blocks = [];
-    const minHour = singleDayWorkHours?.enabled ? getHours(parse(singleDayWorkHours.start_time, 'HH:mm:ss', currentDate)) : 0;
-    const maxHour = singleDayWorkHours?.enabled ? getHours(parse(singleDayWorkHours.end_time, 'HH:mm:ss', currentDate)) : 24;
-
-    let currentTime = setHours(setMinutes(currentDate, 0), minHour);
-    const endTime = setHours(setMinutes(currentDate, 0), maxHour);
-
-    while (currentTime.getTime() < endTime.getTime()) {
-      const blockStart = currentTime;
-      const blockEnd = addMinutes(currentTime, 30);
-      blocks.push({
-        start: blockStart,
-        end: blockEnd,
-      });
-      currentTime = blockEnd;
-    }
-    return blocks;
-  }, [currentDate, singleDayWorkHours]);
 
   const daysInGrid = useMemo(() => [currentDate], [currentDate]);
 
@@ -77,7 +54,6 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
         onOpenTaskOverview={onOpenTaskOverview}
         currentViewDate={currentDate}
         daysInGrid={daysInGrid}
-        timeBlocks={timeBlocks}
         allWorkHours={allWorkHoursArray}
         saveWorkHours={saveWorkHours}
         appointments={appointments}

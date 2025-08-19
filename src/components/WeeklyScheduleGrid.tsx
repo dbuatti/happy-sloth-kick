@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { addDays, startOfWeek, setHours, setMinutes, addMinutes } from 'date-fns';
+import { addDays, startOfWeek } from 'date-fns';
 import { CardContent } from "@/components/ui/card";
 import { useWorkHours } from '@/hooks/useWorkHours';
 import { useAppointments } from '@/hooks/useAppointments';
@@ -12,7 +12,6 @@ interface WeeklyScheduleGridProps {
   currentWeekStart: Date;
   isDemo?: boolean;
   demoUserId?: string;
-  // Removed onOpenTaskDetail as it's not directly used here or passed down
   onOpenTaskOverview: (task: Task) => void; // Changed to any for now, will be Task
 }
 
@@ -20,7 +19,6 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
   currentWeekStart,
   isDemo = false,
   demoUserId,
-  // Removed onOpenTaskDetail from destructuring
   onOpenTaskOverview,
 }) => {
   const weekEnd = addDays(currentWeekStart, 6);
@@ -36,23 +34,6 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
     sections,
    } = useTasks({ currentDate: currentWeekStart, userId: demoUserId });
   const { settings } = useSettings();
-
-  const timeBlocks = useMemo(() => {
-    const blocks = [];
-    let currentTime = setHours(setMinutes(currentWeekStart, 0), 0);
-    const endTime = setHours(setMinutes(currentWeekStart, 0), 24);
-
-    while (currentTime.getTime() < endTime.getTime()) {
-      const blockStart = currentTime;
-      const blockEnd = addMinutes(currentTime, 30);
-      blocks.push({
-        start: blockStart,
-        end: blockEnd,
-      });
-      currentTime = blockEnd;
-    }
-    return blocks;
-  }, [currentWeekStart]);
 
   const daysInGrid = useMemo(() => {
     const days = [];
@@ -78,7 +59,6 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
         onOpenTaskOverview={onOpenTaskOverview}
         currentViewDate={currentWeekStart}
         daysInGrid={daysInGrid}
-        timeBlocks={timeBlocks}
         allWorkHours={allWorkHours}
         saveWorkHours={saveWorkHours}
         appointments={appointments}
