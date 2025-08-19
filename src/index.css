@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import react-big-calendar styles */
+@import 'react-big-calendar/lib/css/react-big-calendar.css';
+
+/* Custom styles for react-big-calendar to better fit Tailwind */
+.rbc-calendar {
+  font-family: inherit; /* Use Tailwind's default font */
+}
+
+.rbc-header {
+  padding: 0.5rem 0;
+  font-weight: 600;
+  color: #4b5563; /* gray-700 */
+  border-bottom: 1px solid #e5e7eb; /* gray-200 */
+}
+
+.rbc-toolbar button {
+  @apply px-3 py-1 rounded-md text-sm font-medium transition-colors;
+  @apply bg-gray-100 text-gray-700 hover:bg-gray-200;
+}
+
+.rbc-toolbar button:active,
+.rbc-toolbar button.rbc-active {
+  @apply bg-blue-600 text-white hover:bg-blue-700;
+}
+
+.rbc-event {
+  border-radius: 0.25rem; /* rounded-md */
+  padding: 2px 5px;
+  font-size: 0.875rem; /* text-sm */
+  line-height: 1.2;
+  background-color: #3b82f6; /* blue-500 */
+  color: white;
+  border: none;
+}
+
+.rbc-event-content {
+  white-space: normal;
+}
+
+.rbc-day-bg.rbc-today {
+  background-color: #eff6ff; /* blue-50 */
+}
+
+.rbc-off-range-bg {
+  background-color: #f9fafb; /* gray-50 */
+}
+
+.rbc-current-time-indicator {
+  background-color: #ef4444; /* red-500 */
+}
+
+/* Adjustments for month view cells */
+.rbc-day-bg {
+  border-left: 1px solid #e5e7eb; /* gray-200 */
+}
+.rbc-month-row {
+  border: 1px solid #e5e7eb; /* gray-200 */
+}
+.rbc-month-view {
+  border: none; /* Remove outer border as month-row handles it */
+}
