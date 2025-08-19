@@ -382,261 +382,263 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <CardContent className="pt-0">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-4">
-          <DateNavigator
-            currentDate={currentDate}
-            onPreviousDay={() => setCurrentDate(prevDate => new Date(prevDate.setDate(prevDate.getDate() - 1)))}
-            onNextDay={() => setCurrentDate(prevDate => new Date(prevDate.setDate(prevDate.getDate() + 1)))}
-            onGoToToday={() => setCurrentDate(new Date())}
-            setCurrentDate={setCurrentDate}
-          />
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => setIsClearDayDialogOpen(true)} disabled={appointments.length === 0 || isDemo}>
-              <X className="mr-2 h-4 w-4" /> Clear Day
-            </Button>
-            <Button variant="outline" onClick={() => setIsParsingDialogOpen(true)} disabled={isDemo}>
-              <Sparkles className="mr-2 h-4 w-4" /> Parse from Text
-            </Button>
+      <>
+        <CardContent className="pt-0">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-4">
+            <DateNavigator
+              currentDate={currentDate}
+              onPreviousDay={() => setCurrentDate(prevDate => new Date(prevDate.setDate(prevDate.getDate() - 1)))}
+              onNextDay={() => setCurrentDate(prevDate => new Date(prevDate.setDate(prevDate.getDate() + 1)))}
+              onGoToToday={() => setCurrentDate(new Date())}
+              setCurrentDate={setCurrentDate}
+            />
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => setIsClearDayDialogOpen(true)} disabled={appointments.length === 0 || isDemo}>
+                <X className="mr-2 h-4 w-4" /> Clear Day
+              </Button>
+              <Button variant="outline" onClick={() => setIsParsingDialogOpen(true)} disabled={isDemo}>
+                <Sparkles className="mr-2 h-4 w-4" /> Parse from Text
+              </Button>
+            </div>
           </div>
-        </div>
 
-        {totalLoading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] lg:gap-6">
-            <div className="flex-1 overflow-x-auto">
-              <div className="relative grid border rounded-lg min-w-max" style={{
-                gridTemplateColumns: `1fr`,
-                gridTemplateRows: `repeat(${timeBlocks.length}, ${rowHeight}px)`,
-                rowGap: `${gapHeight}px`,
-                minWidth: 'calc(100% - 80px)',
-              }}>
-                {timeBlocks.map((block, index) => {
-                    const isBlockOccupied = appointmentsWithPositions.some(app => {
-                      if (!app.start_time || !app.end_time) return false;
-                      const appStart = parse(app.start_time, 'HH:mm:ss', currentDate);
-                      const appEnd = parse(app.end_time, 'HH:mm:ss', currentDate);
-                      return block.start.getTime() >= appStart.getTime() && block.start.getTime() < appEnd.getTime();
-                    });
+          {totalLoading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] lg:gap-6">
+              <div className="flex-1 overflow-x-auto">
+                <div className="relative grid border rounded-lg min-w-max" style={{
+                  gridTemplateColumns: `1fr`,
+                  gridTemplateRows: `repeat(${timeBlocks.length}, ${rowHeight}px)`,
+                  rowGap: `${gapHeight}px`,
+                  minWidth: 'calc(100% - 80px)',
+                }}>
+                  {timeBlocks.map((block, index) => {
+                      const isBlockOccupied = appointmentsWithPositions.some(app => {
+                        if (!app.start_time || !app.end_time) return false;
+                        const appStart = parse(app.start_time, 'HH:mm:ss', currentDate);
+                        const appEnd = parse(app.end_time, 'HH:mm:ss', currentDate);
+                        return block.start.getTime() >= appStart.getTime() && block.start.getTime() < appEnd.getTime();
+                      });
 
-                    return (
-                      <div
-                        key={`block-${format(block.start, 'HH:mm')}`}
-                        className={cn(
-                          "relative h-full w-full border-t border-gray-200/80 dark:border-gray-700/80",
-                          workHoursEnabled ? "bg-background/50" : "bg-muted/20"
-                        )}
-                        style={{ gridRow: `${index + 1}`, zIndex: 1 }}
-                      >
-                        <div className="absolute top-1/2 w-full border-b border-dashed border-gray-200/50 dark:border-gray-700/50" />
-                        {/* Time label as background element */}
-                        {getMinutes(block.start) === 0 && (
-                          <span className="absolute right-full mr-4 text-xl font-bubbly text-muted-foreground whitespace-nowrap -translate-y-1/2" style={{ zIndex: 0 }}>
-                            {format(block.start, 'h a')}
-                          </span>
-                        )}
-                        {!isBlockOccupied && !isDemo && (
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <div className="absolute inset-0 cursor-pointer rounded-lg hover:bg-muted/50 transition-colors" />
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-1">
-                              <TimeBlockActionMenu
-                                block={block}
-                                onAddAppointment={() => handleOpenAppointmentForm(block)}
-                                onScheduleTask={handleScheduleTask}
-                                unscheduledTasks={unscheduledDoTodayTasks}
-                                sections={sections}
-                              />
-                            </PopoverContent>
-                          </Popover>
-                        )}
-                      </div>
-                    );
-                  })}
+                      return (
+                        <div
+                          key={`block-${format(block.start, 'HH:mm')}`}
+                          className={cn(
+                            "relative h-full w-full border-t border-gray-200/80 dark:border-gray-700/80",
+                            workHoursEnabled ? "bg-background/50" : "bg-muted/20"
+                          )}
+                          style={{ gridRow: `${index + 1}`, zIndex: 1 }}
+                        >
+                          <div className="absolute top-1/2 w-full border-b border-dashed border-gray-200/50 dark:border-gray-700/50" />
+                          {/* Time label as background element */}
+                          {getMinutes(block.start) === 0 && (
+                            <span className="absolute right-full mr-4 text-xl font-bubbly text-muted-foreground whitespace-nowrap -translate-y-1/2" style={{ zIndex: 0 }}>
+                              {format(block.start, 'h a')}
+                            </span>
+                          )}
+                          {!isBlockOccupied && !isDemo && (
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <div className="absolute inset-0 cursor-pointer rounded-lg hover:bg-muted/50 transition-colors" />
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-1">
+                                <TimeBlockActionMenu
+                                  block={block}
+                                  onAddAppointment={() => handleOpenAppointmentForm(block)}
+                                  onScheduleTask={handleScheduleTask}
+                                  unscheduledTasks={unscheduledDoTodayTasks}
+                                  sections={sections}
+                                />
+                              </PopoverContent>
+                            </Popover>
+                          )}
+                        </div>
+                      );
+                    })}
 
-                  {appointmentsWithPositions.map((app) => {
-                    const task = app.task_id ? allTasks.find(t => t.id === app.task_id) : undefined;
-                    return (
-                      <DraggableAppointmentCard
-                        key={app.id}
-                        appointment={app}
-                        task={task}
-                        onEdit={handleAppointmentClick}
-                        onUnschedule={handleUnscheduleTask}
-                        gridRowStart={app.gridRowStart}
-                        gridRowEnd={app.gridRowEnd}
-                        overlapOffset={app.overlapOffset}
-                        rowHeight={rowHeight}
-                        gapHeight={gapHeight}
-                      />
-                    );
-                  })}
+                    {appointmentsWithPositions.map((app) => {
+                      const task = app.task_id ? allTasks.find(t => t.id === app.task_id) : undefined;
+                      return (
+                        <DraggableAppointmentCard
+                          key={app.id}
+                          appointment={app}
+                          task={task}
+                          onEdit={handleAppointmentClick}
+                          onUnschedule={handleUnscheduleTask}
+                          gridRowStart={app.gridRowStart}
+                          gridRowEnd={app.gridRowEnd}
+                          overlapOffset={app.overlapOffset}
+                          rowHeight={rowHeight}
+                          gapHeight={gapHeight}
+                        />
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="relative mt-6 lg:mt-0">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsTaskPanelCollapsed(!isTaskPanelCollapsed)}
-                className={cn(
-                  "absolute -left-4 top-1/2 -translate-y-1/2 z-20 bg-background hover:bg-muted rounded-full h-8 w-8 border hidden lg:flex",
-                  isTaskPanelCollapsed && "lg:hidden"
-                )}
-                aria-label={isTaskPanelCollapsed ? "Show task panel" : "Hide task panel"}
-              >
-                {isTaskPanelCollapsed ? <PanelRightOpen className="h-5 w-5" /> : <PanelRightClose className="h-5 w-5" />}
-              </Button>
-              <div className={cn(
-                "lg:w-[300px] lg:flex-shrink-0",
-                isTaskPanelCollapsed && "hidden"
-              )}>
-                <div className="lg:sticky lg:top-4 space-y-4 bg-muted rounded-lg p-4">
-                  <h3 className="text-lg font-semibold">Unscheduled Tasks</h3>
-                  <div className="space-y-2 max-h-[calc(100vh-20rem)] overflow-y-auto p-1">
-                    {unscheduledDoTodayTasks.length > 0 ? (
-                      unscheduledDoTodayTasks.map(task => (
-                        <DraggableScheduleTaskItem key={task.id} task={task} sections={sections} />
-                      ))
-                    ) : (
-                      <p className="text-sm text-muted-foreground text-center py-4">No tasks to schedule.</p>
-                    )}
+              <div className="relative mt-6 lg:mt-0">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsTaskPanelCollapsed(!isTaskPanelCollapsed)}
+                  className={cn(
+                    "absolute -left-4 top-1/2 -translate-y-1/2 z-20 bg-background hover:bg-muted rounded-full h-8 w-8 border hidden lg:flex",
+                    isTaskPanelCollapsed && "lg:hidden"
+                  )}
+                  aria-label={isTaskPanelCollapsed ? "Show task panel" : "Hide task panel"}
+                >
+                  {isTaskPanelCollapsed ? <PanelRightOpen className="h-5 w-5" /> : <PanelRightClose className="h-5 w-5" />}
+                </Button>
+                <div className={cn(
+                  "lg:w-[300px] lg:flex-shrink-0",
+                  isTaskPanelCollapsed && "hidden"
+                )}>
+                  <div className="lg:sticky lg:top-4 space-y-4 bg-muted rounded-lg p-4">
+                    <h3 className="text-lg font-semibold">Unscheduled Tasks</h3>
+                    <div className="space-y-2 max-h-[calc(100vh-20rem)] overflow-y-auto p-1">
+                      {unscheduledDoTodayTasks.length > 0 ? (
+                        unscheduledDoTodayTasks.map(task => (
+                          <DraggableScheduleTaskItem key={task.id} task={task} sections={sections} />
+                        ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground text-center py-4">No tasks to schedule.</p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
-      </CardContent>
-      <AppointmentForm
-        isOpen={isAppointmentFormOpen}
-        onClose={() => {
-          setIsAppointmentFormOpen(false);
-          setEditingAppointment(null);
-          setSelectedTimeSlotForNew(null);
-          setParsedDataForForm(null);
-          setPendingAppointmentData(null);
-        }}
-        onSave={handleSaveAppointment}
-        onDelete={handleDeleteAppointment}
-        initialData={editingAppointment}
-        selectedDate={currentDate}
-        selectedTimeSlot={selectedTimeSlotForNew}
-        prefilledData={parsedDataForForm}
-      />
-      {taskToOverview && (
-        <TaskOverviewDialog
-          task={taskToOverview}
-          isOpen={isTaskOverviewOpen}
-          onClose={() => setIsTaskOverviewOpen(false)}
-          onEditClick={handleEditTaskFromOverview}
-          onUpdate={updateTask}
-          onDelete={deleteTaskFromHook}
-          sections={sections}
-          allCategories={allCategories}
-          allTasks={allTasks}
-        />
-      )}
-      {taskToEdit && (
-        <TaskDetailDialog
-          task={taskToEdit}
-          isOpen={isTaskDetailOpen}
-          onClose={() => setIsTaskDetailOpen(false)}
-          onUpdate={updateTask}
-          onDelete={deleteTaskFromHook}
-          sections={sections}
-          allCategories={allCategories}
-          createSection={createSection}
-          updateSection={updateSection}
-          deleteSection={deleteSection}
-          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-          allTasks={allTasks}
-        />
-      )}
-      <Dialog open={isParsingDialogOpen} onOpenChange={setIsParsingDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Parse Appointment from Text</DialogTitle>
-            <DialogDescription>
-              Paste your appointment details below (e.g., "meeting at 3pm for 1 hour" or a confirmation email) and we'll try to fill out the form for you.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <Label htmlFor="text-to-parse">Appointment Text</Label>
-            <Textarea
-              id="text-to-parse"
-              value={textToParse}
-              onChange={(e) => setTextToParse(e.target.value)}
-              rows={10}
-              placeholder="Paste text here..."
-              disabled={isParsing}
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsParsingDialogOpen(false)} disabled={isParsing}>Cancel</Button>
-            <Button onClick={handleParseText} disabled={isParsing || !textToParse.trim()}>
-              {isParsing ? 'Parsing...' : 'Parse and Create'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      {createPortal(
-        <DragOverlay dropAnimation={null}>
-          {activeDragItem?.type === 'task' && (
-            <DraggableScheduleTaskItem task={activeDragItem.task} sections={sections} />
           )}
-          {activeDragItem?.type === 'appointment' && (() => {
-            const startTime = activeDragItem.appointment.start_time ? parseISO(`2000-01-01T${activeDragItem.appointment.start_time}`) : null;
-            const endTime = activeDragItem.appointment.end_time ? parseISO(`2000-01-01T${activeDragItem.appointment.end_time}`) : null;
-            return (
-              <div className="rounded-lg p-2 shadow-md text-white" style={{ backgroundColor: activeDragItem.appointment.color, width: '200px' }}>
-                <h4 className="font-semibold text-sm truncate">{activeDragItem.appointment.title}</h4>
-                <p className="text-xs opacity-90">
-                  {startTime && endTime && isValid(startTime) && isValid(endTime) ? `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}` : 'Invalid time'}
-                </p>
-              </div>
-            );
-          })()}
-        </DragOverlay>,
-        document.body
-      )}
-      <AlertDialog open={isClearDayDialogOpen} onOpenChange={setIsClearDayDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure you want to clear the day?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action will remove all appointments for {currentDate ? format(currentDate, 'MMMM d, yyyy') : 'the selected day'}. This cannot be undone immediately, but you can undo it from the toast notification.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleClearDay}>Clear Day</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        </CardContent>
+        <AppointmentForm
+          isOpen={isAppointmentFormOpen}
+          onClose={() => {
+            setIsAppointmentFormOpen(false);
+            setEditingAppointment(null);
+            setSelectedTimeSlotForNew(null);
+            setParsedDataForForm(null);
+            setPendingAppointmentData(null);
+          }}
+          onSave={handleSaveAppointment}
+          onDelete={handleDeleteAppointment}
+          initialData={editingAppointment}
+          selectedDate={currentDate}
+          selectedTimeSlot={selectedTimeSlotForNew}
+          prefilledData={parsedDataForForm}
+        />
+        {taskToOverview && (
+          <TaskOverviewDialog
+            task={taskToOverview}
+            isOpen={isTaskOverviewOpen}
+            onClose={() => setIsTaskOverviewOpen(false)}
+            onEditClick={handleEditTaskFromOverview}
+            onUpdate={updateTask}
+            onDelete={deleteTaskFromHook}
+            sections={sections}
+            allCategories={allCategories}
+            allTasks={allTasks}
+          />
+        )}
+        {taskToEdit && (
+          <TaskDetailDialog
+            task={taskToEdit}
+            isOpen={isTaskDetailOpen}
+            onClose={() => setIsTaskDetailOpen(false)}
+            onUpdate={updateTask}
+            onDelete={deleteTaskFromHook}
+            sections={sections}
+            allCategories={allCategories}
+            createSection={createSection}
+            updateSection={updateSection}
+            deleteSection={deleteSection}
+            updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+            allTasks={allTasks}
+          />
+        )}
+        <Dialog open={isParsingDialogOpen} onOpenChange={setIsParsingDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Parse Appointment from Text</DialogTitle>
+              <DialogDescription>
+                Paste your appointment details below (e.g., "meeting at 3pm for 1 hour" or a confirmation email) and we'll try to fill out the form for you.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <Label htmlFor="text-to-parse">Appointment Text</Label>
+              <Textarea
+                id="text-to-parse"
+                value={textToParse}
+                onChange={(e) => setTextToParse(e.target.value)}
+                rows={10}
+                placeholder="Paste text here..."
+                disabled={isParsing}
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsParsingDialogOpen(false)} disabled={isParsing}>Cancel</Button>
+              <Button onClick={handleParseText} disabled={isParsing || !textToParse.trim()}>
+                {isParsing ? 'Parsing...' : 'Parse and Create'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        {createPortal(
+          <DragOverlay dropAnimation={null}>
+            {activeDragItem?.type === 'task' && (
+              <DraggableScheduleTaskItem task={activeDragItem.task} sections={sections} />
+            )}
+            {activeDragItem?.type === 'appointment' && (() => {
+              const startTime = activeDragItem.appointment.start_time ? parseISO(`2000-01-01T${activeDragItem.appointment.start_time}`) : null;
+              const endTime = activeDragItem.appointment.end_time ? parseISO(`2000-01-01T${activeDragItem.appointment.end_time}`) : null;
+              return (
+                <div className="rounded-lg p-2 shadow-md text-white" style={{ backgroundColor: activeDragItem.appointment.color, width: '200px' }}>
+                  <h4 className="font-semibold text-sm truncate">{activeDragItem.appointment.title}</h4>
+                  <p className="text-xs opacity-90">
+                    {startTime && endTime && isValid(startTime) && isValid(endTime) ? `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}` : 'Invalid time'}
+                  </p>
+                </div>
+              );
+            })()}
+          </DragOverlay>,
+          document.body
+        )}
+        <AlertDialog open={isClearDayDialogOpen} onOpenChange={setIsClearDayDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure you want to clear the day?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action will remove all appointments for {currentDate ? format(currentDate, 'MMMM d, yyyy') : 'the selected day'}. This cannot be undone immediately, but you can undo it from the toast notification.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleClearDay}>Clear Day</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
-      <AlertDialog open={isExtendHoursDialogOpen} onOpenChange={setIsExtendHoursDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Extend Work Hours?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This appointment falls outside your current work hours for {format(currentDate, 'EEEE, MMM d')}. Would you like to extend your work hours to {newHoursToExtend ? `${format(setHours(currentDate, newHoursToExtend.min), 'h a')} - ${format(setHours(currentDate, newHoursToExtend.max), 'h a')}` : 'fit it'}?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => {
-              setIsExtendHoursDialogOpen(false);
-              setNewHoursToExtend(null);
-              setPendingAppointmentData(null);
-            }}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmExtendHours}>Extend Hours</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        <AlertDialog open={isExtendHoursDialogOpen} onOpenChange={setIsExtendHoursDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Extend Work Hours?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This appointment falls outside your current work hours for {format(currentDate, 'EEEE, MMM d')}. Would you like to extend your work hours to {newHoursToExtend ? `${format(setHours(currentDate, newHoursToExtend.min), 'h a')} - ${format(setHours(currentDate, newHoursToExtend.max), 'h a')}` : 'fit it'}?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => {
+                setIsExtendHoursDialogOpen(false);
+                setNewHoursToExtend(null);
+                setPendingAppointmentData(null);
+              }}>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmExtendHours}>Extend Hours</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </>
     </DndContext>
   );
 };
