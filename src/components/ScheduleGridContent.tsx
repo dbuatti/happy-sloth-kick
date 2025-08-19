@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"; // Added Popover imports
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -416,7 +416,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
                 {/* Header Row: Days */}
                 {daysInGrid.map((day, index) => {
                   const workHoursForDay = getWorkHoursForDay(day);
-                  const isWorkDayEnabled = workHoursForDay?.enabled;
+                  // Removed 'isWorkDayEnabled' declaration here as it's not used
                   return (
                     <div key={index} className="p-2 border-b text-center font-semibold text-sm flex flex-col items-center justify-center bg-muted/30">
                       <span>{format(day, 'EEE')}</span>
@@ -595,7 +595,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
             <DialogDescription>
               Paste your appointment details below (e.g., "meeting at 3pm for 1 hour" or a confirmation email) and we'll try to fill out the form for you.
             </DialogDescription>
-          </DialogDescription>
+          </DialogHeader>
           <div className="py-4">
             <Label htmlFor="text-to-parse">Appointment Text</Label>
             <Textarea
@@ -657,7 +657,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
             <AlertDialogDescription>
               This appointment falls outside your current work hours for {format(selectedDateForNew, 'EEEE, MMM d')}. Would you like to extend your work hours to {newHoursToExtend ? `${format(setHours(selectedDateForNew, newHoursToExtend.min), 'h a')} - ${format(setHours(selectedDateForNew, newHoursToExtend.max), 'h a')}` : 'fit it'}?
             </AlertDialogDescription>
-          </AlertDialogDescription>
+          </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => {
               setIsExtendHoursDialogOpen(false);
