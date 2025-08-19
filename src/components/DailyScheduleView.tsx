@@ -33,12 +33,13 @@ interface DailyScheduleViewProps {
   demoUserId?: string;
   onOpenTaskDetail: (task: Task) => void;
   onOpenTaskOverview: (task: Task) => void;
+  minScheduleHour: number;
+  maxScheduleHour: number;
+  setScheduleHours: (minHour: number, maxHour: number) => Promise<void>;
 }
 
 const rowHeight = 50;
 const gapHeight = 4;
-const MIN_HOUR = 0; // 00:00
-const MAX_HOUR = 24; // 24:00 (end of day)
 
 const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
   currentDate,
@@ -47,6 +48,9 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
   demoUserId,
   onOpenTaskDetail,
   onOpenTaskOverview,
+  minScheduleHour,
+  maxScheduleHour,
+  setScheduleHours,
 }) => {
   const { workHours: singleDayWorkHoursRaw, loading: workHoursLoading } = useWorkHours({ date: currentDate, userId: demoUserId });
   const singleDayWorkHours = Array.isArray(singleDayWorkHoursRaw) ? null : singleDayWorkHoursRaw;
@@ -93,6 +97,10 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
     }
   });
   const [isClearDayDialogOpen, setIsClearDayDialogOpen] = useState(false);
+  const [isExtendHoursDialogOpen, setIsExtendHoursDialogOpen] = useState(false);
+  const [newHoursToExtend, setNewHoursToExtend] = useState<{ min: number; max: number } | null>(null);
+  const [pendingAppointmentData, setPendingAppointmentData] = useState<NewAppointmentData | null>(null);
+
 
   const sensors = useSensors(useSensor(PointerSensor, {
     activationConstraint: {
@@ -107,10 +115,46 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
   };
 
   const handleSaveAppointment = async (data: NewAppointmentData) => {
+    const appStartTime = parse(data.start_time, 'HH:mm:ss', currentDate);
+    const appEndTime = parse(data.end_time, 'HH:mm:ss', currentDate);
+
+    const appStartHour = getHours(appStartTime);
+    const appEndHour = getHours(appEndTime) + (getMinutes(appEndTime) > 0 ? 1 : 0); // Round up to next hour if minutes exist
+
+    const requiresExtension = appStartHour < minScheduleHour || appEndHour > maxScheduleHour;
+
+    if (requiresExtension && !isDemo) {
+      setNewHoursToExtend({
+        min: Math.min(minScheduleHour, appStartHour),
+        max: Math.max(maxScheduleHour, appEndHour),
+      });
+      setPendingAppointmentData(data);
+      setIsExtendHoursDialogOpen(true);
+      return false; // Prevent immediate save
+    }
+
     if (editingAppointment) {
       return await updateAppointment(editingAppointment.id, data);
     } else {
       return await addAppointment(data);
+    }
+  };
+
+  const confirmExtendHours = async () => {
+    if (newHoursToExtend) {
+      await setScheduleHours(newHoursToExtend.min, newHoursToExtend.max);
+      setIsExtendHoursDialogOpen(false);
+      setNewHoursToExtend(null);
+      if (pendingAppointmentData) {
+        // Now save the pending appointment
+        if (editingAppointment) {
+          await updateAppointment(editingAppointment.id, pendingAppointmentData);
+        } else {
+          await addAppointment(pendingAppointmentData);
+        }
+        setPendingAppointmentData(null);
+        setIsAppointmentFormOpen(false); // Close form after successful save
+      }
     }
   };
 
@@ -175,18 +219,18 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
 
     const startMinutes = (getHours(appStartTime) * 60) + getMinutes(appStartTime);
     const endMinutes = (getHours(appEndTime) * 60) + getMinutes(appEndTime);
-    const minHourMinutes = MIN_HOUR * 60;
+    const minHourMinutes = minScheduleHour * 60;
 
     const gridRowStart = Math.floor((startMinutes - minHourMinutes) / 30) + 1;
     const gridRowEnd = Math.ceil((endMinutes - minHourMinutes) / 30) + 1;
 
     return { gridRowStart, gridRowEnd };
-  }, [currentDate]);
+  }, [currentDate, minScheduleHour]);
 
   const timeBlocks = useMemo(() => {
     const blocks = [];
-    let currentTime = setHours(setMinutes(currentDate, 0), MIN_HOUR);
-    const endTime = setHours(setMinutes(currentDate, 0), MAX_HOUR);
+    let currentTime = setHours(setMinutes(currentDate, 0), minScheduleHour);
+    const endTime = setHours(setMinutes(currentDate, 0), maxScheduleHour);
 
     while (isBefore(currentTime, endTime)) {
       const blockStart = currentTime;
@@ -198,7 +242,7 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
       currentTime = blockEnd;
     }
     return blocks;
-  }, [currentDate]);
+  }, [currentDate, minScheduleHour, maxScheduleHour]);
 
   const appointmentsWithPositions = useMemo(() => {
     const positionedApps = appointments.map(app => ({
@@ -327,6 +371,10 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
     }
   };
 
+  const workHoursEnabled = singleDayWorkHours?.enabled;
+  const workHoursStart = singleDayWorkHours?.start_time ? parse(singleDayWorkHours.start_time, 'HH:mm:ss', currentDate) : null;
+  const workHoursEnd = singleDayWorkHours?.end_time ? parse(singleDayWorkHours.end_time, 'HH:mm:ss', currentDate) : null;
+
   return (
     <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <CardContent className="pt-0">
@@ -353,9 +401,9 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] lg:gap-6"> {/* Changed to grid layout */}
-            <div className="flex-1 overflow-x-auto"> {/* Added overflow-x-auto here */}
-              <div className="flex gap-x-4 min-w-max"> {/* Added min-w-max to ensure content doesn't shrink */}
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] lg:gap-6">
+            <div className="flex-1 overflow-x-auto">
+              <div className="flex gap-x-4 min-w-max">
                 <div className="w-[80px] flex-shrink-0 relative" style={{
                   height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`,
                 }}>
@@ -366,7 +414,7 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                         className="absolute right-0 text-right pr-2"
                         style={{ top: `${index * (rowHeight + gapHeight) - 8}px` }}
                       >
-                        <span className="text-xs text-muted-foreground">{format(block.start, 'h a')}</span>
+                        <span className="text-xl font-bubbly text-muted-foreground">{format(block.start, 'h a')}</span>
                       </div>
                     )
                   ))}
@@ -376,12 +424,19 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                   gridTemplateRows: `repeat(${timeBlocks.length}, ${rowHeight}px)`,
                   rowGap: `${gapHeight}px`,
                   height: `${timeBlocks.length * rowHeight + (timeBlocks.length > 0 ? (timeBlocks.length - 1) * gapHeight : 0)}px`,
-                  minWidth: 'calc(100% - 80px)', // Ensure it takes up remaining space, but allows scrolling
+                  minWidth: 'calc(100% - 80px)',
                 }}>
                   {timeBlocks.map((block, index) => {
-                    const isWithinWorkHours = singleDayWorkHours?.enabled &&
-                      isAfter(block.start, parse(singleDayWorkHours.start_time, 'HH:mm:ss', currentDate)) &&
-                      isBefore(block.end, parse(singleDayWorkHours.end_time, 'HH:mm:ss', currentDate));
+                    const isWithinWorkHours = workHoursEnabled && workHoursStart && workHoursEnd &&
+                      isAfter(block.start, workHoursStart) &&
+                      isBefore(block.end, workHoursEnd);
+
+                    const isBlockOccupied = appointmentsWithPositions.some(app => {
+                      if (!app.start_time || !app.end_time) return false;
+                      const appStart = parse(app.start_time, 'HH:mm:ss', currentDate);
+                      const appEnd = parse(app.end_time, 'HH:mm:ss', currentDate);
+                      return block.start.getTime() >= appStart.getTime() && block.start.getTime() < appEnd.getTime();
+                    });
 
                     return (
                       <div
@@ -393,20 +448,22 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                         style={{ gridRow: `${index + 1}`, zIndex: 1 }}
                       >
                         <div className="absolute top-1/2 w-full border-b border-dashed border-gray-200/50 dark:border-gray-700/50" />
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <div className="absolute inset-0 cursor-pointer rounded-lg hover:bg-muted/50 transition-colors" />
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-1">
-                            <TimeBlockActionMenu
-                              block={block}
-                              onAddAppointment={() => handleOpenAppointmentForm(block)}
-                              onScheduleTask={handleScheduleTask}
-                              unscheduledTasks={unscheduledDoTodayTasks}
-                              sections={sections}
-                            />
-                          </PopoverContent>
-                        </Popover>
+                        {!isBlockOccupied && !isDemo && (
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <div className="absolute inset-0 cursor-pointer rounded-lg hover:bg-muted/50 transition-colors" />
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-1">
+                              <TimeBlockActionMenu
+                                block={block}
+                                onAddAppointment={() => handleOpenAppointmentForm(block)}
+                                onScheduleTask={handleScheduleTask}
+                                unscheduledTasks={unscheduledDoTodayTasks}
+                                sections={sections}
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        )}
                       </div>
                     );
                   })}
@@ -431,7 +488,6 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                 </div>
               </div>
             </div>
-            {/* Task panel moved outside the flex-1 schedule container, now in its own grid column */}
             <div className="relative mt-6 lg:mt-0">
               <Button
                 variant="ghost"
@@ -473,6 +529,7 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
           setEditingAppointment(null);
           setSelectedTimeSlotForNew(null);
           setParsedDataForForm(null);
+          setPendingAppointmentData(null);
         }}
         onSave={handleSaveAppointment}
         onDelete={handleDeleteAppointment}
@@ -568,6 +625,25 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleClearDay}>Clear Day</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={isExtendHoursDialogOpen} onOpenChange={setIsExtendHoursDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Extend Viewable Hours?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This appointment falls outside your current viewable hours ({format(setHours(currentDate, minScheduleHour), 'h a')} - {format(setHours(currentDate, maxScheduleHour), 'h a')}). Would you like to extend the schedule view to {newHoursToExtend ? `${format(setHours(currentDate, newHoursToExtend.min), 'h a')} - ${format(setHours(currentDate, newHoursToExtend.max), 'h a')}` : 'fit it'}?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setIsExtendHoursDialogOpen(false);
+              setNewHoursToExtend(null);
+              setPendingAppointmentData(null);
+            }}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmExtendHours}>Extend View</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

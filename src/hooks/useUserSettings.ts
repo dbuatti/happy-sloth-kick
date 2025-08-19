@@ -14,6 +14,8 @@ export interface UserSettings {
   visible_pages?: Record<string, boolean>;
   schedule_show_focus_tasks_only: boolean;
   dashboard_panel_sizes: number[] | null; // New: Stores the sizes of resizable panels
+  min_schedule_hour: number; // New: Minimum hour to display in schedule (0-23)
+  max_schedule_hour: number; // New: Maximum hour to display in schedule (0-24, where 24 means end of day)
 }
 
 const defaultSettings: Omit<UserSettings, 'user_id'> = {
@@ -25,6 +27,8 @@ const defaultSettings: Omit<UserSettings, 'user_id'> = {
   visible_pages: {},
   schedule_show_focus_tasks_only: true,
   dashboard_panel_sizes: [66, 34], // Default sizes for the two main dashboard panels
+  min_schedule_hour: 0, // Default to 00:00
+  max_schedule_hour: 24, // Default to 24:00 (end of day)
 };
 
 export const useUserSettings = (props?: { userId?: string }) => {
@@ -58,6 +62,8 @@ export const useUserSettings = (props?: { userId?: string }) => {
           ...data,
           dashboard_layout: { ...defaultSettings.dashboard_layout, ...(data.dashboard_layout || {}) },
           dashboard_panel_sizes: data.dashboard_panel_sizes || defaultSettings.dashboard_panel_sizes,
+          min_schedule_hour: data.min_schedule_hour ?? defaultSettings.min_schedule_hour,
+          max_schedule_hour: data.max_schedule_hour ?? defaultSettings.max_schedule_hour,
         });
       } else {
         // If in demo mode, don't try to insert. Just use defaults.

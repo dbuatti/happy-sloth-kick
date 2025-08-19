@@ -9,6 +9,7 @@ import { Task, useTasks } from '@/hooks/useTasks'; // Import useTasks
 import { startOfWeek, addWeeks } from 'date-fns';
 import TaskOverviewDialog from '@/components/TaskOverviewDialog'; // Import TaskOverviewDialog
 import TaskDetailDialog from '@/components/TaskDetailDialog'; // Import TaskDetailDialog
+import { useSettings } from '@/context/SettingsContext';
 
 interface TimeBlockScheduleProps {
   isDemo?: boolean;
@@ -16,6 +17,8 @@ interface TimeBlockScheduleProps {
 }
 
 const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, demoUserId }) => {
+  const { settings, updateSettings } = useSettings();
+
   const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('daily');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 })); // Monday as start of week
@@ -85,6 +88,13 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
   
   useKeyboardShortcuts(shortcuts);
 
+  const minScheduleHour = settings?.min_schedule_hour ?? 0;
+  const maxScheduleHour = settings?.max_schedule_hour ?? 24;
+
+  const setScheduleHours = useCallback(async (minHour: number, maxHour: number) => {
+    await updateSettings({ min_schedule_hour: minHour, max_schedule_hour: maxHour });
+  }, [updateSettings]);
+
   return (
     <div className="flex-1 flex flex-col">
       <main className="flex-grow p-4">
@@ -108,6 +118,9 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
                 demoUserId={demoUserId}
                 onOpenTaskDetail={handleOpenTaskDetail}
                 onOpenTaskOverview={handleOpenTaskOverview}
+                minScheduleHour={minScheduleHour}
+                maxScheduleHour={maxScheduleHour}
+                setScheduleHours={setScheduleHours}
               />
             </TabsContent>
             <TabsContent value="weekly" className="mt-4">
@@ -117,6 +130,9 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
                 demoUserId={demoUserId}
                 onOpenTaskDetail={handleOpenTaskDetail}
                 onOpenTaskOverview={handleOpenTaskOverview}
+                minScheduleHour={minScheduleHour}
+                maxScheduleHour={maxScheduleHour}
+                setScheduleHours={setScheduleHours}
               />
             </TabsContent>
           </Tabs>

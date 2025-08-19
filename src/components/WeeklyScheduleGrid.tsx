@@ -32,12 +32,13 @@ interface WeeklyScheduleGridProps {
   demoUserId?: string;
   onOpenTaskDetail: (task: Task) => void;
   onOpenTaskOverview: (task: Task) => void;
+  minScheduleHour: number;
+  maxScheduleHour: number;
+  setScheduleHours: (minHour: number, maxHour: number) => Promise<void>;
 }
 
 const rowHeight = 50;
 const gapHeight = 4;
-const MIN_HOUR = 0; // 00:00
-const MAX_HOUR = 24; // 24:00 (end of day)
 
 const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
   currentWeekStart,
@@ -45,6 +46,9 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
   demoUserId,
   onOpenTaskDetail,
   onOpenTaskOverview,
+  minScheduleHour,
+  maxScheduleHour,
+  setScheduleHours,
 }) => {
   const weekEnd = addDays(currentWeekStart, 6);
 
@@ -94,6 +98,10 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
   });
   const [isClearDayDialogOpen, setIsClearDayDialogOpen] = useState(false);
   const [dayToClear, setDayToClear] = useState<Date | null>(null);
+  const [isExtendHoursDialogOpen, setIsExtendHoursDialogOpen] = useState(false);
+  const [newHoursToExtend, setNewHoursToExtend] = useState<{ min: number; max: number } | null>(null);
+  const [pendingAppointmentData, setPendingAppointmentData] = useState<NewAppointmentData | null>(null);
+
 
   // Dummy reads for TaskSection and Category types to resolve TS6133
   // These types are used in interfaces and function signatures, which the linter sometimes misses.
@@ -120,10 +128,45 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
   };
 
   const handleSaveAppointment = async (data: NewAppointmentData) => {
+    const appStartTime = parse(data.start_time, 'HH:mm:ss', parseISO(data.date));
+    const appEndTime = parse(data.end_time, 'HH:mm:ss', parseISO(data.date));
+
+    const appStartHour = getHours(appStartTime);
+    const appEndHour = getHours(appEndTime) + (getMinutes(appEndTime) > 0 ? 1 : 0);
+
+    const requiresExtension = appStartHour < minScheduleHour || appEndHour > maxScheduleHour;
+
+    if (requiresExtension && !isDemo) {
+      setNewHoursToExtend({
+        min: Math.min(minScheduleHour, appStartHour),
+        max: Math.max(maxScheduleHour, appEndHour),
+      });
+      setPendingAppointmentData(data);
+      setIsExtendHoursDialogOpen(true);
+      return false;
+    }
+
     if (editingAppointment) {
       return await updateAppointment(editingAppointment.id, data);
     } else {
       return await addAppointment(data);
+    }
+  };
+
+  const confirmExtendHours = async () => {
+    if (newHoursToExtend) {
+      await setScheduleHours(newHoursToExtend.min, newHoursToExtend.max);
+      setIsExtendHoursDialogOpen(false);
+      setNewHoursToExtend(null);
+      if (pendingAppointmentData) {
+        if (editingAppointment) {
+          await updateAppointment(editingAppointment.id, pendingAppointmentData);
+        } else {
+          await addAppointment(pendingAppointmentData);
+        }
+        setPendingAppointmentData(null);
+        setIsAppointmentFormOpen(false);
+      }
     }
   };
 
@@ -186,8 +229,8 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
 
   const timeBlocks = useMemo(() => {
     const blocks = [];
-    let currentTime = setHours(setMinutes(currentWeekStart, 0), MIN_HOUR);
-    const endTime = setHours(setMinutes(currentWeekStart, 0), MAX_HOUR);
+    let currentTime = setHours(setMinutes(currentWeekStart, 0), minScheduleHour);
+    const endTime = setHours(setMinutes(currentWeekStart, 0), maxScheduleHour);
 
     while (isBefore(currentTime, endTime)) {
       const blockStart = currentTime;
@@ -199,7 +242,7 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
       currentTime = blockEnd;
     }
     return blocks;
-  }, [currentWeekStart]);
+  }, [currentWeekStart, minScheduleHour, maxScheduleHour]);
 
   const daysInWeek = useMemo(() => {
     const days = [];
@@ -228,12 +271,12 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
     const startMinutes = (getHours(appStartTime) * 60) + getMinutes(appStartTime);
     const endMinutes = (getHours(appEndTime) * 60) + getMinutes(appEndTime);
 
-    const gridRowStart = Math.floor((startMinutes - (MIN_HOUR * 60)) / 30) + 1;
-    const gridRowEnd = Math.ceil((endMinutes - (MIN_HOUR * 60)) / 30) + 1;
+    const gridRowStart = Math.floor((startMinutes - (minScheduleHour * 60)) / 30) + 1;
+    const gridRowEnd = Math.ceil((endMinutes - (minScheduleHour * 60)) / 30) + 1;
     const gridColumn = dayIndex + 2; // +2 because column 1 is for time labels
 
     return { gridRowStart, gridRowEnd, gridColumn };
-  }, [allWorkHours]);
+  }, [allWorkHours, minScheduleHour]);
 
   const appointmentsWithPositions = useMemo(() => {
     const positionedApps = appointments.map(app => {
@@ -414,7 +457,7 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
                       className="sticky left-0 bg-card z-10 text-right pr-2 flex items-center justify-end border-r"
                       style={{ gridRow: `${index + 2} / span 2`, height: `${2 * rowHeight + gapHeight}px` }}
                     >
-                      <span className="text-xs text-muted-foreground">{format(block.start, 'h a')}</span>
+                      <span className="text-xl font-bubbly text-muted-foreground">{format(block.start, 'h a')}</span>
                     </div>
                   )
                 ))}
@@ -429,9 +472,9 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
                     const blockStartWithDate = setHours(setMinutes(day, getMinutes(block.start)), getHours(block.start));
                     const blockEndWithDate = addMinutes(blockStartWithDate, 30);
 
-                    const isWithinWorkHours = isWorkDayEnabled &&
-                      isAfter(blockStartWithDate, parse(workHoursForDay!.start_time, 'HH:mm:ss', day)) &&
-                      isBefore(blockEndWithDate, parse(workHoursForDay!.end_time, 'HH:mm:ss', day));
+                    const isWithinWorkHours = isWorkDayEnabled && workHoursForDay?.start_time && workHoursForDay?.end_time &&
+                      isAfter(blockStartWithDate, parse(workHoursForDay.start_time, 'HH:mm:ss', day)) &&
+                      isBefore(blockEndWithDate, parse(workHoursForDay.end_time, 'HH:mm:ss', day));
 
                     return (
                       <div
@@ -540,6 +583,7 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
           setEditingAppointment(null);
           setSelectedTimeSlotForNew(null);
           setParsedDataForForm(null);
+          setPendingAppointmentData(null);
         }}
         onSave={handleSaveAppointment}
         onDelete={handleDeleteAppointment}
@@ -635,6 +679,25 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleClearDay}>Clear Day</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={isExtendHoursDialogOpen} onOpenChange={setIsExtendHoursDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Extend Viewable Hours?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This appointment falls outside your current viewable hours ({format(setHours(currentWeekStart, minScheduleHour), 'h a')} - {format(setHours(currentWeekStart, maxScheduleHour), 'h a')}). Would you like to extend the schedule view to {newHoursToExtend ? `${format(setHours(currentWeekStart, newHoursToExtend.min), 'h a')} - ${format(setHours(currentWeekStart, newHoursToExtend.max), 'h a')}` : 'fit it'}?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setIsExtendHoursDialogOpen(false);
+              setNewHoursToExtend(null);
+              setPendingAppointmentData(null);
+            }}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmExtendHours}>Extend View</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
