@@ -28,11 +28,11 @@ const CustomCard: React.FC<CustomCardProps> = ({ card, isOverlay = false }) => {
 
   const handleSave = async () => {
     setIsSaving(true);
-    await updateCustomCard(card.id, {
+    await updateCustomCard({ id: card.id, updates: {
       title,
       content,
       emoji,
-    });
+    }});
     setIsSaving(false);
   };
 
@@ -89,7 +89,7 @@ const CustomCard: React.FC<CustomCardProps> = ({ card, isOverlay = false }) => {
           <p className="text-sm text-muted-foreground whitespace-pre-wrap flex-1 break-words">
             {renderContentWithLinks(card.content)}
           </p>
-        </div>
+        </div >
       </EditableCard>
       {!isOverlay && (
         <Button variant="destructive" size="icon" className="absolute -top-2 -right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={handleDelete}>

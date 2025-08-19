@@ -99,7 +99,7 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
                   <li key={task.id} className="relative rounded-xl p-2 transition-all duration-200 ease-in-out group hover:shadow-md">
                     <TaskItem
                       task={task}
-                      allTasks={allTasks}
+                      allTasks={allTasks as Task[]} // Cast to Task[]
                       onStatusChange={handleTaskStatusChange}
                       onDelete={deleteTask}
                       onUpdate={updateTask}
@@ -134,7 +134,7 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
           onDelete={deleteTask}
           sections={sections}
           allCategories={allCategories}
-          allTasks={allTasks}
+          allTasks={allTasks as Task[]} // Cast to Task[]
         />
       )}
       {taskToEdit && (
@@ -150,7 +150,7 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
           updateSection={updateSection}
           deleteSection={deleteSection}
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-          allTasks={allTasks}
+          allTasks={allTasks as Task[]} // Cast to Task[]
         />
       )}
     </div>

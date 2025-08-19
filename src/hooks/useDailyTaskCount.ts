@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { startOfDay, parseISO, isSameDay, isBefore, format } from 'date-fns';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 // Define a minimal Task type for this hook, including necessary fields for filtering
 interface DailyCountTask {
@@ -14,127 +15,113 @@ interface DailyCountTask {
   parent_task_id: string | null; // Added parent_task_id
 }
 
+// Re-use query functions from useTasks
+import { fetchSections, fetchTasks, fetchDoTodayOffLog, TaskSection, Task } from './useTasks';
+
 export const useDailyTaskCount = (props?: { userId?: string }) => {
   const { user } = useAuth();
   const userId = props?.userId || user?.id;
-  const [dailyTaskCount, setDailyTaskCount] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const fetchDailyTaskCount = useCallback(async () => {
-    if (!userId) {
-      setDailyTaskCount(0);
-      setLoading(false);
-      return;
-    }
+  const todayStart = startOfDay(new Date()); // Always use current date for daily count
 
-    setLoading(true);
-    try {
-      const todayStart = startOfDay(new Date());
+  // Fetch sections included in focus mode
+  const { data: sectionsData = [], isLoading: sectionsLoading } = useQuery<TaskSection[], Error>({
+    queryKey: ['task_sections', userId], // Use the same query key as useTasks
+    queryFn: () => fetchSections(userId!), // Re-use the fetchSections function
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
-      // Get "Do Today" off IDs from localStorage
-      const key = `doTodayOff-${userId}-${format(todayStart, 'yyyy-MM-dd')}`;
-      let offIds = new Set<string>();
-      try {
-        const saved = localStorage.getItem(key);
-        if (saved) offIds = new Set(JSON.parse(saved));
-      } catch {}
+  // Fetch all 'to-do' tasks for the user that could potentially be relevant for today
+  const { data: allUserTasks = [], isLoading: tasksLoading } = useQuery<Task[], Error>({
+    queryKey: ['tasks', userId], // Use the same query key as useTasks
+    queryFn: () => fetchTasks(userId!) as Promise<Task[]>, // Cast to Task[]
+    enabled: !!userId,
+    staleTime: 60 * 1000, // 1 minute
+  });
 
-      // 1. Fetch sections included in focus mode
-      const { data: sectionsData, error: sectionsError } = await supabase
-        .from('task_sections')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('include_in_focus_mode', true);
+  // Get "Do Today" off IDs
+  const { data: doTodayOffIds = new Set(), isLoading: doTodayOffLoading } = useQuery<Set<string>, Error>({
+    queryKey: ['do_today_off_log', userId, format(todayStart, 'yyyy-MM-dd')], // Use the same query key
+    queryFn: () => fetchDoTodayOffLog(userId!, todayStart), // Re-use the fetchDoTodayOffLog function
+    enabled: !!userId,
+    staleTime: 60 * 1000, // 1 minute
+  });
 
-      if (sectionsError) throw sectionsError;
-      const focusModeSectionIds = new Set(sectionsData?.map(s => s.id) || []);
+  const loading = sectionsLoading || tasksLoading || doTodayOffLoading;
 
-      // 2. Fetch all 'to-do' tasks for the user that could potentially be relevant for today
-      const { data: allUserTasks, error: tasksError } = await supabase
-        .from('tasks')
-        .select('id, status, created_at, original_task_id, section_id, recurring_type, parent_task_id')
-        .eq('user_id', userId)
-        .eq('status', 'to-do'); // Only interested in 'to-do' tasks for the count
+  const dailyTaskCount = useMemo(() => {
+    if (!userId || loading) return 0;
 
-      if (tasksError) throw tasksError;
+    let count = 0;
+    const focusModeSectionIds = new Set(sectionsData.filter(s => s.include_in_focus_mode).map(s => s.id));
+    const processedOriginalIds = new Set<string>();
 
-      let count = 0;
-      if (allUserTasks) {
-        const relevantTasksForToday: DailyCountTask[] = [];
-        const processedOriginalIds = new Set<string>();
+    // Filter for top-level tasks (not sub-tasks)
+    const topLevelTasks = (allUserTasks as DailyCountTask[]).filter(task => task.parent_task_id === null);
 
-        // Filter for top-level tasks (not sub-tasks)
-        const topLevelTasks = (allUserTasks as DailyCountTask[]).filter(task => task.parent_task_id === null);
+    const relevantTasksForToday: DailyCountTask[] = [];
 
-        topLevelTasks.forEach(task => {
-          const taskCreatedAt = startOfDay(parseISO(task.created_at)); // Use startOfDay for comparison
-          const originalId = task.original_task_id || task.id;
+    topLevelTasks.forEach(task => {
+      const taskCreatedAt = startOfDay(parseISO(task.created_at));
+      const originalId = task.original_task_id || task.id;
 
-          if (task.recurring_type !== 'none') {
-            if (processedOriginalIds.has(originalId)) {
-              return; // Skip if this original recurring task has already been processed
-            }
+      if (task.recurring_type !== 'none') {
+        if (processedOriginalIds.has(originalId)) {
+          return;
+        }
 
-            const allInstancesOfThisRecurringTask = (allUserTasks as DailyCountTask[]).filter(t =>
-              t.original_task_id === originalId || t.id === originalId
-            );
+        const allInstancesOfThisRecurringTask = (allUserTasks as DailyCountTask[]).filter(t =>
+          t.original_task_id === originalId || t.id === originalId
+        );
 
-            let taskToDisplay: DailyCountTask | null = null;
+        let taskToDisplay: DailyCountTask | null = null;
 
-            // Check for an instance created specifically for the current day
-            const instanceForCurrentDay = allInstancesOfThisRecurringTask.find(t =>
-              isSameDay(startOfDay(parseISO(t.created_at)), todayStart) && t.status !== 'archived'
-            );
-            
-            if (instanceForCurrentDay) {
-              taskToDisplay = instanceForCurrentDay;
-            } else {
-              // If no instance for today, check for a carry-over 'to-do' task from a previous day
-              const carryOverTask = allInstancesOfThisRecurringTask
-                .filter(t => isBefore(startOfDay(parseISO(t.created_at)), todayStart) && t.status === 'to-do')
-                .sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime())[0];
+        const instanceForCurrentDay = allInstancesOfThisRecurringTask.find(t =>
+          isSameDay(startOfDay(parseISO(t.created_at)), todayStart) && t.status !== 'archived'
+        );
+        
+        if (instanceForCurrentDay) {
+          taskToDisplay = instanceForCurrentDay;
+        } else {
+          const carryOverTask = allInstancesOfThisRecurringTask
+            .filter(t => isBefore(startOfDay(parseISO(t.created_at)), todayStart) && t.status === 'to-do')
+            .sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime())[0];
 
-              if (carryOverTask) {
-                taskToDisplay = carryOverTask;
-              }
-            }
-            
-            if (taskToDisplay) {
-              relevantTasksForToday.push(taskToDisplay);
-            }
-            processedOriginalIds.add(originalId); // Mark original task as processed
-          } else { // Non-recurring task
-            const isTaskCreatedOnCurrentDate = isSameDay(taskCreatedAt, todayStart);
-            if (isTaskCreatedOnCurrentDate && task.status !== 'archived') {
-              relevantTasksForToday.push(task);
-            } else if (isBefore(taskCreatedAt, todayStart) && task.status === 'to-do') {
-              relevantTasksForToday.push(task);
-            }
+          if (carryOverTask) {
+            taskToDisplay = carryOverTask;
           }
-        });
-
-        // Now filter the relevant tasks by focus mode sections and "Do Today" switch
-        relevantTasksForToday.forEach(task => {
-          const isFocusModeTask = task.section_id === null || focusModeSectionIds.has(task.section_id);
-          const isDoToday = task.recurring_type !== 'none' || !offIds.has(task.id);
-          if (isFocusModeTask && isDoToday) {
-            count++;
-          }
-        });
+        }
+        
+        if (taskToDisplay) {
+          relevantTasksForToday.push(taskToDisplay);
+        }
+        processedOriginalIds.add(originalId);
+      } else {
+        const isTaskCreatedOnCurrentDate = isSameDay(taskCreatedAt, todayStart);
+        if (isTaskCreatedOnCurrentDate && task.status !== 'archived') {
+          relevantTasksForToday.push(task);
+        } else if (isBefore(taskCreatedAt, todayStart) && task.status === 'to-do') {
+          relevantTasksForToday.push(task);
+        }
       }
-      setDailyTaskCount(count);
-    } catch (error) {
-      console.error('Error fetching daily task count:', error);
-      setDailyTaskCount(0);
-    } finally {
-      setLoading(false);
-    }
-  }, [userId]);
+    });
 
+    relevantTasksForToday.forEach(task => {
+      const isFocusModeTask = task.section_id === null || focusModeSectionIds.has(task.section_id);
+      const isDoToday = task.recurring_type !== 'none' || !doTodayOffIds.has(task.original_task_id || task.id);
+      if (isFocusModeTask && isDoToday) {
+        count++;
+      }
+    });
+    return count;
+  }, [userId, loading, sectionsData, allUserTasks, doTodayOffIds, todayStart]);
+
+  // Real-time subscriptions to invalidate queries
   useEffect(() => {
-    fetchDailyTaskCount();
+    if (!userId) return;
 
-    // Set up real-time subscription for tasks and sections to update count
     const tasksChannel = supabase
       .channel('daily_task_count_tasks_channel')
       .on(
@@ -145,9 +132,10 @@ export const useDailyTaskCount = (props?: { userId?: string }) => {
           table: 'tasks',
           filter: `user_id=eq.${userId}`,
         },
-        (payload) => {
-          console.log('Task change received for daily count!', payload);
-          fetchDailyTaskCount();
+        () => { // Removed unused payload parameter
+          console.log('Task change received for daily count!');
+          queryClient.invalidateQueries({ queryKey: ['tasks', userId] });
+          queryClient.invalidateQueries({ queryKey: ['do_today_off_log', userId] }); // Also invalidate do_today_off_log
         }
       )
       .subscribe();
@@ -162,9 +150,26 @@ export const useDailyTaskCount = (props?: { userId?: string }) => {
           table: 'task_sections',
           filter: `user_id=eq.${userId}`,
         },
-        (payload) => {
-          console.log('Section change received for daily count!', payload);
-          fetchDailyTaskCount();
+        () => { // Removed unused payload parameter
+          console.log('Section change received for daily count!');
+          queryClient.invalidateQueries({ queryKey: ['task_sections', userId] });
+        }
+      )
+      .subscribe();
+
+    const doTodayOffLogChannel = supabase
+      .channel('daily_task_count_do_today_off_log_channel')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'do_today_off_log',
+          filter: `user_id=eq.${userId}`,
+        },
+        () => { // Removed unused payload parameter
+          console.log('Do Today Off Log change received for daily count!');
+          queryClient.invalidateQueries({ queryKey: ['do_today_off_log', userId] });
         }
       )
       .subscribe();
@@ -172,8 +177,10 @@ export const useDailyTaskCount = (props?: { userId?: string }) => {
     return () => {
       supabase.removeChannel(tasksChannel);
       supabase.removeChannel(sectionsChannel);
+      supabase.removeChannel(doTodayOffLogChannel);
     };
-  }, [userId, fetchDailyTaskCount]);
+  }, [userId, queryClient]);
+
 
   return { dailyTaskCount, loading };
 };

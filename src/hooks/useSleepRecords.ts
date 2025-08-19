@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { showError } from '@/utils/toast';
+import { showError, showSuccess } from '@/utils/toast';
 import { format } from 'date-fns';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 export interface SleepRecord {
   id: string;
@@ -32,20 +33,14 @@ interface UseSleepRecordsProps {
 export const useSleepRecords = ({ selectedDate, userId: propUserId }: UseSleepRecordsProps) => {
   const { user } = useAuth();
   const userId = propUserId || user?.id;
-  const [sleepRecord, setSleepRecord] = useState<SleepRecord | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
+  const queryClient = useQueryClient();
 
   const formattedDate = format(selectedDate, 'yyyy-MM-dd');
 
-  const fetchSleepRecord = useCallback(async () => {
-    if (!userId) {
-      setSleepRecord(null);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    try {
+  const { data: sleepRecord = null, isLoading: loading, error } = useQuery<SleepRecord | null, Error>({
+    queryKey: ['sleepRecord', userId, formattedDate],
+    queryFn: async () => {
+      if (!userId) return null;
       const { data, error } = await supabase
         .from('sleep_records')
         .select('*')
@@ -56,26 +51,22 @@ export const useSleepRecords = ({ selectedDate, userId: propUserId }: UseSleepRe
       if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
         throw error;
       }
-      setSleepRecord(data || null);
-    } catch (error: any) {
-      console.error('Error fetching sleep record:', error.message);
-      showError('Failed to load sleep record.');
-    } finally {
-      setLoading(false);
-    }
-  }, [userId, formattedDate]);
+      return data || null;
+    },
+    enabled: !!userId,
+    staleTime: 1000 * 30, // 30 seconds
+  });
 
   useEffect(() => {
-    fetchSleepRecord();
-  }, [fetchSleepRecord]);
-
-  const saveSleepRecord = useCallback(async (dataToSave: NewSleepRecordData) => {
-    if (!userId) {
-      showError('User not authenticated.');
-      return;
+    if (error) {
+      console.error('Error fetching sleep record:', error.message);
+      showError('Failed to load sleep record.');
     }
-    setIsSaving(true);
-    try {
+  }, [error]);
+
+  const saveSleepRecordMutation = useMutation<SleepRecord, Error, NewSleepRecordData>({
+    mutationFn: async (dataToSave) => {
+      if (!userId) throw new Error('User not authenticated.');
       const payload = {
         ...dataToSave,
         user_id: userId,
@@ -89,24 +80,25 @@ export const useSleepRecords = ({ selectedDate, userId: propUserId }: UseSleepRe
         .single();
 
       if (error) throw error;
-      
-      // Update local state with the data that was just saved.
-      // This is crucial for the comparison logic in the component to work correctly after a save.
-      setSleepRecord(data);
-
-    } catch (error: any) {
-      console.error('Error saving sleep record:', error.message);
+      return data;
+    },
+    onSuccess: (data) => {
+      showSuccess('Sleep record saved!');
+      queryClient.setQueryData(['sleepRecord', userId, formattedDate], data); // Update specific record
+      queryClient.invalidateQueries({ queryKey: ['sleepDiary', userId] }); // Invalidate diary view
+      queryClient.invalidateQueries({ queryKey: ['sleepAnalytics', userId] }); // Invalidate analytics
+      queryClient.invalidateQueries({ queryKey: ['dailyBriefing', userId] }); // Invalidate daily briefing
+    },
+    onError: (err) => {
+      console.error('Error saving sleep record:', err.message);
       showError('Failed to save sleep record.');
-    } finally {
-      setTimeout(() => setIsSaving(false), 500);
-    }
-  }, [userId, formattedDate]);
+    },
+  });
 
   return {
     sleepRecord,
     loading,
-    isSaving,
-    saveSleepRecord,
-    fetchSleepRecord,
+    isSaving: saveSleepRecordMutation.isPending,
+    saveSleepRecord: saveSleepRecordMutation.mutateAsync,
   };
 };

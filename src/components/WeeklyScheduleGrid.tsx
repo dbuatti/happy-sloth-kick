@@ -3,7 +3,7 @@ import { addDays, startOfWeek, setHours, setMinutes, addMinutes } from 'date-fns
 import { CardContent } from "@/components/ui/card";
 import { useWorkHours } from '@/hooks/useWorkHours';
 import { useAppointments } from '@/hooks/useAppointments';
-import { useTasks } from '@/hooks/useTasks';
+import { useTasks, Task } from '@/hooks/useTasks';
 import { useSettings } from '@/context/SettingsContext';
 import WeeklyDateNavigator from './WeeklyDateNavigator';
 import ScheduleGridContent from './ScheduleGridContent'; // Import the new component
@@ -13,7 +13,7 @@ interface WeeklyScheduleGridProps {
   isDemo?: boolean;
   demoUserId?: string;
   // Removed onOpenTaskDetail as it's not directly used here or passed down
-  onOpenTaskOverview: (task: any) => void; // Changed to any for now, will be Task
+  onOpenTaskOverview: (task: Task) => void; // Changed to any for now, will be Task
 }
 
 const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
@@ -83,11 +83,11 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
         saveWorkHours={saveWorkHours}
         appointments={appointments}
         addAppointment={addAppointment}
-        updateAppointment={updateAppointment}
+        updateAppointment={(id, updates) => updateAppointment({ id, updates })}
         deleteAppointment={deleteAppointment}
         clearDayAppointments={clearDayAppointments}
         batchAddAppointments={batchAddAppointments}
-        allTasks={allTasks}
+        allTasks={allTasks as Task[]} // Cast to Task[]
         allDayTasks={allDayTasks}
         allCategories={allCategories}
         sections={sections}

@@ -26,7 +26,7 @@ const QuickLinks: React.FC<QuickLinksProps> = ({ isDemo = false, demoUserId }) =
 
   const handleSave = async (data: { title: string; url: string; imageFile?: File | null; emoji?: string | null; backgroundColor?: string | null; avatarText?: string | null; }) => {
     if (editingLink) {
-      await updateQuickLink(editingLink.id, data);
+      await updateQuickLink({ id: editingLink.id, updates: data, imageFile: data.imageFile });
     } else {
       await addQuickLink(data);
     }

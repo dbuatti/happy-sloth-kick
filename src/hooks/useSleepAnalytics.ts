@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { showError } from '@/utils/toast';
 import { format, parseISO, differenceInMinutes, addMinutes, isValid, startOfDay, endOfDay, getHours, getMinutes } from 'date-fns';
+import { useQuery } from '@tanstack/react-query';
 
 export interface SleepRecord {
   id: string;
@@ -45,21 +46,14 @@ interface UseSleepAnalyticsProps {
 export const useSleepAnalytics = ({ startDate, endDate, userId: propUserId }: UseSleepAnalyticsProps) => {
   const { user } = useAuth();
   const userId = propUserId || user?.id;
-  const [analyticsData, setAnalyticsData] = useState<SleepAnalyticsData[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  const fetchSleepAnalytics = useCallback(async () => {
-    if (!userId) {
-      setAnalyticsData([]);
-      setLoading(false);
-      console.log('useSleepAnalytics: No user ID, skipping fetch.');
-      return;
-    }
-    setLoading(true);
-    try {
-      const startOfRange = format(startOfDay(startDate), 'yyyy-MM-dd');
-      const endOfRange = format(endOfDay(endDate), 'yyyy-MM-dd');
+  const startOfRange = format(startOfDay(startDate), 'yyyy-MM-dd');
+  const endOfRange = format(endOfDay(endDate), 'yyyy-MM-dd');
 
+  const { data: analyticsData = [], isLoading: loading, error } = useQuery<SleepAnalyticsData[], Error>({
+    queryKey: ['sleepAnalytics', userId, startOfRange, endOfRange],
+    queryFn: async () => {
+      if (!userId) return [];
       const { data, error } = await supabase
         .from('sleep_records')
         .select('*')
@@ -141,18 +135,18 @@ export const useSleepAnalytics = ({ startDate, endDate, userId: propUserId }: Us
           getOutOfBedTimeValue: normalizeTimeForChart(getOutOfBedTime),
         };
       });
-      setAnalyticsData(processedData);
-    } catch (error: any) {
-      console.error('Error fetching sleep analytics:', error.message);
-      showError('Failed to load sleep analytics.');
-    } finally {
-      setLoading(false);
-    }
-  }, [userId, startDate, endDate]);
+      return processedData;
+    },
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
 
   useEffect(() => {
-    fetchSleepAnalytics();
-  }, [fetchSleepAnalytics]);
+    if (error) {
+      console.error('Error fetching sleep analytics:', error.message);
+      showError('Failed to load sleep analytics.');
+    }
+  }, [error]);
 
-  return { analyticsData, loading, fetchSleepAnalytics };
+  return { analyticsData, loading };
 };

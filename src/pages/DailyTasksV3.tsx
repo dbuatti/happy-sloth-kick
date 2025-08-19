@@ -185,7 +185,7 @@ const DailyTasksV3: React.FC<DailyTasksV3Props> = ({ isDemo = false, demoUserId 
           <DailyTasksHeader
             currentDate={currentDate}
             setCurrentDate={setCurrentDate}
-            tasks={tasks}
+            tasks={tasks as Task[]} // Cast to Task[]
             filteredTasks={filteredTasks}
             sections={sections}
             allCategories={allCategories}
@@ -224,7 +224,7 @@ const DailyTasksV3: React.FC<DailyTasksV3Props> = ({ isDemo = false, demoUserId 
             <CardContent className="p-4 flex-1 flex flex-col">
               <div className="flex-1 overflow-y-auto">
                 <TaskList
-                  tasks={tasks}
+                  tasks={tasks as Task[]} // Cast to Task[]
                   processedTasks={processedTasks}
                   filteredTasks={filteredTasks}
                   loading={tasksLoading}
@@ -286,7 +286,7 @@ const DailyTasksV3: React.FC<DailyTasksV3Props> = ({ isDemo = false, demoUserId 
           onDelete={deleteTask}
           sections={sections}
           allCategories={allCategories}
-          allTasks={tasks}
+          allTasks={tasks as Task[]} // Cast to Task[]
         />
       )}
 
@@ -303,7 +303,7 @@ const DailyTasksV3: React.FC<DailyTasksV3Props> = ({ isDemo = false, demoUserId 
           updateSection={updateSection}
           deleteSection={deleteSection}
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-          allTasks={tasks}
+          allTasks={tasks as Task[]} // Cast to Task[]
         />
       )}
 
@@ -311,7 +311,7 @@ const DailyTasksV3: React.FC<DailyTasksV3Props> = ({ isDemo = false, demoUserId 
         isOpen={isFocusPanelOpen}
         onClose={() => setIsFocusPanelOpen(false)}
         nextAvailableTask={nextAvailableTask}
-        tasks={tasks}
+        tasks={tasks as Task[]}
         filteredTasks={filteredTasks}
         updateTask={updateTask}
         onDeleteTask={deleteTask}

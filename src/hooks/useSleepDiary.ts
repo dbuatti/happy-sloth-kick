@@ -1,30 +1,30 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { showError } from '@/utils/toast';
 import { SleepRecord } from './useSleepRecords';
+import { useInfiniteQuery, InfiniteData } from '@tanstack/react-query'; // Import InfiniteData
 
 const PAGE_SIZE = 14; // Fetch 14 days at a time
 
 export const useSleepDiary = (props?: { userId?: string }) => {
   const { user } = useAuth();
   const userId = props?.userId || user?.id;
-  const [records, setRecords] = useState<SleepRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [hasMore, setHasMore] = useState(true);
-  const [page, setPage] = useState(0);
 
-  const fetchRecords = useCallback(async (pageNum: number) => {
-    if (!userId) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    error,
+  } = useInfiniteQuery<SleepRecord[], Error, InfiniteData<SleepRecord[]>, string[], number>({
+    queryKey: ['sleepDiary', userId!], // Added non-null assertion
+    queryFn: async ({ pageParam = 0 }) => {
+      if (!userId) throw new Error('User not authenticated.');
+      const from = pageParam * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
 
-    const from = pageNum * PAGE_SIZE;
-    const to = from + PAGE_SIZE - 1;
-
-    try {
       const { data, error } = await supabase
         .from('sleep_records')
         .select('*')
@@ -33,39 +33,35 @@ export const useSleepDiary = (props?: { userId?: string }) => {
         .range(from, to);
 
       if (error) throw error;
-
-      if (data) {
-        setRecords(prev => pageNum === 0 ? data : [...prev, ...data]);
-        if (data.length < PAGE_SIZE) {
-          setHasMore(false);
-        }
-      } else {
-        setHasMore(false);
+      return data || [];
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      if (lastPage.length < PAGE_SIZE) {
+        return undefined; // No more pages
       }
-    } catch (err: any) {
-      showError('Failed to load sleep diary.');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [userId]);
+      return allPages.length; // Next page number
+    },
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    initialPageParam: 0,
+  });
+
+  const records = useMemo(() => (data as InfiniteData<SleepRecord[]>)?.pages.flatMap((page: SleepRecord[]) => page) || [], [data]);
+  const loading = isLoading || isFetchingNextPage;
+  const hasMore = hasNextPage;
 
   useEffect(() => {
-    setRecords([]);
-    setPage(0);
-    setHasMore(true);
-    if (userId) {
-      fetchRecords(0);
+    if (error) {
+      showError('Failed to load sleep diary.');
+      console.error(error);
     }
-  }, [userId, fetchRecords]);
+  }, [error]);
 
   const loadMore = useCallback(() => {
     if (!loading && hasMore) {
-      const nextPage = page + 1;
-      setPage(nextPage);
-      fetchRecords(nextPage);
+      fetchNextPage();
     }
-  }, [loading, hasMore, page, fetchRecords]);
+  }, [loading, hasMore, fetchNextPage]);
 
   return { records, loading, hasMore, loadMore };
 };

@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess } from '@/utils/toast';
 import { startOfWeek, format } from 'date-fns';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 export interface WeeklyFocus {
   id: string;
@@ -40,38 +41,30 @@ export const useDashboardData = (props?: { userId?: string }) => {
   const { user } = useAuth();
   const userId = props?.userId || user?.id;
   const isDemo = !!props?.userId;
-
-  const [weeklyFocus, setWeeklyFocus] = useState<WeeklyFocus | null>(null);
-  const [customCards, setCustomCards] = useState<CustomCard[]>([]);
-  const [settings, setSettings] = useState<DashboardSettings>({ meditation_notes: null, dashboard_layout: defaultLayout });
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   const weekStartDate = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
 
-  const fetchData = useCallback(async () => {
-    if (!userId) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    try {
-      // Fetch or create weekly focus
-      let { data: focusData, error: focusError } = await supabase
+  // Fetch Weekly Focus
+  const { data: weeklyFocus = null, isLoading: weeklyFocusLoading, error: weeklyFocusError } = useQuery<WeeklyFocus | null, Error>({
+    queryKey: ['weeklyFocus', userId, weekStartDate],
+    queryFn: async () => {
+      if (!userId) return null;
+      let { data, error } = await supabase
         .from('weekly_focus')
         .select('*')
         .eq('user_id', userId)
         .eq('week_start_date', weekStartDate)
         .maybeSingle();
 
-      if (focusError) throw focusError;
+      if (error) throw error;
 
-      if (!focusData && !isDemo) {
+      if (!data && !isDemo) {
         const { data: newFocus, error: insertError } = await supabase
           .from('weekly_focus')
           .insert({ user_id: userId, week_start_date: weekStartDate })
           .select()
           .single();
-        
         if (insertError) {
           if (insertError.code === '23505') { // unique_violation, handle race condition
             const { data: refetchedFocus, error: refetchError } = await supabase
@@ -81,54 +74,69 @@ export const useDashboardData = (props?: { userId?: string }) => {
               .eq('week_start_date', weekStartDate)
               .single();
             if (refetchError) throw refetchError;
-            focusData = refetchedFocus;
+            data = refetchedFocus;
           } else {
             throw insertError;
           }
         } else {
-          focusData = newFocus;
+          data = newFocus;
         }
       }
-      setWeeklyFocus(focusData);
+      return data;
+    },
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 30, // 30 minutes
+  });
 
-      // Fetch custom cards
-      const { data: cardsData, error: cardsError } = await supabase
+  // Fetch Custom Cards
+  const { data: customCards = [], isLoading: customCardsLoading, error: customCardsError } = useQuery<CustomCard[], Error>({
+    queryKey: ['customCards', userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      const { data, error } = await supabase
         .from('custom_dashboard_cards')
         .select('*')
         .eq('user_id', userId)
         .order('card_order');
-      if (cardsError) throw cardsError;
-      setCustomCards(cardsData || []);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
 
-      // Fetch settings
-      const { data: settingsData, error: settingsError } = await supabase
+  // Fetch User Settings (for dashboard layout and meditation notes)
+  const { data: settings = { meditation_notes: null, dashboard_layout: defaultLayout }, isLoading: settingsLoading, error: settingsError } = useQuery<DashboardSettings, Error>({
+    queryKey: ['userSettings', userId],
+    queryFn: async () => {
+      if (!userId) return { meditation_notes: null, dashboard_layout: defaultLayout };
+      const { data, error } = await supabase
         .from('user_settings')
         .select('meditation_notes, dashboard_layout')
         .eq('user_id', userId)
         .single();
-      if (settingsError && settingsError.code !== 'PGRST116') throw settingsError;
-      if (settingsData) {
-        setSettings({
-          meditation_notes: settingsData.meditation_notes,
-          dashboard_layout: { ...defaultLayout, ...(settingsData.dashboard_layout || {}) },
-        });
-      }
+      if (error && error.code !== 'PGRST116') throw error;
+      return {
+        meditation_notes: data?.meditation_notes || null,
+        dashboard_layout: { ...defaultLayout, ...(data?.dashboard_layout || {}) },
+      };
+    },
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
 
-    } catch (error: any) {
-      showError('Failed to load dashboard data.');
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  }, [userId, weekStartDate, isDemo]);
+  const loading = weeklyFocusLoading || customCardsLoading || settingsLoading;
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (weeklyFocusError || customCardsError || settingsError) {
+      console.error('Error fetching dashboard data:', weeklyFocusError || customCardsError || settingsError);
+      showError('Failed to load dashboard data.');
+    }
+  }, [weeklyFocusError, customCardsError, settingsError]);
 
-  const updateWeeklyFocus = async (updates: Partial<Omit<WeeklyFocus, 'id' | 'user_id' | 'week_start_date'>>) => {
-    if (!userId || !weeklyFocus) return;
-    try {
+  const updateWeeklyFocusMutation = useMutation<WeeklyFocus, Error, Partial<Omit<WeeklyFocus, 'id' | 'user_id' | 'week_start_date'>>>({
+    mutationFn: async (updates) => {
+      if (!userId || !weeklyFocus) throw new Error('User not authenticated or weekly focus not loaded.');
       const { data, error } = await supabase
         .from('weekly_focus')
         .update(updates)
@@ -136,47 +144,42 @@ export const useDashboardData = (props?: { userId?: string }) => {
         .select()
         .single();
       if (error) throw error;
-      setWeeklyFocus(data);
+      return data;
+    },
+    onSuccess: () => {
       showSuccess('Weekly focus updated!');
-    } catch (error) {
+      queryClient.invalidateQueries({ queryKey: ['weeklyFocus', userId, weekStartDate] });
+    },
+    onError: (err) => {
       showError('Failed to update weekly focus.');
-    }
-  };
+      console.error(err);
+    },
+  });
 
-  const updateSettings = async (updates: Partial<DashboardSettings>) => {
-    if (!userId) return;
-    try {
-      const { error } = await supabase
-        .from('user_settings')
-        .update(updates)
-        .eq('user_id', userId);
-      if (error) throw error;
-      setSettings(prev => ({ ...prev, ...updates }));
-      showSuccess('Settings updated!');
-    } catch (error) {
-      showError('Failed to update settings.');
-    }
-  };
-
-  const addCustomCard = async (card: Omit<CustomCard, 'id' | 'user_id' | 'is_visible'>) => {
-    if (!userId) return;
-    try {
+  const addCustomCardMutation = useMutation<CustomCard, Error, Omit<CustomCard, 'id' | 'user_id' | 'is_visible'>>({
+    mutationFn: async (card) => {
+      if (!userId) throw new Error('User not authenticated.');
       const { data, error } = await supabase
         .from('custom_dashboard_cards')
         .insert({ ...card, user_id: userId })
         .select()
         .single();
       if (error) throw error;
-      setCustomCards(prev => [...prev, data]);
+      return data;
+    },
+    onSuccess: () => {
       showSuccess('Card added!');
-    } catch (error) {
+      queryClient.invalidateQueries({ queryKey: ['customCards', userId] });
+    },
+    onError: (err) => {
       showError('Failed to add card.');
-    }
-  };
+      console.error(err);
+    },
+  });
 
-  const updateCustomCard = async (id: string, updates: Partial<Omit<CustomCard, 'id' | 'user_id'>>) => {
-    if (!userId) return;
-    try {
+  const updateCustomCardMutation = useMutation<CustomCard, Error, { id: string; updates: Partial<Omit<CustomCard, 'id' | 'user_id'>> }>({
+    mutationFn: async ({ id, updates }) => {
+      if (!userId) throw new Error('User not authenticated.');
       const { data, error } = await supabase
         .from('custom_dashboard_cards')
         .update(updates)
@@ -184,66 +187,69 @@ export const useDashboardData = (props?: { userId?: string }) => {
         .select()
         .single();
       if (error) throw error;
-      setCustomCards(prev => prev.map(c => c.id === id ? data : c));
+      return data;
+    },
+    onSuccess: () => {
       showSuccess('Card updated!');
-    } catch (error) {
+      queryClient.invalidateQueries({ queryKey: ['customCards', userId] });
+    },
+    onError: (err) => {
       showError('Failed to update card.');
-    }
-  };
+      console.error(err);
+    },
+  });
 
-  const deleteCustomCard = async (id: string) => {
-    if (!userId) return;
-    try {
+  const deleteCustomCardMutation = useMutation<boolean, Error, string>({
+    mutationFn: async (id) => {
+      if (!userId) throw new Error('User not authenticated.');
       const { error } = await supabase.from('custom_dashboard_cards').delete().eq('id', id);
       if (error) throw error;
-      setCustomCards(prev => prev.filter(c => c.id !== id));
+      return true;
+    },
+    onSuccess: () => {
       showSuccess('Card deleted!');
-    } catch (error) {
+      queryClient.invalidateQueries({ queryKey: ['customCards', userId] });
+    },
+    onError: (err) => {
       showError('Failed to delete card.');
-    }
-  };
+      console.error(err);
+    },
+  });
 
-  const reorderCustomCards = useCallback(async (orderedCardIds: string[]) => {
-    if (!userId) {
-      showError('User not authenticated.');
-      return;
-    }
-    const updates = orderedCardIds.map((id, index) => ({
-      id,
-      card_order: index,
-      user_id: userId, // Ensure user_id is included for RLS
-    }));
+  const reorderCustomCardsMutation = useMutation<boolean, Error, string[]>({
+    mutationFn: async (orderedCardIds) => {
+      if (!userId) throw new Error('User not authenticated.');
+      const updates = orderedCardIds.map((id, index) => ({
+        id,
+        card_order: index,
+        user_id: userId,
+      }));
 
-    // Optimistic update
-    setCustomCards(prev => {
-      const newOrderMap = new Map(updates.map(u => [u.id, u.card_order]));
-      return [...prev].sort((a, b) => (newOrderMap.get(a.id) || 0) - (newOrderMap.get(b.id) || 0));
-    });
-
-    try {
       const { error } = await supabase
         .from('custom_dashboard_cards')
-        .upsert(updates, { onConflict: 'id' }); // Use upsert with onConflict on 'id'
+        .upsert(updates, { onConflict: 'id' });
       if (error) throw error;
+      return true;
+    },
+    onSuccess: () => {
       showSuccess('Cards reordered!');
-    } catch (error: any) {
+      queryClient.invalidateQueries({ queryKey: ['customCards', userId] });
+    },
+    onError: (err) => {
       showError('Failed to reorder cards.');
-      console.error('Error reordering custom cards:', error.message);
-      // Revert optimistic update if error occurs
-      fetchData(); 
-    }
-  }, [userId, fetchData]);
+      console.error('Error reordering custom cards:', err.message);
+    },
+  });
 
   return {
     loading,
     weeklyFocus,
     customCards,
     settings,
-    updateWeeklyFocus,
-    updateSettings,
-    addCustomCard,
-    updateCustomCard,
-    deleteCustomCard,
-    reorderCustomCards, // Export the new function
+    updateWeeklyFocus: updateWeeklyFocusMutation.mutateAsync,
+    addCustomCard: addCustomCardMutation.mutateAsync,
+    updateCustomCard: updateCustomCardMutation.mutateAsync,
+    deleteCustomCard: deleteCustomCardMutation.mutateAsync,
+    reorderCustomCards: reorderCustomCardsMutation.mutateAsync,
   };
 };

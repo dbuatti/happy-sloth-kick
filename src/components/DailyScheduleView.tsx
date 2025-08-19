@@ -82,11 +82,11 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
         saveWorkHours={saveWorkHours}
         appointments={appointments}
         addAppointment={addAppointment}
-        updateAppointment={updateAppointment}
+        updateAppointment={(id, updates) => updateAppointment({ id, updates })}
         deleteAppointment={deleteAppointment}
         clearDayAppointments={clearDayAppointments}
         batchAddAppointments={batchAddAppointments}
-        allTasks={allTasks}
+        allTasks={allTasks as Task[]} // Cast to Task[]
         allDayTasks={allDayTasks}
         allCategories={allCategories}
         sections={sections}

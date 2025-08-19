@@ -40,7 +40,7 @@ const SleepDiaryView: React.FC<SleepDiaryViewProps> = ({ isDemo = false, demoUse
 
       {/* Diary Entries */}
       <div className="space-y-3 px-2 md:px-0">
-        {records.map(record => {
+        {records.map((record: any) => { // Explicitly type record as any for now
           const recordDate = parseISO(record.date);
           return (
             <div key={record.id} className="md:grid md:grid-cols-[100px_1fr] md:gap-x-4 md:items-center p-2 rounded-lg bg-muted/30 md:bg-transparent md:p-0">

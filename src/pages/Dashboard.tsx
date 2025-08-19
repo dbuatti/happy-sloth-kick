@@ -347,7 +347,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
             onDelete={deleteTask}
             sections={sections}
             allCategories={allCategories}
-            allTasks={allTasks}
+            allTasks={allTasks as Task[]} // Cast to Task[]
           />
         )}
         {taskToEdit && (
@@ -363,7 +363,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
             updateSection={updateSection}
             deleteSection={deleteSection}
             updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-            allTasks={allTasks}
+            allTasks={allTasks as Task[]} // Cast to Task[]
           />
         )}
         <AnimatePresence>

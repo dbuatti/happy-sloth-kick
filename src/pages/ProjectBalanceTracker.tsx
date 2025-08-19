@@ -92,7 +92,7 @@ const ProjectBalanceTracker: React.FC<ProjectBalanceTrackerProps> = ({ isDemo = 
   const handleAddProject = async () => {
     if (newProjectName.trim()) {
       setIsSavingProject(true);
-      const success = await addProject(newProjectName.trim(), newProjectDescription.trim() || null, newProjectLink.trim() || null);
+      const success = await addProject({ name: newProjectName.trim(), description: newProjectDescription.trim() || null, link: newProjectLink.trim() || null });
       if (success) {
         setNewProjectName('');
         setNewProjectDescription('');
@@ -113,11 +113,11 @@ const ProjectBalanceTracker: React.FC<ProjectBalanceTrackerProps> = ({ isDemo = 
   const handleSaveProjectEdit = async () => {
     if (editingProjectId && editingProjectName.trim()) {
       setIsSavingProject(true);
-      const success = await updateProject(editingProjectId, {
+      const success = await updateProject({ projectId: editingProjectId, updates: {
         name: editingProjectName.trim(),
         description: editingProjectDescription.trim() || null,
         link: editingProjectLink.trim() || null,
-      });
+      }});
       if (success) {
         setEditingProjectId(null);
         setEditingProjectName('');
@@ -159,7 +159,7 @@ const ProjectBalanceTracker: React.FC<ProjectBalanceTrackerProps> = ({ isDemo = 
   const confirmResetIndividualProject = async () => {
     if (projectToResetId) {
       setIsSavingProject(true);
-      await updateProject(projectToResetId, { current_count: 0 });
+      await updateProject({ projectId: projectToResetId, updates: { current_count: 0 } });
       setProjectToResetId(null);
       setShowConfirmResetIndividualDialog(false);
       setIsSavingProject(false);
@@ -192,7 +192,7 @@ const ProjectBalanceTracker: React.FC<ProjectBalanceTrackerProps> = ({ isDemo = 
   };
 
   const handleSaveNotes = async (projectId: string, notes: string) => {
-    await updateProject(projectId, { notes });
+    await updateProject({ projectId, updates: { notes } });
   };
 
   return (

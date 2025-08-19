@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess } from '@/utils/toast';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 
 export interface UserSettings {
@@ -30,18 +31,13 @@ const defaultSettings: Omit<UserSettings, 'user_id'> = {
 export const useUserSettings = (props?: { userId?: string }) => {
   const { user } = useAuth();
   const userId = props?.userId || user?.id;
-  const [settings, setSettings] = useState<UserSettings | null>(null);
-  const [loading, setLoading] = useState(true);
   const isDemo = !!props?.userId;
+  const queryClient = useQueryClient();
 
-  const fetchSettings = useCallback(async () => {
-    if (!userId) {
-      setSettings(null);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    try {
+  const { data: settings = null, isLoading: loading, error } = useQuery<UserSettings | null, Error>({
+    queryKey: ['userSettings', userId],
+    queryFn: async () => {
+      if (!userId) return null;
       const { data, error } = await supabase
         .from('user_settings')
         .select('*')
@@ -53,20 +49,20 @@ export const useUserSettings = (props?: { userId?: string }) => {
       }
 
       if (data) {
-        setSettings({
+        return {
+          user_id: userId,
           ...defaultSettings,
           ...data,
           dashboard_layout: { ...defaultSettings.dashboard_layout, ...(data.dashboard_layout || {}) },
           dashboard_panel_sizes: data.dashboard_panel_sizes || defaultSettings.dashboard_panel_sizes,
-        });
+        };
       } else {
         // If in demo mode, don't try to insert. Just use defaults.
         if (isDemo) {
-          setSettings({
+          return {
             user_id: userId,
             ...defaultSettings
-          });
-          return;
+          };
         }
         // No settings found, create default ones for a real user
         const { data: newData, error: insertError } = await supabase
@@ -82,52 +78,47 @@ export const useUserSettings = (props?: { userId?: string }) => {
               .eq('user_id', userId)
               .single();
             if (refetchError) throw refetchError;
-            setSettings({ ...defaultSettings, ...refetchedSettings });
+            return { ...defaultSettings, ...refetchedSettings, user_id: userId };
           } else {
             throw insertError;
           }
         } else {
-          setSettings(newData);
+          return newData;
         }
       }
-    } catch (error: any) {
-      console.error('Error fetching user settings:', error);
-      showError('Failed to load user settings.');
-    } finally {
-      setLoading(false);
-    }
-  }, [userId, isDemo]);
+    },
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
 
   useEffect(() => {
-    fetchSettings();
-  }, [fetchSettings]);
-
-  const updateSettings = useCallback(async (updates: Partial<Omit<UserSettings, 'user_id'>>) => {
-    if (!userId || !settings) {
-      showError('User not authenticated or settings not loaded.');
-      return false;
+    if (error) {
+      console.error('Error fetching user settings:', error);
+      showError('Failed to load user settings.');
     }
-    
-    const newSettings = { ...settings, ...updates };
-    setSettings(newSettings);
+  }, [error]);
 
-    try {
+  const updateSettingsMutation = useMutation<boolean, Error, Partial<Omit<UserSettings, 'user_id'>>>({
+    mutationFn: async (updates) => {
+      if (!userId) throw new Error('User not authenticated.');
       const { error } = await supabase
         .from('user_settings')
         .update(updates)
         .eq('user_id', userId);
 
       if (error) throw error;
-      showSuccess('Settings updated!');
       return true;
-    } catch (error: any) {
-      console.error('Error updating settings:', error);
+    },
+    onSuccess: () => {
+      showSuccess('Settings updated!');
+      queryClient.invalidateQueries({ queryKey: ['userSettings', userId] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardData', userId] }); // Invalidate dashboard data if layout changes
+    },
+    onError: (err) => {
+      console.error('Error updating settings:', err);
       showError('Failed to update settings.');
-      // Revert optimistic update
-      setSettings(settings);
-      return false;
-    }
-  }, [userId, settings]);
+    },
+  });
 
-  return { settings, loading, updateSettings };
+  return { settings, loading, updateSettings: updateSettingsMutation.mutateAsync };
 };

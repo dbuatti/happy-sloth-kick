@@ -82,7 +82,7 @@ const DevSpace: React.FC<DevSpaceProps> = ({ isDemo = false, demoUserId }) => {
 
   const handleSave = async (data: Omit<DevIdea, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'tags'> & { tagIds: string[] }) => {
     if (editingIdea) {
-      return await updateIdea(editingIdea.id, data);
+      return await updateIdea({ id: editingIdea.id, updates: data });
     } else {
       return await addIdea(data);
     }
@@ -97,7 +97,9 @@ const DevSpace: React.FC<DevSpaceProps> = ({ isDemo = false, demoUserId }) => {
     setActiveIdea(null);
     const { active, over } = event;
 
-    if (!over) return;
+    if (!over || active.id === over.id) {
+      return;
+    }
 
     const activeId = String(active.id);
     const overId = String(over.id);
@@ -110,15 +112,10 @@ const DevSpace: React.FC<DevSpaceProps> = ({ isDemo = false, demoUserId }) => {
     if (activeContainer !== overContainer) {
         const newStatus = overContainer as DevIdea['status'];
         if (['idea', 'in-progress', 'completed'].includes(newStatus)) {
-            updateIdea(activeId, { status: newStatus });
+            updateIdea({ id: activeId, updates: { status: newStatus } });
         }
     } else if (activeId !== overId) {
-        setIdeas((prev) => {
-            const oldIndex = prev.findIndex((idea) => idea.id === activeId);
-            const newIndex = prev.findIndex((idea) => idea.id === overId);
-            if (oldIndex === -1 || newIndex === -1) return prev;
-            return arrayMove(prev, oldIndex, newIndex);
-        });
+        setIdeas(arrayMove(ideas, ideas.findIndex((idea: DevIdea) => idea.id === activeId), ideas.findIndex((idea: DevIdea) => idea.id === overId)));
     }
   };
 
@@ -169,7 +166,7 @@ const DevSpace: React.FC<DevSpaceProps> = ({ isDemo = false, demoUserId }) => {
           onSave={handleSave}
           initialData={editingIdea}
           allTags={tags}
-          onAddTag={addTag}
+          onAddTag={async (name, color) => addTag({ name, color })}
         />
       </div>
       {createPortal(

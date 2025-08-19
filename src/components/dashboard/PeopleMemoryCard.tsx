@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } => 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'; // Import Card components
 import { Button } from '@/components/ui/button';
 import { Plus, UploadCloud, X, Users } from 'lucide-react';
@@ -49,9 +49,9 @@ const PeopleMemoryCard: React.FC = () => {
     if (!name.trim()) return;
     setIsSaving(true);
     if (editingPerson) {
-      await updatePerson(editingPerson.id, { name, notes }, imageFile);
+      await updatePerson({ id: editingPerson.id, updates: { name, notes }, avatarFile });
     } else {
-      await addPerson({ name, notes }, imageFile);
+      await addPerson({ personData: { name, notes }, avatarFile });
     }
     setIsSaving(false);
     handleCloseForm();
@@ -113,7 +113,7 @@ const PeopleMemoryCard: React.FC = () => {
                   person={person}
                   onEdit={handleOpenForm}
                   onDelete={handleDeleteClick}
-                  onUpdateAvatar={async (id, file) => { await updatePerson(id, {}, file); }}
+                  onUpdateAvatar={async (id, file) => { await updatePerson({ id, updates: {}, avatarFile: file }); }}
                 />
               ))}
               <Button variant="outline" className="h-20 w-20 rounded-full flex-shrink-0" onClick={() => handleOpenForm(null)}>

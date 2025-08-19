@@ -96,7 +96,7 @@ const TaskCalendar: React.FC<TaskCalendarProps> = ({ isDemo = false, demoUserId 
         <Card className="w-full max-w-6xl mx-auto shadow-lg rounded-xl p-4">
           <CardHeader className="pb-2">
             <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
-              <CalendarDays className="h-7 w-7 text-primary" /> Task Calendar
+              <CalendarDays className="h-7 w-7" /> Task Calendar
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -135,7 +135,7 @@ const TaskCalendar: React.FC<TaskCalendarProps> = ({ isDemo = false, demoUserId 
                     <li key={task.id}>
                       <TaskItem
                         task={task}
-                        allTasks={allTasks}
+                        allTasks={allTasks as Task[]} // Cast to Task[]
                         onStatusChange={(taskId, newStatus) => updateTask(taskId, { status: newStatus })}
                         onDelete={deleteTask}
                         onUpdate={updateTask}
@@ -172,7 +172,7 @@ const TaskCalendar: React.FC<TaskCalendarProps> = ({ isDemo = false, demoUserId 
           onDelete={deleteTask}
           sections={sections}
           allCategories={allCategories}
-          allTasks={allTasks}
+          allTasks={allTasks as Task[]} // Cast to Task[]
         />
       )}
       {taskToEdit && (
@@ -188,7 +188,7 @@ const TaskCalendar: React.FC<TaskCalendarProps> = ({ isDemo = false, demoUserId 
           updateSection={updateSection}
           deleteSection={deleteSection}
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-          allTasks={allTasks}
+          allTasks={allTasks as Task[]} // Cast to Task[]
         />
       )}
     </div>

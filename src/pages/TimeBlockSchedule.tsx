@@ -137,7 +137,7 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
           onDelete={deleteTask}
           sections={sections}
           allCategories={allCategories}
-          allTasks={allTasks}
+          allTasks={allTasks as Task[]} // Cast to Task[]
         />
       )}
       {taskToEdit && (
@@ -153,7 +153,7 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
           updateSection={updateSection}
           deleteSection={deleteSection}
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-          allTasks={allTasks}
+          allTasks={allTasks as Task[]} // Cast to Task[]
         />
       )}
     </div>

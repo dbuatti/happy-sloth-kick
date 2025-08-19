@@ -1,41 +1,37 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { showError } from '@/utils/toast';
 import { Appointment } from './useAppointments';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 export const useAllAppointments = () => {
   const { user } = useAuth();
   const userId = user?.id;
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const fetchAppointments = useCallback(async () => {
-    if (!userId) {
-      setAppointments([]);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    try {
+  const { data: appointments = [], isLoading: loading, error } = useQuery<Appointment[], Error>({
+    queryKey: ['allAppointments', userId],
+    queryFn: async () => {
+      if (!userId) return [];
       const { data, error } = await supabase
         .from('schedule_appointments')
         .select('*')
         .eq('user_id', userId);
 
       if (error) throw error;
-      setAppointments(data || []);
-    } catch (error: any) {
-      console.error('Error fetching all appointments:', error.message);
-      showError('Failed to load schedule data.');
-    } finally {
-      setLoading(false);
-    }
-  }, [userId]);
+      return data || [];
+    },
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
 
   useEffect(() => {
-    fetchAppointments();
-  }, [fetchAppointments]);
+    if (error) {
+      console.error('Error fetching all appointments:', error.message);
+      showError('Failed to load schedule data.');
+    }
+  }, [error]);
 
   useEffect(() => {
     if (!userId) return;
@@ -46,7 +42,8 @@ export const useAllAppointments = () => {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'schedule_appointments', filter: `user_id=eq.${userId}` },
         () => {
-          fetchAppointments();
+          queryClient.invalidateQueries({ queryKey: ['allAppointments', userId] });
+          queryClient.invalidateQueries({ queryKey: ['appointments', userId] }); // Also invalidate specific date range appointments
         }
       )
       .subscribe();
@@ -54,7 +51,7 @@ export const useAllAppointments = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userId, fetchAppointments]);
+  }, [userId, queryClient]);
 
   return { appointments, loading };
 };

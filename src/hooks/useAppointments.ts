@@ -1,8 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess } from '@/utils/toast';
 import { format, startOfDay, endOfDay } from 'date-fns';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner'; // Import toast from sonner
 
 export interface Appointment {
   id: string;
@@ -30,20 +32,15 @@ interface UseAppointmentsProps {
 export const useAppointments = ({ startDate, endDate, userId: propUserId }: UseAppointmentsProps) => {
   const { user } = useAuth();
   const userId = propUserId || user?.id;
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const fetchAppointments = useCallback(async () => {
-    if (!userId) {
-      setAppointments([]);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    try {
-      const startOfRange = format(startOfDay(startDate), 'yyyy-MM-dd');
-      const endOfRange = format(endOfDay(endDate), 'yyyy-MM-dd');
+  const startOfRange = format(startOfDay(startDate), 'yyyy-MM-dd');
+  const endOfRange = format(endOfDay(endDate), 'yyyy-MM-dd');
 
+  const { data: appointments = [], isLoading: loading, error } = useQuery<Appointment[], Error>({
+    queryKey: ['appointments', userId, startOfRange, endOfRange],
+    queryFn: async () => {
+      if (!userId) return [];
       const { data, error } = await supabase
         .from('schedule_appointments')
         .select('*')
@@ -54,53 +51,44 @@ export const useAppointments = ({ startDate, endDate, userId: propUserId }: UseA
         .order('start_time', { ascending: true });
 
       if (error) throw error;
-      setAppointments(data || []);
-    } catch (error: any) {
-      console.error('Error fetching appointments:', error.message);
-      showError('Failed to load appointments.');
-    } finally {
-      setLoading(false);
-    }
-  }, [userId, startDate, endDate]);
+      return data || [];
+    },
+    enabled: !!userId,
+    staleTime: 1000 * 60, // 1 minute
+  });
 
   useEffect(() => {
-    fetchAppointments();
-  }, [fetchAppointments]);
-
-  const addAppointment = useCallback(async (newAppointment: NewAppointmentData) => {
-    console.log('useAppointments: addAppointment called with:', newAppointment);
-    if (!userId) {
-      showError('User not authenticated.');
-      console.error('useAppointments: User not authenticated for addAppointment.');
-      return null;
+    if (error) {
+      console.error('Error fetching appointments:', error.message);
+      showError('Failed to load appointments.');
     }
-    try {
+  }, [error]);
+
+  const addAppointmentMutation = useMutation<Appointment, Error, NewAppointmentData>({
+    mutationFn: async (newAppointment) => {
+      if (!userId) throw new Error('User not authenticated.');
       const { data, error } = await supabase
         .from('schedule_appointments')
         .insert({ ...newAppointment, user_id: userId })
         .select()
         .single();
-
       if (error) throw error;
-      setAppointments(prev => [...prev, data].sort((a, b) => a.start_time.localeCompare(b.start_time)));
-      showSuccess('Appointment added successfully!');
-      console.log('useAppointments: addAppointment success, data:', data);
       return data;
-    } catch (error: any) {
-      console.error('useAppointments: Error adding appointment:', error.message);
+    },
+    onSuccess: () => { // Removed unused data parameter
+      showSuccess('Appointment added successfully!');
+      queryClient.invalidateQueries({ queryKey: ['appointments', userId] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats', userId] }); // Invalidate dashboard stats
+    },
+    onError: (err) => {
+      console.error('useAppointments: Error adding appointment:', err.message);
       showError('Failed to add appointment.');
-      return null;
-    }
-  }, [userId]);
+    },
+  });
 
-  const updateAppointment = useCallback(async (id: string, updates: UpdateAppointmentData) => {
-    console.log('useAppointments: updateAppointment called for ID:', id, 'with updates:', updates);
-    if (!userId) {
-      showError('User not authenticated.');
-      console.error('useAppointments: User not authenticated for updateAppointment.');
-      return null;
-    }
-    try {
+  const updateAppointmentMutation = useMutation<Appointment, Error, { id: string; updates: UpdateAppointmentData }>({
+    mutationFn: async ({ id, updates }) => {
+      if (!userId) throw new Error('User not authenticated.');
       const { data, error } = await supabase
         .from('schedule_appointments')
         .update(updates)
@@ -108,57 +96,49 @@ export const useAppointments = ({ startDate, endDate, userId: propUserId }: UseA
         .eq('user_id', userId)
         .select()
         .single();
-
       if (error) throw error;
-      setAppointments(prev => prev.map(app => (app.id === id ? data : app)).sort((a, b) => a.start_time.localeCompare(b.start_time)));
-      showSuccess('Appointment updated successfully!');
-      console.log('useAppointments: updateAppointment success, data:', data);
       return data;
-    } catch (error: any) {
-      console.error('useAppointments: Error updating appointment:', error.message);
+    },
+    onSuccess: () => { // Removed unused data parameter
+      showSuccess('Appointment updated successfully!');
+      queryClient.invalidateQueries({ queryKey: ['appointments', userId] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats', userId] }); // Invalidate dashboard stats
+    },
+    onError: (err) => {
+      console.error('useAppointments: Error updating appointment:', err.message);
       showError('Failed to update appointment.');
-      return null;
-    }
-  }, [userId]);
+    },
+  });
 
-  const deleteAppointment = useCallback(async (id: string) => {
-    console.log('useAppointments: deleteAppointment called for ID:', id);
-    if (!userId) {
-      showError('User not authenticated.');
-      console.error('useAppointments: User not authenticated for deleteAppointment.');
-      return false;
-    }
-    try {
+  const deleteAppointmentMutation = useMutation<boolean, Error, string>({
+    mutationFn: async (id) => {
+      if (!userId) throw new Error('User not authenticated.');
       const { error } = await supabase
         .from('schedule_appointments')
         .delete()
         .eq('id', id)
         .eq('user_id', userId);
-
       if (error) throw error;
-      setAppointments(prev => prev.filter(app => app.id !== id));
-      showSuccess('Appointment deleted successfully!');
-      console.log('useAppointments: deleteAppointment success.');
       return true;
-    } catch (error: any) {
-      console.error('useAppointments: Error deleting appointment:', error.message);
+    },
+    onSuccess: () => {
+      showSuccess('Appointment deleted successfully!');
+      queryClient.invalidateQueries({ queryKey: ['appointments', userId] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats', userId] }); // Invalidate dashboard stats
+    },
+    onError: (err) => {
+      console.error('useAppointments: Error deleting appointment:', err.message);
       showError('Failed to delete appointment.');
-      return false;
-    }
-  }, [userId]);
+    },
+  });
 
-  const clearDayAppointments = useCallback(async (dateToClear: Date) => {
-    if (!userId) {
-      return [];
-    }
-    const formattedDateToClear = format(dateToClear, 'yyyy-MM-dd');
-    const appointmentsToDelete = appointments.filter(app => app.date === formattedDateToClear);
-    if (appointmentsToDelete.length === 0) {
-      return [];
-    }
-    setAppointments(prev => prev.filter(app => app.date !== formattedDateToClear)); // Optimistic update
+  const clearDayAppointmentsMutation = useMutation<Appointment[], Error, Date>({
+    mutationFn: async (dateToClear) => {
+      if (!userId) throw new Error('User not authenticated.');
+      const formattedDateToClear = format(dateToClear, 'yyyy-MM-dd');
+      const appointmentsToDelete = appointments.filter(app => app.date === formattedDateToClear);
+      if (appointmentsToDelete.length === 0) return [];
 
-    try {
       const idsToDelete = appointmentsToDelete.map(app => app.id);
       const { error } = await supabase
         .from('schedule_appointments')
@@ -167,50 +147,54 @@ export const useAppointments = ({ startDate, endDate, userId: propUserId }: UseA
         .eq('user_id', userId);
       
       if (error) throw error;
-      
       return appointmentsToDelete;
-    } catch (error: any) {
+    },
+    onSuccess: (deletedApps, dateToClear) => {
+      if (deletedApps.length > 0) {
+        toast.success(`Cleared ${format(dateToClear, 'MMM d')}.`, {
+          action: {
+            label: 'Undo',
+            onClick: () => batchAddAppointmentsMutation.mutate(deletedApps),
+          },
+        });
+      }
+      queryClient.invalidateQueries({ queryKey: ['appointments', userId] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats', userId] });
+    },
+    onError: (err) => {
       showError('Failed to clear day.');
-      // Revert optimistic update
-      setAppointments(prev => [...prev, ...appointmentsToDelete].sort((a, b) => a.start_time.localeCompare(b.start_time)));
-      return [];
-    }
-  }, [userId, appointments]);
+      console.error('Error clearing day appointments:', err.message);
+    },
+  });
 
-  const batchAddAppointments = useCallback(async (appointmentsToRestore: Appointment[]) => {
-    if (!userId || appointmentsToRestore.length === 0) {
-      return false;
-    }
-    
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const recordsToInsert = appointmentsToRestore.map(({ id, created_at, updated_at, ...rest }) => rest);
-
-    setAppointments(prev => [...prev, ...appointmentsToRestore].sort((a, b) => a.start_time.localeCompare(b.start_time)));
-
-    try {
+  const batchAddAppointmentsMutation = useMutation<boolean, Error, Appointment[]>({
+    mutationFn: async (appointmentsToRestore) => {
+      if (!userId || appointmentsToRestore.length === 0) return false;
+      const recordsToInsert = appointmentsToRestore.map(({ id, created_at, updated_at, ...rest }) => rest);
       const { error } = await supabase
         .from('schedule_appointments')
         .insert(recordsToInsert);
-      
       if (error) throw error;
-      
-      await fetchAppointments();
       return true;
-    } catch (error: any) {
+    },
+    onSuccess: () => {
+      showSuccess('Appointments restored!');
+      queryClient.invalidateQueries({ queryKey: ['appointments', userId] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats', userId] });
+    },
+    onError: (err) => {
       showError('Failed to restore appointments.');
-      await fetchAppointments();
-      return false;
-    }
-  }, [userId, fetchAppointments]);
+      console.error('Error batch adding appointments:', err.message);
+    },
+  });
 
   return {
     appointments,
     loading,
-    addAppointment,
-    updateAppointment,
-    deleteAppointment,
-    fetchAppointments,
-    clearDayAppointments,
-    batchAddAppointments,
+    addAppointment: addAppointmentMutation.mutateAsync,
+    updateAppointment: updateAppointmentMutation.mutateAsync,
+    deleteAppointment: deleteAppointmentMutation.mutateAsync,
+    clearDayAppointments: clearDayAppointmentsMutation.mutateAsync,
+    batchAddAppointments: batchAddAppointmentsMutation.mutateAsync,
   };
 };

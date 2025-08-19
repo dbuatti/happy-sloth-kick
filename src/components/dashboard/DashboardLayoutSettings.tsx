@@ -25,13 +25,16 @@ const DashboardLayoutSettings: React.FC<DashboardLayoutSettingsProps> = ({
 }) => {
   const handleToggleBuiltIn = (cardKey: string, checked: boolean) => {
     if (!settings) return; // Ensure settings is not null
-    const newLayout = { ...settings.dashboard_layout, [cardKey]: checked };
+    const newLayout = {
+      ...(settings.dashboard_layout || {}), // Ensure it's an object
+      [cardKey]: checked
+    };
     // Ensure updates match the Partial<Omit<UserSettings, 'user_id'>> expected by useSettings
     updateSettings({ dashboard_layout: newLayout });
   };
 
   const handleToggleCustom = (cardId: string, checked: boolean) => {
-    updateCustomCard(cardId, { is_visible: checked });
+    updateCustomCard({ id: cardId, updates: { is_visible: checked } });
   };
 
   const builtInCards = [
