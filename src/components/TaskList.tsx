@@ -245,8 +245,8 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     allSortableSections.forEach(section => {
       const topLevelTasksInSection = filteredTasks
         .filter(t => t.parent_task_id === null && (t.section_id === section.id || (t.section_id === null && section.id === 'no-section-header')))
-        .sort((a, b) => (a.order || 0) - (b.order || 0));
-      const remainingTasksCount = topLevelTasksInSection.filter(t => t.status === 'to-do').length;
+        .filter(t => t.status === 'to-do'); // Only count 'to-do' tasks
+      const remainingTasksCount = topLevelTasksInSection.length;
 
       if (remainingTasksCount === 0 && (expandedSections[section.id] ?? true)) { // Check if it's currently expanded
         toggleSection(section.id);
@@ -392,7 +392,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                       onMoveDown={async () => {}}
                       isOverlay={true}
                       setFocusTask={setFocusTask}
-                      isDoToday={!doTodayOffIds.has((activeItemData as Task).id)}
+                      isDoToday={!doTodayOffIds.has((activeItemData as Task).original_task_id || (activeItemData as Task).id)}
                       toggleDoToday={toggleDoToday}
                       scheduledTasksMap={scheduledTasksMap}
                     />
