@@ -63,7 +63,7 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode
-  } = useTasks({ currentDate: currentWeekStart, userId: demoUserId }); // Pass currentWeekStart for task filtering context
+   } = useTasks({ currentDate: currentWeekStart, userId: demoUserId }); // Pass currentWeekStart for task filtering context
   const { settings } = useSettings();
 
   const [isAppointmentFormOpen, setIsAppointmentFormOpen] = useState(false);
@@ -633,7 +633,7 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure you want to clear the day?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action will remove all appointments for {currentDate ? format(currentDate, 'MMMM d, yyyy') : 'the selected day'}. This cannot be undone immediately, but you can undo it from the toast notification.
+              This action will remove all appointments for {dayToClear ? format(dayToClear, 'MMMM d, yyyy') : 'the selected day'}. This cannot be undone immediately, but you can undo it from the toast notification.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -646,4 +646,4 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
   );
 };
 
-export default DailyScheduleView;
+export default WeeklyScheduleGrid;
