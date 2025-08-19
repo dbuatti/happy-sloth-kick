@@ -66,7 +66,7 @@ export const useSleepAnalytics = ({ startDate, endDate, userId: propUserId }: Us
 
       // Filter out incomplete records before processing
       const validRecords = (data || []).filter(record => {
-        return record.bed_time && record.lights_off_time && record.wake_up_time && record.get_out_of_bed_time;
+        return record.bed_time && record.lights_off_off_time && record.wake_up_time && record.get_out_of_bed_time;
       });
 
       const processedData: SleepAnalyticsData[] = validRecords.map(record => {

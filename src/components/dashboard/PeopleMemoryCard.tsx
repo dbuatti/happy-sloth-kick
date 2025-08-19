@@ -1,4 +1,4 @@
-import React, { useState, useEffect } => 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'; // Import Card components
 import { Button } from '@/components/ui/button';
 import { Plus, UploadCloud, X, Users } from 'lucide-react';
@@ -22,15 +22,15 @@ const PeopleMemoryCard: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [personToDelete, setPersonToDelete] = useState<string | null>(null);
 
-  const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [currentImageFile, setCurrentImageFile] = useState<File | null>(null); // New state for the actual File object
   const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     if (isFormOpen) {
       setName(editingPerson?.name || '');
       setNotes(editingPerson?.notes || '');
-      setImageFile(null);
+      setCurrentImageFile(null); // Clear file input on open
       setImagePreview(editingPerson?.avatar_url || null);
     }
   }, [isFormOpen, editingPerson]);
@@ -49,9 +49,9 @@ const PeopleMemoryCard: React.FC = () => {
     if (!name.trim()) return;
     setIsSaving(true);
     if (editingPerson) {
-      await updatePerson({ id: editingPerson.id, updates: { name, notes }, avatarFile });
+      await updatePerson({ id: editingPerson.id, updates: { name, notes, avatar_url: currentImageFile ? undefined : imagePreview }, avatarFile: currentImageFile });
     } else {
-      await addPerson({ personData: { name, notes }, avatarFile });
+      await addPerson({ personData: { name, notes }, avatarFile: currentImageFile });
     }
     setIsSaving(false);
     handleCloseForm();
@@ -70,11 +70,16 @@ const PeopleMemoryCard: React.FC = () => {
 
   const handleFile = (file: File | null) => {
     if (file && file.type.startsWith('image/')) {
-      setImageFile(file);
+      setCurrentImageFile(file);
       setImagePreview(URL.createObjectURL(file));
     } else if (file) {
       showError('Please upload a valid image file.');
     }
+  };
+
+  const handleRemoveImage = () => {
+    setCurrentImageFile(null);
+    setImagePreview(null);
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
@@ -140,7 +145,7 @@ const PeopleMemoryCard: React.FC = () => {
               {imagePreview ? (
                 <>
                   <img src={imagePreview} alt="Avatar preview" className="rounded-full h-24 w-24 object-cover" />
-                  <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={() => { setImageFile(null); setImagePreview(null); }}>
+                  <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={handleRemoveImage}>
                     <X className="h-4 w-4" />
                   </Button>
                 </>
