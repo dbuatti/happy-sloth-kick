@@ -26,8 +26,9 @@ import TimeBlockActionMenu from '@/components/TimeBlockActionMenu';
 
 interface ScheduleGridContentProps {
   isDemo?: boolean;
-  // Removed demoUserId from interface
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onOpenTaskDetail: (task: Task) => void;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onOpenTaskOverview: (task: Task) => void;
 
   // Data from parent view (Daily/Weekly)
@@ -60,8 +61,9 @@ const gapHeight = 4;
 
 const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
   isDemo = false,
-  // Removed demoUserId from destructuring
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onOpenTaskDetail,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onOpenTaskOverview,
   currentViewDate,
   daysInGrid,
@@ -78,7 +80,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
   allDayTasks,
   allCategories,
   sections,
-  // Removed updateTask, deleteTaskFromHook, createSection, updateSection, deleteSection, updateSectionIncludeInFocusMode
+  // Removed updateTask, deleteTaskFromHook, createSection, updateSection, deleteSection, updateSectionIncludeInFocusMode from destructuring
   settings,
   isLoading,
 }) => {
@@ -91,9 +93,6 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
   const [textToParse, setTextToParse] = useState('');
   const [isParsing, setIsParsing] = useState(false);
   const [parsedDataForForm, setParsedDataForForm] = useState<Partial<NewAppointmentData> | null>(null);
-
-  // Removed taskToOverview, isTaskOverviewOpen, taskToEdit, isTaskDetailOpen states
-  // as they are now managed by the parent component.
 
   const [activeDragItem, setActiveDragItem] = useState<any>(null);
   
@@ -210,7 +209,11 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
     }
   };
 
-  // Removed handleEditTaskFromOverview as it's no longer needed here
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleEditTaskFromOverview = (task: Task) => {
+    // This function is now a passthrough to the parent's onOpenTaskDetail
+    onOpenTaskDetail(task);
+  };
 
   const handleDeleteAppointment = async (id: string) => {
     return await deleteAppointment(id);
@@ -428,6 +431,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
                 {/* Header Row: Days */}
                 {daysInGrid.map((day, index) => {
                   const workHoursForDay = getWorkHoursForDay(day);
+                  // eslint-disable-next-line @typescript-eslint/no-unused-vars
                   const isWorkDayEnabled = workHoursForDay?.enabled;
                   return (
                     <div key={index} className="p-2 border-b text-center font-semibold text-sm flex flex-col items-center justify-center bg-muted/30">
@@ -600,7 +604,6 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
         selectedTimeSlot={selectedTimeSlotForNew}
         prefilledData={parsedDataForForm}
       />
-      {/* TaskOverviewDialog and TaskDetailDialog are now managed by the parent component */}
       <Dialog open={isParsingDialogOpen} onOpenChange={setIsParsingDialogOpen}>
         <DialogContent>
           <DialogHeader>

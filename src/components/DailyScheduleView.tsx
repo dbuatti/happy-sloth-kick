@@ -80,7 +80,6 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
       />
       <ScheduleGridContent
         isDemo={isDemo}
-        demoUserId={demoUserId}
         onOpenTaskDetail={onOpenTaskDetail}
         onOpenTaskOverview={onOpenTaskOverview}
         currentViewDate={currentDate}
@@ -98,12 +97,7 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
         allDayTasks={allDayTasks}
         allCategories={allCategories}
         sections={sections}
-        updateTask={updateTask}
-        deleteTaskFromHook={deleteTaskFromHook}
-        createSection={createSection}
-        updateSection={updateSection}
-        deleteSection={deleteSection}
-        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+        // Removed updateTask, deleteTaskFromHook, createSection, updateSection, deleteSection, updateSectionIncludeInFocusMode
         settings={settings}
         isLoading={workHoursLoading || appointmentsLoading}
       />
