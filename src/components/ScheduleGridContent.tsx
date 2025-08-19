@@ -470,7 +470,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
                       >
                         <div className="absolute top-1/2 w-full border-b border-dashed border-gray-200/50 dark:border-gray-700/50" />
                         {dayIndex === 0 && getMinutes(block.start) === 0 && (
-                          <span className="absolute right-full mr-4 text-xl font-bubbly text-muted-foreground whitespace-nowrap -translate-y-1/2" style={{ zIndex: 0 }}>
+                          <span className="absolute inset-0 flex items-center justify-center text-6xl font-bubbly text-muted-foreground/10 pointer-events-none" style={{ zIndex: 0 }}>
                             {format(block.start, 'h a')}
                           </span>
                         )}
