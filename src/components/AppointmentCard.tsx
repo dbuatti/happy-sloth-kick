@@ -13,11 +13,10 @@ interface AppointmentCardProps {
   task?: Task;
   onEdit: (appointment: Appointment) => void;
   onUnschedule: (appointmentId: string) => void;
-  gridRowStart: number;
-  gridRowEnd: number;
-  overlapOffset: number;
-  rowHeight: number;
-  gapHeight: number;
+  top: number;
+  height: number;
+  left: number;
+  width: string;
 }
 
 const AppointmentCard: React.FC<AppointmentCardProps> = ({
@@ -25,25 +24,17 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
   task,
   onEdit,
   onUnschedule,
-  gridRowStart,
-  gridRowEnd,
-  overlapOffset,
-  rowHeight,
-  gapHeight,
+  top,
+  height,
+  left,
+  width,
 }) => {
-  const calculatedTop = (gridRowStart - 1) * (rowHeight + gapHeight);
-  const numberOfBlocksSpanned = gridRowEnd - gridRowStart;
-  const calculatedHeight = numberOfBlocksSpanned * rowHeight + (numberOfBlocksSpanned > 0 ? (numberOfBlocksSpanned - 1) * gapHeight : 0);
-
-  const calculatedLeft = overlapOffset * 10;
-  const calculatedWidth = `calc(100% - ${calculatedLeft}px)`;
-
   const style = {
-    top: `${calculatedTop}px`,
-    height: `${calculatedHeight}px`,
+    top: `${top}px`,
+    height: `${height}px`,
     backgroundColor: appointment.color,
-    left: `${calculatedLeft}px`,
-    width: calculatedWidth,
+    left: `${left}px`,
+    width: width,
     zIndex: 10,
   };
 

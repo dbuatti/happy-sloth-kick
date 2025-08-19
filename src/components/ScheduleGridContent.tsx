@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -53,6 +53,7 @@ interface ScheduleGridContentProps {
 
 const rowHeight = 50;
 const gapHeight = 4;
+const headerHeight = 80; // Fixed height for the header row
 
 const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
   isDemo = false,
@@ -231,53 +232,50 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
     setDayToClear(null);
   };
 
-  const getAppointmentGridPosition = useCallback((app: Appointment, dayIndex: number | null) => {
-    if (!app.start_time || !app.end_time) {
-      return { gridRowStart: 1, gridRowEnd: 1, gridColumn: dayIndex !== null ? dayIndex + 1 : 1, overlapOffset: 0 };
-    }
-    const appDate = parseISO(app.date);
-    const appStartTime = parse(app.start_time, 'HH:mm:ss', appDate);
-    const appEndTime = parse(app.end_time, 'HH:mm:ss', appDate);
-
-    if (isNaN(appStartTime.getTime()) || isNaN(appEndTime.getTime())) {
-      return { gridRowStart: 1, gridRowEnd: 1, gridColumn: dayIndex !== null ? dayIndex + 1 : 1, overlapOffset: 0 };
-    }
-
-    const minHourMinutes = (getWorkHoursForDay(appDate)?.enabled ? (getHours(parse(getWorkHoursForDay(appDate)!.start_time, 'HH:mm:ss', appDate)) * 60) : 0);
-
-    const startMinutes = (getHours(appStartTime) * 60) + getMinutes(appStartTime);
-    const endMinutes = (getHours(appEndTime) * 60) + getMinutes(appEndTime);
-    
-    const gridRowStart = Math.floor((startMinutes - minHourMinutes) / 30) + 1;
-    const gridRowEnd = Math.ceil((endMinutes - minHourMinutes) / 30) + 1;
-    const gridColumn = dayIndex !== null ? dayIndex + 1 : 1;
-
-    return { gridRowStart, gridRowEnd, gridColumn };
-  }, [currentViewDate, getWorkHoursForDay]);
-
   const appointmentsWithPositions = useMemo(() => {
     const positionedApps = appointments.map(app => {
       const dayIndex = daysInGrid.findIndex(day => isSameDay(day, parseISO(app.date)));
       if (dayIndex === -1) return null;
 
+      const appDate = parseISO(app.date);
+      const appStartTime = parse(app.start_time, 'HH:mm:ss', appDate);
+      const appEndTime = parse(app.end_time, 'HH:mm:ss', appDate);
+
+      if (!isValid(appStartTime) || !isValid(appEndTime)) {
+        return null;
+      }
+
+      const workHoursForAppDay = getWorkHoursForDay(appDate);
+      const minHourMinutes = workHoursForAppDay?.enabled ? (getHours(parse(workHoursForAppDay.start_time, 'HH:mm:ss', appDate)) * 60) : 0;
+      
+      const startMinutes = (getHours(appStartTime) * 60) + getMinutes(appStartTime);
+      const endMinutes = (getHours(appEndTime) * 60) + getMinutes(appEndTime);
+      
+      // Calculate top and height in pixels
+      const calculatedTop = headerHeight + ((startMinutes - minHourMinutes) / 30) * (rowHeight + gapHeight);
+      const durationBlocks = (endMinutes - startMinutes) / 30;
+      const calculatedHeight = durationBlocks * rowHeight + (durationBlocks > 0 ? (durationBlocks - 1) * gapHeight : 0);
+
       return {
         ...app,
-        ...getAppointmentGridPosition(app, dayIndex),
+        calculatedTop,
+        calculatedHeight,
+        gridColumn: dayIndex + 1, // Still useful for filtering by day
       };
-    }).filter(Boolean) as (Appointment & { gridRowStart: number; gridRowEnd: number; gridColumn: number; })[];
+    }).filter(Boolean) as (Appointment & { calculatedTop: number; calculatedHeight: number; gridColumn: number; })[];
 
     const finalApps = positionedApps.map(app => ({ ...app, overlapOffset: 0 }));
 
     daysInGrid.forEach((_, dayIndex) => {
       const appsForThisDay = finalApps.filter(app => app.gridColumn === dayIndex + 1)
-                                      .sort((a, b) => a.gridRowStart - b.gridRowStart);
+                                      .sort((a, b) => a.calculatedTop - b.calculatedTop);
       
       for (let i = 0; i < appsForThisDay.length; i++) {
         for (let j = i + 1; j < appsForThisDay.length; j++) {
           const appA = appsForThisDay[i];
           const appB = appsForThisDay[j];
 
-          const overlaps = (appA.gridRowStart < appB.gridRowEnd && appB.gridRowStart < appA.gridRowEnd);
+          const overlaps = (appA.calculatedTop < (appB.calculatedTop + appB.calculatedHeight) && appB.calculatedTop < (appA.calculatedTop + appA.calculatedHeight));
 
           if (overlaps) {
             appB.overlapOffset = appA.overlapOffset + 1;
@@ -286,7 +284,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
       }
     });
     return finalApps;
-  }, [appointments, daysInGrid, getAppointmentGridPosition]);
+  }, [appointments, daysInGrid, getWorkHoursForDay]);
 
   const unscheduledDoTodayTasks = useMemo(() => {
     const scheduledTaskIds = new Set(
@@ -408,9 +406,9 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] lg:gap-6">
             <div className="flex-1 overflow-x-auto">
-              <div className="grid border rounded-lg min-w-max" style={{
+              <div className="grid border rounded-lg min-w-max relative" style={{ // Added relative positioning here
                 gridTemplateColumns: `repeat(${daysInGrid.length}, minmax(120px, 1fr))`,
-                gridTemplateRows: `auto repeat(${timeBlocks.length}, ${rowHeight}px)`,
+                gridTemplateRows: `${headerHeight}px repeat(${timeBlocks.length}, ${rowHeight}px)`, // Fixed header height
                 rowGap: `${gapHeight}px`,
               }}>
                 {/* Header Row: Days */}
@@ -418,7 +416,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
                   // Removed 'const workHoursForDay = getWorkHoursForDay(day);' as it was declared but never read.
                   // Removed 'isWorkDayEnabled' declaration here as it's not used
                   return (
-                    <div key={index} className="p-2 border-b text-center font-semibold text-sm flex flex-col items-center justify-center bg-muted/30">
+                    <div key={index} className="p-2 border-b text-center font-semibold text-sm flex flex-col items-center justify-center bg-muted/30 h-full"> {/* Added h-full */}
                       <span>{format(day, 'EEE')}</span>
                       <span className="text-xs text-muted-foreground">{format(day, 'MMM d')}</span>
                       {!isDemo && (
@@ -464,7 +462,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
                         )}
                         style={{
                           gridColumn: dayIndex + 1,
-                          gridRow: blockIndex + 2,
+                          gridRow: blockIndex + 2, // +2 because of header row (row 1)
                           height: `${rowHeight}px`,
                           zIndex: 1,
                           display: isWithinWorkHours ? 'block' : 'none',
@@ -519,19 +517,15 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
                       task={task}
                       onEdit={handleAppointmentClick}
                       onUnschedule={handleUnscheduleTask}
-                      gridRowStart={app.gridRowStart}
-                      gridRowEnd={app.gridRowEnd}
-                      overlapOffset={app.overlapOffset}
-                      rowHeight={rowHeight}
-                      gapHeight={gapHeight}
+                      top={app.calculatedTop}
+                      height={app.calculatedHeight}
+                      left={app.overlapOffset * 10}
+                      width={`calc(100% - ${app.overlapOffset * 10}px)`}
                       style={{
-                        gridColumn: app.gridColumn,
-                        gridRow: `${app.gridRowStart} / ${app.gridRowEnd}`,
-                        left: `${app.overlapOffset * 10}px`,
-                        width: `calc(100% - ${app.overlapOffset * 10}px)`,
-                        backgroundColor: app.color,
-                        zIndex: 10 + app.overlapOffset,
+                        gridColumn: app.gridColumn, // Keep gridColumn for positioning within the column
+                        position: 'absolute', // Ensure absolute positioning relative to the grid container
                         display: isWithinWorkHoursRange ? 'block' : 'none',
+                        zIndex: 10 + app.overlapOffset,
                       }}
                     />
                   );

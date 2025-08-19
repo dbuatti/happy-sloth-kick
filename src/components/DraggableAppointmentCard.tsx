@@ -10,11 +10,10 @@ interface DraggableAppointmentCardProps {
   task?: Task;
   onEdit: (appointment: Appointment) => void;
   onUnschedule: (appointmentId: string) => void;
-  gridRowStart: number;
-  gridRowEnd: number;
-  overlapOffset: number;
-  rowHeight: number;
-  gapHeight: number;
+  top: number;
+  height: number;
+  left: number;
+  width: string;
   style?: React.CSSProperties; // Make style prop optional
 }
 
