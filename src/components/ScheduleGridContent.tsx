@@ -112,7 +112,8 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
   const getWorkHoursForDay = useCallback((date: Date) => {
     const dayOfWeekString = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][date.getDay()];
     const workHour = allWorkHours.find(wh => wh.day_of_week === dayOfWeekString);
-    return workHour || null;
+    // Only return workHour if it's explicitly enabled for the day
+    return workHour && workHour.enabled ? workHour : null;
   }, [allWorkHours]);
 
   // Generate time blocks for the full 24 hours to simplify grid row calculations
@@ -147,8 +148,8 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
 
     const workHoursForAppDay = getWorkHoursForDay(appDate);
 
-    const currentMinHour = workHoursForAppDay?.enabled ? getHours(parse(workHoursForAppDay.start_time, 'HH:mm:ss', appDate)) : 0;
-    const currentMaxHour = workHoursForAppDay?.enabled ? getHours(parse(workHoursForAppDay.end_time, 'HH:mm:ss', appDate)) : 24;
+    const currentMinHour = workHoursForAppDay ? getHours(parse(workHoursForAppDay.start_time, 'HH:mm:ss', appDate)) : 0;
+    const currentMaxHour = workHoursForAppDay ? getHours(parse(workHoursForAppDay.end_time, 'HH:mm:ss', appDate)) : 24;
 
     const appStartHour = getHours(appStartTime);
     const appEndHour = getHours(appEndTime) + (getMinutes(appEndTime) > 0 ? 1 : 0); // Round up to next hour if minutes exist
@@ -458,18 +459,19 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
                     </div>
 
                     {daysInGrid.map((day, dayIndex) => {
-                      const workHoursForDay = getWorkHoursForDay(day);
-                      const isWorkDayEnabled = workHoursForDay?.enabled;
+                      const workHoursForDay = getWorkHoursForDay(day); // This now returns null if not enabled
+                      const isWorkDayEnabled = !!workHoursForDay; // Check if work hours are defined and enabled for the day
 
-                      const minHour = workHoursForDay?.enabled ? getHours(parse(workHoursForDay.start_time, 'HH:mm:ss', day)) : 0;
-                      const maxHour = workHoursForDay?.enabled ? getHours(parse(workHoursForDay.end_time, 'HH:mm:ss', day)) : 24;
+                      const minHour = workHoursForDay ? getHours(parse(workHoursForDay.start_time, 'HH:mm:ss', day)) : 0;
+                      const maxHour = workHoursForDay ? getHours(parse(workHoursForDay.end_time, 'HH:mm:ss', day)) : 24;
 
                       const blockStartWithDate = setHours(setMinutes(day, getMinutes(block.start)), getHours(block.start));
                       const blockEndWithDate = addMinutes(blockStartWithDate, 30);
 
-                      const isWithinWorkHours = isWorkDayEnabled && 
-                        isAfter(blockStartWithDate, setHours(setMinutes(day, 0), minHour - 1)) &&
-                        isBefore(blockEndWithDate, setHours(setMinutes(day, 0), maxHour + 1));
+                      // Check if the block falls within the defined work hours
+                      const isWithinDefinedWorkHours = isWorkDayEnabled && 
+                        !isBefore(blockStartWithDate, setHours(setMinutes(day, 0), minHour)) &&
+                        !isAfter(blockEndWithDate, setHours(setMinutes(day, 0), maxHour));
 
                       const isBlockOccupied = appointmentsWithPositions.some(app => {
                         if (!app.start_time || !app.end_time || !isSameDay(parseISO(app.date), day)) return false;
@@ -483,8 +485,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
                           key={`${format(day, 'yyyy-MM-dd')}-${format(block.start, 'HH:mm')}`}
                           className={cn(
                             "relative h-full w-full border-t border-l",
-                            isWorkDayEnabled ? "bg-background/50" : "bg-muted/20",
-                            isWithinWorkHours ? "hover:bg-primary/10" : "",
+                            isWithinDefinedWorkHours ? "bg-background/50 hover:bg-primary/10" : "bg-muted/20 hover:bg-muted/30", // Different background for off-hours
                             "border-gray-200/80 dark:border-gray-700/80"
                           )}
                           style={{
@@ -492,7 +493,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
                             gridRow: blockIndex + 2, // +2 because of header row (row 1)
                             height: `${rowHeight}px`,
                             zIndex: 1,
-                            display: isWithinWorkHours ? 'block' : 'none',
+                            // Always display, let CSS handle visibility/styling
                           }}
                         >
                           <div className="absolute top-1/2 w-full border-b border-dashed border-gray-200/50 dark:border-gray-700/50" />
@@ -527,10 +528,10 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
                   const task = app.task_id ? allTasks.find(t => t.id === app.task_id) : undefined;
                   const appDay = parseISO(app.date);
                   const workHoursForAppDay = getWorkHoursForDay(appDay);
-                  const isWorkDayEnabled = workHoursForAppDay?.enabled;
+                  const isWorkDayEnabled = !!workHoursForAppDay;
 
-                  const minHour = workHoursForAppDay?.enabled ? getHours(parse(workHoursForAppDay.start_time, 'HH:mm:ss', appDay)) : 0;
-                  const maxHour = workHoursForAppDay?.enabled ? getHours(parse(workHoursForAppDay.end_time, 'HH:mm:ss', appDay)) : 24;
+                  const minHour = workHoursForAppDay ? getHours(parse(workHoursForAppDay.start_time, 'HH:mm:ss', appDay)) : 0;
+                  const maxHour = workHoursForAppDay ? getHours(parse(workHoursForAppDay.end_time, 'HH:mm:ss', appDay)) : 24;
 
                   const appStartHour = getHours(parse(app.start_time, 'HH:mm:ss', appDay));
                   const appEndHour = getHours(parse(app.end_time, 'HH:mm:ss', appDay));
@@ -550,7 +551,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
                         gridColumn: app.gridColumn + 1, // Adjust gridColumn by +1 for the new time label column
                         gridRow: `${app.gridRowStart} / ${app.gridRowEnd}`,
                         zIndex: 10 + app.overlapOffset,
-                        display: isWithinWorkHoursRange ? 'block' : 'none',
+                        opacity: isWithinWorkHoursRange ? 1 : 0.6, // Reduce opacity for appointments outside work hours
                       }}
                     />
                   );
