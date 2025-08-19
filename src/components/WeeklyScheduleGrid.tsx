@@ -32,9 +32,6 @@ interface WeeklyScheduleGridProps {
   demoUserId?: string;
   onOpenTaskDetail: (task: Task) => void;
   onOpenTaskOverview: (task: Task) => void;
-  minScheduleHour: number;
-  maxScheduleHour: number;
-  setScheduleHours: (minHour: number, maxHour: number) => Promise<void>;
 }
 
 const rowHeight = 50;
@@ -46,13 +43,10 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
   demoUserId,
   onOpenTaskDetail,
   onOpenTaskOverview,
-  minScheduleHour,
-  maxScheduleHour,
-  setScheduleHours,
 }) => {
   const weekEnd = addDays(currentWeekStart, 6);
 
-  const { workHours: allWorkHoursRaw, loading: workHoursLoading } = useWorkHours({ userId: demoUserId });
+  const { workHours: allWorkHoursRaw, loading: workHoursLoading, saveWorkHours } = useWorkHours({ userId: demoUserId });
   const allWorkHours = Array.isArray(allWorkHoursRaw) ? allWorkHoursRaw : [];
 
   const { appointments, loading: appointmentsLoading, addAppointment, updateAppointment, deleteAppointment, clearDayAppointments, batchAddAppointments } = useAppointments({ startDate: currentWeekStart, endDate: weekEnd });
@@ -128,18 +122,25 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
   };
 
   const handleSaveAppointment = async (data: NewAppointmentData) => {
-    const appStartTime = parse(data.start_time, 'HH:mm:ss', parseISO(data.date));
-    const appEndTime = parse(data.end_time, 'HH:mm:ss', parseISO(data.date));
+    const appDate = parseISO(data.date);
+    const appStartTime = parse(data.start_time, 'HH:mm:ss', appDate);
+    const appEndTime = parse(data.end_time, 'HH:mm:ss', appDate);
+
+    const currentDayOfWeekString = allDaysOfWeek[appDate.getDay()].id;
+    const workHoursForAppDay = allWorkHours.find(wh => wh.day_of_week === currentDayOfWeekString);
+
+    const currentMinHour = workHoursForAppDay?.enabled ? getHours(parse(workHoursForAppDay.start_time, 'HH:mm:ss', appDate)) : 0;
+    const currentMaxHour = workHoursForAppDay?.enabled ? getHours(parse(workHoursForAppDay.end_time, 'HH:mm:ss', appDate)) : 24;
 
     const appStartHour = getHours(appStartTime);
     const appEndHour = getHours(appEndTime) + (getMinutes(appEndTime) > 0 ? 1 : 0);
 
-    const requiresExtension = appStartHour < minScheduleHour || appEndHour > maxScheduleHour;
+    const requiresExtension = appStartHour < currentMinHour || appEndHour > currentMaxHour;
 
     if (requiresExtension && !isDemo) {
       setNewHoursToExtend({
-        min: Math.min(minScheduleHour, appStartHour),
-        max: Math.max(maxScheduleHour, appEndHour),
+        min: Math.min(currentMinHour, appStartHour),
+        max: Math.max(currentMaxHour, appEndHour),
       });
       setPendingAppointmentData(data);
       setIsExtendHoursDialogOpen(true);
@@ -154,8 +155,18 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
   };
 
   const confirmExtendHours = async () => {
-    if (newHoursToExtend) {
-      await setScheduleHours(newHoursToExtend.min, newHoursToExtend.max);
+    if (newHoursToExtend && pendingAppointmentData) {
+      const appDate = parseISO(pendingAppointmentData.date);
+      const currentDayOfWeekString = allDaysOfWeek[appDate.getDay()].id;
+      const workHoursForAppDay = allWorkHours.find(wh => wh.day_of_week === currentDayOfWeekString);
+
+      const updatedWorkHours = {
+        ...(workHoursForAppDay || { day_of_week: currentDayOfWeekString, enabled: true }), // Create new if not exists
+        start_time: format(setHours(appDate, newHoursToExtend.min), 'HH:mm:ss'),
+        end_time: format(setHours(appDate, newHoursToExtend.max), 'HH:mm:ss'),
+        enabled: true, // Ensure work hours are enabled if extended
+      };
+      await saveWorkHours(updatedWorkHours);
       setIsExtendHoursDialogOpen(false);
       setNewHoursToExtend(null);
       if (pendingAppointmentData) {
@@ -229,8 +240,9 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
 
   const timeBlocks = useMemo(() => {
     const blocks = [];
-    let currentTime = setHours(setMinutes(currentWeekStart, 0), minScheduleHour);
-    const endTime = setHours(setMinutes(currentWeekStart, 0), maxScheduleHour);
+    // This timeBlocks array defines the vertical axis labels, so it should span the full 24 hours
+    let currentTime = setHours(setMinutes(currentWeekStart, 0), 0); // Start from 00:00
+    const endTime = setHours(setMinutes(currentWeekStart, 0), 24); // End at 24:00
 
     while (isBefore(currentTime, endTime)) {
       const blockStart = currentTime;
@@ -242,7 +254,7 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
       currentTime = blockEnd;
     }
     return blocks;
-  }, [currentWeekStart, minScheduleHour, maxScheduleHour]);
+  }, [currentWeekStart]);
 
   const daysInWeek = useMemo(() => {
     const days = [];
@@ -261,22 +273,20 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
     const appStartTime = parse(app.start_time, 'HH:mm:ss', parseISO(app.date));
     const appEndTime = parse(app.end_time, 'HH:mm:ss', parseISO(app.date));
 
-    const dayOfWeek = parseISO(app.date).getDay(); // 0 for Sunday, 1 for Monday
-    const workHoursForDay = allWorkHours.find(wh => wh.day_of_week === allDaysOfWeek[dayOfWeek].id);
-
-    if (!workHoursForDay || !workHoursForDay.enabled || isNaN(appStartTime.getTime()) || isNaN(appEndTime.getTime())) {
+    if (isNaN(appStartTime.getTime()) || isNaN(appEndTime.getTime())) {
       return { gridRowStart: 1, gridRowEnd: 1, gridColumn: dayIndex + 2, overlapOffset: 0 };
     }
 
-    const startMinutes = (getHours(appStartTime) * 60) + getMinutes(appStartTime);
-    const endMinutes = (getHours(appEndTime) * 60) + getMinutes(appEndTime);
+    // Calculate grid row based on 00:00 as the start of the grid
+    const startMinutesFromMidnight = (getHours(appStartTime) * 60) + getMinutes(appStartTime);
+    const endMinutesFromMidnight = (getHours(appEndTime) * 60) + getMinutes(appEndTime);
 
-    const gridRowStart = Math.floor((startMinutes - (minScheduleHour * 60)) / 30) + 1;
-    const gridRowEnd = Math.ceil((endMinutes - (minScheduleHour * 60)) / 30) + 1;
+    const gridRowStart = Math.floor(startMinutesFromMidnight / 30) + 1;
+    const gridRowEnd = Math.ceil(endMinutesFromMidnight / 30) + 1;
     const gridColumn = dayIndex + 2; // +2 because column 1 is for time labels
 
     return { gridRowStart, gridRowEnd, gridColumn };
-  }, [allWorkHours, minScheduleHour]);
+  }, []);
 
   const appointmentsWithPositions = useMemo(() => {
     const positionedApps = appointments.map(app => {
@@ -468,13 +478,23 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
                   const workHoursForDay = allWorkHours.find(wh => wh.day_of_week === allDaysOfWeek[dayOfWeek].id);
                   const isWorkDayEnabled = workHoursForDay?.enabled;
 
+                  const minHour = workHoursForDay?.enabled ? getHours(parse(workHoursForDay.start_time, 'HH:mm:ss', day)) : 0;
+                  const maxHour = workHoursForDay?.enabled ? getHours(parse(workHoursForDay.end_time, 'HH:mm:ss', day)) : 24;
+
                   return timeBlocks.map((block, blockIndex) => {
                     const blockStartWithDate = setHours(setMinutes(day, getMinutes(block.start)), getHours(block.start));
                     const blockEndWithDate = addMinutes(blockStartWithDate, 30);
 
-                    const isWithinWorkHours = isWorkDayEnabled && workHoursForDay?.start_time && workHoursForDay?.end_time &&
-                      isAfter(blockStartWithDate, parse(workHoursForDay.start_time, 'HH:mm:ss', day)) &&
-                      isBefore(blockEndWithDate, parse(workHoursForDay.end_time, 'HH:mm:ss', day));
+                    const isWithinWorkHours = isWorkDayEnabled && 
+                      isAfter(blockStartWithDate, setHours(setMinutes(day, 0), minHour - 1)) && // -1 to include the start hour block
+                      isBefore(blockEndWithDate, setHours(setMinutes(day, 0), maxHour + 1)); // +1 to include the end hour block
+
+                    const isBlockOccupied = appointmentsWithPositions.some(app => {
+                      if (!app.start_time || !app.end_time || !isSameDay(parseISO(app.date), day)) return false;
+                      const appStart = parse(app.start_time, 'HH:mm:ss', day);
+                      const appEnd = parse(app.end_time, 'HH:mm:ss', day);
+                      return blockStartWithDate.getTime() >= appStart.getTime() && blockStartWithDate.getTime() < appEnd.getTime();
+                    });
 
                     return (
                       <div
@@ -490,10 +510,11 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
                           gridRow: blockIndex + 2,
                           height: `${rowHeight}px`,
                           zIndex: 1,
+                          display: isWithinWorkHours ? 'block' : 'none', // Hide blocks outside work hours
                         }}
                       >
                         <div className="absolute top-1/2 w-full border-b border-dashed border-gray-200/50 dark:border-gray-700/50" />
-                        {!isDemo && (
+                        {!isBlockOccupied && !isDemo && (
                           <Popover>
                             <PopoverTrigger asChild>
                               <div className="absolute inset-0 cursor-pointer rounded-lg hover:bg-muted/50 transition-colors" />
@@ -517,6 +538,20 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
                 {/* Appointments */}
                 {appointmentsWithPositions.map((app) => {
                   const task = app.task_id ? allTasks.find(t => t.id === app.task_id) : undefined;
+                  const appDay = parseISO(app.date);
+                  const dayOfWeek = appDay.getDay();
+                  const workHoursForAppDay = allWorkHours.find(wh => wh.day_of_week === allDaysOfWeek[dayOfWeek].id);
+                  const isWorkDayEnabled = workHoursForAppDay?.enabled;
+
+                  const minHour = workHoursForAppDay?.enabled ? getHours(parse(workHoursForAppDay.start_time, 'HH:mm:ss', appDay)) : 0;
+                  const maxHour = workHoursForAppDay?.enabled ? getHours(parse(workHoursForAppDay.end_time, 'HH:mm:ss', appDay)) : 24;
+
+                  const appStartHour = getHours(parse(app.start_time, 'HH:mm:ss', appDay));
+                  const appEndHour = getHours(parse(app.end_time, 'HH:mm:ss', appDay));
+
+                  const isWithinWorkHoursRange = isWorkDayEnabled && 
+                    appStartHour >= minHour && appEndHour <= maxHour;
+
                   return (
                     <DraggableAppointmentCard
                       key={app.id}
@@ -536,6 +571,7 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
                         width: `calc(100% - ${app.overlapOffset * 10}px)`,
                         backgroundColor: app.color,
                         zIndex: 10 + app.overlapOffset,
+                        display: isWithinWorkHoursRange ? 'block' : 'none', // Hide appointments outside work hours
                       }}
                     />
                   );
@@ -686,9 +722,9 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
       <AlertDialog open={isExtendHoursDialogOpen} onOpenChange={setIsExtendHoursDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Extend Viewable Hours?</AlertDialogTitle>
+            <AlertDialogTitle>Extend Work Hours?</AlertDialogTitle>
             <AlertDialogDescription>
-              This appointment falls outside your current viewable hours ({format(setHours(currentWeekStart, minScheduleHour), 'h a')} - {format(setHours(currentWeekStart, maxScheduleHour), 'h a')}). Would you like to extend the schedule view to {newHoursToExtend ? `${format(setHours(currentWeekStart, newHoursToExtend.min), 'h a')} - ${format(setHours(currentWeekStart, newHoursToExtend.max), 'h a')}` : 'fit it'}?
+              This appointment falls outside your current work hours for {format(selectedDateForNew, 'EEEE, MMM d')}. Would you like to extend your work hours to {newHoursToExtend ? `${format(setHours(selectedDateForNew, newHoursToExtend.min), 'h a')} - ${format(setHours(selectedDateForNew, newHoursToExtend.max), 'h a')}` : 'fit it'}?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -697,7 +733,7 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
               setNewHoursToExtend(null);
               setPendingAppointmentData(null);
             }}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmExtendHours}>Extend View</AlertDialogAction>
+            <AlertDialogAction onClick={confirmExtendHours}>Extend Hours</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
