@@ -61,8 +61,8 @@ const gapHeight = 4;
 const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
   isDemo = false,
   // Removed demoUserId from destructuring
-  onOpenTaskDetail, // Kept for passing to TimeBlockActionMenu
-  onOpenTaskOverview, // Kept for passing to handleAppointmentClick
+  onOpenTaskDetail,
+  onOpenTaskOverview,
   currentViewDate,
   daysInGrid,
   timeBlocks,
