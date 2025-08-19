@@ -12,7 +12,7 @@ interface DraggableAppointmentCardProps {
   onUnschedule: (appointmentId: string) => void;
   top: number;
   height: number;
-  left: number;
+  marginLeft: number; // Changed from 'left' to 'marginLeft'
   width: string;
   style?: React.CSSProperties; // Make style prop optional
 }

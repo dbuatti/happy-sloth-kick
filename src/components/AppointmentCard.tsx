@@ -15,7 +15,7 @@ interface AppointmentCardProps {
   onUnschedule: (appointmentId: string) => void;
   top: number;
   height: number;
-  left: number;
+  marginLeft: number; // Changed from 'left' to 'marginLeft'
   width: string;
 }
 
@@ -26,16 +26,16 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
   onUnschedule,
   top,
   height,
-  left,
+  marginLeft, // Destructure new prop
   width,
 }) => {
   const style = {
     top: `${top}px`,
     height: `${height}px`,
     backgroundColor: appointment.color,
-    left: `${left}px`,
     width: width,
     zIndex: 10,
+    marginLeft: `${marginLeft}px`, // Apply marginLeft here
   };
 
   const startTime = appointment.start_time ? parseISO(`2000-01-01T${appointment.start_time}`) : null;

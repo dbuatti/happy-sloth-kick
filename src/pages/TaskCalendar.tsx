@@ -105,7 +105,7 @@ const TaskCalendar: React.FC<TaskCalendarProps> = ({ isDemo = false, demoUserId 
                 mode="single"
                 selected={selectedDate}
                 onSelect={setSelectedDate}
-                className="rounded-md"
+                className="rounded-md w-full"
                 modifiers={{
                   hasTasks: daysWithTasks,
                 }}
