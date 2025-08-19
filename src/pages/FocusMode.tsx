@@ -21,7 +21,7 @@ const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
     updateSectionIncludeInFocusMode,
     handleAddTask,
     currentDate,
-  } = useTasks({ viewMode: 'focus', userId: demoUserId });
+  } = useTasks({ viewMode: 'focus', userId: demoUserId, currentDate: new Date() }); // Pass new Date()
 
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
@@ -62,6 +62,7 @@ const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
           updateSection={updateSection}
           deleteSection={deleteSection}
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+          allTasks={tasks}
         />
       )}
     </div>

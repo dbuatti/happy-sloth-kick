@@ -31,7 +31,7 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
     setFocusTask,
     toggleDoToday,
     doTodayOffIds,
-  } = useTasks({ viewMode: 'archive', userId: demoUserId });
+  } = useTasks({ viewMode: 'archive', userId: demoUserId, currentDate: new Date() }); // Pass new Date()
 
   const { appointments: allAppointments } = useAllAppointments();
 
@@ -150,6 +150,7 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
           updateSection={updateSection}
           deleteSection={deleteSection}
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+          allTasks={allTasks}
         />
       )}
     </div>

@@ -89,12 +89,12 @@ const cleanTaskForDb = (task: Partial<Task> | NewTaskData): Omit<Partial<Task>, 
 };
 
 interface UseTasksProps {
-  currentDate?: Date; // Make optional, as it might be managed internally for 'daily' view
+  currentDate: Date; // Now required and expected to be stable from parent
   viewMode?: 'daily' | 'archive' | 'focus';
   userId?: string;
 }
 
-export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', userId: propUserId }: UseTasksProps = {}) => {
+export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }: UseTasksProps) => {
   const { user, loading: authLoading } = useAuth();
   const userId = propUserId || user?.id;
   const { settings: userSettings, updateSettings } = useSettings();
@@ -114,9 +114,8 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [sectionFilter, setSectionFilter] = useState('all');
 
-  // Use propCurrentDate directly, or initialize internalCurrentDate to local new Date()
-  const [internalCurrentDate, setInternalCurrentDate] = useState(new Date());
-  const effectiveCurrentDate = propCurrentDate || internalCurrentDate;
+  // currentDate is now directly used from props, no internal state needed
+  const effectiveCurrentDate = currentDate;
 
   const categoriesMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -544,9 +543,8 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
             return null; // Return null here
         }
         
-        // tasksForOperation is not needed here, as we are directly updating the state
-        // and the real-time listener will handle the full update.
-        // For now, just return the new ID.
+        // Push the new task with its color to the local state for immediate UI update
+        setTasks(prev => [...prev, { ...dbTask, category_color: virtualTask.category_color }]);
         showSuccess('Task updated!');
         
         if (dbTask.remind_at && dbTask.status === 'to-do') {
@@ -1288,8 +1286,8 @@ export const useTasks = ({ currentDate: propCurrentDate, viewMode = 'daily', use
     filteredTasks: finalFilteredTasks,
     nextAvailableTask,
     loading,
-    currentDate: effectiveCurrentDate,
-    setCurrentDate: setInternalCurrentDate,
+    currentDate: effectiveCurrentDate, // Expose effectiveCurrentDate
+    setCurrentDate: null, // No longer expose internal setter
     userId,
     handleAddTask,
     updateTask,

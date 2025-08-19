@@ -28,6 +28,9 @@ const DailyTasksV3: React.FC<DailyTasksV3Props> = ({ isDemo = false, demoUserId 
   const { user } = useAuth();
   const { playSound } = useSound();
 
+  // Manage currentDate state locally in DailyTasksV3
+  const [currentDate, setCurrentDate] = useState(new Date());
+
   const {
     tasks,
     processedTasks,
@@ -58,14 +61,14 @@ const DailyTasksV3: React.FC<DailyTasksV3Props> = ({ isDemo = false, demoUserId 
     setPriorityFilter,
     sectionFilter,
     setSectionFilter,
-    currentDate,
-    setCurrentDate,
+    // currentDate is now managed here, so remove from useTasks destructuring
+    // setCurrentDate is also managed here
     setFocusTask,
     doTodayOffIds,
     toggleDoToday,
     toggleAllDoToday,
     dailyProgress,
-  } = useTasks({ viewMode: 'daily', userId: demoUserId, currentDate: new Date() }); // Pass new Date() as propCurrentDate
+  } = useTasks({ viewMode: 'daily', userId: demoUserId, currentDate: currentDate }); // Pass the stable currentDate
 
   const { appointments: allAppointments } = useAllAppointments();
 
@@ -241,7 +244,7 @@ const DailyTasksV3: React.FC<DailyTasksV3Props> = ({ isDemo = false, demoUserId 
                   setIsAddTaskOpen={() => {}}
                   onOpenOverview={handleOpenOverview}
                   currentDate={currentDate}
-                  setCurrentDate={setCurrentDate}
+                  setCurrentDate={setCurrentDate} // Pass setCurrentDate to TaskList
                   expandedSections={expandedSections}
                   toggleSection={toggleSection}
                   toggleAllSections={toggleAllSections}
@@ -300,6 +303,7 @@ const DailyTasksV3: React.FC<DailyTasksV3Props> = ({ isDemo = false, demoUserId 
           updateSection={updateSection}
           deleteSection={deleteSection}
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+          allTasks={tasks} {/* Added allTasks prop */}
         />
       )}
 

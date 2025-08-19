@@ -78,7 +78,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
     deleteSection,
     updateSectionIncludeInFocusMode,
     loading: tasksLoading,
-  } = useTasks({ viewMode: 'daily', userId: demoUserId });
+  } = useTasks({ viewMode: 'daily', userId: demoUserId, currentDate: new Date() }); // Pass new Date()
 
   const { playSound } = useSound();
   const [isAddCardOpen, setIsAddCardOpen] = useState(false);
@@ -363,6 +363,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
             updateSection={updateSection}
             deleteSection={deleteSection}
             updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+            allTasks={allTasks}
           />
         )}
         <AnimatePresence>

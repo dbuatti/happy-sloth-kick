@@ -18,8 +18,8 @@ import DraggableAppointmentCard from '@/components/DraggableAppointmentCard';
 import DraggableScheduleTaskItem from '@/components/DraggableScheduleTaskItem';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import TimeBlockActionMenu from './TimeBlockActionMenu';
@@ -578,6 +578,7 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
           updateSection={updateSection}
           deleteSection={deleteSection}
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+          allTasks={allTasks} {/* Added allTasks prop */}
         />
       )}
       <Dialog open={isParsingDialogOpen} onOpenChange={setIsParsingDialogOpen}>

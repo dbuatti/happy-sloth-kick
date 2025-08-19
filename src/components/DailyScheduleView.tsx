@@ -55,7 +55,6 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
     deleteTask: deleteTaskFromHook,
     createSection,
     updateSection,
-    deleteSection,
     updateSectionIncludeInFocusMode
   } = useTasks({ currentDate, userId: demoUserId });
   const { settings } = useSettings();
@@ -532,6 +531,7 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
           updateSection={updateSection}
           deleteSection={deleteSection}
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+          allTasks={allTasks} {/* Added allTasks prop */}
         />
       )}
       <Dialog open={isParsingDialogOpen} onOpenChange={setIsParsingDialogOpen}>
@@ -586,7 +586,7 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure you want to clear the day?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action will remove all appointments for {format(currentDate, 'MMMM d, yyyy')}. This cannot be undone immediately, but you can undo it from the toast notification.
+              This action will remove all appointments for {currentDate ? format(currentDate, 'MMMM d, yyyy') : 'the selected day'}. This cannot be undone immediately, but you can undo it from the toast notification.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

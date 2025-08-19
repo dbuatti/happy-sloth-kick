@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DailyScheduleView from '@/components/DailyScheduleView';
 import WeeklyScheduleGrid from '@/components/WeeklyScheduleGrid';
-import { Task } from '@/hooks/useTasks';
+import { Task, useTasks } from '@/hooks/useTasks'; // Import useTasks
 import { startOfWeek, addWeeks } from 'date-fns';
 import TaskOverviewDialog from '@/components/TaskOverviewDialog'; // Import TaskOverviewDialog
 import TaskDetailDialog from '@/components/TaskDetailDialog'; // Import TaskDetailDialog
@@ -20,16 +20,23 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 })); // Monday as start of week
 
-  // These state variables are used by being passed as props to child components.
-  // Adding a dummy read to satisfy the TypeScript compiler.
+  // Fetch allTasks here to pass to TaskDetailDialog
+  const {
+    tasks: allTasks,
+    sections,
+    allCategories,
+    updateTask,
+    deleteTask,
+    createSection,
+    updateSection,
+    deleteSection,
+    updateSectionIncludeInFocusMode,
+  } = useTasks({ currentDate: new Date(), userId: demoUserId }); // Pass a dummy date for this global fetch
+
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
-  void setTaskToOverview; // Explicitly mark as used for TS6133
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
-  void setIsTaskOverviewOpen; // Explicitly mark as used for TS6133
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
-  void setTaskToEdit; // Explicitly mark as used for TS6133
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
-  void setIsTaskDetailOpen; // Explicitly mark as used for TS6133
 
   const handleOpenTaskOverview = (task: Task) => {
     setTaskToOverview(task);
@@ -124,11 +131,11 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
           isOpen={isTaskOverviewOpen}
           onClose={() => setIsTaskOverviewOpen(false)}
           onEditClick={handleOpenTaskDetail}
-          onUpdate={() => Promise.resolve(null)} // Dummy onUpdate
-          onDelete={() => {}} // Dummy onDelete
-          sections={[]} // Dummy sections
-          allCategories={[]} // Dummy allCategories
-          allTasks={[]} // Dummy allTasks
+          onUpdate={updateTask}
+          onDelete={deleteTask}
+          sections={sections}
+          allCategories={allCategories}
+          allTasks={allTasks}
         />
       )}
       {taskToEdit && (
@@ -136,14 +143,15 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
           task={taskToEdit}
           isOpen={isTaskDetailOpen}
           onClose={() => setIsTaskDetailOpen(false)}
-          onUpdate={() => Promise.resolve(null)} // Dummy onUpdate
-          onDelete={() => {}} // Dummy onDelete
-          sections={[]} // Dummy sections
-          allCategories={[]} // Dummy allCategories
-          createSection={() => Promise.resolve()} // Dummy createSection
-          updateSection={() => Promise.resolve()} // Dummy updateSection
-          deleteSection={() => Promise.resolve()} // Dummy deleteSection
-          updateSectionIncludeInFocusMode={() => Promise.resolve()} // Dummy updateSectionIncludeInFocusMode
+          onUpdate={updateTask}
+          onDelete={deleteTask}
+          sections={sections}
+          allCategories={allCategories}
+          createSection={createSection}
+          updateSection={updateSection}
+          deleteSection={deleteSection}
+          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+          allTasks={allTasks} {/* Added allTasks prop */}
         />
       )}
     </div>

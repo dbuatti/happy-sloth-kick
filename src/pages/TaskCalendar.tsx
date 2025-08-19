@@ -17,6 +17,8 @@ interface TaskCalendarProps {
 }
 
 const TaskCalendar: React.FC<TaskCalendarProps> = ({ isDemo = false, demoUserId }) => {
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+
   const {
     tasks: allTasks,
     filteredTasks,
@@ -32,7 +34,7 @@ const TaskCalendar: React.FC<TaskCalendarProps> = ({ isDemo = false, demoUserId 
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode,
-  } = useTasks({ userId: demoUserId });
+  } = useTasks({ userId: demoUserId, currentDate: selectedDate || new Date() }); // Pass selectedDate
 
   const { appointments: allAppointments } = useAllAppointments();
 
@@ -48,7 +50,6 @@ const TaskCalendar: React.FC<TaskCalendarProps> = ({ isDemo = false, demoUserId 
     return map;
   }, [allAppointments]);
 
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
@@ -187,6 +188,7 @@ const TaskCalendar: React.FC<TaskCalendarProps> = ({ isDemo = false, demoUserId 
           updateSection={updateSection}
           deleteSection={deleteSection}
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+          allTasks={allTasks}
         />
       )}
     </div>

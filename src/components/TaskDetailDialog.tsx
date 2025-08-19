@@ -35,6 +35,7 @@ interface TaskDetailDialogProps {
   updateSection: (sectionId: string, newName: string) => Promise<void>;
   deleteSection: (sectionId: string) => Promise<void>;
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
+  allTasks: Task[]; // Add allTasks prop
 }
 
 const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
@@ -49,13 +50,15 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   updateSection,
   deleteSection,
   updateSectionIncludeInFocusMode,
+  allTasks, // Destructure allTasks
 }) => {
   // Removed 'user' and 'userId' from useAuth destructuring as they are not directly used here.
   useAuth(); 
   const isMobile = useIsMobile();
 
   // Only use useTasks for actions that require it, not for fetching global state
-  const { tasks: allTasks, updateTask: updateSubtask } = useTasks(); 
+  // Removed internal useTasks() call, now using allTasks prop for subtasks
+  const { updateTask: updateSubtask } = useTasks({ currentDate: new Date() }); // Keep useTasks for updateSubtask, provide a dummy date
   const { playSound } = useSound();
   const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
