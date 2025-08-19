@@ -80,6 +80,7 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
       />
       <ScheduleGridContent
         isDemo={isDemo}
+        // Removed demoUserId as it's not directly used in ScheduleGridContent
         onOpenTaskDetail={onOpenTaskDetail}
         onOpenTaskOverview={onOpenTaskOverview}
         currentViewDate={currentDate}
