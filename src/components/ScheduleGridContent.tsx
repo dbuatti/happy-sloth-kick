@@ -472,7 +472,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
                         >
                           <div className="absolute top-1/2 w-full border-b border-dashed border-gray-200/50 dark:border-gray-700/50" />
                           {getMinutes(block.start) === 0 && (
-                            <span className="absolute inset-0 flex items-center justify-center text-6xl font-bubbly text-muted-foreground/30 pointer-events-none" style={{ zIndex: 0 }}>
+                            <span className="absolute inset-0 flex items-center justify-center text-6xl font-bubbly text-muted-foreground/70 pointer-events-none" style={{ zIndex: 0 }}>
                               {format(block.start, 'h')}
                             </span>
                           )}
@@ -526,7 +526,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
                       width={`calc(100% - ${app.overlapOffset * 10}px)`}
                       style={{
                         gridColumn: app.gridColumn + 1, // Adjust gridColumn by +1 for the new time label column
-                        position: 'absolute', // Ensure absolute positioning relative to the grid container
+                        gridRow: '1 / -1', // Span all rows
                         display: isWithinWorkHoursRange ? 'block' : 'none',
                         zIndex: 10 + app.overlapOffset,
                       }}

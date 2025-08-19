@@ -12,9 +12,9 @@ interface DraggableAppointmentCardProps {
   onUnschedule: (appointmentId: string) => void;
   top: number;
   height: number;
-  marginLeft: number; // Changed from 'left' to 'marginLeft'
+  marginLeft: number;
   width: string;
-  style?: React.CSSProperties; // Make style prop optional
+  style?: React.CSSProperties;
 }
 
 const DraggableAppointmentCard: React.FC<DraggableAppointmentCardProps> = (props) => {
@@ -39,8 +39,21 @@ const DraggableAppointmentCard: React.FC<DraggableAppointmentCardProps> = (props
   };
 
   return (
-    <div ref={setNodeRef} style={draggableStyle} {...attributes} {...listeners} className="cursor-grab touch-none select-none">
-      <AppointmentCard {...props} />
+    <div 
+      ref={setNodeRef} 
+      style={draggableStyle} 
+      {...attributes} 
+      {...listeners} 
+      className="relative cursor-grab touch-none select-none" // Make this relative for absolute child
+    >
+      <AppointmentCard 
+        {...props} 
+        top={0} // Position relative to this parent
+        height="100%" // Take full height of this parent
+        left={props.marginLeft} // Use marginLeft as left for absolute positioning
+        width={props.width} // Use width as is
+        marginLeft={0} // Reset marginLeft on the child as it's now handled by 'left'
+      />
     </div>
   );
 };
