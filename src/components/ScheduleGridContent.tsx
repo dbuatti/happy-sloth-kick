@@ -66,7 +66,7 @@ const gapHeight = 4;
 
 const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
   isDemo = false,
-  demoUserId,
+  // Removed demoUserId as it's not directly used here
   onOpenTaskDetail,
   onOpenTaskOverview,
   currentViewDate,
@@ -103,9 +103,9 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
   const [isParsing, setIsParsing] = useState(false);
   const [parsedDataForForm, setParsedDataForForm] = useState<Partial<NewAppointmentData> | null>(null);
 
-  const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
+  const [taskToOverview, ] = useState<Task | null>(null); // Removed setTaskToOverview
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
-  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+  const [taskToEdit, ] = useState<Task | null>(null); // Removed setTaskToEdit
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
 
   const [activeDragItem, setActiveDragItem] = useState<any>(null);

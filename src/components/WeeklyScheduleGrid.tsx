@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { format, addDays, startOfWeek, setHours, setMinutes, addMinutes } from 'date-fns';
+import { addDays, startOfWeek, setHours, setMinutes, addMinutes } from 'date-fns';
 import { CardContent } from "@/components/ui/card";
 import { useWorkHours } from '@/hooks/useWorkHours';
 import { useAppointments } from '@/hooks/useAppointments';
@@ -71,46 +71,44 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
   }, [currentWeekStart]);
 
   return (
-    <>
-      <CardContent className="pt-0">
-        <WeeklyDateNavigator
-          currentWeekStart={currentWeekStart}
-          onPreviousWeek={() => { /* Handled by parent */ }}
-          onNextWeek={() => { /* Handled by parent */ }}
-          onGoToCurrentWeek={() => { /* Handled by parent */ }}
-          setCurrentWeekStart={() => { /* Handled by parent */ }}
-        />
-        <ScheduleGridContent
-          isDemo={isDemo}
-          demoUserId={demoUserId}
-          onOpenTaskDetail={onOpenTaskDetail}
-          onOpenTaskOverview={onOpenTaskOverview}
-          currentViewDate={currentWeekStart}
-          daysInGrid={daysInGrid}
-          timeBlocks={timeBlocks}
-          allWorkHours={allWorkHours}
-          saveWorkHours={saveWorkHours}
-          appointments={appointments}
-          addAppointment={addAppointment}
-          updateAppointment={updateAppointment}
-          deleteAppointment={deleteAppointment}
-          clearDayAppointments={clearDayAppointments}
-          batchAddAppointments={batchAddAppointments}
-          allTasks={allTasks}
-          allDayTasks={allDayTasks}
-          allCategories={allCategories}
-          sections={sections}
-          updateTask={updateTask}
-          deleteTaskFromHook={deleteTaskFromHook}
-          createSection={createSection}
-          updateSection={updateSection}
-          deleteSection={deleteSection}
-          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-          settings={settings}
-          isLoading={workHoursLoading || appointmentsLoading}
-        />
-      </CardContent>
-    </>
+    <CardContent className="pt-0">
+      <WeeklyDateNavigator
+        currentWeekStart={currentWeekStart}
+        onPreviousWeek={() => { /* Handled by parent */ }}
+        onNextWeek={() => { /* Handled by parent */ }}
+        onGoToCurrentWeek={() => { /* Handled by parent */ }}
+        setCurrentWeekStart={() => { /* Handled by parent */ }}
+      />
+      <ScheduleGridContent
+        isDemo={isDemo}
+        demoUserId={demoUserId}
+        onOpenTaskDetail={onOpenTaskDetail}
+        onOpenTaskOverview={onOpenTaskOverview}
+        currentViewDate={currentWeekStart}
+        daysInGrid={daysInGrid}
+        timeBlocks={timeBlocks}
+        allWorkHours={allWorkHours}
+        saveWorkHours={saveWorkHours}
+        appointments={appointments}
+        addAppointment={addAppointment}
+        updateAppointment={updateAppointment}
+        deleteAppointment={deleteAppointment}
+        clearDayAppointments={clearDayAppointments}
+        batchAddAppointments={batchAddAppointments}
+        allTasks={allTasks}
+        allDayTasks={allDayTasks}
+        allCategories={allCategories}
+        sections={sections}
+        updateTask={updateTask}
+        deleteTaskFromHook={deleteTaskFromHook}
+        createSection={createSection}
+        updateSection={updateSection}
+        deleteSection={deleteSection}
+        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+        settings={settings}
+        isLoading={workHoursLoading || appointmentsLoading}
+      />
+    </CardContent>
   );
 };
 
