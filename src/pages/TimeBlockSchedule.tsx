@@ -91,7 +91,7 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
 
   return (
     <div className="flex-1 flex flex-col">
-      <main className="flex-grow p-4">
+      <main className="flex-grow p-4 bg-red-500">
         <Card className="w-full max-w-6xl mx-auto shadow-lg rounded-xl p-4">
           <CardHeader className="pb-2">
             <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
