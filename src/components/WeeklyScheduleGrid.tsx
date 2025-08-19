@@ -3,7 +3,7 @@ import { addDays, startOfWeek, setHours, setMinutes, addMinutes } from 'date-fns
 import { CardContent } from "@/components/ui/card";
 import { useWorkHours } from '@/hooks/useWorkHours';
 import { useAppointments } from '@/hooks/useAppointments';
-import { useTasks } from '@/hooks/useTasks';
+import { useTasks } from '@/hooks/useTasks'; // Corrected import syntax
 import { useSettings } from '@/context/SettingsContext';
 import WeeklyDateNavigator from './WeeklyDateNavigator';
 import ScheduleGridContent from './ScheduleGridContent'; // Import the new component
@@ -34,7 +34,6 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
     filteredTasks: allDayTasks,
     allCategories,
     sections,
-    // Removed updateTask, deleteTaskFromHook, createSection, updateSection, deleteSection, updateSectionIncludeInFocusMode
    } = useTasks({ currentDate: currentWeekStart, userId: demoUserId });
   const { settings } = useSettings();
 
@@ -76,8 +75,6 @@ const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
       />
       <ScheduleGridContent
         isDemo={isDemo}
-        demoUserId={demoUserId}
-        onOpenTaskDetail={onOpenTaskDetail}
         onOpenTaskOverview={onOpenTaskOverview}
         currentViewDate={currentWeekStart}
         daysInGrid={daysInGrid}

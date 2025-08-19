@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, useSensor, useSensors, closestCorners } from '@dnd-kit/core';
 import { format, addMinutes, parse, isBefore, getMinutes, getHours, parseISO, isValid, setHours, setMinutes, isSameDay, isAfter } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { Sparkles, X, PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { Sparkles, X, PanelRightClose, PanelRightOpen } from 'lucide-react'; // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
@@ -22,21 +22,18 @@ import AppointmentForm from '@/components/AppointmentForm';
 import DraggableAppointmentCard from '@/components/DraggableAppointmentCard';
 import DraggableScheduleTaskItem from '@/components/DraggableScheduleTaskItem';
 import TimeBlockActionMenu from '@/components/TimeBlockActionMenu';
-// Removed TaskOverviewDialog and TaskDetailDialog imports as they are no longer managed here
 
 interface ScheduleGridContentProps {
   isDemo?: boolean;
-  demoUserId?: string; // Re-added
-  onOpenTaskDetail: (task: Task) => void; // Re-added
   onOpenTaskOverview: (task: Task) => void;
 
   // Data from parent view (Daily/Weekly)
-  currentViewDate: Date; // The date representing the current view (e.g., selected day or start of week)
-  daysInGrid: Date[]; // Array of dates for the columns (e.g., [currentDate] for daily, 7 days for weekly)
-  timeBlocks: { start: Date; end: Date }[]; // Array of time slots for rows (e.g., 24 hours for weekly, work hours for daily)
+  currentViewDate: Date;
+  daysInGrid: Date[];
+  timeBlocks: { start: Date; end: Date }[];
   
   // Data from hooks (passed down)
-  allWorkHours: WorkHour[]; // Array of all work hours (for weekly view) or single WorkHour (for daily view)
+  allWorkHours: WorkHour[];
   saveWorkHours: (hoursToSave: WorkHour | WorkHour[]) => Promise<boolean>;
   appointments: Appointment[];
   addAppointment: (newAppointment: NewAppointmentData) => Promise<Appointment | null>;
@@ -44,15 +41,14 @@ interface ScheduleGridContentProps {
   deleteAppointment: (id: string) => Promise<boolean>;
   clearDayAppointments: (dateToClear: Date) => Promise<Appointment[]>;
   batchAddAppointments: (appointmentsToRestore: Appointment[]) => Promise<boolean>;
-  allTasks: Task[]; // All tasks for subtask lookup
-  allDayTasks: Task[]; // Tasks relevant to the current day/week for scheduling
+  allTasks: Task[];
+  allDayTasks: Task[];
   allCategories: Category[];
   sections: TaskSection[];
-  // Removed updateTask, deleteTaskFromHook, createSection, updateSection, deleteSection, updateSectionIncludeInFocusMode
-  settings: any; // Use 'any' for settings to avoid deep type dependency from useSettings
+  settings: any;
 
   // Loading states
-  isLoading: boolean; // Overall loading for the grid content
+  isLoading: boolean;
 }
 
 const rowHeight = 50;
@@ -60,8 +56,6 @@ const gapHeight = 4;
 
 const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
   isDemo = false,
-  demoUserId, // Re-added
-  onOpenTaskDetail, // Re-added
   onOpenTaskOverview,
   currentViewDate,
   daysInGrid,
@@ -78,14 +72,13 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
   allDayTasks,
   allCategories,
   sections,
-  // Removed updateTask, deleteTaskFromHook, createSection, updateSection, deleteSection, updateSectionIncludeInFocusMode from destructuring
   settings,
   isLoading,
 }) => {
   const [isAppointmentFormOpen, setIsAppointmentFormOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const [selectedTimeSlotForNew, setSelectedTimeSlotForNew] = useState<{ start: Date; end: Date } | null>(null);
-  const [selectedDateForNew, setSelectedDateForNew] = useState<Date>(currentViewDate); // For new appointments
+  const [selectedDateForNew, setSelectedDateForNew] = useState<Date>(currentViewDate);
 
   const [isParsingDialogOpen, setIsParsingDialogOpen] = useState(false);
   const [textToParse, setTextToParse] = useState('');
@@ -207,12 +200,6 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
     }
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleEditTaskFromOverview = (task: Task) => {
-    // This function is now a passthrough to the parent's onOpenTaskDetail
-    onOpenTaskDetail(task);
-  };
-
   const handleDeleteAppointment = async (id: string) => {
     return await deleteAppointment(id);
   };
@@ -266,7 +253,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
     const gridColumn = dayIndex !== null ? dayIndex + 1 : 1;
 
     return { gridRowStart, gridRowEnd, gridColumn };
-  }, [currentViewDate, getWorkHoursForDay]); // Added currentViewDate to dependencies
+  }, [currentViewDate, getWorkHoursForDay]);
 
   const appointmentsWithPositions = useMemo(() => {
     const positionedApps = appointments.map(app => {

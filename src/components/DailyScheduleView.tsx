@@ -34,7 +34,6 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
     filteredTasks: allDayTasks, 
     allCategories, 
     sections, 
-    // Removed unused destructured variables from useTasks
   } = useTasks({ currentDate, userId: demoUserId });
   const { settings } = useSettings();
 
@@ -75,8 +74,6 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
       />
       <ScheduleGridContent
         isDemo={isDemo}
-        demoUserId={demoUserId}
-        onOpenTaskDetail={onOpenTaskDetail}
         onOpenTaskOverview={onOpenTaskOverview}
         currentViewDate={currentDate}
         daysInGrid={daysInGrid}
