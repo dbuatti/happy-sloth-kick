@@ -466,7 +466,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] lg:gap-6">
             <div className="flex-1 overflow-x-auto">
               <div className="grid border rounded-lg min-w-max relative" style={{
-                gridTemplateColumns: `minmax(90px, auto) repeat(${daysInGrid.length}, minmax(120px, 1fr))`, // Increased minmax for time labels
+                gridTemplateColumns: `minmax(100px, auto) repeat(${daysInGrid.length}, minmax(120px, 1fr))`, // Increased minmax for time labels
                 gridTemplateRows: `${headerHeight}px repeat(${visibleTimeBlocks.length}, ${rowHeight}px)`,
                 // Removed rowGap here, will manage spacing with padding/margins inside cells
               }}>
@@ -509,7 +509,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
                           key={`${format(day, 'yyyy-MM-dd')}-${format(block.start, 'HH:mm')}`}
                           className={cn(
                             "relative h-full w-full",
-                            "border-b", // Horizontal line for each row
+                            "border-b border-gray-200 dark:border-gray-700", // Solid horizontal line for each row
                             dayIndex < daysInGrid.length - 1 && "border-r", // Vertical line for each column
                             isOutsideWorkHours ? "bg-muted/20" : "bg-background" // Background for work/non-work hours
                           )}

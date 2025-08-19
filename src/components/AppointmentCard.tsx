@@ -25,9 +25,16 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
   trackIndex, // Destructure new prop
   totalTracks, // Destructure new prop
 }) => {
-  const horizontalGap = 4; // Gap between overlapping appointments
-  const calculatedWidth = totalTracks > 0 ? `calc((100% / ${totalTracks}) - ${horizontalGap * (totalTracks - 1) / totalTracks}px)` : '100%';
-  const calculatedLeft = totalTracks > 0 ? `calc(${trackIndex} * (100% / ${totalTracks}) + ${trackIndex * horizontalGap}px)` : '0px';
+  const horizontalGap = 4; // Gap between overlapping appointments in pixels
+
+  // Calculate width and left position for overlapping appointments
+  const calculatedWidth = totalTracks > 0 
+    ? `calc((100% - ${horizontalGap * (totalTracks - 1)}px) / ${totalTracks})` 
+    : '100%';
+  
+  const calculatedLeft = totalTracks > 0 
+    ? `calc(${trackIndex} * (100% / ${totalTracks}) + ${trackIndex * horizontalGap}px)` 
+    : '0px';
 
   const style = {
     backgroundColor: appointment.color,
