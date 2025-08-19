@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"; // Added Popover imports
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -415,7 +415,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
               }}>
                 {/* Header Row: Days */}
                 {daysInGrid.map((day, index) => {
-                  const workHoursForDay = getWorkHoursForDay(day);
+                  // Removed 'const workHoursForDay = getWorkHoursForDay(day);' as it was declared but never read.
                   // Removed 'isWorkDayEnabled' declaration here as it's not used
                   return (
                     <div key={index} className="p-2 border-b text-center font-semibold text-sm flex flex-col items-center justify-center bg-muted/30">
