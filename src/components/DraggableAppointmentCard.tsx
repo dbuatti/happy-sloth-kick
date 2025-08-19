@@ -1,12 +1,9 @@
-"use client";
-
 import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { Appointment } from '@/hooks/useAppointments';
 import { Task } from '@/hooks/useTasks';
 import AppointmentCard from './AppointmentCard';
 import { differenceInMinutes, parseISO, isValid } from 'date-fns';
-import { CSSProperties } from 'react';
 
 interface DraggableAppointmentCardProps {
   appointment: Appointment;
@@ -14,7 +11,7 @@ interface DraggableAppointmentCardProps {
   onEdit: (appointment: Appointment) => void;
   onUnschedule: (appointmentId: string) => void;
   overlapOffset: number; // New prop
-  style?: CSSProperties; // Make style prop optional and use CSSProperties
+  style?: React.CSSProperties; // Make style prop optional
 }
 
 const DraggableAppointmentCard: React.FC<DraggableAppointmentCardProps> = (props) => {
@@ -33,7 +30,7 @@ const DraggableAppointmentCard: React.FC<DraggableAppointmentCardProps> = (props
     },
   });
 
-  const draggableStyle: CSSProperties = {
+  const draggableStyle: React.CSSProperties = {
     opacity: isDragging ? 0.5 : 1,
     ...props.style, // Merge passed style with draggable style
     position: 'relative', // Make this container relative for absolute children

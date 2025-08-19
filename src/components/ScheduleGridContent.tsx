@@ -5,10 +5,10 @@ import { format, addMinutes, parse, isBefore, getMinutes, getHours, parseISO, is
 import { Button } from '@/components/ui/button';
 import { Sparkles, X, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { Label } from '@/components/ui/label';
-import { Textarea } from "@/components/ui/textarea";
+import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -30,7 +30,7 @@ interface ScheduleGridContentProps {
   // Data from parent view (Daily/Weekly)
   currentViewDate: Date;
   daysInGrid: Date[];
-  timeBlocks: { start: Date; end: Date }[];
+  timeBlocks: { start: Date; end: Date }[]; // This prop is still used for its type, but the value is not directly read
   
   // Data from hooks (passed down)
   allWorkHours: WorkHour[];
@@ -60,7 +60,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
   onOpenTaskOverview,
   currentViewDate,
   daysInGrid,
-  timeBlocks,
+  timeBlocks: _initialTimeBlocks, // Renamed to _initialTimeBlocks and ignored
   allWorkHours,
   saveWorkHours,
   appointments,
@@ -118,8 +118,8 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
   // Generate time blocks for the full 24 hours to simplify grid row calculations
   const timeBlocks = useMemo(() => {
     const blocks = [];
-    let currentTime = setHours(setMinutes(currentViewDate, 0), 0);
-    const endTime = setHours(setMinutes(currentViewDate, 0), 24);
+    let currentTime = setHours(setMinutes(currentViewDate, 0), 0); // Start from 00:00
+    const endTime = setHours(setMinutes(currentViewDate, 0), 24); // End at 24:00 (next day 00:00)
 
     while (currentTime.getTime() < endTime.getTime()) {
       const blockStart = currentTime;
@@ -250,6 +250,103 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
     setDayToClear(null);
   };
 
+  const appointmentsWithPositions = useMemo(() => {
+    const positionedApps = appointments.map(app => {
+      const dayIndex = daysInGrid.findIndex(day => isSameDay(day, parseISO(app.date)));
+      if (dayIndex === -1) return null;
+
+      const appDate = parseISO(app.date);
+      const appStartTime = parse(app.start_time, 'HH:mm:ss', appDate);
+      const appEndTime = parse(app.end_time, 'HH:mm:ss', appDate);
+
+      if (!isValid(appStartTime) || !isValid(appEndTime)) {
+        return null;
+      }
+
+      // Find the starting grid row based on timeBlocks
+      const startBlockIndex = timeBlocks.findIndex(block =>
+          getHours(block.start) === getHours(appStartTime) && getMinutes(block.start) === getMinutes(appStartTime)
+      );
+
+      if (startBlockIndex === -1) {
+          // If the appointment start time doesn't exactly match a time block,
+          // find the closest preceding block or handle as needed.
+          // For simplicity, let's just return null for now if it doesn't align perfectly.
+          return null;
+      }
+
+      const gridRowStart = startBlockIndex + 2; // +2 for header row and 1-based indexing
+      const durationInMinutes = differenceInMinutes(appEndTime, appStartTime);
+      const durationInBlocks = durationInMinutes / 30;
+      const gridRowEnd = gridRowStart + durationInBlocks;
+
+      return {
+        ...app,
+        gridColumn: dayIndex + 1, // +1 for time label column
+        gridRowStart,
+        gridRowEnd,
+      };
+    }).filter(Boolean) as (Appointment & { gridColumn: number; gridRowStart: number; gridRowEnd: number; })[];
+
+    const finalApps = positionedApps.map(app => ({ ...app, overlapOffset: 0 }));
+
+    daysInGrid.forEach((_, dayIndex) => {
+      const appsForThisDay = finalApps.filter(app => app.gridColumn === dayIndex + 1)
+                                      .sort((a, b) => a.gridRowStart - b.gridRowStart);
+      
+      for (let i = 0; i < appsForThisDay.length; i++) {
+        for (let j = i + 1; j < appsForThisDay.length; j++) {
+          const appA = appsForThisDay[i];
+          const appB = appsForThisDay[j];
+
+          // Check for overlap in grid rows
+          const overlaps = (appA.gridRowStart < appB.gridRowEnd && appB.gridRowStart < appA.gridRowEnd);
+
+          if (overlaps) {
+            appB.overlapOffset = appA.overlapOffset + 1;
+          }
+        }
+      }
+    });
+    return finalApps;
+  }, [appointments, daysInGrid, timeBlocks, getWorkHoursForDay]);
+
+  const unscheduledDoTodayTasks = useMemo(() => {
+    const scheduledTaskIds = new Set(
+      appointments.map(app => app.task_id).filter(Boolean)
+    );
+    
+    let tasksToDisplay = allDayTasks.filter(task => !scheduledTaskIds.has(task.id) && task.status === 'to-do');
+
+    if (settings?.schedule_show_focus_tasks_only) {
+      const focusModeSectionIds = new Set(sections.filter(s => s.include_in_focus_mode).map(s => s.id));
+      tasksToDisplay = tasksToDisplay.filter(task => {
+        return task.section_id === null || focusModeSectionIds.has(task.section_id);
+      });
+    }
+
+    return tasksToDisplay;
+  }, [appointments, allDayTasks, settings?.schedule_show_focus_tasks_only, sections]);
+
+  const handleScheduleTask = async (taskId: string, blockStart: Date, targetDate: Date) => {
+    const task = allDayTasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const category = allCategories.find(c => c.id === task.category);
+
+    const newAppointment: NewAppointmentData = {
+      title: task.description || '',
+      description: task.notes,
+      date: format(targetDate, 'yyyy-MM-dd'),
+      start_time: format(blockStart, 'HH:mm:ss'),
+      end_time: format(addMinutes(blockStart, 30), 'HH:mm:ss'),
+      color: category?.color || '#3b82f6',
+      task_id: task.id,
+    };
+
+    await addAppointment(newAppointment);
+  };
+
   const handleParseText = async () => {
     if (!textToParse.trim()) {
       showError('Please paste some text to parse.');
@@ -332,68 +429,165 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
           </div>
         ) : (
-          <div className="grid border rounded-lg min-w-max relative" style={{ // Added relative positioning here
-            gridTemplateColumns: `minmax(60px, auto) repeat(${daysInGrid.length}, minmax(120px, 1fr))`, // Added first column for time labels
-            gridTemplateRows: `80px repeat(${timeBlocks.length}, 50px)`, // Fixed header height
-            rowGap: '4px',
-          }}>
-            {/* Top-left empty corner */}
-            <div className="p-2 border-b border-r bg-muted/30 h-full" style={{ gridColumn: 1, gridRow: 1 }}></div>
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] lg:gap-6">
+            <div className="flex-1 overflow-x-auto">
+              <div className="grid border rounded-lg min-w-max relative" style={{ // Added relative positioning here
+                gridTemplateColumns: `minmax(60px, auto) repeat(${daysInGrid.length}, minmax(120px, 1fr))`, // Added first column for time labels
+                gridTemplateRows: `${headerHeight}px repeat(${timeBlocks.length}, ${rowHeight}px)`, // Fixed header height
+                rowGap: `${gapHeight}px`,
+              }}>
+                {/* Top-left empty corner */}
+                <div className="p-2 border-b border-r bg-muted/30 h-full" style={{ gridColumn: 1, gridRow: 1 }}></div>
 
-            {/* Header Row: Days */}
-            {daysInGrid.map((day, index) => (
-              <div key={index} className="p-2 border-b text-center font-semibold text-sm flex flex-col items-center justify-center bg-muted/30 h-full">
-                <span>{format(day, 'EEE')}</span>
-                <span className="text-xs text-muted-foreground">{format(day, 'MMM d')}</span>
+                {/* Header Row: Days */}
+                {daysInGrid.map((day, index) => {
+                  return (
+                    <div key={index} className="p-2 border-b text-center font-semibold text-sm flex flex-col items-center justify-center bg-muted/30 h-full">
+                      <span>{format(day, 'EEE')}</span>
+                      <span className="text-xs text-muted-foreground">{format(day, 'MMM d')}</span>
+                    </div>
+                  );
+                })}
+
+                {/* Grid Cells for each day and time block */}
+                {timeBlocks.map((block, blockIndex) => (
+                  <React.Fragment key={`time-row-${blockIndex}`}>
+                    {/* Time Label Column */}
+                    <div className="p-2 border-b border-r text-right text-xs font-medium text-muted-foreground flex items-center justify-end bg-muted/30" style={{ gridColumn: 1, gridRow: blockIndex + 2, height: `${rowHeight}px` }}>
+                      {getMinutes(block.start) === 0 && format(block.start, 'h a')}
+                    </div>
+
+                    {daysInGrid.map((day, dayIndex) => {
+                      const workHoursForDay = getWorkHoursForDay(day);
+                      const isWorkDayEnabled = workHoursForDay?.enabled;
+
+                      const minHour = workHoursForDay?.enabled ? getHours(parse(workHoursForDay.start_time, 'HH:mm:ss', day)) : 0;
+                      const maxHour = workHoursForDay?.enabled ? getHours(parse(workHoursForDay.end_time, 'HH:mm:ss', day)) : 24;
+
+                      const blockStartWithDate = setHours(setMinutes(day, getMinutes(block.start)), getHours(block.start));
+                      const blockEndWithDate = addMinutes(blockStartWithDate, 30);
+
+                      const isWithinWorkHours = isWorkDayEnabled && 
+                        isAfter(blockStartWithDate, setHours(setMinutes(day, 0), minHour - 1)) &&
+                        isBefore(blockEndWithDate, setHours(setMinutes(day, 0), maxHour + 1));
+
+                      const isBlockOccupied = appointmentsWithPositions.some(app => {
+                        if (!app.start_time || !app.end_time || !isSameDay(parseISO(app.date), day)) return false;
+                        const appStart = parse(app.start_time, 'HH:mm:ss', day);
+                        const appEnd = parse(app.end_time, 'HH:mm:ss', day);
+                        return blockStartWithDate.getTime() >= appStart.getTime() && blockStartWithDate.getTime() < appEnd.getTime();
+                      });
+
+                      return (
+                        <div
+                          key={`${format(day, 'yyyy-MM-dd')}-${format(block.start, 'HH:mm')}`}
+                          className={cn(
+                            "relative h-full w-full border-t border-l",
+                            isWorkDayEnabled ? "bg-background/50" : "bg-muted/20",
+                            isWithinWorkHours ? "hover:bg-primary/10" : "",
+                            "border-gray-200/80 dark:border-gray-700/80"
+                          )}
+                          style={{
+                            gridColumn: dayIndex + 2, // +2 because of time label column (column 1)
+                            gridRow: blockIndex + 2, // +2 because of header row (row 1)
+                            height: `${rowHeight}px`,
+                            zIndex: 1,
+                            display: isWithinWorkHours ? 'block' : 'none',
+                          }}
+                        >
+                          <div className="absolute top-1/2 w-full border-b border-dashed border-gray-200/50 dark:border-gray-700/50" />
+                          {getMinutes(block.start) === 0 && (
+                            <span className="absolute inset-0 flex items-center justify-center text-6xl font-bubbly text-muted-foreground/30 pointer-events-none" style={{ zIndex: 0 }}>
+                              {format(block.start, 'h')}
+                            </span>
+                          )}
+                          {!isBlockOccupied && !isDemo && (
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <div className="absolute inset-0 cursor-pointer rounded-lg hover:bg-muted/50 transition-colors" />
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-1">
+                                <TimeBlockActionMenu
+                                  block={{ start: blockStartWithDate, end: blockEndWithDate }}
+                                  onAddAppointment={(b) => handleOpenAppointmentForm(b, day)}
+                                  onScheduleTask={(taskId, bStart) => handleScheduleTask(taskId, bStart, day)}
+                                  unscheduledTasks={unscheduledDoTodayTasks}
+                                  sections={sections}
+                                />
+                              </PopoverContent>
+                            </Popover>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </React.Fragment>
+                ))}
+
+                {appointmentsWithPositions.map((app) => {
+                  const task = app.task_id ? allTasks.find(t => t.id === app.task_id) : undefined;
+                  const appDay = parseISO(app.date);
+                  const workHoursForAppDay = getWorkHoursForDay(appDay);
+                  const isWorkDayEnabled = workHoursForAppDay?.enabled;
+
+                  const minHour = workHoursForAppDay?.enabled ? getHours(parse(workHoursForAppDay.start_time, 'HH:mm:ss', appDay)) : 0;
+                  const maxHour = workHoursForAppDay?.enabled ? getHours(parse(workHoursForAppDay.end_time, 'HH:mm:ss', appDay)) : 24;
+
+                  const appStartHour = getHours(parse(app.start_time, 'HH:mm:ss', appDay));
+                  const appEndHour = getHours(parse(app.end_time, 'HH:mm:ss', appDay));
+
+                  const isWithinWorkHoursRange = isWorkDayEnabled && 
+                    appStartHour >= minHour && appEndHour <= maxHour;
+
+                  return (
+                    <DraggableAppointmentCard
+                      key={app.id}
+                      appointment={app}
+                      task={task}
+                      onEdit={handleAppointmentClick}
+                      onUnschedule={handleUnscheduleTask}
+                      overlapOffset={app.overlapOffset}
+                      style={{
+                        gridColumn: app.gridColumn + 1, // Adjust gridColumn by +1 for the new time label column
+                        gridRow: `${app.gridRowStart} / ${app.gridRowEnd}`,
+                        zIndex: 10 + app.overlapOffset,
+                        display: isWithinWorkHoursRange ? 'block' : 'none',
+                      }}
+                    />
+                  );
+                })}
               </div>
-            ))}
-
-            {/* Grid Cells for each day and time block */}
-            {timeBlocks.map((block, blockIndex) => (
-              <React.Fragment key={`time-row-${blockIndex}`}>
-                {/* Time Label Column */}
-                <div className="p-2 border-b border-r text-right text-xs font-medium text-muted-foreground flex items-center justify-end bg-muted/30" style={{ gridColumn: 1, gridRow: blockIndex + 2, height: '50px' }}>
-                  {getMinutes(block.start) === 0 && format(block.start, 'h a')}
-                </div>
-
-                {daysInGrid.map((day, dayIndex) => (
-                  <div
-                    key={`${format(day, 'yyyy-MM-dd')}-${format(block.start, 'HH:mm')}`}
-                    className="relative h-full w-full border-t border-l border-gray-200/80 dark:border-gray-700/80"
-                    style={{
-                      gridColumn: dayIndex + 2, // +2 because of time label column (column 1)
-                      gridRow: blockIndex + 2, // +2 because of header row (row 1)
-                    }}
-                  >
-                    <div className="absolute top-1/2 w-full border-b border-dashed border-gray-200/50 dark:border-gray-700/50" />
-                    {getMinutes(block.start) === 0 && (
-                      <span className="absolute inset-0 flex items-center justify-center text-6xl font-bubbly text-muted-foreground/30 pointer-events-none" style={{ zIndex: 0 }}>
-                        {format(block.start, 'h')}
-                      </span>
+            </div>
+            <div className="relative mt-6 lg:mt-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsTaskPanelCollapsed(!isTaskPanelCollapsed)}
+                className={cn(
+                  "absolute -left-4 top-1/2 -translate-y-1/2 z-20 bg-background hover:bg-muted rounded-full h-8 w-8 border hidden lg:flex",
+                  isTaskPanelCollapsed && "lg:hidden"
+                )}
+                aria-label={isTaskPanelCollapsed ? "Show task panel" : "Hide task panel"}
+              >
+                {isTaskPanelCollapsed ? <PanelRightOpen className="h-5 w-5" /> : <PanelRightClose className="h-5 w-5" />}
+              </Button>
+              <div className={cn(
+                "lg:w-[300px] lg:flex-shrink-0",
+                isTaskPanelCollapsed && "hidden"
+              )}>
+                <div className="lg:sticky lg:top-4 space-y-4 bg-muted rounded-lg p-4">
+                  <h3 className="text-lg font-semibold">Unscheduled Tasks</h3>
+                  <div className="space-y-2 max-h-[calc(100vh-20rem)] overflow-y-auto p-1">
+                    {unscheduledDoTodayTasks.length > 0 ? (
+                      unscheduledDoTodayTasks.map(task => (
+                        <DraggableScheduleTaskItem key={task.id} task={task} sections={sections} />
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-4">No tasks to schedule.</p>
                     )}
                   </div>
-                ))}
-              </React.Fragment>
-            ))}
-
-            {appointmentsWithPositions.map((app) => {
-              const task = app.task_id ? allTasks.find(t => t.id === app.task_id) : undefined;
-              return (
-                <DraggableAppointmentCard
-                  key={app.id}
-                  appointment={app}
-                  task={task}
-                  onEdit={handleAppointmentClick}
-                  onUnschedule={handleUnscheduleTask}
-                  overlapOffset={app.overlapOffset}
-                  style={{
-                    gridColumn: app.gridColumn + 1, // Adjust gridColumn by +1 for the new time label column
-                    gridRow: `${app.gridRowStart} / ${app.gridRowEnd}`,
-                    zIndex: 10 + app.overlapOffset,
-                  }}
-                />
-              );
-            })}
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </>
