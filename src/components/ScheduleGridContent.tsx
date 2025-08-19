@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, useSensor, useSensors, closestCorners } from '@dnd-kit/core';
 import { format, addMinutes, parse, isBefore, getMinutes, getHours, parseISO, isValid, setHours, setMinutes, isSameDay, isAfter } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { Sparkles, X, PanelRightClose, PanelRightOpen } from 'lucide-react'; // eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { Sparkles, X, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";

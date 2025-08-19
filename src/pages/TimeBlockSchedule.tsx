@@ -5,10 +5,10 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DailyScheduleView from '@/components/DailyScheduleView';
 import WeeklyScheduleGrid from '@/components/WeeklyScheduleGrid';
-import { Task, useTasks } from '@/hooks/useTasks'; // Import useTasks
+import { Task, useTasks } from '@/hooks/useTasks';
 import { startOfWeek, addWeeks } from 'date-fns';
-import TaskOverviewDialog from '@/components/TaskOverviewDialog'; // Import TaskOverviewDialog
-import TaskDetailDialog from '@/components/TaskDetailDialog'; // Import TaskDetailDialog
+import TaskOverviewDialog from '@/components/TaskOverviewDialog';
+import TaskDetailDialog from '@/components/TaskDetailDialog';
 import { useSettings } from '@/context/SettingsContext';
 
 interface TimeBlockScheduleProps {
@@ -110,7 +110,6 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
                 setCurrentDate={setCurrentDate}
                 isDemo={isDemo}
                 demoUserId={demoUserId}
-                onOpenTaskDetail={handleOpenTaskDetail}
                 onOpenTaskOverview={handleOpenTaskOverview}
               />
             </TabsContent>
@@ -119,7 +118,6 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
                 currentWeekStart={currentWeekStart}
                 isDemo={isDemo}
                 demoUserId={demoUserId}
-                onOpenTaskDetail={handleOpenTaskDetail}
                 onOpenTaskOverview={handleOpenTaskOverview}
               />
             </TabsContent>

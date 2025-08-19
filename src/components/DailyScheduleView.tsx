@@ -13,7 +13,7 @@ interface DailyScheduleViewProps {
   setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
   isDemo?: boolean;
   demoUserId?: string;
-  onOpenTaskDetail: (task: Task) => void;
+  // Removed onOpenTaskDetail as it's not directly used here or passed down
   onOpenTaskOverview: (task: Task) => void;
 }
 
@@ -22,7 +22,7 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
   setCurrentDate,
   isDemo = false,
   demoUserId,
-  onOpenTaskDetail,
+  // Removed onOpenTaskDetail from destructuring
   onOpenTaskOverview,
 }) => {
   const { workHours, loading: workHoursLoading, saveWorkHours } = useWorkHours({ date: currentDate, userId: demoUserId });
