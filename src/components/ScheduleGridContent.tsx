@@ -2,15 +2,15 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, useSensor, useSensors, closestCorners } from '@dnd-kit/core';
 import { format, addMinutes, parse, isBefore, getMinutes, getHours, parseISO, isValid, setHours, setMinutes, isSameDay, isAfter, differenceInMinutes } from 'date-fns';
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 import { Sparkles, X, PanelRightClose, PanelRightOpen } from 'lucide-react';
-import { Label } from "@/components/ui/label";
+import { Label } from '@/components/ui/label';
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from 'sonner';
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils';
 
 import { WorkHour } from '@/hooks/useWorkHours';
 import { Appointment, NewAppointmentData, UpdateAppointmentData } from '@/hooks/useAppointments';
@@ -118,8 +118,8 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
   // Generate time blocks for the full 24 hours to simplify grid row calculations
   const timeBlocks = useMemo(() => {
     const blocks = [];
-    let currentTime = setHours(setMinutes(currentViewDate, 0), 0); // Start from 00:00
-    const endTime = setHours(setMinutes(currentViewDate, 0), 24); // End at 24:00 (next day 00:00)
+    let currentTime = setHours(setMinutes(currentViewDate, 0), 0);
+    const endTime = setHours(setMinutes(currentViewDate, 0), 24);
 
     while (currentTime.getTime() < endTime.getTime()) {
       const blockStart = currentTime;
@@ -131,16 +131,6 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
       currentTime = blockEnd;
     }
     return blocks;
-  }, [currentViewDate]);
-
-  const daysInGrid = useMemo(() => {
-    const days = [];
-    let currentDay = startOfWeek(currentViewDate, { weekStartsOn: 1 });
-    for (let i = 0; i < 7; i++) {
-      days.push(currentDay);
-      currentDay = addDays(currentDay, 1);
-    }
-    return days;
   }, [currentViewDate]);
 
   const handleOpenAppointmentForm = (block: { start: Date; end: Date }, date: Date) => {
@@ -323,57 +313,90 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
   };
 
   return (
-    <>
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-4">
-        {/* This space is for DateNavigator in DailyView or WeeklyDateNavigator in WeeklyView */}
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => handleClearDayClick(currentViewDate)} disabled={appointments.length === 0 || isDemo}>
-            <X className="mr-2 h-4 w-4" /> Clear Day
-          </Button>
-          <Button variant="outline" onClick={() => setIsParsingDialogOpen(true)} disabled={isDemo}>
-            <Sparkles className="mr-2 h-4 w-4" /> Parse from Text
-          </Button>
-        </div>
-      </div>
-      <div className="grid border rounded-lg min-w-max relative" style={{ // Added relative positioning here
-        gridTemplateColumns: `minmax(60px, auto) repeat(${daysInGrid.length}, minmax(120px, 1fr))`, // Added first column for time labels
-        gridTemplateRows: `80px repeat(${timeBlocks.length}, 50px)`, // Fixed header height
-        rowGap: '4px',
-      }}>
-        {/* Top-left empty corner */}
-        <div className="p-2 border-b border-r bg-muted/30 h-full" style={{ gridColumn: 1, gridRow: 1 }}></div>
-
-        {/* Header Row: Days */}
-        {daysInGrid.map((day, index) => (
-          <div key={index} className="p-2 border-b text-center font-semibold text-sm flex flex-col items-center justify-center bg-muted/30 h-full">
-            <span>{format(day, 'EEE')}</span>
-            <span className="text-xs text-muted-foreground">{format(day, 'MMM d')}</span>
+    <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-4">
+          {/* This space is for DateNavigator in DailyView or WeeklyDateNavigator in WeeklyView */}
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => handleClearDayClick(currentViewDate)} disabled={appointments.length === 0 || isDemo}>
+              <X className="mr-2 h-4 w-4" /> Clear Day
+            </Button>
+            <Button variant="outline" onClick={() => setIsParsingDialogOpen(true)} disabled={isDemo}>
+              <Sparkles className="mr-2 h-4 w-4" /> Parse from Text
+            </Button>
           </div>
-        ))}
+        </div>
 
-        {/* Grid Cells for each day and time block */}
-        {timeBlocks.map((block, blockIndex) => (
-          <React.Fragment key={`time-row-${blockIndex}`}>
-            {/* Time Label Column */}
-            <div className="p-2 border-b border-r text-right text-xs font-medium text-muted-foreground flex items-center justify-end bg-muted/30" style={{ gridColumn: 1, gridRow: blockIndex + 2, height: '50px' }}>
-              {getMinutes(block.start) === 0 && format(block.start, 'h a')}
-            </div>
+        {isLoading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </div>
+        ) : (
+          <div className="grid border rounded-lg min-w-max relative" style={{ // Added relative positioning here
+            gridTemplateColumns: `minmax(60px, auto) repeat(${daysInGrid.length}, minmax(120px, 1fr))`, // Added first column for time labels
+            gridTemplateRows: `80px repeat(${timeBlocks.length}, 50px)`, // Fixed header height
+            rowGap: '4px',
+          }}>
+            {/* Top-left empty corner */}
+            <div className="p-2 border-b border-r bg-muted/30 h-full" style={{ gridColumn: 1, gridRow: 1 }}></div>
 
-            {daysInGrid.map((day, dayIndex) => (
-              <div
-                key={`${format(day, 'yyyy-MM-dd')}-${format(block.start, 'HH:mm')}`}
-                className="relative h-full w-full border-t border-l border-gray-200/80 dark:border-gray-700/80"
-                style={{
-                  gridColumn: dayIndex + 2, // +2 because of time label column (column 1)
-                  gridRow: blockIndex + 2, // +2 because of header row (row 1)
-                }}
-              >
-                <div className="absolute top-1/2 w-full border-b border-dashed border-gray-200/50 dark:border-gray-700/50" />
+            {/* Header Row: Days */}
+            {daysInGrid.map((day, index) => (
+              <div key={index} className="p-2 border-b text-center font-semibold text-sm flex flex-col items-center justify-center bg-muted/30 h-full">
+                <span>{format(day, 'EEE')}</span>
+                <span className="text-xs text-muted-foreground">{format(day, 'MMM d')}</span>
               </div>
             ))}
-          </React.Fragment>
-        ))}
-      </div>
+
+            {/* Grid Cells for each day and time block */}
+            {timeBlocks.map((block, blockIndex) => (
+              <React.Fragment key={`time-row-${blockIndex}`}>
+                {/* Time Label Column */}
+                <div className="p-2 border-b border-r text-right text-xs font-medium text-muted-foreground flex items-center justify-end bg-muted/30" style={{ gridColumn: 1, gridRow: blockIndex + 2, height: '50px' }}>
+                  {getMinutes(block.start) === 0 && format(block.start, 'h a')}
+                </div>
+
+                {daysInGrid.map((day, dayIndex) => (
+                  <div
+                    key={`${format(day, 'yyyy-MM-dd')}-${format(block.start, 'HH:mm')}`}
+                    className="relative h-full w-full border-t border-l border-gray-200/80 dark:border-gray-700/80"
+                    style={{
+                      gridColumn: dayIndex + 2, // +2 because of time label column (column 1)
+                      gridRow: blockIndex + 2, // +2 because of header row (row 1)
+                    }}
+                  >
+                    <div className="absolute top-1/2 w-full border-b border-dashed border-gray-200/50 dark:border-gray-700/50" />
+                    {getMinutes(block.start) === 0 && (
+                      <span className="absolute inset-0 flex items-center justify-center text-6xl font-bubbly text-muted-foreground/30 pointer-events-none" style={{ zIndex: 0 }}>
+                        {format(block.start, 'h')}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </React.Fragment>
+            ))}
+
+            {appointmentsWithPositions.map((app) => {
+              const task = app.task_id ? allTasks.find(t => t.id === app.task_id) : undefined;
+              return (
+                <DraggableAppointmentCard
+                  key={app.id}
+                  appointment={app}
+                  task={task}
+                  onEdit={handleAppointmentClick}
+                  onUnschedule={handleUnscheduleTask}
+                  overlapOffset={app.overlapOffset}
+                  style={{
+                    gridColumn: app.gridColumn + 1, // Adjust gridColumn by +1 for the new time label column
+                    gridRow: `${app.gridRowStart} / ${app.gridRowEnd}`,
+                    zIndex: 10 + app.overlapOffset,
+                  }}
+                />
+              );
+            })}
+          </div>
+        )}
+      </>
       <AppointmentForm
         isOpen={isAppointmentFormOpen}
         onClose={() => {
@@ -417,6 +440,59 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {createPortal(
+        <DragOverlay dropAnimation={null}>
+          {activeDragItem?.type === 'task' && (
+            <DraggableScheduleTaskItem task={activeDragItem.task} sections={sections} />
+          )}
+          {activeDragItem?.type === 'appointment' && (() => {
+            const startTime = activeDragItem.appointment.start_time ? parseISO(`2000-01-01T${activeDragItem.appointment.start_time}`) : null;
+            const endTime = activeDragItem.appointment.end_time ? parseISO(`2000-01-01T${activeDragItem.appointment.end_time}`) : null;
+            return (
+              <div className="rounded-lg p-2 shadow-md text-white" style={{ backgroundColor: activeDragItem.appointment.color, width: '200px' }}>
+                <h4 className="font-semibold text-sm truncate">{activeDragItem.appointment.title}</h4>
+                <p className="text-xs opacity-90">
+                  {startTime && endTime && isValid(startTime) && isValid(endTime) ? `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}` : 'Invalid time'}
+                </p>
+              </div>
+            );
+          })()}
+        </DragOverlay>,
+        document.body
+      )}
+      <AlertDialog open={isClearDayDialogOpen} onOpenChange={setIsClearDayDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to clear the day?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action will remove all appointments for {dayToClear ? format(dayToClear, 'MMMM d, yyyy') : 'the selected day'}. This cannot be undone immediately, but you can undo it from the toast notification.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleClearDay}>Clear Day</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={isExtendHoursDialogOpen} onOpenChange={setIsExtendHoursDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Extend Work Hours?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This appointment falls outside your current work hours for {format(selectedDateForNew, 'EEEE, MMM d')}. Would you like to extend your work hours to {newHoursToExtend ? `${format(setHours(selectedDateForNew, newHoursToExtend.min), 'h a')} - ${format(setHours(selectedDateForNew, newHoursToExtend.max), 'h a')}` : 'fit it'}?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setIsExtendHoursDialogOpen(false);
+              setNewHoursToExtend(null);
+              setPendingAppointmentData(null);
+            }}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmExtendHours}>Extend Hours</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DndContext>
   );
 };
