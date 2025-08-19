@@ -416,7 +416,6 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
                 {/* Header Row: Days */}
                 {daysInGrid.map((day, index) => {
                   const workHoursForDay = getWorkHoursForDay(day);
-                  // eslint-disable-next-line @typescript-eslint/no-unused-vars
                   const isWorkDayEnabled = workHoursForDay?.enabled;
                   return (
                     <div key={index} className="p-2 border-b text-center font-semibold text-sm flex flex-col items-center justify-center bg-muted/30">
@@ -596,7 +595,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
             <DialogDescription>
               Paste your appointment details below (e.g., "meeting at 3pm for 1 hour" or a confirmation email) and we'll try to fill out the form for you.
             </DialogDescription>
-          </DialogHeader>
+          </DialogDescription>
           <div className="py-4">
             <Label htmlFor="text-to-parse">Appointment Text</Label>
             <Textarea
@@ -658,7 +657,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
             <AlertDialogDescription>
               This appointment falls outside your current work hours for {format(selectedDateForNew, 'EEEE, MMM d')}. Would you like to extend your work hours to {newHoursToExtend ? `${format(setHours(selectedDateForNew, newHoursToExtend.min), 'h a')} - ${format(setHours(selectedDateForNew, newHoursToExtend.max), 'h a')}` : 'fit it'}?
             </AlertDialogDescription>
-          </AlertDialogHeader>
+          </AlertDialogDescription>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => {
               setIsExtendHoursDialogOpen(false);
