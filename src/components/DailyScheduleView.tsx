@@ -70,46 +70,44 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
   }, [singleDayWorkHours]);
 
   return (
-    <>
-      <CardContent className="pt-0">
-        <DateNavigator
-          currentDate={currentDate}
-          onPreviousDay={() => setCurrentDate(prevDate => new Date(prevDate.setDate(prevDate.getDate() - 1)))}
-          onNextDay={() => setCurrentDate(prevDate => new Date(prevDate.setDate(prevDate.getDate() + 1)))}
-          onGoToToday={() => setCurrentDate(new Date())}
-          setCurrentDate={setCurrentDate}
-        />
-        <ScheduleGridContent
-          isDemo={isDemo}
-          demoUserId={demoUserId}
-          onOpenTaskDetail={onOpenTaskDetail}
-          onOpenTaskOverview={onOpenTaskOverview}
-          currentViewDate={currentDate}
-          daysInGrid={daysInGrid}
-          timeBlocks={timeBlocks}
-          allWorkHours={allWorkHoursArray}
-          saveWorkHours={saveWorkHours}
-          appointments={appointments}
-          addAppointment={addAppointment}
-          updateAppointment={updateAppointment}
-          deleteAppointment={deleteAppointment}
-          clearDayAppointments={clearDayAppointments}
-          batchAddAppointments={batchAddAppointments}
-          allTasks={allTasks}
-          allDayTasks={allDayTasks}
-          allCategories={allCategories}
-          sections={sections}
-          updateTask={updateTask}
-          deleteTaskFromHook={deleteTaskFromHook}
-          createSection={createSection}
-          updateSection={updateSection}
-          deleteSection={deleteSection}
-          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-          settings={settings}
-          isLoading={workHoursLoading || appointmentsLoading}
-        />
-      </CardContent>
-    </>
+    <CardContent className="pt-0">
+      <DateNavigator
+        currentDate={currentDate}
+        onPreviousDay={() => setCurrentDate(prevDate => new Date(prevDate.setDate(prevDate.getDate() - 1)))}
+        onNextDay={() => setCurrentDate(prevDate => new Date(prevDate.setDate(prevDate.getDate() + 1)))}
+        onGoToToday={() => setCurrentDate(new Date())}
+        setCurrentDate={setCurrentDate}
+      />
+      <ScheduleGridContent
+        isDemo={isDemo}
+        demoUserId={demoUserId}
+        onOpenTaskDetail={onOpenTaskDetail}
+        onOpenTaskOverview={onOpenTaskOverview}
+        currentViewDate={currentDate}
+        daysInGrid={daysInGrid}
+        timeBlocks={timeBlocks}
+        allWorkHours={allWorkHoursArray}
+        saveWorkHours={saveWorkHours}
+        appointments={appointments}
+        addAppointment={addAppointment}
+        updateAppointment={updateAppointment}
+        deleteAppointment={deleteAppointment}
+        clearDayAppointments={clearDayAppointments}
+        batchAddAppointments={batchAddAppointments}
+        allTasks={allTasks}
+        allDayTasks={allDayTasks}
+        allCategories={allCategories}
+        sections={sections}
+        updateTask={updateTask}
+        deleteTaskFromHook={deleteTaskFromHook}
+        createSection={createSection}
+        updateSection={updateSection}
+        deleteSection={deleteSection}
+        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+        settings={settings}
+        isLoading={workHoursLoading || appointmentsLoading}
+      />
+    </CardContent>
   );
 };
 
