@@ -22,12 +22,11 @@ import AppointmentForm from '@/components/AppointmentForm';
 import DraggableAppointmentCard from '@/components/DraggableAppointmentCard';
 import DraggableScheduleTaskItem from '@/components/DraggableScheduleTaskItem';
 import TimeBlockActionMenu from '@/components/TimeBlockActionMenu';
-import TaskOverviewDialog from '@/components/TaskOverviewDialog';
-import TaskDetailDialog from '@/components/TaskDetailDialog';
+// Removed TaskOverviewDialog and TaskDetailDialog imports as they are no longer managed here
 
 interface ScheduleGridContentProps {
   isDemo?: boolean;
-  demoUserId?: string;
+  // Removed demoUserId from interface
   onOpenTaskDetail: (task: Task) => void;
   onOpenTaskOverview: (task: Task) => void;
 
@@ -49,12 +48,7 @@ interface ScheduleGridContentProps {
   allDayTasks: Task[]; // Tasks relevant to the current day/week for scheduling
   allCategories: Category[];
   sections: TaskSection[];
-  updateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
-  deleteTaskFromHook: (taskId: string) => void;
-  createSection: (name: string) => Promise<void>;
-  updateSection: (sectionId: string, newName: string) => Promise<void>;
-  deleteSection: (sectionId: string) => Promise<void>;
-  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
+  // Removed updateTask, deleteTaskFromHook, createSection, updateSection, deleteSection, updateSectionIncludeInFocusMode
   settings: any; // Use 'any' for settings to avoid deep type dependency from useSettings
 
   // Loading states
@@ -66,9 +60,9 @@ const gapHeight = 4;
 
 const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
   isDemo = false,
-  // Removed demoUserId as it's not directly used here
-  onOpenTaskDetail,
-  onOpenTaskOverview,
+  // Removed demoUserId from destructuring
+  onOpenTaskDetail, // Kept for passing to TimeBlockActionMenu
+  onOpenTaskOverview, // Kept for passing to handleAppointmentClick
   currentViewDate,
   daysInGrid,
   timeBlocks,
@@ -84,12 +78,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
   allDayTasks,
   allCategories,
   sections,
-  updateTask,
-  deleteTaskFromHook,
-  createSection,
-  updateSection,
-  deleteSection,
-  updateSectionIncludeInFocusMode,
+  // Removed updateTask, deleteTaskFromHook, createSection, updateSection, deleteSection, updateSectionIncludeInFocusMode
   settings,
   isLoading,
 }) => {
@@ -103,10 +92,8 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
   const [isParsing, setIsParsing] = useState(false);
   const [parsedDataForForm, setParsedDataForForm] = useState<Partial<NewAppointmentData> | null>(null);
 
-  const [taskToOverview, ] = useState<Task | null>(null); // Removed setTaskToOverview
-  const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
-  const [taskToEdit, ] = useState<Task | null>(null); // Removed setTaskToEdit
-  const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
+  // Removed taskToOverview, isTaskOverviewOpen, taskToEdit, isTaskDetailOpen states
+  // as they are now managed by the parent component.
 
   const [activeDragItem, setActiveDragItem] = useState<any>(null);
   
@@ -223,10 +210,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
     }
   };
 
-  const handleEditTaskFromOverview = (task: Task) => {
-    setIsTaskOverviewOpen(false);
-    onOpenTaskDetail(task);
-  };
+  // Removed handleEditTaskFromOverview as it's no longer needed here
 
   const handleDeleteAppointment = async (id: string) => {
     return await deleteAppointment(id);
@@ -616,35 +600,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
         selectedTimeSlot={selectedTimeSlotForNew}
         prefilledData={parsedDataForForm}
       />
-      {isTaskOverviewOpen && taskToOverview && (
-        <TaskOverviewDialog
-          task={taskToOverview}
-          isOpen={isTaskOverviewOpen}
-          onClose={() => setIsTaskOverviewOpen(false)}
-          onEditClick={handleEditTaskFromOverview}
-          onUpdate={updateTask}
-          onDelete={deleteTaskFromHook}
-          sections={sections}
-          allCategories={allCategories}
-          allTasks={allTasks}
-        />
-      )}
-      {isTaskDetailOpen && taskToEdit && (
-        <TaskDetailDialog
-          task={taskToEdit}
-          isOpen={isTaskDetailOpen}
-          onClose={() => setIsTaskDetailOpen(false)}
-          onUpdate={updateTask}
-          onDelete={deleteTaskFromHook}
-          sections={sections}
-          allCategories={allCategories}
-          createSection={createSection}
-          updateSection={updateSection}
-          deleteSection={deleteSection}
-          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-          allTasks={allTasks}
-        />
-      )}
+      {/* TaskOverviewDialog and TaskDetailDialog are now managed by the parent component */}
       <Dialog open={isParsingDialogOpen} onOpenChange={setIsParsingDialogOpen}>
         <DialogContent>
           <DialogHeader>

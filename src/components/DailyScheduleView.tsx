@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { CardContent } from "@/components/ui/card";
 import { useWorkHours, WorkHour } from '@/hooks/useWorkHours';
-import { addMinutes, parse, getMinutes, getHours, setHours, setMinutes } from 'date-fns';
+import { addMinutes, parse, getHours, setHours, setMinutes } from 'date-fns';
 import DateNavigator from '@/components/DateNavigator';
 import { useAppointments } from '@/hooks/useAppointments';
 import { useTasks, Task } from '@/hooks/useTasks';
