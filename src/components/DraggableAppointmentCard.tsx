@@ -10,12 +10,13 @@ interface DraggableAppointmentCardProps {
   task?: Task;
   onEdit: (appointment: Appointment) => void;
   onUnschedule: (appointmentId: string) => void;
-  overlapOffset: number; // New prop
+  trackIndex: number; // New prop
+  totalTracks: number; // New prop
   style?: React.CSSProperties; // Make style prop optional
 }
 
 const DraggableAppointmentCard: React.FC<DraggableAppointmentCardProps> = (props) => {
-  const { appointment, overlapOffset } = props; // Destructure overlapOffset
+  const { appointment, trackIndex, totalTracks } = props; // Destructure new props
 
   const startTime = appointment.start_time ? parseISO(`2000-01-01T${appointment.start_time}`) : null;
   const endTime = appointment.end_time ? parseISO(`2000-01-01T${appointment.end_time}`) : null;
@@ -42,8 +43,8 @@ const DraggableAppointmentCard: React.FC<DraggableAppointmentCardProps> = (props
       <AppointmentCard
         {...props}
         // Pass positioning props to AppointmentCard for absolute positioning within this div
-        left={overlapOffset * 10}
-        width={`calc(100% - ${overlapOffset * 10}px)`}
+        trackIndex={trackIndex} // Pass trackIndex
+        totalTracks={totalTracks} // Pass totalTracks
       />
     </div>
   );

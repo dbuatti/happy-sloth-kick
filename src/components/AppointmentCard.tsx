@@ -13,8 +13,8 @@ interface AppointmentCardProps {
   task?: Task;
   onEdit: (appointment: Appointment) => void;
   onUnschedule: (appointmentId: string) => void;
-  left: number; // New prop for horizontal offset
-  width: string; // New prop for calculated width
+  trackIndex: number; // New prop
+  totalTracks: number; // New prop
 }
 
 const AppointmentCard: React.FC<AppointmentCardProps> = ({
@@ -22,14 +22,18 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
   task,
   onEdit,
   onUnschedule,
-  left, // Destructure new prop
-  width, // Destructure new prop
+  trackIndex, // Destructure new prop
+  totalTracks, // Destructure new prop
 }) => {
+  const horizontalGap = 4; // Gap between overlapping appointments
+  const calculatedWidth = totalTracks > 0 ? `calc((100% / ${totalTracks}) - ${horizontalGap * (totalTracks - 1) / totalTracks}px)` : '100%';
+  const calculatedLeft = totalTracks > 0 ? `calc(${trackIndex} * (100% / ${totalTracks}) + ${trackIndex * horizontalGap}px)` : '0px';
+
   const style = {
     backgroundColor: appointment.color,
     zIndex: 10,
-    left: `${left}px`, // Apply left here
-    width: width, // Apply width here
+    left: calculatedLeft, // Apply calculated left
+    width: calculatedWidth, // Apply calculated width
     top: 0, // Always 0 relative to its parent
     height: '100%', // Always 100% relative to its parent
   };
