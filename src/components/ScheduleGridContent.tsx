@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, useSensor, useSensors, closestCorners } from '@dnd-kit/core';
-import { format, addMinutes, parse, isBefore, getMinutes, getHours, parseISO, isValid, setHours, setMinutes, isSameDay, isAfter } from 'date-fns';
+import { format, addMinutes, parse, isBefore, getMinutes, getHours, parseISO, isValid, setHours, setMinutes, isSameDay, isAfter, differenceInMinutes } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Sparkles, X, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { Label } from '@/components/ui/label';
@@ -60,7 +60,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
   onOpenTaskOverview,
   currentViewDate,
   daysInGrid,
-  timeBlocks,
+  timeBlocks: initialTimeBlocks, // Renamed to initialTimeBlocks
   allWorkHours,
   saveWorkHours,
   appointments,
@@ -114,6 +114,24 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
     const workHour = allWorkHours.find(wh => wh.day_of_week === dayOfWeekString);
     return workHour || null;
   }, [allWorkHours]);
+
+  // Generate time blocks for the full 24 hours to simplify grid row calculations
+  const timeBlocks = useMemo(() => {
+    const blocks = [];
+    let currentTime = setHours(setMinutes(currentViewDate, 0), 0); // Start from 00:00
+    const endTime = setHours(setMinutes(currentViewDate, 0), 24); // End at 24:00 (next day 00:00)
+
+    while (currentTime.getTime() < endTime.getTime()) {
+      const blockStart = currentTime;
+      const blockEnd = addMinutes(currentTime, 30);
+      blocks.push({
+        start: blockStart,
+        end: blockEnd,
+      });
+      currentTime = blockEnd;
+    }
+    return blocks;
+  }, [currentViewDate]);
 
   const handleOpenAppointmentForm = (block: { start: Date; end: Date }, date: Date) => {
     setEditingAppointment(null);
@@ -245,37 +263,44 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
         return null;
       }
 
-      const workHoursForAppDay = getWorkHoursForDay(appDate);
-      const minHourMinutes = workHoursForAppDay?.enabled ? (getHours(parse(workHoursForAppDay.start_time, 'HH:mm:ss', appDate)) * 60) : 0;
-      
-      const startMinutes = (getHours(appStartTime) * 60) + getMinutes(appStartTime);
-      const endMinutes = (getHours(appEndTime) * 60) + getMinutes(appEndTime);
-      
-      // Calculate top and height in pixels
-      const calculatedTop = headerHeight + ((startMinutes - minHourMinutes) / 30) * (rowHeight + gapHeight);
-      const durationBlocks = (endMinutes - startMinutes) / 30;
-      const calculatedHeight = durationBlocks * rowHeight + (durationBlocks > 0 ? (durationBlocks - 1) * gapHeight : 0);
+      // Find the starting grid row based on timeBlocks
+      const startBlockIndex = timeBlocks.findIndex(block =>
+          getHours(block.start) === getHours(appStartTime) && getMinutes(block.start) === getMinutes(appStartTime)
+      );
+
+      if (startBlockIndex === -1) {
+          // If the appointment start time doesn't exactly match a time block,
+          // find the closest preceding block or handle as needed.
+          // For simplicity, let's just return null for now if it doesn't align perfectly.
+          return null;
+      }
+
+      const gridRowStart = startBlockIndex + 2; // +2 for header row and 1-based indexing
+      const durationInMinutes = differenceInMinutes(appEndTime, appStartTime);
+      const durationInBlocks = durationInMinutes / 30;
+      const gridRowEnd = gridRowStart + durationInBlocks;
 
       return {
         ...app,
-        calculatedTop,
-        calculatedHeight,
-        gridColumn: dayIndex + 1, // Still useful for filtering by day
+        gridColumn: dayIndex + 1, // +1 for time label column
+        gridRowStart,
+        gridRowEnd,
       };
-    }).filter(Boolean) as (Appointment & { calculatedTop: number; calculatedHeight: number; gridColumn: number; })[];
+    }).filter(Boolean) as (Appointment & { gridColumn: number; gridRowStart: number; gridRowEnd: number; })[];
 
     const finalApps = positionedApps.map(app => ({ ...app, overlapOffset: 0 }));
 
     daysInGrid.forEach((_, dayIndex) => {
       const appsForThisDay = finalApps.filter(app => app.gridColumn === dayIndex + 1)
-                                      .sort((a, b) => a.calculatedTop - b.calculatedTop);
+                                      .sort((a, b) => a.gridRowStart - b.gridRowStart);
       
       for (let i = 0; i < appsForThisDay.length; i++) {
         for (let j = i + 1; j < appsForThisDay.length; j++) {
           const appA = appsForThisDay[i];
           const appB = appsForThisDay[j];
 
-          const overlaps = (appA.calculatedTop < (appB.calculatedTop + appB.calculatedHeight) && appB.calculatedTop < (appA.calculatedTop + appA.calculatedHeight));
+          // Check for overlap in grid rows
+          const overlaps = (appA.gridRowStart < appB.gridRowEnd && appB.gridRowStart < appA.gridRowEnd);
 
           if (overlaps) {
             appB.overlapOffset = appA.overlapOffset + 1;
@@ -284,7 +309,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
       }
     });
     return finalApps;
-  }, [appointments, daysInGrid, getWorkHoursForDay]);
+  }, [appointments, daysInGrid, timeBlocks, getWorkHoursForDay]);
 
   const unscheduledDoTodayTasks = useMemo(() => {
     const scheduledTaskIds = new Set(
@@ -472,7 +497,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
                         >
                           <div className="absolute top-1/2 w-full border-b border-dashed border-gray-200/50 dark:border-gray-700/50" />
                           {getMinutes(block.start) === 0 && (
-                            <span className="absolute inset-0 flex items-center justify-center text-6xl font-bubbly text-muted-foreground/70 pointer-events-none" style={{ zIndex: 0 }}>
+                            <span className="absolute inset-0 flex items-center justify-center text-6xl font-bubbly text-muted-foreground/30 pointer-events-none" style={{ zIndex: 0 }}>
                               {format(block.start, 'h')}
                             </span>
                           )}
@@ -520,15 +545,12 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
                       task={task}
                       onEdit={handleAppointmentClick}
                       onUnschedule={handleUnscheduleTask}
-                      top={app.calculatedTop}
-                      height={app.calculatedHeight}
-                      marginLeft={app.overlapOffset * 10} // Pass as marginLeft
-                      width={`calc(100% - ${app.overlapOffset * 10}px)`}
+                      overlapOffset={app.overlapOffset}
                       style={{
                         gridColumn: app.gridColumn + 1, // Adjust gridColumn by +1 for the new time label column
-                        gridRow: '1 / -1', // Span all rows
-                        display: isWithinWorkHoursRange ? 'block' : 'none',
+                        gridRow: `${app.gridRowStart} / ${app.gridRowEnd}`,
                         zIndex: 10 + app.overlapOffset,
+                        display: isWithinWorkHoursRange ? 'block' : 'none',
                       }}
                     />
                   );

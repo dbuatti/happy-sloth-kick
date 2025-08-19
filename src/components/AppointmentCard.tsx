@@ -13,10 +13,8 @@ interface AppointmentCardProps {
   task?: Task;
   onEdit: (appointment: Appointment) => void;
   onUnschedule: (appointmentId: string) => void;
-  top: number;
-  height: string | number; // Changed to allow string for '100%'
-  left: number;
-  width: string;
+  left: number; // New prop for horizontal offset
+  width: string; // New prop for calculated width
 }
 
 const AppointmentCard: React.FC<AppointmentCardProps> = ({
@@ -24,18 +22,16 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
   task,
   onEdit,
   onUnschedule,
-  top,
-  height,
-  left,
-  width,
+  left, // Destructure new prop
+  width, // Destructure new prop
 }) => {
   const style = {
-    top: `${top}px`,
-    height: height, // Use height directly
     backgroundColor: appointment.color,
-    left: `${left}px`,
-    width: width,
     zIndex: 10,
+    left: `${left}px`, // Apply left here
+    width: width, // Apply width here
+    top: 0, // Always 0 relative to its parent
+    height: '100%', // Always 100% relative to its parent
   };
 
   const startTime = appointment.start_time ? parseISO(`2000-01-01T${appointment.start_time}`) : null;

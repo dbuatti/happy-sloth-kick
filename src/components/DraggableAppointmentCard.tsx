@@ -10,15 +10,12 @@ interface DraggableAppointmentCardProps {
   task?: Task;
   onEdit: (appointment: Appointment) => void;
   onUnschedule: (appointmentId: string) => void;
-  top: number;
-  height: number;
-  marginLeft: number;
-  width: string;
-  style?: React.CSSProperties;
+  overlapOffset: number; // New prop
+  style?: React.CSSProperties; // Make style prop optional
 }
 
 const DraggableAppointmentCard: React.FC<DraggableAppointmentCardProps> = (props) => {
-  const { appointment } = props;
+  const { appointment, overlapOffset } = props; // Destructure overlapOffset
 
   const startTime = appointment.start_time ? parseISO(`2000-01-01T${appointment.start_time}`) : null;
   const endTime = appointment.end_time ? parseISO(`2000-01-01T${appointment.end_time}`) : null;
@@ -36,23 +33,17 @@ const DraggableAppointmentCard: React.FC<DraggableAppointmentCardProps> = (props
   const draggableStyle = {
     opacity: isDragging ? 0.5 : 1,
     ...props.style, // Merge passed style with draggable style
+    position: 'relative', // Make this container relative for absolute children
+    height: '100%', // Ensure it fills its grid row height
   };
 
   return (
-    <div 
-      ref={setNodeRef} 
-      style={draggableStyle} 
-      {...attributes} 
-      {...listeners} 
-      className="relative cursor-grab touch-none select-none" // Make this relative for absolute child
-    >
-      <AppointmentCard 
-        {...props} 
-        top={0} // Position relative to this parent
-        height="100%" // Take full height of this parent
-        left={props.marginLeft} // Use marginLeft as left for absolute positioning
-        width={props.width} // Use width as is
-        marginLeft={0} // Reset marginLeft on the child as it's now handled by 'left'
+    <div ref={setNodeRef} style={draggableStyle} {...attributes} {...listeners} className="cursor-grab touch-none select-none">
+      <AppointmentCard
+        {...props}
+        // Pass positioning props to AppointmentCard for absolute positioning within this div
+        left={overlapOffset * 10}
+        width={`calc(100% - ${overlapOffset * 10}px)`}
       />
     </div>
   );
