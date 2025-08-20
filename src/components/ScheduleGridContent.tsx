@@ -303,12 +303,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
   };
 
   const handleAppointmentClick = (appointment: Appointment) => {
-    // Check if this is a virtual task (recurring instance)
-    if (appointment.task_id && appointment.task_id.startsWith('virtual-')) {
-      // For virtual tasks, just open the appointment form for editing
-      handleEditAppointment(appointment);
-    } else if (appointment.task_id) {
-      // For real tasks, open task overview
+    if (appointment.task_id) {
       const task = allTasks.find(t => t.id === appointment.task_id);
       if (task) {
         onOpenTaskOverview(task);
@@ -316,7 +311,6 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
         handleEditAppointment(appointment);
       }
     } else {
-      // For appointments without tasks, open appointment form
       handleEditAppointment(appointment);
     }
   };

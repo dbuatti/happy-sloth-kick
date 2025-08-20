@@ -1,51 +1,53 @@
 import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
-import { Task } from '@/hooks/useTasks';
+import { Task, TaskSection } from '@/hooks/useTasks';
 import { cn } from '@/lib/utils';
-import { ListTodo } from 'lucide-react';
+import { GripVertical, FolderOpen } from 'lucide-react';
 
 interface DraggableScheduleTaskItemProps {
   task: Task;
-  sections: any[]; // Simplified for now
+  sections: TaskSection[];
 }
 
-const DraggableScheduleTaskItem: React.FC<DraggableScheduleTaskItemProps> = ({ task }) => {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+const DraggableScheduleTaskItem: React.FC<DraggableScheduleTaskItemProps> = ({ task, sections }) => {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `task-${task.id}`,
-    data: { type: 'task', task },
+    data: { type: 'task', task, duration: 30 },
   });
 
-  const dragStyle = {
-    transform: CSS.Translate.toString(transform),
-    opacity: isDragging ? 0.5 : 1,
-  };
-
-  const getPriorityColor = (priority: string | null) => {
-    if (!priority) return 'border-l-gray-300';
+  const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'low': return 'border-l-green-500';
-      case 'medium': return 'border-l-yellow-500';
-      case 'high': return 'border-l-orange-500';
-      case 'urgent': return 'border-l-red-500';
-      default: return 'border-l-gray-300';
+      case 'urgent': return 'border-l-priority-urgent';
+      case 'high': return 'border-l-priority-high';
+      case 'medium': return 'border-l-priority-medium';
+      case 'low': return 'border-l-priority-low';
+      default: return 'border-l-gray-500';
     }
   };
+
+  const section = sections.find(s => s.id === task.section_id);
 
   return (
     <div
       ref={setNodeRef}
-      style={dragStyle}
-      {...listeners}
-      {...attributes}
       className={cn(
         "p-2 rounded-md bg-card shadow-sm flex items-center gap-2 border-l-4 select-none",
-        getPriorityColor(task.priority || null),
+        getPriorityColor(task.priority),
         isDragging && "opacity-50"
       )}
     >
-      <ListTodo className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-      <span className="text-sm truncate">{task.description}</span>
+      <button {...listeners} {...attributes} className="cursor-grab touch-none p-1 -ml-1">
+        <GripVertical className="h-4 w-4 text-muted-foreground" />
+      </button>
+      <div className="flex-1 min-w-0">
+        <p className="font-semibold text-sm truncate">{task.description}</p>
+        {section && (
+          <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+            <FolderOpen className="h-3 w-3" />
+            <span>{section.name}</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

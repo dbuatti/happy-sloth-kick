@@ -1,38 +1,41 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Link as LinkIcon } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
-import { Task, TaskSection, Category } from '@/hooks/useTasks';
-import { SectionSelector } from '@/components/SectionSelector';
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerDescription } from "@/components/ui/drawer";
+import { Trash2, ListTodo } from 'lucide-react';
+import { Task, TaskSection, Category } from '@/hooks/useTasks'; // Import Task, TaskSection, Category types
+import { useTasks } from '@/hooks/useTasks'; // Keep useTasks for subtask updates and handleAddTask
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useSound } from '@/context/SoundContext';
+import TaskForm from './TaskForm';
+import { cn } from '@/lib/utils';
+import { Checkbox } from "@/components/ui/checkbox";
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface TaskDetailDialogProps {
-  task: Task;
+  task: Task | null;
   isOpen: boolean;
   onClose: () => void;
-  onUpdate: (id: string, updates: Partial<Task>) => Promise<void>;
-  sections: TaskSection[];
-  allCategories: Category[];
-  createSection: (sectionData: Omit<TaskSection, 'id' | 'user_id' | 'created_at'>) => Promise<TaskSection | null>;
-  updateSection: (id: string, updates: Partial<TaskSection>) => Promise<void>;
-  deleteSection: (id: string) => Promise<void>;
-  updateSectionIncludeInFocusMode: (id: string, includeInFocusMode: boolean) => Promise<void>;
-}
-
-interface FormState {
-  description: string;
-  category: string | null;
-  priority: 'low' | 'medium' | 'high' | 'urgent' | null;
-  dueDate: Date | null;
-  dueTime: string | null;
-  notes: string | null;
-  link: string | null;
-  sectionId: string | null;
-  recurringType: 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly';
+  onUpdate: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
+  onDelete: (taskId: string) => void;
+  sections: TaskSection[]; // Passed as prop
+  allCategories: Category[]; // Passed as prop
+  // New props for section management
+  createSection: (name: string) => Promise<void>;
+  updateSection: (sectionId: string, newName: string) => Promise<void>;
+  deleteSection: (sectionId: string) => Promise<void>;
+  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
+  allTasks: Task[]; // Add allTasks prop
 }
 
 const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
@@ -40,268 +43,196 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   isOpen,
   onClose,
   onUpdate,
-  sections,
-  allCategories,
-  createSection,
+  onDelete,
+  sections, // Destructure from props
+  allCategories, // Destructure from props
+  createSection, // Destructure new props
   updateSection,
   deleteSection,
   updateSectionIncludeInFocusMode,
+  allTasks, // Destructure allTasks
 }) => {
-  const [formState, setFormState] = useState<FormState>({
-    description: task.description,
-    category: task.category,
-    priority: task.priority,
-    dueDate: task.due_date ? parseISO(task.due_date) : null,
-    dueTime: task.due_date ? format(parseISO(task.due_date), 'HH:mm') : null,
-    notes: task.notes,
-    link: task.link,
-    sectionId: task.section_id,
-    recurringType: task.recurring_type,
-  });
+  // Removed 'user' and 'userId' from useAuth destructuring as they are not directly used here.
+  useAuth(); 
+  const isMobile = useIsMobile();
 
+  // Only use useTasks for actions that require it, not for fetching global state
+  // Removed internal useTasks() call, now using allTasks prop for subtasks
+  const { updateTask: updateSubtask } = useTasks({ currentDate: new Date() }); // Keep useTasks for updateSubtask, provide a dummy date
+  const { playSound } = useSound();
+  const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleChange = (field: keyof FormState, value: any) => {
-    setFormState(prev => ({ ...prev, [field]: value }));
+  type TaskFormData = Parameters<typeof TaskForm>['0']['onSave'] extends ((taskData: infer T) => any) ? T : never;
+
+  const handleSaveMainTask = async (taskData: TaskFormData) => {
+    if (!task) return false;
+    setIsSaving(true);
+    await onUpdate(task.id, taskData);
+    setIsSaving(false);
+    return true;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSaving(true);
-    
-    try {
-      // Combine date and time for due_date
-      let due_date = null;
-      if (formState.dueDate) {
-        if (formState.dueTime) {
-          const [hours, minutes] = formState.dueTime.split(':').map(Number);
-          const dateWithTime = new Date(formState.dueDate);
-          dateWithTime.setHours(hours, minutes, 0, 0);
-          due_date = dateWithTime.toISOString();
-        } else {
-          due_date = formState.dueDate.toISOString();
-        }
-      }
+  const handleDeleteClick = () => {
+    setShowConfirmDeleteDialog(true);
+  };
 
-      // Create taskData with correct types
-      const taskData = {
-        description: formState.description,
-        category: formState.category,
-        priority: formState.priority,
-        due_date: due_date,
-        notes: formState.notes,
-        remind_at: task.remind_at,
-        section_id: formState.sectionId,
-        recurring_type: formState.recurringType,
-        parent_task_id: task.parent_task_id,
-        link: formState.link,
-        image_url: task.image_url,
-      };
-
-      await onUpdate(task.id, taskData);
+  const confirmDeleteTask = () => {
+    if (task) {
+      onDelete(task.id);
+      setShowConfirmDeleteDialog(false);
       onClose();
-    } finally {
-      setIsSaving(false);
     }
   };
 
-  const handleDateChange = (date: Date | undefined) => {
-    handleChange('dueDate', date || null);
+  const handleSubtaskStatusChange = async (subtaskId: string, newStatus: Task['status']) => {
+    await updateSubtask(subtaskId, { status: newStatus });
   };
 
-  const handleTimeChange = (time: string | undefined) => {
-    handleChange('dueTime', time || null);
+  const handleToggleMainTaskStatus = async () => {
+    if (!task) return;
+    setIsSaving(true);
+    const newStatus = task.status === 'completed' ? 'to-do' : 'completed';
+    await onUpdate(task.id, { status: newStatus });
+    if (newStatus === 'completed') {
+      playSound('success');
+    } else {
+      playSound('success');
+    }
+    setIsSaving(false);
+    onClose();
   };
 
-  // Simple CategorySelector component
-  const CategorySelector = ({ 
-    categories, 
-    selectedCategoryId, 
-    onSelectCategory 
-  }: { 
-    categories: Category[]; 
-    selectedCategoryId: string | null; 
-    onSelectCategory: (categoryId: string | null) => void;
-  }) => (
-    <Select value={selectedCategoryId || ''} onValueChange={(value) => onSelectCategory(value || null)}>
-      <SelectTrigger>
-        <SelectValue placeholder="Select category" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="">No category</SelectItem>
-        {categories.map((category) => (
-          <SelectItem key={category.id} value={category.id}>
-            {category.name}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+  if (!task) return null;
+
+  const subtasks = allTasks.filter(t => t.parent_task_id === task?.id)
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+  const MainContent = () => (
+    <>
+      <TaskForm
+        initialData={task}
+        onSave={handleSaveMainTask}
+        onCancel={onClose}
+        sections={sections}
+        allCategories={allCategories}
+        autoFocus={false}
+        createSection={createSection} // Pass new props
+        updateSection={updateSection}
+        deleteSection={deleteSection}
+        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+      />
+
+      <div className="space-y-2 mt-3 border-t pt-2">
+        <div className="flex justify-between items-center">
+          <h3 className="text-base font-semibold">Sub-tasks ({subtasks.length})</h3>
+          <Button variant="outline" size="sm" className="h-8 text-base" onClick={() => { /* Removed setIsAddSubtaskOpen(true) */ }}>
+            Add Sub-task
+          </Button>
+        </div>
+        {subtasks.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No sub-tasks yet. Break down this task into smaller steps!</p>
+        ) : (
+          <ul className="space-y-1.5">
+            {subtasks.map(subtask => (
+              <li key={subtask.id} className="flex items-center space-x-2 p-1.5 rounded-md bg-background shadow-sm">
+                <Checkbox
+                  checked={subtask.status === 'completed'}
+                  onCheckedChange={(checked: boolean) => handleSubtaskStatusChange(subtask.id, checked ? 'completed' : 'to-do')}
+                  id={`subtask-${subtask.id}`}
+                  className="flex-shrink-0 h-3.5 w-3.5"
+                />
+                <label
+                  htmlFor={`subtask-${subtask.id}`}
+                  className={cn(
+                    "flex-1 text-sm font-medium leading-tight",
+                    subtask.status === 'completed' ? 'line-through text-gray-500 dark:text-gray-400' : 'text-foreground',
+                    "block truncate"
+                  )}
+                >
+                  {subtask.description}
+                </label>
+                {subtask.status === 'completed' && <ListTodo className="h-3.5 w-3.5 text-green-500" />}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </>
   );
 
-  // Simple DatePicker component
-  const DatePicker = ({ 
-    selected, 
-    onSelect 
-  }: { 
-    selected: Date | null; 
-    onSelect: (date: Date | undefined) => void;
-  }) => (
-    <Input
-      type="date"
-      value={selected ? format(selected, 'yyyy-MM-dd') : ''}
-      onChange={(e) => onSelect(e.target.value ? new Date(e.target.value) : undefined)}
-    />
-  );
-
-  // Simple TimePicker component
-  const TimePicker = ({ 
-    selectedTime, 
-    onSelectTime 
-  }: { 
-    selectedTime: string | null; 
-    onSelectTime: (time: string | undefined) => void;
-  }) => (
-    <Input
-      type="time"
-      value={selectedTime || ''}
-      onChange={(e) => onSelectTime(e.target.value || undefined)}
-    />
-  );
+  const FooterContent = ({ isDrawer = false }: { isDrawer?: boolean }) => {
+    const FooterComponent = isDrawer ? DrawerFooter : DialogFooter;
+    return (
+      <FooterComponent className={isDrawer ? "pt-2" : "flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2 pt-2"}>
+        <Button
+          variant={task.status === 'completed' ? 'outline' : 'default'}
+          onClick={handleToggleMainTaskStatus}
+          disabled={isSaving}
+          className="w-full sm:w-auto mt-1.5 sm:mt-0 h-9 text-base"
+        >
+          {task.status === 'completed' ? (
+            <><ListTodo className="mr-2 h-3.5 w-3.5" /> Mark To-Do</>
+          ) : (
+            <><ListTodo className="mr-2 h-3.5 w-3.5" /> Mark Complete</>
+          )}
+        </Button>
+        <Button variant="destructive" onClick={handleDeleteClick} disabled={isSaving} className="w-full sm:w-auto mt-1.5 sm:mt-0 h-9 text-base">
+          <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete Task
+        </Button>
+      </FooterComponent>
+    );
+  };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Edit Task</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="description">Task Description *</Label>
-            <Input
-              id="description"
-              value={formState.description}
-              onChange={(e) => handleChange('description', e.target.value)}
-              placeholder="What needs to be done?"
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <Label>Category</Label>
-              <CategorySelector
-                categories={allCategories}
-                selectedCategoryId={formState.category}
-                onSelectCategory={(categoryId) => handleChange('category', categoryId)}
-              />
+    <>
+      {isMobile ? (
+        <Drawer open={isOpen} onOpenChange={onClose}>
+          <DrawerContent>
+            <DrawerHeader className="text-left">
+              <DrawerTitle>Edit Task</DrawerTitle>
+              <DrawerDescription className="sr-only">
+                Edit the details of your task, including sub-tasks.
+              </DrawerDescription>
+            </DrawerHeader>
+            <div className="px-4 pb-4 overflow-y-auto">
+              <MainContent />
             </div>
+            <FooterContent isDrawer />
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Dialog open={isOpen} onOpenChange={onClose}>
+          <DialogContent className="sm:max-w-[425px] md:max-w-lg lg:max-w-xl">
+            <DialogHeader>
+              <DialogTitle>Edit Task</DialogTitle>
+              <DialogDescription className="sr-only">
+                Edit the details of your task, including sub-tasks.
+              </DialogDescription>
+            </DialogHeader>
+            <MainContent />
+            <FooterContent />
+          </DialogContent>
+        </Dialog>
+      )}
 
-            <div>
-              <Label>Priority</Label>
-              <Select
-                value={formState.priority || ''}
-                onValueChange={(value) => handleChange('priority', value === '' ? null : value as any)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select priority" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">No priority</SelectItem>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                  <SelectItem value="urgent">Urgent</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div>
-            <Label>Section</Label>
-            <SectionSelector
-              sections={sections}
-              selectedSectionId={formState.sectionId}
-              onSelectSection={(sectionId) => handleChange('sectionId', sectionId)}
-              createSection={createSection}
-              updateSection={updateSection}
-              deleteSection={deleteSection}
-              updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <Label>Due Date</Label>
-              <DatePicker
-                selected={formState.dueDate}
-                onSelect={handleDateChange}
-              />
-            </div>
-
-            <div>
-              <Label>Due Time</Label>
-              <TimePicker
-                selectedTime={formState.dueTime}
-                onSelectTime={handleTimeChange}
-              />
-            </div>
-          </div>
-
-          <div>
-            <Label>Recurring</Label>
-            <Select
-              value={formState.recurringType}
-              onValueChange={(value) => handleChange('recurringType', value as any)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Does not repeat" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Does not repeat</SelectItem>
-                <SelectItem value="daily">Daily</SelectItem>
-                <SelectItem value="weekly">Weekly</SelectItem>
-                <SelectItem value="monthly">Monthly</SelectItem>
-                <SelectItem value="yearly">Yearly</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea
-              id="notes"
-              value={formState.notes || ''}
-              onChange={(e) => handleChange('notes', e.target.value)}
-              placeholder="Add additional details..."
-              rows={3}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="link">Link</Label>
-            <div className="flex gap-2">
-              <LinkIcon className="h-5 w-5 text-muted-foreground mt-2.5" />
-              <Input
-                id="link"
-                value={formState.link || ''}
-                onChange={(e) => handleChange('link', e.target.value)}
-                placeholder="https://example.com"
-                type="url"
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isSaving || !formState.description.trim()}>
-              {isSaving ? 'Saving...' : 'Save Changes'}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+      <AlertDialog open={showConfirmDeleteDialog} onOpenChange={setShowConfirmDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete this task and all its sub-tasks.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSaving}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteTask} disabled={isSaving}>
+              {isSaving ? 'Deleting...' : 'Continue'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 

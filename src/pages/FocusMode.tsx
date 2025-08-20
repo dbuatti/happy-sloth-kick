@@ -1,94 +1,72 @@
 import React, { useState } from 'react';
-import { Task, TaskSection, Category } from '@/hooks/useTasks';
-import FocusToolsPanel from '@/components/FocusToolsPanel';
+import { useTasks, Task } from '@/hooks/useTasks';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
+import FocusToolsPanel from '@/components/FocusToolsPanel';
 
-interface FocusModePageProps {
+interface FocusModeProps {
   demoUserId?: string;
-  isDemo?: boolean;
 }
 
-const FocusModePage: React.FC<FocusModePageProps> = ({ isDemo = false }) => {
-  // Mock data since we're removing the invalid destructuring
-  const [sections] = useState<TaskSection[]>([]);
-  const [allCategories] = useState<Category[]>([]);
-  
-  const [nextAvailableTask] = useState<Task | null>(null);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
+  const {
+    filteredTasks,
+    updateTask,
+    sections,
+    allCategories,
+    tasks,
+    nextAvailableTask,
+    createSection,
+    updateSection,
+    deleteSection,
+    updateSectionIncludeInFocusMode,
+    handleAddTask,
+    currentDate,
+  } = useTasks({ viewMode: 'focus', userId: demoUserId, currentDate: new Date() }); // Pass new Date()
+
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
 
-  // Mark unused params to avoid TS errors
-  const updateTask = async (id: string, updates: Partial<Task>) => {
-    void id; void updates;
+  const handleOpenDetail = (task: Task) => {
+    setTaskToEdit(task);
+    setIsTaskDetailOpen(true);
   };
-  
-  const createSection = async (sectionData: Omit<TaskSection, 'id' | 'user_id' | 'created_at'>) => {
-    void sectionData;
-    return null;
-  };
-  
-  const updateSection = async (id: string, updates: Partial<TaskSection>) => {
-    void id; void updates;
-  };
-  
-  const deleteSection = async (id: string) => {
-    void id;
-  };
-  
-  const updateSectionIncludeInFocusMode = async (id: string, includeInFocusMode: boolean) => {
-    void id; void includeInFocusMode;
-  };
-
-  // Mark these as used to avoid TS errors
-  void setSelectedTask;
-  void setIsTaskDetailOpen;
-  void isDemo; // Mark isDemo as used
-
-  // Mock data for upcoming tasks (empty array to avoid TS errors)
-  const upcomingTasks: Task[] = [];
 
   return (
-    <div className="container mx-auto py-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Focus Mode</h1>
-          <p className="text-muted-foreground">Deep work session with timer and task management</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
+    <div className="flex-1 flex flex-col">
+      <main className="flex-grow p-4 flex justify-center">
+        <div className="w-full max-w-4xl mx-auto space-y-6">
           <FocusToolsPanel
             nextAvailableTask={nextAvailableTask}
-            upcomingTasks={upcomingTasks}
-            isTimerRunning={false}
-            timerMode="work"
-            timeLeft={25 * 60}
-            startTimer={() => {}}
-            pauseTimer={() => {}}
-            skipTimer={() => {}}
-            resetTimer={() => {}}
+            tasks={tasks as Task[]} // Cast to Task[]
+            filteredTasks={filteredTasks}
             updateTask={updateTask}
+            onOpenDetail={handleOpenDetail}
+            onDeleteTask={() => { /* Delete not typically in focus mode */ }}
+            sections={sections}
+            allCategories={allCategories}
+            currentDate={currentDate}
+            handleAddTask={handleAddTask}
           />
         </div>
-      </div>
-
-      {selectedTask && (
+      </main>
+      {taskToEdit && (
         <TaskDetailDialog
-          task={selectedTask}
+          task={taskToEdit}
           isOpen={isTaskDetailOpen}
           onClose={() => setIsTaskDetailOpen(false)}
           onUpdate={updateTask}
+          onDelete={() => { /* Delete not typically in focus mode */ }}
           sections={sections}
           allCategories={allCategories}
           createSection={createSection}
           updateSection={updateSection}
           deleteSection={deleteSection}
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+          allTasks={tasks as Task[]} // Cast to Task[]
         />
       )}
     </div>
   );
 };
 
-export default FocusModePage;
+export default FocusMode;

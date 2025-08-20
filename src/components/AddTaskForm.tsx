@@ -1,17 +1,35 @@
-import React, { useState } from 'react';
+import React from 'react';
+import TaskForm from './TaskForm';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
-import TaskForm from '@/components/TaskForm';
+// Removed useAuth as it's not directly used in this component's logic
 
 interface AddTaskFormProps {
-  onAddTask: (taskData: Omit<Task, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => Promise<boolean>;
-  onTaskAdded?: () => void;
+  onAddTask: (taskData: {
+    description: string;
+    category: string;
+    priority: string;
+    due_date: string | null;
+    notes: string | null;
+    remind_at: string | null;
+    section_id: string | null;
+    recurring_type: 'none' | 'daily' | 'weekly' | 'monthly';
+    parent_task_id: string | null;
+    link: string | null;
+    image_url: string | null;
+  }) => Promise<any>;
+  onTaskAdded?: () => void; // Callback for when task is successfully added
   sections: TaskSection[];
   allCategories: Category[];
-  currentDate?: Date;
-  createSection: (sectionData: Omit<TaskSection, 'id' | 'user_id' | 'created_at'>) => Promise<TaskSection | null>;
-  updateSection: (id: string, updates: Partial<TaskSection>) => Promise<void>;
-  deleteSection: (id: string) => Promise<void>;
-  updateSectionIncludeInFocusMode: (id: string, includeInFocusMode: boolean) => Promise<void>;
+  autoFocus?: boolean;
+  preselectedSectionId?: string | null;
+  parentTaskId?: string | null; // For sub-tasks
+  currentDate: Date; // Added currentDate prop
+  // New props for section management
+  createSection: (name: string) => Promise<void>;
+  updateSection: (sectionId: string, newName: string) => Promise<void>;
+  deleteSection: (sectionId: string) => Promise<void>;
+  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
+  initialData?: Partial<Task> | null;
 }
 
 const AddTaskForm: React.FC<AddTaskFormProps> = ({
@@ -19,40 +37,40 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({
   onTaskAdded,
   sections,
   allCategories,
+  autoFocus,
+  preselectedSectionId,
+  parentTaskId,
   currentDate,
-  createSection,
+  createSection, // Destructure new props
   updateSection,
   deleteSection,
   updateSectionIncludeInFocusMode,
+  initialData,
 }) => {
-  const [initialData] = useState<Partial<Task> | undefined>(undefined);
+  // Removed userId as it's not directly used in this component's logic
+  // const { user } = useAuth(); 
+  // const userId = user?.id || null; 
 
-  const handleSave = async (taskData: Omit<Task, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => {
+  const handleSave = async (taskData: Parameters<typeof onAddTask>[0]) => {
     const success = await onAddTask(taskData);
-    if (success && onTaskAdded) {
-      onTaskAdded();
+    if (success) {
+      onTaskAdded?.();
     }
     return success;
   };
 
-  const handleCancel = () => {
-    if (onTaskAdded) {
-      onTaskAdded();
-    }
-  };
-
   return (
     <TaskForm
-      initialData={initialData}
-      onSubmit={async (data) => {
-        await handleSave(data);
-        return Promise.resolve(); // Return void promise to match expected type
-      }}
-      onCancel={handleCancel}
+      initialData={initialData as Task | null}
+      onSave={handleSave}
+      onCancel={onTaskAdded || (() => {})} // If onTaskAdded is not provided, use a no-op
       sections={sections}
       allCategories={allCategories}
+      autoFocus={autoFocus}
+      preselectedSectionId={preselectedSectionId}
+      parentTaskId={parentTaskId}
       currentDate={currentDate}
-      createSection={createSection}
+      createSection={createSection} // Pass new props
       updateSection={updateSection}
       deleteSection={deleteSection}
       updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}

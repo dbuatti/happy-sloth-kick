@@ -1,33 +1,36 @@
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { 
-  Calendar, 
-  Flag, 
-  Link as LinkIcon, 
-  Paperclip, 
-  Pencil, 
-  Trash2, 
-  CheckCircle2,
-  AlertCircle,
-  Info,
-  Tag
-} from 'lucide-react';
-import { format, parseISO, isValid, isBefore, isToday, isTomorrow } from 'date-fns';
+import React, { useState, useMemo } from 'react';
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerDescription } from "@/components/ui/drawer";
+import { Trash2, ListTodo, Edit, Calendar, StickyNote, BellRing, FolderOpen, Repeat, Link as LinkIcon, ClipboardCopy } from 'lucide-react';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
+import { useSound } from '@/context/SoundContext';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from '@/lib/utils';
+import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
+import { getCategoryColorProps } from '@/lib/categoryColors';
+import { showSuccess, showError } from '@/utils/toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface TaskOverviewDialogProps {
-  task: Task;
+  task: Task | null;
   isOpen: boolean;
   onClose: () => void;
-  onEditClick: (task: Task) => void;
-  onUpdate: (id: string, updates: Partial<Task>) => Promise<void>;
-  onDelete: (id: string) => Promise<void>;
+  onEditClick: (task: Task) => void; // To open the full edit dialog
+  onUpdate: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
+  onDelete: (taskId: string) => void;
   sections: TaskSection[];
-  allCategories: Category[];
+  allCategories: Category[]; // This prop is no longer used directly in this component
+  allTasks: Task[];
 }
 
 const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
@@ -38,268 +41,292 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
   onUpdate,
   onDelete,
   sections,
-  allCategories,
+  // Removed allCategories from destructuring as it's not used here
+  allTasks,
 }) => {
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const { playSound } = useSound();
+  const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const isMobile = useIsMobile();
 
-  // Check if this is a virtual task (recurring instance)
-  const isVirtualTask = task.id.startsWith('virtual-');
+  const subtasks = useMemo(() => {
+    return allTasks.filter(t => t.parent_task_id === task?.id)
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
+  }, [allTasks, task?.id]);
 
-  const handleCompleteTask = async () => {
-    if (isVirtualTask) {
-      // For virtual tasks, we need to handle the completion differently
-      // This would typically involve updating the original recurring task
-      // For now, we'll just close the dialog
-      onClose();
-      return;
-    }
+  const originalTask = useMemo(() => {
+    if (!task?.original_task_id) return null;
+    return allTasks.find(t => t.id === task.original_task_id);
+  }, [allTasks, task]);
 
-    try {
-      if (task.recurring_type !== 'none') {
-        // For recurring tasks, we mark this specific instance as completed
-        await onUpdate(task.id, { status: 'completed' });
-      } else {
-        // For non-recurring tasks, we just mark as completed
-        await onUpdate(task.id, { status: 'completed' });
-      }
-      onClose();
-    } catch (error) {
-      console.error('Error completing task:', error);
-    }
-  };
+  const recurringType = originalTask ? originalTask.recurring_type : task?.recurring_type;
 
-  const handleDeleteTask = async () => {
-    if (isVirtualTask) {
-      // Virtual tasks can't be deleted from the database
-      onClose();
-      return;
-    }
-
-    setIsDeleting(true);
-    setDeleteError(null);
-    try {
-      await onDelete(task.id);
-      onClose();
-    } catch (error: any) {
-      console.error('Error deleting task:', error);
-      setDeleteError(error.message || 'Failed to delete task. Please try again.');
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  const getPriorityColor = (priority: string | null) => {
-    if (!priority) return 'bg-gray-100 text-gray-800';
+  const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'low': return 'bg-green-100 text-green-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'high': return 'bg-orange-100 text-orange-800';
-      case 'urgent': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'urgent': return 'text-priority-urgent';
+      case 'high': return 'text-priority-high';
+      case 'medium': return 'text-priority-medium';
+      case 'low': return 'text-priority-low';
+      default: return 'text-muted-foreground';
     }
   };
 
-  const getSectionName = (sectionId: string | null) => {
-    if (!sectionId) return 'No Section';
-    const section = sections.find(s => s.id === sectionId);
-    return section ? section.name : 'Unknown Section';
+  const getDueDateDisplay = (dueDate: string | null) => {
+    if (!dueDate) return null;
+    const date = parseISO(dueDate);
+    if (isSameDay(date, new Date())) {
+      return 'Today';
+    } else if (isPast(date) && !isSameDay(date, new Date())) {
+      return `Overdue ${format(date, 'MMM d')}`;
+    } else {
+      return `Due ${format(date, 'MMM d')}`;
+    }
   };
 
-  const getCategoryName = (categoryId: string | null) => {
-    if (!categoryId) return 'No Category';
-    const category = allCategories.find(c => c.id === categoryId);
-    return category ? category.name : 'Unknown Category';
+  const handleToggleMainTaskStatus = async () => {
+    if (!task) return;
+    setIsUpdatingStatus(true);
+    const newStatus = task.status === 'completed' ? 'to-do' : 'completed';
+    await onUpdate(task.id, { status: newStatus });
+    playSound('success');
+    setIsUpdatingStatus(false);
+    onClose();
   };
 
-  const getCategoryColor = (categoryId: string | null) => {
-    if (!categoryId) return 'bg-gray-100 text-gray-800';
-    const category = allCategories.find(c => c.id === categoryId);
-    return category ? `bg-${category.color}-100 text-${category.color}-800` : 'bg-gray-100 text-gray-800';
+  const handleSubtaskStatusChange = async (subtaskId: string, newStatus: Task['status']) => {
+    await onUpdate(subtaskId, { status: newStatus });
   };
 
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'No due date';
-    const date = parseISO(dateString);
-    if (!isValid(date)) return 'Invalid date';
-    
-    if (isToday(date)) return 'Today';
-    if (isTomorrow(date)) return 'Tomorrow';
-    return format(date, 'EEE, MMM d');
+  const handleDeleteClick = () => {
+    setShowConfirmDeleteDialog(true);
   };
 
-  const isOverdue = (dateString: string | null) => {
-    if (!dateString) return false;
-    const date = parseISO(dateString);
-    return isValid(date) && isBefore(date, new Date()) && !isToday(date);
+  const confirmDeleteTask = () => {
+    if (task) {
+      onDelete(task.id);
+      setShowConfirmDeleteDialog(false);
+      onClose();
+    }
   };
 
-  // For virtual tasks, we don't show the complete button since they're already completed
-  const showCompleteButton = task.status !== 'completed' && !isVirtualTask;
+  const isUrl = (path: string) => path.startsWith('http://') || path.startsWith('https://');
 
-  // Simple text component for notes (replacing TextWithLinks)
-  const TextWithLinks = ({ text }: { text: string | null }) => (
-    <div className="whitespace-pre-wrap break-words">{text || ''}</div>
+  const handleCopyPath = async (path: string) => {
+    try {
+      await navigator.clipboard.writeText(path);
+      showSuccess('Path copied to clipboard!');
+    } catch (err) {
+      showError('Failed to copy path.');
+    }
+  };
+
+  if (!task) return null;
+
+  const categoryColorProps = getCategoryColorProps(task.category_color);
+  const sectionName = task.section_id ? sections.find(s => s.id === task.section_id)?.name : 'No Section';
+
+  const isOverdue = task.due_date && task.status !== 'completed' && isPast(parseISO(task.due_date)) && !isSameDay(parseISO(task.due_date), new Date());
+  const isDueToday = task.due_date && task.status !== 'completed' && isSameDay(parseISO(task.due_date), new Date());
+
+  const TitleContent = ({ isDrawer = false }: { isDrawer?: boolean }) => {
+    const TitleComponent = isDrawer ? DrawerTitle : DialogTitle;
+    return (
+      <TitleComponent className="flex items-center gap-2">
+        <div className={cn("w-3.5 h-3.5 rounded-full flex items-center justify-center border", categoryColorProps.backgroundClass, categoryColorProps.dotBorder)}>
+          <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: categoryColorProps.dotColor }}></div>
+        </div>
+        <span className="flex-1 truncate">{task.description}</span>
+      </TitleComponent>
+    );
+  };
+
+  const MainContent = () => (
+    <div className="space-y-3 text-sm text-foreground">
+      {task.image_url && (
+        <div className="mb-3">
+          <img src={task.image_url} alt="Task attachment" className="rounded-lg max-h-64 w-full object-contain bg-muted" />
+        </div>
+      )}
+      <div className="grid grid-cols-2 gap-y-1.5 gap-x-4">
+        <div className="flex items-center gap-2">
+          <ListTodo className="h-3.5 w-3.5 text-muted-foreground" />
+          <span>Status: <span className="font-semibold capitalize">{task.status}</span></span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className={cn("h-3.5 w-3.5", getPriorityColor(task.priority))}><Edit className="h-3.5 w-3.5" /></span>
+          <span>Priority: <span className={cn("font-semibold capitalize", getPriorityColor(task.priority))}>{task.priority}</span></span>
+        </div>
+        <div className="flex items-center gap-2">
+          <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
+          <span>Section: <span className="font-semibold">{sectionName}</span></span>
+        </div>
+        {recurringType !== 'none' && (
+          <div className="flex items-center gap-2">
+            <Repeat className="h-3.5 w-3.5 text-muted-foreground" />
+            <span>Recurring: <span className="font-semibold capitalize">{recurringType}</span></span>
+          </div>
+        )}
+        {task.due_date && (
+          <div className="flex items-center gap-2 col-span-2">
+            <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+            <span>Due Date: <span className={cn("font-semibold", isOverdue && "text-status-overdue", isDueToday && "text-status-due-today")}>{getDueDateDisplay(task.due_date)}</span></span>
+          </div>
+        )}
+        {task.remind_at && (
+          <div className="flex items-center gap-2 col-span-2">
+            <BellRing className="h-3.5 w-3.5 text-muted-foreground" />
+            <span>Reminder: <span className="font-semibold">{isValid(parseISO(task.remind_at)) ? format(parseISO(task.remind_at), 'MMM d, yyyy HH:mm') : 'Invalid Date'}</span></span>
+          </div>
+        )}
+        {task.link && (
+          <div className="flex items-center gap-2 col-span-2">
+            {isUrl(task.link) ? (
+              <>
+                <LinkIcon className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                <span className="flex-shrink-0">Link:</span>
+                <a href={task.link} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline flex-1 min-w-0 truncate">
+                  {task.link}
+                </a>
+              </>
+            ) : (
+              <>
+                <ClipboardCopy className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                <span className="flex-shrink-0">Path:</span>
+                <span className="font-mono text-sm bg-muted px-1 rounded flex-1 min-w-0 truncate">{task.link}</span>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleCopyPath(task.link!)}>
+                  <ClipboardCopy className="h-3.5 w-3.5" />
+                </Button>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
+      {task.notes && (
+        <div className="space-y-1">
+          <h4 className="font-semibold flex items-center gap-2"><StickyNote className="h-3.5 w-3.5 text-muted-foreground" /> Notes:</h4>
+          <p className="text-muted-foreground whitespace-pre-wrap">{task.notes}</p>
+        </div>
+      )}
+
+      <div className="space-y-1.5">
+        <h4 className="font-semibold flex items-center gap-2"><ListTodo className="h-3.5 w-3.5 text-muted-foreground" /> Sub-tasks ({subtasks.length})</h4>
+        {subtasks.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No sub-tasks for this task.</p>
+        ) : (
+          <ul className="space-y-1.5">
+            {subtasks.map(subtask => (
+              <li key={subtask.id} className="flex items-center space-x-2 p-1.5 rounded-md bg-background shadow-sm">
+                <input // Changed from Checkbox to input type="checkbox"
+                  type="checkbox"
+                  checked={subtask.status === 'completed'}
+                  onChange={(e) => handleSubtaskStatusChange(subtask.id, e.target.checked ? 'completed' : 'to-do')}
+                  id={`subtask-overview-${subtask.id}`}
+                  className="flex-shrink-0 h-3.5 w-3.5"
+                  disabled={isUpdatingStatus}
+                />
+                <label
+                  htmlFor={`subtask-overview-${subtask.id}`}
+                  className={cn(
+                    "flex-1 text-sm font-medium leading-tight",
+                    subtask.status === 'completed' ? 'line-through text-gray-500 dark:text-gray-400' : 'text-foreground',
+                    "block truncate"
+                  )}
+                >
+                  {subtask.description}
+                </label>
+                {subtask.status === 'completed' && <ListTodo className="h-3.5 w-3.5 text-green-500" />}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <p className="text-xs text-muted-foreground text-right">Created: {format(parseISO(task.created_at), 'MMM d, yyyy HH:mm')}</p>
+    </div>
   );
 
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md sm:max-w-lg md:max-w-2xl">
-        <DialogHeader>
-          <div className="flex justify-between items-start">
-            <DialogTitle className="text-xl">
-              {task.status === 'completed' ? (
-                <span className="flex items-center gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-green-500" />
-                  <span className="line-through">{task.description}</span>
-                </span>
-              ) : (
-                task.description
-              )}
-            </DialogTitle>
-            {!isVirtualTask && (
-              <Button variant="ghost" size="icon" onClick={() => onEditClick(task)}>
-                <Pencil className="h-4 w-4" />
-              </Button>
+  const FooterContent = ({ isDrawer = false }: { isDrawer?: boolean }) => {
+    const FooterComponent = isDrawer ? DrawerFooter : DialogFooter;
+    return (
+      <FooterComponent className={isDrawer ? "pt-2" : "flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2 pt-2"}>
+        <Button
+          variant="default"
+          onClick={() => onEditClick(task)}
+          className="w-full sm:w-auto mt-1.5 sm:mt-0 h-9"
+        >
+          <Edit className="mr-2 h-3.5 w-3.5" /> Edit
+        </Button>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Button
+            variant={task.status === 'completed' ? 'outline' : 'default'}
+            onClick={handleToggleMainTaskStatus}
+            disabled={isUpdatingStatus}
+            className="flex-1 h-9"
+          >
+            {task.status === 'completed' ? (
+              <><ListTodo className="mr-2 h-3.5 w-3.5" /> Mark To-Do</>
+            ) : (
+              <><ListTodo className="mr-2 h-3.5 w-3.5" /> Mark Complete</>
             )}
-          </div>
-        </DialogHeader>
-        
-        <div className="space-y-4">
-          {task.notes && (
-            <div>
-              <h3 className="text-sm font-medium mb-1 flex items-center">
-                <Info className="h-4 w-4 mr-2" />
-                Notes
-              </h3>
-              <div className="text-sm text-muted-foreground bg-muted p-3 rounded-md">
-                <TextWithLinks text={task.notes} />
-              </div>
-            </div>
-          )}
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <h3 className="text-sm font-medium mb-1 flex items-center">
-                <Calendar className="h-4 w-4 mr-2" />
-                Due Date
-              </h3>
-              <Badge 
-                variant="secondary" 
-                className={cn(
-                  "text-xs py-1 px-2",
-                  isOverdue(task.due_date) && task.status !== 'completed' && "bg-red-100 text-red-800"
-                )}
-              >
-                {formatDate(task.due_date)}
-              </Badge>
-            </div>
-            
-            <div>
-              <h3 className="text-sm font-medium mb-1 flex items-center">
-                <Flag className="h-4 w-4 mr-2" />
-                Priority
-              </h3>
-              <Badge 
-                variant="secondary" 
-                className={cn("text-xs py-1 px-2", getPriorityColor(task.priority))}
-              >
-                {task.priority || 'medium'}
-              </Badge>
-            </div>
-            
-            <div>
-              <h3 className="text-sm font-medium mb-1 flex items-center">
-                <Tag className="h-4 w-4 mr-2" />
-                Category
-              </h3>
-              <Badge 
-                variant="secondary" 
-                className={cn("text-xs py-1 px-2", getCategoryColor(task.category))}
-              >
-                {getCategoryName(task.category)}
-              </Badge>
-            </div>
-            
-            <div>
-              <h3 className="text-sm font-medium mb-1 flex items-center">
-                <Paperclip className="h-4 w-4 mr-2" />
-                Section
-              </h3>
-              <Badge variant="secondary" className="text-xs py-1 px-2">
-                {getSectionName(task.section_id)}
-              </Badge>
-            </div>
-          </div>
-          
-          {task.link && (
-            <div>
-              <h3 className="text-sm font-medium mb-1 flex items-center">
-                <LinkIcon className="h-4 w-4 mr-2" />
-                Link
-              </h3>
-              <a 
-                href={task.link} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-sm text-blue-600 hover:underline break-all"
-              >
-                {task.link}
-              </a>
-            </div>
-          )}
-          
-          {task.image_url && (
-            <div>
-              <h3 className="text-sm font-medium mb-1">Image</h3>
-              <img 
-                src={task.image_url} 
-                alt="Task related" 
-                className="rounded-md max-w-full h-auto"
-              />
-            </div>
-          )}
-          
-          <Separator />
-          
-          <div className="flex flex-wrap gap-2">
-            {showCompleteButton && (
-              <Button onClick={handleCompleteTask} className="flex-1">
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                Complete Task
-              </Button>
-            )}
-            {!isVirtualTask && (
-              <Button 
-                variant="outline" 
-                onClick={handleDeleteTask} 
-                disabled={isDeleting}
-                className="flex-1 border-destructive text-destructive hover:bg-destructive/10"
-              >
-                {isDeleting ? (
-                  <>
-                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-destructive border-t-transparent"></div>
-                    Deleting...
-                  </>
-                ) : (
-                  <>
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete Task
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
-          
-          {deleteError && (
-            <div className="text-sm text-destructive flex items-center">
-              <AlertCircle className="h-4 w-4 mr-2" />
-              {deleteError}
-            </div>
-          )}
+          </Button>
+          <Button variant="destructive" onClick={handleDeleteClick} disabled={isUpdatingStatus} className="flex-1 h-9">
+            <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete
+          </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </FooterComponent>
+    );
+  };
+
+  return (
+    <>
+      {isMobile ? (
+        <Drawer open={isOpen} onOpenChange={onClose}>
+          <DrawerContent>
+            <DrawerHeader className="text-left">
+              <TitleContent isDrawer />
+              <DrawerDescription className="sr-only">
+                View and manage the details of this task.
+              </DrawerDescription>
+            </DrawerHeader>
+            <div className="px-4 pb-4 overflow-y-auto">
+              <MainContent />
+            </div>
+            <FooterContent isDrawer />
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Dialog open={isOpen} onOpenChange={onClose}>
+          <DialogContent className="sm:max-w-[425px] md:max-w-lg lg:max-w-xl">
+            <DialogHeader>
+              <TitleContent />
+              <DialogDescription className="sr-only">
+                View and manage the details of this task.
+              </DialogDescription>
+            </DialogHeader>
+            <MainContent />
+            <FooterContent />
+          </DialogContent>
+        </Dialog>
+      )}
+
+      <AlertDialog open={showConfirmDeleteDialog} onOpenChange={setShowConfirmDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete this task and all its sub-tasks.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isUpdatingStatus}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteTask} disabled={isUpdatingStatus}>
+              {isUpdatingStatus ? 'Deleting...' : 'Continue'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 
