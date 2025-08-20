@@ -1,50 +1,55 @@
 import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
+import AppointmentCard from '@/components/AppointmentCard';
 import { Appointment } from '@/hooks/useAppointments';
 import { Task } from '@/hooks/useTasks';
-import AppointmentCard from './AppointmentCard';
-import { differenceInMinutes, parseISO, isValid } from 'date-fns';
 
 interface DraggableAppointmentCardProps {
-  appointment: Appointment;
+  appointment: Appointment & { trackIndex: number; totalTracks: number };
   task?: Task;
   onEdit: (appointment: Appointment) => void;
   onUnschedule: (appointmentId: string) => void;
-  trackIndex: number; // New prop
-  totalTracks: number; // New prop
-  style?: React.CSSProperties; // Make style prop optional
+  trackIndex: number;
+  totalTracks: number;
+  style?: React.CSSProperties;
 }
 
-const DraggableAppointmentCard: React.FC<DraggableAppointmentCardProps> = (props) => {
-  const { appointment, trackIndex, totalTracks } = props; // Destructure new props
-
-  const startTime = appointment.start_time ? parseISO(`2000-01-01T${appointment.start_time}`) : null;
-  const endTime = appointment.end_time ? parseISO(`2000-01-01T${appointment.end_time}`) : null;
-  const duration = startTime && endTime && isValid(startTime) && isValid(endTime) ? differenceInMinutes(endTime, startTime) : 0;
-
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+const DraggableAppointmentCard: React.FC<DraggableAppointmentCardProps> = ({
+  appointment,
+  task,
+  onEdit,
+  onUnschedule,
+  trackIndex,
+  totalTracks,
+  style,
+}) => {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `appointment-${appointment.id}`,
     data: {
       type: 'appointment',
       appointment,
-      duration,
+      duration: appointment.end_time && appointment.start_time 
+        ? (new Date(`2000-01-01T${appointment.end_time}`).getTime() - new Date(`2000-01-01T${appointment.start_time}`).getTime()) / 60000 
+        : 30
     },
   });
 
-  const draggableStyle: React.CSSProperties = {
+  const dragStyle = {
+    transform: CSS.Translate.toString(transform),
     opacity: isDragging ? 0.5 : 1,
-    ...props.style, // Merge passed style with draggable style
-    position: 'relative', // Make this container relative for absolute children
-    height: '100%', // Ensure it fills its grid row height
+    ...style,
   };
 
   return (
-    <div ref={setNodeRef} style={draggableStyle} {...attributes} {...listeners} className="cursor-grab touch-none select-none">
+    <div ref={setNodeRef} style={dragStyle} {...listeners} {...attributes} className="relative">
       <AppointmentCard
-        {...props}
-        // Pass positioning props to AppointmentCard for absolute positioning within this div
-        trackIndex={trackIndex} // Pass trackIndex
-        totalTracks={totalTracks} // Pass totalTracks
+        appointment={appointment}
+        task={task}
+        onEdit={onEdit}
+        onUnschedule={onUnschedule}
+        trackIndex={trackIndex}
+        totalTracks={totalTracks}
       />
     </div>
   );
