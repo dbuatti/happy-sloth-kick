@@ -2,7 +2,7 @@ import { useCallback, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
-import { parseISO, isValid, format, setHours, setMinutes, getHours, getMinutes } from 'date-fns';
+import { parseISO, isValid, format } from 'date-fns'; // Removed setHours, setMinutes, getHours, getMinutes
 import { arrayMove } from '@dnd-kit/sortable';
 
 import { showError, showSuccess } from '@/utils/toast';
@@ -248,7 +248,8 @@ export const useTaskMutations = ({
       showSuccess('Task(s) deleted!');
       idsToDelete.forEach(dismissReminder);
       invalidateTasksQueries();
-    } catch (e: any) {
+    }
+    catch (e: any) {
       showError('Failed to delete task.');
       console.error(`useTasks: Error deleting task(s) from DB:`, e.message);
       invalidateTasksQueries();
@@ -584,8 +585,8 @@ export const useTaskMutations = ({
             order: virtualTask.order,
             original_task_id: virtualTask.original_task_id || virtualTask.id.replace(/^virtual-/, '').split(/-\d{4}-\d{2}-\d{2}$/)[0],
             parent_task_id: virtualTask.parent_task_id,
-            link: virtualTask.link,
-            image_url: virtualTask.image_url,
+            link: updates.link !== undefined ? updates.link : virtualTask.link,
+            image_url: updates.image_url !== undefined ? updates.image_url : virtualTask.image_url,
         };
 
         queryClient.setQueryData(['tasks', userId], (oldTasks: Task[] | undefined) => {
@@ -727,7 +728,7 @@ export const useTaskMutations = ({
     const formattedDate = format(effectiveCurrentDate, 'yyyy-MM-dd');
     const isCurrentlyOff = doTodayOffIds.has(taskIdToLog);
 
-    queryClient.setQueryData(['do_today_off_log', userId, format(effectiveCurrentDate, 'yyyy-MM-dd')], (oldSet: Set<string> | undefined) => {
+    queryClient.setQueryData(['do_today_off_log', userId, formattedDate], (oldSet: Set<string> | undefined) => {
         const newSet = new Set(oldSet || []);
         if (isCurrentlyOff) {
             newSet.delete(taskIdToLog);
@@ -753,12 +754,12 @@ export const useTaskMutations = ({
             if (error) throw error;
         }
         invalidateTasksQueries();
-        queryClient.invalidateQueries({ queryKey: ['do_today_off_log', userId, format(effectiveCurrentDate, 'yyyy-MM-dd')] });
+        queryClient.invalidateQueries({ queryKey: ['do_today_off_log', userId, formattedDate] });
     } catch (e: any) {
         showError("Failed to sync 'Do Today' setting.");
         console.error("Error toggling Do Today:", e);
         invalidateTasksQueries();
-        queryClient.invalidateQueries({ queryKey: ['do_today_off_log', userId, format(effectiveCurrentDate, 'yyyy-MM-dd')] });
+        queryClient.invalidateQueries({ queryKey: ['do_today_off_log', userId, formattedDate] });
     }
   }, [userId, effectiveCurrentDate, doTodayOffIds, queryClient, invalidateTasksQueries]);
 
