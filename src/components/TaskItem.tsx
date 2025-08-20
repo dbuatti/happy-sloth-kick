@@ -1,14 +1,12 @@
-import React, { useState } from 'react';
-import { format, parseISO, isValid, isToday, isTomorrow, addDays } from 'date-fns';
+import React from 'react';
+import { format, parseISO, isValid, isToday, isTomorrow } from 'date-fns';
 import { 
   MoreHorizontal, 
   Calendar, 
-  Flag, 
   Paperclip, 
   Link as LinkIcon, 
   CheckCircle2, 
   Circle, 
-  Clock, 
   Archive,
   RotateCcw,
   ListTodo,

@@ -142,17 +142,6 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
     <div className="whitespace-pre-wrap break-words">{text || ''}</div>
   );
 
-  const getPriorityDotColor = (priority: string | null) => {
-    if (!priority) return 'bg-gray-400';
-    switch (priority) {
-      case 'low': return 'bg-green-500';
-      case 'medium': return 'bg-yellow-500';
-      case 'high': return 'bg-orange-500';
-      case 'urgent': return 'bg-red-500';
-      default: return 'bg-gray-400';
-    }
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md sm:max-w-lg md:max-w-2xl">
