@@ -99,10 +99,8 @@ const TaskForm: React.FC<TaskFormProps> = ({
         link: formState.link,
         image_url: null,
         status: 'to-do', // Add missing status property
-        user_id: '', // Will be set by the hook
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
+        // Remove user_id, created_at, updated_at as they are omitted in the onSubmit type
+      } as Omit<Task, 'id' | 'created_at' | 'updated_at' | 'user_id'>);
     } finally {
       setIsSubmitting(false);
     }

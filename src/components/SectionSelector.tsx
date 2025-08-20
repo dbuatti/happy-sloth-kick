@@ -130,7 +130,7 @@ const SectionSelector: React.FC<SectionSelectorProps> = ({
             </div>
             
             <div className="space-y-2 max-h-60 overflow-y-auto">
-              {sections.map((section, index) => (
+              {sections.map((section) => (
                 <div
                   key={section.id}
                   className="flex items-center gap-2 p-2 bg-muted rounded-md"
