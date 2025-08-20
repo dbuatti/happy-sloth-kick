@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Plus, CheckCircle2, ChevronDown, MoreHorizontal, Trash2, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { TaskSection } from '@/hooks/tasks/types'; // Updated import path
+import { TaskSection } from '@/hooks/useTasks';
 
 interface SortableSectionHeaderProps {
   section: TaskSection;
@@ -118,6 +118,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
                 onChange={(e) => setLocalSectionName(e.target.value)}
                 onBlur={handleSaveEdit}
                 onKeyDown={handleInputKeyDown}
+                onMouseDown={(e) => e.stopPropagation()}
                 className={cn(
                   "!text-xl !font-bold",
                   "border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0",

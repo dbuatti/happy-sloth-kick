@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar, ListTodo } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Task, TaskSection } from '@/hooks/tasks/types'; // Updated import path
+import { Task, TaskSection } from '@/hooks/useTasks';
 
 interface TimeBlockActionMenuProps {
   block: { start: Date; end: Date };
@@ -23,7 +23,7 @@ const TimeBlockActionMenu: React.FC<TimeBlockActionMenuProps> = ({ block, onAddA
         </SelectTrigger>
         <SelectContent>
           {unscheduledTasks.length > 0 ? (
-            unscheduledTasks.map((task: Task) => {
+            unscheduledTasks.map(task => {
               const section = sections.find(s => s.id === task.section_id);
               return (
                 <SelectItem key={task.id} value={task.id}>

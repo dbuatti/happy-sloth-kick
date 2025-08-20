@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Plus } from 'lucide-react';
-import { Task } from '@/hooks/tasks/types'; // Updated import path
+import { Task } from '@/hooks/useTasks';
 
 interface QuickAddTaskProps {
   sectionId: string | null;

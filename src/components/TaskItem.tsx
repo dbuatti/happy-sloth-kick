@@ -5,7 +5,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock, ChevronRight } from 'lucide-react';
 import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { cn } from "@/lib/utils";
-import { Task } from '@/hooks/tasks/types'; // Updated import path
+import { Task } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { CheckCircle2 } from 'lucide-react';
@@ -33,7 +33,6 @@ interface TaskItemProps {
   setFocusTask: (taskId: string | null) => Promise<void>;
   isDoToday: boolean;
   toggleDoToday: (task: Task) => void;
-  doTodayOffIds: Set<string>;
   scheduledTasksMap: Map<string, Appointment>;
   isDemo?: boolean;
 }
@@ -54,7 +53,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
   setFocusTask,
   isDoToday,
   toggleDoToday,
-  doTodayOffIds,
   scheduledTasksMap,
   isDemo = false,
 }) => {
@@ -361,7 +359,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
             )}
             <DropdownMenuSeparator />
             <DropdownMenuSub>
-              <DropdownMenuSubTrigger>
+              <DropdownMenuSubTrigger onSelect={(e) => e.preventDefault()}>
                 <FolderOpen className="mr-2 h-4 w-4" /> Move to Section
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent>
@@ -390,7 +388,9 @@ const TaskItem: React.FC<TaskItemProps> = ({
                         {section.name}
                       </DropdownMenuItem>
                     ))}
-                  </DropdownMenuSubContent>
+                  </>
+                )}
+              </DropdownMenuSubContent>
             </DropdownMenuSub>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={() => { onDelete(task.id); playSound('alert'); }} className="text-destructive focus:text-destructive">

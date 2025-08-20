@@ -3,10 +3,9 @@ import { CardContent } from "@/components/ui/card";
 import { useWorkHours, WorkHour } from '@/hooks/useWorkHours';
 import DateNavigator from '@/components/DateNavigator';
 import { useAppointments } from '@/hooks/useAppointments';
-import { useTasks } from '@/hooks/useTasks';
-import { Task } from '@/hooks/tasks/types'; // Updated import path
+import { useTasks, Task } from '@/hooks/useTasks';
 import { useSettings } from '@/context/SettingsContext';
-import ScheduleGridContent from './ScheduleGridContent';
+import ScheduleGridContent from './ScheduleGridContent'; // Import the new component
 
 interface DailyScheduleViewProps {
   currentDate: Date;

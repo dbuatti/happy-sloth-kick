@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from '@/lib/utils';
 import { getCategoryColorProps } from '@/lib/categoryColors';
-import { Category } from '@/hooks/tasks/types'; // Updated import path
+import { Category } from '@/hooks/useTasks';
 // Removed useAuth as it's not directly used in this component
 import ManageCategoriesDialog from './ManageCategoriesDialog'; // Import the new dialog
 
@@ -59,7 +59,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, ca
             </SelectValue>
           </SelectTrigger>
           <SelectContent className="z-[9999]">
-            {categories.map((category: Category) => {
+            {categories.map(category => {
               const colorProps = getCategoryColorProps(category.color);
               return (
                 <SelectItem key={category.id} value={category.id}>

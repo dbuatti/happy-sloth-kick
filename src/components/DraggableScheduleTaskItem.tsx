@@ -1,6 +1,6 @@
 import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import { Task, TaskSection } from '@/hooks/tasks/types'; // Updated import path
+import { Task, TaskSection } from '@/hooks/useTasks';
 import { cn } from '@/lib/utils';
 import { GripVertical, FolderOpen } from 'lucide-react';
 

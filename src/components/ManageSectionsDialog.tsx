@@ -5,10 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Edit, Trash2, Eye, EyeOff, Plus } from 'lucide-react';
-import { TaskSection } from '@/hooks/tasks/types'; // Updated import path
+import { TaskSection } from '@/hooks/useTasks';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { showError } from '@/utils/toast';
+import { showError } from '@/utils/toast'; // Removed showSuccess, it is not used here
 
 interface ManageSectionsDialogProps {
   isOpen: boolean;
@@ -131,7 +131,7 @@ const ManageSectionsDialog: React.FC<ManageSectionsDialogProps> = ({
             <p className="text-muted-foreground text-center">No sections created yet.</p>
           ) : (
             <ul className="space-y-2">
-              {sections.map((section: TaskSection) => (
+              {sections.map(section => (
                 <li key={section.id} className="flex items-center justify-between p-2 rounded-md shadow-sm bg-background">
                   {editingSectionId === section.id ? (
                     <div className="flex-1 flex items-center gap-2">

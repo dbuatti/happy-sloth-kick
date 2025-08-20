@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerDescription } from "@/components/ui/drawer";
 import { Trash2, ListTodo, Edit, Calendar, StickyNote, BellRing, FolderOpen, Repeat, Link as LinkIcon, ClipboardCopy } from 'lucide-react';
-import { Task, TaskSection, Category } from '@/hooks/tasks/types'; // Updated import path
+import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
 import {
   AlertDialog,
@@ -215,7 +215,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
           <p className="text-sm text-muted-foreground">No sub-tasks for this task.</p>
         ) : (
           <ul className="space-y-1.5">
-            {subtasks.map((subtask: Task) => (
+            {subtasks.map(subtask => (
               <li key={subtask.id} className="flex items-center space-x-2 p-1.5 rounded-md bg-background shadow-sm">
                 <input // Changed from Checkbox to input type="checkbox"
                   type="checkbox"

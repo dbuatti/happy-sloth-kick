@@ -12,7 +12,7 @@ import PrioritySelector from "./PrioritySelector";
 import SectionSelector from "./SectionSelector";
 import { format, setHours, setMinutes, parseISO, isValid } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Task, TaskSection, Category } from '@/hooks/tasks/types'; // Updated import path
+import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -137,7 +137,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
       remindAtDate: null,
       remindAtTime: '',
       sectionId: preselectedSectionId,
-      recurringType: 'none' as const,
+      recurringType: 'none',
       parentTaskId: parentTaskId ?? null,
       link: null,
       image_url: null,
@@ -197,7 +197,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
     }
     setIsSuggesting(true);
     try {
-      const categoriesForAI = allCategories.map((cat: Category) => ({ id: cat.id, name: cat.name }));
+      const categoriesForAI = allCategories.map(cat => ({ id: cat.id, name: cat.name }));
       const suggestions = await suggestTaskDetails(description, categoriesForAI, currentDate);
 
       if (suggestions) {
