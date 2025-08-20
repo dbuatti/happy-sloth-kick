@@ -1,4 +1,4 @@
-import { type UserSettings } from '@/hooks/useUserSettings';
+// Removed unused import: import { type UserSettings } from '@/hooks/useUserSettings';
 
 export interface Task {
   id: string;

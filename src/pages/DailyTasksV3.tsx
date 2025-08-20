@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import TaskList from '@/components/TaskList';
+import { TaskList } from '@/components/TaskList'; // Corrected to named import
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import TaskOverviewDialog from '@/components/TaskOverviewDialog';
 import { useTasks, Task } from '@/hooks/useTasks';
@@ -144,11 +144,6 @@ const DailyTasksV3: React.FC<DailyTasksV3Props> = ({ isDemo = false, demoUserId 
   const handleOpenOverview = (task: Task) => {
     setTaskToOverview(task);
     setIsTaskOverviewOpen(true);
-  };
-
-  const handleOpenDetail = (task: Task) => {
-    setTaskToEdit(task);
-    setIsTaskDetailOpen(true);
   };
 
   const handleEditTaskFromOverview = (task: Task) => {
