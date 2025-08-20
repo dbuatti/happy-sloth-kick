@@ -1,57 +1,45 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+"use client";
+
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess } from '@/utils/toast';
-import {
-  format,
-  isSameDay,
-  startOfWeek,
-  startOfMonth,
-  parseISO,
-  addDays,
-  addWeeks,
-  addMonths,
-  addYears,
-  startOfDay,
-} from 'date-fns';
-import { useQueryClient } from '@tanstack/react-query';
+import { useReminders } from '@/context/ReminderContext';
+import { v4 as uuidv4 } from 'uuid';
+import { isSameDay, parseISO, isValid, isBefore, format, setHours, setMinutes, getHours, getMinutes, isAfter, startOfDay, addDays } from 'date-fns';
+import { arrayMove } from '@dnd-kit/sortable';
+import { useSettings } from '@/context/SettingsContext';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
-// Type Definitions
 export interface Task {
-  id: string; // Can be a UUID or a virtual ID (e.g., "virtual-...")
-  description: string;
-  status: 'to-do' | 'completed' | 'skipped' | 'archived'; // Added 'skipped' and 'archived'
+  id: string;
+  description: string | null; // Changed to allow null
+  status: 'to-do' | 'completed' | 'skipped' | 'archived';
+  recurring_type: 'none' | 'daily' | 'weekly' | 'monthly';
+  created_at: string;
+  updated_at: string;
   user_id: string;
-  category?: string | null; // UUID, can be null
-  priority?: 'low' | 'medium' | 'high' | 'urgent' | null; // Can be null
-  due_date?: string | null; // ISO date string (e.g., 'YYYY-MM-DD'), can be null
-  notes?: string | null; // Can be null
-  remind_at?: string | null; // ISO datetime string, can be null
-  section_id?: string | null; // UUID, can be null
-  order?: number | null; // Can be null
-  parent_task_id?: string | null; // UUID, can be null
-  recurring_type?: 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly' | null; // Added 'yearly', can be null
-  original_task_id?: string | null; // UUID of the recurring template task, can be null
-  link?: string | null; // Can be null
-  image_url?: string | null; // Can be null
-  created_at: string; // Required
-  updated_at?: string | null; // Can be null
+  category: string;
+  category_color: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent' | string;
+  due_date: string | null;
+  notes: string | null;
+  remind_at: string | null;
+  section_id: string | null;
+  order: number | null;
+  original_task_id: string | null;
+  parent_task_id: string | null;
+  link: string | null;
+  image_url: string | null;
 }
-
-export type NewTaskData = Omit<Task, 'id' | 'created_at' | 'updated_at' | 'user_id'>;
-export type UpdateTaskData = Partial<Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at'>>;
 
 export interface TaskSection {
   id: string;
   name: string;
   user_id: string;
-  order: number | null; // Can be null
-  created_at: string; // Required
+  order: number | null;
   include_in_focus_mode: boolean;
 }
-
-export type NewTaskSectionData = Omit<TaskSection, 'id' | 'created_at' | 'user_id'>;
-export type UpdateTaskSectionData = Partial<Omit<TaskSection, 'id' | 'user_id' | 'created_at'>>;
 
 export interface Category {
   id: string;
@@ -61,534 +49,1351 @@ export interface Category {
   created_at: string;
 }
 
-export type NewCategoryData = Omit<Category, 'id' | 'created_at' | 'user_id'>;
-export type UpdateCategoryData = Partial<Omit<Category, 'id' | 'user_id' | 'created_at'>>;
+type TaskUpdate = Partial<Omit<Task, 'id' | 'user_id' | 'created_at'>>;
 
-interface UseTasksOptions {
-  currentDate?: Date;
-  userId?: string; // Optional userId for demo mode
+interface NewTaskData {
+  description: string;
+  status?: Task['status'];
+  recurring_type?: Task['recurring_type'];
+  category: string;
+  priority?: Task['priority'];
+  due_date?: string | null;
+  notes?: string | null;
+  remind_at?: string | null;
+  section_id?: string | null;
+  parent_task_id?: string | null;
+  original_task_id?: string | null; // Added for new instance creation
+  created_at?: string; // Added for new instance creation
+  link?: string | null;
+  image_url?: string | null;
 }
 
-const isValidUuid = (uuid: string) => {
-  return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(uuid);
+// Helper function to clean task data for database insertion/update
+const cleanTaskForDb = (task: Partial<Task> | NewTaskData): Omit<Partial<Task>, 'category_color'> => {
+  const cleaned: Omit<Partial<Task>, 'category_color'> = { ...task };
+  // Remove client-side only fields
+  if ('category_color' in cleaned) {
+    delete (cleaned as any).category_color;
+  }
+  // Ensure optional fields are explicitly null if empty string or undefined
+  if (cleaned.description === '') cleaned.description = null;
+  if (cleaned.notes === '') cleaned.notes = null;
+  if (cleaned.link === '') cleaned.link = null;
+  if (cleaned.image_url === '') cleaned.image_url = null;
+  if (cleaned.due_date === '') cleaned.due_date = null;
+  if (cleaned.remind_at === '') cleaned.remind_at = null;
+  if (cleaned.section_id === '') cleaned.section_id = null;
+  if (cleaned.parent_task_id === '') cleaned.parent_task_id = null;
+  if (cleaned.original_task_id === '') cleaned.original_task_id = null;
+
+  return cleaned;
 };
 
-export const useTasks = ({ currentDate = new Date(), userId: propUserId }: UseTasksOptions = {}) => {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
+// --- Query Functions (moved outside the hook) ---
+
+// Query function for sections
+export const fetchSections = async (userId: string) => {
+  const { data, error } = await supabase
+    .from('task_sections')
+    .select('id, name, user_id, order, include_in_focus_mode')
+    .eq('user_id', userId)
+    .order('order', { ascending: true })
+    .order('name', { ascending: true });
+  if (error) throw error;
+  return data || [];
+};
+
+// Query function for categories
+export const fetchCategories = async (userId: string) => {
+  const { data, error } = await supabase
+    .from('task_categories')
+    .select('id, name, color, user_id, created_at')
+    .eq('user_id', userId);
+  if (error) throw error;
+  return data || [];
+};
+
+// Query function for doTodayOffLog
+export const fetchDoTodayOffLog = async (userId: string, date: Date) => {
+  const formattedDate = format(date, 'yyyy-MM-dd');
+  const { data: offLogData, error: offLogError } = await supabase
+    .from('do_today_off_log')
+    .select('task_id')
+    .eq('user_id', userId)
+    .eq('off_date', formattedDate);
+  if (offLogError) {
+      console.error(offLogError);
+      return new Set<string>();
+  }
+  return new Set(offLogData?.map(item => item.task_id) || new Set());
+};
+
+// Query function for tasks
+export const fetchTasks = async (userId: string): Promise<Omit<Task, 'category_color'>[]> => {
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('id, description, status, recurring_type, created_at, updated_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link, image_url')
+    .eq('user_id', userId)
+    .order('section_id', { ascending: true, nullsFirst: true })
+    .order('order', { ascending: true });
+  if (error) throw error;
+  return data || [];
+};
+
+// --- End Query Functions ---
+
+interface UseTasksProps {
+  currentDate: Date; // Now required and expected to be stable from parent
+  viewMode?: 'daily' | 'archive' | 'focus';
+  userId?: string;
+}
+
+export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }: UseTasksProps) => {
+  const { user, loading: authLoading } = useAuth();
   const userId = propUserId || user?.id;
+  const { settings: userSettings, updateSettings } = useSettings();
+  const { addReminder, dismissReminder } = useReminders();
+  const queryClient = useQueryClient();
 
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [recurringTasks, setRecurringTasks] = useState<Task[]>([]); // All recurring tasks from DB
-  const [sections, setSections] = useState<TaskSection[]>([]);
-  const [allCategories, setAllCategories] = useState<Category[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const inFlightUpdatesRef = useRef<Set<string>>(new Set());
 
-  const fetchTasks = useCallback(async () => {
-    if (!userId) {
-      setIsLoading(false);
-      return;
-    }
-    setIsLoading(true);
-    setError(null);
+  const [searchFilter, setSearchFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [priorityFilter, setPriorityFilter] = useState('all');
+  const [sectionFilter, setSectionFilter] = useState('all');
 
-    try {
-      const { data: tasksData, error: tasksError } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('user_id', userId)
-        .order('order', { ascending: true })
-        .order('created_at', { ascending: false });
+  const effectiveCurrentDate = currentDate;
+  const todayStart = startOfDay(effectiveCurrentDate);
 
-      if (tasksError) throw tasksError;
+  // Use useQuery for sections
+  const { data: sections = [], isLoading: sectionsLoading } = useQuery<TaskSection[], Error>({
+    queryKey: ['task_sections', userId],
+    queryFn: () => fetchSections(userId!),
+    enabled: !!userId && !authLoading,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
-      const nonRecurring = tasksData.filter(t => t.recurring_type === 'none' || !t.recurring_type);
-      const recurring = tasksData.filter(t => t.recurring_type !== 'none' && t.recurring_type !== null);
+  // Use useQuery for categories
+  const { data: allCategories = [], isLoading: categoriesLoading } = useQuery<Category[], Error>({
+    queryKey: ['task_categories', userId],
+    queryFn: () => fetchCategories(userId!),
+    enabled: !!userId && !authLoading,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
-      setTasks(nonRecurring); // Set non-recurring tasks directly to 'tasks' state
-      setRecurringTasks(recurring);
+  // Use useQuery for doTodayOffIds
+  const { data: doTodayOffIds = new Set(), isLoading: doTodayOffLoading } = useQuery<Set<string>, Error>({
+    queryKey: ['do_today_off_log', userId, format(effectiveCurrentDate, 'yyyy-MM-dd')],
+    queryFn: () => fetchDoTodayOffLog(userId!, effectiveCurrentDate),
+    enabled: !!userId && !authLoading,
+    staleTime: 60 * 1000, // 1 minute
+  });
 
-    } catch (err: any) {
-      console.error('Error fetching tasks:', err.message);
-      setError(err.message);
-      showError('Failed to fetch tasks.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [userId]);
+  // Use useQuery for raw tasks
+  const { data: rawTasks = [], isLoading: tasksLoading } = useQuery<Omit<Task, 'category_color'>[], Error>({
+    queryKey: ['tasks', userId],
+    queryFn: () => fetchTasks(userId!),
+    enabled: !!userId && !authLoading,
+    staleTime: 60 * 1000, // 1 minute
+  });
 
-  const fetchSections = useCallback(async () => {
-    if (!userId) return;
-    try {
-      const { data, error } = await supabase
-        .from('task_sections')
-        .select('*')
-        .eq('user_id', userId)
-        .order('order', { ascending: true });
-      if (error) throw error;
-      setSections(data);
-    } catch (err: any) {
-      console.error('Error fetching sections:', err.message);
-      showError('Failed to fetch sections.');
-    }
-  }, [userId]);
+  // Combine loading states
+  const loading = authLoading || sectionsLoading || categoriesLoading || doTodayOffLoading || tasksLoading;
 
-  const fetchCategories = useCallback(async () => {
-    if (!userId) return;
-    try {
-      const { data, error } = await supabase
-        .from('task_categories')
-        .select('*')
-        .eq('user_id', userId)
-        .order('name', { ascending: true });
-      if (error) throw error;
-      setAllCategories(data);
-    } catch (err: any) {
-      console.error('Error fetching categories:', err.message);
-      showError('Failed to fetch categories.');
-    }
-  }, [userId]);
+  // Memoize categoriesMap
+  const categoriesMap = useMemo(() => {
+    const map = new Map<string, string>();
+    allCategories.forEach(c => map.set(c.id, c.color));
+    return map;
+  }, [allCategories]);
 
-  useEffect(() => {
-    fetchTasks();
-    fetchSections();
-    fetchCategories();
-  }, [fetchTasks, fetchSections, fetchCategories]);
+  // Refetch functions for mutations
+  const invalidateTasksQueries = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['tasks', userId] });
+    queryClient.invalidateQueries({ queryKey: ['do_today_off_log', userId] }); // Invalidate do_today_off_log as well
+    queryClient.invalidateQueries({ queryKey: ['dailyTaskCount', userId] }); // Invalidate daily task count
+  }, [queryClient, userId]);
 
-  // Realtime subscriptions
+  const invalidateSectionsQueries = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['task_sections', userId] });
+    queryClient.invalidateQueries({ queryKey: ['dailyTaskCount', userId] }); // Invalidate daily task count
+  }, [queryClient, userId]);
+
+  const invalidateCategoriesQueries = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['task_categories', userId] });
+  }, [queryClient, userId]);
+
+  // Real-time subscriptions to invalidate queries
   useEffect(() => {
     if (!userId) return;
 
     const tasksChannel = supabase
-      .channel('public:tasks')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${userId}` }, payload => {
-        if (payload.eventType === 'INSERT') {
-          const newTask = payload.new as Task;
-          if (newTask.recurring_type === 'none' || !newTask.recurring_type) {
-            setTasks(prev => [...prev, newTask]);
-          } else {
-            setRecurringTasks(prev => [...prev, newTask]);
+      .channel('tasks_channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${userId}` },
+        (payload) => {
+          const newOrOldTask = (payload.new || payload.old) as Task;
+          if (inFlightUpdatesRef.current.has(newOrOldTask.id)) return;
+          
+          invalidateTasksQueries(); // Invalidate to refetch and get correct data/order
+          if (payload.eventType === 'UPDATE') {
+            if (newOrOldTask.remind_at && newOrOldTask.status === 'to-do') {
+              const d = parseISO(newOrOldTask.remind_at);
+              if (isValid(d)) addReminder(newOrOldTask.id, `Reminder: ${newOrOldTask.description}`, d);
+            } else if (newOrOldTask.status === 'completed' || newOrOldTask.status === 'archived' || newOrOldTask.remind_at === null) {
+              dismissReminder(newOrOldTask.id);
+            }
+          } else if (payload.eventType === 'DELETE') {
+            dismissReminder(newOrOldTask.id);
           }
-        } else if (payload.eventType === 'UPDATE') {
-          const updatedTask = payload.new as Task;
-          if (updatedTask.recurring_type === 'none' || !updatedTask.recurring_type) {
-            setTasks(prev => prev.map(task => (task.id === payload.old.id ? updatedTask : task)));
-          } else {
-            setRecurringTasks(prev => prev.map(task => (task.id === payload.old.id ? updatedTask : task)));
-          }
-        } else if (payload.eventType === 'DELETE') {
-          setTasks(prev => prev.filter(task => task.id !== payload.old.id));
-          setRecurringTasks(prev => prev.filter(task => task.id !== payload.old.id));
         }
-      })
+      )
       .subscribe();
 
     const sectionsChannel = supabase
-      .channel('public:task_sections')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'task_sections', filter: `user_id=eq.${userId}` }, payload => {
-        if (payload.eventType === 'INSERT') {
-          setSections(prev => [...prev, payload.new as TaskSection]);
-        } else if (payload.eventType === 'UPDATE') {
-          setSections(prev => prev.map(section => (section.id === payload.old.id ? payload.new as TaskSection : section)));
-        } else if (payload.eventType === 'DELETE') {
-          setSections(prev => prev.filter(section => section.id !== payload.old.id));
+      .channel('sections_channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'task_sections', filter: `user_id=eq.${userId}` },
+        (payload) => {
+          const newOrOldSection = (payload.new || payload.old) as TaskSection;
+          if (inFlightUpdatesRef.current.has(newOrOldSection.id)) return;
+          invalidateSectionsQueries();
+          if (payload.eventType === 'DELETE') {
+            invalidateTasksQueries(); // Tasks might have their section_id set to null
+          }
         }
-      })
+      )
       .subscribe();
 
     const categoriesChannel = supabase
-      .channel('public:task_categories')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'task_categories', filter: `user_id=eq.${userId}` }, payload => {
-        if (payload.eventType === 'INSERT') {
-          setAllCategories(prev => [...prev, payload.new as Category]);
-        } else if (payload.eventType === 'UPDATE') {
-          setAllCategories(prev => prev.map(category => (category.id === payload.old.id ? payload.new as Category : category)));
-        } else if (payload.eventType === 'DELETE') {
-          setAllCategories(prev => prev.filter(category => category.id !== payload.old.id));
+      .channel('categories_channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'task_categories', filter: `user_id=eq.${userId}` },
+        (payload) => {
+          const newOrOldCategory = (payload.new || payload.old) as Category;
+          if (inFlightUpdatesRef.current.has(newOrOldCategory.id)) return;
+          invalidateCategoriesQueries();
+          if (payload.eventType === 'DELETE') {
+            invalidateTasksQueries(); // Tasks might have their category changed
+          }
         }
-      })
+      )
+      .subscribe();
+
+    const doTodayOffLogChannel = supabase
+      .channel('do_today_off_log_channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'do_today_off_log', filter: `user_id=eq.${userId}` },
+        () => { // Removed unused payload parameter
+          queryClient.invalidateQueries({ queryKey: ['do_today_off_log', userId, format(effectiveCurrentDate, 'yyyy-MM-dd')] });
+          invalidateTasksQueries(); // Tasks might change visibility based on this
+        }
+      )
       .subscribe();
 
     return () => {
       supabase.removeChannel(tasksChannel);
       supabase.removeChannel(sectionsChannel);
       supabase.removeChannel(categoriesChannel);
+      supabase.removeChannel(doTodayOffLogChannel);
     };
-  }, [userId]);
+  }, [userId, addReminder, dismissReminder, invalidateTasksQueries, invalidateSectionsQueries, invalidateCategoriesQueries, queryClient, effectiveCurrentDate]);
 
-  // Generate virtual tasks for recurring tasks
-  const generatedRecurringTasks = useMemo(() => {
-    const generated: Task[] = [];
-    const today = startOfDay(currentDate);
-    const oneYearFromNow = addYears(today, 1); // Generate for up to one year in the future
+  const processedTasks = useMemo(() => {
+    const allProcessedTasks: Task[] = [];
+    const processedSeriesKeys = new Set<string>();
+    const categoriesMapLocal = categoriesMap;
 
-    recurringTasks.forEach(task => {
-      let currentInstanceDate = parseISO(task.created_at); // Start from creation date
-      if (task.due_date) {
-        currentInstanceDate = parseISO(task.due_date);
+    const taskSeriesMap = new Map<string, Omit<Task, 'category_color'>[]>();
+    rawTasks.forEach((task: Omit<Task, 'category_color'>) => {
+      const seriesKey = task.original_task_id || task.id;
+      if (!taskSeriesMap.has(seriesKey)) {
+        taskSeriesMap.set(seriesKey, []);
+      }
+      taskSeriesMap.get(seriesKey)!.push(task);
+    });
+
+    taskSeriesMap.forEach((seriesInstances, seriesKey) => {
+      if (processedSeriesKeys.has(seriesKey)) return;
+      processedSeriesKeys.add(seriesKey);
+
+      const templateTask: Omit<Task, 'category_color'> | undefined = rawTasks.find((t: Omit<Task, 'category_color'>) => t.id === seriesKey);
+
+      if (!templateTask) {
+        seriesInstances.forEach(orphanTask => {
+            allProcessedTasks.push({ ...orphanTask, category_color: categoriesMapLocal.get(orphanTask.category) || 'gray' });
+        });
+        return;
       }
 
-      while (currentInstanceDate && (isSameDay(currentInstanceDate, oneYearFromNow) || currentInstanceDate < oneYearFromNow)) {
-        let shouldGenerate = false;
-        let instanceDueDate: Date | undefined;
+      if (templateTask.recurring_type === 'none') {
+        allProcessedTasks.push({ ...templateTask, category_color: categoriesMapLocal.get(templateTask.category) || 'gray' });
+      } else {
+        const sortedInstances = [...seriesInstances].sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime());
+        let relevantInstance: Omit<Task, 'category_color'> | null = sortedInstances.find(t => isSameDay(startOfDay(parseISO(t.created_at)), todayStart)) || null;
 
-        if (task.recurring_type === 'daily') {
-          shouldGenerate = true;
-          instanceDueDate = currentInstanceDate;
-        } else if (task.recurring_type === 'weekly') {
-          if (isSameDay(currentInstanceDate, startOfWeek(currentInstanceDate))) { // Assuming weekly tasks recur on start of week
-            shouldGenerate = true;
-            instanceDueDate = currentInstanceDate;
-          }
-        } else if (task.recurring_type === 'monthly') {
-          if (isSameDay(currentInstanceDate, startOfMonth(currentInstanceDate))) { // Assuming monthly tasks recur on start of month
-            shouldGenerate = true;
-            instanceDueDate = currentInstanceDate;
-          }
-        } else if (task.recurring_type === 'yearly') {
-          if (isSameDay(currentInstanceDate, new Date(currentInstanceDate.getFullYear(), 0, 1))) { // Assuming yearly tasks recur on Jan 1
-            shouldGenerate = true;
-            instanceDueDate = currentInstanceDate;
-          }
+        if (!relevantInstance) {
+          relevantInstance = sortedInstances.find(t => isBefore(startOfDay(parseISO(t.created_at)), todayStart) && t.status === 'to-do') || null;
         }
 
-        if (shouldGenerate && instanceDueDate) {
-          // Check if a real task already exists for this recurring instance's date
-          const existingRealTask = tasks.find(
-            t => t.original_task_id === task.id && t.due_date && isSameDay(parseISO(t.due_date), instanceDueDate!)
-          );
+        if (!relevantInstance) {
+          const mostRecentRealInstance = sortedInstances.find(t => isBefore(startOfDay(parseISO(t.created_at)), todayStart));
+          const baseTaskForVirtual = mostRecentRealInstance || templateTask;
 
-          if (!existingRealTask) {
-            generated.push({
-              ...task,
-              id: `virtual-${task.id}-${format(instanceDueDate, 'yyyy-MM-dd')}`, // Unique virtual ID
-              due_date: format(instanceDueDate, 'yyyy-MM-dd'),
-              status: 'to-do', // Virtual instances are always 'to-do' by default
-              original_task_id: task.id, // Reference to the real recurring task
-              created_at: format(new Date(), 'yyyy-MM-ddTHH:mm:ssZ'), // Set a valid created_at for virtual tasks
-            });
+          const templateCreatedAt = parseISO(templateTask.created_at);
+          const isDailyMatch = templateTask.recurring_type === 'daily';
+          const isWeeklyMatch = templateTask.recurring_type === 'weekly' && todayStart.getUTCDay() === templateCreatedAt.getUTCDay();
+          const isMonthlyMatch = templateTask.recurring_type === 'monthly' && todayStart.getUTCDate() === templateCreatedAt.getUTCDate();
+
+          if ((isDailyMatch || isWeeklyMatch || isMonthlyMatch) && templateTask.status !== 'archived') {
+            const virtualTask: Task = {
+              ...baseTaskForVirtual,
+              id: `virtual-${templateTask.id}-${format(todayStart, 'yyyy-MM-dd')}`,
+              created_at: todayStart.toISOString(),
+              status: 'to-do',
+              original_task_id: templateTask.id,
+              remind_at: baseTaskForVirtual.remind_at ? format(setHours(setMinutes(todayStart, getMinutes(parseISO(baseTaskForVirtual.remind_at))), getHours(parseISO(baseTaskForVirtual.remind_at))), 'yyyy-MM-ddTHH:mm:ssZ') : null,
+              due_date: baseTaskForVirtual.due_date ? todayStart.toISOString() : null,
+              category_color: categoriesMapLocal.get(baseTaskForVirtual.category) || 'gray',
+            };
+            allProcessedTasks.push(virtualTask);
           }
-        }
-
-        // Increment date for next iteration
-        if (task.recurring_type === 'daily') {
-          currentInstanceDate = addDays(currentInstanceDate, 1);
-        } else if (task.recurring_type === 'weekly') {
-          currentInstanceDate = addWeeks(currentInstanceDate, 1);
-        } else if (task.recurring_type === 'monthly') {
-          currentInstanceDate = addMonths(currentInstanceDate, 1);
-        } else if (task.recurring_type === 'yearly') {
-          currentInstanceDate = addYears(currentInstanceDate, 1);
         } else {
-          break; // Should not happen for recurring tasks
+          allProcessedTasks.push({ ...relevantInstance, category_color: categoriesMapLocal.get(relevantInstance.category) || 'gray' });
         }
       }
     });
-    return generated;
-  }, [recurringTasks, tasks, currentDate]);
+    return allProcessedTasks;
+  }, [rawTasks, todayStart, categoriesMap]);
 
-  // Combine real tasks and generated recurring tasks
-  const allTasksCombined = useMemo(() => {
-    // Filter out any generated recurring tasks that have a corresponding real task
-    const combinedTasks = [
-      ...tasks, // These are the non-recurring tasks from DB
-      ...generatedRecurringTasks.filter(genTask =>
-        !tasks.some(realTask => realTask.original_task_id === genTask.original_task_id && realTask.due_date && isSameDay(parseISO(realTask.due_date), parseISO(genTask.due_date || '')))
-      )
-    ];
-    return combinedTasks;
-  }, [tasks, generatedRecurringTasks]);
-
-
-  const createTask = async (newTask: NewTaskData): Promise<Task | null> => {
+  const handleAddTask = useCallback(async (newTaskData: NewTaskData) => {
     if (!userId) {
       showError('User not authenticated.');
-      return null;
+      return false;
     }
+    const newTaskClientSideId = uuidv4();
+    inFlightUpdatesRef.current.add(newTaskClientSideId);
     try {
+      // Optimistic update
+      const categoryColor = categoriesMap.get(newTaskData.category) || 'gray';
+      const tempTask: Task = {
+        id: newTaskClientSideId,
+        user_id: userId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        status: newTaskData.status || 'to-do',
+        recurring_type: newTaskData.recurring_type || 'none',
+        category: newTaskData.category,
+        category_color: categoryColor,
+        priority: (newTaskData.priority || 'medium') as Task['priority'],
+        due_date: newTaskData.due_date || null,
+        notes: newTaskData.notes || null,
+        remind_at: newTaskData.remind_at || null,
+        section_id: newTaskData.section_id || null,
+        order: 0, // Placeholder order
+        original_task_id: null,
+        parent_task_id: newTaskData.parent_task_id || null,
+        description: newTaskData.description,
+        link: newTaskData.link || null,
+        image_url: newTaskData.image_url || null,
+      };
+      queryClient.setQueryData(['tasks', userId], (oldTasks: Task[] | undefined) => {
+        return oldTasks ? [...oldTasks, tempTask] : [tempTask];
+      });
+
       const { data, error } = await supabase
         .from('tasks')
-        .insert({ ...newTask, user_id: userId })
-        .select()
+        .insert(cleanTaskForDb(tempTask)) // Use tempTask for insertion
+        .select('id, description, status, recurring_type, created_at, updated_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link, image_url')
         .single();
 
       if (error) throw error;
-      showSuccess('Task created successfully!');
-      queryClient.invalidateQueries({ queryKey: ['tasks', userId] });
-      return data;
-    } catch (err: any) {
-      console.error('useTasks: Error creating task:', err.message);
-      showError(`Failed to create task: ${err.message}`);
-      return null;
+      showSuccess('Task added successfully!');
+      invalidateTasksQueries(); // Invalidate to refetch and get correct data/order
+      if (data.remind_at && data.status === 'to-do') {
+        const d = parseISO(data.remind_at);
+        if (isValid(d)) addReminder(data.id, `Reminder: ${data.description}`, d);
+      }
+      return true;
+    } catch (e: any) {
+      showError('Failed to add task.');
+      console.error('useTasks: Error adding task to DB:', e.message);
+      invalidateTasksQueries(); // Revert optimistic update on error
+      return false;
+    } finally {
+      setTimeout(() => {
+        inFlightUpdatesRef.current.delete(newTaskClientSideId);
+      }, 1500);
     }
-  };
+  }, [userId, addReminder, queryClient, invalidateTasksQueries, categoriesMap]);
 
-  const updateTask = async (taskId: string, updates: UpdateTaskData): Promise<Task | null> => {
+  const updateTask = useCallback(async (taskId: string, updates: TaskUpdate): Promise<string | null> => {
     if (!userId) {
       showError('User not authenticated.');
       return null;
     }
+    let idToTrack = taskId;
+    let originalTaskState: Task | undefined;
+    
     try {
-      if (!isValidUuid(taskId)) {
-        // This is a virtual task ID. We need to create a new, non-recurring task.
-        console.log(`Attempting to update virtual task ID: ${taskId}. Creating a new task instead.`);
+      let categoryColor: string | undefined;
+      if (updates.category) categoryColor = categoriesMap.get(updates.category) || 'gray';
 
-        const virtualTaskToUpdate = allTasksCombined.find(t => t.id === taskId); // Find the virtual task in the current state
+      originalTaskState = processedTasks.find(t => t.id === taskId);
+      if (!originalTaskState) {
+        // Handle virtual task creation
+        if (taskId.toString().startsWith('virtual-')) {
+            const virtualTask = processedTasks.find(t => t.id === taskId);
+            if (!virtualTask) {
+                console.error('[DnD Error] Virtual task not found');
+                return null;
+            }
 
-        if (!virtualTaskToUpdate) {
-          console.error("Virtual task not found in current state for update. Cannot create new task.");
-          showError("Failed to update task: Virtual task not found.");
-          return null;
+            const newInstanceId = uuidv4();
+            idToTrack = newInstanceId;
+            inFlightUpdatesRef.current.add(newInstanceId);
+
+            const newInstanceData: Omit<Task, 'category_color'> = {
+                id: newInstanceId,
+                user_id: userId,
+                description: updates.description !== undefined ? updates.description : virtualTask.description,
+                status: updates.status ?? virtualTask.status,
+                recurring_type: 'none' as const,
+                created_at: virtualTask.created_at,
+                updated_at: new Date().toISOString(),
+                category: updates.category !== undefined ? updates.category : virtualTask.category,
+                priority: updates.priority !== undefined ? updates.priority : virtualTask.priority,
+                due_date: updates.due_date !== undefined ? updates.due_date : virtualTask.due_date,
+                notes: updates.notes !== undefined ? updates.notes : virtualTask.notes,
+                remind_at: updates.remind_at !== undefined ? updates.remind_at : virtualTask.remind_at,
+                section_id: updates.section_id !== undefined ? updates.section_id : virtualTask.section_id,
+                order: virtualTask.order, // Placeholder order
+                original_task_id: virtualTask.original_task_id || virtualTask.id.replace(/^virtual-/, '').split(/-\d{4}-\d{2}-\d{2}$/)[0],
+                parent_task_id: virtualTask.parent_task_id,
+                link: updates.link !== undefined ? updates.link : virtualTask.link,
+                image_url: updates.image_url !== undefined ? updates.image_url : virtualTask.image_url,
+            };
+
+            // Optimistic update for new instance
+            queryClient.setQueryData(['tasks', userId], (oldTasks: Task[] | undefined) => {
+                return oldTasks ? [...oldTasks, { ...newInstanceData, category_color: virtualTask.category_color }] : [{ ...newInstanceData, category_color: virtualTask.category_color }];
+            });
+
+            const { data: dbTask, error: insertError } = await supabase
+                .from('tasks')
+                .insert(cleanTaskForDb(newInstanceData))
+                .select('*')
+                .single();
+
+            if (insertError) {
+                console.error('[DnD Error] Failed to insert new task instance:', insertError);
+                showError('Failed to create an instance of the recurring task.');
+                invalidateTasksQueries(); // Revert optimistic update
+                return null;
+            }
+            showSuccess('Task updated!');
+            invalidateTasksQueries();
+            if (dbTask.remind_at && dbTask.status === 'to-do') {
+                const d = parseISO(dbTask.remind_at);
+                if (isValid(d)) addReminder(dbTask.id, `Reminder: ${dbTask.description}`, d);
+            }
+            return dbTask.id;
+        }
+        return null; // Should not happen for non-virtual tasks
+      }
+
+      // Optimistic update for existing task
+      queryClient.setQueryData(['tasks', userId], (oldTasks: Task[] | undefined) => {
+        return oldTasks?.map(t => t.id === taskId ? { ...t, ...updates, ...(categoryColor && { category_color: categoryColor }) } : t) || [];
+      });
+
+      const { data, error } = await supabase
+        .from('tasks')
+        .update(cleanTaskForDb(updates))
+        .eq('id', taskId)
+        .eq('user_id', userId)
+        .select('id, description, status, recurring_type, created_at, updated_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link, image_url')
+        .single();
+
+      if (error) throw error;
+
+      showSuccess('Task updated!');
+      invalidateTasksQueries(); // Invalidate to refetch and ensure consistency
+
+      if (updates.remind_at) {
+        const d = parseISO(updates.remind_at as string);
+        if (isValid(d) && (updates.status === undefined || updates.status === 'to-do')) addReminder(taskId, `Reminder: ${originalTaskState.description}`, d);
+      }
+      if (updates.status === 'completed' || updates.status === 'archived' || updates.remind_at === null) {
+        dismissReminder(taskId);
+      }
+      return data.id;
+    } catch (e: any) {
+      showError('Failed to update task.');
+      console.error('useTasks: Error updating task:', e.message);
+      invalidateTasksQueries(); // Revert optimistic update on error
+      return null;
+    } finally {
+      setTimeout(() => {
+        inFlightUpdatesRef.current.delete(idToTrack);
+      }, 1500);
+    }
+  }, [userId, processedTasks, addReminder, dismissReminder, queryClient, invalidateTasksQueries, categoriesMap]);
+
+  const deleteTask = useCallback(async (taskId: string) => {
+    if (!userId) {
+      showError('User not authenticated.');
+      return;
+    }
+    let idsToDelete: string[] = [];
+    try {
+      const taskToDelete: Task | undefined = processedTasks.find(t => t.id === taskId);
+      if (!taskToDelete) return;
+
+      if (taskToDelete.image_url) {
+        try {
+          const imagePath = taskToDelete.image_url.split('/taskimages/')[1];
+          if (imagePath) {
+            await supabase.storage.from('taskimages').remove([imagePath]);
+          }
+        } catch (imgErr) {
+          console.error("Failed to delete task image, but proceeding with task deletion:", imgErr);
+        }
+      }
+
+      idsToDelete = [taskId];
+      const subIds = processedTasks.filter(t => t.parent_task_id === taskId).map(t => t.id);
+      idsToDelete = [...idsToDelete, ...subIds];
+      if (taskToDelete.recurring_type !== 'none' && taskToDelete.original_task_id === null) {
+        const inst = processedTasks.filter(t => t.original_task_id === taskId).map(t => t.id);
+        idsToDelete = [...idsToDelete, ...inst];
+      }
+      
+      idsToDelete.forEach(id => inFlightUpdatesRef.current.add(id));
+      // Optimistic update
+      queryClient.setQueryData(['tasks', userId], (oldTasks: Task[] | undefined) => {
+        return oldTasks?.filter(t => !idsToDelete.includes(t.id)) || [];
+      });
+
+      const { error } = await supabase.from('tasks').delete().in('id', idsToDelete).eq('user_id', userId).select('id');
+      if (error) throw error;
+      showSuccess('Task(s) deleted!');
+      idsToDelete.forEach(dismissReminder);
+      invalidateTasksQueries(); // Invalidate to ensure consistency
+    } catch (e: any) {
+      showError('Failed to delete task.');
+      console.error(`useTasks: Error deleting task(s) from DB:`, e.message);
+      invalidateTasksQueries(); // Revert optimistic update on error
+    } finally {
+      setTimeout(() => {
+        idsToDelete.forEach(id => inFlightUpdatesRef.current.delete(id));
+      }, 1500);
+    }
+  }, [userId, processedTasks, dismissReminder, queryClient, invalidateTasksQueries]);
+
+  const bulkUpdateTasks = useCallback(async (updates: Partial<Task>, ids: string[]) => {
+    if (!userId) {
+      showError('User not authenticated.');
+      return;
+    }
+    if (ids.length === 0) {
+      return;
+    }
+    ids.forEach(id => inFlightUpdatesRef.current.add(id));
+    // Optimistic update
+    queryClient.setQueryData(['tasks', userId], (oldTasks: Task[] | undefined) => {
+      return oldTasks?.map(t => (ids.includes(t.id) ? { ...t, ...updates } : t)) || [];
+    });
+
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update(cleanTaskForDb(updates))
+        .in('id', ids)
+        .eq('user_id', userId);
+
+      if (error) throw error;
+      showSuccess('Tasks updated!');
+      invalidateTasksQueries(); // Invalidate to ensure consistency
+    } catch (e: any) {
+      showError('Failed to update tasks.');
+      console.error(`useTasks: Error during bulk update for tasks ${ids.join(', ')}:`, e.message);
+      invalidateTasksQueries(); // Revert optimistic update on error
+    } finally {
+      setTimeout(() => {
+        ids.forEach(id => inFlightUpdatesRef.current.delete(id));
+      }, 1500);
+    }
+  }, [userId, queryClient, invalidateTasksQueries]);
+
+  const bulkDeleteTasks = useCallback(async (ids: string[]) => {
+    if (!userId) {
+      showError('User not authenticated.');
+      return false;
+    }
+    if (ids.length === 0) {
+      return true;
+    }
+    try {
+      const tasksToDelete = processedTasks.filter(t => ids.includes(t.id));
+      const imageKeysToDelete = tasksToDelete
+        .map(t => t.image_url)
+        .filter((url): url is string => !!url)
+        .map(url => url.split('/taskimages/')[1])
+        .filter(Boolean);
+
+      if (imageKeysToDelete.length > 0) {
+        await supabase.storage.from('taskimages').remove(imageKeysToDelete);
+      }
+
+      ids.forEach(id => inFlightUpdatesRef.current.add(id));
+      // Optimistic update
+      queryClient.setQueryData(['tasks', userId], (oldTasks: Task[] | undefined) => {
+        return oldTasks?.filter(t => !ids.includes(t.id)) || [];
+      });
+
+      const { error } = await supabase.from('tasks').delete().in('id', ids).eq('user_id', userId);
+      if (error) throw error;
+
+      showSuccess(`${ids.length} task(s) deleted!`);
+      ids.forEach(dismissReminder);
+      invalidateTasksQueries(); // Invalidate to ensure consistency
+      return true;
+    } catch (e: any) {
+      showError('Failed to delete tasks.');
+      console.error(`useTasks: Error during bulk delete for tasks ${ids.join(', ')}:`, e.message);
+      invalidateTasksQueries(); // Revert optimistic update on error
+      return false;
+    } finally {
+      setTimeout(() => {
+        ids.forEach(id => inFlightUpdatesRef.current.delete(id));
+      }, 1500);
+    }
+  }, [userId, processedTasks, dismissReminder, queryClient, invalidateTasksQueries]);
+
+  const archiveAllCompletedTasks = useCallback(async () => {
+    if (!userId) {
+        showError('User not authenticated.');
+        return;
+    }
+    const completedTaskIds = processedTasks
+        .filter(task => task.status === 'completed')
+        .map(task => task.id);
+
+    if (completedTaskIds.length === 0) {
+        showSuccess('No completed tasks to archive!');
+        return;
+    }
+    await bulkUpdateTasks({ status: 'archived' }, completedTaskIds);
+  }, [userId, processedTasks, bulkUpdateTasks]);
+
+  const markAllTasksInSectionCompleted = useCallback(async (sectionId: string | null) => {
+    if (!userId) {
+      showError('User not authenticated.');
+      return;
+    }
+    const tasksToComplete = processedTasks.filter(t =>
+      t.status === 'to-do' &&
+      t.parent_task_id === null &&
+      (sectionId === null ? t.section_id === null : t.section_id === sectionId)
+    ).map(t => t.id);
+
+    if (tasksToComplete.length === 0) {
+      showSuccess('No pending tasks in this section to complete!');
+      return;
+    }
+
+    await bulkUpdateTasks({ status: 'completed' }, tasksToComplete);
+  }, [processedTasks, userId, bulkUpdateTasks]);
+
+  const createSection = useCallback(async (name: string) => {
+    if (!userId) {
+      showError('User not authenticated.');
+      return;
+    }
+    const newOrder = sections.length;
+    const tempSectionId = uuidv4(); // Declare tempSectionId here
+    inFlightUpdatesRef.current.add(tempSectionId);
+    try {
+      // Optimistic update
+      queryClient.setQueryData(['task_sections', userId], (oldSections: TaskSection[] | undefined) => {
+        return oldSections ? [...oldSections, { id: tempSectionId, name, user_id: userId, order: newOrder, include_in_focus_mode: true }] : [{ id: tempSectionId, name, user_id: userId, order: newOrder, include_in_focus_mode: true }];
+      });
+
+      const { error } = await supabase
+        .from('task_sections')
+        .insert({ name, user_id: userId, order: newOrder, include_in_focus_mode: true })
+        .select()
+        .single();
+      if (error) throw error;
+      showSuccess('Section created!');
+      invalidateSectionsQueries(); // Invalidate to refetch and get correct ID/order
+    } catch (e: any) {
+      showError('Failed to create section.');
+      console.error('useTasks: Error creating section:', e.message);
+      invalidateSectionsQueries(); // Revert optimistic update on error
+    } finally {
+      setTimeout(() => {
+        inFlightUpdatesRef.current.delete(tempSectionId);
+      }, 1500);
+    }
+  }, [userId, sections.length, queryClient, invalidateSectionsQueries]);
+
+  const updateSection = useCallback(async (sectionId: string, newName: string) => {
+    if (!userId) {
+      showError('User not authenticated.');
+      return;
+    }
+    inFlightUpdatesRef.current.add(sectionId);
+    // Optimistic update
+    queryClient.setQueryData(['task_sections', userId], (oldSections: TaskSection[] | undefined) => {
+      return oldSections?.map(s => s.id === sectionId ? { ...s, name: newName } : s) || [];
+    });
+
+    try {
+      const { error } = await supabase
+        .from('task_sections')
+        .update({ name: newName })
+        .eq('id', sectionId)
+        .eq('user_id', userId);
+      if (error) throw error;
+      showSuccess('Section updated!');
+      invalidateSectionsQueries(); // Invalidate to ensure consistency
+    } catch (e: any) {
+      showError('Failed to update section.');
+      console.error(`useTasks: Error updating section ${sectionId}:`, e.message);
+      invalidateSectionsQueries(); // Revert optimistic update on error
+    } finally {
+      setTimeout(() => {
+        inFlightUpdatesRef.current.delete(sectionId);
+      }, 1500);
+    }
+  }, [userId, queryClient, invalidateSectionsQueries]);
+
+  const deleteSection = useCallback(async (sectionId: string) => {
+    if (!userId) {
+      showError('User not authenticated.');
+      return;
+    }
+    inFlightUpdatesRef.current.add(sectionId);
+    // Optimistic update
+    queryClient.setQueryData(['task_sections', userId], (oldSections: TaskSection[] | undefined) => {
+      return oldSections?.filter(s => s.id !== sectionId) || [];
+    });
+    queryClient.setQueryData(['tasks', userId], (oldTasks: Task[] | undefined) => {
+      return oldTasks?.map(t => t.section_id === sectionId ? { ...t, section_id: null } : t) || [];
+    });
+
+    try {
+      await supabase
+        .from('tasks')
+        .update({ section_id: null })
+        .eq('section_id', sectionId)
+        .eq('user_id', userId);
+
+      const { error } = await supabase
+        .from('task_sections')
+        .delete()
+        .eq('id', sectionId)
+        .eq('user_id', userId);
+      if (error) throw error;
+      showSuccess('Section deleted!');
+      invalidateSectionsQueries(); // Invalidate sections
+      invalidateTasksQueries(); // Invalidate tasks as well
+    }
+    catch (e: any) {
+      showError('Failed to delete section.');
+      console.error(`useTasks: Error deleting section ${sectionId}:`, e.message);
+      invalidateSectionsQueries(); // Revert optimistic update on error
+      invalidateTasksQueries(); // Revert optimistic update on error
+    } finally {
+      setTimeout(() => {
+        inFlightUpdatesRef.current.delete(sectionId);
+      }, 1500);
+    }
+  }, [userId, queryClient, invalidateSectionsQueries, invalidateTasksQueries]);
+
+  const updateSectionIncludeInFocusMode = useCallback(async (sectionId: string, include: boolean) => {
+    if (!userId) {
+      showError('User not authenticated.');
+      return;
+    }
+    inFlightUpdatesRef.current.add(sectionId);
+    // Optimistic update
+    queryClient.setQueryData(['task_sections', userId], (oldSections: TaskSection[] | undefined) => {
+      return oldSections?.map(s => s.id === sectionId ? { ...s, include_in_focus_mode: include } : s) || [];
+    });
+
+    try {
+      const { error } = await supabase
+        .from('task_sections')
+        .update({ include_in_focus_mode: include })
+        .eq('id', sectionId)
+        .eq('user_id', userId);
+      if (error) throw error;
+      showSuccess('Focus mode setting updated!');
+      invalidateSectionsQueries(); // Invalidate to ensure consistency
+    } catch (e: any) {
+      showError('Failed to update focus mode setting.');
+      console.error(`useTasks: Error updating focus mode for section ${sectionId}:`, e.message);
+      invalidateSectionsQueries(); // Revert optimistic update on error
+    } finally {
+      setTimeout(() => {
+        inFlightUpdatesRef.current.delete(sectionId);
+      }, 1500);
+    }
+  }, [userId, queryClient, invalidateSectionsQueries]);
+
+  const reorderSections = useCallback(async (activeId: string, overId: string) => {
+    if (!userId) {
+      showError('User not authenticated.');
+      return;
+    }
+    const oldIndex = sections.findIndex(s => s.id === activeId);
+    const newIndex = sections.findIndex(s => s.id === overId);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const newOrderedSections = arrayMove(sections, oldIndex, newIndex);
+    const updates = newOrderedSections.map((s, i) => ({
+      id: s.id,
+      name: s.name,
+      order: i,
+      user_id: userId,
+      include_in_focus_mode: s.include_in_focus_mode,
+    }));
+
+    const updatedIds = updates.map(s => s.id);
+    updatedIds.forEach(id => inFlightUpdatesRef.current.add(id));
+
+    // Optimistic update
+    queryClient.setQueryData(['task_sections', userId], newOrderedSections);
+
+    try {
+      const { error } = await supabase.from('task_sections').upsert(updates, { onConflict: 'id' });
+      if (error) throw error;
+      showSuccess('Sections reordered!');
+      invalidateSectionsQueries(); // Invalidate to ensure consistency
+    } catch (e: any) {
+      showError('Failed to reorder sections.');
+      console.error('useTasks: Error reordering sections:', e.message);
+      invalidateSectionsQueries(); // Revert optimistic update on error
+    } finally {
+      setTimeout(() => {
+        updatedIds.forEach(id => inFlightUpdatesRef.current.delete(id));
+      }, 1500);
+    }
+  }, [userId, sections, queryClient, invalidateSectionsQueries]);
+
+  const updateTaskParentAndOrder = useCallback(async (activeId: string, newParentId: string | null, newSectionId: string | null, overId: string | null, isDraggingDown: boolean) => {
+    if (!userId) {
+        showError('User not authenticated.');
+        return;
+    }
+
+    let finalActiveId = activeId;
+    const isVirtual = activeId.toString().startsWith('virtual-');
+    let activeTask: Task | undefined;
+
+    if (isVirtual) {
+        const virtualTask = processedTasks.find(t => t.id === activeId);
+        if (!virtualTask) {
+            console.error('[DnD Error] Virtual task not found');
+            return;
         }
 
-        // Prepare data for a new task (detached from recurring)
-        // Use properties from the virtual task as base, then apply updates
-        const newTaskData: NewTaskData = {
-          description: updates.description ?? virtualTaskToUpdate.description,
-          status: updates.status ?? virtualTaskToUpdate.status,
-          category: updates.category ?? virtualTaskToUpdate.category,
-          priority: updates.priority ?? virtualTaskToUpdate.priority,
-          due_date: updates.due_date ?? virtualTaskToUpdate.due_date, // Crucial: specific date of this instance
-          notes: updates.notes ?? virtualTaskToUpdate.notes,
-          remind_at: updates.remind_at ?? virtualTaskToUpdate.remind_at,
-          section_id: updates.section_id ?? virtualTaskToUpdate.section_id,
-          order: updates.order ?? virtualTaskToUpdate.order,
-          parent_task_id: updates.parent_task_id ?? virtualTaskToUpdate.parent_task_id,
-          recurring_type: 'none', // This new task is a specific instance, not recurring itself
-          // Link back to the original recurring task.
-          // If virtualTaskToUpdate has original_task_id, use it. Otherwise, if it was itself the recurring template, use its ID.
-          original_task_id: virtualTaskToUpdate.original_task_id || (virtualTaskToUpdate.recurring_type !== 'none' && virtualTaskToUpdate.recurring_type !== null ? virtualTaskToUpdate.id : null),
-          link: updates.link ?? virtualTaskToUpdate.link,
-          image_url: updates.image_url ?? virtualTaskToUpdate.image_url,
+        const newInstanceId = uuidv4();
+        finalActiveId = newInstanceId;
+        inFlightUpdatesRef.current.add(newInstanceId);
+
+        const newInstanceData: Omit<Task, 'category_color'> = {
+            id: newInstanceId,
+            user_id: userId,
+            description: virtualTask.description,
+            status: virtualTask.status,
+            recurring_type: 'none' as const,
+            created_at: virtualTask.created_at,
+            updated_at: new Date().toISOString(),
+            category: virtualTask.category,
+            priority: virtualTask.priority,
+            due_date: virtualTask.due_date,
+            notes: virtualTask.notes,
+            remind_at: virtualTask.remind_at,
+            section_id: newSectionId,
+            order: virtualTask.order, // Placeholder order
+            original_task_id: virtualTask.original_task_id || virtualTask.id.replace(/^virtual-/, '').split(/-\d{4}-\d{2}-\d{2}$/)[0],
+            parent_task_id: virtualTask.parent_task_id,
+            link: virtualTask.link,
+            image_url: virtualTask.image_url,
         };
 
-        // Ensure description is not empty for the new task
-        if (!newTaskData.description) {
-          showError("Cannot create new task from virtual ID: description is missing.");
-          return null;
+        // Optimistic update for new instance
+        queryClient.setQueryData(['tasks', userId], (oldTasks: Task[] | undefined) => {
+            return oldTasks ? [...oldTasks, { ...newInstanceData, category_color: virtualTask.category_color }] : [{ ...newInstanceData, category_color: virtualTask.category_color }];
+        });
+
+        const { data: dbTask, error: insertError } = await supabase
+            .from('tasks')
+            .insert(cleanTaskForDb(newInstanceData))
+            .select('*')
+            .single();
+
+        if (insertError) {
+            console.error('[DnD Error] Failed to insert new task instance:', insertError);
+            showError('Failed to create an instance of the recurring task.');
+            invalidateTasksQueries(); // Revert optimistic update
+            return;
+        }
+        showSuccess('Task moved!');
+        invalidateTasksQueries();
+        if (dbTask.remind_at && dbTask.status === 'to-do') {
+            const d = parseISO(dbTask.remind_at);
+            if (isValid(d)) addReminder(dbTask.id, `Reminder: ${dbTask.description}`, d);
+        }
+        return; // Exit early as new instance is handled
+    } else {
+        activeTask = processedTasks.find(t => t.id === finalActiveId);
+    }
+
+    if (!activeTask) {
+        console.error('[DnD Error] Active task could not be found or created:', finalActiveId);
+        return;
+    }
+
+    const updatesForDb: { id: string; order: number; parent_task_id: string | null; section_id: string | null; }[] = [];
+
+    const sourceSiblings = processedTasks.filter(t => 
+        t.parent_task_id === activeTask!.parent_task_id && 
+        t.section_id === activeTask!.section_id && 
+        t.id !== finalActiveId
+    ).sort((a, b) => (a.order || 0) - (b.order || 0));
+
+    let destinationSiblings = processedTasks.filter(t => 
+        t.parent_task_id === newParentId && 
+        t.section_id === newSectionId &&
+        t.id !== finalActiveId
+    ).sort((a, b) => (a.order || 0) - (b.order || 0));
+
+    let overIndex = overId ? destinationSiblings.findIndex(t => t.id === overId) : -1;
+    
+    if (overIndex !== -1 && isDraggingDown) {
+        overIndex += 1;
+    }
+
+    const newIndex = overIndex !== -1 ? overIndex : destinationSiblings.length;
+    
+    const newDestinationSiblings = [...destinationSiblings];
+    newDestinationSiblings.splice(newIndex, 0, { ...activeTask, parent_task_id: newParentId, section_id: newSectionId });
+
+    newDestinationSiblings.forEach((task, index) => {
+        updatesForDb.push({
+            id: task.id,
+            order: index,
+            parent_task_id: newParentId,
+            section_id: newSectionId,
+        });
+    });
+
+    if (activeTask.parent_task_id !== newParentId || activeTask.section_id !== newSectionId) {
+        sourceSiblings.forEach((task, index) => {
+            updatesForDb.push({
+                id: task.id,
+                order: index,
+                parent_task_id: activeTask!.parent_task_id,
+                section_id: activeTask!.section_id,
+            });
+        });
+    }
+
+    const updatedTasksMap = new Map(processedTasks.map(t => [t.id, t]));
+    updatesForDb.forEach(update => {
+        const taskToUpdate = updatedTasksMap.get(update.id);
+        if (taskToUpdate) {
+            updatedTasksMap.set(update.id, { ...taskToUpdate, ...update });
+        }
+    });
+    // Optimistic update
+    queryClient.setQueryData(['tasks', userId], Array.from(updatedTasksMap.values()));
+
+    const updatedIds = updatesForDb.map(t => t.id!);
+    updatedIds.forEach(id => inFlightUpdatesRef.current.add(id));
+
+    try {
+        if (updatesForDb.length > 0) {
+            const { error } = await supabase.rpc('update_tasks_order', { updates: updatesForDb });
+            if (error) {
+                throw error;
+            }
+        }
+        showSuccess('Task moved!');
+        invalidateTasksQueries(); // Invalidate to ensure consistency
+    } catch (e: any) {
+        showError(`Failed to move task: ${e.message}`);
+        console.error('useTasks: Error moving task:', e.message);
+        invalidateTasksQueries(); // Revert optimistic update on error
+    } finally {
+        setTimeout(() => {
+            updatedIds.forEach(id => inFlightUpdatesRef.current.delete(id));
+        }, 1500);
+    }
+}, [userId, processedTasks, addReminder, queryClient, invalidateTasksQueries]);
+
+  const finalFilteredTasks = useMemo(() => {
+    let filtered = processedTasks;
+
+    if (viewMode === 'daily') {
+      filtered = filtered.filter(task => {
+        // Condition 1: Was completed or archived today
+        if ((task.status === 'completed' || task.status === 'archived') && task.updated_at) {
+            const updatedAt = startOfDay(parseISO(task.updated_at));
+            if (isSameDay(updatedAt, todayStart)) {
+                return true;
+            }
         }
 
-        const createdTask = await createTask(newTaskData);
-        if (createdTask) {
-          showSuccess("Recurring task instance saved as a new task.");
-          return createdTask;
+        // Condition 2: Is a relevant 'to-do' task
+        if (task.status === 'to-do') {
+            const createdAt = startOfDay(parseISO(task.created_at));
+            const dueDate = task.due_date ? startOfDay(parseISO(task.due_date)) : null;
+
+            // Due on or before today
+            if (dueDate && !isAfter(dueDate, todayStart)) {
+                return true;
+            }
+            
+            // No due date, created on or before today
+            if (!dueDate && !isAfter(createdAt, todayStart)) {
+                return true;
+            }
         }
-        return null;
+
+        return false;
+      });
+    }
+
+    if (searchFilter) {
+      filtered = filtered.filter(task =>
+        task.description?.toLowerCase().includes(searchFilter.toLowerCase()) || // Added null check
+        task.notes?.toLowerCase().includes(searchFilter.toLowerCase()) ||
+        task.link?.toLowerCase().includes(searchFilter.toLowerCase())
+      );
+    }
+
+    if (viewMode === 'archive') {
+      filtered = filtered.filter(task => task.status === 'archived');
+    } else {
+      if (statusFilter !== 'all') {
+        filtered = filtered.filter(task => task.status === statusFilter);
+      } else {
+        filtered = filtered.filter(task => task.status !== 'archived');
       }
-
-      // If it's a real UUID, proceed with the update operation
-      const { data, error } = await supabase
-        .from('tasks')
-        .update(updates)
-        .eq('id', taskId)
-        .eq('user_id', userId)
-        .select()
-        .single();
-
-      if (error) throw error;
-      showSuccess('Task updated successfully!');
-      queryClient.invalidateQueries({ queryKey: ['tasks', userId] });
-      return data;
-    } catch (err: any) {
-      console.error('useTasks: Error updating task:', err.message);
-      showError(`Failed to update task: ${err.message}`);
-      return null;
     }
-  };
 
-  const deleteTask = async (taskId: string): Promise<boolean> => {
-    if (!userId) {
-      showError('User not authenticated.');
-      return false;
+    if (categoryFilter !== 'all') {
+      filtered = filtered.filter(task => task.category === categoryFilter);
     }
-    try {
-      // If it's a virtual task, we don't delete from DB, just from local state if needed
-      if (!isValidUuid(taskId)) {
-        console.log(`Attempted to delete virtual task ID: ${taskId}. No database operation performed.`);
-        // The memoized 'allTasksCombined' array will naturally re-calculate without it if it's not a real task.
-        showSuccess('Virtual task removed from view.');
-        return true;
+
+    if (priorityFilter !== 'all') {
+      filtered = filtered.filter(task => task.priority === priorityFilter);
+    }
+
+    if (sectionFilter !== 'all') {
+      if (sectionFilter === 'no-section') {
+        filtered = filtered.filter(task => task.section_id === null);
+      } else {
+        filtered = filtered.filter(task => task.section_id === sectionFilter);
       }
-
-      const { error } = await supabase
-        .from('tasks')
-        .delete()
-        .eq('id', taskId)
-        .eq('user_id', userId);
-
-      if (error) throw error;
-      showSuccess('Task deleted successfully!');
-      queryClient.invalidateQueries({ queryKey: ['tasks', userId] });
-      return true;
-    } catch (err: any) {
-      console.error('useTasks: Error deleting task:', err.message);
-      showError(`Failed to delete task: ${err.message}`);
-      return false;
     }
-  };
 
-  const createSection = async (newSection: NewTaskSectionData): Promise<TaskSection | null> => {
+    if (userSettings && userSettings.future_tasks_days_visible !== -1 && viewMode === 'daily') {
+      const visibilityDays = userSettings.future_tasks_days_visible;
+      const today = startOfDay(effectiveCurrentDate);
+      const futureLimit = addDays(today, visibilityDays);
+
+      filtered = filtered.filter(task => {
+        if (!task.due_date) {
+          return true; // Always show tasks without a due date
+        }
+        const dueDate = startOfDay(parseISO(task.due_date));
+        // Show if due date is today or in the past, or within the visibility window
+        return !isAfter(dueDate, futureLimit);
+      });
+    }
+
+    return filtered;
+  }, [
+    processedTasks,
+    searchFilter,
+    statusFilter,
+    categoryFilter,
+    priorityFilter,
+    sectionFilter,
+    viewMode,
+    effectiveCurrentDate,
+    userSettings,
+    todayStart,
+  ]);
+
+  const setFocusTask = useCallback(async (taskId: string | null) => {
     if (!userId) {
       showError('User not authenticated.');
-      return null;
+      return;
     }
+    
+    let finalTaskId = taskId;
+    if (taskId && taskId.startsWith('virtual-')) {
+      const newRealTaskId = await updateTask(taskId, {});
+      if (!newRealTaskId) {
+        showError('Failed to create a real task instance to focus on.');
+        return;
+      }
+      finalTaskId = newRealTaskId;
+    }
+
+    const success = await updateSettings({ focused_task_id: finalTaskId });
+    if (success) {
+      showSuccess(finalTaskId ? 'Task set as focus!' : 'Focus cleared.');
+    } else {
+      showError('Failed to set focus task.');
+    }
+  }, [userId, updateSettings, updateTask]);
+
+  const nextAvailableTask = useMemo(() => {
+    const focusedTaskId = userSettings?.focused_task_id;
+    if (focusedTaskId) {
+      const focusedTask = processedTasks.find(t => t.id === focusedTaskId);
+      if (focusedTask && focusedTask.status === 'to-do' && (focusedTask.recurring_type !== 'none' || !doTodayOffIds.has(focusedTask.original_task_id || focusedTask.id))) {
+        return focusedTask;
+      }
+    }
+
+    const relevantTasks = processedTasks.filter(task =>
+      task.status === 'to-do' &&
+      task.parent_task_id === null &&
+      (task.recurring_type !== 'none' || !doTodayOffIds.has(task.original_task_id || task.id))
+    );
+
+    const tasksBySection = new Map<string | null, Task[]>();
+    relevantTasks.forEach(task => {
+      const sectionId = task.section_id || null;
+      if (!tasksBySection.has(sectionId)) {
+        tasksBySection.set(sectionId, []);
+      }
+      tasksBySection.get(sectionId)!.push(task);
+    });
+
+    tasksBySection.forEach((tasksInSection) => {
+      tasksInSection.sort((a, b) => (a.order || 0) - (b.order || 0));
+    });
+
+    for (const section of sections) {
+      const tasksInSection = tasksBySection.get(section.id);
+      if (tasksInSection && tasksInSection.length > 0) {
+        return tasksInSection[0];
+      }
+    }
+
+    const tasksInNoSection = tasksBySection.get(null);
+    if (tasksInNoSection && tasksInNoSection.length > 0) {
+      return tasksInNoSection[0];
+    }
+
+    return null;
+  }, [processedTasks, sections, userSettings?.focused_task_id, doTodayOffIds]);
+
+  const toggleDoToday = useCallback(async (task: Task) => {
+    if (!userId) return;
+    const taskIdToLog = task.original_task_id || task.id;
+    const formattedDate = format(effectiveCurrentDate, 'yyyy-MM-dd');
+    const isCurrentlyOn = doTodayOffIds.has(taskIdToLog); // Corrected logic
+
+    // Optimistic update
+    queryClient.setQueryData(['do_today_off_log', userId, format(effectiveCurrentDate, 'yyyy-MM-dd')], (oldSet: Set<string> | undefined) => {
+        const newSet = new Set(oldSet || []);
+        if (isCurrentlyOn) { // If it was ON, we're turning it OFF
+            newSet.add(taskIdToLog);
+        } else { // If it was OFF, we're turning it ON
+            newSet.delete(taskIdToLog);
+        }
+        return newSet;
+    });
+
     try {
-      const { data, error } = await supabase
-        .from('task_sections')
-        .insert({ ...newSection, user_id: userId })
-        .select()
-        .single();
-
-      if (error) throw error;
-      showSuccess('Section created successfully!');
-      queryClient.invalidateQueries({ queryKey: ['sections', userId] });
-      return data;
-    } catch (err: any) {
-      console.error('useTasks: Error creating section:', err.message);
-      showError(`Failed to create section: ${err.message}`);
-      return null;
+        if (isCurrentlyOn) { // If it was ON, we're turning it OFF (insert into off_log)
+            const { error } = await supabase
+                .from('do_today_off_log')
+                .insert({ user_id: userId, task_id: taskIdToLog, off_date: formattedDate });
+            if (error) throw error;
+        } else { // If it was OFF, we're turning it ON (delete from off_log)
+            const { error } = await supabase
+                .from('do_today_off_log')
+                .delete()
+                .eq('user_id', userId)
+                .eq('task_id', taskIdToLog)
+                .eq('off_date', formattedDate);
+            if (error) throw error;
+        }
+        // No success toast here, as it's a quick toggle
+        invalidateTasksQueries(); // Invalidate tasks to re-evaluate `isDoToday` in filteredTasks
+        queryClient.invalidateQueries({ queryKey: ['do_today_off_log', userId, format(effectiveCurrentDate, 'yyyy-MM-dd')] }); // Invalidate specific do_today_off_log query
+    } catch (e: any) {
+        showError("Failed to sync 'Do Today' setting.");
+        console.error("Error toggling Do Today:", e);
+        invalidateTasksQueries(); // Revert optimistic update on error
+        queryClient.invalidateQueries({ queryKey: ['do_today_off_log', userId, format(effectiveCurrentDate, 'yyyy-MM-dd')] }); // Revert optimistic update on error
     }
-  };
+  }, [userId, effectiveCurrentDate, doTodayOffIds, queryClient, invalidateTasksQueries]);
 
-  const updateSection = async (sectionId: string, updates: UpdateTaskSectionData): Promise<TaskSection | null> => {
-    if (!userId) {
-      showError('User not authenticated.');
-      return null;
+  const toggleAllDoToday = useCallback(async () => {
+    if (!userId) return;
+
+    const nonRecurringTasks = finalFilteredTasks.filter(t => t.recurring_type === 'none');
+    if (nonRecurringTasks.length === 0) {
+      showSuccess("No non-recurring tasks to toggle.");
+      return;
     }
+
+    const nonRecurringTaskIds = nonRecurringTasks.map(t => t.original_task_id || t.id);
+    const currentlyOnCount = nonRecurringTasks.filter(t => !doTodayOffIds.has(t.original_task_id || t.id)).length;
+    const turnAllOff = currentlyOnCount > nonRecurringTasks.length / 2; // If more than half are ON, turn all OFF
+
+    const formattedDate = format(effectiveCurrentDate, 'yyyy-MM-dd');
+    
+    // Optimistic update
+    queryClient.setQueryData(['do_today_off_log', userId, formattedDate], (oldSet: Set<string> | undefined) => {
+        const newSet = new Set(oldSet || []);
+        if (turnAllOff) {
+            nonRecurringTaskIds.forEach(id => newSet.add(id));
+        } else {
+            nonRecurringTaskIds.forEach(id => newSet.delete(id));
+        }
+        return newSet;
+    });
+
     try {
-      const { data, error } = await supabase
-        .from('task_sections')
-        .update(updates)
-        .eq('id', sectionId)
-        .eq('user_id', userId)
-        .select()
-        .single();
+        // Always delete all for the day first to simplify logic
+        await supabase.from('do_today_off_log').delete().eq('user_id', userId).eq('off_date', formattedDate);
 
-      if (error) throw error;
-      showSuccess('Section updated successfully!');
-      queryClient.invalidateQueries({ queryKey: ['sections', userId] });
-      return data;
-    } catch (err: any) {
-      console.error('useTasks: Error updating section:', err.message);
-      showError(`Failed to update section: ${err.message}`);
-      return null;
+        if (turnAllOff) {
+            const recordsToInsert = nonRecurringTaskIds.map(taskId => ({ user_id: userId, task_id: taskId, off_date: formattedDate }));
+            if (recordsToInsert.length > 0) {
+                const { error } = await supabase.from('do_today_off_log').insert(recordsToInsert);
+                if (error) throw error;
+            }
+            showSuccess("All tasks toggled off for today.");
+        } else {
+            showSuccess("All tasks toggled on for today.");
+        }
+        invalidateTasksQueries(); // Invalidate tasks to re-evaluate `isDoToday` in filteredTasks
+        queryClient.invalidateQueries({ queryKey: ['do_today_off_log', userId, formattedDate] }); // Invalidate specific do_today_off_log query
+    } catch (e: any) {
+        showError("Failed to sync 'Do Today' settings.");
+        console.error("Error toggling all Do Today:", e);
+        invalidateTasksQueries(); // Revert optimistic update on error
+        queryClient.invalidateQueries({ queryKey: ['do_today_off_log', userId, formattedDate] }); // Revert optimistic update on error
     }
-  };
+  }, [userId, finalFilteredTasks, doTodayOffIds, effectiveCurrentDate, queryClient, invalidateTasksQueries]);
 
-  const updateSectionIncludeInFocusMode = async (sectionId: string, include: boolean): Promise<TaskSection | null> => {
-    return updateSection(sectionId, { include_in_focus_mode: include });
-  };
-
-  const deleteSection = async (sectionId: string): Promise<boolean> => {
-    if (!userId) {
-      showError('User not authenticated.');
-      return false;
+  const dailyProgress = useMemo(() => {
+    if (viewMode !== 'daily') {
+      return { totalCount: 0, completedCount: 0, overdueCount: 0 };
     }
-    try {
-      const { error } = await supabase
-        .from('task_sections')
-        .delete()
-        .eq('id', sectionId)
-        .eq('user_id', userId);
 
-      if (error) throw error;
-      showSuccess('Section deleted successfully!');
-      queryClient.invalidateQueries({ queryKey: ['sections', userId] });
-      return true;
-    } catch (err: any) {
-      console.error('useTasks: Error deleting section:', err.message);
-      showError(`Failed to delete section: ${err.message}`);
-      return false;
-    }
-  };
+    const tasksForToday = processedTasks.filter(task => {
+        // Condition 1: Was completed or archived today
+        if ((task.status === 'completed' || task.status === 'archived') && task.updated_at) {
+            const updatedAt = startOfDay(parseISO(task.updated_at));
+            if (isSameDay(updatedAt, todayStart)) {
+                return true;
+            }
+        }
 
-  const createCategory = async (newCategory: NewCategoryData): Promise<Category | null> => {
-    if (!userId) {
-      showError('User not authenticated.');
-      return null;
-    }
-    try {
-      const { data, error } = await supabase
-        .from('task_categories')
-        .insert({ ...newCategory, user_id: userId })
-        .select()
-        .single();
+        // Condition 2: Is a relevant 'to-do' task
+        if (task.status === 'to-do') {
+            const createdAt = startOfDay(parseISO(task.created_at));
+            const dueDate = task.due_date ? startOfDay(parseISO(task.due_date)) : null;
 
-      if (error) throw error;
-      showSuccess('Category created successfully!');
-      queryClient.invalidateQueries({ queryKey: ['categories', userId] });
-      return data;
-    } catch (err: any) {
-      console.error('useTasks: Error creating category:', err.message);
-      showError(`Failed to create category: ${err.message}`);
-      return null;
-    }
-  };
+            // Due on or before today
+            if (dueDate && !isAfter(dueDate, todayStart)) {
+                return true;
+            }
+            
+            // No due date, created on or before today
+            if (!dueDate && !isAfter(createdAt, todayStart)) {
+                return true;
+            }
+        }
 
-  const updateCategory = async (categoryId: string, updates: UpdateCategoryData): Promise<Category | null> => {
-    if (!userId) {
-      showError('User not authenticated.');
-      return null;
-    }
-    try {
-      const { data, error } = await supabase
-        .from('task_categories')
-        .update(updates)
-        .eq('id', categoryId)
-        .eq('user_id', userId)
-        .select()
-        .single();
+        return false;
+    });
 
-      if (error) throw error;
-      showSuccess('Category updated successfully!');
-      queryClient.invalidateQueries({ queryKey: ['categories', userId] });
-      return data;
-    } catch (err: any) {
-      console.error('useTasks: Error updating category:', err.message);
-      showError(`Failed to update category: ${err.message}`);
-      return null;
-    }
-  };
+    const focusModeSectionIds = new Set(sections.filter(s => s.include_in_focus_mode).map(s => s.id));
 
-  const deleteCategory = async (categoryId: string): Promise<boolean> => {
-    if (!userId) {
-      showError('User not authenticated.');
-      return false;
-    }
-    try {
-      const { error } = await supabase
-        .from('task_categories')
-        .delete()
-        .eq('id', categoryId)
-        .eq('user_id', userId);
+    const focusTasks = tasksForToday.filter(t => {
+      if (t.parent_task_id !== null) return false; // Only top-level tasks
 
-      if (error) throw error;
-      showSuccess('Category deleted successfully!');
-      queryClient.invalidateQueries({ queryKey: ['categories', userId] });
-      return true;
-    } catch (err: any) {
-      console.error('useTasks: Error deleting category:', err.message);
-      showError(`Failed to delete category: ${err.message}`);
-      return false;
-    }
-  };
+      const isInFocusArea = t.section_id === null || focusModeSectionIds.has(t.section_id);
+      const isDoToday = t.recurring_type !== 'none' || !doTodayOffIds.has(t.original_task_id || t.id);
+
+      return isInFocusArea && isDoToday;
+    });
+
+    const completedCount = focusTasks.filter(t => t.status === 'completed' || t.status === 'archived').length;
+    const totalCount = focusTasks.filter(t => t.status !== 'skipped').length;
+    
+    const overdueCount = focusTasks.filter(t => {
+      if (!t.due_date || t.status === 'completed' || t.status === 'archived') return false;
+      const due = parseISO(t.due_date);
+      return isValid(due) && isBefore(startOfDay(due), startOfDay(todayStart));
+    }).length;
+
+    return { totalCount, completedCount, overdueCount };
+  }, [processedTasks, viewMode, sections, doTodayOffIds, todayStart]);
 
   return {
-    tasks: allTasksCombined, // Combined real and generated virtual tasks
-    sections,
-    allCategories,
-    isLoading,
-    error,
-    createTask,
+    tasks: rawTasks, // Expose rawTasks for direct access if needed, but processedTasks is usually preferred
+    processedTasks,
+    filteredTasks: finalFilteredTasks,
+    nextAvailableTask,
+    loading,
+    currentDate: effectiveCurrentDate, // Expose effectiveCurrentDate
+    setCurrentDate: null, // No longer expose internal setter
+    userId,
+    handleAddTask,
     updateTask,
     deleteTask,
+    bulkUpdateTasks,
+    bulkDeleteTasks,
+    searchFilter,
+    setSearchFilter,
+    statusFilter,
+    setStatusFilter,
+    categoryFilter,
+    setCategoryFilter,
+    priorityFilter,
+    setPriorityFilter,
+    sectionFilter,
+    setSectionFilter,
+    sections,
+    allCategories,
+    updateTaskParentAndOrder,
+    moveTask: () => Promise.resolve(),
+    archiveAllCompletedTasks,
+    markAllTasksInSectionCompleted,
     createSection,
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode,
-    createCategory,
-    updateCategory,
-    deleteCategory,
+    reorderSections,
+    setFocusTask,
+    doTodayOffIds,
+    toggleDoToday,
+    toggleAllDoToday,
+    dailyProgress,
   };
 };

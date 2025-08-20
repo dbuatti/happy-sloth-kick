@@ -3,7 +3,7 @@ import { CalendarDays } from 'lucide-react';
 import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import DailyScheduleView from '@/components/DailyScheduleView';
-import { Task, useTasks, NewTaskSectionData, UpdateTaskSectionData, NewCategoryData, UpdateCategoryData } from '@/hooks/useTasks'; // Removed unused Category types
+import { Task, useTasks } from '@/hooks/useTasks';
 import TaskOverviewDialog from '@/components/TaskOverviewDialog';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import { useSettings } from '@/context/SettingsContext';
@@ -20,7 +20,7 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
 
   // Fetch allTasks here to pass to TaskDetailDialog
   const {
-    tasks: allTasks, // This now contains combined real and generated recurring tasks
+    tasks: allTasks,
     sections,
     allCategories,
     updateTask,
@@ -29,9 +29,6 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode,
-    createCategory,
-    updateCategory,
-    deleteCategory,
   } = useTasks({ currentDate: new Date(), userId: demoUserId }); // Pass a dummy date for this global fetch
 
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
@@ -45,7 +42,6 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
   };
 
   const handleOpenTaskDetail = (task: Task) => {
-    setTaskToOverview(null); // Close overview if open
     setTaskToEdit(task);
     setIsTaskDetailOpen(true);
   };
@@ -111,7 +107,7 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
           onDelete={deleteTask}
           sections={sections}
           allCategories={allCategories}
-          allTasks={allTasks} // Cast to Task[]
+          allTasks={allTasks as Task[]}
         />
       )}
       {taskToEdit && (
@@ -127,10 +123,7 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
           updateSection={updateSection}
           deleteSection={deleteSection}
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-          createCategory={createCategory}
-          updateCategory={updateCategory}
-          deleteCategory={deleteCategory}
-          allTasks={allTasks} // Cast to Task[]
+          allTasks={allTasks as Task[]}
         />
       )}
     </div>

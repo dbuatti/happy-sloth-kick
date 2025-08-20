@@ -1,11 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, ListTodo, CalendarDays, BookOpen, Brain, Timer, Archive, Settings, BarChart3, Lightbulb, Users } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Menu, Volume2, VolumeX } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/context/AuthContext';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
+import { Badge } from '@/components/ui/badge';
+import { useSound } from '@/context/SoundContext';
+import ThemeSelector from './ThemeSelector';
+import { navItems } from '@/lib/navItems';
 import { useSettings } from '@/context/SettingsContext';
+import { useAuth } from '@/context/AuthContext';
 
 interface SidebarProps {
   children: React.ReactNode;
@@ -13,82 +19,138 @@ interface SidebarProps {
   demoUserId?: string;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false, demoUserId }) => {
+const NavigationLinks = ({ onLinkClick, isDemo, demoUserId }: { onLinkClick?: () => void; isDemo?: boolean; demoUserId?: string; }) => {
   const location = useLocation();
-  const { completedCount, totalCount, isLoading: countLoading } = useDailyTaskCount({ userId: demoUserId, currentDate: new Date() }); // Pass currentDate
+  const { dailyTaskCount, loading: countLoading } = useDailyTaskCount({ userId: demoUserId });
   const { settings } = useSettings();
+  const { user } = useAuth();
 
-  const navItems = [
-    { name: 'Dashboard', href: '/dashboard', icon: Home, visible: settings?.visible_pages?.dashboard ?? true },
-    { name: 'Daily Tasks', href: '/daily-tasks', icon: ListTodo, visible: settings?.visible_pages?.daily_tasks ?? true, count: { completed: completedCount, total: totalCount, loading: countLoading } },
-    { name: 'Schedule', href: '/schedule', icon: CalendarDays, visible: settings?.visible_pages?.schedule ?? true },
-    { name: 'Calendar', href: '/calendar', icon: CalendarDays, visible: settings?.visible_pages?.calendar ?? true },
-    { name: 'Projects', href: '/projects', icon: Lightbulb, visible: settings?.visible_pages?.projects ?? true },
-    { name: 'Focus Mode', href: '/focus', icon: Timer, visible: settings?.visible_pages?.focus_mode ?? true },
-    { name: 'Meditation', href: '/meditation', icon: BookOpen, visible: settings?.visible_pages?.meditation ?? true },
-    { name: 'Mindfulness Tools', href: '/mindfulness', icon: Brain, visible: settings?.visible_pages?.mindfulness_tools ?? true },
-    { name: 'Sleep', href: '/sleep', icon: Users, visible: settings?.visible_pages?.sleep ?? true },
-    { name: 'Dev Space', href: '/dev-space', icon: Lightbulb, visible: settings?.visible_pages?.dev_space ?? true },
-    { name: 'Archive', href: '/archive', icon: Archive, visible: settings?.visible_pages?.archive ?? true },
-    { name: 'Analytics', href: '/analytics', icon: BarChart3, visible: settings?.visible_pages?.analytics ?? true },
-    { name: 'Settings', href: '/settings', icon: Settings, visible: settings?.visible_pages?.settings ?? true },
-  ];
-
-  const { signOut } = useAuth();
-
-  const handleSignOut = async () => {
-    await signOut();
-  };
+  const visibleNavItems = navItems.filter(item => {
+    // Hide Dev Space unless it's the specific user
+    if (item.path === '/dev-space') {
+      return user?.id === 'abc41fed-55ba-4249-90df-3b5a25b09e87';
+    }
+    if (!item.toggleable) return true;
+    return settings?.visible_pages?.[item.path] !== false;
+  });
 
   return (
-    <div className="flex h-screen">
-      <aside className="w-64 bg-background border-r p-4 flex flex-col">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">TaskMaster</h1>
-        </div>
-        <nav className="flex-grow">
-          <ul className="space-y-2">
-            {navItems.map((item) => (
-              item.visible && (
-                <li key={item.name}>
-                  <Button
-                    variant="ghost"
-                    className={cn(
-                      "w-full justify-start",
-                      location.pathname === (isDemo ? `/demo${item.href}` : item.href) && "bg-muted hover:bg-muted"
-                    )}
-                    asChild
-                  >
-                    <Link to={isDemo ? `/demo${item.href}` : item.href}>
-                      <item.icon className="mr-2 h-4 w-4" />
-                      {item.name}
-                      {item.name === 'Daily Tasks' && item.count && (
-                        <span className="ml-auto text-xs font-semibold">
-                          {item.count.loading ? (
-                            <span className="animate-pulse">...</span>
-                          ) : (
-                            `${item.count.completed}/${item.count.total}`
-                          )}
-                        </span>
-                      )}
-                    </Link>
-                  </Button>
-                </li>
-              )
-            ))}
-          </ul>
-        </nav>
-        <div className="mt-auto pt-4 border-t">
-          {!isDemo && (
-            <Button variant="ghost" className="w-full justify-start" onClick={handleSignOut}>
-              Sign Out
-            </Button>
-          )}
-        </div>
-      </aside>
-      {children}
-    </div>
+    <nav className="flex-1 px-3 space-y-1">
+      {visibleNavItems.map((item) => {
+        const path = isDemo ? (item.path === '/dashboard' ? '/demo' : `/demo${item.path}`) : item.path;
+        const isActive = location.pathname === path;
+        const Icon = item.icon;
+        return (
+          <Link
+            key={item.path}
+            to={path}
+            className={cn(
+              "flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+              isActive
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'text-foreground/80 hover:bg-muted hover:text-foreground'
+            )}
+            onClick={onLinkClick}
+          >
+            <Icon className="h-4 w-4" />
+            <span className="font-medium text-sm">{item.name}</span>
+            {item.showCount && !countLoading && dailyTaskCount > 0 && (
+              <Badge className="ml-auto px-2.5 py-1 text-xs rounded-full bg-primary-foreground text-primary flex-shrink-0">
+                {dailyTaskCount}
+              </Badge>
+            )}
+          </Link>
+        );
+      })}
+    </nav>
   );
 };
 
-export default Sidebar;
+export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false, demoUserId }) => {
+  const isMobile = useIsMobile();
+  const { isSoundEnabled, toggleSound } = useSound();
+
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+
+  if (isMobile) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <header className="flex items-center justify-between p-4 bg-card/80 backdrop-blur shadow-sm sticky top-0 z-50">
+          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" aria-label="Open menu" className="h-9 w-9">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent
+              side="left"
+              className="w-64 bg-card flex flex-col"
+              onPointerDownOutside={(e) => {
+                if (e.target instanceof HTMLElement && e.target.closest('[data-radix-popper-content-wrapper]')) {
+                  e.preventDefault();
+                }
+              }}
+            >
+              <div className="p-4 flex justify-between items-center">
+                <Link to={isDemo ? '/demo' : '/dashboard'} className="hover:opacity-80 transition-opacity">
+                  <h1 className="text-2xl font-bubbly">TaskMaster</h1>
+                </Link>
+              </div>
+              <NavigationLinks onLinkClick={() => setIsSheetOpen(false)} isDemo={isDemo} demoUserId={demoUserId} />
+              <div className="p-4 border-t border-border flex justify-between items-center">
+                <p className="text-xs text-muted-foreground">
+                  &copy; {new Date().getFullYear()} TaskMaster
+                </p>
+                <div className="flex items-center space-x-1">
+                  <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"} className="h-8 w-8">
+                    {isSoundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+                  </Button>
+                  <ThemeSelector />
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+          <Link to={isDemo ? '/demo' : '/dashboard'} className="hover:opacity-80 transition-opacity">
+            <h1 className="text-xl font-bubbly sm:text-2xl">TaskMaster</h1> {/* Reduced font size for mobile */}
+          </Link>
+          <div className="flex items-center space-x-1">
+            <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"} className="h-8 w-8">
+              {isSoundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+            </Button>
+            <ThemeSelector />
+          </div>
+        </header>
+        <div className="flex-1 overflow-auto">
+          {children}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-screen flex overflow-hidden bg-background">
+      <div className="w-64 bg-card/80 backdrop-blur shadow-md h-full flex flex-col flex-shrink-0">
+        <div className="p-4 flex justify-between items-center">
+          <Link to={isDemo ? '/demo' : '/dashboard'} className="hover:opacity-80 transition-opacity">
+            <h1 className="text-2xl font-bubbly">TaskMaster</h1>
+          </Link>
+        </div>
+        <NavigationLinks isDemo={isDemo} demoUserId={demoUserId} />
+        <div className="p-4 border-t border-border flex justify-between items-center">
+          <p className="text-xs text-muted-foreground">
+            &copy; {new Date().getFullYear()} TaskMaster
+          </p>
+          <div className="flex items-center space-x-1">
+            <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"} className="h-8 w-8">
+              {isSoundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+            </Button>
+            <ThemeSelector />
+          </div>
+        </div>
+      </div>
+      <div className="flex-1 flex flex-col overflow-y-auto">
+        {children}
+      </div>
+    </div>
+  );
+};
