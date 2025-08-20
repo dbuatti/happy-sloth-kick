@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { isSameDay, parseISO, isBefore, format, setHours, setMinutes, getHours, getMinutes, startOfDay } from 'date-fns';
-import { Task } from './types'; // Removed Category from import
+import { Task, Category } from './types';
 
 interface UseProcessedTasksProps {
   rawTasks: Omit<Task, 'category_color'>[];

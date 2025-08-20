@@ -7,7 +7,7 @@ interface UseTaskFilteringProps {
   processedTasks: Task[];
   userSettings: UserSettings | null;
   options: UseTasksOptions;
-  doTodayOffIds: Set<string>; // Removed from destructuring as it's not used in this hook's logic
+  doTodayOffIds: Set<string>;
 }
 
 export const useTaskFiltering = ({ processedTasks, userSettings, options, doTodayOffIds }: UseTaskFilteringProps) => {

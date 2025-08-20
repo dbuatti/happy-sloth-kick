@@ -227,7 +227,7 @@ const ManageCategoriesDialog: React.FC<ManageCategoriesDialogProps> = ({
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete the category "{categoryToDeleteName}" and reassign all tasks in this category to "General" (or no category if "General" doesn't exist).
             </AlertDialogDescription>
-          </AlertDialogHeader>
+          </AlertDialogDescription>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isSaving}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDeleteCategory} disabled={isSaving}>

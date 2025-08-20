@@ -33,6 +33,7 @@ interface TaskItemProps {
   setFocusTask: (taskId: string | null) => Promise<void>;
   isDoToday: boolean;
   toggleDoToday: (task: Task) => void;
+  doTodayOffIds: Set<string>;
   scheduledTasksMap: Map<string, Appointment>;
   isDemo?: boolean;
 }
@@ -53,6 +54,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   setFocusTask,
   isDoToday,
   toggleDoToday,
+  doTodayOffIds,
   scheduledTasksMap,
   isDemo = false,
 }) => {
@@ -388,9 +390,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
                         {section.name}
                       </DropdownMenuItem>
                     ))}
-                  </>
-                )}
-              </DropdownMenuSubContent>
+                  </DropdownMenuSubContent>
             </DropdownMenuSub>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={() => { onDelete(task.id); playSound('alert'); }} className="text-destructive focus:text-destructive">
