@@ -1,186 +1,83 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { startOfDay, parseISO, isSameDay, isBefore, format } from 'date-fns';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { format, isSameDay, startOfDay, parseISO } from 'date-fns'; // Added parseISO
+// import { useQueryClient } from '@tanstack/react-query'; // Removed unused import
+import { Task } from './useTasks'; // Import Task type
 
-// Define a minimal Task type for this hook, including necessary fields for filtering
-interface DailyCountTask {
-  id: string;
-  status: 'to-do' | 'completed' | 'skipped' | 'archived';
-  created_at: string;
-  original_task_id: string | null;
-  section_id: string | null;
-  recurring_type: 'none' | 'daily' | 'weekly' | 'monthly';
-  parent_task_id: string | null; // Added parent_task_id
+interface UseDailyTaskCountOptions {
+  currentDate: Date;
+  userId?: string;
 }
 
-// Re-use query functions from useTasks
-import { fetchSections, fetchTasks, fetchDoTodayOffLog, TaskSection, Task } from './useTasks';
-
-export const useDailyTaskCount = (props?: { userId?: string }) => {
+export const useDailyTaskCount = ({ currentDate, userId: propUserId }: UseDailyTaskCountOptions) => {
   const { user } = useAuth();
-  const userId = props?.userId || user?.id;
-  const queryClient = useQueryClient();
+  // const queryClient = useQueryClient(); // Removed unused variable
+  const userId = propUserId || user?.id;
 
-  const todayStart = startOfDay(new Date()); // Always use current date for daily count
+  const [completedCount, setCompletedCount] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch sections included in focus mode
-  const { data: sectionsData = [], isLoading: sectionsLoading } = useQuery<TaskSection[], Error>({
-    queryKey: ['task_sections', userId], // Use the same query key as useTasks
-    queryFn: () => fetchSections(userId!), // Re-use the fetchSections function
-    enabled: !!userId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
+  const fetchDailyTaskCounts = useCallback(async () => {
+    if (!userId) {
+      setIsLoading(false);
+      return;
+    }
+    setIsLoading(true);
+    const startOfCurrentDay = format(startOfDay(currentDate), 'yyyy-MM-dd');
 
-  // Fetch all 'to-do' tasks for the user that could potentially be relevant for today
-  const { data: allUserTasks = [], isLoading: tasksLoading } = useQuery<Task[], Error>({
-    queryKey: ['tasks', userId], // Use the same query key as useTasks
-    queryFn: () => fetchTasks(userId!) as Promise<Task[]>, // Cast to Task[]
-    enabled: !!userId,
-    staleTime: 60 * 1000, // 1 minute
-  });
+    try {
+      // Fetch tasks for the current day
+      const { data: tasks, error: tasksError } = await supabase
+        .from('tasks')
+        .select('id, status, due_date, recurring_type, original_task_id')
+        .eq('user_id', userId)
+        .or(`due_date.eq.${startOfCurrentDay},recurring_type.neq.none`); // Include recurring tasks for the day
 
-  // Get "Do Today" off IDs
-  const { data: doTodayOffIds = new Set(), isLoading: doTodayOffLoading } = useQuery<Set<string>, Error>({
-    queryKey: ['do_today_off_log', userId, format(todayStart, 'yyyy-MM-dd')], // Use the same query key
-    queryFn: () => fetchDoTodayOffLog(userId!, todayStart), // Re-use the fetchDoTodayOffLog function
-    enabled: !!userId,
-    staleTime: 60 * 1000, // 1 minute
-  });
+      if (tasksError) throw tasksError;
 
-  const loading = sectionsLoading || tasksLoading || doTodayOffLoading;
+      // Filter tasks to only include those due today or recurring for today
+      const relevantTasks = tasks.filter(task => {
+        const isDueToday = task.due_date && isSameDay(parseISO(task.due_date), currentDate);
+        const isRecurringToday = task.recurring_type !== 'none' && task.recurring_type !== null; // Simplified check, actual recurrence logic is in useTasks
 
-  const dailyTaskCount = useMemo(() => {
-    if (!userId || loading) return 0;
+        return isDueToday || isRecurringToday;
+      });
 
-    let count = 0;
-    const focusModeSectionIds = new Set(sectionsData.filter(s => s.include_in_focus_mode).map(s => s.id));
-    const processedOriginalIds = new Set<string>();
+      const completed = relevantTasks.filter(task => task.status === 'completed').length;
+      const total = relevantTasks.length;
 
-    // Filter for top-level tasks (not sub-tasks)
-    const topLevelTasks = (allUserTasks as DailyCountTask[]).filter(task => task.parent_task_id === null);
+      setCompletedCount(completed);
+      setTotalCount(total);
 
-    const relevantTasksForToday: DailyCountTask[] = [];
+    } catch (err: any) {
+      console.error('Error fetching daily task counts:', err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [userId, currentDate]);
 
-    topLevelTasks.forEach(task => {
-      const taskCreatedAt = startOfDay(parseISO(task.created_at));
-      const originalId = task.original_task_id || task.id;
+  useEffect(() => {
+    fetchDailyTaskCounts();
+  }, [fetchDailyTaskCounts]);
 
-      if (task.recurring_type !== 'none') {
-        if (processedOriginalIds.has(originalId)) {
-          return;
-        }
-
-        const allInstancesOfThisRecurringTask = (allUserTasks as DailyCountTask[]).filter(t =>
-          t.original_task_id === originalId || t.id === originalId
-        );
-
-        let taskToDisplay: DailyCountTask | null = null;
-
-        const instanceForCurrentDay = allInstancesOfThisRecurringTask.find(t =>
-          isSameDay(startOfDay(parseISO(t.created_at)), todayStart) && t.status !== 'archived'
-        );
-        
-        if (instanceForCurrentDay) {
-          taskToDisplay = instanceForCurrentDay;
-        } else {
-          const carryOverTask = allInstancesOfThisRecurringTask
-            .filter(t => isBefore(startOfDay(parseISO(t.created_at)), todayStart) && t.status === 'to-do')
-            .sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime())[0];
-
-          if (carryOverTask) {
-            taskToDisplay = carryOverTask;
-          }
-        }
-        
-        if (taskToDisplay) {
-          relevantTasksForToday.push(taskToDisplay);
-        }
-        processedOriginalIds.add(originalId);
-      } else {
-        const isTaskCreatedOnCurrentDate = isSameDay(taskCreatedAt, todayStart);
-        if (isTaskCreatedOnCurrentDate && task.status !== 'archived') {
-          relevantTasksForToday.push(task);
-        } else if (isBefore(taskCreatedAt, todayStart) && task.status === 'to-do') {
-          relevantTasksForToday.push(task);
-        }
-      }
-    });
-
-    relevantTasksForToday.forEach(task => {
-      const isFocusModeTask = task.section_id === null || focusModeSectionIds.has(task.section_id);
-      const isDoToday = task.recurring_type !== 'none' || !doTodayOffIds.has(task.original_task_id || task.id);
-      if (isFocusModeTask && isDoToday) {
-        count++;
-      }
-    });
-    return count;
-  }, [userId, loading, sectionsData, allUserTasks, doTodayOffIds, todayStart]);
-
-  // Real-time subscriptions to invalidate queries
+  // Realtime subscription for tasks to update counts
   useEffect(() => {
     if (!userId) return;
 
     const tasksChannel = supabase
-      .channel('daily_task_count_tasks_channel')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'tasks',
-          filter: `user_id=eq.${userId}`,
-        },
-        () => { // Removed unused payload parameter
-          console.log('Task change received for daily count!');
-          queryClient.invalidateQueries({ queryKey: ['tasks', userId] });
-          queryClient.invalidateQueries({ queryKey: ['do_today_off_log', userId] }); // Also invalidate do_today_off_log
-        }
-      )
-      .subscribe();
-    
-    const sectionsChannel = supabase
-      .channel('daily_task_count_sections_channel')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'task_sections',
-          filter: `user_id=eq.${userId}`,
-        },
-        () => { // Removed unused payload parameter
-          console.log('Section change received for daily count!');
-          queryClient.invalidateQueries({ queryKey: ['task_sections', userId] });
-        }
-      )
-      .subscribe();
-
-    const doTodayOffLogChannel = supabase
-      .channel('daily_task_count_do_today_off_log_channel')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'do_today_off_log',
-          filter: `user_id=eq.${userId}`,
-        },
-        () => { // Removed unused payload parameter
-          console.log('Do Today Off Log change received for daily count!');
-          queryClient.invalidateQueries({ queryKey: ['do_today_off_log', userId] });
-        }
-      )
+      .channel('daily_task_count_channel')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${userId}` }, () => { // Removed unused payload
+        // Re-fetch counts on any task change relevant to the user
+        fetchDailyTaskCounts();
+      })
       .subscribe();
 
     return () => {
       supabase.removeChannel(tasksChannel);
-      supabase.removeChannel(sectionsChannel);
-      supabase.removeChannel(doTodayOffLogChannel);
     };
-  }, [userId, queryClient]);
+  }, [userId, fetchDailyTaskCounts]);
 
-
-  return { dailyTaskCount, loading };
+  return { completedCount, totalCount, isLoading };
 };

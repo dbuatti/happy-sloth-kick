@@ -1,72 +1,65 @@
-import { Label } from "@/components/ui/label";
-import { FolderOpen, Plus } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-// Removed useAuth as it's not directly used in this component
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import ManageSectionsDialog from './ManageSectionsDialog'; // Import the new dialog
-
-interface TaskSection {
-  id: string;
-  name: string;
-  user_id: string;
-  order: number | null;
-  include_in_focus_mode: boolean; // Added for consistency
-}
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { PlusCircle, Settings2 } from 'lucide-react';
+import { TaskSection, NewTaskSectionData, UpdateTaskSectionData, Category, NewCategoryData, UpdateCategoryData } from '@/hooks/useTasks';
+import ManageSectionsDialog from './ManageSectionsDialog';
 
 interface SectionSelectorProps {
-  value: string | null;
-  onChange: (sectionId: string | null) => void;
   sections: TaskSection[];
-  createSection: (name: string) => Promise<void>;
-  updateSection: (sectionId: string, newName: string) => Promise<void>;
-  deleteSection: (sectionId: string) => Promise<void>;
-  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
+  selectedSectionId: string | null | undefined;
+  onSelectSection: (sectionId: string | null) => void;
+  createSection: (newSection: NewTaskSectionData) => Promise<TaskSection | null>;
+  updateSection: (sectionId: string, updates: UpdateTaskSectionData) => Promise<TaskSection | null>;
+  deleteSection: (sectionId: string) => Promise<boolean>;
+  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<TaskSection | null>;
+  // Category props are not used here, but might be passed down from parent
+  createCategory: (newCategory: NewCategoryData) => Promise<Category | null>;
+  updateCategory: (categoryId: string, updates: UpdateCategoryData) => Promise<Category | null>;
+  deleteCategory: (categoryId: string) => Promise<boolean>;
 }
 
 const SectionSelector: React.FC<SectionSelectorProps> = ({
-  value,
-  onChange,
   sections,
+  selectedSectionId,
+  onSelectSection,
   createSection,
   updateSection,
   deleteSection,
   updateSectionIncludeInFocusMode,
+  createCategory, // Passed through to ManageSectionsDialog
+  updateCategory, // Passed through to ManageSectionsDialog
+  deleteCategory, // Passed through to ManageSectionsDialog
 }) => {
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
 
-  const selectedSection = sections.find(sec => sec.id === value);
+  const currentSectionName = selectedSectionId
+    ? sections.find(s => s.id === selectedSectionId)?.name || 'Unknown Section'
+    : 'No Section';
 
   return (
-    <div className="space-y-2">
-      <Label>Section</Label>
-      <div className="flex space-x-2">
-        <Select value={value || "no-section-option"} onValueChange={(val) => onChange(val === "no-section-option" ? null : val)}>
-          <SelectTrigger className="flex-1 h-9">
-            <SelectValue placeholder="Select section" />
-          </SelectTrigger>
-          <SelectContent className="z-[9999]">
-            <SelectItem value="no-section-option">No Section</SelectItem>
-            {sections.length > 0 && (
-              sections.map(section => (
-                <SelectItem key={section.id} value={section.id}>
-                  {section.name}
-                </SelectItem>
-              ))
-            )}
-          </SelectContent>
-        </Select>
-        <Button type="button" size="icon" variant="outline" className="h-9 w-9" onClick={() => setIsManageSectionsOpen(true)}>
-          <Plus className="h-3.5 w-3.5" />
-        </Button>
-      </div>
-      
-      {selectedSection && (
-        <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-          <FolderOpen className="h-3.5 w-3.5" />
-          <span>{selectedSection.name}</span>
-        </div>
-      )}
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" className="w-full justify-between">
+            <span>{currentSectionName}</span>
+            <Settings2 className="ml-2 h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)]">
+          <DropdownMenuItem onSelect={() => onSelectSection(null)}>
+            No Section
+          </DropdownMenuItem>
+          {sections.map(section => (
+            <DropdownMenuItem key={section.id} onSelect={() => onSelectSection(section.id)}>
+              {section.name}
+            </DropdownMenuItem>
+          ))}
+          <DropdownMenuItem onSelect={() => setIsManageSectionsOpen(true)}>
+            <PlusCircle className="mr-2 h-4 w-4" /> Manage Sections
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <ManageSectionsDialog
         isOpen={isManageSectionsOpen}
@@ -76,8 +69,11 @@ const SectionSelector: React.FC<SectionSelectorProps> = ({
         updateSection={updateSection}
         deleteSection={deleteSection}
         updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+        createCategory={createCategory}
+        updateCategory={updateCategory}
+        deleteCategory={deleteCategory}
       />
-    </div>
+    </>
   );
 };
 

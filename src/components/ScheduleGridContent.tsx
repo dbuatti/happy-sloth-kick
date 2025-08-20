@@ -356,7 +356,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
     if (settings?.schedule_show_focus_tasks_only) {
       const focusModeSectionIds = new Set(sections.filter(s => s.include_in_focus_mode).map(s => s.id));
       tasksToDisplay = tasksToDisplay.filter(task => {
-        return task.section_id === null || focusModeSectionIds.has(task.section_id);
+        return task.section_id === null || focusModeSectionIds.has(task.section_id || ''); // Handle potential undefined section_id
       });
     }
 
@@ -371,7 +371,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
 
     const newAppointment: NewAppointmentData = {
       title: task.description || '',
-      description: task.notes,
+      description: task.notes || null, // Ensure notes is string or null
       date: format(targetDate, 'yyyy-MM-dd'),
       start_time: format(blockStart, 'HH:mm:ss'),
       end_time: format(addMinutes(blockStart, 30), 'HH:mm:ss'),
@@ -502,7 +502,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
                       const blockStartWithDate = setHours(setMinutes(day, getMinutes(block.start)), getHours(block.start));
                       const blockEndWithDate = addMinutes(blockStartWithDate, 30);
 
-                      const isOutsideWorkHours = workHoursForDay && (!workHoursForDay.enabled || isBefore(blockStartWithDate, dayStartTime!) || !isBefore(blockStartWithDate, dayEndTime!));
+                      const isOutsideWorkHours = workHoursForDay && (!workHoursForDay.enabled || (dayStartTime && isBefore(blockStartWithDate, dayStartTime)) || (dayEndTime && !isBefore(blockStartWithDate, dayEndTime)));
 
                       return (
                         <div
