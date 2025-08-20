@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerDescription } from "@/components/ui/drawer";
 import { Trash2, ListTodo } from 'lucide-react';
-import { Task, TaskSection, Category } from '@/hooks/useTasks'; // Import Task, TaskSection, Category types
+import { Task, TaskSection, Category } from '@/hooks/tasks/types'; // Updated import path
 import { useTasks } from '@/hooks/useTasks'; // Keep useTasks for subtask updates and handleAddTask
 import {
   AlertDialog,
@@ -19,7 +19,7 @@ import { useSound } from '@/context/SoundContext';
 import TaskForm from './TaskForm';
 import { cn } from '@/lib/utils';
 import { Checkbox } from "@/components/ui/checkbox";
-import { useAuth } from '@/context/AuthContext'; // Import useAuth
+import { useAuth } from '@/context/AuthAuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface TaskDetailDialogProps {
@@ -134,16 +134,18 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
           <p className="text-sm text-muted-foreground">No sub-tasks yet. Break down this task into smaller steps!</p>
         ) : (
           <ul className="space-y-1.5">
-            {subtasks.map(subtask => (
+            {subtasks.map((subtask: Task) => (
               <li key={subtask.id} className="flex items-center space-x-2 p-1.5 rounded-md bg-background shadow-sm">
-                <Checkbox
+                <input // Changed from Checkbox to input type="checkbox"
+                  type="checkbox"
                   checked={subtask.status === 'completed'}
-                  onCheckedChange={(checked: boolean) => handleSubtaskStatusChange(subtask.id, checked ? 'completed' : 'to-do')}
-                  id={`subtask-${subtask.id}`}
+                  onChange={(e) => handleSubtaskStatusChange(subtask.id, e.target.checked ? 'completed' : 'to-do')}
+                  id={`subtask-overview-${subtask.id}`}
                   className="flex-shrink-0 h-3.5 w-3.5"
+                  disabled={isSaving}
                 />
                 <label
-                  htmlFor={`subtask-${subtask.id}`}
+                  htmlFor={`subtask-overview-${subtask.id}`}
                   className={cn(
                     "flex-1 text-sm font-medium leading-tight",
                     subtask.status === 'completed' ? 'line-through text-gray-500 dark:text-gray-400' : 'text-foreground',
@@ -191,9 +193,9 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
           <DrawerContent>
             <DrawerHeader className="text-left">
               <DrawerTitle>Edit Task</DrawerTitle>
-              <DrawerDescription className="sr-only">
+              <DialogDescription className="sr-only">
                 Edit the details of your task, including sub-tasks.
-              </DrawerDescription>
+              </DialogDescription>
             </DrawerHeader>
             <div className="px-4 pb-4 overflow-y-auto">
               <MainContent />

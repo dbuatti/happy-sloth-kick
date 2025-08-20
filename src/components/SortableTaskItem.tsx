@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Task } from '@/hooks/useTasks';
+import { Task } from '@/hooks/tasks/types'; // Updated import path
 import TaskItem from './TaskItem';
 import { cn } from '@/lib/utils';
 import { Appointment } from '@/hooks/useAppointments';
@@ -61,7 +61,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
     paddingLeft: `${level * 12}px`,
   };
 
-  const directSubtasks = allTasks.filter(t => t.parent_task_id === task.id)
+  const directSubtasks = allTasks.filter((t: Task) => t.parent_task_id === task.id)
                                  .sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
 
   const isExpanded = expandedTasks[task.id] !== false;
@@ -93,14 +93,14 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           {...rest}
           isOverlay={isOverlay}
           setFocusTask={setFocusTask}
-          isDoToday={isDoToday}
+          isDoToday={!doTodayOffIds.has(task.original_task_id || task.id)}
           toggleDoToday={toggleDoToday}
           scheduledTasksMap={scheduledTasksMap}
           isDemo={isDemo}
         />
         {isExpanded && directSubtasks.length > 0 && (
           <ul className="list-none mt-1.5 space-y-1.5">
-            {directSubtasks.map(subtask => (
+            {directSubtasks.map((subtask: Task) => (
               <SortableTaskItem
                 key={subtask.id}
                 task={subtask}

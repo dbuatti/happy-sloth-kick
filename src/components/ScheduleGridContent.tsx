@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 
 import { WorkHour } from '@/hooks/useWorkHours';
 import { Appointment, NewAppointmentData, UpdateAppointmentData } from '@/hooks/useAppointments';
-import { Task, TaskSection, Category } from '@/hooks/useTasks';
+import { Task, TaskSection, Category } from '@/hooks/tasks/types'; // Updated import path
 import { parseAppointmentText } from '@/integrations/supabase/api';
 import { showLoading, dismissToast, showError, showSuccess } from '@/utils/toast';
 
@@ -582,7 +582,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
                   <h3 className="text-lg font-semibold">Unscheduled Tasks</h3>
                   <div className="space-y-2 max-h-[calc(100vh-20rem)] overflow-y-auto p-1">
                     {unscheduledDoTodayTasks.length > 0 ? (
-                      unscheduledDoTodayTasks.map(task => (
+                      unscheduledDoTodayTasks.map((task: Task) => (
                         <DraggableScheduleTaskItem key={task.id} task={task} sections={sections} />
                       ))
                     ) : (

@@ -1,10 +1,10 @@
 import React from 'react';
 import { Appointment } from '@/hooks/useAppointments';
-import { Task } from '@/hooks/useTasks';
+import { Task } from '@/hooks/tasks/types'; // Updated import path
 import { cn } from '@/lib/utils';
 import { format, parseISO, isValid } from 'date-fns';
 import { Info, ListTodo, CheckCircle2, X, MoreHorizontal, Edit } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } => "@/components/ui/tooltip";
 import { Button } from './ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 

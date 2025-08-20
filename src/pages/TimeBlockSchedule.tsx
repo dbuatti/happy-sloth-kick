@@ -3,7 +3,8 @@ import { CalendarDays } from 'lucide-react';
 import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import DailyScheduleView from '@/components/DailyScheduleView';
-import { Task, useTasks } from '@/hooks/useTasks';
+import { useTasks } from '@/hooks/useTasks';
+import { Task } from '@/hooks/tasks/types'; // Updated import path
 import TaskOverviewDialog from '@/components/TaskOverviewDialog';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import { useSettings } from '@/context/SettingsContext';

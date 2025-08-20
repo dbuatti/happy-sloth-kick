@@ -2,7 +2,8 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Archive as ArchiveIcon } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useTasks, Task } from '@/hooks/useTasks';
+import { useTasks } from '@/hooks/useTasks';
+import { Task } from '@/hooks/tasks/types'; // Updated import path
 import TaskItem from '@/components/TaskItem';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import TaskOverviewDialog from '@/components/TaskOverviewDialog';
@@ -95,7 +96,7 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
               </div>
             ) : (
               <ul className="space-y-2">
-                {archivedTasks.map((task) => (
+                {archivedTasks.map((task: Task) => (
                   <li key={task.id} className="relative rounded-xl p-2 transition-all duration-200 ease-in-out group hover:shadow-md">
                     <TaskItem
                       task={task}

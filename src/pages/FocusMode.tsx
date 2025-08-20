@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useTasks, Task } from '@/hooks/useTasks';
+import { useTasks } from '@/hooks/useTasks';
+import { Task } from '@/hooks/tasks/types'; // Updated import path
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import FocusToolsPanel from '@/components/FocusToolsPanel';
 

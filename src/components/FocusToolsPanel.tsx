@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Edit, Target, ListTodo, Clock, Plus, Sparkles, Wind, Home, TreePine, UtensilsCrossed, ScanEye, Armchair, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Task, TaskSection, Category } from '@/hooks/useTasks';
+import { Task, TaskSection, Category } from '@/hooks/tasks/types'; // Updated import path
 import TaskOverviewDialog from './TaskOverviewDialog';
 import { useAuth } from '@/context/AuthContext';
 import { Input } from './ui/input';
@@ -77,10 +77,10 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
     if (!nextAvailableTask) return [];
     const nextTaskAndSubtasksIds = new Set([
       nextAvailableTask.id,
-      ...tasks.filter(t => t.parent_task_id === nextAvailableTask.id).map(t => t.id)
+      ...tasks.filter((t: Task) => t.parent_task_id === nextAvailableTask.id).map((t: Task) => t.id)
     ]);
     return filteredTasks
-      .filter(t => !nextTaskAndSubtasksIds.has(t.id) && t.parent_task_id === null && t.status === 'to-do')
+      .filter((t: Task) => !nextTaskAndSubtasksIds.has(t.id) && t.parent_task_id === null && t.status === 'to-do')
       .slice(0, 5);
   }, [nextAvailableTask, filteredTasks, tasks]);
 
@@ -92,7 +92,7 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
     }
     setIsAddingQuickTask(true);
     const loadingToastId = showLoading('Getting AI suggestions...');
-    const categoriesForAI = allCategories.map(cat => ({ id: cat.id, name: cat.name }));
+    const categoriesForAI = allCategories.map((cat: Category) => ({ id: cat.id, name: cat.name }));
     const suggestions = await suggestTaskDetails(quickAddTaskDescription.trim(), categoriesForAI, currentDate);
     dismissToast(loadingToastId);
     if (!suggestions) {
@@ -101,8 +101,8 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
       setQuickAddTaskDescription('');
       return;
     }
-    const suggestedCategoryId = allCategories.find(cat => cat.name.toLowerCase() === suggestions.category.toLowerCase())?.id || allCategories.find(cat => cat.name.toLowerCase() === 'general')?.id || allCategories[0]?.id || '';
-    const suggestedSectionId = sections.find(sec => sec.name.toLowerCase() === suggestions.section?.toLowerCase())?.id || null;
+    const suggestedCategoryId = allCategories.find((cat: Category) => cat.name.toLowerCase() === suggestions.category.toLowerCase())?.id || allCategories.find((cat: Category) => cat.name.toLowerCase() === 'general')?.id || allCategories[0]?.id || '';
+    const suggestedSectionId = sections.find((sec: TaskSection) => sec.name.toLowerCase() === suggestions.section?.toLowerCase())?.id || null;
     const success = await handleAddTask({
       description: suggestions.cleanedDescription,
       category: suggestedCategoryId,
@@ -216,7 +216,7 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
         <CardContent className="pt-0">
           {upcomingTasks.length > 0 ? (
             <ul className="space-y-2 max-h-40 overflow-y-auto pr-2">
-              {upcomingTasks.map(task => (
+              {upcomingTasks.map((task: Task) => (
                 <li key={task.id} className="flex items-center space-x-2">
                   <div className={cn("w-2 h-2 rounded-full", getPriorityDotColor(task.priority))} />
                   <span className="text-sm text-foreground truncate flex-grow">{task.description}</span>

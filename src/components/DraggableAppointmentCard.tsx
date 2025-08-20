@@ -1,7 +1,7 @@
 import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { Appointment } from '@/hooks/useAppointments';
-import { Task } from '@/hooks/useTasks';
+import { Task } from '@/hooks/tasks/types'; // Updated import path
 import AppointmentCard from './AppointmentCard';
 import { differenceInMinutes, parseISO, isValid } from 'date-fns';
 

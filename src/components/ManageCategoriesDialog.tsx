@@ -3,12 +3,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { X } from 'lucide-react'; // Removed Plus
+import { X } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
 import { cn } from '@/lib/utils';
 import { categoryColorMap, CategoryColorKey, getCategoryColorProps } from '@/lib/categoryColors';
-import { Category } from '@/hooks/useTasks';
+import { Category } from '@/hooks/tasks/types'; // Updated import path
 import { useAuth } from '@/context/AuthContext';
 import {
   AlertDialog,
@@ -125,8 +125,8 @@ const ManageCategoriesDialog: React.FC<ManageCategoriesDialogProps> = ({
       showSuccess('Category deleted successfully!');
       onCategoryDeleted(categoryToDeleteId); // Notify parent of deletion
     } catch (error: any) {
+      console.error('Error deleting category:', error.message);
       showError('Failed to delete category.');
-      console.error('Error deleting category:', error);
     } finally {
       setIsSaving(false);
       setShowConfirmDeleteDialog(false);
@@ -227,7 +227,7 @@ const ManageCategoriesDialog: React.FC<ManageCategoriesDialogProps> = ({
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete the category "{categoryToDeleteName}" and reassign all tasks in this category to "General" (or no category if "General" doesn't exist).
             </AlertDialogDescription>
-          </AlertDialogHeader>
+          </AlertDialogDescription>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isSaving}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDeleteCategory} disabled={isSaving}>
