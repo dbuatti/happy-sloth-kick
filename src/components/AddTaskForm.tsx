@@ -45,8 +45,8 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({
     <TaskForm
       initialData={initialData}
       onSubmit={async (data) => {
-        const result = await handleSave(data);
-        return result;
+        await handleSave(data);
+        return Promise.resolve(); // Return void promise to match expected type
       }}
       onCancel={handleCancel}
       sections={sections}

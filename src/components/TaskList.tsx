@@ -72,8 +72,8 @@ const TaskList: React.FC<TaskListProps> = ({
         <div className="p-4 rounded-lg border bg-card">
           <TaskForm
             onSubmit={async (data) => {
-              const result = await handleAddTask(data);
-              return result;
+              await handleAddTask(data);
+              return Promise.resolve(); // Return void promise to match expected type
             }}
             onCancel={handleCancelAdd}
             sections={sections}

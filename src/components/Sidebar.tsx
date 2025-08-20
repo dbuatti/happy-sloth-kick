@@ -10,7 +10,6 @@ import {
   Target, 
   User, 
   Archive,
-  Brain,
   BarChart3,
   Lightbulb,
   Users,
@@ -20,17 +19,14 @@ import {
   Timer
 } from 'lucide-react';
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
-import { useSettings } from '@/context/SettingsContext';
 import { cn } from '@/lib/utils';
 
 interface SidebarProps {
   demoUserId?: string;
-  isDemo?: boolean;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ demoUserId, isDemo = false }) => {
+const Sidebar: React.FC<SidebarProps> = ({ demoUserId }) => {
   const location = useLocation();
-  const { settings } = useSettings();
   
   // Fix the useDailyTaskCount call by providing currentDate
   const { dailyProgress, loading: countLoading } = useDailyTaskCount({ 
