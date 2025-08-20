@@ -437,7 +437,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
       showError('User not authenticated.');
       return null;
     }
-    let idToTrack = taskId;
+    let idToTrack: string = taskId; // Declare idToTrack here
     let originalTaskState: Task | undefined;
     
     try {
@@ -445,68 +445,67 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
       if (updates.category) categoryColor = categoriesMap.get(updates.category) || 'gray';
 
       originalTaskState = processedTasks.find(t => t.id === taskId);
-      if (!originalTaskState) {
-        // Handle virtual task creation
-        if (taskId.toString().startsWith('virtual-')) {
-            const virtualTask = processedTasks.find(t => t.id === taskId);
-            if (!virtualTask) {
-                console.error('[DnD Error] Virtual task not found');
-                return null;
-            }
 
-            const newInstanceId = uuidv4();
-            idToTrack = newInstanceId;
-            inFlightUpdatesRef.current.add(newInstanceId);
+      if (originalTaskState && originalTaskState.id.startsWith('virtual-')) {
+        // This is a virtual task that needs to become a real one.
+        const virtualTask = originalTaskState; // Use the found virtual task
+        
+        const newInstanceId = uuidv4();
+        idToTrack = newInstanceId;
+        inFlightUpdatesRef.current.add(newInstanceId);
 
-            const newInstanceData: Omit<Task, 'category_color'> = {
-                id: newInstanceId,
-                user_id: userId,
-                description: updates.description !== undefined ? updates.description : virtualTask.description,
-                status: updates.status ?? virtualTask.status,
-                recurring_type: 'none' as const,
-                created_at: virtualTask.created_at,
-                updated_at: new Date().toISOString(),
-                category: updates.category !== undefined ? updates.category : virtualTask.category,
-                priority: updates.priority !== undefined ? updates.priority : virtualTask.priority,
-                due_date: updates.due_date !== undefined ? updates.due_date : virtualTask.due_date,
-                notes: updates.notes !== undefined ? updates.notes : virtualTask.notes,
-                remind_at: updates.remind_at !== undefined ? updates.remind_at : virtualTask.remind_at,
-                section_id: updates.section_id !== undefined ? updates.section_id : virtualTask.section_id,
-                order: virtualTask.order, // Placeholder order
-                original_task_id: virtualTask.original_task_id || virtualTask.id.replace(/^virtual-/, '').split(/-\d{4}-\d{2}-\d{2}$/)[0],
-                parent_task_id: virtualTask.parent_task_id,
-                link: updates.link !== undefined ? updates.link : virtualTask.link,
-                image_url: updates.image_url !== undefined ? updates.image_url : virtualTask.image_url,
-            };
+        const newInstanceData: Omit<Task, 'category_color'> = {
+            id: newInstanceId,
+            user_id: userId,
+            description: updates.description !== undefined ? updates.description : virtualTask.description,
+            status: updates.status ?? virtualTask.status,
+            recurring_type: 'none' as const, // New instance is no longer recurring
+            created_at: virtualTask.created_at, // Keep original creation date for consistency
+            updated_at: new Date().toISOString(),
+            category: updates.category !== undefined ? updates.category : virtualTask.category,
+            priority: updates.priority !== undefined ? updates.priority : virtualTask.priority,
+            due_date: updates.due_date !== undefined ? updates.due_date : virtualTask.due_date,
+            notes: updates.notes !== undefined ? updates.notes : virtualTask.notes,
+            remind_at: updates.remind_at !== undefined ? updates.remind_at : virtualTask.remind_at,
+            section_id: updates.section_id !== undefined ? updates.section_id : virtualTask.section_id,
+            order: virtualTask.order, // Placeholder order
+            original_task_id: virtualTask.original_task_id || virtualTask.id.replace(/^virtual-/, '').split(/-\d{4}-\d{2}-\d{2}$/)[0],
+            parent_task_id: virtualTask.parent_task_id,
+            link: updates.link !== undefined ? updates.link : virtualTask.link,
+            image_url: updates.image_url !== undefined ? updates.image_url : virtualTask.image_url,
+        };
 
-            // Optimistic update for new instance
-            queryClient.setQueryData(['tasks', userId], (oldTasks: Task[] | undefined) => {
-                return oldTasks ? [...oldTasks, { ...newInstanceData, category_color: virtualTask.category_color }] : [{ ...newInstanceData, category_color: virtualTask.category_color }];
-            });
+        // Optimistic update for new instance
+        queryClient.setQueryData(['tasks', userId], (oldTasks: Task[] | undefined) => {
+            return oldTasks ? [...oldTasks, { ...newInstanceData, category_color: virtualTask.category_color }] : [{ ...newInstanceData, category_color: virtualTask.category_color }];
+        });
 
-            const { data: dbTask, error: insertError } = await supabase
-                .from('tasks')
-                .insert(cleanTaskForDb(newInstanceData))
-                .select('*')
-                .single();
+        const { data: dbTask, error: insertError } = await supabase
+            .from('tasks')
+            .insert(cleanTaskForDb(newInstanceData))
+            .select('*')
+            .single();
 
-            if (insertError) {
-                console.error('[DnD Error] Failed to insert new task instance:', insertError);
-                showError('Failed to create an instance of the recurring task.');
-                invalidateTasksQueries(); // Revert optimistic update
-                return null;
-            }
-            showSuccess('Task updated!');
-            invalidateTasksQueries();
-            if (dbTask.remind_at && dbTask.status === 'to-do') {
-                const d = parseISO(dbTask.remind_at);
-                if (isValid(d)) addReminder(dbTask.id, `Reminder: ${dbTask.description}`, d);
-            }
-            return dbTask.id;
+        if (insertError) {
+            console.error('[DnD Error] Failed to insert new task instance:', insertError);
+            showError('Failed to create an instance of the recurring task.');
+            invalidateTasksQueries(); // Revert optimistic update
+            return null;
         }
-        return null; // Should not happen for non-virtual tasks
+        showSuccess('Task created from recurring template!');
+        invalidateTasksQueries();
+        if (dbTask.remind_at && dbTask.status === 'to-do') {
+            const d = parseISO(dbTask.remind_at);
+            if (isValid(d)) addReminder(dbTask.id, `Reminder: ${dbTask.description}`, d);
+        }
+        return dbTask.id; // Return the new real ID
+      } else if (!originalTaskState) {
+        // Task not found (and not a virtual task that was found). This is an error.
+        showError('Task not found for update.');
+        return null;
       }
 
+      // If we reach here, originalTaskState is a real task, proceed with update.
       // Optimistic update for existing task
       queryClient.setQueryData(['tasks', userId], (oldTasks: Task[] | undefined) => {
         return oldTasks?.map(t => t.id === taskId ? { ...t, ...updates, ...(categoryColor && { category_color: categoryColor }) } : t) || [];
