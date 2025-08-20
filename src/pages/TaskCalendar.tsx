@@ -44,6 +44,7 @@ const TaskCalendarPage: React.FC<TaskCalendarPageProps> = ({ isDemo = false }) =
   void setIsTaskOverviewOpen;
   void setIsTaskDetailOpen;
   void allTasks;
+  void isDemo; // Mark isDemo as used
 
   // Mock filteredTasks
   const filteredTasks: Task[] = [];
@@ -98,7 +99,7 @@ const TaskCalendarPage: React.FC<TaskCalendarPageProps> = ({ isDemo = false }) =
           allCategories={allCategories}
           createSection={createSection}
           updateSection={updateSection}
-          deleteSection={deleteTask} // Use deleteTask instead of separate deleteSection
+          deleteSection={deleteTask}
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
         />
       )}

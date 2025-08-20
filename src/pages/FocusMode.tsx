@@ -42,6 +42,7 @@ const FocusModePage: React.FC<FocusModePageProps> = ({ isDemo = false }) => {
   // Mark these as used to avoid TS errors
   void setSelectedTask;
   void setIsTaskDetailOpen;
+  void isDemo; // Mark isDemo as used
 
   // Mock data for upcoming tasks (empty array to avoid TS errors)
   const upcomingTasks: Task[] = [];
