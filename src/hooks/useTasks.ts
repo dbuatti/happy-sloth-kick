@@ -164,7 +164,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
   const [sectionFilter, setSectionFilter] = useState('all');
 
   const effectiveCurrentDate = currentDate;
-  const todayStart = startOfDay(effectiveCurrentDate);
+  const todayStart = startOfDay(effectiveCurrentDate); // This is the start of the local day for the selected date
 
   // Use useQuery for sections
   const { data: sections = [], isLoading: sectionsLoading } = useQuery<TaskSection[], Error>({
@@ -1049,8 +1049,13 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
       filtered = filtered.filter(task => {
         // Condition 1: Was completed or archived today
         if ((task.status === 'completed' || task.status === 'archived') && task.updated_at) {
-            const updatedAtLocal = startOfDay(new Date(task.updated_at)); // Convert UTC string to local Date, then get start of day
-            if (isSameDay(updatedAtLocal, todayStart)) {
+            const updatedAtUtcDateString = task.updated_at.split('T')[0];
+            const currentFormattedDate = format(effectiveCurrentDate, 'yyyy-MM-dd');
+            
+            const isUpdatedOnCurrentDate = updatedAtUtcDateString === currentFormattedDate;
+            
+            // console.log(`Task ${task.id} (${task.description}) status: ${task.status}, updated_at: ${task.updated_at}, updatedAtUtcDateString: ${updatedAtUtcDateString}, currentFormattedDate: ${currentFormattedDate}, isUpdatedOnCurrentDate: ${isUpdatedOnCurrentDate}`);
+            if (isUpdatedOnCurrentDate) {
                 return true;
             }
         }
@@ -1320,10 +1325,13 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     const tasksForToday = processedTasks.filter(task => {
         // Condition 1: Was completed or archived today
         if ((task.status === 'completed' || task.status === 'archived') && task.updated_at) {
-            const updatedAtLocal = startOfDay(new Date(task.updated_at)); // Convert UTC string to local Date, then get start of day
-            const isUpdatedToday = isSameDay(updatedAtLocal, todayStart);
-            console.log(`Task ${task.id} (${task.description}) status: ${task.status}, updated_at: ${task.updated_at}, updatedAtLocal: ${updatedAtLocal.toISOString()}, isUpdatedToday: ${isUpdatedToday}`);
-            if (isUpdatedToday) {
+            const updatedAtUtcDateString = task.updated_at.split('T')[0];
+            const currentFormattedDate = format(effectiveCurrentDate, 'yyyy-MM-dd');
+            
+            const isUpdatedOnCurrentDate = updatedAtUtcDateString === currentFormattedDate;
+            
+            console.log(`Task ${task.id} (${task.description}) status: ${task.status}, updated_at: ${task.updated_at}, updatedAtUtcDateString: ${updatedAtUtcDateString}, currentFormattedDate: ${currentFormattedDate}, isUpdatedOnCurrentDate: ${isUpdatedOnCurrentDate}`);
+            if (isUpdatedOnCurrentDate) {
                 return true;
             }
         }
@@ -1363,7 +1371,11 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     console.log("Focus tasks count:", focusTasks.length);
 
     const completedCount = focusTasks.filter(t => {
-      const isCompletedOrArchived = t.status === 'completed' || t.status === 'archived';
+      const updatedAtUtcDateString = t.updated_at?.split('T')[0];
+      const currentFormattedDate = format(effectiveCurrentDate, 'yyyy-MM-dd');
+      const isUpdatedOnCurrentDate = updatedAtUtcDateString === currentFormattedDate;
+
+      const isCompletedOrArchived = (t.status === 'completed' || t.status === 'archived') && isUpdatedOnCurrentDate;
       if (isCompletedOrArchived) {
         console.log(`[Daily Progress Debug] Counting completed/archived task: ${t.description} (ID: ${t.id}, Status: ${t.status}, Updated: ${t.updated_at})`);
       }
@@ -1379,7 +1391,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     }).length;
 
     return { totalCount, completedCount, overdueCount };
-  }, [processedTasks, viewMode, sections, doTodayOffIds, todayStart]);
+  }, [processedTasks, viewMode, sections, doTodayOffIds, todayStart, effectiveCurrentDate]);
 
   return {
     tasks: rawTasks, // Expose rawTasks for direct access if needed, but processedTasks is usually preferred
