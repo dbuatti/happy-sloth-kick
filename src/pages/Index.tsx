@@ -83,7 +83,7 @@ export default function Index() {
     }
 
     const { data: user } = await supabase.auth.getUser();
-    if (!user.user) { // Fixed: Changed user.data.user to user.user
+    if (!user.user) {
       toast.error("You must be logged in to add tasks.");
       return;
     }
@@ -91,7 +91,7 @@ export default function Index() {
     const newTask: Omit<Task, "id" | "created_at" | "updated_at"> = {
       description: newTaskDescription,
       status: "to-do",
-      user_id: user.user.id, // Fixed: Changed user.data.user.id to user.user.id
+      user_id: user.user.id,
       priority: "medium",
       order: tasks.length,
       parent_task_id: parentId,
@@ -135,35 +135,37 @@ export default function Index() {
 
   const handleToggleDoToday = async (taskId: string, doToday: boolean) => {
     const { data: user } = await supabase.auth.getUser();
-    if (!user.user) { // Fixed: Changed user.data.user to user.user
+    if (!user.user) {
       toast.error("You must be logged in to update tasks.");
       return;
     }
 
     if (doToday) {
-      // Add to do_today_off_log (meaning it's NOT "Do Today")
-      const { error } = await supabase
-        .from("do_today_off_log")
-        .insert({ task_id: taskId, user_id: user.user.id, off_date: new Date().toISOString().split('T')[0] }); // Fixed: Changed user.data.user.id to user.user.id
-      if (error) {
-        toast.error("Failed to mark task as 'Do Today'.");
-        console.error("Error marking task as 'Do Today':", error);
-      } else {
-        setDoTodayLog((prevLog) => [...prevLog, { task_id: taskId }]);
-        toast.success("Task marked as 'Do Today'!");
-      }
-    } else {
-      // Remove from do_today_off_log (meaning it IS "Do Today")
+      // If doToday is true, it means the user wants to mark it as "Do Today".
+      // So, we should REMOVE it from the do_today_off_log.
       const { error } = await supabase
         .from("do_today_off_log")
         .delete()
         .eq("task_id", taskId)
-        .eq("user_id", user.user.id); // Fixed: Changed user.data.user.id to user.user.id
+        .eq("user_id", user.user.id);
+      if (error) {
+        toast.error("Failed to mark task as 'Do Today'.");
+        console.error("Error marking task as 'Do Today':", error);
+      } else {
+        setDoTodayLog((prevLog) => prevLog.filter((log) => log.task_id !== taskId));
+        toast.success("Task marked as 'Do Today'!");
+      }
+    } else {
+      // If doToday is false, it means the user wants to mark it as NOT "Do Today".
+      // So, we should ADD it to the do_today_off_log.
+      const { error } = await supabase
+        .from("do_today_off_log")
+        .insert({ task_id: taskId, user_id: user.user.id, off_date: new Date().toISOString().split('T')[0] });
       if (error) {
         toast.error("Failed to unmark task from 'Do Today'.");
         console.error("Error unmarking task from 'Do Today':", error);
       } else {
-        setDoTodayLog((prevLog) => prevLog.filter((log) => log.task_id !== taskId));
+        setDoTodayLog((prevLog) => [...prevLog, { task_id: taskId }]);
         toast.success("Task unmarked from 'Do Today'.");
       }
     }

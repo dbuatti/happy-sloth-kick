@@ -66,7 +66,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const [editedLink, setEditedLink] = useState<string>(task.link || "");
   const [editedImageUrl, setEditedImageUrl] = useState<string>(task.image_url || "");
   const [showDetails, setShowDetails] = useState(false);
-  const [isDoToday, setIsDoToday] = useState(doTodayLog.some(log => log.task_id === task.id));
+  // Invert the logic: isDoToday is true if task is NOT in doTodayLog
+  const [isDoToday, setIsDoToday] = useState(!doTodayLog.some(log => log.task_id === task.id));
 
   const detailsRef = useRef<HTMLDivElement>(null);
 
@@ -87,7 +88,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
   };
 
   useEffect(() => {
-    setIsDoToday(doTodayLog.some(log => log.task_id === task.id));
+    // Invert the logic: isDoToday is true if task is NOT in doTodayLog
+    setIsDoToday(!doTodayLog.some(log => log.task_id === task.id));
   }, [doTodayLog, task.id]);
 
   const handleUpdateTask = async (updates: Partial<Task>) => {
