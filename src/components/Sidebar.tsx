@@ -4,7 +4,7 @@ import { Menu, Volume2, VolumeX } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Button } from '@/components/ui/button'; // Changed from TouchFriendlyButton
+import { Button } from '@/components/ui/button';
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
 import { Badge } from '@/components/ui/badge';
 import { useSound } from '@/context/SoundContext';
@@ -12,6 +12,7 @@ import ThemeSelector from './ThemeSelector';
 import { navItems } from '@/lib/navItems';
 import { useSettings } from '@/context/SettingsContext';
 import { useAuth } from '@/context/AuthContext';
+import type { PointerDownOutsideEvent } from '@radix-ui/react-dismissable-layer'; // Import the correct type
 
 interface SidebarProps {
   children: React.ReactNode;
@@ -85,7 +86,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false, demo
             <SheetContent
               side="left"
               className="w-64 bg-card flex flex-col"
-              onPointerDownOutside={(e) => {
+              onPointerDownOutside={(e: PointerDownOutsideEvent) => {
                 if (e.target instanceof HTMLElement && e.target.closest('[data-radix-popper-content-wrapper]')) {
                   e.preventDefault();
                 }

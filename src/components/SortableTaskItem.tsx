@@ -97,6 +97,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           toggleDoToday={toggleDoToday}
           scheduledTasksMap={scheduledTasksMap}
           isDemo={isDemo}
+          level={level} // Pass level prop
         />
         {isExpanded && directSubtasks.length > 0 && (
           <ul className="list-none mt-1.5 space-y-1.5">

@@ -113,6 +113,7 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
                       toggleDoToday={() => toggleDoToday(task)}
                       scheduledTasksMap={scheduledTasksMap}
                       isDemo={isDemo}
+                      level={0} // Pass level prop
                     />
                   </li>
                 ))}

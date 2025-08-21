@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
-import { Button } from "@/components/ui/button"; // Changed from TouchFriendlyButton
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,10 +21,11 @@ import { useSound } from '@/context/SoundContext';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { Input } from './ui/input';
-import DoTodaySwitch from './DoTodaySwitch';
+import { Input } from '@/components/ui/input'; // Corrected import path
+import DoTodaySwitch from '@/components/DoTodaySwitch'; // Corrected import path
 import { showSuccess, showError } from '@/utils/toast';
 import { Appointment } from '@/hooks/useAppointments';
+
 
 interface TaskItemProps {
   task: Task;
@@ -45,7 +46,6 @@ interface TaskItemProps {
   setFocusTask: (taskId: string | null) => Promise<void>;
   isDoToday: boolean; // This is a prop, not internal state
   toggleDoToday: (task: Task) => void; // This is the function from useTasks
-  doTodayOffIds: Set<string>; // This is the Set from useTasks
   scheduledTasksMap: Map<string, Appointment>;
   isDemo?: boolean;
 }
@@ -66,7 +66,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
   setFocusTask,
   isDoToday, // Destructure prop
   toggleDoToday, // Destructure prop
-  doTodayOffIds, // Destructure prop
   scheduledTasksMap,
   isDemo = false,
 }) => {
@@ -193,13 +192,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
       {/* Priority Pill */}
       <div className={cn("absolute left-0 top-0 h-full w-1.5 rounded-l-lg", getPriorityDotColor(task.priority))} />
 
-      <div className="flex-shrink-0 pr-1 flex items-center" onPointerDown={(e) => e.stopPropagation()}>
+      <div className="flex-shrink-0 pr-1 flex items-center" onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}>
         {hasSubtasks && (
           <Button
             variant="ghost"
             size="icon"
             className="h-6 w-6"
-            onClick={(e) => {
+            onClick={(e: React.MouseEvent) => {
               e.stopPropagation();
               toggleTask?.(task.id);
             }}
@@ -211,13 +210,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
       </div>
 
       {/* Checkbox Area */}
-      <div className="flex-shrink-0 pr-3" onPointerDown={(e) => e.stopPropagation()}>
+      <div className="flex-shrink-0 pr-3" onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}>
         <Checkbox
           key={`${task.id}-${task.status}`}
           checked={task.status === 'completed'}
           onCheckedChange={handleCheckboxChange}
           id={`task-${task.id}`}
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e: React.MouseEvent) => e.stopPropagation()}
           className="flex-shrink-0 h-5 w-5 checkbox-root"
           aria-label={`Mark task "${task.description}" as ${task.status === 'completed' ? 'to-do' : 'completed'}`}
           disabled={isOverlay || isDemo}
@@ -234,11 +233,11 @@ const TaskItem: React.FC<TaskItemProps> = ({
             <Input
               ref={inputRef}
               value={editText || ''} // Ensure value is always a string
-              onChange={(e) => setEditText(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditText(e.target.value)}
               onBlur={handleSaveEdit}
               onKeyDown={handleInputKeyDown}
               className="h-auto text-lg leading-tight p-0 border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full"
-              onPointerDown={(e) => e.stopPropagation()}
+              onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
             />
           ) : (
             <>
@@ -264,7 +263,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           )}
         </div>
 
-        <div className="flex-shrink-0 flex items-center space-x-2" onPointerDown={(e) => e.stopPropagation()}>
+        <div className="flex-shrink-0 flex items-center space-x-2" onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}>
           {task.link && (
             isUrl(task.link) ? (
               <Tooltip>
@@ -274,7 +273,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center flex-shrink-0 text-muted-foreground hover:text-primary"
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e: React.MouseEvent) => e.stopPropagation()}
                   >
                     <LinkIcon className="h-4 w-4" />
                   </a>
@@ -290,7 +289,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
                     variant="ghost"
                     size="icon"
                     className="h-7 w-7 flex-shrink-0 text-muted-foreground hover:text-primary"
-                    onClick={(e) => handleCopyPath(e, task.link!)}
+                    onClick={(e: React.MouseEvent) => handleCopyPath(e, task.link!)}
                   >
                     <ClipboardCopy className="h-4 w-4" />
                   </Button>
@@ -323,7 +322,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
       </div>
 
       {/* Actions Area */}
-      <div className="flex-shrink-0 flex items-center gap-1 pr-3" onPointerDown={(e) => e.stopPropagation()}>
+      <div className="flex-shrink-0 flex items-center gap-1 pr-3" onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}>
         {recurringType !== 'none' && (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -344,11 +343,12 @@ const TaskItem: React.FC<TaskItemProps> = ({
         />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button // Changed from TouchFriendlyButton
+            <Button
               variant="ghost"
               className="h-8 w-8 p-0"
               aria-label="More options"
               disabled={isOverlay || isDemo}
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
             >
               <span className="sr-only">Open menu</span>
               <MoreHorizontal className="h-4 w-4" />
@@ -384,7 +384,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
             )}
             <DropdownMenuSeparator />
             <DropdownMenuSub>
-              <DropdownMenuSubTrigger onSelect={(e) => e.preventDefault()}>
+              <DropdownMenuSubTrigger onSelect={(e: React.SyntheticEvent) => e.preventDefault()}>
                 <FolderOpen className="mr-2 h-4 w-4" /> Move to Section
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent>

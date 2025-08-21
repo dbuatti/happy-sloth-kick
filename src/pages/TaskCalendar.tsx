@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { useTasks, Task } from '@/hooks/useTasks';
@@ -84,7 +84,7 @@ const TaskCalendar: React.FC<TaskCalendarProps> = ({ isDemo = false, demoUserId 
     setIsTaskOverviewOpen(true);
   };
 
-  const handleEditTaskFromOverview = (task: Task) => {
+  const handleOpenTaskDetail = (task: Task) => { // Defined handleOpenTaskDetail
     setIsTaskOverviewOpen(false);
     setTaskToEdit(task);
     setIsTaskDetailOpen(true);
@@ -149,6 +149,7 @@ const TaskCalendar: React.FC<TaskCalendarProps> = ({ isDemo = false, demoUserId 
                         toggleDoToday={toggleDoToday}
                         scheduledTasksMap={scheduledTasksMap}
                         isDemo={isDemo}
+                        level={0} // Pass level prop
                       />
                     </li>
                   ))}
@@ -167,7 +168,7 @@ const TaskCalendar: React.FC<TaskCalendarProps> = ({ isDemo = false, demoUserId 
           task={taskToOverview}
           isOpen={isTaskOverviewOpen}
           onClose={() => setIsTaskOverviewOpen(false)}
-          onEditClick={handleEditTaskFromOverview}
+          onEditClick={handleOpenTaskDetail}
           onUpdate={updateTask}
           onDelete={deleteTask}
           sections={sections}

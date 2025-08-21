@@ -382,9 +382,9 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                     <TaskItem
                       task={activeItemData as Task}
                       allTasks={tasks}
-                      onStatusChange={async () => null}
+                      onStatusChange={async (taskId, newStatus) => { await updateTask(taskId, { status: newStatus }); return taskId; }}
                       onDelete={() => {}}
-                      onUpdate={async () => null}
+                      onUpdate={async (taskId, updates) => { await updateTask(taskId, updates); return taskId; }}
                       sections={sections}
                       onOpenOverview={() => {}}
                       currentDate={currentDate}
@@ -395,6 +395,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                       isDoToday={!doTodayOffIds.has((activeItemData as Task).original_task_id || (activeItemData as Task).id)}
                       toggleDoToday={toggleDoToday}
                       scheduledTasksMap={scheduledTasksMap}
+                      level={0} // Pass level prop
                     />
                   </div>
                 )
