@@ -21,8 +21,8 @@ import { useSound } from '@/context/SoundContext';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { Input } from '@/components/ui/input'; // Corrected import path
-import DoTodaySwitch from '@/components/DoTodaySwitch'; // Corrected import path
+import { Input } from '@/components/ui/input';
+import DoTodaySwitch from '@/components/DoTodaySwitch';
 import { showSuccess, showError } from '@/utils/toast';
 import { Appointment } from '@/hooks/useAppointments';
 
@@ -175,8 +175,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const isOverdue = task.due_date && task.status !== 'completed' && isPast(parseISO(task.due_date)) && !isSameDay(parseISO(task.due_date), currentDate);
   const isDueToday = task.due_date && task.status !== 'completed' && isSameDay(parseISO(task.due_date), currentDate);
 
-  const handleToggleDoTodaySwitch = () => {
-    console.log(`TaskItem: Toggling Do Today for task ${task.id}. Current isDoToday prop: ${isDoToday}`);
+  const handleToggleDoTodaySwitch = (newCheckedState: boolean) => { // Added newCheckedState parameter
+    console.log(`TaskItem: Toggling Do Today for task ${task.id}. New state from switch: ${newCheckedState}`);
     toggleDoToday(task); // Call the prop function from useTasks
   };
 
