@@ -1,7 +1,18 @@
+"use client";
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
-import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button"; // Changed from TouchFriendlyButton
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock, ChevronRight } from 'lucide-react';
 import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { cn } from "@/lib/utils";
@@ -26,13 +37,15 @@ interface TaskItemProps {
   currentDate: Date;
   onMoveUp: (taskId: string) => Promise<void>;
   onMoveDown: (taskId: string) => Promise<void>;
-  isOverlay?: boolean;
+  level: number; // New prop for indentation level
+  isOverlay?: boolean; // New prop for drag overlay
   hasSubtasks?: boolean;
   isExpanded?: boolean;
   toggleTask?: (taskId: string) => void;
   setFocusTask: (taskId: string | null) => Promise<void>;
-  isDoToday: boolean;
-  toggleDoToday: (task: Task) => void;
+  isDoToday: boolean; // This is a prop, not internal state
+  toggleDoToday: (task: Task) => void; // This is the function from useTasks
+  doTodayOffIds: Set<string>; // This is the Set from useTasks
   scheduledTasksMap: Map<string, Appointment>;
   isDemo?: boolean;
 }
@@ -51,8 +64,9 @@ const TaskItem: React.FC<TaskItemProps> = ({
   isExpanded = true,
   toggleTask,
   setFocusTask,
-  isDoToday,
-  toggleDoToday,
+  isDoToday, // Destructure prop
+  toggleDoToday, // Destructure prop
+  doTodayOffIds, // Destructure prop
   scheduledTasksMap,
   isDemo = false,
 }) => {
@@ -78,6 +92,12 @@ const TaskItem: React.FC<TaskItemProps> = ({
       inputRef.current.select();
     }
   }, [isEditing]);
+
+  // Log the isDoToday prop whenever it changes
+  useEffect(() => {
+    console.log(`TaskItem: Task ${task.id} (${task.description}) - isDoToday prop changed to: ${isDoToday}`);
+  }, [isDoToday, task.id, task.description]);
+
 
   const handleStartEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -156,12 +176,17 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const isOverdue = task.due_date && task.status !== 'completed' && isPast(parseISO(task.due_date)) && !isSameDay(parseISO(task.due_date), currentDate);
   const isDueToday = task.due_date && task.status !== 'completed' && isSameDay(parseISO(task.due_date), currentDate);
 
+  const handleToggleDoTodaySwitch = () => {
+    console.log(`TaskItem: Toggling Do Today for task ${task.id}. Current isDoToday prop: ${isDoToday}`);
+    toggleDoToday(task); // Call the prop function from useTasks
+  };
+
   return (
     <div
       className={cn(
         "relative flex items-center w-full rounded-lg transition-colors duration-200 py-2 pl-4",
         task.status === 'completed' ? "text-muted-foreground bg-task-completed-bg" : "bg-card text-foreground",
-        !isDoToday && "opacity-40",
+        !isDoToday && "opacity-40", // Apply opacity if NOT 'Do Today'
         "group hover:bg-muted/50"
       )}
     >
@@ -313,13 +338,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
         )}
         <DoTodaySwitch
           isOn={isDoToday}
-          onToggle={() => toggleDoToday(task)}
+          onToggle={handleToggleDoTodaySwitch}
           taskId={task.id}
           isDemo={isDemo}
         />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button
+            <Button // Changed from TouchFriendlyButton
               variant="ghost"
               className="h-8 w-8 p-0"
               aria-label="More options"

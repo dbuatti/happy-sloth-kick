@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Task, TaskCategory, TaskSection } from "@/types";
 import TaskItem from "@/components/tasks/TaskItem";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"; // Changed from TouchFriendlyButton
 import { toast } from "sonner";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable";
