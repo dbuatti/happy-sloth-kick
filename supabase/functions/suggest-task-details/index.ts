@@ -141,8 +141,11 @@ Deno.serve(async (req) => {
     }
 
     const geminiData = await geminiResponse.json();
-    const responseText = geminiData.candidates[0].content.parts[0].text;
+    let responseText = geminiData.candidates[0].content.parts[0].text;
     
+    // Clean the response text to ensure it's pure JSON
+    responseText = responseText.replace(/^json\n/, '').trim();
+
     let parsedData;
     try {
       parsedData = JSON.parse(responseText);

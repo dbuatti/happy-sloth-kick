@@ -2,6 +2,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+// @ts-ignore
+import { isValid } from 'https://esm.sh/date-fns@3.6.0'; // Import isValid
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -121,17 +123,17 @@ serve(async (req: Request) => { // Explicitly type 'req'
       const taskCreatedAt = t.created_at ? new Date(t.created_at) : null;
       const taskDueDate = t.due_date ? new Date(t.due_date + 'T00:00:00Z') : null; // Treat due_date as UTC midnight for comparison
 
-      // Check if task's updated_at or created_at falls within the client's local day (in UTC)
-      const isUpdatedTodayLocal = taskUpdatedAt && taskUpdatedAt.toISOString() >= localDayStartISO && taskUpdatedAt.toISOString() <= localDayEndISO;
-      const isCreatedTodayLocal = taskCreatedAt && taskCreatedAt.toISOString() >= localDayStartISO && taskCreatedAt.toISOString() <= localDayEndISO;
-      const isDueTodayLocal = taskDueDate && taskDueDate.toISOString().split('T')[0] === todayDateString; // Compare YYYY-MM-DD strings
+      // Add isValid checks before calling toISOString()
+      const isUpdatedTodayLocal = taskUpdatedAt && isValid(taskUpdatedAt) && taskUpdatedAt.toISOString() >= localDayStartISO && taskUpdatedAt.toISOString() <= localDayEndISO;
+      const isCreatedTodayLocal = taskCreatedAt && isValid(taskCreatedAt) && taskCreatedAt.toISOString() >= localDayStartISO && taskCreatedAt.toISOString() <= localDayEndISO;
+      const isDueTodayLocal = taskDueDate && isValid(taskDueDate) && taskDueDate.toISOString().split('T')[0] === todayDateString; // Compare YYYY-MM-DD strings
 
       if (t.status === 'completed' || t.status === 'archived') {
         if (isUpdatedTodayLocal) { // Only count if updated today (local time)
           completedTasks.push(t);
         }
       } else if (t.status === 'to-do') {
-        if (taskDueDate && taskDueDate.toISOString().split('T')[0] < todayDateString) { // Overdue
+        if (taskDueDate && isValid(taskDueDate) && taskDueDate.toISOString().split('T')[0] < todayDateString) { // Overdue
           overdueTasks.push(t);
         } else if (isDueTodayLocal || isCreatedTodayLocal || isUpdatedTodayLocal) { // Pending for today (due today, created today, or updated today)
           pendingTasks.push(t);
