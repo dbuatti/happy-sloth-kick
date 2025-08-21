@@ -21,11 +21,11 @@ import { useSound } from '@/context/SoundContext';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { Input } from './ui/input';
-import DoTodaySwitch from './DoTodaySwitch';
+import { Input } from '@/components/ui/input'; // Corrected import path
+import DoTodaySwitch from '@/components/DoTodaySwitch'; // Corrected import path
 import { showSuccess, showError } from '@/utils/toast';
 import { Appointment } from '@/hooks/useAppointments';
-import { Switch } from "@/components/ui/switch"; // Import Switch directly
+
 
 interface TaskItemProps {
   task: Task;
@@ -233,7 +233,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
             <Input
               ref={inputRef}
               value={editText || ''} // Ensure value is always a string
-              onChange={(e) => setEditText(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditText(e.target.value)}
               onBlur={handleSaveEdit}
               onKeyDown={handleInputKeyDown}
               className="h-auto text-lg leading-tight p-0 border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full"
@@ -348,6 +348,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
               className="h-8 w-8 p-0"
               aria-label="More options"
               disabled={isOverlay || isDemo}
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
             >
               <span className="sr-only">Open menu</span>
               <MoreHorizontal className="h-4 w-4" />

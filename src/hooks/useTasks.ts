@@ -19,14 +19,14 @@ export interface Task {
   created_at: string;
   updated_at: string;
   user_id: string;
-  category: string;
+  category: string | null; // Changed to allow null
   category_color: string;
   priority: 'low' | 'medium' | 'high' | 'urgent' | string;
   due_date: string | null;
   notes: string | null;
   remind_at: string | null;
   section_id: string | null;
-  order: number | null;
+  order: number | null; // Changed to allow null
   original_task_id: string | null;
   parent_task_id: string | null;
   link: string | null;
@@ -55,7 +55,7 @@ interface NewTaskData {
   description: string;
   status?: Task['status'];
   recurring_type?: Task['recurring_type'];
-  category: string;
+  category: string | null; // Changed to allow null
   priority?: Task['priority'];
   due_date?: string | null;
   notes?: string | null;
@@ -326,13 +326,13 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
 
       if (!templateTask) {
         seriesInstances.forEach(orphanTask => {
-            allProcessedTasks.push({ ...orphanTask, category_color: categoriesMapLocal.get(orphanTask.category) || 'gray' });
+            allProcessedTasks.push({ ...orphanTask, category_color: categoriesMapLocal.get(orphanTask.category || '') || 'gray' });
         });
         return;
       }
 
       if (templateTask.recurring_type === 'none') {
-        allProcessedTasks.push({ ...templateTask, category_color: categoriesMapLocal.get(templateTask.category) || 'gray' });
+        allProcessedTasks.push({ ...templateTask, category_color: categoriesMapLocal.get(templateTask.category || '') || 'gray' });
       } else {
         const sortedInstances = [...seriesInstances].sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime());
         let relevantInstance: Omit<Task, 'category_color'> | null = sortedInstances.find(t => isSameDay(startOfDay(parseISO(t.created_at)), todayStart)) || null;
@@ -359,12 +359,12 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
               original_task_id: templateTask.id,
               remind_at: baseTaskForVirtual.remind_at ? format(setHours(setMinutes(todayStart, getMinutes(parseISO(baseTaskForVirtual.remind_at))), getHours(parseISO(baseTaskForVirtual.remind_at))), 'yyyy-MM-ddTHH:mm:ssZ') : null,
               due_date: baseTaskForVirtual.due_date ? todayStart.toISOString() : null,
-              category_color: categoriesMapLocal.get(baseTaskForVirtual.category) || 'gray',
+              category_color: categoriesMapLocal.get(baseTaskForVirtual.category || '') || 'gray',
             };
             allProcessedTasks.push(virtualTask);
           }
         } else {
-          allProcessedTasks.push({ ...relevantInstance, category_color: categoriesMapLocal.get(relevantInstance.category) || 'gray' });
+          allProcessedTasks.push({ ...relevantInstance, category_color: categoriesMapLocal.get(relevantInstance.category || '') || 'gray' });
         }
       }
     });
@@ -380,7 +380,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     inFlightUpdatesRef.current.add(newTaskClientSideId);
     try {
       // Optimistic update
-      const categoryColor = categoriesMap.get(newTaskData.category) || 'gray';
+      const categoryColor = categoriesMap.get(newTaskData.category || '') || 'gray';
       const tempTask: Task = {
         id: newTaskClientSideId,
         user_id: userId,
@@ -388,7 +388,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
         updated_at: new Date().toISOString(),
         status: newTaskData.status || 'to-do',
         recurring_type: newTaskData.recurring_type || 'none',
-        category: newTaskData.category,
+        category: newTaskData.category || null,
         category_color: categoryColor,
         priority: (newTaskData.priority || 'medium') as Task['priority'],
         due_date: newTaskData.due_date || null,
@@ -915,8 +915,8 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
             user_id: userId,
             description: virtualTask.description,
             status: virtualTask.status,
-            recurring_type: 'none' as const,
-            created_at: virtualTask.created_at,
+            recurring_type: 'none' as const, // New instance is no longer recurring
+            created_at: virtualTask.created_at, // Keep original creation date for consistency
             updated_at: new Date().toISOString(),
             category: virtualTask.category,
             priority: virtualTask.priority,
@@ -948,7 +948,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
             invalidateTasksQueries(); // Revert optimistic update
             return;
         }
-        showSuccess('Task moved!');
+        showSuccess('Task created from recurring template!');
         invalidateTasksQueries();
         if (dbTask.remind_at && dbTask.status === 'to-do') {
             const d = parseISO(dbTask.remind_at);
@@ -964,7 +964,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
         return;
     }
 
-    const updatesForDb: { id: string; order: number; parent_task_id: string | null; section_id: string | null; }[] = [];
+    const updatesForDb: { id: string; order: number | null; parent_task_id: string | null; section_id: string | null; }[] = [];
 
     const sourceSiblings = processedTasks.filter(t => 
         t.parent_task_id === activeTask!.parent_task_id && 
@@ -1239,12 +1239,12 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
         }
         // No success toast here, as it's a quick toggle
         invalidateTasksQueries(); // Invalidate tasks to re-evaluate `isDoToday` in filteredTasks
-        queryClient.invalidateQueries({ queryKey: ['do_today_off_log', userId, format(effectiveCurrentDate, 'yyyy-MM-dd')] }); // Invalidate specific do_today_off_log query
+        queryClient.invalidateQueries({ queryKey: ['do_today_off_log', userId, formattedDate] }); // Invalidate specific do_today_off_log query
     } catch (e: any) {
         showError("Failed to sync 'Do Today' setting.");
         console.error("Error toggling Do Today:", e);
         invalidateTasksQueries(); // Revert optimistic update on error
-        queryClient.invalidateQueries({ queryKey: ['do_today_off_log', userId, format(effectiveCurrentDate, 'yyyy-MM-dd')] }); // Revert optimistic update on error
+        queryClient.invalidateQueries({ queryKey: ['do_today_off_log', userId, formattedDate] }); // Revert optimistic update on error
     }
   }, [userId, effectiveCurrentDate, doTodayOffIds, queryClient, invalidateTasksQueries]);
 

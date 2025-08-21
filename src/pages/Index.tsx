@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Task, TaskSection, Category } from "@/hooks/useTasks"; // Corrected import for Task and Category
+import { Task, TaskSection } from "@/hooks/useTasks"; // Removed Category import
 import TaskItem from "@/components/tasks/TaskItem";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -41,15 +41,10 @@ export default function Index() {
   const fetchCategories = useCallback(async () => {
     // This function is still needed to fetch categories, even if the state isn't directly used in Index.tsx's JSX
     // TaskItem still needs categories prop, which is passed from here.
-    const { data, error } = await supabase.from("task_categories").select("*");
+    const { error } = await supabase.from("task_categories").select("*");
     if (error) {
       toast.error("Failed to fetch categories.");
       console.error("Error fetching categories:", error);
-    } else {
-      // If categories state is removed, this data needs to be passed down differently or fetched in TaskItem
-      // For now, I'll keep the fetch, but remove the state if it's truly unused in this component's render.
-      // Given TaskItem needs it, it's likely better to keep it here and pass it down.
-      // Re-adding categories state for now, as TaskItem needs it.
     }
   }, []);
 
@@ -79,9 +74,6 @@ export default function Index() {
     fetchSections();
     fetchDoTodayLog();
   }, [fetchTasks, fetchCategories, fetchSections, fetchDoTodayLog]);
-
-  // Re-adding categories state here as it's passed to TaskItem
-  const [categories, setCategories] = useState<Category[]>([]);
 
   const handleAddTask = async (parentId: string | null = null) => {
     if (!newTaskDescription.trim()) {

@@ -12,7 +12,9 @@ import ThemeSelector from './ThemeSelector';
 import { navItems } from '@/lib/navItems';
 import { useSettings } from '@/context/SettingsContext';
 import { useAuth } from '@/context/AuthContext';
-import type { PointerDownOutsideEvent } from '@radix-ui/react-dismissable-layer'; // Import the correct type
+
+// Define PointerDownOutsideEvent type locally to resolve import issues
+type PointerDownOutsideEvent = CustomEvent<{ originalEvent: PointerEvent }>;
 
 interface SidebarProps {
   children: React.ReactNode;
