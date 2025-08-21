@@ -11,7 +11,7 @@ interface DoTodaySwitchProps {
 
 const DoTodaySwitch: React.FC<DoTodaySwitchProps> = ({ isOn, onToggle, taskId, isDemo = false }) => {
   return (
-    <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
+    <div className="flex items-center"> {/* Removed onClick={(e) => e.stopPropagation()} */}
       <Switch
         id={`do-today-${taskId}`}
         checked={isOn}
