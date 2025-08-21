@@ -3,14 +3,14 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 // @ts-ignore
-import { isValid } from 'https://esm.sh/date-fns@3.6.0'; // Import isValid
+import { isValid } from 'https://esm.sh/date-fns@3.6.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Define interfaces for fetched data to provide explicit typing
+// Define interfaces for fetched data to provide explicit typing and improve readability
 interface Task {
   description: string;
   status: 'to-do' | 'completed' | 'skipped' | 'archived';
@@ -20,7 +20,7 @@ interface Task {
   recurring_type: 'none' | 'daily' | 'weekly' | 'monthly';
   original_task_id: string | null;
   updated_at: string;
-  created_at: string; // Added created_at
+  created_at: string;
 }
 
 interface Appointment {
@@ -42,15 +42,17 @@ interface SleepRecord {
   sleep_interruptions_duration_minutes: number | null;
 }
 
-serve(async (req: Request) => { // Explicitly type 'req'
+serve(async (req: Request) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { userId, localDayStartISO, localDayEndISO } = await req.json(); // Receive new parameters
+    const { userId, localDayStartISO, localDayEndISO } = await req.json();
     console.log("Daily Briefing: Received request:", { userId, localDayStartISO, localDayEndISO });
 
+    // Validate required input parameters
     if (!userId || !localDayStartISO || !localDayEndISO) {
       return new Response(JSON.stringify({ error: 'User ID and local day boundaries are required.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -58,6 +60,7 @@ serve(async (req: Request) => { // Explicitly type 'req'
       });
     }
 
+    // Retrieve environment variables for Supabase and Gemini API
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
@@ -70,6 +73,7 @@ serve(async (req: Request) => { // Explicitly type 'req'
       });
     }
 
+    // Initialize Supabase client with service role key for elevated permissions
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: {
         autoRefreshToken: false,
@@ -77,16 +81,17 @@ serve(async (req: Request) => { // Explicitly type 'req'
       },
     });
 
-    const todayDateString = localDayStartISO.split('T')[0]; // YYYY-MM-DD from client's local day start
+    // Extract today's date string (YYYY-MM-DD) from the client's local day start
+    const todayDateString = localDayStartISO.split('T')[0];
 
-    // Fetch ALL tasks for the user to ensure all relevant tasks (overdue, completed on local day) are available for filtering
+    // Fetch all tasks for the user to allow comprehensive filtering
     const { data: allTasksData, error: tasksError } = await supabaseAdmin.from('tasks')
       .select('description, status, priority, due_date, section_id, recurring_type, original_task_id, updated_at, created_at')
       .eq('user_id', userId);
     if (tasksError) throw tasksError;
     const allTasks: Task[] = allTasksData || [];
 
-    // Fetch appointments, weekly focus, sleep record (these are already date-string based or single-record)
+    // Fetch other relevant data concurrently
     const [appointmentsRes, weeklyFocusRes, sleepRecordRes] = await Promise.all([
       supabaseAdmin.from('schedule_appointments')
         .select('title, start_time, end_time')
@@ -105,6 +110,7 @@ serve(async (req: Request) => { // Explicitly type 'req'
         .maybeSingle(),
     ]);
 
+    // Handle potential errors from data fetches
     if (appointmentsRes.error) throw appointmentsRes.error;
     if (weeklyFocusRes.error) throw weeklyFocusRes.error;
     if (sleepRecordRes.error) throw sleepRecordRes.error;
@@ -113,34 +119,42 @@ serve(async (req: Request) => { // Explicitly type 'req'
     const weeklyFocus: WeeklyFocus | null = weeklyFocusRes.data;
     const sleepRecord: SleepRecord | null = sleepRecordRes.data;
 
-    // Filter tasks for AI prompt based on the fetched data and local day boundaries
+    // Filter tasks into categories for the AI prompt
     const pendingTasks: Task[] = [];
     const completedTasks: Task[] = [];
     const overdueTasks: Task[] = [];
 
     allTasks.forEach(t => {
+      // Parse date strings into Date objects, handling potential nulls
       const taskUpdatedAt = t.updated_at ? new Date(t.updated_at) : null;
       const taskCreatedAt = t.created_at ? new Date(t.created_at) : null;
-      const taskDueDate = t.due_date ? new Date(t.due_date + 'T00:00:00Z') : null; // Treat due_date as UTC midnight for comparison
+      // Treat due_date as UTC midnight for consistent comparison with todayDateString
+      const taskDueDate = t.due_date ? new Date(t.due_date + 'T00:00:00Z') : null;
 
-      // Add isValid checks before calling toISOString()
+      // Check if dates are valid and within today's local time boundaries
       const isUpdatedTodayLocal = taskUpdatedAt && isValid(taskUpdatedAt) && taskUpdatedAt.toISOString() >= localDayStartISO && taskUpdatedAt.toISOString() <= localDayEndISO;
       const isCreatedTodayLocal = taskCreatedAt && isValid(taskCreatedAt) && taskCreatedAt.toISOString() >= localDayStartISO && taskCreatedAt.toISOString() <= localDayEndISO;
-      const isDueTodayLocal = taskDueDate && isValid(taskDueDate) && taskDueDate.toISOString().split('T')[0] === todayDateString; // Compare YYYY-MM-DD strings
+      // Compare YYYY-MM-DD strings for due date to match today's date
+      const isDueTodayLocal = taskDueDate && isValid(taskDueDate) && taskDueDate.toISOString().split('T')[0] === todayDateString;
 
       if (t.status === 'completed' || t.status === 'archived') {
-        if (isUpdatedTodayLocal) { // Only count if updated today (local time)
+        // A task is considered 'completed today' if its status was updated today (local time)
+        if (isUpdatedTodayLocal) {
           completedTasks.push(t);
         }
       } else if (t.status === 'to-do') {
-        if (taskDueDate && isValid(taskDueDate) && taskDueDate.toISOString().split('T')[0] < todayDateString) { // Overdue
+        // A task is overdue if its due date is before today
+        if (taskDueDate && isValid(taskDueDate) && taskDueDate.toISOString().split('T')[0] < todayDateString) {
           overdueTasks.push(t);
-        } else if (isDueTodayLocal || isCreatedTodayLocal || isUpdatedTodayLocal) { // Pending for today (due today, created today, or updated today)
+        }
+        // A task is pending for today if it's due today, created today, or updated today
+        else if (isDueTodayLocal || isCreatedTodayLocal || isUpdatedTodayLocal) {
           pendingTasks.push(t);
         }
       }
     });
 
+    // Construct the prompt for the Gemini AI
     const prompt = `Generate a concise, encouraging, and actionable daily briefing for a user based on their productivity data.
     Today's date (client local time): ${todayDateString}
 
@@ -163,6 +177,7 @@ serve(async (req: Request) => { // Explicitly type 'req'
 
     const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
 
+    // Call the Gemini API
     const geminiResponse = await fetch(API_URL, {
       method: 'POST',
       headers: {
@@ -173,6 +188,7 @@ serve(async (req: Request) => { // Explicitly type 'req'
       }),
     });
 
+    // Handle non-OK responses from Gemini API
     if (!geminiResponse.ok) {
       const errorBody = await geminiResponse.text();
       console.error("Daily Briefing: Gemini API request failed:", geminiResponse.status, errorBody);
@@ -182,12 +198,14 @@ serve(async (req: Request) => { // Explicitly type 'req'
     const geminiData = await geminiResponse.json();
     const briefingText = geminiData.candidates[0].content.parts[0].text;
 
+    // Return the generated briefing
     return new Response(JSON.stringify({ briefing: briefingText }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
 
   } catch (error: any) {
+    // Catch and log any errors during the function execution
     console.error("Error in Edge Function 'daily-briefing' (outer catch):", error);
     return new Response(JSON.stringify({ error: error.message || 'An unexpected error occurred in the Edge Function.' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

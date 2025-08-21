@@ -3,7 +3,34 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+/**
+ * Calculates various future dates relative to a given current date.
+ * @param currentDateString The current date in 'YYYY-MM-DD' format.
+ * @returns An object containing tomorrow's date, next Friday's date, and next week's date in 'YYYY-MM-DD' format.
+ */
+function calculateFutureDates(currentDateString: string) {
+  const today = new Date(currentDateString);
+  
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+  const tomorrowDateString = tomorrow.toISOString().split('T')[0];
+
+  const nextFriday = new Date(today);
+  const currentDay = today.getDay(); // Sunday = 0, Friday = 5
+  const daysUntilFriday = (5 - currentDay + 7) % 7;
+  // If today is Friday, add 7 days to get next Friday, otherwise add daysUntilFriday
+  nextFriday.setDate(today.getDate() + (daysUntilFriday === 0 ? 7 : daysUntilFriday));
+  const nextFridayDateString = nextFriday.toISOString().split('T')[0];
+
+  const nextWeek = new Date(today);
+  nextWeek.setDate(today.getDate() + 7);
+  const nextWeekDateString = nextWeek.toISOString().split('T')[0];
+
+  return { tomorrowDateString, nextFridayDateString, nextWeekDateString };
+}
+
 Deno.serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -12,6 +39,7 @@ Deno.serve(async (req) => {
     const { description, categories, currentDate } = await req.json();
     console.log("Suggest Details: Received request:", { description, categories, currentDate });
 
+    // Validate required input parameters
     if (!description) {
       return new Response(JSON.stringify({ error: 'Task description is required.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -19,6 +47,7 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Retrieve Gemini API key from environment variables
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) {
       console.error("Suggest Details: GEMINI_API_KEY not set.");
@@ -30,24 +59,13 @@ Deno.serve(async (req) => {
     console.log("Suggest Details: GEMINI_API_KEY loaded.");
 
     const categoryNames = categories.map((cat: { name: string }) => cat.name).join(', ');
-
     const today = new Date(currentDate);
     const dayOfWeek = today.toLocaleDateString('en-US', { weekday: 'long' });
 
-    const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1);
-    const tomorrowDateString = tomorrow.toISOString().split('T')[0];
+    // Calculate dynamic dates using the helper function
+    const { tomorrowDateString, nextFridayDateString, nextWeekDateString } = calculateFutureDates(currentDate);
 
-    const nextFriday = new Date(today);
-    const currentDay = today.getDay(); // Sunday = 0, Friday = 5
-    const daysUntilFriday = (5 - currentDay + 7) % 7;
-    nextFriday.setDate(today.getDate() + (daysUntilFriday === 0 ? 7 : daysUntilFriday)); // if today is Friday, go to next Friday
-    const nextFridayDateString = nextFriday.toISOString().split('T')[0];
-
-    const nextWeek = new Date(today);
-    nextWeek.setDate(today.getDate() + 7);
-    const nextWeekDateString = nextWeek.toISOString().split('T')[0];
-
+    // Construct the prompt for the Gemini AI
     const prompt = `You are a helpful assistant that extracts structured task data from natural language descriptions.
     Today's date is ${currentDate} (${dayOfWeek}).
     
@@ -124,6 +142,7 @@ Deno.serve(async (req) => {
 
     const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
 
+    // Call the Gemini API
     const geminiResponse = await fetch(API_URL, {
       method: 'POST',
       headers: {
@@ -134,6 +153,7 @@ Deno.serve(async (req) => {
       }),
     });
 
+    // Handle non-OK responses from Gemini API
     if (!geminiResponse.ok) {
       const errorBody = await geminiResponse.text();
       console.error("Suggest Details: Gemini API request failed:", geminiResponse.status, errorBody);
@@ -143,8 +163,8 @@ Deno.serve(async (req) => {
     const geminiData = await geminiResponse.json();
     let responseText = geminiData.candidates[0].content.parts[0].text;
     
-    // Clean the response text to ensure it's pure JSON
-    responseText = responseText.replace(/```json\n|```/g, '').trim(); // Updated to remove markdown code blocks
+    // Clean the response text to ensure it's pure JSON by removing markdown code blocks
+    responseText = responseText.replace(/```json\n|```/g, '').trim();
 
     let parsedData;
     try {
@@ -154,6 +174,11 @@ Deno.serve(async (req) => {
       throw new Error("AI response was not valid JSON.");
     }
 
+    /**
+     * Parses a date string into an ISO 8601 string if valid, otherwise returns null.
+     * @param dateStr The date string to parse.
+     * @returns ISO 8601 string or null.
+     */
     const parseDateString = (dateStr: string | null) => {
       if (!dateStr) return null;
       try {
@@ -164,9 +189,11 @@ Deno.serve(async (req) => {
       }
     };
 
+    // Process and format the extracted data
     const finalDueDate = parsedData.dueDate ? parseDateString(parsedData.dueDate) : null;
     const finalRemindAt = parsedData.remindAt ? parseDateString(parsedData.remindAt) : null;
 
+    // Find the matching category ID, defaulting to 'General' or the first available category
     const matchedCategory = categories.find((cat: { name: string }) => cat.name.toLowerCase() === parsedData.category.toLowerCase());
     const finalCategory = matchedCategory ? matchedCategory.id : categories.find((cat: { name: string }) => cat.name.toLowerCase() === 'general')?.id || categories[0]?.id;
 
@@ -181,12 +208,14 @@ Deno.serve(async (req) => {
       notes: parsedData.notes || null,
     };
 
+    // Return the structured response
     return new Response(JSON.stringify(responseData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
 
   } catch (error: any) {
+    // Catch and log any errors during the function execution
     console.error("Error in Edge Function 'suggest-task-details' (outer catch):", error);
     return new Response(JSON.stringify({ error: error.message || 'An unexpected error occurred in the Edge Function.' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
