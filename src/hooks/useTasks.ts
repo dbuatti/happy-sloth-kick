@@ -448,7 +448,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
 
       if (originalTaskState && originalTaskState.id.startsWith('virtual-')) {
         // This is a virtual task that needs to become a real one.
-        const virtualTask = originalTaskState; // Use the found virtual task
+        const virtualTask = originalTaskState;
         
         const newInstanceId = uuidv4();
         idToTrack = newInstanceId;
@@ -1314,11 +1314,16 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
       return { totalCount: 0, completedCount: 0, overdueCount: 0 };
     }
 
+    console.log("Daily Progress Calculation for:", format(todayStart, 'yyyy-MM-dd'));
+    console.log("Processed Tasks count:", processedTasks.length);
+
     const tasksForToday = processedTasks.filter(task => {
         // Condition 1: Was completed or archived today
         if ((task.status === 'completed' || task.status === 'archived') && task.updated_at) {
             const updatedAt = startOfDay(parseISO(task.updated_at));
-            if (isSameDay(updatedAt, todayStart)) {
+            const isUpdatedToday = isSameDay(updatedAt, todayStart);
+            console.log(`Task ${task.id} (${task.description}) status: ${task.status}, updated_at: ${task.updated_at}, isUpdatedToday: ${isUpdatedToday}`);
+            if (isUpdatedToday) {
                 return true;
             }
         }
@@ -1342,6 +1347,8 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
         return false;
     });
 
+    console.log("Tasks relevant for today's progress (tasksForToday count):", tasksForToday.length);
+
     const focusModeSectionIds = new Set(sections.filter(s => s.include_in_focus_mode).map(s => s.id));
 
     const focusTasks = tasksForToday.filter(t => {
@@ -1353,7 +1360,10 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
       return isInFocusArea && isDoToday;
     });
 
+    console.log("Focus tasks count:", focusTasks.length);
+
     const completedCount = focusTasks.filter(t => t.status === 'completed' || t.status === 'archived').length;
+    console.log("Completed count (from focusTasks):", completedCount);
     const totalCount = focusTasks.filter(t => t.status !== 'skipped').length;
     
     const overdueCount = focusTasks.filter(t => {
