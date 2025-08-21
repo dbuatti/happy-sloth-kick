@@ -1049,8 +1049,8 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
       filtered = filtered.filter(task => {
         // Condition 1: Was completed or archived today
         if ((task.status === 'completed' || task.status === 'archived') && task.updated_at) {
-            const updatedAt = startOfDay(parseISO(task.updated_at));
-            if (isSameDay(updatedAt, todayStart)) {
+            const updatedAtLocal = startOfDay(new Date(task.updated_at)); // Convert UTC string to local Date, then get start of day
+            if (isSameDay(updatedAtLocal, todayStart)) {
                 return true;
             }
         }
@@ -1320,9 +1320,9 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     const tasksForToday = processedTasks.filter(task => {
         // Condition 1: Was completed or archived today
         if ((task.status === 'completed' || task.status === 'archived') && task.updated_at) {
-            const updatedAt = startOfDay(parseISO(task.updated_at));
-            const isUpdatedToday = isSameDay(updatedAt, todayStart);
-            console.log(`Task ${task.id} (${task.description}) status: ${task.status}, updated_at: ${task.updated_at}, isUpdatedToday: ${isUpdatedToday}`);
+            const updatedAtLocal = startOfDay(new Date(task.updated_at)); // Convert UTC string to local Date, then get start of day
+            const isUpdatedToday = isSameDay(updatedAtLocal, todayStart);
+            console.log(`Task ${task.id} (${task.description}) status: ${task.status}, updated_at: ${task.updated_at}, updatedAtLocal: ${updatedAtLocal.toISOString()}, isUpdatedToday: ${isUpdatedToday}`);
             if (isUpdatedToday) {
                 return true;
             }
@@ -1362,7 +1362,13 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
 
     console.log("Focus tasks count:", focusTasks.length);
 
-    const completedCount = focusTasks.filter(t => t.status === 'completed' || t.status === 'archived').length;
+    const completedCount = focusTasks.filter(t => {
+      const isCompletedOrArchived = t.status === 'completed' || t.status === 'archived';
+      if (isCompletedOrArchived) {
+        console.log(`[Daily Progress Debug] Counting completed/archived task: ${t.description} (ID: ${t.id}, Status: ${t.status}, Updated: ${t.updated_at})`);
+      }
+      return isCompletedOrArchived;
+    }).length;
     console.log("Completed count (from focusTasks):", completedCount);
     const totalCount = focusTasks.filter(t => t.status !== 'skipped').length;
     
