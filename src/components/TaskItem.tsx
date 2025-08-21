@@ -175,8 +175,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const isOverdue = task.due_date && task.status !== 'completed' && isPast(parseISO(task.due_date)) && !isSameDay(parseISO(task.due_date), currentDate);
   const isDueToday = task.due_date && task.status !== 'completed' && isSameDay(parseISO(task.due_date), currentDate);
 
-  const handleToggleDoTodaySwitch = (newCheckedState: boolean) => { // Added newCheckedState parameter
-    console.log(`TaskItem: Toggling Do Today for task ${task.id}. New state from switch: ${newCheckedState}`);
+  const handleToggleDoTodaySwitch = (newCheckedState: boolean) => {
+    console.log(`[Do Today Debug] TaskItem: handleToggleDoTodaySwitch called for task ${task.id}. New state from switch: ${newCheckedState}`);
     toggleDoToday(task); // Call the prop function from useTasks
   };
 
@@ -373,7 +373,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={async () => { await onStatusChange(task.id, 'completed'); playSound('success'); }}>
                   Mark as Completed
-                </DropdownMenuItem>
+                </GropdownMenuItem>
                 <DropdownMenuItem onSelect={async () => { await onStatusChange(task.id, 'skipped'); playSound('success'); }}>
                   Mark as Skipped
                 </DropdownMenuItem>

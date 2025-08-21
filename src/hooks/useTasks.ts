@@ -1036,11 +1036,11 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
         console.error('useTasks: Error moving task:', e.message);
         invalidateTasksQueries(); // Revert optimistic update on error
     } finally {
-        setTimeout(() => {
-            updatedIds.forEach(id => inFlightUpdatesRef.current.delete(id));
-        }, 1500);
+      setTimeout(() => {
+        updatedIds.forEach(id => inFlightUpdatesRef.current.delete(id));
+      }, 1500);
     }
-}, [userId, processedTasks, addReminder, queryClient, invalidateTasksQueries]);
+  }, [userId, processedTasks, addReminder, queryClient, invalidateTasksQueries]);
 
   const finalFilteredTasks = useMemo(() => {
     let filtered = processedTasks;
@@ -1206,29 +1206,32 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
   }, [processedTasks, sections, userSettings?.focused_task_id, doTodayOffIds]);
 
   const toggleDoToday = useCallback(async (task: Task) => {
-    if (!userId) return;
+    if (!userId) {
+      console.log("[Do Today Debug] User not authenticated.");
+      showError('User not authenticated.');
+      return;
+    }
     const taskIdToLog = task.original_task_id || task.id;
     const formattedDate = format(effectiveCurrentDate, 'yyyy-MM-dd');
-    const isCurrentlyOn = doTodayOffIds.has(taskIdToLog); // Corrected logic
+    const isCurrentlyOff = doTodayOffIds.has(taskIdToLog); // Corrected logic: `doTodayOffIds` stores tasks that are *off* for today
+
+    console.log(`[Do Today Debug] Toggling task ${taskIdToLog}. Currently OFF: ${isCurrentlyOff}`);
 
     // Optimistic update
-    queryClient.setQueryData(['do_today_off_log', userId, format(effectiveCurrentDate, 'yyyy-MM-dd')], (oldSet: Set<string> | undefined) => {
+    queryClient.setQueryData(['do_today_off_log', userId, formattedDate], (oldSet: Set<string> | undefined) => {
         const newSet = new Set(oldSet || []);
-        if (isCurrentlyOn) { // If it was ON, we're turning it OFF
-            newSet.add(taskIdToLog);
-        } else { // If it was OFF, we're turning it ON
+        if (isCurrentlyOff) { // If it was OFF, we're turning it ON (remove from off_log)
             newSet.delete(taskIdToLog);
+            console.log(`[Do Today Debug] Optimistically removing ${taskIdToLog} from off_log.`);
+        } else { // If it was ON, we're turning it OFF (add to off_log)
+            newSet.add(taskIdToLog);
+            console.log(`[Do Today Debug] Optimistically adding ${taskIdToLog} to off_log.`);
         }
         return newSet;
     });
 
     try {
-        if (isCurrentlyOn) { // If it was ON, we're turning it OFF (insert into off_log)
-            const { error } = await supabase
-                .from('do_today_off_log')
-                .insert({ user_id: userId, task_id: taskIdToLog, off_date: formattedDate });
-            if (error) throw error;
-        } else { // If it was OFF, we're turning it ON (delete from off_log)
+        if (isCurrentlyOff) { // If it was OFF, we're turning it ON (delete from off_log)
             const { error } = await supabase
                 .from('do_today_off_log')
                 .delete()
@@ -1236,13 +1239,21 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
                 .eq('task_id', taskIdToLog)
                 .eq('off_date', formattedDate);
             if (error) throw error;
+            console.log(`[Do Today Debug] Supabase: Deleted ${taskIdToLog} from do_today_off_log.`);
+        } else { // If it was ON, we're turning it OFF (insert into off_log)
+            const { error } = await supabase
+                .from('do_today_off_log')
+                .insert({ user_id: userId, task_id: taskIdToLog, off_date: formattedDate });
+            if (error) throw error;
+            console.log(`[Do Today Debug] Supabase: Inserted ${taskIdToLog} into do_today_off_log.`);
         }
         // No success toast here, as it's a quick toggle
         invalidateTasksQueries(); // Invalidate tasks to re-evaluate `isDoToday` in filteredTasks
         queryClient.invalidateQueries({ queryKey: ['do_today_off_log', userId, formattedDate] }); // Invalidate specific do_today_off_log query
+        console.log(`[Do Today Debug] Queries invalidated.`);
     } catch (e: any) {
         showError("Failed to sync 'Do Today' setting.");
-        console.error("Error toggling Do Today:", e);
+        console.error("[Do Today Debug] Error toggling Do Today:", e);
         invalidateTasksQueries(); // Revert optimistic update on error
         queryClient.invalidateQueries({ queryKey: ['do_today_off_log', userId, formattedDate] }); // Revert optimistic update on error
     }
