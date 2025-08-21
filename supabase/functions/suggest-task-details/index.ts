@@ -144,7 +144,7 @@ Deno.serve(async (req) => {
     let responseText = geminiData.candidates[0].content.parts[0].text;
     
     // Clean the response text to ensure it's pure JSON
-    responseText = responseText.replace(/^json\n/, '').trim();
+    responseText = responseText.replace(/```json\n|```/g, '').trim(); // Updated to remove markdown code blocks
 
     let parsedData;
     try {
