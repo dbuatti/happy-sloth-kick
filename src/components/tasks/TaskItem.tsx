@@ -60,10 +60,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
     task.remind_at ? parseISO(task.remind_at) : undefined
   );
   const [editedCategory, setEditedCategory] = useState<string | undefined>(task.category || undefined);
-  // Fix: Use Task['priority'] type for editedPriority
   const [editedPriority, setEditedPriority] = useState<Task['priority']>(task.priority || "medium");
   const [editedSection, setEditedSection] = useState<string | undefined>(task.section_id || undefined);
-  // Fix: Use Task['recurring_type'] type for editedRecurringType
   const [editedRecurringType, setEditedRecurringType] = useState<Task['recurring_type']>(task.recurring_type || "none");
   const [editedLink, setEditedLink] = useState<string>(task.link || "");
   const [editedImageUrl, setEditedImageUrl] = useState<string>(task.image_url || "");
@@ -268,10 +266,11 @@ const TaskItem: React.FC<TaskItemProps> = ({
             checked={isDoToday}
             onCheckedChange={handleToggleDoTodaySwitch}
             aria-label="Toggle Do Today"
+            onClick={(e) => e.stopPropagation()}
           />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <TouchFriendlyButton variant="ghost" size="icon">
+              <TouchFriendlyButton variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
                 <MoreHorizontal className="h-4 w-4" />
               </TouchFriendlyButton>
             </DropdownMenuTrigger>
@@ -416,7 +415,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
               </div>
               <div className="flex items-center space-x-2">
                 <Flag className="h-4 w-4 text-muted-foreground" />
-                <Select value={editedPriority} onValueChange={setEditedPriority}>
+                <Select value={editedPriority} onValueChange={(value) => setEditedPriority(value as Task['priority'])}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Select priority" />
                   </SelectTrigger>
@@ -451,7 +450,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
               </div>
               <div className="flex items-center space-x-2">
                 <Repeat className="h-4 w-4 text-muted-foreground" />
-                <Select value={editedRecurringType} onValueChange={setEditedRecurringType}>
+                <Select value={editedRecurringType} onValueChange={(value) => setEditedRecurringType(value as Task['recurring_type'])}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Select recurrence" />
                   </SelectTrigger>
