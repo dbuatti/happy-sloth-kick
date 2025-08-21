@@ -373,7 +373,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={async () => { await onStatusChange(task.id, 'completed'); playSound('success'); }}>
                   Mark as Completed
-                </GropdownMenuItem>
+                </DropdownMenuItem>
                 <DropdownMenuItem onSelect={async () => { await onStatusChange(task.id, 'skipped'); playSound('success'); }}>
                   Mark as Skipped
                 </DropdownMenuItem>
