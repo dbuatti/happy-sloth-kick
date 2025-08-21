@@ -35,7 +35,7 @@ interface TaskItemProps {
   isSubtask?: boolean;
   subtasks?: Task[];
   onToggleDoToday: (taskId: string, doToday: boolean) => void;
-  doTodayLog: { task_id: string }[];
+  doTodayLog: Set<string>; // Changed to Set<string>
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -66,8 +66,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const [editedLink, setEditedLink] = useState<string>(task.link || "");
   const [editedImageUrl, setEditedImageUrl] = useState<string>(task.image_url || "");
   const [showDetails, setShowDetails] = useState(false);
-  // Invert the logic: isDoToday is true if task is NOT in doTodayLog
-  const [isDoToday, setIsDoToday] = useState(!doTodayLog.some(log => log.task_id === task.id));
+  // isDoToday is true if task is NOT in doTodayLog (meaning it IS 'Do Today')
+  const [isDoToday, setIsDoToday] = useState(!doTodayLog.has(task.id));
 
   const detailsRef = useRef<HTMLDivElement>(null);
 
@@ -87,9 +87,9 @@ const TaskItem: React.FC<TaskItemProps> = ({
     opacity: isDragging ? 0.8 : 1,
   };
 
+  // Update isDoToday when doTodayLog or task.id changes
   useEffect(() => {
-    // Invert the logic: isDoToday is true if task is NOT in doTodayLog
-    setIsDoToday(!doTodayLog.some(log => log.task_id === task.id));
+    setIsDoToday(!doTodayLog.has(task.id));
   }, [doTodayLog, task.id]);
 
   const handleUpdateTask = async (updates: Partial<Task>) => {
@@ -189,7 +189,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   };
 
   const handleToggleDoTodaySwitch = (checked: boolean) => {
-    setIsDoToday(checked);
+    // `checked` is the new state of the switch (true if 'Do Today', false if 'Not Do Today')
     onToggleDoToday(task.id, checked);
   };
 

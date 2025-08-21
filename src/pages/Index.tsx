@@ -16,7 +16,7 @@ export default function Index() {
   const [categories, setCategories] = useState<TaskCategory[]>([]);
   const [sections, setSections] = useState<TaskSection[]>([]);
   const [newTaskDescription, setNewTaskDescription] = useState("");
-  const [doTodayLog, setDoTodayLog] = useState<{ task_id: string }[]>([]);
+  const [doTodayLog, setDoTodayLog] = useState<Set<string>>(new Set()); // Changed to Set<string>
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -65,7 +65,7 @@ export default function Index() {
       toast.error("Failed to fetch 'Do Today' log.");
       console.error("Error fetching 'Do Today' log:", error);
     } else {
-      setDoTodayLog(data || []);
+      setDoTodayLog(new Set(data?.map(item => item.task_id) || [])); // Convert to Set
     }
   }, []);
 
@@ -130,7 +130,11 @@ export default function Index() {
 
   const handleDeleteTask = (taskId: string) => {
     setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
-    setDoTodayLog((prevLog) => prevLog.filter((log) => log.task_id !== taskId));
+    setDoTodayLog((prevLog) => {
+      const newLog = new Set(prevLog);
+      newLog.delete(taskId);
+      return newLog;
+    });
   };
 
   const handleToggleDoToday = async (taskId: string, doToday: boolean) => {
@@ -152,7 +156,11 @@ export default function Index() {
         toast.error("Failed to mark task as 'Do Today'.");
         console.error("Error marking task as 'Do Today':", error);
       } else {
-        setDoTodayLog((prevLog) => prevLog.filter((log) => log.task_id !== taskId));
+        setDoTodayLog((prevLog) => {
+          const newLog = new Set(prevLog);
+          newLog.delete(taskId);
+          return newLog;
+        });
         toast.success("Task marked as 'Do Today'!");
       }
     } else {
@@ -165,7 +173,11 @@ export default function Index() {
         toast.error("Failed to unmark task from 'Do Today'.");
         console.error("Error unmarking task from 'Do Today':", error);
       } else {
-        setDoTodayLog((prevLog) => [...prevLog, { task_id: taskId }]);
+        setDoTodayLog((prevLog) => {
+          const newLog = new Set(prevLog);
+          newLog.add(taskId);
+          return newLog;
+        });
         toast.success("Task unmarked from 'Do Today'.");
       }
     }
