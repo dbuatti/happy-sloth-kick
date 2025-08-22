@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import TasksPage from './pages/Tasks';
 import { SessionContextProvider } from '@supabase/auth-ui-react';
 import { supabase } from './integrations/supabase/client';
@@ -35,15 +35,19 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          {session ? (
-            <>
-              <Route path="/" element={<TasksPage />} />
-              <Route path="/tasks" element={<TasksPage />} />
-              {/* Add other authenticated routes here */}
-            </>
-          ) : (
-            <Route path="*" element={<LoginPage />} /> {/* Redirect unauthenticated users to login */}
-          )}
+          <Route
+            path="/"
+            element={session ? <TasksPage /> : <Navigate to="/login" replace />}
+          />
+          <Route
+            path="/tasks"
+            element={session ? <TasksPage /> : <Navigate to="/login" replace />}
+          />
+          {/* Catch-all route: if authenticated, redirect to home; otherwise, redirect to login */}
+          <Route
+            path="*"
+            element={session ? <Navigate to="/" replace /> : <Navigate to="/login" replace />}
+          />
         </Routes>
       </BrowserRouter>
     </SessionContextProvider>

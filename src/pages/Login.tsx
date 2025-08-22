@@ -8,7 +8,7 @@ function LoginPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => { // Fixed: _event to mark as unused
       if (session) {
         navigate('/tasks'); // Redirect to tasks page on login
       }
