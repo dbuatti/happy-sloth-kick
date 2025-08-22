@@ -1,11 +1,34 @@
-import { Task, TaskSection, TaskCategory, DailyTaskCount, TaskStatus, TaskPriority, Appointment, Project, UserSettings, WorkHour, QuickLink, WeeklyFocus, GratitudeJournalEntry, WorryJournalEntry, SleepRecord, PeopleMemory, CustomDashboardCard } from './task';
+import {
+  Task,
+  TaskSection,
+  TaskCategory,
+  DailyTaskCount,
+  Project,
+  UserSettings,
+  CustomDashboardCard,
+  QuickLink,
+  WeeklyFocus,
+  GratitudeJournalEntry,
+  WorryJournalEntry,
+  SleepRecord,
+  PeopleMemory,
+  Appointment,
+  WorkHour,
+  TaskStatus,
+  TaskPriority,
+  RecurringType,
+} from './task';
+import { Dispatch, SetStateAction } from 'react';
 
-export interface AddTaskFormProps {
-  onAddTask: (taskData: Partial<Task>) => Promise<Task | null>;
-  onTaskAdded?: () => void;
+// --- General Props ---
+export interface BasePageProps {
+  isDemo?: boolean;
+  demoUserId?: string;
+}
+
+export interface TaskManagementProps {
   sections: TaskSection[];
-  allCategories: TaskCategory[];
-  currentDate: Date;
+  categories: TaskCategory[];
   createSection: (name: string) => Promise<TaskSection | null>;
   updateSection: (sectionId: string, newName: string) => Promise<TaskSection | null>;
   deleteSection: (sectionId: string) => Promise<void>;
@@ -13,314 +36,227 @@ export interface AddTaskFormProps {
   createCategory: (name: string, color: string) => Promise<TaskCategory | null>;
   updateCategory: (categoryId: string, newName: string, newColor: string) => Promise<TaskCategory | null>;
   deleteCategory: (categoryId: string) => Promise<void>;
+}
+
+export interface TaskActionProps {
+  onAddTask: (taskData: Partial<Task>) => Promise<Task | null>;
+  onUpdate: (taskId: string, updates: Partial<Task>) => Promise<Task | null>;
+  onDelete: (taskId: string) => Promise<void>;
+  onReorderTasks: (updates: { id: string; order: number | null; section_id: string | null; parent_task_id: string | null; }[]) => Promise<void>;
+}
+
+// --- Component Specific Props ---
+
+export interface AddTaskFormProps extends TaskManagementProps, TaskActionProps {
+  onTaskAdded?: () => void;
+  currentDate: Date;
   initialData?: Partial<Task> | null;
 }
 
-export interface ManageSectionsDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  sections: TaskSection[];
-  createSection: (name: string) => Promise<TaskSection | null>;
-  updateSection: (sectionId: string, newName: string) => Promise<TaskSection | null>;
-  deleteSection: (sectionId: string) => Promise<void>;
-  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<TaskSection | null>;
+export interface DailyTasksHeaderProps extends TaskManagementProps, TaskActionProps {
+  dailyProgress: DailyTaskCount;
+  toggleAllDoToday: (turnOff: boolean) => Promise<void>;
+  showTodayTasks: () => void;
+  currentDate: Date;
+  setPrefilledTaskData: (data: Partial<Task> | null) => void;
+  isDemo?: boolean;
 }
 
-export interface ManageCategoriesDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  categories: TaskCategory[];
-  createCategory: (name: string, color: string) => Promise<TaskCategory | null>;
-  updateCategory: (categoryId: string, newName: string, newColor: string) => Promise<TaskCategory | null>;
-  deleteCategory: (categoryId: string) => Promise<void>;
+export interface TaskFilterProps extends TaskManagementProps {
+  statusFilter: TaskStatus | 'all';
+  setStatusFilter: Dispatch<SetStateAction<TaskStatus | 'all'>>;
+  categoryFilter: string | 'all' | null;
+  setCategoryFilter: Dispatch<SetStateAction<string | 'all' | null>>;
+  priorityFilter: TaskPriority | 'all' | null;
+  setPriorityFilter: Dispatch<SetStateAction<TaskPriority | 'all' | null>>;
+  sectionFilter: string | 'all' | null;
+  setSectionFilter: Dispatch<SetStateAction<string | 'all' | null>>;
 }
 
-export interface TaskListProps {
+export interface TaskListProps extends TaskManagementProps, TaskActionProps, TaskFilterProps {
   tasks: Task[];
-  processedTasks: Task[];
-  sections: TaskSection[];
-  categories: TaskCategory[];
+  processedTasks: (Task & { isOverdue: boolean; isDueToday: boolean })[];
   onStatusChange: (taskId: string, newStatus: TaskStatus) => Promise<Task | null>;
-  onUpdate: (taskId: string, updates: Partial<Task>) => Promise<Task | null>;
-  onDelete: (taskId: string) => Promise<void>;
   onOpenOverview: (task: Task) => void;
   onOpenDetail: (task: Task) => void;
-  onAddTask: (taskData: Partial<Task>) => Promise<Task | null>;
-  onReorderTasks: (updates: { id: string; order: number | null; section_id: string | null; parent_task_id: string | null; }[]) => Promise<void>;
   showDoTodayToggle?: boolean;
   toggleDoToday?: (taskId: string, isOff: boolean) => Promise<void>;
   doTodayOffIds?: Set<string>;
   isDemo?: boolean;
-  nextAvailableTask?: Task | null;
+  nextAvailableTask: Task | null;
   currentDate: Date;
-  createSection: (name: string) => Promise<TaskSection | null>;
-  updateSection: (sectionId: string, newName: string) => Promise<TaskSection | null>;
-  deleteSection: (sectionId: string) => Promise<void>;
-  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<TaskSection | null>;
   archiveAllCompletedTasks: () => Promise<void>;
   toggleAllDoToday: (turnOff: boolean) => Promise<void>;
   setIsAddTaskDialogOpen: (isOpen: boolean) => void;
   setPrefilledTaskData: (data: Partial<Task> | null) => void;
   dailyProgress: DailyTaskCount;
   onOpenFocusView: (task: Task) => void;
-  statusFilter: TaskStatus | 'all';
-  setStatusFilter: (value: TaskStatus | 'all') => void;
-  categoryFilter: string | 'all' | null;
-  setCategoryFilter: (value: string | 'all' | null) => void;
-  priorityFilter: TaskPriority | 'all' | null;
-  setPriorityFilter: (value: TaskPriority | 'all' | null) => void;
-  sectionFilter: string | 'all' | null;
-  setSectionFilter: (value: string | 'all' | null) => void;
 }
 
-export interface DailyTasksHeaderProps {
-  dailyProgress: DailyTaskCount;
-  toggleAllDoToday: (turnOff: boolean) => Promise<void>;
-  showTodayTasks: () => void;
-  currentDate: Date;
-  sections: TaskSection[];
-  allCategories: TaskCategory[];
-  createSection: (name: string) => Promise<TaskSection | null>;
-  updateSection: (sectionId: string, newName: string) => Promise<TaskSection | null>;
-  deleteSection: (sectionId: string) => Promise<void>;
-  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<TaskSection | null>;
-  createCategory: (name: string, color: string) => Promise<TaskCategory | null>;
-  updateCategory: (categoryId: string, newName: string, newColor: string) => Promise<TaskCategory | null>;
-  deleteCategory: (categoryId: string) => Promise<void>;
-  onAddTask: (taskData: Partial<Task>) => Promise<Task | null>;
-  setPrefilledTaskData: (data: Partial<Task> | null) => void;
-  isDemo?: boolean;
-}
-
-export interface NextTaskCardProps {
-  nextAvailableTask: Task | null;
-  updateTask: (taskId: string, updates: Partial<Task>) => Promise<Task | null>;
+export interface TaskItemProps extends TaskManagementProps, TaskActionProps {
+  task: Task;
+  allTasks: Task[];
+  onStatusChange: (taskId: string, newStatus: TaskStatus) => Promise<Task | null>;
   onOpenOverview: (task: Task) => void;
   onOpenDetail: (task: Task) => void;
-  sections: TaskSection[];
-  categories: TaskCategory[];
+  showDoTodayToggle?: boolean;
+  toggleDoToday?: (taskId: string, isOff: boolean) => Promise<void>;
+  isDoTodayOff?: boolean;
+  level?: number;
   isDemo?: boolean;
 }
 
-export interface FocusModeProps {
-  isDemo?: boolean;
-  demoUserId?: string;
-}
-
-export interface TaskCalendarProps {
-  isDemo?: boolean;
-  demoUserId?: string;
-}
-
-export interface ArchivePageProps {
-  isDemo?: boolean;
-  demoUserId?: string;
-}
-
-export interface DraggableAppointmentCardProps {
-  appointment: Appointment;
-  task?: Task;
-  onClick: (appointment: Appointment) => void;
-  className?: string;
-}
-
-export interface TimeBlockActionMenuProps {
-  block: { start: Date; end: Date };
-  onAddAppointment: (block: { start: Date; end: Date }) => void;
-  onScheduleTask: (taskId: string, blockStart: Date) => void;
-  unscheduledTasks: Task[];
-  sections: TaskSection[];
-}
-
-export interface TaskOverviewDialogProps {
+export interface TaskOverviewDialogProps extends TaskManagementProps, TaskActionProps {
   isOpen: boolean;
   onClose: () => void;
   task: Task | null;
   onOpenDetail: (task: Task) => void;
   onOpenFocusView: (task: Task) => void;
-  updateTask: (taskId: string, updates: Partial<Task>) => Promise<Task | null>;
-  deleteTask: (taskId: string) => Promise<void>;
-  sections: TaskSection[];
-  categories: TaskCategory[];
   allTasks: Task[];
-  onAddTask: (taskData: Partial<Task>) => Promise<Task | null>;
-  onReorderTasks: (updates: { id: string; order: number | null; section_id: string | null; parent_task_id: string | null; }[]) => Promise<void>;
-  createSection: (name: string) => Promise<TaskSection | null>;
-  updateSection: (sectionId: string, newName: string) => Promise<TaskSection | null>;
-  deleteSection: (sectionId: string) => Promise<void>;
-  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<TaskSection | null>;
-  createCategory: (name: string, color: string) => Promise<TaskCategory | null>;
-  updateCategory: (categoryId: string, newName: string, newColor: string) => Promise<TaskCategory | null>;
-  deleteCategory: (categoryId: string) => Promise<void>;
 }
 
-export interface TaskDetailDialogProps {
+export interface TaskDetailDialogProps extends TaskManagementProps, TaskActionProps {
   isOpen: boolean;
   onClose: () => void;
   task: Task | null;
   allTasks: Task[];
-  sections: TaskSection[];
-  categories: TaskCategory[];
-  onUpdate: (taskId: string, updates: Partial<Task>) => Promise<Task | null>;
-  onDelete: (taskId: string) => Promise<void>;
-  onAddTask: (taskData: Partial<Task>) => Promise<Task | null>;
-  onReorderTasks: (updates: { id: string; order: number | null; section_id: string | null; parent_task_id: string | null; }[]) => Promise<void>;
-  createSection: (name: string) => Promise<TaskSection | null>;
-  updateSection: (sectionId: string, newName: string) => Promise<TaskSection | null>;
-  deleteSection: (sectionId: string) => Promise<void>;
-  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<TaskSection | null>;
-  createCategory: (name: string, color: string) => Promise<TaskCategory | null>;
-  updateCategory: (categoryId: string, newName: string, newColor: string) => Promise<TaskCategory | null>;
-  deleteCategory: (categoryId: string) => Promise<void>;
 }
 
-export interface FullScreenFocusViewProps {
+export interface FullScreenFocusViewProps extends TaskManagementProps, TaskActionProps {
   task: Task;
   onClose: () => void;
   onComplete: () => void;
   onSkip: () => void;
   onOpenDetail: (task: Task) => void;
-  updateTask: (taskId: string, updates: Partial<Task>) => Promise<Task | null>;
-  sections: TaskSection[];
-  categories: TaskCategory[];
   allTasks: Task[];
-  onAddTask: (taskData: Partial<Task>) => Promise<Task | null>;
-  onReorderTasks: (updates: { id: string; order: number | null; section_id: string | null; parent_task_id: string | null; }[]) => Promise<void>;
-  createSection: (name: string) => Promise<TaskSection | null>;
-  updateSection: (sectionId: string, newName: string) => Promise<TaskSection | null>;
-  deleteSection: (sectionId: string) => Promise<void>;
-  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<TaskSection | null>;
-  createCategory: (name: string, color: string) => Promise<TaskCategory | null>;
-  updateCategory: (categoryId: string, newName: string, newColor: string) => Promise<TaskCategory | null>;
-  deleteCategory: (categoryId: string) => Promise<void>;
 }
 
-export interface DailyScheduleViewProps {
-  isDemo?: boolean;
-  onOpenTaskOverview: (task: Task) => void;
-  currentViewDate: Date;
-  daysInGrid: Date[];
-  allWorkHours: WorkHour[];
-  saveWorkHours: (hoursToSave: WorkHour | WorkHour[]) => Promise<void>;
+export interface DraggableTaskListItemProps extends TaskManagementProps, TaskActionProps {
+  task: Task;
+  onEdit: (task: Task) => void;
+  onDelete: (taskId: string) => Promise<void>;
+  onUpdate: (taskId: string, updates: Partial<Task>) => Promise<Task | null>;
+  allTasks: Task[];
+  onStatusChange: (taskId: string, newStatus: TaskStatus) => Promise<Task | null>;
+  onOpenOverview: (task: Task) => void;
+}
+
+export interface SortableTaskItemProps extends DraggableTaskListItemProps {}
+
+export interface QuickAddTaskProps extends TaskManagementProps, TaskActionProps {
+  currentDate: Date;
+  setPrefilledTaskData: (data: Partial<Task> | null) => void;
+}
+
+export interface CategorySelectorProps extends TaskManagementProps {
+  selectedCategory: string | 'all' | null;
+  onSelectCategory: (categoryId: string | 'all' | null) => void;
+}
+
+export interface SectionSelectorProps extends TaskManagementProps {
+  selectedSection: string | 'all' | null;
+  onSelectSection: (sectionId: string | 'all' | null) => void;
+}
+
+export interface ManageSectionsDialogProps extends TaskManagementProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export interface ManageCategoriesDialogProps extends TaskManagementProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export interface TimeBlockProps {
+  block: { start: Date; end: Date };
   appointments: Appointment[];
   tasks: Task[];
   sections: TaskSection[];
-  categories: TaskCategory[];
-  addAppointment: (appointmentData: Partial<Appointment>) => Promise<Appointment | null>;
-  updateAppointment: (appointmentId: string, updates: Partial<Appointment>) => Promise<Appointment | null>;
-  deleteAppointment: (appointmentId: string) => Promise<void>;
-  onAddTask: (taskData: Partial<Task>) => Promise<Task | null>;
-  onUpdateTask: (taskId: string, updates: Partial<Task>) => Promise<Task | null>;
+  onAddAppointment: (block: { start: Date; end: Date }) => void;
+  onScheduleTask: (taskId: string, blockStart: Date) => Promise<void>;
+  onOpenAppointmentDetail: (app: Appointment) => void;
   onOpenTaskDetail: (task: Task) => void;
-  isLoading: boolean;
+  unscheduledTasks: Task[];
 }
 
 export interface ScheduleGridContentProps {
+  day: Date;
+  timeBlocks: { start: Date; end: Date }[];
+  appointments: Appointment[];
+  tasks: Task[];
+  sections: TaskSection[];
+  onAddAppointment: (block: { start: Date; end: Date }) => void;
+  onScheduleTask: (taskId: string, blockStart: Date) => Promise<void>;
+  onOpenAppointmentDetail: (app: Appointment) => void;
+  onOpenTaskDetail: (task: Task) => void;
+  unscheduledTasks: Task[];
+}
+
+export interface DailyScheduleViewProps extends TaskActionProps, TaskManagementProps {
   isDemo?: boolean;
   onOpenTaskOverview: (task: Task) => void;
   currentViewDate: Date;
-  daysInGrid: Date[];
   allWorkHours: WorkHour[];
   saveWorkHours: (hoursToSave: WorkHour | WorkHour[]) => Promise<void>;
   appointments: Appointment[];
   tasks: Task[];
-  sections: TaskSection[];
-  categories: TaskCategory[];
-  addAppointment: (appointmentData: Partial<Appointment>) => Promise<Appointment | null>;
-  updateAppointment: (appointmentId: string, updates: Partial<Appointment>) => Promise<Appointment | null>;
-  deleteAppointment: (appointmentId: string) => Promise<void>;
-  onAddTask: (taskData: Partial<Task>) => Promise<Task | null>;
-  onUpdateTask: (taskId: string, updates: Partial<Task>) => Promise<Task | null>;
-  onOpenTaskDetail: (task: Task) => void;
   isLoading: boolean;
 }
 
-export interface TaskItemProps {
-  task: Task;
-  allTasks: Task[];
-  sections: TaskSection[];
-  categories: TaskCategory[];
-  onStatusChange: (taskId: string, newStatus: TaskStatus) => Promise<Task | null>;
-  onUpdate: (taskId: string, updates: Partial<Task>) => Promise<Task | null>;
-  onDelete: (taskId: string) => Promise<void>;
-  onOpenOverview: (task: Task) => void;
-  onOpenDetail: (task: Task) => void;
-  onAddTask: (taskData: Partial<Task>) => Promise<Task | null>;
-  onReorderTasks: (
-    updates: {
-      id: string;
-      order: number | null;
-      section_id: string | null;
-      parent_task_id: string | null;
-    }[]
-  ) => Promise<void>;
-  showDoTodayToggle?: boolean;
-  toggleDoToday?: (taskId: string, isOff: boolean) => Promise<void>;
-  isDoTodayOff?: boolean;
-  level?: number; // For subtasks indentation
-  isDemo?: boolean;
-}
-
-export interface TaskFilterProps {
-  statusFilter: TaskStatus | 'all';
-  setStatusFilter: (value: TaskStatus | 'all') => void;
-  categoryFilter: string | 'all' | null;
-  setCategoryFilter: (value: string | 'all' | null) => void;
-  priorityFilter: TaskPriority | 'all' | null;
-  setPriorityFilter: (value: TaskPriority | 'all' | null) => void;
-  sectionFilter: string | 'all' | null;
-  setSectionFilter: (value: string | 'all' | null) => void;
-  sections: TaskSection[];
-  categories: TaskCategory[];
-}
-
-export interface FocusToolsPanelProps {
+export interface FocusToolsPanelProps extends TaskManagementProps, TaskActionProps {
   currentTask: Task | null;
-  onCompleteCurrentTask: () => void;
-  onSkipCurrentTask: () => void;
-  onOpenDetail: (task: Task) => void;
-  onOpenOverview: (task: Task) => void;
-  updateTask: (taskId: string, updates: Partial<Task>) => Promise<Task | null>;
-  sections: TaskSection[];
-  allCategories: TaskCategory[];
-  handleAddTask: (taskData: Partial<Task>) => Promise<Task | null>;
-  currentDate: Date;
-  isDemo?: boolean;
+  onCompleteTask: () => Promise<void>;
+  onSkipTask: () => Promise<void>;
+  onOpenTaskDetail: (task: Task) => void;
+  onAddSubtask: () => Promise<void>;
+  newSubtaskDescription: string;
+  setNewSubtaskDescription: Dispatch<SetStateAction<string>>;
+  subtasks: Task[];
+  allTasks: Task[];
+  onUpdateTask: (taskId: string, updates: Partial<Task>) => Promise<Task | null>;
+  onDeleteTask: (taskId: string) => Promise<void>;
+  onOpenTaskOverview: (task: Task) => void;
 }
 
-export interface FocusPanelDrawerProps {
+export interface ProjectNotesDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  currentTask: Task | null;
-  onCompleteCurrentTask: () => void;
-  onSkipCurrentTask: () => void;
-  onOpenDetail: (task: Task) => void;
-  onOpenOverview: (task: Task) => void;
-  updateTask: (taskId: string, updates: Partial<Task>) => Promise<Task | null>;
-  sections: TaskSection[];
-  allCategories: TaskCategory[];
-  handleAddTask: (taskData: Partial<Task>) => Promise<Task | null>;
-  currentDate: Date;
-  isDemo?: boolean;
+  project: Project;
+  onSaveNotes: (notes: string) => Promise<void>;
 }
 
-export interface DailyTasksV3PageProps {
-  isDemo?: boolean;
-  demoUserId?: string;
+export interface BulkActionBarProps {
+  selectedTaskIds: Set<string>;
+  onMarkComplete: () => Promise<void>;
+  onArchive: () => Promise<void>;
+  onDelete: () => Promise<void>;
+  onClearSelection: () => void;
 }
 
-export interface SidebarProps {
-  isDemo?: boolean;
-  demoUserId?: string;
+export interface WorkHourState {
+  id?: string;
+  day_of_week: string;
+  start_time: string;
+  end_time: string;
+  enabled: boolean;
 }
 
-export interface DashboardStats {
-  isLoading: boolean;
-  tasksDue: number;
-  tasksCompleted: number;
-  appointmentsToday: number;
-}
+// --- Page Props ---
+export interface DashboardPageProps extends BasePageProps {}
+export interface MyHubPageProps extends BasePageProps {}
+export interface CalendarPageProps extends BasePageProps {}
+export interface ArchivePageProps extends BasePageProps {}
+export interface SettingsPageProps extends BasePageProps {}
+export interface ProjectBalanceTrackerPageProps extends BasePageProps {}
+export interface DailyTasksV3PageProps extends BasePageProps {}
+export interface TaskCalendarPageProps extends BasePageProps {}
+export interface TimeBlockSchedulePageProps extends BasePageProps {}
+export interface SleepPageProps extends BasePageProps {}
+export interface SleepDiaryViewProps extends BasePageProps {}
+export interface TasksPageProps extends BasePageProps {}
 
+// --- Hook Context Types ---
 export interface ProjectContextType {
   projects: Project[];
   isLoading: boolean;
@@ -333,7 +269,7 @@ export interface ProjectContextType {
   decrementProjectCount: (projectId: string) => Promise<void>;
   resetAllProjectCounts: () => Promise<void>;
   sortOption: string;
-  setSortOption: (option: string) => void;
+  setSortOption: Dispatch<SetStateAction<string>>;
 }
 
 export interface SettingsContextType {
@@ -341,242 +277,4 @@ export interface SettingsContextType {
   isLoading: boolean;
   error: Error | null;
   updateSettings: (updates: Partial<UserSettings>) => Promise<UserSettings | null>;
-}
-
-export interface CustomDashboardCardProps {
-  card: CustomDashboardCard;
-}
-
-export interface ProjectBalanceCardProps {
-  projects: Project[];
-  title: string;
-}
-
-export interface QuickLinksCardProps {
-  quickLinks: QuickLink[];
-  isLoading: boolean;
-  error: Error | null;
-  addQuickLink: (title: string, url: string, emoji: string | null, backgroundColor: string | null) => Promise<QuickLink | null>;
-  updateQuickLink: (linkId: string, updates: Partial<QuickLink>) => Promise<QuickLink | null>;
-  deleteQuickLink: (linkId: string) => Promise<void>;
-}
-
-export interface WeeklyFocusCardProps {
-  weeklyFocus: WeeklyFocus | null;
-  isLoading: boolean;
-  error: Error | null;
-  updateWeeklyFocus: (updates: Partial<WeeklyFocus>) => Promise<WeeklyFocus | null>;
-}
-
-export interface GratitudeJournalCardProps {
-  entries: GratitudeJournalEntry[];
-  isLoading: boolean;
-  error: Error | null;
-  addEntry: (entry: string) => Promise<GratitudeJournalEntry | null>;
-  deleteEntry: (entryId: string) => Promise<void>;
-}
-
-export interface WorryJournalCardProps {
-  entries: WorryJournalEntry[];
-  isLoading: boolean;
-  error: Error | null;
-  addEntry: (thought: string) => Promise<WorryJournalEntry | null>;
-  deleteEntry: (entryId: string) => Promise<void>;
-}
-
-export interface SleepTrackerCardProps {
-  sleepRecords: SleepRecord[];
-  isLoading: boolean;
-  error: Error | null;
-  addSleepRecord: (record: Partial<SleepRecord>) => Promise<SleepRecord | null>;
-  updateSleepRecord: (recordId: string, updates: Partial<SleepRecord>) => Promise<SleepRecord | null>;
-  deleteSleepRecord: (recordId: string) => Promise<void>;
-}
-
-export interface PeopleMemoryCardProps {
-  people: PeopleMemory[];
-  isLoading: boolean;
-  error: Error | null;
-  addPerson: (name: string, notes: string | null, avatarUrl: string | null) => Promise<PeopleMemory | null>;
-  updatePerson: (personId: string, updates: Partial<PeopleMemory>) => Promise<PeopleMemory | null>;
-  deletePerson: (personId: string) => Promise<void>;
-}
-
-export interface BulkActionBarProps {
-  selectedTaskIds: Set<string>;
-  onMarkComplete: () => void;
-  onArchive: () => void;
-  onDelete: () => void;
-  onClearSelection: () => void;
-}
-
-export interface CategorySelectorProps {
-  categories: TaskCategory[];
-  selectedCategory: string | 'all' | null;
-  onSelectCategory: (categoryId: string | 'all' | null) => void;
-  createCategory: (name: string, color: string) => Promise<TaskCategory | null>;
-  updateCategory: (categoryId: string, newName: string, newColor: string) => Promise<TaskCategory | null>;
-  deleteCategory: (categoryId: string) => Promise<void>;
-}
-
-export interface DraggableTaskListItemProps {
-  task: Task;
-  onEdit: (task: Task) => void;
-  onDelete: (taskId: string) => Promise<void>;
-  onUpdate: (taskId: string, updates: Partial<Task>) => Promise<Task | null>;
-  allTasks: Task[];
-  onStatusChange: (taskId: string, newStatus: TaskStatus) => Promise<Task | null>;
-  onOpenOverview: (task: Task) => void;
-}
-
-export interface QuickAddTaskProps {
-  onAddTask: (taskData: Partial<Task>) => Promise<Task | null>;
-  sections: TaskSection[];
-  allCategories: TaskCategory[];
-  currentDate: Date;
-  createSection: (name: string) => Promise<TaskSection | null>;
-  updateSection: (sectionId: string, newName: string) => Promise<TaskSection | null>;
-  deleteSection: (sectionId: string) => Promise<void>;
-  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<TaskSection | null>;
-  setPrefilledTaskData: (data: Partial<Task> | null) => void;
-  isDemo?: boolean;
-}
-
-export interface SectionSelectorProps {
-  sections: TaskSection[];
-  selectedSection: string | 'all' | null;
-  onSelectSection: (sectionId: string | 'all' | null) => void;
-  createSection: (name: string) => Promise<TaskSection | null>;
-  updateSection: (sectionId: string, newName: string) => Promise<TaskSection | null>;
-  deleteSection: (sectionId: string) => Promise<void>;
-  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<TaskSection | null>;
-}
-
-export interface SortableTaskItemProps {
-  task: Task;
-  onEdit: (task: Task) => void;
-  onDelete: (taskId: string) => Promise<void>;
-  onUpdate: (taskId: string, updates: Partial<Task>) => Promise<Task | null>;
-  allTasks: Task[];
-  onStatusChange: (taskId: string, newStatus: TaskStatus) => Promise<Task | null>;
-  onOpenOverview: (task: Task) => void;
-}
-
-export interface TimeBlockProps {
-  block: { start: Date; end: Date };
-  appointments: Appointment[];
-  tasks: Task[];
-  sections: TaskSection[];
-  onAddAppointment: (block: { start: Date; end: Date }) => void;
-  onScheduleTask: (taskId: string, blockStart: Date) => void;
-  onOpenAppointmentDetail: (appointment: Appointment) => void;
-  onOpenTaskDetail: (task: Task) => void;
-  unscheduledTasks: Task[];
-}
-
-export interface DashboardPageProps {
-  isDemo?: boolean;
-  demoUserId?: string;
-}
-
-export interface MyHubPageProps {
-  isDemo?: boolean;
-  demoUserId?: string;
-}
-
-export interface SettingsPageProps {
-  isDemo?: boolean;
-  demoUserId?: string;
-}
-
-export interface AnalyticsPageProps {
-  isDemo?: boolean;
-  demoUserId?: string;
-}
-
-export interface HelpPageProps {
-  isDemo?: boolean;
-  demoUserId?: string;
-}
-
-export interface ProjectBalanceTrackerPageProps {
-  isDemo?: boolean;
-  demoUserId?: string;
-}
-
-export interface DailyTasksV3PageProps {
-  isDemo?: boolean;
-  demoUserId?: string;
-}
-
-export interface TaskCalendarPageProps {
-  isDemo?: boolean;
-  demoUserId?: string;
-}
-
-export interface TimeBlockSchedulePageProps {
-  isDemo?: boolean;
-  demoUserId?: string;
-}
-
-export interface WorkHourState {
-  id?: string; // Optional for new entries
-  day_of_week: string;
-  start_time: string;
-  end_time: string;
-  enabled: boolean;
-}
-
-export interface AppointmentFormProps {
-  appointment?: Appointment | null;
-  onSave: (data: Partial<Appointment>) => Promise<void>;
-  onCancel: () => void;
-  onDelete?: (id: string) => Promise<void>;
-  tasks: Task[];
-  sections: TaskSection[];
-  categories: TaskCategory[];
-  currentDate: Date;
-}
-
-export interface DailySchedulePreviewProps {
-  userId?: string | null;
-}
-
-export interface QuickLinkFormProps {
-  link?: QuickLink | null;
-  onSave: (data: Partial<QuickLink>) => Promise<void>;
-  onCancel: () => void;
-  onDelete?: (id: string) => Promise<void>;
-}
-
-export interface QuickLinksProps {
-  isDemo?: boolean;
-  demoUserId?: string;
-}
-
-export interface PersonAvatarProps {
-  person: PeopleMemory;
-  className?: string;
-}
-
-export interface SleepBarProps {
-  sleepRecord: SleepRecord;
-  onEdit: (record: SleepRecord) => void;
-}
-
-export interface SleepDiaryPageProps {
-  isDemo?: boolean;
-  demoUserId?: string;
-}
-
-export interface TasksPageProps {
-  isDemo?: boolean;
-  demoUserId?: string;
-}
-
-export interface ProjectNotesDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  project: Project;
-  onSaveNotes: (notes: string) => Promise<void>;
 }

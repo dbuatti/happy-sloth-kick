@@ -1,145 +1,109 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Play, EyeOff, Check, Edit, MoreVertical } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Task, TaskSection, TaskCategory, TaskStatus, TaskPriority } from '@/types/task';
-import { getCategoryColorProps } from '@/utils/categoryColors';
-import { format, isToday, isTomorrow, isPast, parseISO } from 'date-fns';
-import { useTasks } from '@/hooks/useTasks'; // Corrected import path
-import { useAuth } from '@/context/AuthContext';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Play, Pause, SkipForward, Check, Edit, Plus, Link } from 'lucide-react';
+import { Task, TaskSection, TaskCategory } from '@/types/task';
 import { FocusToolsPanelProps } from '@/types/props';
 
 const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
   currentTask,
-  onCompleteCurrentTask,
-  onSkipCurrentTask,
-  onOpenDetail,
-  onOpenOverview,
-  updateTask,
+  onCompleteTask,
+  onSkipTask,
+  onOpenTaskDetail,
+  onAddSubtask,
+  newSubtaskDescription,
+  setNewSubtaskDescription,
+  subtasks,
+  allTasks,
   sections,
-  allCategories,
-  handleAddTask,
-  currentDate,
-  isDemo,
+  categories,
+  onUpdateTask,
+  onDeleteTask,
+  onOpenTaskOverview,
+  onReorderTasks,
+  createSection,
+  updateSection,
+  deleteSection,
+  updateSectionIncludeInFocusMode,
+  createCategory,
+  updateCategory,
+  deleteCategory,
 }) => {
-  const { user } = useAuth();
-  const userId = user?.id;
-  // Removed incorrect destructuring from useTasks() as these properties are not exposed by the hook
-  // const { updateTask: update, setEditing, tasks, markAllTasksInSectionCompleted, reorderTasks,  updateTaskParentAndOrder } = useTasks();
-
-  if (!currentTask) return null;
-
-  const category = allCategories.find((cat) => cat.id === currentTask.category);
-  const section = sections.find((sec) => sec.id === currentTask.section_id);
-  const categoryColorProps = category ? getCategoryColorProps(category.color) : null;
-  // Removed incorrect destructuring from useTasks()
-  // const {  onUpdate } = useTasks();
-
-  const getDueDateText = (dueDate: string | null) => {
-    if (!dueDate) return null;
-    const date = parseISO(dueDate);
-    if (isToday(date)) return 'Today';
-    if (isTomorrow(date)) return 'Tomorrow';
-    if (isPast(date) && !isToday(date)) return 'Overdue';
-    return format(date, 'MMM d');
-  };
-
-  const getPriorityClasses = (priority: TaskPriority) => {
-    switch (priority) {
-      case 'urgent':
-        return 'text-red-600 border-red-600 bg-red-50';
-      case 'high':
-        return 'text-orange-600 border-orange-600 bg-orange-50';
-      case 'medium':
-        return 'text-yellow-600 border-yellow-600 bg-yellow-50';
-      case 'low':
-        return 'text-green-600 border-green-600 bg-green-50';
-      default:
-        return 'text-gray-500 border-gray-500 bg-gray-50';
-    }
-  };
-
-  const handleUpdateStatus = async (newStatus: TaskStatus) => {
-    if (!currentTask) return;
-    await updateTask(currentTask.id, { status: newStatus });
-  };
-
-  const handleUpdate = async (updates: Partial<Task>) => {
-    if (!currentTask) return;
-    await updateTask(currentTask.id, updates);
-  };
   return (
-    <div className="flex flex-col space-y-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-      <h2 className="text-xl font-semibold mb-2">{currentTask.description}</h2>
-      <div className="flex flex-wrap gap-2 text-sm text-gray-500">
-        {currentTask.priority && (
-          <Badge
-            variant="outline"
-            className={cn(
-              'px-2 py-0.5 rounded-full text-xs border',
-              getPriorityClasses(currentTask.priority)
-            )}
-          >
-            {currentTask.priority}
-          </Badge>
-        )}
-        {currentTask.due_date && (
-          <Badge
-            variant="outline"
-            className={cn(
-              'px-2 py-0.5 rounded-full text-xs border',
-              isPast(parseISO(currentTask.due_date)) && !isToday(parseISO(currentTask.due_date))
-                ? 'border-red-500 text-red-500 bg-red-50'
-                : 'border-gray-300 text-gray-600'
-            )}
-          >
-            <span className="mr-1">🗓️</span> {getDueDateText(currentTask.due_date)}
-          </Badge>
-        )}
-        {category && (
-          <Badge
-            variant="outline"
-            className={cn(
-              'px-2 py-0.5 rounded-full text-xs border',
-              categoryColorProps?.dotBorder,
-              categoryColorProps?.dotColor,
-              categoryColorProps?.backgroundClass
-            )}
-          >
-            <span
-              className={cn(
-                'w-2 h-2 rounded-full mr-1',
-                categoryColorProps?.dotColor
-              )}
-              style={{ backgroundColor: categoryColorProps?.bg }}
-            />
-            {category.name}
-          </Badge>
-        )}
-        {section && (
-          <Badge variant="outline" className="px-2 py-0.5 rounded-full text-xs border border-gray-300 text-gray-600">
-            <span className="mr-1">📂</span> {section.name}
-          </Badge>
-        )}
-      </div>
+    <Card className="h-full">
+      <CardHeader>
+        <CardTitle>Focus Tools</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {currentTask && (
+          <>
+            <div className="flex space-x-2">
+              <Button onClick={onCompleteTask} className="flex-1">
+                <Check className="mr-2 h-4 w-4" /> Complete Task
+              </Button>
+              <Button variant="secondary" onClick={onSkipTask} className="flex-1">
+                <SkipForward className="mr-2 h-4 w-4" /> Skip Task
+              </Button>
+            </div>
+            <Button variant="outline" className="w-full" onClick={() => onOpenTaskDetail(currentTask)}>
+              <Edit className="mr-2 h-4 w-4" /> Edit Task Details
+            </Button>
 
-      <div className="flex space-x-2">
-        <Button onClick={() => handleUpdateStatus('completed')} className="flex-1">
-          <Check className="h-4 w-4 mr-2" /> Complete
-        </Button>
-        <Button variant="destructive" onClick={() => handleUpdateStatus('skipped')} className="flex-1">
-          <X className="h-4 w-4 mr-2" /> Skip
-        </Button>
-      </div>
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold">Subtasks</h3>
+              <div className="flex space-x-2">
+                <Input
+                  placeholder="Add a subtask..."
+                  value={newSubtaskDescription}
+                  onChange={(e) => setNewSubtaskDescription(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      onAddSubtask();
+                    }
+                  }}
+                />
+                <Button onClick={onAddSubtask} size="icon">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {subtasks.length === 0 ? (
+                  <p className="text-gray-500 text-sm">No subtasks yet.</p>
+                ) : (
+                  subtasks.map((subtask) => (
+                    <div key={subtask.id} className="flex items-center justify-between p-2 border rounded-md text-sm">
+                      <span>{subtask.description}</span>
+                      <Button variant="ghost" size="icon" onClick={() => onOpenTaskDetail(subtask)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
 
-      <Button variant="outline" onClick={() => onOpenDetail(currentTask)}>
-        <Edit className="h-4 w-4 mr-2" /> Edit Details
-      </Button>
-      <Button variant="outline" onClick={() => onOpenOverview(currentTask)}>
-        <MoreVertical className="h-4 w-4 mr-2" /> Task Overview
-      </Button>
-    </div>
+            {currentTask.notes && (
+              <div>
+                <h3 className="font-semibold">Notes:</h3>
+                <Textarea readOnly value={currentTask.notes} className="min-h-[100px]" />
+              </div>
+            )}
+
+            {currentTask.link && (
+              <div>
+                <h3 className="font-semibold">Link:</h3>
+                <a href={currentTask.link} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline flex items-center">
+                  <Link className="h-4 w-4 mr-1" /> {currentTask.link}
+                </a>
+              </div>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 

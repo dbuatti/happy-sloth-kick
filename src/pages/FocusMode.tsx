@@ -41,7 +41,7 @@ const FocusModePage: React.FC<FocusModePageProps> = ({ isDemo: propIsDemo, demoU
     deleteCategory,
     isLoading,
     error,
-  } = useTasks({ userId: userId, currentDate: currentDate, viewMode: 'focus' });
+  } = useTasks({ userId: userId, currentDate: currentDate, viewMode: 'focus' }); // Fixed prop passing
 
   useEffect(() => {
     if (!selectedTask && nextAvailableTask) {
@@ -153,12 +153,9 @@ const FocusModePage: React.FC<FocusModePageProps> = ({ isDemo: propIsDemo, demoU
         sections={sections}
         categories={allCategories}
         allTasks={tasks}
-        onAddTask={handleAddTask}
-        onReorderTasks={reorderTasks}
         createSection={createSection}
         updateSection={updateSection}
         deleteSection={deleteSection}
-        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
         createCategory={createCategory}
         updateCategory={updateCategory}
         deleteCategory={deleteCategory}

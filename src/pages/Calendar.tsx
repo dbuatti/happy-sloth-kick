@@ -75,6 +75,10 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ isDemo: propIsDemo, demoUse
     setIsFocusViewOpen(true);
   };
 
+  const handleUpdateTaskStatus = async (taskId: string, newStatus: TaskStatus): Promise<Task | null> => {
+    return updateTask(taskId, { status: newStatus });
+  };
+
   return (
     <div className="flex flex-col h-full">
       <h1 className="text-3xl font-bold p-4 md:p-6">Calendar</h1>
@@ -82,7 +86,6 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ isDemo: propIsDemo, demoUse
         isDemo={isDemo}
         onOpenTaskOverview={handleOpenTaskOverview}
         currentViewDate={currentViewDate}
-        daysInGrid={[]} // This will be calculated internally by DailyScheduleView
         allWorkHours={allWorkHours}
         saveWorkHours={saveWorkHours}
         appointments={appointments}
@@ -129,12 +132,9 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ isDemo: propIsDemo, demoUse
         sections={sections}
         categories={allCategories}
         allTasks={tasks}
-        onAddTask={handleAddTask}
-        onReorderTasks={reorderTasks}
         createSection={createSection}
         updateSection={updateSection}
         deleteSection={deleteSection}
-        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
         createCategory={createCategory}
         updateCategory={updateCategory}
         deleteCategory={deleteCategory}

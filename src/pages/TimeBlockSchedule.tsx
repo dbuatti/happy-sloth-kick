@@ -3,8 +3,8 @@ import { useAuth } from '@/context/AuthContext';
 import { useTasks } from '@/hooks/useTasks';
 import { useAppointments } from '@/hooks/useAppointments';
 import { useWorkHours } from '@/hooks/useWorkHours';
-import { Task, Appointment, TaskSection, TaskCategory } from '@/types/task';
-import { format, startOfWeek, addDays, isSameDay, parseISO, startOfDay } from 'date-fns';
+import { Task, Appointment, TaskSection, TaskCategory, TaskStatus } from '@/types/task';
+import { format, startOfWeek, addDays, isSameDay, parseISO, startOfDay, setHours, setMinutes } from 'date-fns';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,11 +13,12 @@ import { TaskDetailDialog } from '@/components/TaskDetailDialog';
 import FullScreenFocusView from '@/components/FullScreenFocusView';
 import AppointmentForm from '@/components/AppointmentForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import TimeBlock from '@/components/TimeBlock';
+import TimeBlock from '@/components/TimeBlock'; // Removed unused import
 import { TimeBlockSchedulePageProps } from '@/types/props';
 import { cn } from '@/lib/utils';
+import ScheduleGridContent from '@/components/ScheduleGridContent'; // Added ScheduleGridContent
 
-const TimeBlockSchedulePage: React.FC<TimeBlockSchedulePagePageProps> = ({ isDemo: propIsDemo, demoUserId }) => {
+const TimeBlockSchedulePage: React.FC<TimeBlockSchedulePageProps> = ({ isDemo: propIsDemo, demoUserId }) => { // Fixed typo
   const { user } = useAuth();
   const userId = user?.id || demoUserId;
   const isDemo = propIsDemo || user?.id === 'd889323b-350c-4764-9788-6359f85f6142';
@@ -116,7 +117,7 @@ const TimeBlockSchedulePage: React.FC<TimeBlockSchedulePagePageProps> = ({ isDem
         description: taskToSchedule.notes,
         date: format(blockStart, 'yyyy-MM-dd'),
         start_time: format(blockStart, 'HH:mm:ss'),
-        end_time: format(addDays(blockStart, 1), 'HH:mm:ss'), // Default 1 hour
+        end_time: format(addMinutes(blockStart, 30), 'HH:mm:ss'), // Default 30 min
         color: '#3b82f6', // Default blue
         task_id: taskToSchedule.id,
       });
@@ -136,6 +137,10 @@ const TimeBlockSchedulePage: React.FC<TimeBlockSchedulePagePageProps> = ({ isDem
   const handleOpenFocusView = (task: Task) => {
     setSelectedTask(task);
     setIsFocusViewOpen(true);
+  };
+
+  const handleUpdateTaskStatus = async (taskId: string, newStatus: TaskStatus): Promise<Task | null> => {
+    return updateTask(taskId, { status: newStatus });
   };
 
   if (isLoading) {
@@ -184,54 +189,33 @@ const TimeBlockSchedulePage: React.FC<TimeBlockSchedulePagePageProps> = ({ isDem
             <div className="sticky left-0 bg-background z-10 text-right text-xs text-gray-500 pr-2 h-16 flex items-start pt-1 border-b border-gray-200 dark:border-gray-700">
               {block.start.getMinutes() === 0 && format(block.start, 'h a')}
             </div>
-            {daysInWeek.map(day => {
-              const currentBlockStart = setHours(setMinutes(startOfDay(day), block.start.getMinutes()), block.start.getHours());
-              const currentBlockEnd = setHours(setMinutes(startOfDay(day), block.end.getMinutes()), block.end.getHours());
-
-              const blockAppointments = appointments.filter(app => {
-                const appDate = parseISO(app.date);
-                const appStart = parseISO(app.date + 'T' + app.start_time);
-                const appEnd = parseISO(app.date + 'T' + app.end_time);
-                return (
-                  isSameDay(appDate, day) &&
-                  ((appStart < currentBlockEnd && appEnd > currentBlockStart) ||
-                   (isSameDay(appStart, currentBlockStart) && appStart.getHours() === currentBlockStart.getHours() && appStart.getMinutes() === currentBlockStart.getMinutes()))
-                );
-              });
-
-              const blockTasks = tasks.filter(task => {
-                if (!task.due_date) return false;
-                const taskDueDate = parseISO(task.due_date);
-                return isSameDay(taskDueDate, day);
-              });
-
-              return (
-                <TimeBlock
-                  key={format(day, 'yyyy-MM-dd') + format(block.start, 'HH:mm')}
-                  block={{ start: currentBlockStart, end: currentBlockEnd }}
-                  appointments={blockAppointments}
-                  tasks={blockTasks}
-                  sections={sections}
-                  onAddAppointment={(b) => {
-                    setEditingAppointment({
-                      id: '', user_id: userId!, title: '', description: null,
-                      date: format(b.start, 'yyyy-MM-dd'),
-                      start_time: format(b.start, 'HH:mm:ss'),
-                      end_time: format(b.end, 'HH:mm:ss'),
-                      color: '#3b82f6', created_at: '', updated_at: '', task_id: null
-                    });
-                    setIsAppointmentFormOpen(true);
-                  }}
-                  onScheduleTask={handleScheduleTask}
-                  onOpenAppointmentDetail={(app) => {
-                    setEditingAppointment(app);
-                    setIsAppointmentFormOpen(true);
-                  }}
-                  onOpenTaskDetail={handleOpenTaskDetail}
-                  unscheduledTasks={unscheduledTasks}
-                />
-              );
-            })}
+            {daysInWeek.map(day => (
+              <ScheduleGridContent
+                key={format(day, 'yyyy-MM-dd')}
+                day={day}
+                timeBlocks={[{ start: setHours(setMinutes(startOfDay(day), block.start.getMinutes()), block.start.getHours()), end: setHours(setMinutes(startOfDay(day), block.end.getMinutes()), block.end.getHours()) }]}
+                appointments={appointments}
+                tasks={tasks}
+                sections={sections}
+                onAddAppointment={(b) => {
+                  setEditingAppointment({
+                    id: '', user_id: userId!, title: '', description: null,
+                    date: format(b.start, 'yyyy-MM-dd'),
+                    start_time: format(b.start, 'HH:mm:ss'),
+                    end_time: format(b.end, 'HH:mm:ss'),
+                    color: '#3b82f6', created_at: '', updated_at: '', task_id: null
+                  });
+                  setIsAppointmentFormOpen(true);
+                }}
+                onScheduleTask={handleScheduleTask}
+                onOpenAppointmentDetail={(app) => {
+                  setEditingAppointment(app);
+                  setIsAppointmentFormOpen(true);
+                }}
+                onOpenTaskDetail={handleOpenTaskDetail}
+                unscheduledTasks={unscheduledTasks}
+              />
+            ))}
           </React.Fragment>
         ))}
       </div>
@@ -280,12 +264,9 @@ const TimeBlockSchedulePage: React.FC<TimeBlockSchedulePagePageProps> = ({ isDem
         sections={sections}
         categories={allCategories}
         allTasks={tasks}
-        onAddTask={handleAddTask}
-        onReorderTasks={reorderTasks}
         createSection={createSection}
         updateSection={updateSection}
         deleteSection={deleteSection}
-        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
         createCategory={createCategory}
         updateCategory={updateCategory}
         deleteCategory={deleteCategory}

@@ -69,6 +69,10 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo: propIsDemo, demoUserI
     setIsConfirmDeleteAllOpen(false);
   };
 
+  const handleStatusChangeWrapper = async (taskId: string, newStatus: TaskStatus): Promise<Task | null> => {
+    return updateTask(taskId, { status: newStatus });
+  };
+
   const filteredArchivedTasks = useMemo(() => {
     return tasks.filter(task => {
       if (statusFilter !== 'all' && task.status !== statusFilter) return false;
@@ -103,6 +107,13 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo: propIsDemo, demoUserI
           setSectionFilter={setSectionFilter}
           sections={sections}
           categories={allCategories}
+          createSection={createSection}
+          updateSection={updateSection}
+          deleteSection={deleteSection}
+          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+          createCategory={createCategory}
+          updateCategory={updateCategory}
+          deleteCategory={deleteCategory}
         />
         <Button variant="destructive" onClick={() => setIsConfirmDeleteAllOpen(true)}>
           <Trash2 className="h-4 w-4 mr-2" /> Delete All Archived
@@ -118,7 +129,7 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo: propIsDemo, demoUserI
             processedTasks={processedTasks}
             sections={sections}
             categories={allCategories}
-            onStatusChange={updateTask}
+            onStatusChange={handleStatusChangeWrapper}
             onUpdate={updateTask}
             onDelete={deleteTask}
             onOpenOverview={handleOpenOverview}
@@ -184,12 +195,9 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo: propIsDemo, demoUserI
         sections={sections}
         categories={allCategories}
         allTasks={tasks}
-        onAddTask={handleAddTask}
-        onReorderTasks={reorderTasks}
         createSection={createSection}
         updateSection={updateSection}
         deleteSection={deleteSection}
-        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
         createCategory={createCategory}
         updateCategory={updateCategory}
         deleteCategory={deleteCategory}

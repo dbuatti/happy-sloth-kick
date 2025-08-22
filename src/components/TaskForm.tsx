@@ -125,10 +125,16 @@ const TaskForm: React.FC<TaskFormProps> = ({
         <Label htmlFor="category" className="text-right">Category</Label>
         <SelectDialog
           items={categories.map(cat => ({ id: cat.id, name: cat.name, color: cat.color }))}
-          selectedItem={selectedCategory}
-          onSelectItem={setSelectedCategory}
-          createItem={createCategory}
-          updateItem={updateCategory}
+          selectedItem={selectedCategory ? { id: selectedCategory.id, name: selectedCategory.name, color: selectedCategory.color } : null}
+          onSelectItem={(item) => setSelectedCategory(categories.find(cat => cat.id === item?.id) || null)}
+          createItem={async (name: string, color?: string) => {
+            const newCat = await createCategory(name, color || '#cccccc');
+            return newCat ? { id: newCat.id, name: newCat.name, color: newCat.color } : null;
+          }}
+          updateItem={async (id: string, name: string, color?: string) => {
+            const updatedCat = await updateCategory(id, name, color || '#cccccc');
+            return updatedCat ? { id: updatedCat.id, name: updatedCat.name, color: updatedCat.color } : null;
+          }}
           deleteItem={deleteCategory}
           placeholder="Select category"
           className="col-span-3"
@@ -139,10 +145,16 @@ const TaskForm: React.FC<TaskFormProps> = ({
         <Label htmlFor="section" className="text-right">Section</Label>
         <SelectDialog
           items={sections.map(sec => ({ id: sec.id, name: sec.name }))}
-          selectedItem={selectedSection}
-          onSelectItem={setSelectedSection}
-          createItem={createSection}
-          updateItem={updateSection}
+          selectedItem={selectedSection ? { id: selectedSection.id, name: selectedSection.name } : null}
+          onSelectItem={(item) => setSelectedSection(sections.find(sec => sec.id === item?.id) || null)}
+          createItem={async (name: string) => {
+            const newSec = await createSection(name);
+            return newSec ? { id: newSec.id, name: newSec.name } : null;
+          }}
+          updateItem={async (id: string, name: string) => {
+            const updatedSec = await updateSection(id, name);
+            return updatedSec ? { id: updatedSec.id, name: updatedSec.name } : null;
+          }}
           deleteItem={deleteSection}
           placeholder="Select section"
           className="col-span-3"

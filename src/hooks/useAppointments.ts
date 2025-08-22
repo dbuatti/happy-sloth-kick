@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react'; // Removed useState, useEffect
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import {
@@ -7,27 +7,16 @@ import {
   updateAppointment,
   deleteAppointment,
 } from '@/integrations/supabase/api';
-import { Appointment } from '@/types/task';
+import { Appointment } from '@/types/task'; // Corrected import path
 import { showError, showSuccess } from '@/utils/toast';
 
 interface UseAppointmentsProps {
   userId?: string | null;
 }
 
-interface NewAppointmentData {
-  title: string;
-  description: string | null;
-  date: string;
-  start_time: string;
-  end_time: string;
-  color: string;
-  task_id: string | null;
-  user_id: string;
-}
-
-export const useAppointments = (props?: UseAppointmentsProps) => {
+export const useAppointments = ({ userId }: UseAppointmentsProps) => {
   const { user } = useAuth();
-  const activeUserId = props?.userId || user?.id;
+  const activeUserId = userId || user?.id;
   const queryClient = useQueryClient();
 
   const appointmentsQueryKey = ['appointments', activeUserId];
@@ -42,23 +31,25 @@ export const useAppointments = (props?: UseAppointmentsProps) => {
     enabled: !!activeUserId,
   });
 
-  const addAppointmentMutation = useMutation<Appointment | null, Error, NewAppointmentData>({
-    mutationFn: (newAppointment) => addAppointment(newAppointment),
+  const addAppointmentMutation = useMutation<Appointment | null, Error, Partial<Appointment>>({
+    mutationFn: (newAppointment) => addAppointment({ ...newAppointment, user_id: activeUserId! }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: appointmentsQueryKey });
+      showSuccess('Appointment added successfully!');
     },
     onError: (err) => {
-      showError(`Failed to add appointment: ${err.message}`);
+      showError(`Failed to add appointment: ${(err as Error).message}`);
     },
   });
 
-  const updateAppointmentMutation = useMutation<Appointment | null, Error, { id: string; updates: Partial<NewAppointmentData> }>({
+  const updateAppointmentMutation = useMutation<Appointment | null, Error, { id: string; updates: Partial<Appointment> }>({
     mutationFn: ({ id, updates }) => updateAppointment(id, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: appointmentsQueryKey });
+      showSuccess('Appointment updated successfully!');
     },
     onError: (err) => {
-      showError(`Failed to update appointment: ${err.message}`);
+      showError(`Failed to update appointment: ${(err as Error).message}`);
     },
   });
 
@@ -66,35 +57,21 @@ export const useAppointments = (props?: UseAppointmentsProps) => {
     mutationFn: (id) => deleteAppointment(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: appointmentsQueryKey });
+      showSuccess('Appointment deleted successfully!');
     },
     onError: (err) => {
-      showError(`Failed to delete appointment: ${err.message}`);
+      showError(`Failed to delete appointment: ${(err as Error).message}`);
     },
   });
 
-  const addAppointmentCallback = useCallback(
+  const handleAddAppointment = useCallback(
     async (appointmentData: Partial<Appointment>): Promise<Appointment | null> => {
       if (!activeUserId) {
         showError('User not authenticated.');
         return null;
       }
-      if (!appointmentData.title || !appointmentData.date || !appointmentData.start_time || !appointmentData.end_time || !appointmentData.color) {
-        showError('Missing required appointment fields.');
-        return null;
-      }
       try {
-        const newAppointment: NewAppointmentData = {
-          user_id: activeUserId,
-          title: appointmentData.title,
-          description: appointmentData.description || null,
-          date: appointmentData.date,
-          start_time: appointmentData.start_time,
-          end_time: appointmentData.end_time,
-          color: appointmentData.color,
-          task_id: appointmentData.task_id || null,
-        };
-        const result = await addAppointmentMutation.mutateAsync(newAppointment);
-        showSuccess('Appointment added successfully!');
+        const result = await addAppointmentMutation.mutateAsync(appointmentData);
         return result;
       } catch (err) {
         return null;
@@ -103,11 +80,10 @@ export const useAppointments = (props?: UseAppointmentsProps) => {
     [activeUserId, addAppointmentMutation]
   );
 
-  const updateAppointmentCallback = useCallback(
+  const handleUpdateAppointment = useCallback(
     async (appointmentId: string, updates: Partial<Appointment>): Promise<Appointment | null> => {
       try {
-        const result = await updateAppointmentMutation.mutateAsync({ id: appointmentId, updates: updates as Partial<NewAppointmentData> });
-        showSuccess('Appointment updated successfully!');
+        const result = await updateAppointmentMutation.mutateAsync({ id: appointmentId, updates });
         return result;
       } catch (err) {
         return null;
@@ -116,11 +92,10 @@ export const useAppointments = (props?: UseAppointmentsProps) => {
     [updateAppointmentMutation]
   );
 
-  const deleteAppointmentCallback = useCallback(
+  const handleDeleteAppointment = useCallback(
     async (appointmentId: string): Promise<void> => {
       try {
         await deleteAppointmentMutation.mutateAsync(appointmentId);
-        showSuccess('Appointment deleted successfully!');
       } catch (err) {
         // Error handled by mutation's onError
       }
@@ -132,8 +107,8 @@ export const useAppointments = (props?: UseAppointmentsProps) => {
     appointments,
     isLoading,
     error,
-    addAppointment: addAppointmentCallback,
-    updateAppointment: updateAppointmentCallback,
-    deleteAppointment: deleteAppointmentCallback,
+    addAppointment: handleAddAppointment,
+    updateAppointment: handleUpdateAppointment,
+    deleteAppointment: handleDeleteAppointment,
   };
 };

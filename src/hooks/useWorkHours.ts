@@ -7,7 +7,7 @@ import {
 } from '@/integrations/supabase/api';
 import { WorkHour } from '@/types/task';
 import { showError, showSuccess } from '@/utils/toast';
-import { WorkHourState } from '@/types/props';
+import { WorkHourState } from '@/types/props'; // Corrected import path
 
 interface UseWorkHoursProps {
   userId?: string | null;

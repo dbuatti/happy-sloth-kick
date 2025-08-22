@@ -17,7 +17,7 @@ const QuickLinks: React.FC<QuickLinksProps> = ({ isDemo = false, demoUserId }) =
   const { user } = useAuth();
   const userId = user?.id || demoUserId;
 
-  const { quickLinks, isLoading, error, addQuickLink, updateQuickLink, deleteQuickLink } = useQuickLinks({ userId });
+  const { quickLinks, isLoading, error, addQuickLink, updateQuickLink, deleteQuickLink } = useQuickLinks({ userId }); // Fixed prop passing
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingLink, setEditingLink] = useState<QuickLink | null>(null);
 

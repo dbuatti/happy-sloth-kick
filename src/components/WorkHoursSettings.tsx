@@ -20,7 +20,7 @@ const WorkHoursSettings: React.FC = () => {
   const [localWorkHours, setLocalWorkHours] = useState<WorkHourState[]>([]);
 
   const allDaysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-  const defaultTime = '09:00:00'; // Default start time for new entries
+  // Removed unused: const defaultTime = '09:00:00'; // Default start time for new entries
 
   useEffect(() => {
     if (allWorkHours) {
