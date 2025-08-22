@@ -7,7 +7,6 @@ import { useGratitudeJournal } from '@/hooks/useGratitudeJournal';
 import { useAuth } from '@/context/AuthContext';
 import { GratitudeJournalEntry } from '@/types/task';
 import { format } from 'date-fns';
-import { GratitudeJournalCardProps } from '@/types/props';
 
 const GratitudeJournalCard: React.FC = () => {
   const { user } = useAuth();

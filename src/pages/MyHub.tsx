@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { useTasks } from '@/hooks/useTasks';
 import { useAuth } from '@/context/AuthContext';
+import { useTasks } from '@/hooks/useTasks';
 import { Task, TaskSection, DailyTaskCount, TaskStatus, TaskPriority } from '@/types/task';
 import TaskList from '@/components/TaskList';
 import DailyTasksHeader from '@/components/DailyTasksHeader';
@@ -10,13 +10,15 @@ import FullScreenFocusView from '@/components/FullScreenFocusView';
 import AddTaskForm from '@/components/AddTaskForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Archive } from 'lucide-react';
 import ManageSectionsDialog from '@/components/ManageSectionsDialog';
 import ManageCategoriesDialog from '@/components/ManageCategoriesDialog';
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
-import { MyHubProps } from '@/types/props'; // Import MyHubProps
+import TaskFilter from '@/components/TaskFilter';
+import { MyHubPageProps } from '@/types/props';
+import { Input } from '@/components/ui/input'; // Added missing Input import
 
-const MyHub: React.FC<MyHubProps> = ({ isDemo: propIsDemo, demoUserId }) => {
+const MyHubPage: React.FC<MyHubPageProps> = ({ isDemo: propIsDemo, demoUserId }) => {
   const { user } = useAuth();
   const userId = user?.id || demoUserId;
   const isDemo = propIsDemo || user?.id === 'd889323b-350c-4764-9788-6359f85f6142';
@@ -63,7 +65,9 @@ const MyHub: React.FC<MyHubProps> = ({ isDemo: propIsDemo, demoUserId }) => {
     setPriorityFilter,
     sectionFilter,
     setSectionFilter,
-  } = useTasks({ userId: userId, currentDate: currentDate, viewMode: 'today' });
+    searchFilter,
+    setSearchFilter,
+  } = useTasks({ userId: userId, currentDate: currentDate, viewMode: 'all' });
 
   const dailyProgress: DailyTaskCount = useDailyTaskCount(currentDate, userId);
 
@@ -97,9 +101,10 @@ const MyHub: React.FC<MyHubProps> = ({ isDemo: propIsDemo, demoUserId }) => {
       if (categoryFilter !== 'all' && task.category !== categoryFilter) return false;
       if (priorityFilter !== 'all' && task.priority !== priorityFilter) return false;
       if (sectionFilter !== 'all' && task.section_id !== sectionFilter) return false;
+      if (searchFilter && task.description && !task.description.toLowerCase().includes(searchFilter.toLowerCase())) return false;
       return true;
     });
-  }, [activeTasks, statusFilter, categoryFilter, priorityFilter, sectionFilter]);
+  }, [activeTasks, statusFilter, categoryFilter, priorityFilter, sectionFilter, searchFilter]);
 
   if (isLoading) {
     return <div className="p-4 md:p-6">Loading tasks...</div>;
@@ -114,7 +119,7 @@ const MyHub: React.FC<MyHubProps> = ({ isDemo: propIsDemo, demoUserId }) => {
       <DailyTasksHeader
         dailyProgress={dailyProgress}
         toggleAllDoToday={toggleAllDoToday}
-        showTodayTasks={() => {}} // Placeholder, as this might be handled by filter
+        showTodayTasks={() => {}}
         currentDate={currentDate}
         sections={sections}
         allCategories={allCategories}
@@ -130,11 +135,35 @@ const MyHub: React.FC<MyHubProps> = ({ isDemo: propIsDemo, demoUserId }) => {
         isDemo={isDemo}
       />
 
-      <div className="flex justify-end mb-4">
-        <Button onClick={() => setIsAddTaskDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" /> Add Task
-        </Button>
+      <div className="flex justify-between items-center mb-4">
+        <Input
+          placeholder="Search tasks..."
+          value={searchFilter}
+          onChange={(e) => setSearchFilter(e.target.value)}
+          className="max-w-sm"
+        />
+        <div className="flex space-x-2">
+          <Button onClick={() => setIsAddTaskDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" /> Add Task
+          </Button>
+          <Button variant="outline" onClick={archiveAllCompletedTasks}>
+            <Archive className="mr-2 h-4 w-4" /> Archive Completed
+          </Button>
+        </div>
       </div>
+
+      <TaskFilter
+        statusFilter={statusFilter}
+        setStatusFilter={setStatusFilter}
+        categoryFilter={categoryFilter}
+        setCategoryFilter={setCategoryFilter}
+        priorityFilter={priorityFilter}
+        setPriorityFilter={setPriorityFilter}
+        sectionFilter={sectionFilter}
+        setSectionFilter={setSectionFilter}
+        sections={sections}
+        categories={allCategories}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         {sections.map((section: TaskSection) => {
@@ -202,6 +231,9 @@ const MyHub: React.FC<MyHubProps> = ({ isDemo: propIsDemo, demoUserId }) => {
             updateSection={updateSection}
             deleteSection={deleteSection}
             updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+            createCategory={createCategory}
+            updateCategory={updateCategory}
+            deleteCategory={deleteCategory}
             initialData={prefilledTaskData}
           />
         </DialogContent>
@@ -277,27 +309,8 @@ const MyHub: React.FC<MyHubProps> = ({ isDemo: propIsDemo, demoUserId }) => {
           deleteCategory={deleteCategory}
         />
       )}
-
-      <ManageSectionsDialog
-        isOpen={isManageSectionsOpen}
-        onClose={() => setIsManageSectionsOpen(false)}
-        sections={sections}
-        createSection={createSection}
-        updateSection={updateSection}
-        deleteSection={deleteSection}
-        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-      />
-
-      <ManageCategoriesDialog
-        isOpen={isManageCategoriesOpen}
-        onClose={() => setIsManageCategoriesOpen(false)}
-        categories={allCategories}
-        createCategory={createCategory}
-        updateCategory={updateCategory}
-        deleteCategory={deleteCategory}
-      />
     </div>
   );
 };
 
-export default MyHub;
+export default MyHubPage;

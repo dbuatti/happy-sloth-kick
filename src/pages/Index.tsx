@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Loader2 } from 'lucide-react';
 
 const IndexPage: React.FC = () => {
-  const { user, isLoading } = useAuth(); // Corrected access to isLoading
+  const { user, isLoading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {

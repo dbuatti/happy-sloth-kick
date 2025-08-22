@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
-import { Task, TaskSection, TaskCategory, TaskStatus } from '@/types/task';
+import { Task, TaskStatus } from '@/types/task';
 import { format, isToday, isTomorrow, isPast, parseISO } from 'date-fns';
 import { getCategoryColorProps } from '@/utils/categoryColors';
 import { NextTaskCardProps } from '@/types/props';
@@ -16,7 +16,6 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({
   onOpenDetail,
   sections,
   categories,
-  isDemo,
 }) => {
   const handleStatusChange = async (
     taskId: string,

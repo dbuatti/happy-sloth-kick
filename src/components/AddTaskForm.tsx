@@ -28,7 +28,6 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({
   onTaskAdded,
   sections,
   allCategories,
-  currentDate,
   createSection,
   updateSection,
   deleteSection,

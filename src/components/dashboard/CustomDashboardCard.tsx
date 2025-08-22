@@ -4,11 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Edit, Save, X, Trash2 } from 'lucide-react';
-import { CustomDashboardCard as CustomDashboardCardType } from '@/types/task';
 import { useCustomDashboardCards } from '@/hooks/useCustomDashboardCards';
 import { useAuth } from '@/context/AuthContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
 import { CustomDashboardCardProps } from '@/types/props';
 
 const CustomDashboardCard: React.FC<CustomDashboardCardProps> = ({ card }) => {

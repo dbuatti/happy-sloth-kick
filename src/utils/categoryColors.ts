@@ -1,78 +1,79 @@
-import { CategoryColorKey } from '@/types/task';
+import { TaskCategory } from '@/types/task';
 
-export const categoryColors: Record<CategoryColorKey, { name: string; backgroundClass: string; dotColor: string; dotBorder: string; bg: string }> = {
+interface CategoryColorProps {
+  bg: string;
+  text: string;
+  dotColor: string;
+  dotBorder: string;
+  backgroundClass: string;
+}
+
+export const categoryColors: Record<string, CategoryColorProps> = {
   red: {
-    name: 'Red',
-    backgroundClass: 'bg-red-100 dark:bg-red-900',
-    dotColor: 'text-red-500',
+    bg: '#fef2f2',
+    text: '#ef4444',
+    dotColor: 'bg-red-500',
     dotBorder: 'border-red-500',
-    bg: '#ef4444',
-  },
-  blue: {
-    name: 'Blue',
-    backgroundClass: 'bg-blue-100 dark:bg-blue-900',
-    dotColor: 'text-blue-500',
-    dotBorder: 'border-blue-500',
-    bg: '#3b82f6',
-  },
-  green: {
-    name: 'Green',
-    backgroundClass: 'bg-green-100 dark:bg-green-900',
-    dotColor: 'text-green-500',
-    dotBorder: 'border-green-500',
-    bg: '#22c55e',
-  },
-  yellow: {
-    name: 'Yellow',
-    backgroundClass: 'bg-yellow-100 dark:bg-yellow-900',
-    dotColor: 'text-yellow-500',
-    dotBorder: 'border-yellow-500',
-    bg: '#eab308',
-  },
-  purple: {
-    name: 'Purple',
-    backgroundClass: 'bg-purple-100 dark:bg-purple-900',
-    dotColor: 'text-purple-500',
-    dotBorder: 'border-purple-500',
-    bg: '#a855f7',
+    backgroundClass: 'bg-red-50',
   },
   orange: {
-    name: 'Orange',
-    backgroundClass: 'bg-orange-100 dark:bg-orange-900',
-    dotColor: 'text-orange-500',
+    bg: '#fff7ed',
+    text: '#f97316',
+    dotColor: 'bg-orange-500',
     dotBorder: 'border-orange-500',
-    bg: '#f97316',
+    backgroundClass: 'bg-orange-50',
+  },
+  yellow: {
+    bg: '#fffbeb',
+    text: '#f59e0b',
+    dotColor: 'bg-yellow-500',
+    dotBorder: 'border-yellow-500',
+    backgroundClass: 'bg-yellow-50',
+  },
+  green: {
+    bg: '#f0fdf4',
+    text: '#22c55e',
+    dotColor: 'bg-green-500',
+    dotBorder: 'border-green-500',
+    backgroundClass: 'bg-green-50',
+  },
+  blue: {
+    bg: '#eff6ff',
+    text: '#3b82f6',
+    dotColor: 'bg-blue-500',
+    dotBorder: 'border-blue-500',
+    backgroundClass: 'bg-blue-50',
+  },
+  indigo: {
+    bg: '#eef2ff',
+    text: '#6366f1',
+    dotColor: 'bg-indigo-500',
+    dotBorder: 'border-indigo-500',
+    backgroundClass: 'bg-indigo-50',
+  },
+  purple: {
+    bg: '#f5f3ff',
+    text: '#a855f7',
+    dotColor: 'bg-purple-500',
+    dotBorder: 'border-purple-500',
+    backgroundClass: 'bg-purple-50',
   },
   pink: {
-    name: 'Pink',
-    backgroundClass: 'bg-pink-100 dark:bg-pink-900',
-    dotColor: 'text-pink-500',
+    bg: '#fdf2f8',
+    text: '#ec4899',
+    dotColor: 'bg-pink-500',
     dotBorder: 'border-pink-500',
-    bg: '#ec4899',
-  },
-  teal: {
-    name: 'Teal',
-    backgroundClass: 'bg-teal-100 dark:bg-teal-900',
-    dotColor: 'text-teal-500',
-    dotBorder: 'border-teal-500',
-    bg: '#14b8a6',
-  },
-  cyan: {
-    name: 'Cyan',
-    backgroundClass: 'bg-cyan-100 dark:bg-cyan-900',
-    dotColor: 'text-cyan-500',
-    dotBorder: 'border-cyan-500',
-    bg: '#06b6d4',
+    backgroundClass: 'bg-pink-50',
   },
   gray: {
-    name: 'Gray',
-    backgroundClass: 'bg-gray-100 dark:bg-gray-700',
-    dotColor: 'text-gray-500',
+    bg: '#f9fafb',
+    text: '#6b7280',
+    dotColor: 'bg-gray-500',
     dotBorder: 'border-gray-500',
-    bg: '#6b7280',
+    backgroundClass: 'bg-gray-50',
   },
 };
 
-export const getCategoryColorProps = (colorKey: string) => {
-  return categoryColors[colorKey as CategoryColorKey] || categoryColors.gray;
+export const getCategoryColorProps = (colorKey: string): CategoryColorProps => {
+  return categoryColors[colorKey] || categoryColors.gray;
 };

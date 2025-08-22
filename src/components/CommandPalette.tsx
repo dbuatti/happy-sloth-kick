@@ -39,7 +39,7 @@ const CommandPalette: React.FC = () => {
     updateCategory,
     deleteCategory,
     currentDate,
-  } = useTasks({ userId: userId, currentDate: new Date() });
+  } = useTasks({ userId: userId, currentDate: new Date(), viewMode: 'all' }); // Added viewMode
 
   const isMobile = useIsMobile();
 

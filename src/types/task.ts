@@ -1,13 +1,13 @@
 export type TaskStatus = 'to-do' | 'completed' | 'skipped' | 'archived';
 export type RecurringType = 'none' | 'daily' | 'weekly' | 'monthly';
-export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent' | null;
+export type TaskPriority = 'urgent' | 'high' | 'medium' | 'low' | null;
 
 export interface Task {
   id: string;
-  description: string | null;
+  user_id: string;
+  description: string;
   status: TaskStatus;
   created_at: string;
-  user_id: string;
   priority: TaskPriority;
   due_date: string | null;
   notes: string | null;
@@ -20,32 +20,23 @@ export interface Task {
   category: string | null;
   link: string | null;
   image_url: string | null;
-  updated_at?: string | null;
-  category_color?: string | null; // Added for processed tasks
+  updated_at: string;
 }
 
 export interface TaskSection {
   id: string;
-  name: string;
   user_id: string;
+  name: string;
   order: number | null;
   created_at: string;
-  include_in_focus_mode: boolean | null;
+  include_in_focus_mode: boolean;
 }
 
 export interface TaskCategory {
   id: string;
+  user_id: string;
   name: string;
   color: string;
-  user_id: string;
-  created_at: string;
-}
-
-export interface DoTodayOffLog {
-  id: string;
-  user_id: string;
-  task_id: string;
-  off_date: string;
   created_at: string;
 }
 
@@ -53,40 +44,6 @@ export interface DailyTaskCount {
   totalPendingCount: number;
   completedCount: number;
   overdueCount: number;
-}
-
-export type CategoryColorKey =
-  | 'red'
-  | 'blue'
-  | 'green'
-  | 'yellow'
-  | 'purple'
-  | 'orange'
-  | 'pink'
-  | 'teal'
-  | 'cyan'
-  | 'gray';
-
-export interface CategoryColorProps {
-  name: string;
-  backgroundClass: string;
-  dotColor: string;
-  dotBorder: string;
-  bg: string; // Added for direct background color access
-}
-
-export interface Appointment {
-  id: string;
-  user_id: string;
-  title: string;
-  description: string | null;
-  date: string;
-  start_time: string;
-  end_time: string;
-  color: string;
-  created_at: string;
-  updated_at: string;
-  task_id: string | null;
 }
 
 export interface Project {
@@ -105,19 +62,22 @@ export interface UserSettings {
   project_tracker_title: string;
   focused_task_id: string | null;
   meditation_notes: string | null;
-  dashboard_layout: any[] | null; // Consider a more specific type if structure is known
-  visible_pages: any[] | null; // Consider a more specific type if structure is known
+  dashboard_layout: any | null; // Consider a more specific type if structure is known
+  visible_pages: any | null; // Consider a more specific type if structure is known
   schedule_show_focus_tasks_only: boolean;
   future_tasks_days_visible: number;
 }
 
-export interface WorkHour {
+export interface CustomDashboardCard {
   id: string;
   user_id: string;
-  day_of_week: string;
-  start_time: string;
-  end_time: string;
-  enabled: boolean;
+  title: string;
+  content: string | null;
+  emoji: string | null;
+  card_order: number | null;
+  is_visible: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface QuickLink {
@@ -184,14 +144,33 @@ export interface PeopleMemory {
   created_at: string;
 }
 
-export interface CustomDashboardCard {
+export interface Appointment {
   id: string;
   user_id: string;
   title: string;
-  content: string | null;
-  emoji: string | null;
-  card_order: number | null;
-  is_visible: boolean | null;
-  created_at: string | null;
-  updated_at: string | null;
+  description: string | null;
+  date: string;
+  start_time: string;
+  end_time: string;
+  color: string;
+  created_at: string;
+  updated_at: string;
+  task_id: string | null;
+}
+
+export interface WorkHour {
+  id: string;
+  user_id: string;
+  day_of_week: string;
+  start_time: string;
+  end_time: string;
+  enabled: boolean;
+}
+
+export interface DoTodayOffLog {
+  id: string;
+  user_id: string;
+  task_id: string;
+  date: string;
+  created_at: string;
 }

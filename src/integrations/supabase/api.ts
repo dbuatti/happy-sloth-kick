@@ -1,561 +1,417 @@
 import { supabase } from './client';
-import { Task, TaskSection, TaskCategory, DoTodayOffLog, Appointment, Project, UserSettings, WorkHour, QuickLink, WeeklyFocus, GratitudeJournalEntry, WorryJournalEntry, SleepRecord, PeopleMemory, CustomDashboardCard, TaskPriority } from '@/types/task'; // Corrected import
+import { Task, TaskSection, TaskCategory, DoTodayOffLog, Appointment, Project, UserSettings, WorkHour, QuickLink, WeeklyFocus, GratitudeJournalEntry, WorryJournalEntry, SleepRecord, PeopleMemory, CustomDashboardCard, TaskPriority } from '@/types/task';
+import { format } from 'date-fns';
 
-// --- Task related API calls ---
-export const fetchTasks = async (userId: string, viewMode: 'all' | 'focus' | 'archive' | 'today', currentDate: Date | null = null): Promise<Task[]> => {
-  let query = supabase
-    .from('tasks')
-    .select(`
-      *,
-      task_categories (
-        color
-      )
-    `)
-    .eq('user_id', userId);
+// --- Tasks ---
+export const fetchTasks = async (userId: string, viewMode: 'today' | 'all' | 'focus' | 'archive', currentDate: Date): Promise<Task[]> => {
+  let query = supabase.from('tasks').select('*').eq('user_id', userId);
 
-  if (viewMode === 'archive') {
+  if (viewMode === 'today') {
+    const today = format(currentDate, 'yyyy-MM-dd');
+    query = query.or(`due_date.eq.${today},recurring_type.eq.daily`);
+    query = query.not('status', 'eq', 'completed');
+    query = query.not('status', 'eq', 'archived');
+  } else if (viewMode === 'archive') {
     query = query.eq('status', 'archived');
-  } else {
-    query = query.neq('status', 'archived');
+  } else if (viewMode === 'focus') {
+    query = query.not('status', 'eq', 'completed');
+    query = query.not('status', 'eq', 'archived');
+    // Logic for focus mode tasks will be handled in the hook
+  } else { // 'all'
+    query = query.not('status', 'eq', 'archived');
   }
 
-  if (viewMode === 'today' && currentDate) {
-    const todayStart = currentDate.toISOString().split('T')[0];
-    query = query.or(`due_date.eq.${todayStart},due_date.is.null`);
-  }
-
-  const { data, error } = await query.order('order', { ascending: true }).order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('Error fetching tasks:', error);
-    return [];
-  }
-
-  return data.map((task: any) => ({
-    ...task,
-    category_color: task.task_categories?.color || null,
-  }));
-};
-
-export const addTask = async (taskData: Partial<Task>): Promise<Task | null> => {
-  const { data, error } = await supabase.from('tasks').insert(taskData).select().single();
-  if (error) {
-    console.error('Error adding task:', error);
-    return null;
-  }
+  const { data, error } = await query.order('order', { ascending: true }).order('created_at', { ascending: true });
+  if (error) throw error;
   return data;
 };
 
-export const updateTask = async (taskId: string, updates: Partial<Task>): Promise<Task | null> => {
-  const { data, error } = await supabase.from('tasks').update(updates).eq('id', taskId).select().single();
-  if (error) {
-    console.error('Error updating task:', error);
-    return null;
-  }
+export const addTask = async (task: Partial<Task>): Promise<Task | null> => {
+  const { data, error } = await supabase.from('tasks').insert(task).select().single();
+  if (error) throw error;
   return data;
 };
 
-export const deleteTask = async (taskId: string): Promise<void> => {
-  const { error } = await supabase.from('tasks').delete().eq('id', taskId);
-  if (error) {
-    console.error('Error deleting task:', error);
-    throw error;
-  }
+export const updateTask = async (id: string, updates: Partial<Task>): Promise<Task | null> => {
+  const { data, error } = await supabase.from('tasks').update(updates).eq('id', id).select().single();
+  if (error) throw error;
+  return data;
 };
 
-export const bulkUpdateTasks = async (taskIds: string[], updates: Partial<Task>): Promise<void> => {
-  const { error } = await supabase.from('tasks').update(updates).in('id', taskIds);
-  if (error) {
-    console.error('Error bulk updating tasks:', error);
-    throw error;
-  }
+export const deleteTask = async (id: string): Promise<void> => {
+  const { error } = await supabase.from('tasks').delete().eq('id', id);
+  if (error) throw error;
 };
 
-export const reorderTasks = async (updates: { id: string; order: number | null; section_id: string | null; parent_task_id: string | null; }[]): Promise<void> => {
+export const updateTasksOrder = async (updates: { id: string; order: number | null; section_id: string | null; parent_task_id: string | null; }[]): Promise<void> => {
   const { error } = await supabase.rpc('update_tasks_order', { updates });
-  if (error) {
-    console.error('Error reordering tasks:', error);
-    throw error;
-  }
+  if (error) throw error;
 };
 
-// --- Section related API calls ---
+export const archiveAllCompletedTasks = async (userId: string): Promise<void> => {
+  const { error } = await supabase.from('tasks').update({ status: 'archived' }).eq('user_id', userId).eq('status', 'completed');
+  if (error) throw error;
+};
+
+// --- Sections ---
 export const fetchSections = async (userId: string): Promise<TaskSection[]> => {
-  const { data, error } = await supabase
-    .from('task_sections')
-    .select('*')
-    .eq('user_id', userId)
-    .order('order', { ascending: true });
-  if (error) {
-    console.error('Error fetching sections:', error);
-    return [];
-  }
+  const { data, error } = await supabase.from('task_sections').select('*').eq('user_id', userId).order('order', { ascending: true });
+  if (error) throw error;
   return data;
 };
 
-export const createSection = async (userId: string, name: string): Promise<TaskSection | null> => {
-  const { data, error } = await supabase.from('task_sections').insert({ user_id: userId, name }).select().single();
-  if (error) {
-    console.error('Error creating section:', error);
-    return null;
-  }
+export const addSection = async (section: Partial<TaskSection>): Promise<TaskSection | null> => {
+  const { data, error } = await supabase.from('task_sections').insert(section).select().single();
+  if (error) throw error;
   return data;
 };
 
-export const updateSection = async (sectionId: string, updates: Partial<TaskSection>): Promise<TaskSection | null> => {
-  const { data, error } = await supabase.from('task_sections').update(updates).eq('id', sectionId).select().single();
-  if (error) {
-    console.error('Error updating section:', error);
-    return null;
-  }
+export const updateSection = async (id: string, updates: Partial<TaskSection>): Promise<TaskSection | null> => {
+  const { data, error } = await supabase.from('task_sections').update(updates).eq('id', id).select().single();
+  if (error) throw error;
   return data;
 };
 
-export const deleteSection = async (sectionId: string): Promise<void> => {
-  const { error } = await supabase.from('task_sections').delete().eq('id', sectionId);
-  if (error) {
-    console.error('Error deleting section:', error);
-    throw error;
-  }
+export const deleteSection = async (id: string): Promise<void> => {
+  const { error } = await supabase.from('task_sections').delete().eq('id', id);
+  if (error) throw error;
 };
 
-// --- Category related API calls ---
+// --- Categories ---
 export const fetchCategories = async (userId: string): Promise<TaskCategory[]> => {
-  const { data, error } = await supabase
-    .from('task_categories')
-    .select('*')
-    .eq('user_id', userId)
-    .order('name', { ascending: true });
-  if (error) {
-    console.error('Error fetching categories:', error);
-    return [];
-  }
+  const { data, error } = await supabase.from('task_categories').select('*').eq('user_id', userId).order('name', { ascending: true });
+  if (error) throw error;
   return data;
 };
 
-export const createCategory = async (userId: string, name: string, color: string): Promise<TaskCategory | null> => {
-  const { data, error } = await supabase.from('task_categories').insert({ user_id: userId, name, color }).select().single();
-  if (error) {
-    console.error('Error creating category:', error);
-    return null;
-  }
+export const addCategory = async (category: Partial<TaskCategory>): Promise<TaskCategory | null> => {
+  const { data, error } = await supabase.from('task_categories').insert(category).select().single();
+  if (error) throw error;
   return data;
 };
 
-export const updateCategory = async (categoryId: string, updates: Partial<TaskCategory>): Promise<TaskCategory | null> => {
-  const { data, error } = await supabase.from('task_categories').update(updates).eq('id', categoryId).select().single();
-  if (error) {
-    console.error('Error updating category:', error);
-    return null;
-  }
+export const updateCategory = async (id: string, updates: Partial<TaskCategory>): Promise<TaskCategory | null> => {
+  const { data, error } = await supabase.from('task_categories').update(updates).eq('id', id).select().single();
+  if (error) throw error;
   return data;
 };
 
-export const deleteCategory = async (categoryId: string): Promise<void> => {
-  const { error } = await supabase.from('task_categories').delete().eq('id', categoryId);
-  if (error) {
-    console.error('Error deleting category:', error);
-    throw error;
-  }
+export const deleteCategory = async (id: string): Promise<void> => {
+  const { error } = await supabase.from('task_categories').delete().eq('id', id);
+  if (error) throw error;
 };
 
-// --- Do Today Off Log API calls ---
-export const fetchDoTodayOffLog = async (userId: string, date: Date): Promise<DoTodayOffLog[]> => {
-  const { data, error } = await supabase
-    .from('do_today_off_log')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('off_date', date.toISOString().split('T')[0]);
-  if (error) {
-    console.error('Error fetching do today off log:', error);
-    return [];
-  }
+// --- Do Today Off Log ---
+export const fetchDoTodayOffLog = async (userId: string, date: string): Promise<DoTodayOffLog[]> => {
+  const { data, error } = await supabase.from('do_today_off_log').select('*').eq('user_id', userId).eq('off_date', date);
+  if (error) throw error;
   return data;
 };
 
-export const addDoTodayOffLog = async (userId: string, taskId: string, date: Date): Promise<void> => {
-  const { error } = await supabase.from('do_today_off_log').insert({ user_id: userId, task_id: taskId, off_date: date.toISOString().split('T')[0] });
-  if (error) {
-    console.error('Error adding do today off log:', error);
-    throw error;
-  }
+export const addDoTodayOffLog = async (log: { task_id: string; date: string; user_id: string }): Promise<void> => {
+  const { error } = await supabase.from('do_today_off_log').insert({ task_id: log.task_id, off_date: log.date, user_id: log.user_id });
+  if (error) throw error;
 };
 
-export const deleteDoTodayOffLog = async (userId: string, taskId: string, date: Date): Promise<void> => {
-  const { error } = await supabase.from('do_today_off_log').delete().eq('user_id', userId).eq('task_id', taskId).eq('off_date', date.toISOString().split('T')[0]);
-  if (error) {
-    console.error('Error deleting do today off log:', error);
-    throw error;
-  }
+export const deleteDoTodayOffLog = async (log: { task_id: string; date: string; user_id: string }): Promise<void> => {
+  const { error } = await supabase.from('do_today_off_log').delete().eq('task_id', log.task_id).eq('off_date', log.date).eq('user_id', log.user_id);
+  if (error) throw error;
 };
 
-// --- Daily Briefing API calls ---
-export const getDailyBriefing = async (userId: string) => {
-  // This is a placeholder. Implement actual daily briefing logic here.
-  // For example, fetch tasks, appointments, journal entries for the day.
-  console.log(`Fetching daily briefing for user: ${userId}`);
-  return {
-    tasksDueToday: 5,
-    appointmentsToday: 2,
-    focusTasks: 1,
-  };
-};
-
-// --- AI Suggestion API calls ---
-export interface SuggestedTaskDetails {
-  cleanedDescription: string;
-  suggestedCategory: string | null;
-  suggestedSection: string | null;
-  suggestedPriority: TaskPriority;
-  suggestedDueDate: string | null;
-  suggestedNotes: string | null;
-  suggestedRemindAt: string | null;
-  suggestedLink: string | null;
-}
-
-export const suggestTaskDetails = async (
-  taskDescription: string,
-  categories: { id: string; name: string }[],
-  currentDate: Date
-): Promise<SuggestedTaskDetails> => {
-  // This is a placeholder. Implement actual AI suggestion logic here.
-  console.log(`Suggesting details for: ${taskDescription}`);
-  console.log('Categories:', categories);
-  console.log('Current Date:', currentDate);
-
-  // Mocking AI suggestions
-  const lowerDescription = taskDescription.toLowerCase();
-  let suggestedCategory: string | null = null;
-  let suggestedPriority: TaskPriority = 'medium';
-  let suggestedDueDate: string | null = null;
-  let suggestedNotes: string | null = null;
-  let suggestedLink: string | null = null;
-
-  if (lowerDescription.includes('work')) suggestedCategory = 'Work';
-  if (lowerDescription.includes('personal')) suggestedCategory = 'Personal';
-  if (lowerDescription.includes('urgent')) suggestedPriority = 'urgent';
-  if (lowerDescription.includes('tomorrow')) suggestedDueDate = new Date(currentDate.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-  if (lowerDescription.includes('link:')) {
-    const match = lowerDescription.match(/link:\s*(https?:\/\/\S+)/);
-    if (match) suggestedLink = match[1];
-  }
-
-  return {
-    cleanedDescription: taskDescription.replace(/link:\s*(https?:\/\/\S+)/, '').trim(),
-    suggestedCategory: suggestedCategory,
-    suggestedSection: null, // Placeholder
-    suggestedPriority: suggestedPriority,
-    suggestedDueDate: suggestedDueDate,
-    suggestedNotes: suggestedNotes,
-    suggestedRemindAt: null, // Placeholder
-    suggestedLink: suggestedLink,
-  };
-};
-
-// --- Appointment related API calls ---
-export const addAppointment = async (appointmentData: Partial<Appointment>): Promise<Appointment | null> => {
-  const { data, error } = await supabase.from('schedule_appointments').insert(appointmentData).select().single();
-  if (error) {
-    console.error('Error adding appointment:', error);
-    return null;
-  }
+// --- Appointments ---
+export const fetchAppointments = async (userId: string): Promise<Appointment[]> => {
+  const { data, error } = await supabase.from('schedule_appointments').select('*').eq('user_id', userId).order('date', { ascending: true }).order('start_time', { ascending: true });
+  if (error) throw error;
   return data;
 };
 
-export const updateAppointment = async (appointmentId: string, updates: Partial<Appointment>): Promise<Appointment | null> => {
-  const { data, error } = await supabase.from('schedule_appointments').update(updates).eq('id', appointmentId).select().single();
-  if (error) {
-    console.error('Error updating appointment:', error);
-    return null;
-  }
+export const addAppointment = async (appointment: Partial<Appointment>): Promise<Appointment | null> => {
+  const { data, error } = await supabase.from('schedule_appointments').insert(appointment).select().single();
+  if (error) throw error;
   return data;
 };
 
-export const deleteAppointment = async (appointmentId: string): Promise<void> => {
-  const { error } = await supabase.from('schedule_appointments').delete().eq('id', appointmentId);
-  if (error) {
-    console.error('Error deleting appointment:', error);
-    throw error;
-  }
+export const updateAppointment = async (id: string, updates: Partial<Appointment>): Promise<Appointment | null> => {
+  const { data, error } = await supabase.from('schedule_appointments').update(updates).eq('id', id).select().single();
+  if (error) throw error;
+  return data;
 };
 
-// --- Project related API calls ---
+export const deleteAppointment = async (id: string): Promise<void> => {
+  const { error } = await supabase.from('schedule_appointments').delete().eq('id', id);
+  if (error) throw error;
+};
+
+// --- Projects ---
 export const fetchProjects = async (userId: string): Promise<Project[]> => {
   const { data, error } = await supabase.from('projects').select('*').eq('user_id', userId).order('created_at', { ascending: true });
-  if (error) {
-    console.error('Error fetching projects:', error);
-    return [];
-  }
+  if (error) throw error;
   return data;
 };
 
-export const addProject = async (projectData: Partial<Project>): Promise<Project | null> => {
-  const { data, error } = await supabase.from('projects').insert(projectData).select().single();
-  if (error) {
-    console.error('Error adding project:', error);
-    return null;
-  }
+export const addProject = async (project: Partial<Project>): Promise<Project | null> => {
+  const { data, error } = await supabase.from('projects').insert(project).select().single();
+  if (error) throw error;
   return data;
 };
 
-export const updateProject = async (projectId: string, updates: Partial<Project>): Promise<Project | null> => {
-  const { data, error } = await supabase.from('projects').update(updates).eq('id', projectId).select().single();
-  if (error) {
-    console.error('Error updating project:', error);
-    return null;
-  }
+export const updateProject = async (id: string, updates: Partial<Project>): Promise<Project | null> => {
+  const { data, error } = await supabase.from('projects').update(updates).eq('id', id).select().single();
+  if (error) throw error;
   return data;
 };
 
-export const deleteProject = async (projectId: string): Promise<void> => {
-  const { error } = await supabase.from('projects').delete().eq('id', projectId);
-  if (error) {
-    console.error('Error deleting project:', error);
-    throw error;
-  }
+export const deleteProject = async (id: string): Promise<void> => {
+  const { error } = await supabase.from('projects').delete().eq('id', id);
+  if (error) throw error;
 };
 
-// --- User Settings API calls ---
+// --- User Settings ---
 export const fetchUserSettings = async (userId: string): Promise<UserSettings | null> => {
   const { data, error } = await supabase.from('user_settings').select('*').eq('user_id', userId).single();
-  if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
-    console.error('Error fetching user settings:', error);
-    return null;
-  }
+  if (error && error.code !== 'PGRST116') throw error; // PGRST116 means no rows found
   return data;
 };
 
 export const updateUserSettings = async (userId: string, updates: Partial<UserSettings>): Promise<UserSettings | null> => {
-  const { data, error } = await supabase.from('user_settings').update(updates).eq('user_id', userId).select().single();
-  if (error) {
-    console.error('Error updating user settings:', error);
-    return null;
-  }
+  const { data, error } = await supabase.from('user_settings').upsert({ ...updates, user_id: userId }).eq('user_id', userId).select().single();
+  if (error) throw error;
   return data;
 };
 
-// --- User Work Hours API calls ---
+// --- Work Hours ---
 export const fetchUserWorkHours = async (userId: string): Promise<WorkHour[]> => {
-  const { data, error } = await supabase.from('user_work_hours').select('*').eq('user_id', userId).order('day_of_week');
-  if (error) {
-    console.error('Error fetching user work hours:', error);
-    return [];
-  }
+  const { data, error } = await supabase.from('user_work_hours').select('*').eq('user_id', userId).order('day_of_week', { ascending: true });
+  if (error) throw error;
   return data;
 };
 
-export const saveUserWorkHours = async (userId: string, hours: WorkHour[]): Promise<void> => {
-  const { error } = await supabase.from('user_work_hours').upsert(hours.map(h => ({ ...h, user_id: userId })));
-  if (error) {
-    console.error('Error saving user work hours:', error);
-    throw error;
-  }
+export const saveUserWorkHours = async (userId: string, workHours: WorkHour[]): Promise<void> => {
+  const { error } = await supabase.from('user_work_hours').upsert(workHours.map(wh => ({ ...wh, user_id: userId })));
+  if (error) throw error;
 };
 
-// --- Quick Links API calls ---
+// --- Quick Links ---
 export const fetchQuickLinks = async (userId: string): Promise<QuickLink[]> => {
-  const { data, error } = await supabase.from('quick_links').select('*').eq('user_id', userId).order('link_order');
-  if (error) {
-    console.error('Error fetching quick links:', error);
-    return [];
-  }
+  const { data, error } = await supabase.from('quick_links').select('*').eq('user_id', userId).order('link_order', { ascending: true });
+  if (error) throw error;
   return data;
 };
 
-export const addQuickLink = async (linkData: Partial<QuickLink>): Promise<QuickLink | null> => {
-  const { data, error } = await supabase.from('quick_links').insert(linkData).select().single();
-  if (error) {
-    console.error('Error adding quick link:', error);
-    return null;
-  }
+export const addQuickLink = async (link: Partial<QuickLink>): Promise<QuickLink | null> => {
+  const { data, error } = await supabase.from('quick_links').insert(link).select().single();
+  if (error) throw error;
   return data;
 };
 
-export const updateQuickLink = async (linkId: string, updates: Partial<QuickLink>): Promise<QuickLink | null> => {
-  const { data, error } = await supabase.from('quick_links').update(updates).eq('id', linkId).select().single();
-  if (error) {
-    console.error('Error updating quick link:', error);
-    return null;
-  }
+export const updateQuickLink = async (id: string, updates: Partial<QuickLink>): Promise<QuickLink | null> => {
+  const { data, error } = await supabase.from('quick_links').update(updates).eq('id', id).select().single();
+  if (error) throw error;
   return data;
 };
 
-export const deleteQuickLink = async (linkId: string): Promise<void> => {
-  const { error } = await supabase.from('quick_links').delete().eq('id', linkId);
-  if (error) {
-    console.error('Error deleting quick link:', error);
-    throw error;
-  }
+export const deleteQuickLink = async (id: string): Promise<void> => {
+  const { error } = await supabase.from('quick_links').delete().eq('id', id);
+  if (error) throw error;
 };
 
-// --- Weekly Focus API calls ---
+// --- Weekly Focus ---
 export const fetchWeeklyFocus = async (userId: string, weekStartDate: string): Promise<WeeklyFocus | null> => {
   const { data, error } = await supabase.from('weekly_focus').select('*').eq('user_id', userId).eq('week_start_date', weekStartDate).single();
-  if (error && error.code !== 'PGRST116') {
-    console.error('Error fetching weekly focus:', error);
-    return null;
-  }
+  if (error && error.code !== 'PGRST116') throw error;
   return data;
 };
 
-export const upsertWeeklyFocus = async (focusData: Partial<WeeklyFocus>): Promise<WeeklyFocus | null> => {
-  const { data, error } = await supabase.from('weekly_focus').upsert(focusData).select().single();
-  if (error) {
-    console.error('Error upserting weekly focus:', error);
-    return null;
-  }
+export const upsertWeeklyFocus = async (focus: Partial<WeeklyFocus>): Promise<WeeklyFocus | null> => {
+  const { data, error } = await supabase.from('weekly_focus').upsert(focus).select().single();
+  if (error) throw error;
   return data;
 };
 
-// --- Gratitude Journal API calls ---
+// --- Gratitude Journal ---
 export const fetchGratitudeJournalEntries = async (userId: string): Promise<GratitudeJournalEntry[]> => {
   const { data, error } = await supabase.from('gratitude_journal_entries').select('*').eq('user_id', userId).order('created_at', { ascending: false });
-  if (error) {
-    console.error('Error fetching gratitude journal entries:', error);
-    return [];
-  }
+  if (error) throw error;
   return data;
 };
 
-export const addGratitudeJournalEntry = async (entryData: Partial<GratitudeJournalEntry>): Promise<GratitudeJournalEntry | null> => {
-  const { data, error } = await supabase.from('gratitude_journal_entries').insert(entryData).select().single();
-  if (error) {
-    console.error('Error adding gratitude journal entry:', error);
-    return null;
-  }
+export const addGratitudeJournalEntry = async (entry: Partial<GratitudeJournalEntry>): Promise<GratitudeJournalEntry | null> => {
+  const { data, error } = await supabase.from('gratitude_journal_entries').insert(entry).select().single();
+  if (error) throw error;
   return data;
 };
 
-export const deleteGratitudeJournalEntry = async (entryId: string): Promise<void> => {
-  const { error } = await supabase.from('gratitude_journal_entries').delete().eq('id', entryId);
-  if (error) {
-    console.error('Error deleting gratitude journal entry:', error);
-    throw error;
-  }
+export const deleteGratitudeJournalEntry = async (id: string): Promise<void> => {
+  const { error } = await supabase.from('gratitude_journal_entries').delete().eq('id', id);
+  if (error) throw error;
 };
 
-// --- Worry Journal API calls ---
+// --- Worry Journal ---
 export const fetchWorryJournalEntries = async (userId: string): Promise<WorryJournalEntry[]> => {
   const { data, error } = await supabase.from('worry_journal_entries').select('*').eq('user_id', userId).order('created_at', { ascending: false });
-  if (error) {
-    console.error('Error fetching worry journal entries:', error);
-    return [];
-  }
+  if (error) throw error;
   return data;
 };
 
-export const addWorryJournalEntry = async (entryData: Partial<WorryJournalEntry>): Promise<WorryJournalEntry | null> => {
-  const { data, error } = await supabase.from('worry_journal_entries').insert(entryData).select().single();
-  if (error) {
-    console.error('Error adding worry journal entry:', error);
-    return null;
-  }
+export const addWorryJournalEntry = async (entry: Partial<WorryJournalEntry>): Promise<WorryJournalEntry | null> => {
+  const { data, error } = await supabase.from('worry_journal_entries').insert(entry).select().single();
+  if (error) throw error;
   return data;
 };
 
-export const deleteWorryJournalEntry = async (entryId: string): Promise<void> => {
-  const { error } = await supabase.from('worry_journal_entries').delete().eq('id', entryId);
-  if (error) {
-    console.error('Error deleting worry journal entry:', error);
-    throw error;
-  }
+export const deleteWorryJournalEntry = async (id: string): Promise<void> => {
+  const { error } = await supabase.from('worry_journal_entries').delete().eq('id', id);
+  if (error) throw error;
 };
 
-// --- Sleep Records API calls ---
+// --- Sleep Records ---
 export const fetchSleepRecords = async (userId: string): Promise<SleepRecord[]> => {
   const { data, error } = await supabase.from('sleep_records').select('*').eq('user_id', userId).order('date', { ascending: false });
-  if (error) {
-    console.error('Error fetching sleep records:', error);
-    return [];
-  }
+  if (error) throw error;
   return data;
 };
 
-export const addSleepRecord = async (recordData: Partial<SleepRecord>): Promise<SleepRecord | null> => {
-  const { data, error } = await supabase.from('sleep_records').insert(recordData).select().single();
-  if (error) {
-    console.error('Error adding sleep record:', error);
-    return null;
-  }
+export const addSleepRecord = async (record: Partial<SleepRecord>): Promise<SleepRecord | null> => {
+  const { data, error } = await supabase.from('sleep_records').insert(record).select().single();
+  if (error) throw error;
   return data;
 };
 
-export const updateSleepRecord = async (recordId: string, updates: Partial<SleepRecord>): Promise<SleepRecord | null> => {
-  const { data, error } = await supabase.from('sleep_records').update(updates).eq('id', recordId).select().single();
-  if (error) {
-    console.error('Error updating sleep record:', error);
-    return null;
-  }
+export const updateSleepRecord = async (id: string, updates: Partial<SleepRecord>): Promise<SleepRecord | null> => {
+  const { data, error } = await supabase.from('sleep_records').update(updates).eq('id', id).select().single();
+  if (error) throw error;
   return data;
 };
 
-export const deleteSleepRecord = async (recordId: string): Promise<void> => {
-  const { error } = await supabase.from('sleep_records').delete().eq('id', recordId);
-  if (error) {
-    console.error('Error deleting sleep record:', error);
-    throw error;
-  }
+export const deleteSleepRecord = async (id: string): Promise<void> => {
+  const { error } = await supabase.from('sleep_records').delete().eq('id', id);
+  if (error) throw error;
 };
 
-// --- People Memory API calls ---
+// --- People Memory ---
 export const fetchPeopleMemory = async (userId: string): Promise<PeopleMemory[]> => {
-  const { data, error } = await supabase.from('people_memory').select('*').eq('user_id', userId).order('name');
-  if (error) {
-    console.error('Error fetching people memory:', error);
-    return [];
-  }
+  const { data, error } = await supabase.from('people_memory').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+  if (error) throw error;
   return data;
 };
 
-export const addPeopleMemory = async (personData: Partial<PeopleMemory>): Promise<PeopleMemory | null> => {
-  const { data, error } = await supabase.from('people_memory').insert(personData).select().single();
-  if (error) {
-    console.error('Error adding person to memory:', error);
-    return null;
-  }
+export const addPeopleMemory = async (person: Partial<PeopleMemory>): Promise<PeopleMemory | null> => {
+  const { data, error } = await supabase.from('people_memory').insert(person).select().single();
+  if (error) throw error;
   return data;
 };
 
-export const updatePeopleMemory = async (personId: string, updates: Partial<PeopleMemory>): Promise<PeopleMemory | null> => {
-  const { data, error } = await supabase.from('people_memory').update(updates).eq('id', personId).select().single();
-  if (error) {
-    console.error('Error updating person in memory:', error);
-    return null;
-  }
+export const updatePeopleMemory = async (id: string, updates: Partial<PeopleMemory>): Promise<PeopleMemory | null> => {
+  const { data, error } = await supabase.from('people_memory').update(updates).eq('id', id).select().single();
+  if (error) throw error;
   return data;
 };
 
-export const deletePeopleMemory = async (personId: string): Promise<void> => {
-  const { error } = await supabase.from('people_memory').delete().eq('id', personId);
-  if (error) {
-    console.error('Error deleting person from memory:', error);
-    throw error;
-  }
+export const deletePeopleMemory = async (id: string): Promise<void> => {
+  const { error } = await supabase.from('people_memory').delete().eq('id', id);
+  if (error) throw error;
 };
 
-// --- Custom Dashboard Cards API calls ---
+// --- Custom Dashboard Cards ---
 export const fetchCustomDashboardCards = async (userId: string): Promise<CustomDashboardCard[]> => {
-  const { data, error } = await supabase.from('custom_dashboard_cards').select('*').eq('user_id', userId).order('card_order');
-  if (error) {
-    console.error('Error fetching custom dashboard cards:', error);
-    return [];
-  }
+  const { data, error } = await supabase.from('custom_dashboard_cards').select('*').eq('user_id', userId).order('card_order', { ascending: true });
+  if (error) throw error;
   return data;
 };
 
-export const upsertCustomDashboardCard = async (cardData: Partial<CustomDashboardCard>): Promise<CustomDashboardCard | null> => {
-  const { data, error } = await supabase.from('custom_dashboard_cards').upsert(cardData).select().single();
-  if (error) {
-    console.error('Error upserting custom dashboard card:', error);
-    return null;
-  }
+export const upsertCustomDashboardCard = async (card: Partial<CustomDashboardCard>): Promise<CustomDashboardCard | null> => {
+  const { data, error } = await supabase.from('custom_dashboard_cards').upsert(card).select().single();
+  if (error) throw error;
   return data;
 };
 
-export const deleteCustomDashboardCard = async (cardId: string): Promise<void> => {
-  const { error } = await supabase.from('custom_dashboard_cards').delete().eq('id', cardId);
-  if (error) {
-    console.error('Error deleting custom dashboard card:', error);
-    throw error;
-  }
+export const deleteCustomDashboardCard = async (id: string): Promise<void> => {
+  const { error } = await supabase.from('custom_dashboard_cards').delete().eq('id', id);
+  if (error) throw error;
+};
+
+// --- Daily Briefing / Stats ---
+export const getDailyTaskCounts = async (userId: string, date: string): Promise<DailyTaskCount> => {
+  const { data: tasksData, error: tasksError } = await supabase
+    .from('tasks')
+    .select('id, status, due_date, recurring_type')
+    .eq('user_id', userId);
+
+  if (tasksError) throw tasksError;
+
+  const today = new Date(date);
+  let totalPendingCount = 0;
+  let completedCount = 0;
+  let overdueCount = 0;
+
+  const doTodayOffLog = await fetchDoTodayOffLog(userId, date);
+  const doTodayOffIds = new Set(doTodayOffLog.map(log => log.task_id));
+
+  tasksData.forEach(task => {
+    const isDueToday = task.due_date && format(new Date(task.due_date), 'yyyy-MM-dd') === date;
+    const isRecurringDaily = task.recurring_type === 'daily';
+    const isIncludedToday = (isDueToday || isRecurringDaily) && !doTodayOffIds.has(task.id);
+
+    if (task.status === 'completed') {
+      completedCount++;
+    } else if (task.status === 'to-do' && isIncludedToday) {
+      totalPendingCount++;
+      if (task.due_date && new Date(task.due_date) < today) {
+        overdueCount++;
+      }
+    }
+  });
+
+  return { totalPendingCount, completedCount, overdueCount };
+};
+
+export const getDailyBriefing = async (userId: string) => {
+  const today = format(new Date(), 'yyyy-MM-dd');
+
+  const { data: tasksDueToday, error: tasksError } = await supabase
+    .from('tasks')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('due_date', today)
+    .eq('status', 'to-do');
+
+  if (tasksError) throw tasksError;
+
+  const { data: appointmentsToday, error: appointmentsError } = await supabase
+    .from('schedule_appointments')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('date', today);
+
+  if (appointmentsError) throw appointmentsError;
+
+  return {
+    tasksDueToday: tasksDueToday?.length || 0,
+    appointmentsToday: appointmentsToday?.length || 0,
+  };
+};
+
+export const suggestTaskDetails = async (description: string, categories: { id: string; name: string }[], currentDate: Date) => {
+  // This is a placeholder for an actual AI suggestion API call
+  // In a real app, this would call an Edge Function or external AI service
+  console.log('AI Suggestion Request:', { description, categories, currentDate });
+
+  // Simulate AI response
+  const cleanedDescription = description.replace(/(tomorrow|today|high priority|low priority|urgent|medium priority)/gi, '').trim();
+  const suggestedPriority: TaskPriority = description.toLowerCase().includes('urgent') ? 'urgent' :
+                                         description.toLowerCase().includes('high priority') ? 'high' :
+                                         description.toLowerCase().includes('low priority') ? 'low' : 'medium';
+  const suggestedDueDate = description.toLowerCase().includes('tomorrow') ? format(new Date(currentDate.setDate(currentDate.getDate() + 1)), 'yyyy-MM-dd') :
+                           description.toLowerCase().includes('today') ? format(currentDate, 'yyyy-MM-dd') : null;
+
+  return {
+    cleanedDescription,
+    suggestedCategory: null, // Placeholder
+    suggestedPriority,
+    suggestedDueDate,
+    suggestedNotes: null,
+    suggestedRemindAt: null,
+    suggestedSection: null,
+    suggestedLink: null,
+  };
 };

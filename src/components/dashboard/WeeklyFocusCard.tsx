@@ -6,7 +6,6 @@ import { Edit, Save, X } from 'lucide-react';
 import { useWeeklyFocus } from '@/hooks/useWeeklyFocus';
 import { useAuth } from '@/context/AuthContext';
 import { format, startOfWeek } from 'date-fns';
-import { WeeklyFocusCardProps } from '@/types/props';
 
 const WeeklyFocusCard: React.FC = () => {
   const { user } = useAuth();

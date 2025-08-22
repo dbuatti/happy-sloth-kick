@@ -10,7 +10,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { TwitterPicker } from 'react-color';
-import { QuickLinksCardProps } from '@/types/props';
 import { showError } from '@/utils/toast';
 
 const QuickLinksCard: React.FC = () => {
@@ -108,7 +107,7 @@ const QuickLinksCard: React.FC = () => {
         {quickLinks.length === 0 ? (
           <p className="text-gray-500">No quick links added yet.</p>
         ) : (
-          quickLinks.map((link: QuickLink) => ( // Explicitly type link
+          quickLinks.map((link: QuickLink) => (
             <div
               key={link.id}
               className="flex items-center justify-between p-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
