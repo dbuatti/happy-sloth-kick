@@ -2,57 +2,57 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Task } from "@/types";
+import { TaskCategory } from "@/types";
 import { useAuth } from "@/hooks/useAuth"; // Assuming useAuth exists for user_id
 
-export function useTasks() {
+export function useTaskCategories() {
   const { user } = useAuth();
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [categories, setCategories] = useState<TaskCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
-      setTasks([]);
+      setCategories([]);
       setLoading(false);
       return;
     }
 
-    const fetchTasks = async () => {
+    const fetchCategories = async () => {
       setLoading(true);
       const { data, error } = await supabase
-        .from("tasks")
+        .from("task_categories")
         .select("*")
         .eq("user_id", user.id)
-        .order("created_at", { ascending: true });
+        .order("name", { ascending: true });
 
       if (error) {
         setError(error.message);
-        setTasks([]);
+        setCategories([]);
       } else {
-        setTasks(data as Task[]);
+        setCategories(data as TaskCategory[]);
       }
       setLoading(false);
     };
 
-    fetchTasks();
+    fetchCategories();
 
     const channel = supabase
-      .channel("tasks_changes")
+      .channel("task_categories_changes")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "tasks", filter: `user_id=eq.${user.id}` },
+        { event: "*", schema: "public", table: "task_categories", filter: `user_id=eq.${user.id}` },
         (payload) => {
           if (payload.eventType === "INSERT") {
-            setTasks((prev) => [...prev, payload.new as Task]);
+            setCategories((prev) => [...prev, payload.new as TaskCategory]);
           } else if (payload.eventType === "UPDATE") {
-            setTasks((prev) =>
-              prev.map((task) =>
-                task.id === payload.old.id ? (payload.new as Task) : task
+            setCategories((prev) =>
+              prev.map((category) =>
+                category.id === payload.old.id ? (payload.new as TaskCategory) : category
               )
             );
           } else if (payload.eventType === "DELETE") {
-            setTasks((prev) => prev.filter((task) => task.id !== payload.old.id));
+            setCategories((prev) => prev.filter((category) => category.id !== payload.old.id));
           }
         }
       )
@@ -63,32 +63,31 @@ export function useTasks() {
     };
   }, [user]);
 
-  const addTask = async (task: Omit<Task, "id" | "user_id" | "created_at" | "updated_at">) => {
+  const addCategory = async (category: Omit<TaskCategory, "id" | "user_id" | "created_at">) => {
     if (!user) {
       setError("User not authenticated.");
       return;
     }
     const { data, error } = await supabase
-      .from("tasks")
-      .insert({ ...task, user_id: user.id })
+      .from("task_categories")
+      .insert({ ...category, user_id: user.id })
       .select()
       .single();
 
     if (error) {
       setError(error.message);
     } else {
-      // The real-time subscription will update the state
-      console.log("Task added:", data);
+      console.log("Category added:", data);
     }
   };
 
-  const updateTask = async (id: string, updates: Partial<Omit<Task, "id" | "user_id" | "created_at">>) => {
+  const updateCategory = async (id: string, updates: Partial<Omit<TaskCategory, "id" | "user_id" | "created_at">>) => {
     if (!user) {
       setError("User not authenticated.");
       return;
     }
     const { data, error } = await supabase
-      .from("tasks")
+      .from("task_categories")
       .update(updates)
       .eq("id", id)
       .eq("user_id", user.id)
@@ -98,18 +97,17 @@ export function useTasks() {
     if (error) {
       setError(error.message);
     } else {
-      // The real-time subscription will update the state
-      console.log("Task updated:", data);
+      console.log("Category updated:", data);
     }
   };
 
-  const deleteTask = async (id: string) => {
+  const deleteCategory = async (id: string) => {
     if (!user) {
       setError("User not authenticated.");
       return;
     }
     const { error } = await supabase
-      .from("tasks")
+      .from("task_categories")
       .delete()
       .eq("id", id)
       .eq("user_id", user.id);
@@ -117,10 +115,9 @@ export function useTasks() {
     if (error) {
       setError(error.message);
     } else {
-      // The real-time subscription will update the state
-      console.log("Task deleted:", id);
+      console.log("Category deleted:", id);
     }
   };
 
-  return { tasks, loading, error, addTask, updateTask, deleteTask };
+  return { categories, loading, error, addCategory, updateCategory, deleteCategory };
 }

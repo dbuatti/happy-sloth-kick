@@ -4,18 +4,18 @@
 // 'category_color' is a derived property, so it's made optional.
 export type Task = {
   id: string;
-  description: string;
-  status: string;
+  description: string; // Not nullable in schema
+  status: "to-do" | "completed" | "skipped" | "archived"; // Updated to union type
   created_at: string; // Not nullable in schema
   user_id: string;
-  priority?: string;
+  priority?: "urgent" | "high" | "medium" | "low"; // Updated to union type
   due_date?: string;
   notes?: string;
   remind_at?: string;
   section_id?: string;
   order?: number;
   parent_task_id?: string;
-  recurring_type?: string;
+  recurring_type?: "none" | "daily" | "weekly" | "monthly" | "yearly"; // Updated to union type
   original_task_id?: string;
   category?: string; // This is the category ID (UUID)
   link?: string;
