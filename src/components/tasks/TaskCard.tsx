@@ -180,7 +180,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
       .from("tasks")
       .delete()
       .eq("id", task.id)
-      .eq("user.id", user.id);
+      .eq("user_id", user.id);
 
     if (error) {
       toast.error("Failed to delete task: " + error.message);
@@ -317,15 +317,11 @@ const TaskCard: React.FC<TaskCardProps> = ({
     (entry) => entry.task_id === task.id && isToday(parseISO(entry.off_date))
   );
 
-  // Removed handleDragStop as it's no longer needed with disableInteractiveElementBlocking
-  // and was causing event propagation issues.
-
   return (
     <div
       ref={provided.innerRef}
       {...provided.draggableProps}
       {...provided.dragHandleProps}
-      // Removed onMouseUp={handleDragStop}
       className={cn(
         "flex flex-col p-3 rounded-lg shadow-sm mb-2 border",
         isDragging ? "bg-blue-100 border-blue-400" : "bg-white border-gray-200",
@@ -422,6 +418,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 size="sm"
                 className="h-8 w-8 p-0"
                 onClick={(e) => e.stopPropagation()} // Prevent drag
+                onTouchStart={(e) => e.stopPropagation()} // Prevent drag on touch start
               >
                 <MoreVertical className="h-4 w-4" />
               </Button>
