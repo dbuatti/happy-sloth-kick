@@ -1,13 +1,13 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import TaskCard, { TaskCardProps } from './TaskCard'; // Import TaskCardProps as a type
+import TaskCard, { TaskCardProps } from './TaskCard';
 
 interface SortableTaskCardProps extends TaskCardProps {
-  // Any additional props specific to SortableTaskCard if needed
+  id: string; // The id for dnd-kit
 }
 
-const SortableTaskCard: React.FC<SortableTaskCardProps> = (props) => {
+const SortableTaskCard: React.FC<SortableTaskCardProps> = ({ id, ...props }) => {
   const {
     attributes,
     listeners,
@@ -15,17 +15,18 @@ const SortableTaskCard: React.FC<SortableTaskCardProps> = (props) => {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: props.task.id });
+  } = useSortable({ id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 10 : 0,
+    opacity: isDragging ? 0.5 : 1,
   };
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <TaskCard {...props} isDragging={isDragging} />
+      <TaskCard {...props} />
     </div>
   );
 };

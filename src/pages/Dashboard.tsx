@@ -1,164 +1,390 @@
-"use client";
+import React, { useState } from 'react';
+import { CheckCircle2, ListTodo, CalendarDays } from 'lucide-react';
+import WeeklyFocusCard from '@/components/dashboard/WeeklyFocus';
+import MeditationNotesCard from '@/components/dashboard/MeditationNotes';
+import DailySchedulePreview from '@/components/dashboard/DailySchedulePreview';
+import CustomCard from '@/components/dashboard/CustomCard';
+import { useDashboardData } from '@/hooks/useDashboardData';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import PeopleMemoryCard from '@/components/dashboard/PeopleMemoryCard';
+import DashboardLayoutSettings from '@/components/dashboard/DashboardLayoutSettings';
+import DashboardHeader from '@/components/dashboard/DashboardHeader';
+import StatCard from '@/components/dashboard/StatCard';
+import { useDashboardStats } from '@/hooks/useDashboardStats';
+import { useTasks, Task } from '@/hooks/useTasks';
+import NextTaskCard from '@/components/dashboard/NextTaskCard';
+import TaskOverviewDialog from '@/components/TaskOverviewDialog';
+import TaskDetailDialog from '@/components/TaskDetailDialog';
+import FullScreenFocusView from '@/components/FullScreenFocusView';
+import { AnimatePresence } from 'framer-motion';
+import { useSound } from '@/context/SoundContext';
+import {
+  DndContext,
+  DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCorners,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  arrayMove,
+  verticalListSortingStrategy,
 
-import React, { useState, useEffect } from "react";
-import { useUser } from "@supabase/auth-helpers-react";
-import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
-import { Button } from "@/components/ui/button";
-import { Plus, Settings as SettingsIcon } from "lucide-react";
-import { toast } from "sonner";
+} from '@dnd-kit/sortable';
+import { createPortal } from 'react-dom';
+import SortableCustomCard from '@/components/dashboard/SortableCustomCard';
+import DailyBriefingCard from '@/components/dashboard/DailyBriefingCard';
+import { PanelGroup, Panel, PanelResizeHandle } from "react-resizable-panels";
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useSettings } from '@/context/SettingsContext';
 
-// Import components
-import MeditationNotesCard from "@/components/dashboard/MeditationNotes";
-import ProjectBalanceTracker from "@/components/dashboard/ProjectBalanceTracker";
-import QuickLinks from "@/components/dashboard/QuickLinks";
-import WeeklyFocus from "@/components/dashboard/WeeklyFocus";
-import CustomCardComponent from "@/components/dashboard/CustomCardComponent";
-import DashboardLayoutSettings from "@/components/dashboard/DashboardLayoutSettings";
 
-// Import hooks and types
-import { useSettings } from "@/context/SettingsContext";
-import { useDashboardData, CustomCard } from "@/hooks/useDashboardData";
-import { UserSettings } from "@/types"; // Ensure UserSettings is imported
+interface DashboardProps {
+  isDemo?: boolean;
+  demoUserId?: string;
+}
 
-const Dashboard: React.FC = () => {
-  const user = useUser();
-  const { settings, loading, updateSettings } = useSettings();
-  const { customCards, loadingCustomCards } = useDashboardData();
+const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => {
+  const { 
+    customCards, 
+    addCustomCard, 
+    weeklyFocus, 
+    updateWeeklyFocus, 
+    loading: dashboardDataLoading,
+    updateCustomCard,
+    reorderCustomCards,
+  } = useDashboardData({ userId: demoUserId });
 
+  const { settings, updateSettings } = useSettings();
+
+  const { tasksDue, tasksCompleted, appointmentsToday, loading: statsLoading } = useDashboardStats({ userId: demoUserId });
+  
+  const {
+    tasks: allTasks,
+    nextAvailableTask,
+    updateTask,
+    deleteTask,
+    sections,
+    allCategories,
+    createSection,
+    updateSection,
+    deleteSection,
+    updateSectionIncludeInFocusMode,
+    loading: tasksLoading,
+  } = useTasks({ viewMode: 'daily', userId: demoUserId, currentDate: new Date() }); // Pass new Date()
+
+  const { playSound } = useSound();
+  const [isAddCardOpen, setIsAddCardOpen] = useState(false);
+  const [newCardTitle, setNewCardTitle] = useState('');
+  const [newCardContent, setNewCardContent] = useState('');
+  const [newCardEmoji, setNewCardEmoji] = useState('');
   const [isLayoutSettingsOpen, setIsLayoutSettingsOpen] = useState(false);
-  const [panelSizes, setPanelSizes] = useState<number[]>([]);
 
-  useEffect(() => {
-    if (settings?.dashboard_panel_sizes) {
-      setPanelSizes(settings.dashboard_panel_sizes);
-    } else {
-      setPanelSizes([66, 34]); // Default sizes
+  const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
+  const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
+  const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+  const [isFocusViewOpen, setIsFocusViewOpen] = useState(false);
+
+  const [activeDragItem, setActiveDragItem] = useState<any>(null);
+
+  const isMobile = useIsMobile();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // User must move 8px before a drag starts
+      },
+    })
+  );
+
+  const handleAddCard = async () => {
+    if (!newCardTitle.trim()) return;
+    await addCustomCard({
+      title: newCardTitle,
+      content: newCardContent,
+      emoji: newCardEmoji,
+      card_order: customCards.length,
+    });
+    setNewCardTitle('');
+    setNewCardContent('');
+    setNewCardEmoji('');
+    setIsAddCardOpen(false);
+  };
+
+  const handleOpenOverview = (task: Task) => {
+    setTaskToOverview(task);
+    setIsTaskOverviewOpen(true);
+  };
+
+  const handleEditTaskFromOverview = (task: Task) => {
+    setIsTaskOverviewOpen(false);
+    setTaskToEdit(task);
+    setIsTaskDetailOpen(true);
+  };
+
+  const handleOpenFocusView = () => {
+    if (nextAvailableTask) {
+      setIsFocusViewOpen(true);
     }
-  }, [settings?.dashboard_panel_sizes]);
+  };
 
-  const handlePanelGroupChange = async (sizes: number[]) => {
-    setPanelSizes(sizes);
+  const handleMarkDoneFromFocusView = async () => {
+    if (nextAvailableTask) {
+      await updateTask(nextAvailableTask.id, { status: 'completed' });
+      playSound('success');
+    }
+  };
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveDragItem(customCards.find(card => card.id === event.active.id) || null);
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    setActiveDragItem(null);
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const oldIndex = customCards.findIndex(card => card.id === active.id);
+    const newIndex = customCards.findIndex(card => card.id === over.id);
+
+    if (oldIndex !== -1 && newIndex !== -1) {
+      const newOrderedCards = arrayMove(customCards, oldIndex, newIndex);
+      await reorderCustomCards(newOrderedCards.map(card => card.id));
+    }
+  };
+
+  const handlePanelLayoutChange = (sizes: number[]) => {
     if (settings) {
-      await updateSettings({ dashboard_panel_sizes: sizes });
+      updateSettings({ dashboard_panel_sizes: sizes });
     }
   };
 
-  const availableCoreCards = [
-    { id: "meditation-notes", title: "Meditation Notes", component: <MeditationNotesCard /> },
-    { id: "project-balance-tracker", title: "Project Balance Tracker", component: <ProjectBalanceTracker /> },
-    { id: "quick-links", title: "Quick Links", component: <QuickLinks /> },
-    { id: "weekly-focus", title: "Weekly Focus", component: <WeeklyFocus /> },
+  const statCards = [
+    { title: "Tasks Due Today", value: tasksDue, icon: ListTodo, description: "tasks remaining for today", className: "bg-blue-500/5 dark:bg-blue-500/10 border-blue-500/20" },
+    { title: "Tasks Completed", value: tasksCompleted, icon: CheckCircle2, description: "tasks completed today", className: "bg-green-500/5 dark:bg-green-500/10 border-green-500/20" },
+    { title: "Appointments", value: appointmentsToday, icon: CalendarDays, description: "events scheduled for today", className: "bg-purple-500/5 dark:bg-purple-500/10 border-purple-500/20" },
   ];
 
-  const allAvailableCards = [
-    ...availableCoreCards,
-    ...(customCards || []).map((card: CustomCard) => ({
-      id: card.id,
-      title: card.title,
-      emoji: card.emoji,
-      component: <CustomCardComponent card={card} />,
-    })),
-  ];
-
-  const getVisibleCards = () => {
-    if (!settings?.dashboard_layout || settings.dashboard_layout.length === 0) {
-      // If no layout saved, show all core cards and visible custom cards by default
-      const defaultVisibleCardIds = availableCoreCards.map(card => card.id);
-      const visibleCustomCardIds = (customCards || []).filter(card => card.is_visible).map(card => card.id);
-      const initialLayout = [...defaultVisibleCardIds, ...visibleCustomCardIds];
-      return initialLayout.map(cardId => allAvailableCards.find(card => card.id === cardId)).filter(Boolean);
-    }
-    return settings.dashboard_layout
-      .map(cardId => allAvailableCards.find(card => card.id === cardId))
-      .filter(Boolean);
-  };
-
-  const visibleCards = getVisibleCards();
-
-  if (loading || loadingCustomCards) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <p>Loading dashboard...</p>
-      </div>
-    );
-  }
+  const defaultPanelSizes = settings?.dashboard_panel_sizes || [66, 34];
 
   return (
-    <div className="flex flex-col h-full p-4">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <Button variant="outline" onClick={() => setIsLayoutSettingsOpen(true)}>
-          <SettingsIcon className="mr-2 h-4 w-4" /> Customize Layout
-        </Button>
+    <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <div className="flex-1 flex flex-col">
+        <main className="flex-grow p-4 md:p-6">
+          <DashboardHeader
+            onAddCard={() => setIsAddCardOpen(true)}
+            onCustomizeLayout={() => setIsLayoutSettingsOpen(true)}
+            isDemo={isDemo}
+            demoUserId={demoUserId}
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            {statCards.map(stat => (
+              <StatCard
+                key={stat.title}
+                title={stat.title}
+                value={stat.value}
+                icon={stat.icon}
+                description={stat.description}
+                loading={statsLoading}
+                className={stat.className}
+              />
+            ))}
+          </div>
+
+          {isMobile ? (
+            <div className="grid grid-cols-1 gap-6 relative z-[1]">
+              <div className="space-y-6">
+                {settings?.dashboard_layout?.['dailyBriefingVisible'] !== false && (
+                  <DailyBriefingCard isDemo={isDemo} demoUserId={demoUserId} />
+                )}
+                {settings?.dashboard_layout?.['dailyScheduleVisible'] !== false && (
+                  <DailySchedulePreview />
+                )}
+                <SortableContext items={customCards.map(card => card.id)} strategy={verticalListSortingStrategy}>
+                  {customCards.filter(card => card.is_visible).map(card => (
+                    <SortableCustomCard key={card.id} card={card} />
+                  ))}
+                </SortableContext>
+              </div>
+              <div className="space-y-6">
+                <NextTaskCard 
+                  nextAvailableTask={nextAvailableTask}
+                  updateTask={updateTask}
+                  onOpenOverview={handleOpenOverview}
+                  loading={tasksLoading}
+                  onFocusViewOpen={handleOpenFocusView}
+                />
+                {settings?.dashboard_layout?.['weeklyFocusVisible'] !== false && (
+                  <WeeklyFocusCard 
+                    weeklyFocus={weeklyFocus} 
+                    updateWeeklyFocus={updateWeeklyFocus} 
+                    loading={dashboardDataLoading} 
+                  />
+                )}
+                {settings?.dashboard_layout?.['peopleMemoryVisible'] !== false && (
+                  <PeopleMemoryCard />
+                )}
+                {settings?.dashboard_layout?.['meditationNotesVisible'] !== false && (
+                  <MeditationNotesCard 
+                    settings={settings} 
+                    updateSettings={updateSettings} 
+                    loading={dashboardDataLoading} 
+                  />
+                )}
+              </div>
+            </div>
+          ) : (
+            <PanelGroup
+              direction="horizontal"
+              className="min-h-[600px] rounded-lg border relative z-[1]"
+              onLayout={handlePanelLayoutChange}
+            >
+              <Panel defaultSize={defaultPanelSizes[0]} minSize={30}>
+                <div className="flex h-full flex-col p-4 space-y-6">
+                  {settings?.dashboard_layout?.['dailyBriefingVisible'] !== false && (
+                    <DailyBriefingCard isDemo={isDemo} demoUserId={demoUserId} />
+                  )}
+                  {settings?.dashboard_layout?.['dailyScheduleVisible'] !== false && (
+                    <DailySchedulePreview />
+                  )}
+                  <SortableContext items={customCards.map(card => card.id)} strategy={verticalListSortingStrategy}>
+                    {customCards.filter(card => card.is_visible).map(card => (
+                      <SortableCustomCard key={card.id} card={card} />
+                    ))}
+                  </SortableContext>
+                </div>
+              </Panel>
+              <PanelResizeHandle />
+              <Panel defaultSize={defaultPanelSizes[1]} minSize={20}>
+                <div className="flex h-full flex-col p-4 space-y-6">
+                  <NextTaskCard 
+                    nextAvailableTask={nextAvailableTask}
+                    updateTask={updateTask}
+                    onOpenOverview={handleOpenOverview}
+                    loading={tasksLoading}
+                    onFocusViewOpen={handleOpenFocusView}
+                  />
+                  {settings?.dashboard_layout?.['weeklyFocusVisible'] !== false && (
+                    <WeeklyFocusCard 
+                      weeklyFocus={weeklyFocus} 
+                      updateWeeklyFocus={updateWeeklyFocus} 
+                      loading={dashboardDataLoading} 
+                    />
+                  )}
+                  {settings?.dashboard_layout?.['peopleMemoryVisible'] !== false && (
+                    <PeopleMemoryCard />
+                  )}
+                  {settings?.dashboard_layout?.['meditationNotesVisible'] !== false && (
+                    <MeditationNotesCard 
+                      settings={settings} 
+                      updateSettings={updateSettings} 
+                      loading={dashboardDataLoading} 
+                    />
+                  )}
+                </div>
+              </Panel>
+            </PanelGroup>
+          )}
+        </main>
+        <footer className="p-4 relative z-[0]">
+          <p>&copy; {new Date().getFullYear()} TaskMaster. All rights reserved.</p>
+        </footer>
+
+        <Dialog open={isAddCardOpen} onOpenChange={setIsAddCardOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Custom Card</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div>
+                <Label>Title</Label>
+                <Input value={newCardTitle} onChange={(e) => setNewCardTitle(e.target.value)} placeholder="e.g., Things to Remember" />
+              </div>
+              <div>
+                <Label>Emoji (Optional)</Label>
+                <Input value={newCardEmoji} onChange={(e) => setNewCardEmoji(e.target.value)} placeholder="🍊" maxLength={2} />
+              </div>
+              <div>
+                <Label>Content</Label>
+                <Textarea value={newCardContent} onChange={(e) => setNewCardContent(e.target.value)} placeholder="e.g., You have an orange" />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsAddCardOpen(false)}>Cancel</Button>
+              <Button onClick={handleAddCard}>Add Card</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <DashboardLayoutSettings
+          isOpen={isLayoutSettingsOpen}
+          onClose={() => setIsLayoutSettingsOpen(false)}
+          settings={settings}
+          customCards={customCards}
+          updateSettings={updateSettings}
+          updateCustomCard={updateCustomCard}
+        />
+
+        {taskToOverview && (
+          <TaskOverviewDialog
+            task={taskToOverview}
+            isOpen={isTaskOverviewOpen}
+            onClose={() => setIsTaskOverviewOpen(false)}
+            onEditClick={handleEditTaskFromOverview}
+            onUpdate={updateTask}
+            onDelete={deleteTask}
+            sections={sections}
+            allCategories={allCategories}
+            allTasks={allTasks as Task[]} // Cast to Task[]
+          />
+        )}
+        {taskToEdit && (
+          <TaskDetailDialog
+            task={taskToEdit}
+            isOpen={isTaskDetailOpen}
+            onClose={() => setIsTaskDetailOpen(false)}
+            onUpdate={updateTask}
+            onDelete={deleteTask}
+            sections={sections}
+            allCategories={allCategories}
+            createSection={createSection}
+            updateSection={updateSection}
+            deleteSection={deleteSection}
+            updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+            allTasks={allTasks as Task[]} // Cast to Task[]
+          />
+        )}
+        <AnimatePresence>
+          {isFocusViewOpen && nextAvailableTask && (
+            <FullScreenFocusView
+              taskDescription={nextAvailableTask.description || ''} // Ensure description is string
+              onClose={() => setIsFocusViewOpen(false)}
+              onMarkDone={handleMarkDoneFromFocusView}
+            />
+          )}
+        </AnimatePresence>
       </div>
-
-      <ResizablePanelGroup direction="horizontal" onLayout={handlePanelGroupChange} className="flex-grow">
-        <ResizablePanel defaultSize={panelSizes[0]} minSize={30}>
-          <div className="h-full pr-2 overflow-y-auto">
-            <DragDropContext onDragEnd={(result: DropResult) => {
-              // Handle reordering of cards within the left panel if needed
-              // For now, layout is managed in settings dialog
-            }}>
-              <Droppable droppableId="dashboard-left-panel">
-                {(provided) => (
-                  <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4">
-                    {visibleCards.filter((_, i) => i % 2 === 0).map((card, index) => (
-                      <Draggable key={card!.id} draggableId={card!.id} index={index}>
-                        {(provided) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                          >
-                            {card!.component}
-                          </div>
-                        )}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder}
-                  </div>
-                )}
-              </Droppable>
-            </DragDropContext>
-          </div>
-        </ResizablePanel>
-        <ResizableHandle withHandle />
-        <ResizablePanel defaultSize={panelSizes[1]} minSize={30}>
-          <div className="h-full pl-2 overflow-y-auto">
-            <DragDropContext onDragEnd={(result: DropResult) => {
-              // Handle reordering of cards within the right panel if needed
-              // For now, layout is managed in settings dialog
-            }}>
-              <Droppable droppableId="dashboard-right-panel">
-                {(provided) => (
-                  <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4">
-                    {visibleCards.filter((_, i) => i % 2 !== 0).map((card, index) => (
-                      <Draggable key={card!.id} draggableId={card!.id} index={index}>
-                        {(provided) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                          >
-                            {card!.component}
-                          </div>
-                        )}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder}
-                  </div>
-                )}
-              </Droppable>
-            </DragDropContext>
-          </div>
-        </ResizablePanel>
-      </ResizablePanelGroup>
-
-      <DashboardLayoutSettings
-        availableCards={allAvailableCards}
-      />
-    </div>
+      {createPortal(
+        <DragOverlay>
+          {activeDragItem ? (
+            <CustomCard card={activeDragItem} isOverlay />
+          ) : null}
+        </DragOverlay>,
+        document.body
+      )}
+    </DndContext>
   );
 };
 

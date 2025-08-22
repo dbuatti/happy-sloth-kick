@@ -1,21 +1,18 @@
-import React, { createContext, useContext, ReactNode } from 'react';
-import { useUserSettings } from '@/hooks/useUserSettings';
-import { UserSettings } from '@/types';
-import { UseMutateAsyncFunction } from '@tanstack/react-query';
+import React, { createContext, useContext } from 'react';
+import { useUserSettings, UserSettings } from '@/hooks/useUserSettings';
 
 interface SettingsContextType {
-  settings: UserSettings | null | undefined;
+  settings: UserSettings | null;
   loading: boolean;
-  updateSettings: UseMutateAsyncFunction<any, Error, Partial<Omit<UserSettings, "user_id">>, unknown>;
+  updateSettings: (updates: Partial<Omit<UserSettings, 'user_id'>>) => Promise<boolean>;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
-export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const { settings, loading, updateSettings } = useUserSettings();
-
+export const SettingsProvider: React.FC<{ children: React.ReactNode, userId?: string }> = ({ children, userId }) => {
+  const userSettings = useUserSettings({ userId });
   return (
-    <SettingsContext.Provider value={{ settings, loading, updateSettings }}>
+    <SettingsContext.Provider value={userSettings}>
       {children}
     </SettingsContext.Provider>
   );

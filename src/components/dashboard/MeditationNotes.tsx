@@ -1,63 +1,52 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect } from 'react';
+import EditableCard from './EditableCard';
+import { Leaf } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useSettings } from '@/context/SettingsContext';
-import { toast } from 'sonner';
+import { UserSettings } from '@/hooks/useUserSettings'; // Import UserSettings type
 
-const MeditationNotes: React.FC = () => {
-  const { settings, loading, updateSettings } = useSettings();
-  const [notes, setNotes] = React.useState(settings?.meditation_notes || '');
+interface MeditationNotesCardProps {
+  settings: UserSettings | null; // Updated to UserSettings | null
+  updateSettings: (updates: Partial<Omit<UserSettings, 'user_id'>>) => Promise<boolean>; // Updated to match useUserSettings's updateSettings
+  loading: boolean;
+}
 
-  React.useEffect(() => {
+const MeditationNotesCard: React.FC<MeditationNotesCardProps> = ({ settings, updateSettings, loading }) => {
+  const [notes, setNotes] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
     if (settings) {
       setNotes(settings.meditation_notes || '');
     }
   }, [settings]);
 
   const handleSave = async () => {
-    try {
-      await updateSettings({ meditation_notes: notes });
-      toast.success('Meditation notes saved!');
-    } catch (error) {
-      console.error('Failed to save meditation notes:', error);
-      toast.error('Failed to save notes.');
-    }
+    setIsSaving(true);
+    // Ensure updates match the Partial<Omit<UserSettings, 'user_id'>> expected by useSettings
+    await updateSettings({ meditation_notes: notes });
+    setIsSaving(false);
   };
 
   if (loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Meditation Notes</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-10 w-24 mt-4 ml-auto" />
-        </CardContent>
-      </Card>
-    );
+    return <Skeleton className="h-32 w-full" />;
   }
 
+  const renderEditForm = () => (
+    <div>
+      <Label>Meditation Notes</Label>
+      <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g., Up to recording #5..." />
+    </div>
+  );
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Meditation Notes</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Textarea
-          placeholder="Jot down your thoughts after meditation..."
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          className="min-h-[120px]"
-        />
-        <div className="flex justify-end mt-4">
-          <Button onClick={handleSave}>Save Notes</Button>
-        </div>
-      </CardContent>
-    </Card>
+    <EditableCard title="Meditation Notes" icon={Leaf} onSave={handleSave} renderEditForm={renderEditForm} isSaving={isSaving}>
+      <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+        {settings?.meditation_notes || 'No notes yet. Click edit to add some.'}
+      </p>
+    </EditableCard>
   );
 };
 
-export default MeditationNotes;
+export default MeditationNotesCard;
