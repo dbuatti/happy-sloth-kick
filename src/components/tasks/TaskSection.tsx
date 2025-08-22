@@ -22,11 +22,12 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
+  DialogClose,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useSupabaseClient, useUser } from "@supabase/auth-helpers-react";
+import { useSupabaseClient } from "@supabase/auth-helpers-react"; // Removed unused useUser
 import { toast } from "sonner";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import {
@@ -69,7 +70,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({
 }) => {
   const supabase = useSupabaseClient();
   const queryClient = useQueryClient();
-  const user = useUser();
+  // const user = useUser(); // Removed unused user
 
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(section.name);
@@ -233,6 +234,11 @@ const TaskSection: React.FC<TaskSectionProps> = ({
                         </div>
                       </div>
                       <DialogFooter>
+                        <DialogClose asChild>
+                          <Button type="button" variant="secondary">
+                            Cancel
+                          </Button>
+                        </DialogClose>
                         <Button type="submit" onClick={handleSave}>
                           Save changes
                         </Button>

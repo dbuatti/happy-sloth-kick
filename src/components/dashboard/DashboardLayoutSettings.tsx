@@ -9,14 +9,12 @@ import {
   DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { useDashboardData, CustomCard } from '@/hooks/useDashboardData';
-import { UserSettings } from '@/types'; // Corrected import path
 import { useSettings } from '@/context/SettingsContext';
 import { toast } from 'sonner';
-import { Plus, GripVertical, Trash2 } from 'lucide-react';
+import { Plus, GripVertical, Trash2, Pencil } from 'lucide-react'; // Added Pencil import
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 
 interface DashboardLayoutSettingsProps {
@@ -24,7 +22,7 @@ interface DashboardLayoutSettingsProps {
 }
 
 const DashboardLayoutSettings: React.FC<DashboardLayoutSettingsProps> = ({ availableCards }) => {
-  const { settings, loading, updateSettings } = useSettings();
+  const { settings, updateSettings } = useSettings(); // Removed 'loading'
   const { customCards, addCustomCard, updateCustomCard, deleteCustomCard } = useDashboardData();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -58,7 +56,7 @@ const DashboardLayoutSettings: React.FC<DashboardLayoutSettingsProps> = ({ avail
       await updateSettings({ dashboard_layout: updatedLayout });
       // Update visibility for custom cards
       for (const card of customCards) {
-        await updateCustomCard(card.id, { is_visible: cardVisibility[card.id] ?? true });
+        await updateCustomCard({ id: card.id, updates: { is_visible: cardVisibility[card.id] ?? true } }); // Corrected call
       }
       toast.success('Dashboard layout saved!');
       setIsDialogOpen(false);
@@ -95,7 +93,7 @@ const DashboardLayoutSettings: React.FC<DashboardLayoutSettingsProps> = ({ avail
         emoji: newCustomCardEmoji || null,
         content: 'New custom card content.', // Default content
         card_order: layout.length, // Add to the end
-        is_visible: true,
+        is_visible: true, // This property should exist on CustomCard type
       });
       setNewCustomCardTitle('');
       setNewCustomCardEmoji('');
@@ -120,10 +118,13 @@ const DashboardLayoutSettings: React.FC<DashboardLayoutSettingsProps> = ({ avail
       return;
     }
     try {
-      await updateCustomCard(editingCustomCard.id, {
-        title: newCustomCardTitle,
-        emoji: newCustomCardEmoji || null,
-      });
+      await updateCustomCard({
+        id: editingCustomCard.id,
+        updates: {
+          title: newCustomCardTitle,
+          emoji: newCustomCardEmoji || null,
+        },
+      }); // Corrected call
       setEditingCustomCard(null);
       setNewCustomCardTitle('');
       setNewCustomCardEmoji('');
@@ -206,7 +207,7 @@ const DashboardLayoutSettings: React.FC<DashboardLayoutSettingsProps> = ({ avail
                               <GripVertical className="h-5 w-5 text-muted-foreground" />
                             </span>
                             <span className="font-medium">
-                              {card.emoji && <span className="mr-2">{card.emoji}</span>}
+                              {'emoji' in card && card.emoji && <span className="mr-2">{card.emoji}</span>} {/* Added type guard */}
                               {card.title}
                             </span>
                           </div>

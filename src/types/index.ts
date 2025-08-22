@@ -53,4 +53,17 @@ export interface UserSettings {
   visible_pages: any | null; // Consider a more specific type if structure is known
   schedule_show_focus_tasks_only: boolean;
   future_tasks_days_visible: number;
+  dashboard_panel_sizes: number[] | null; // Added dashboard_panel_sizes
+}
+
+export interface CustomCard {
+  id: string;
+  user_id: string;
+  title: string;
+  content: string | null;
+  emoji: string | null;
+  card_order: number | null;
+  is_visible: boolean | null;
+  created_at: string;
+  updated_at: string;
 }

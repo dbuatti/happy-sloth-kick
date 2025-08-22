@@ -44,6 +44,7 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
+  DialogClose,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -72,7 +73,7 @@ import {
 import { useTaskCategories } from "@/hooks/useTaskCategories";
 import { useTaskSections } from "@/hooks/useTaskSections";
 import { useDoTodayOffLog } from "@/hooks/useDoTodayOffLog";
-import { useUserSettings } from "@/hooks/useUserSettings";
+// import { useUserSettings } from "@/hooks/useUserSettings"; // Removed unused import
 
 export interface TaskCardProps { // Exported interface
   task: Task;
@@ -103,7 +104,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
   const { data: categories } = useTaskCategories();
   const { data: sections } = useTaskSections();
   const { data: doTodayOffLog, refetch: refetchDoTodayOffLog } = useDoTodayOffLog();
-  const { settings: userSettings } = useUserSettings();
+  // const { settings: userSettings } = useUserSettings(); // Removed unused destructuring
 
   const [isEditing, setIsEditing] = useState(false);
   const [editedDescription, setEditedDescription] = useState(task.description);
@@ -767,6 +768,11 @@ const TaskCard: React.FC<TaskCardProps> = ({
                     </div>
                   </div>
                   <DialogFooter>
+                    <DialogClose asChild>
+                      <Button type="button" variant="secondary">
+                        Cancel
+                      </Button>
+                    </DialogClose>
                     <Button type="submit" onClick={handleSave}>
                       Save changes
                     </Button>
