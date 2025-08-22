@@ -120,9 +120,9 @@ const TaskCard: React.FC<TaskCardProps> = ({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const user = useUser();
-  const { data: categories } = useTaskCategories(); // Removed user?.id argument
-  const { data: sections } = useTaskSections(); // Removed user?.id argument
-  const { data: doTodayOffLog, refetch: refetchDoTodayOffLog } = useDoTodayOffLog(); // Removed user?.id argument
+  const { data: categories } = useTaskCategories();
+  const { data: sections } = useTaskSections();
+  const { data: doTodayOffLog, refetch: refetchDoTodayOffLog } = useDoTodayOffLog();
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -223,6 +223,8 @@ const TaskCard: React.FC<TaskCardProps> = ({
         return "bg-yellow-500";
       case "low":
         return "bg-green-500";
+      case "none": // Added 'none' case
+        return "bg-gray-500";
       default:
         return "bg-gray-500";
     }
@@ -638,7 +640,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
               <SelectValue placeholder="Set priority" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="none">None</SelectItem> {/* Added 'None' option */}
+              <SelectItem value="none">None</SelectItem>
               <SelectItem value="urgent">Urgent</SelectItem>
               <SelectItem value="high">High</SelectItem>
               <SelectItem value="medium">Medium</SelectItem>

@@ -6,7 +6,7 @@ export interface Task {
   status: 'to-do' | 'completed';
   created_at: string;
   user_id: string;
-  priority: 'none' | 'low' | 'medium' | 'high' | 'urgent'; // Added 'none'
+  priority: 'none' | 'low' | 'medium' | 'high' | 'urgent'; // Ensure 'none' is included
   due_date?: string | null;
   notes?: string;
   remind_at?: string | null;
