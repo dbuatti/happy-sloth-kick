@@ -2,8 +2,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { DoTodayOffLogEntry } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
+import { useUser } from '@supabase/auth-helpers-react';
 
-export const useDoTodayOffLog = (userId: string | undefined) => {
+export const useDoTodayOffLog = () => {
+  const user = useUser();
+  const userId = user?.id;
   const [data, setData] = useState<DoTodayOffLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

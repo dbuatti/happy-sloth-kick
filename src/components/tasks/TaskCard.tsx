@@ -21,7 +21,7 @@ import {
   ChevronUp,
   Plus,
 } from "lucide-react";
-import { Task, TaskCategory, TaskSection, DoTodayOffLogEntry } from "@/types";
+import { Task, TaskSection } from "@/types"; // Removed TaskCategory, DoTodayOffLogEntry
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -64,7 +64,7 @@ import { useTaskCategories } from "@/hooks/useTaskCategories";
 import { useTaskSections } from "@/hooks/useTaskSections";
 import { useDoTodayOffLog } from "@/hooks/useDoTodayOffLog";
 
-export interface TaskCardProps { // Exporting the interface
+export interface TaskCardProps {
   task: Task;
   provided: DraggableProvided;
   isDragging: boolean;
@@ -120,9 +120,9 @@ const TaskCard: React.FC<TaskCardProps> = ({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const user = useUser();
-  const { data: categories } = useTaskCategories(user?.id);
-  const { data: sections } = useTaskSections(user?.id);
-  const { data: doTodayOffLog, refetch: refetchDoTodayOffLog } = useDoTodayOffLog(user?.id);
+  const { data: categories } = useTaskCategories(); // Removed user?.id argument
+  const { data: sections } = useTaskSections(); // Removed user?.id argument
+  const { data: doTodayOffLog, refetch: refetchDoTodayOffLog } = useDoTodayOffLog(); // Removed user?.id argument
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -310,12 +310,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
   const todaySection = allSections.find(
     (section) => section.name === "Today's Priorities" && section.user_id === user?.id
   );
-  const thisWeekSection = allSections.find( // This is used in handleMoveToThisWeek
-    (section) => section.name === "This Week" && section.user_id === user?.id
-  );
-  const futureSection = allSections.find( // This is used in handleMoveToFuture
-    (section) => section.name === "Future Ideas" && section.user_id === user?.id
-  );
+  // Removed unused thisWeekSection and futureSection
 
   const isTaskOffToday = doTodayOffLog?.some(
     (entry) => entry.task_id === task.id && isToday(parseISO(entry.off_date))
@@ -378,7 +373,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
         </div>
 
         <div className="flex items-center space-x-2 ml-2">
-          {task.priority && task.priority !== "none" && (
+          {task.priority !== "none" && ( // Corrected comparison
             <Badge
               className={cn(
                 "text-white px-2 py-0.5 text-xs",
@@ -643,6 +638,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
               <SelectValue placeholder="Set priority" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="none">None</SelectItem> {/* Added 'None' option */}
               <SelectItem value="urgent">Urgent</SelectItem>
               <SelectItem value="high">High</SelectItem>
               <SelectItem value="medium">Medium</SelectItem>
