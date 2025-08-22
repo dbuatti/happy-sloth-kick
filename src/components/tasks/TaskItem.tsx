@@ -75,6 +75,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(task.description || ''); // Initialize with empty string if null
   const inputRef = useRef<HTMLInputElement>(null);
+  const dropdownTriggerRef = useRef<HTMLButtonElement>(null);
 
   const scheduledAppointment = useMemo(() => scheduledTasksMap.get(task.id), [scheduledTasksMap, task.id]);
 
@@ -178,6 +179,14 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const handleToggleDoTodaySwitch = (newCheckedState: boolean) => {
     console.log(`[Do Today Debug] TaskItem: handleToggleDoTodaySwitch called for task ${task.id}. New state from switch: ${newCheckedState}`);
     toggleDoToday(task); // Call the prop function from useTasks
+  };
+
+  // Handle touch events for mobile devices
+  const handleTouchStart = (e: React.TouchEvent) => {
+    // Prevent default only on the dropdown trigger to avoid interfering with scrolling
+    if (e.target === dropdownTriggerRef.current) {
+      e.stopPropagation();
+    }
   };
 
   return (
@@ -344,12 +353,14 @@ const TaskItem: React.FC<TaskItemProps> = ({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
+              ref={dropdownTriggerRef}
               variant="ghost"
               className="h-8 w-8 p-0"
               aria-label="More options"
               disabled={isOverlay || isDemo}
               // Added onTouchEnd to handle mobile touch events
               onTouchEnd={(e: React.TouchEvent) => {
+                e.preventDefault();
                 e.stopPropagation();
                 // Ensure the dropdown opens on touch
                 const button = e.currentTarget;
@@ -362,12 +373,18 @@ const TaskItem: React.FC<TaskItemProps> = ({
               }}
               // Keep onClick for desktop
               onClick={(e: React.MouseEvent) => e.stopPropagation()}
+              // Added onTouchStart to prevent default behavior
+              onTouchStart={handleTouchStart}
             >
               <span className="sr-only">Open menu</span>
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+          <DropdownMenuContent 
+            align="end" 
+            onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+          >
             <DropdownMenuItem onSelect={() => onOpenOverview(task)}>
               <Edit className="mr-2 h-4 w-4" /> View Details
             </DropdownMenuItem>
