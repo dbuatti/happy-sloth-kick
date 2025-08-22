@@ -3,9 +3,20 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, MoreHorizontal, Archive, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock, ChevronRight } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock, ChevronRight } from 'lucide-react';
 import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { cn } from "@/lib/utils";
+import { Task } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { CheckCircle2 } from 'lucide-react';
@@ -15,27 +26,6 @@ import DoTodaySwitch from '@/components/DoTodaySwitch';
 import { showSuccess, showError } from '@/utils/toast';
 import { Appointment } from '@/hooks/useAppointments';
 
-// Fix 3: Correct the import path for Task type
-interface Task {
-  id: string;
-  description: string | null;
-  status: 'to-do' | 'completed' | 'skipped' | 'archived';
-  created_at: string;
-  user_id: string;
-  priority: string;
-  due_date: string | null;
-  notes: string | null;
-  remind_at: string | null;
-  section_id: string | null;
-  order: number | null;
-  parent_task_id: string | null;
-  recurring_type: string | null;
-  original_task_id: string | null;
-  category: string | null;
-  link: string | null;
-  image_url: string | null;
-  updated_at: string | null;
-}
 
 interface TaskItemProps {
   task: Task;
@@ -85,8 +75,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(task.description || ''); // Initialize with empty string if null
   const inputRef = useRef<HTMLInputElement>(null);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
 
   const scheduledAppointment = useMemo(() => scheduledTasksMap.get(task.id), [scheduledTasksMap, task.id]);
 
@@ -103,23 +91,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
       inputRef.current.select();
     }
   }, [isEditing]);
-
-  // Close menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsMenuOpen(false);
-      }
-    };
-
-    if (isMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isMenuOpen]);
 
   // Log the isDoToday prop whenever it changes
   useEffect(() => {
@@ -207,21 +178,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const handleToggleDoTodaySwitch = (newCheckedState: boolean) => {
     console.log(`[Do Today Debug] TaskItem: handleToggleDoTodaySwitch called for task ${task.id}. New state from switch: ${newCheckedState}`);
     toggleDoToday(task); // Call the prop function from useTasks
-  };
-
-  // Handle menu toggle for mobile
-  const toggleMenu = (e: React.MouseEvent | React.TouchEvent) => {
-    e.stopPropagation();
-    if (isOverlay || isDemo) return;
-    setIsMenuOpen(!isMenuOpen);
-  };
-
-  // Handle menu item selection
-  const handleMenuItemSelect = (action: () => void) => {
-    return () => {
-      action();
-      setIsMenuOpen(false);
-    };
   };
 
   return (
@@ -367,8 +323,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
       {/* Actions Area */}
       <div className="flex-shrink-0 flex items-center gap-1 pr-3">
-        {/* Fix 1 & 2: Add null check for recurringType before using it */}
-        {recurringType && recurringType !== 'none' && (
+        {recurringType !== 'none' && (
           <Tooltip>
             <TooltipTrigger asChild>
               <div className="h-8 w-8 flex items-center justify-center" aria-label="Recurring task">
@@ -386,129 +341,88 @@ const TaskItem: React.FC<TaskItemProps> = ({
           taskId={task.id}
           isDemo={isDemo}
         />
-        
-        {/* Custom mobile-friendly dropdown implementation */}
-        <div className="relative" ref={menuRef}>
-          <Button
-            variant="ghost"
-            className="h-8 w-8 p-0"
-            aria-label="More options"
-            disabled={isOverlay || isDemo}
-            onClick={toggleMenu}
-            onTouchEnd={(e: React.TouchEvent) => {
-              e.preventDefault();
-              e.stopPropagation();
-              toggleMenu(e);
-            }}
-          >
-            <span className="sr-only">Open menu</span>
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
-          
-          {isMenuOpen && (
-            <div 
-              className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-popover border border-border z-50"
-              onClick={(e) => e.stopPropagation()}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              className="h-8 w-8 p-0"
+              aria-label="More options"
+              disabled={isOverlay || isDemo}
+              // Removed onClick={(e: React.MouseEvent) => e.stopPropagation()}
             >
-              <div className="py-1" role="menu">
-                <button
-                  className="w-full text-left px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground flex items-center"
-                  role="menuitem"
-                  onClick={handleMenuItemSelect(() => onOpenOverview(task))}
-                >
-                  <Edit className="mr-2 h-4 w-4" /> View Details
-                </button>
-                <button
-                  className="w-full text-left px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground flex items-center"
-                  role="menuitem"
-                  onClick={handleMenuItemSelect(() => setFocusTask(task.id))}
-                >
-                  <Target className="mr-2 h-4 w-4" /> Set as Focus
-                </button>
-                
-                {task.status === 'archived' ? (
-                  <button
-                    className="w-full text-left px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground flex items-center"
-                    role="menuitem"
-                    onClick={handleMenuItemSelect(async () => { await onStatusChange(task.id, 'to-do'); playSound('success'); })}
-                  >
-                    <Undo2 className="mr-2 h-4 w-4" /> Restore
-                  </button>
+              <span className="sr-only">Open menu</span>
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+            <DropdownMenuItem onSelect={() => onOpenOverview(task)}>
+              <Edit className="mr-2 h-4 w-4" /> View Details
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setFocusTask(task.id)}>
+              <Target className="mr-2 h-4 w-4" /> Set as Focus
+            </DropdownMenuItem>
+            {task.status === 'archived' && (
+              <DropdownMenuItem onSelect={async () => { await onStatusChange(task.id, 'to-do'); playSound('success'); }}>
+                <Undo2 className="mr-2 h-4 w-4" /> Restore
+              </DropdownMenuItem>
+            )}
+            {task.status !== 'archived' && (
+              <>
+                <DropdownMenuItem onSelect={async () => { await onStatusChange(task.id, 'to-do'); playSound('success'); }}>
+                  Mark as To-Do
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={async () => { await onStatusChange(task.id, 'completed'); playSound('success'); }}>
+                  Mark as Completed
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={async () => { await onStatusChange(task.id, 'skipped'); playSound('success'); }}>
+                  Mark as Skipped
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={async () => { await onStatusChange(task.id, 'archived'); playSound('success'); }}>
+                  <Archive className="mr-2 h-4 w-4" /> Archive
+                </DropdownMenuItem>
+              </>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <FolderOpen className="mr-2 h-4 w-4" /> Move to Section
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                {sections.length === 0 ? (
+                  <DropdownMenuItem disabled>No sections available</DropdownMenuItem>
                 ) : (
                   <>
-                    <button
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground"
-                      role="menuitem"
-                      onClick={handleMenuItemSelect(async () => { await onStatusChange(task.id, 'to-do'); playSound('success'); })}
+                    <DropdownMenuItem
+                      onSelect={async () => {
+                        await onUpdate(task.id, { section_id: null });
+                        playSound('success');
+                      }}
+                      disabled={task.section_id === null}
                     >
-                      Mark as To-Do
-                    </button>
-                    <button
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground"
-                      role="menuitem"
-                      onClick={handleMenuItemSelect(async () => { await onStatusChange(task.id, 'completed'); playSound('success'); })}
-                    >
-                      Mark as Completed
-                    </button>
-                    <button
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground"
-                      role="menuitem"
-                      onClick={handleMenuItemSelect(async () => { await onStatusChange(task.id, 'skipped'); playSound('success'); })}
-                    >
-                      Mark as Skipped
-                    </button>
-                    <button
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground flex items-center"
-                      role="menuitem"
-                      onClick={handleMenuItemSelect(async () => { await onStatusChange(task.id, 'archived'); playSound('success'); })}
-                    >
-                      <Archive className="mr-2 h-4 w-4" /> Archive
-                    </button>
+                      No Section
+                    </DropdownMenuItem>
+                    {sections.map(section => (
+                      <DropdownMenuItem
+                        key={section.id}
+                        onSelect={async () => {
+                          await onUpdate(task.id, { section_id: section.id });
+                          playSound('success');
+                        }}
+                        disabled={task.section_id === section.id}
+                      >
+                        {section.name}
+                      </DropdownMenuItem>
+                    ))}
                   </>
                 )}
-                
-                <div className="border-t border-border my-1"></div>
-                
-                <div className="px-4 py-2 text-sm font-medium">Move to Section</div>
-                <button
-                  className={`w-full text-left px-8 py-2 text-sm hover:bg-accent hover:text-accent-foreground ${task.section_id === null ? 'bg-accent text-accent-foreground' : ''}`}
-                  role="menuitem"
-                  onClick={handleMenuItemSelect(async () => {
-                    await onUpdate(task.id, { section_id: null });
-                    playSound('success');
-                  })}
-                  disabled={task.section_id === null}
-                >
-                  No Section
-                </button>
-                {sections.map(section => (
-                  <button
-                    key={section.id}
-                    className={`w-full text-left px-8 py-2 text-sm hover:bg-accent hover:text-accent-foreground ${task.section_id === section.id ? 'bg-accent text-accent-foreground' : ''}`}
-                    role="menuitem"
-                    onClick={handleMenuItemSelect(async () => {
-                      await onUpdate(task.id, { section_id: section.id });
-                      playSound('success');
-                    })}
-                    disabled={task.section_id === section.id}
-                  >
-                    {section.name}
-                  </button>
-                ))}
-                
-                <div className="border-t border-border my-1"></div>
-                
-                <button
-                  className="w-full text-left px-4 py-2 text-sm text-destructive hover:bg-destructive hover:text-destructive-foreground flex items-center"
-                  role="menuitem"
-                  onClick={handleMenuItemSelect(() => { onDelete(task.id); playSound('alert'); })}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" /> Delete
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={() => { onDelete(task.id); playSound('alert'); }} className="text-destructive focus:text-destructive">
+              <Trash2 className="mr-2 h-4 w-4" /> Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {showCompletionEffect && (

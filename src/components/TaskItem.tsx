@@ -192,7 +192,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
       {/* Priority Pill */}
       <div className={cn("absolute left-0 top-0 h-full w-1.5 rounded-l-lg", getPriorityDotColor(task.priority))} />
 
-      <div className="flex-shrink-0 pr-1 flex items-center">
+      <div className="flex-shrink-0 pr-1 flex items-center" onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}>
         {hasSubtasks && (
           <Button
             variant="ghost"
@@ -210,7 +210,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
       </div>
 
       {/* Checkbox Area */}
-      <div className="flex-shrink-0 pr-3">
+      <div className="flex-shrink-0 pr-3" onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}>
         <Checkbox
           key={`${task.id}-${task.status}`}
           checked={task.status === 'completed'}
@@ -263,7 +263,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           )}
         </div>
 
-        <div className="flex-shrink-0 flex items-center space-x-2">
+        <div className="flex-shrink-0 flex items-center space-x-2" onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}>
           {task.link && (
             isUrl(task.link) ? (
               <Tooltip>
@@ -322,7 +322,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
       </div>
 
       {/* Actions Area */}
-      <div className="flex-shrink-0 flex items-center gap-1 pr-3">
+      <div className="flex-shrink-0 flex items-center gap-1 pr-3" onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}>
         {recurringType !== 'none' && (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -348,13 +348,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
               className="h-8 w-8 p-0"
               aria-label="More options"
               disabled={isOverlay || isDemo}
-              // Removed onClick={(e: React.MouseEvent) => e.stopPropagation()}
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
             >
               <span className="sr-only">Open menu</span>
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+          <DropdownMenuContent align="end">
             <DropdownMenuItem onSelect={() => onOpenOverview(task)}>
               <Edit className="mr-2 h-4 w-4" /> View Details
             </DropdownMenuItem>
@@ -384,7 +384,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
             )}
             <DropdownMenuSeparator />
             <DropdownMenuSub>
-              <DropdownMenuSubTrigger>
+              <DropdownMenuSubTrigger onSelect={(e: React.SyntheticEvent) => e.preventDefault()}>
                 <FolderOpen className="mr-2 h-4 w-4" /> Move to Section
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent>
