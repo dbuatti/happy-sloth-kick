@@ -1,238 +1,183 @@
-import React, { useState } from 'react';
+"use client";
+
+import React, { useState } from 'react'; // Removed unused useEffect
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerDescription } from "@/components/ui/drawer";
 import { Trash2, ListTodo } from 'lucide-react';
-import { Task, TaskSection, Category } from '@/hooks/useTasks'; // Import Task, TaskSection, Category types
-import { useTasks } from '@/hooks/useTasks'; // Keep useTasks for subtask updates and handleAddTask
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { useSound } from '@/context/SoundContext';
+import { Task, TaskSection, TaskCategory } from '@/types/task'; // Corrected import
+import { useTasks } from '@/hooks/useTasks';
 import TaskForm from './TaskForm';
-import { cn } from '@/lib/utils';
-import { Checkbox } from "@/components/ui/checkbox";
-import { useAuth } from '@/context/AuthContext'; // Import useAuth
-import { useIsMobile } from '@/hooks/use-mobile';
+import { showError, showSuccess } from '@/utils/toast';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import TaskItem from './TaskItem';
+import { useAuth } from '@/context/AuthContext';
+import { Input } from '@/components/ui/input'; // Imported Input
 
 interface TaskDetailDialogProps {
-  task: Task | null;
   isOpen: boolean;
   onClose: () => void;
-  onUpdate: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
-  onDelete: (taskId: string) => void;
-  sections: TaskSection[]; // Passed as prop
-  allCategories: Category[]; // Passed as prop
-  // New props for section management
-  createSection: (name: string) => Promise<void>;
-  updateSection: (sectionId: string, newName: string) => Promise<void>;
-  deleteSection: (sectionId: string) => Promise<void>;
-  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
-  allTasks: Task[]; // Add allTasks prop
+  task: Task | null;
+  onUpdateTask: (taskId: string, updates: Partial<Task>) => void;
+  onDeleteTask: (taskId: string) => void;
+  allTasks: Task[]; // All tasks for subtask management
+  sections: TaskSection[];
+  categories: TaskCategory[];
+  onToggleDoToday?: (taskId: string, date: Date) => void;
+  isDoTodayOff?: boolean;
 }
 
 const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
-  task,
   isOpen,
   onClose,
-  onUpdate,
-  onDelete,
-  sections, // Destructure from props
-  allCategories, // Destructure from props
-  createSection, // Destructure new props
-  updateSection,
-  deleteSection,
-  updateSectionIncludeInFocusMode,
-  allTasks, // Destructure allTasks
+  task,
+  onUpdateTask,
+  onDeleteTask,
+  allTasks,
+  sections,
+  categories,
+  onToggleDoToday,
+  isDoTodayOff,
 }) => {
-  // Removed 'user' and 'userId' from useAuth destructuring as they are not directly used here.
-  useAuth(); 
-  const isMobile = useIsMobile();
+  const { user } = useAuth();
+  const { handleAddTask: addSubtask, handleUpdateTask: updateSubtask, handleDeleteTask: deleteSubtask } = useTasks({ currentDate: new Date(), userId: user?.id });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  // Only use useTasks for actions that require it, not for fetching global state
-  // Removed internal useTasks() call, now using allTasks prop for subtasks
-  const { updateTask: updateSubtask } = useTasks({ currentDate: new Date() }); // Keep useTasks for updateSubtask, provide a dummy date
-  const { playSound } = useSound();
-  const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const subtasks = allTasks.filter(sub => sub.parent_task_id === task?.id);
 
-  type TaskFormData = Parameters<typeof TaskForm>['0']['onSave'] extends ((taskData: infer T) => any) ? T : never;
-
-  const handleSaveMainTask = async (taskData: TaskFormData) => {
-    if (!task) return false;
-    setIsSaving(true);
-    await onUpdate(task.id, taskData);
-    setIsSaving(false);
-    return true;
-  };
-
-  const handleDeleteClick = () => {
-    setShowConfirmDeleteDialog(true);
-  };
-
-  const confirmDeleteTask = () => {
-    if (task) {
-      onDelete(task.id);
-      setShowConfirmDeleteDialog(false);
-      onClose();
-    }
-  };
-
-  const handleSubtaskStatusChange = async (subtaskId: string, newStatus: Task['status']) => {
-    await updateSubtask(subtaskId, { status: newStatus });
-  };
-
-  const handleToggleMainTaskStatus = async () => {
+  const handleFormSubmit = async (data: Partial<Task>) => {
     if (!task) return;
-    setIsSaving(true);
-    const newStatus = task.status === 'completed' ? 'to-do' : 'completed';
-    await onUpdate(task.id, { status: newStatus });
-    if (newStatus === 'completed') {
-      playSound('success');
-    } else {
-      playSound('success');
+    setIsSubmitting(true);
+    try {
+      await onUpdateTask(task.id, data);
+      showSuccess("Task updated successfully!");
+      onClose();
+    } catch (error) {
+      showError("Failed to update task.");
+      console.error("Failed to update task:", error);
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSaving(false);
-    onClose();
+  };
+
+  const handleConfirmDelete = () => {
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!task) return;
+    setIsSubmitting(true);
+    try {
+      await onDeleteTask(task.id);
+      showSuccess("Task deleted successfully!");
+      onClose();
+    } catch (error) {
+      showError("Failed to delete task.");
+      console.error("Failed to delete task:", error);
+    } finally {
+      setIsSubmitting(false);
+      setIsDeleteDialogOpen(false);
+    }
+  };
+
+  const handleAddSubtask = async (description: string) => {
+    if (!task || !description.trim()) return;
+    await addSubtask({
+      description: description.trim(),
+      parent_task_id: task.id,
+      section_id: task.section_id,
+      priority: task.priority,
+      category: task.category,
+    });
+    showSuccess("Subtask added!");
   };
 
   if (!task) return null;
 
-  const subtasks = allTasks.filter(t => t.parent_task_id === task?.id)
-    .sort((a, b) => (a.order || 0) - (b.order || 0));
-
-  const MainContent = () => (
-    <>
-      <TaskForm
-        initialData={task}
-        onSave={handleSaveMainTask}
-        onCancel={onClose}
-        sections={sections}
-        allCategories={allCategories}
-        autoFocus={false}
-        createSection={createSection} // Pass new props
-        updateSection={updateSection}
-        deleteSection={deleteSection}
-        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-      />
-
-      <div className="space-y-2 mt-3 border-t pt-2">
-        <div className="flex justify-between items-center">
-          <h3 className="text-base font-semibold">Sub-tasks ({subtasks.length})</h3>
-          <Button variant="outline" size="sm" className="h-8 text-base" onClick={() => { /* Removed setIsAddSubtaskOpen(true) */ }}>
-            Add Sub-task
-          </Button>
-        </div>
-        {subtasks.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No sub-tasks yet. Break down this task into smaller steps!</p>
-        ) : (
-          <ul className="space-y-1.5">
-            {subtasks.map(subtask => (
-              <li key={subtask.id} className="flex items-center space-x-2 p-1.5 rounded-md bg-background shadow-sm">
-                <Checkbox
-                  checked={subtask.status === 'completed'}
-                  onCheckedChange={(checked: boolean) => handleSubtaskStatusChange(subtask.id, checked ? 'completed' : 'to-do')}
-                  id={`subtask-${subtask.id}`}
-                  className="flex-shrink-0 h-3.5 w-3.5"
-                />
-                <label
-                  htmlFor={`subtask-${subtask.id}`}
-                  className={cn(
-                    "flex-1 text-sm font-medium leading-tight",
-                    subtask.status === 'completed' ? 'line-through text-gray-500 dark:text-gray-400' : 'text-foreground',
-                    "block truncate"
-                  )}
-                >
-                  {subtask.description}
-                </label>
-                {subtask.status === 'completed' && <ListTodo className="h-3.5 w-3.5 text-green-500" />}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </>
-  );
-
-  const FooterContent = ({ isDrawer = false }: { isDrawer?: boolean }) => {
-    const FooterComponent = isDrawer ? DrawerFooter : DialogFooter;
-    return (
-      <FooterComponent className={isDrawer ? "pt-2" : "flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2 pt-2"}>
-        <Button
-          variant={task.status === 'completed' ? 'outline' : 'default'}
-          onClick={handleToggleMainTaskStatus}
-          disabled={isSaving}
-          className="w-full sm:w-auto mt-1.5 sm:mt-0 h-9 text-base"
-        >
-          {task.status === 'completed' ? (
-            <><ListTodo className="mr-2 h-3.5 w-3.5" /> Mark To-Do</>
-          ) : (
-            <><ListTodo className="mr-2 h-3.5 w-3.5" /> Mark Complete</>
-          )}
-        </Button>
-        <Button variant="destructive" onClick={handleDeleteClick} disabled={isSaving} className="w-full sm:w-auto mt-1.5 sm:mt-0 h-9 text-base">
-          <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete Task
-        </Button>
-      </FooterComponent>
-    );
-  };
-
   return (
-    <>
-      {isMobile ? (
-        <Drawer open={isOpen} onOpenChange={onClose}>
-          <DrawerContent>
-            <DrawerHeader className="text-left">
-              <DrawerTitle>Edit Task</DrawerTitle>
-              <DrawerDescription className="sr-only">
-                Edit the details of your task, including sub-tasks.
-              </DrawerDescription>
-            </DrawerHeader>
-            <div className="px-4 pb-4 overflow-y-auto">
-              <MainContent />
-            </div>
-            <FooterContent isDrawer />
-          </DrawerContent>
-        </Drawer>
-      ) : (
-        <Dialog open={isOpen} onOpenChange={onClose}>
-          <DialogContent className="sm:max-w-[425px] md:max-w-lg lg:max-w-xl">
-            <DialogHeader>
-              <DialogTitle>Edit Task</DialogTitle>
-              <DialogDescription className="sr-only">
-                Edit the details of your task, including sub-tasks.
-              </DialogDescription>
-            </DialogHeader>
-            <MainContent />
-            <FooterContent />
-          </DialogContent>
-        </Dialog>
-      )}
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Edit Task</DialogTitle>
+          <DialogDescription>
+            Make changes to your task here. Click save when you're done.
+          </DialogDescription>
+        </DialogHeader>
+        <TaskForm
+          task={task}
+          sections={sections}
+          categories={categories}
+          onSubmit={handleFormSubmit}
+          onCancel={onClose}
+          isSubmitting={isSubmitting}
+        />
 
-      <AlertDialog open={showConfirmDeleteDialog} onOpenChange={setShowConfirmDeleteDialog}>
+        <div className="mt-6 border-t pt-4">
+          <h3 className="text-lg font-semibold mb-2 flex items-center">
+            <ListTodo className="h-5 w-5 mr-2" /> Subtasks ({subtasks.length})
+          </h3>
+          <div className="space-y-2">
+            {subtasks.map(subtask => (
+              <TaskItem
+                key={subtask.id}
+                task={subtask}
+                onUpdateTask={updateSubtask}
+                onDeleteTask={deleteSubtask}
+                allTasks={allTasks}
+                sections={sections}
+                categories={categories}
+                isSubtask={true}
+                showSection={false}
+                showCategory={false}
+                showDueDate={true}
+                showPriority={true}
+                showNotes={false}
+                showLink={false}
+                showImage={false}
+                showRecurring={false}
+                showSubtasks={false}
+                showDoTodayToggle={onToggleDoToday !== undefined}
+                onToggleDoToday={onToggleDoToday}
+                isDoTodayOff={isDoTodayOff}
+              />
+            ))}
+            <div className="flex items-center space-x-2">
+              <Input
+                placeholder="Add a new subtask..."
+                onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => { // Explicitly typed 'e'
+                  if (e.key === 'Enter') {
+                    handleAddSubtask(e.currentTarget.value);
+                    e.currentTarget.value = '';
+                  }
+                }}
+              />
+              <Button onClick={() => handleAddSubtask('')} disabled={true}>Add</Button> {/* Disabled as input handles enter */}
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter className="mt-4">
+          <Button variant="destructive" onClick={handleConfirmDelete} disabled={isSubmitting}>
+            <Trash2 className="h-4 w-4 mr-2" /> Delete Task
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete this task and all its sub-tasks.
+              This action cannot be undone. This will permanently delete your task "{task.description}" and all its subtasks.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSaving}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteTask} disabled={isSaving}>
-              {isSaving ? 'Deleting...' : 'Continue'}
-            </AlertDialogAction>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </Dialog>
   );
 };
 

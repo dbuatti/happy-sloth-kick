@@ -1,161 +1,177 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Archive as ArchiveIcon } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useTasks, Task } from '@/hooks/useTasks';
-import TaskItem from '@/components/TaskItem';
-import TaskDetailDialog from '@/components/TaskDetailDialog';
-import TaskOverviewDialog from '@/components/TaskOverviewDialog';
-import { useAllAppointments } from '@/hooks/useAllAppointments';
-import { Appointment } from '@/hooks/useAppointments';
+"use client";
 
-interface ArchiveProps {
+import React, { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useTasks } from '@/hooks/useTasks'; // Corrected import
+import { Task, TaskSection, TaskCategory } from '@/types/task'; // Corrected import
+import TaskItem from '@/components/TaskItem';
+import { useAuth } from '@/context/AuthContext';
+import TaskOverviewDialog from '@/components/TaskOverviewDialog';
+import { ArchiveRestore, Trash2 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { showError, showSuccess } from '@/utils/toast';
+import { supabase } from '@/integrations/supabase/client'; // Imported supabase
+
+interface ArchivePageProps {
   isDemo?: boolean;
   demoUserId?: string;
 }
 
-const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
+const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo, demoUserId }) => {
+  const { user } = useAuth();
+  const currentUserId = user?.id || demoUserId;
+
   const {
-    tasks: allTasks, // Need all tasks for subtask filtering in overview
-    filteredTasks: archivedTasks, 
+    tasks: allTasks, // All tasks for subtask filtering in overview
+    filteredTasks: archivedTasks,
     loading: archiveLoading,
-    updateTask,
-    deleteTask,
+    handleUpdateTask: updateTask,
+    handleDeleteTask: deleteTask,
     sections,
-    allCategories,
+    categories: allCategories,
     setStatusFilter, // To ensure only archived tasks are fetched
-    createSection, // Destructure new props
-    updateSection,
-    deleteSection,
-    updateSectionIncludeInFocusMode,
-    setFocusTask,
-    toggleDoToday,
-    doTodayOffIds,
-  } = useTasks({ viewMode: 'archive', userId: demoUserId, currentDate: new Date() }); // Pass new Date()
+    bulkUpdateTasks,
+  } = useTasks({ viewMode: 'archive', userId: currentUserId, currentDate: new Date() });
 
-  const { appointments: allAppointments } = useAllAppointments();
-
-  const scheduledTasksMap = useMemo(() => {
-    const map = new Map<string, Appointment>();
-    if (allAppointments) {
-        allAppointments.forEach(app => {
-            if (app.task_id) {
-                map.set(app.task_id, app);
-            }
-        });
-    }
-    return map;
-  }, [allAppointments]);
-
-  const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
-  const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
-  const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
-  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+  const [isOverviewOpen, setIsOverviewOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isBulkDeleteConfirmOpen, setIsBulkDeleteConfirmOpen] = useState(false);
 
   useEffect(() => {
-    setStatusFilter('archived');
+    setStatusFilter('archived'); // Ensure only archived tasks are fetched for this page
+    return () => setStatusFilter('all'); // Reset filter when leaving page
   }, [setStatusFilter]);
 
-  const handleTaskStatusChange = async (taskId: string, newStatus: Task['status']) => {
-    return await updateTask(taskId, { status: newStatus });
+  const handleOpenTaskOverview = (task: Task) => {
+    setSelectedTask(task);
+    setIsOverviewOpen(true);
   };
 
-  const handleOpenOverview = (task: Task) => {
-    setTaskToOverview(task);
-    setIsTaskOverviewOpen(true);
+  const handleCloseTaskOverview = () => {
+    setSelectedTask(null);
+    setIsOverviewOpen(false);
   };
 
-  const handleEditTaskFromOverview = (task: Task) => {
-    setIsTaskOverviewOpen(false); // Close overview
-    setTaskToEdit(task);
-    setIsTaskDetailOpen(true); // Open edit dialog
+  const handleRestoreAllArchived = async () => {
+    const archivedTaskIds = archivedTasks.map(task => task.id);
+    if (archivedTaskIds.length > 0) {
+      await bulkUpdateTasks(archivedTaskIds, { status: 'to-do' });
+      showSuccess("All archived tasks restored!");
+    } else {
+      showError("No tasks to restore.");
+    }
+  };
+
+  const handleConfirmBulkDelete = () => {
+    setIsBulkDeleteConfirmOpen(true);
+  };
+
+  const handleBulkDeleteArchived = async () => {
+    if (!currentUserId) {
+      showError("User not authenticated.");
+      return;
+    }
+    const archivedTaskIds = archivedTasks.map(task => task.id);
+    if (archivedTaskIds.length > 0) {
+      // Supabase delete with .in()
+      const { error } = await supabase.from('tasks').delete().in('id', archivedTaskIds).eq('user_id', currentUserId);
+      if (error) {
+        showError("Failed to delete all archived tasks.");
+        console.error("Error bulk deleting archived tasks:", error);
+      } else {
+        showSuccess("All archived tasks permanently deleted!");
+      }
+    } else {
+      showError("No tasks to delete.");
+    }
+    setIsBulkDeleteConfirmOpen(false);
   };
 
   return (
-    <div className="flex-1 flex flex-col">
-      <main className="flex-grow p-4 flex justify-center">
-        <Card className="w-full max-w-4xl mx-auto shadow-lg rounded-xl p-4">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
-              <ArchiveIcon className="h-7 w-7 text-primary" /> Archived Tasks
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            {archiveLoading ? (
-              <div className="space-y-3">
-                {[...Array(5)].map((_, i) => (
-                  <Skeleton key={i} className="h-20 w-full rounded-xl" />
-                ))}
-              </div>
-            ) : archivedTasks.length === 0 ? (
-              <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
-                <ArchiveIcon className="h-12 w-12 text-muted-foreground" />
-                <p className="text-lg font-medium mb-2">No archived tasks found.</p>
-                <p className="text-sm">Completed tasks will appear here once you archive them from your daily view.</p>
-              </div>
-            ) : (
-              <ul className="space-y-2">
-                {archivedTasks.map((task) => (
-                  <li key={task.id} className="relative rounded-xl p-2 transition-all duration-200 ease-in-out group hover:shadow-md">
-                    <TaskItem
-                      task={task}
-                      allTasks={allTasks as Task[]} // Cast to Task[]
-                      onStatusChange={handleTaskStatusChange}
-                      onDelete={deleteTask}
-                      onUpdate={updateTask}
-                      sections={sections}
-                      onOpenOverview={handleOpenOverview}
-                      currentDate={new Date()}
-                      onMoveUp={async () => {}}
-                      onMoveDown={async () => {}}
-                      setFocusTask={setFocusTask}
-                      isDoToday={!doTodayOffIds.has(task.original_task_id || task.id)}
-                      toggleDoToday={() => toggleDoToday(task)}
-                      scheduledTasksMap={scheduledTasksMap}
-                      isDemo={isDemo}
-                      level={0} // Pass level prop
-                    />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-      </main>
-      {taskToOverview && (
+    <div className="flex flex-col h-full p-4">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">Archive</h1>
+        <div className="space-x-2">
+          <Button
+            variant="outline"
+            onClick={handleRestoreAllArchived}
+            disabled={archivedTasks.length === 0 || archiveLoading}
+          >
+            <ArchiveRestore className="h-4 w-4 mr-2" /> Restore All
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handleConfirmBulkDelete}
+            disabled={archivedTasks.length === 0 || archiveLoading}
+          >
+            <Trash2 className="h-4 w-4 mr-2" /> Delete All
+          </Button>
+        </div>
+      </div>
+
+      {archiveLoading ? (
+        <div className="space-y-4">
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+        </div>
+      ) : (
+        <>
+          {archivedTasks.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <p>Your archive is empty. No tasks here!</p>
+            </div>
+          ) : (
+            <ul className="space-y-2">
+              {archivedTasks.map((task: Task) => (
+                <li key={task.id} className="relative rounded-xl p-2 transition-all duration-200 ease-in-out group hover:shadow-md">
+                  <TaskItem
+                    task={task}
+                    onUpdateTask={updateTask}
+                    onDeleteTask={deleteTask}
+                    allTasks={allTasks}
+                    sections={sections}
+                    categories={allCategories}
+                    onOpenTaskDetail={handleOpenTaskOverview}
+                    showDoTodayToggle={false} // No "Do Today" in archive
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      )}
+
+      {selectedTask && (
         <TaskOverviewDialog
-          task={taskToOverview}
-          isOpen={isTaskOverviewOpen}
-          onClose={() => {
-            setIsTaskOverviewOpen(false);
-            setTaskToOverview(null);
-          }}
-          onEditClick={handleEditTaskFromOverview}
-          onUpdate={updateTask}
-          onDelete={deleteTask}
+          isOpen={isOverviewOpen}
+          onClose={handleCloseTaskOverview}
+          task={selectedTask}
+          onUpdateTask={updateTask}
+          onDeleteTask={deleteTask}
+          allTasks={allTasks}
           sections={sections}
-          allCategories={allCategories}
-          allTasks={allTasks as Task[]} // Cast to Task[]
+          categories={allCategories}
         />
       )}
-      {taskToEdit && (
-        <TaskDetailDialog
-          task={taskToEdit}
-          isOpen={isTaskDetailOpen}
-          onClose={() => setIsTaskDetailOpen(false)}
-          onUpdate={updateTask}
-          onDelete={deleteTask}
-          sections={sections}
-          allCategories={allCategories}
-          createSection={createSection}
-          updateSection={updateSection}
-          deleteSection={deleteSection}
-          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-          allTasks={allTasks as Task[]} // Cast to Task[]
-        />
-      )}
+
+      <AlertDialog open={isBulkDeleteConfirmOpen} onOpenChange={setIsBulkDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Permanently Delete All Archived Tasks?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete all {archivedTasks.length} archived tasks.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDeleteArchived} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete All</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
 
-export default Archive;
+export default ArchivePage;

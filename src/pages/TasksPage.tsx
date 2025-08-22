@@ -1,38 +1,34 @@
 "use client";
 
-import React, { useState } from 'react'; // Removed unused useEffect
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Plus } from 'lucide-react';
 import SectionHeader from '@/components/tasks/SectionHeader';
-import { useTasks, Task, TaskSection } from '@/hooks/useTasks'; // Corrected import for Task and TaskSection
+import { useTasks } from '@/hooks/useTasks'; // Import only the hook
+import { Task, TaskSection } from '@/types/task'; // Import types from the new types file
 import { useAuth } from '@/context/AuthContext';
 
 const TasksPage: React.FC = () => {
   const { user } = useAuth();
   const isDemo = user?.id === 'd889323b-350c-4764-9788-6359f85f6142';
   
-  // Pass required arguments to useTasks and destructure section management functions
   const { 
     tasks, 
-    handleAddTask: addTask, // Renamed to avoid conflict with local function
-    updateTask, 
-    deleteTask,
+    handleAddTask: addTask, 
     sections, 
-    createSection: addSection, // Renamed to avoid conflict with local function
+    createSection: addSection, 
     updateSection, 
     deleteSection, 
-    reorderSections, // Kept for completeness, though not used in this file's logic
     updateSectionIncludeInFocusMode,
-  } = useTasks({ currentDate: new Date(), userId: user?.id }); // Pass default date and user ID
+  } = useTasks({ currentDate: new Date(), userId: user?.id }); 
   
   const [newTaskDescription, setNewTaskDescription] = useState('');
 
-  // Filter out archived tasks for display
-  const activeTasks = tasks.filter(task => task.status !== 'archived');
+  const activeTasks = tasks.filter((task: Task) => task.status !== 'archived');
 
   const handleAddTask = async () => {
     if (newTaskDescription.trim()) {
-      await addTask({ description: newTaskDescription.trim(), category: '', priority: 'medium' }); // Add default category/priority
+      await addTask({ description: newTaskDescription.trim(), category: null, priority: 'medium' });
       setNewTaskDescription('');
     }
   };
@@ -54,13 +50,13 @@ const TasksPage: React.FC = () => {
     await addTask({ 
       description: 'New task', 
       section_id: sectionId,
-      category: '', // Add default category/priority
+      category: null, 
       priority: 'medium',
     });
   };
 
   const handleToggleSectionVisibility = async (sectionId: string) => {
-    const section = sections.find((s: TaskSection) => s.id === sectionId); // Explicitly type 's'
+    const section = sections.find((s: TaskSection) => s.id === sectionId); 
     if (section) {
       await updateSectionIncludeInFocusMode(sectionId, !section.include_in_focus_mode);
     }
@@ -97,7 +93,7 @@ const TasksPage: React.FC = () => {
           <div className="text-center py-12">
             <p className="text-muted-foreground">No sections yet.</p>
             <Button 
-              onClick={() => addSection('New Section')} // Call addSection with just the name
+              onClick={() => addSection('New Section')} 
               className="mt-4"
             >
               Create your first section
