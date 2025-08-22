@@ -3,11 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
-import { Task, TaskSection, TaskCategory, TaskStatus } from '@/types/task'; // Corrected import
-import { Skeleton } from '@/components/ui/skeleton';
+import { Task, TaskSection, TaskCategory, TaskStatus } from '@/types/task';
 import { format, isToday, isTomorrow, isPast, parseISO } from 'date-fns';
 import { getCategoryColorProps } from '@/utils/categoryColors';
-import { NextTaskCardProps } from '@/types/props'; // Import props interface
+import { NextTaskCardProps } from '@/types/props';
+import { Badge } from '@/components/ui/badge';
 
 const NextTaskCard: React.FC<NextTaskCardProps> = ({
   nextAvailableTask,
@@ -80,7 +80,7 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({
             <Checkbox
               id={`task-${nextAvailableTask.id}`}
               checked={nextAvailableTask.status === 'completed'}
-              onCheckedChange={(checked) =>
+              onCheckedChange={(checked: boolean) =>
                 handleStatusChange(
                   nextAvailableTask.id,
                   checked ? 'completed' : 'to-do'

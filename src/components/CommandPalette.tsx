@@ -7,24 +7,23 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
-  CommandShortcut,
 } from '@/components/ui/command';
 import { Button } from '@/components/ui/button';
 import { Plus, Search, LayoutDashboard, Calendar, ListTodo, Archive, Settings, HelpCircle, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useTasks } from '@/hooks/useTasks';
-import AddTaskForm from './AddTaskForm'; // Corrected import
+import AddTaskForm from './AddTaskForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/useIsMobile';
-import { Task } from '@/types/task'; // Corrected import
+import { Task } from '@/types/task';
 
 const CommandPalette: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, signOut: authSignOut } = useAuth();
   const userId = user?.id;
   const isDemo = user?.id === 'd889323b-350c-4764-9788-6359f85f6142';
 
@@ -36,6 +35,9 @@ const CommandPalette: React.FC = () => {
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode,
+    createCategory,
+    updateCategory,
+    deleteCategory,
     currentDate,
   } = useTasks({ userId: userId, currentDate: new Date() });
 
@@ -72,11 +74,14 @@ const CommandPalette: React.FC = () => {
       onTaskAdded={() => setIsAddTaskDialogOpen(false)}
       sections={sections}
       allCategories={allCategories}
-      // currentDate={currentDate} // Removed as it's not directly used in the form logic
+      currentDate={currentDate}
       createSection={createSection}
       updateSection={updateSection}
       deleteSection={deleteSection}
       updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+      createCategory={createCategory}
+      updateCategory={updateCategory}
+      deleteCategory={deleteCategory}
     />
   );
 
@@ -131,7 +136,7 @@ const CommandPalette: React.FC = () => {
               <span>Help</span>
             </CommandItem>
             {user && (
-              <CommandItem onSelect={() => signOut()}>
+              <CommandItem onSelect={() => authSignOut()}>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log Out</span>
               </CommandItem>

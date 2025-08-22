@@ -64,8 +64,8 @@ export interface TaskListProps {
   setStatusFilter: (value: TaskStatus | 'all') => void;
   categoryFilter: string | 'all' | null;
   setCategoryFilter: (value: string | 'all' | null) => void;
-  priorityFilter: TaskPriority | 'all';
-  setPriorityFilter: (value: TaskPriority | 'all') => void;
+  priorityFilter: TaskPriority | 'all' | null;
+  setPriorityFilter: (value: TaskPriority | 'all' | null) => void;
   sectionFilter: string | 'all' | null;
   setSectionFilter: (value: string | 'all' | null) => void;
 }
@@ -263,8 +263,8 @@ export interface TaskFilterProps {
   setStatusFilter: (value: TaskStatus | 'all') => void;
   categoryFilter: string | 'all' | null;
   setCategoryFilter: (value: string | 'all' | null) => void;
-  priorityFilter: TaskPriority | 'all';
-  setPriorityFilter: (value: TaskPriority | 'all') => void;
+  priorityFilter: TaskPriority | 'all' | null;
+  setPriorityFilter: (value: TaskPriority | 'all' | null) => void;
   sectionFilter: string | 'all' | null;
   setSectionFilter: (value: string | 'all' | null) => void;
   sections: TaskSection[];
@@ -312,7 +312,7 @@ export interface SidebarProps {
 }
 
 export interface DashboardStats {
-  loading: boolean;
+  isLoading: boolean; // Changed from loading
   tasksDue: number;
   tasksCompleted: number;
   appointmentsToday: number;
@@ -320,20 +320,23 @@ export interface DashboardStats {
 
 export interface ProjectContextType {
   projects: Project[];
-  loading: boolean;
+  isLoading: boolean;
+  error: Error | null;
   sectionTitle: string;
   addProject: (name: string, description: string | null, link: string | null) => Promise<Project | null>;
   updateProject: (projectId: string, updates: Partial<Project>) => Promise<Project | null>;
   deleteProject: (projectId: string) => Promise<void>;
   incrementProjectCount: (projectId: string) => Promise<void>;
   decrementProjectCount: (projectId: string) => Promise<void>;
+  resetAllProjectCounts: () => Promise<void>;
   sortOption: string;
   setSortOption: (option: string) => void;
 }
 
 export interface SettingsContextType {
   settings: UserSettings | null;
-  loading: boolean;
+  isLoading: boolean;
+  error: Error | null;
   updateSettings: (updates: Partial<UserSettings>) => Promise<UserSettings | null>;
 }
 
@@ -349,6 +352,7 @@ export interface ProjectBalanceCardProps {
 export interface QuickLinksCardProps {
   quickLinks: QuickLink[];
   isLoading: boolean;
+  error: Error | null;
   addQuickLink: (title: string, url: string, emoji: string | null, backgroundColor: string | null) => Promise<QuickLink | null>;
   updateQuickLink: (linkId: string, updates: Partial<QuickLink>) => Promise<QuickLink | null>;
   deleteQuickLink: (linkId: string) => Promise<void>;
@@ -357,12 +361,14 @@ export interface QuickLinksCardProps {
 export interface WeeklyFocusCardProps {
   weeklyFocus: WeeklyFocus | null;
   isLoading: boolean;
+  error: Error | null;
   updateWeeklyFocus: (updates: Partial<WeeklyFocus>) => Promise<WeeklyFocus | null>;
 }
 
 export interface GratitudeJournalCardProps {
   entries: GratitudeJournalEntry[];
   isLoading: boolean;
+  error: Error | null;
   addEntry: (entry: string) => Promise<GratitudeJournalEntry | null>;
   deleteEntry: (entryId: string) => Promise<void>;
 }
@@ -370,6 +376,7 @@ export interface GratitudeJournalCardProps {
 export interface WorryJournalCardProps {
   entries: WorryJournalEntry[];
   isLoading: boolean;
+  error: Error | null;
   addEntry: (thought: string) => Promise<WorryJournalEntry | null>;
   deleteEntry: (entryId: string) => Promise<void>;
 }
@@ -377,6 +384,7 @@ export interface WorryJournalCardProps {
 export interface SleepTrackerCardProps {
   sleepRecords: SleepRecord[];
   isLoading: boolean;
+  error: Error | null;
   addSleepRecord: (record: Partial<SleepRecord>) => Promise<SleepRecord | null>;
   updateSleepRecord: (recordId: string, updates: Partial<SleepRecord>) => Promise<SleepRecord | null>;
   deleteSleepRecord: (recordId: string) => Promise<void>;
@@ -385,6 +393,7 @@ export interface SleepTrackerCardProps {
 export interface PeopleMemoryCardProps {
   people: PeopleMemory[];
   isLoading: boolean;
+  error: Error | null;
   addPerson: (name: string, notes: string | null, avatarUrl: string | null) => Promise<PeopleMemory | null>;
   updatePerson: (personId: string, updates: Partial<PeopleMemory>) => Promise<PeopleMemory | null>;
   deletePerson: (personId: string) => Promise<void>;
@@ -410,10 +419,10 @@ export interface CategorySelectorProps {
 export interface DraggableTaskListItemProps {
   task: Task;
   onEdit: (task: Task) => void;
-  onDelete: (taskId: string) => void;
-  onUpdate: (taskId: string, updates: Partial<Task>) => void;
+  onDelete: (taskId: string) => Promise<void>;
+  onUpdate: (taskId: string, updates: Partial<Task>) => Promise<Task | null>;
   allTasks: Task[];
-  onStatusChange: (taskId: string, newStatus: TaskStatus) => void;
+  onStatusChange: (taskId: string, newStatus: TaskStatus) => Promise<Task | null>;
   onOpenOverview: (task: Task) => void;
 }
 
@@ -426,6 +435,8 @@ export interface QuickAddTaskProps {
   updateSection: (sectionId: string, newName: string) => Promise<TaskSection | null>;
   deleteSection: (sectionId: string) => Promise<void>;
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<TaskSection | null>;
+  setPrefilledTaskData: (data: Partial<Task> | null) => void;
+  isDemo?: boolean;
 }
 
 export interface SectionSelectorProps {
@@ -458,4 +469,111 @@ export interface TimeBlockProps {
   onOpenAppointmentDetail: (appointment: Appointment) => void;
   onOpenTaskDetail: (task: Task) => void;
   unscheduledTasks: Task[];
+}
+
+export interface DashboardPageProps { // Renamed from DashboardProps
+  isDemo?: boolean;
+  demoUserId?: string;
+}
+
+export interface MyHubPageProps { // Renamed from MyHubProps
+  isDemo?: boolean;
+  demoUserId?: string;
+}
+
+export interface SettingsPageProps {
+  isDemo?: boolean;
+  demoUserId?: string;
+}
+
+export interface AnalyticsPageProps {
+  isDemo?: boolean;
+  demoUserId?: string;
+}
+
+export interface HelpPageProps {
+  isDemo?: boolean;
+  demoUserId?: string;
+}
+
+export interface ProjectBalanceTrackerPageProps {
+  isDemo?: boolean;
+  demoUserId?: string;
+}
+
+export interface DailyTasksV3PageProps { // Renamed from DailyTasksV3Props
+  isDemo?: boolean;
+  demoUserId?: string;
+}
+
+export interface TaskCalendarPageProps { // Renamed from TaskCalendarProps
+  isDemo?: boolean;
+  demoUserId?: string;
+}
+
+export interface TimeBlockSchedulePageProps { // Renamed from TimeBlockSchedulePageProps
+  isDemo?: boolean;
+  demoUserId?: string;
+}
+
+export interface WorkHourState {
+  id?: string; // Optional for new entries
+  day_of_week: string;
+  start_time: string;
+  end_time: string;
+  enabled: boolean;
+}
+
+export interface AppointmentFormProps {
+  appointment?: Appointment | null;
+  onSave: (data: Partial<Appointment>) => Promise<void>;
+  onCancel: () => void;
+  onDelete?: (id: string) => Promise<void>;
+  tasks: Task[];
+  sections: TaskSection[];
+  categories: TaskCategory[];
+  currentDate: Date;
+}
+
+export interface DailySchedulePreviewProps {
+  userId?: string | null;
+}
+
+export interface QuickLinkFormProps {
+  link?: QuickLink | null;
+  onSave: (data: Partial<QuickLink>) => Promise<void>;
+  onCancel: () => void;
+  onDelete?: (id: string) => Promise<void>;
+}
+
+export interface QuickLinksProps {
+  isDemo?: boolean;
+  demoUserId?: string;
+}
+
+export interface PersonAvatarProps {
+  person: PeopleMemory;
+  className?: string;
+}
+
+export interface SleepBarProps {
+  sleepRecord: SleepRecord;
+  onEdit: (record: SleepRecord) => void;
+}
+
+export interface SleepDiaryPageProps {
+  isDemo?: boolean;
+  demoUserId?: string;
+}
+
+export interface TasksPageProps { // Renamed from TasksPage
+  isDemo?: boolean;
+  demoUserId?: string;
+}
+
+export interface ProjectNotesDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  project: Project;
+  onSaveNotes: (notes: string) => Promise<void>;
 }

@@ -1,25 +1,12 @@
-"use client";
-
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Task, TaskCategory } from '@/types'; // Import Task and TaskCategory from @/types
-import TaskItem from './TaskItem'; // Import the new TaskItem component
-
-interface SortableTaskItemProps {
-  task: Task;
-  categories: TaskCategory[];
-  onEdit: (task: Task) => void;
-  onDelete: (taskId: string) => void;
-  onUpdate: (taskId: string, updates: Partial<Task>) => void;
-  allTasks?: Task[]; // For subtasks
-  onStatusChange?: (taskId: string, newStatus: Task['status']) => void;
-  onOpenOverview?: (task: Task) => void;
-}
+import { Task, TaskStatus } from '@/types/task';
+import TaskItem from './TaskItem';
+import { SortableTaskItemProps } from '@/types/props';
 
 const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   task,
-  categories,
   onEdit,
   onDelete,
   onUpdate,
@@ -34,26 +21,27 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: task.id, data: { type: 'task', task } });
+  } = useSortable({ id: task.id });
 
-  const style: React.CSSProperties = {
+  const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 10 : 'auto',
+    zIndex: isDragging ? 10 : 0,
   };
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
       <TaskItem
         task={task}
-        categories={categories}
-        onEdit={onEdit}
-        onDelete={onDelete}
-        onUpdate={onUpdate}
         allTasks={allTasks}
+        sections={[]} // Pass actual sections if available
+        categories={[]} // Pass actual categories if available
         onStatusChange={onStatusChange}
+        onUpdate={onUpdate}
+        onDelete={onDelete}
         onOpenOverview={onOpenOverview}
+        onOpenDetail={onEdit}
       />
     </div>
   );

@@ -3,14 +3,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Play, Check, X, Edit, Trash2, Plus, Link, Image } from 'lucide-react'; // Removed unused Calendar, Tag, ListTodo, Pause, XCircle, EyeOff, Clock, MessageSquare
+import { Play, Check, X, Edit, Trash2, Plus, Link, Image } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Task, TaskStatus, TaskPriority } from '@/types/task'; // Removed unused TaskSection, TaskCategory, RecurringType
+import { Task, TaskStatus, TaskPriority } from '@/types/task';
 import { format, isToday, isTomorrow, isPast, parseISO } from 'date-fns';
 import { getCategoryColorProps } from '@/utils/categoryColors';
 import TaskItem from './TaskItem';
 import { TaskOverviewDialogProps } from '@/types/props';
-import { Badge } from '@/components/ui/badge'; // Import Badge
+import { Badge } from '@/components/ui/badge';
 
 export const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
   isOpen,
@@ -25,13 +25,13 @@ export const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
   allTasks,
   onAddTask,
   onReorderTasks,
-  createSection, // Kept as it's passed to TaskItem for subtasks
-  updateSection, // Kept as it's passed to TaskItem for subtasks
-  deleteSection, // Kept as it's passed to TaskItem for subtasks
-  updateSectionIncludeInFocusMode, // Kept as it's passed to TaskItem for subtasks
-  createCategory, // Kept as it's passed to TaskItem for subtasks
-  updateCategory, // Kept as it's passed to TaskItem for subtasks
-  deleteCategory, // Kept as it's passed to TaskItem for subtasks
+  createSection,
+  updateSection,
+  deleteSection,
+  updateSectionIncludeInFocusMode,
+  createCategory,
+  updateCategory,
+  deleteCategory,
 }) => {
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
   const [newSubtaskDescription, setNewSubtaskDescription] = useState('');

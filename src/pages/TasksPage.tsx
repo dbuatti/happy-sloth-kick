@@ -1,25 +1,45 @@
-"use client";
-
-import { useState, useMemo } from "react";
-import { useTasks } from "@/hooks/useTasks";
-import { Task, TaskSection, TaskCategory } from "@/types";
-import { SectionHeader } from "@/components/SectionHeader";
-import { TaskCard } from "@/components/TaskCard";
-import { Button } from "@/components/ui/button";
-import { PlusIcon } from "lucide-react";
-import { TaskDialog } from "@/components/TaskDialog";
-import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
+import React, { useState, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useTasks } from '@/hooks/useTasks';
+import { Task, TaskSection, DailyTaskCount, TaskStatus, TaskPriority } from '@/types/task';
+import TaskList from '@/components/TaskList';
+import DailyTasksHeader from '@/components/DailyTasksHeader';
+import { TaskOverviewDialog } from '@/components/TaskOverviewDialog';
+import { TaskDetailDialog } from '@/components/TaskDetailDialog';
+import FullScreenFocusView from '@/components/FullScreenFocusView';
+import AddTaskForm from '@/components/AddTaskForm';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
+import ManageSectionsDialog from '@/components/ManageSectionsDialog';
+import ManageCategoriesDialog from '@/components/ManageCategoriesDialog';
+import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
+import TaskFilter from '@/components/TaskFilter';
 
-export default function TasksPage() {
+const TasksPage: React.FC = () => {
   const { user } = useAuth();
   const userId = user?.id;
+  const isDemo = user?.id === 'd889323b-350c-4764-9788-6359f85f6142';
+
+  const [currentDate] = useState(new Date());
+  const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
+  const [prefilledTaskData, setPrefilledTaskData] = useState<Partial<Task> | null>(null);
+  const [isOverviewOpen, setIsOverviewOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isFocusViewOpen, setIsFocusViewOpen] = useState(false);
+  const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
+  const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
 
   const {
     tasks,
+    processedTasks,
+    activeTasks,
+    nextAvailableTask,
     sections,
-    categories,
-    addTask,
+    allCategories,
+    doTodayOffIds,
+    handleAddTask,
     updateTask,
     deleteTask,
     reorderTasks,
@@ -27,147 +47,260 @@ export default function TasksPage() {
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode,
-    markAllTasksInSectionCompleted,
-  } = useTasks({ currentDate: new Date(), userId });
+    createCategory,
+    updateCategory,
+    deleteCategory,
+    toggleDoToday,
+    toggleAllDoToday,
+    archiveAllCompletedTasks,
+    isLoading,
+    error,
+    statusFilter,
+    setStatusFilter,
+    categoryFilter,
+    setCategoryFilter,
+    priorityFilter,
+    setPriorityFilter,
+    sectionFilter,
+    setSectionFilter,
+    searchFilter,
+    setSearchFilter,
+  } = useTasks({ userId: userId, currentDate: currentDate, viewMode: 'all' }); // Changed viewMode to 'all' for a general tasks page
 
-  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const dailyProgress: DailyTaskCount = useDailyTaskCount(currentDate, userId);
 
-  const activeTasks = useMemo(() => {
-    return tasks.filter((task) => task.status !== "completed");
-  }, [tasks]);
+  const handleOpenOverview = (task: Task) => {
+    setSelectedTask(task);
+    setIsOverviewOpen(true);
+  };
 
-  const onDragEnd = (result: DropResult) => {
-    if (!result.destination) {
-      return;
+  const handleOpenDetail = (task: Task) => {
+    setSelectedTask(task);
+    setIsDetailOpen(true);
+  };
+
+  const handleOpenFocusView = (task: Task) => {
+    setSelectedTask(task);
+    setIsFocusViewOpen(true);
+  };
+
+  const handleNewTaskSubmit = async (taskData: Partial<Task>) => {
+    const newTask = await handleAddTask(taskData);
+    if (newTask) {
+      setIsAddTaskDialogOpen(false);
+      setPrefilledTaskData(null);
     }
-
-    const { source, destination, draggableId } = result;
-
-    // Reordering within the same section
-    if (source.droppableId === destination.droppableId) {
-      // Logic for reordering tasks within a section (not implemented in this snippet)
-      console.log(`Reordering task ${draggableId} within section ${source.droppableId}`);
-    } else {
-      // Moving task to a different section
-      console.log(`Moving task ${draggableId} from section ${source.droppableId} to ${destination.droppableId}`);
-      // Logic for updating task's section_id (not implemented in this snippet)
-    }
+    return newTask;
   };
 
-  const handleAddTask = async (newTask: Partial<Task>) => {
-    await addTask(newTask);
-  };
+  const filteredTasks = useMemo(() => {
+    return activeTasks.filter(task => {
+      if (statusFilter !== 'all' && task.status !== statusFilter) return false;
+      if (categoryFilter !== 'all' && task.category !== categoryFilter) return false;
+      if (priorityFilter !== 'all' && task.priority !== priorityFilter) return false;
+      if (sectionFilter !== 'all' && task.section_id !== sectionFilter) return false;
+      if (searchFilter && task.description && !task.description.toLowerCase().includes(searchFilter.toLowerCase())) return false;
+      return true;
+    });
+  }, [activeTasks, statusFilter, categoryFilter, priorityFilter, sectionFilter, searchFilter]);
 
-  const handleUpdateTask = async (taskId: string, updates: Partial<Task>) => {
-    await updateTask(taskId, updates);
-  };
+  if (isLoading) {
+    return <div className="p-4 md:p-6">Loading tasks...</div>;
+  }
 
-  const handleDeleteTask = async (taskId: string) => {
-    await deleteTask(taskId);
-  };
-
-  const handleUpdateSection = async (sectionId: string, newName: string) => {
-    await updateSection(sectionId, newName);
-  };
-
-  const handleDeleteSection = async (sectionId: string) => {
-    const sectionTasks = tasks.filter(task => task.section_id === sectionId);
-    if (sectionTasks.length > 0) {
-      console.error("Cannot delete section with tasks. Please move or delete tasks first.");
-      return;
-    }
-    await deleteSection(sectionId);
-  };
+  if (error) {
+    return <div className="p-4 md:p-6 text-red-500">Error loading tasks: {error.message}</div>;
+  }
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">My Tasks</h1>
+    <div className="flex flex-col h-full p-4 md:p-6">
+      <DailyTasksHeader
+        dailyProgress={dailyProgress}
+        toggleAllDoToday={toggleAllDoToday}
+        showTodayTasks={() => {}}
+        currentDate={currentDate}
+        sections={sections}
+        allCategories={allCategories}
+        createSection={createSection}
+        updateSection={updateSection}
+        deleteSection={deleteSection}
+        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+        createCategory={createCategory}
+        updateCategory={updateCategory}
+        deleteCategory={deleteCategory}
+        onAddTask={handleAddTask}
+        setPrefilledTaskData={setPrefilledTaskData}
+        isDemo={isDemo}
+      />
 
-      <div className="flex justify-end mb-4">
-        <Button onClick={() => { setSelectedTask(null); setIsTaskDialogOpen(true); }}>
-          <PlusIcon className="mr-2 h-4 w-4" /> Add Task
+      <div className="flex justify-between items-center mb-4">
+        <Input
+          placeholder="Search tasks..."
+          value={searchFilter}
+          onChange={(e) => setSearchFilter(e.target.value)}
+          className="max-w-sm"
+        />
+        <Button onClick={() => setIsAddTaskDialogOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" /> Add Task
         </Button>
       </div>
 
-      <DragDropContext onDragEnd={onDragEnd}>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {sections.map((section: TaskSection) => (
-            <Droppable droppableId={section.id} key={section.id}>
-              {(provided) => (
-                <div
-                  ref={provided.innerRef}
-                  {...provided.droppableProps}
-                  className="bg-card p-4 rounded-lg shadow-sm min-h-[200px]"
-                >
-                  <SectionHeader
-                    section={section}
-                    taskCount={activeTasks.filter((task) => task.section_id === section.id).length}
-                    onEdit={handleUpdateSection}
-                    onDelete={handleDeleteSection}
-                    onAddTask={(sectionId) => {
-                      setSelectedTask({
-                        id: '',
-                        description: null, // Allow null description
-                        status: 'to-do',
-                        user_id: userId || '',
-                        section_id: sectionId || undefined,
-                        created_at: new Date().toISOString(),
-                      });
-                      setIsTaskDialogOpen(true);
-                    }}
-                    onMarkAllCompleted={markAllTasksInSectionCompleted}
-                    onToggleFocusMode={updateSectionIncludeInFocusMode}
-                    isDemo={user?.id === 'd889323b-350c-4764-9788-6359f85f6142'}
-                  />
-                  <div className="mt-4 space-y-3">
-                    {activeTasks
-                      .filter((task) => task.section_id === section.id)
-                      .sort((a, b) => (a.order || 0) - (b.order || 0))
-                      .map((task: Task, index: number) => (
-                        <Draggable key={task.id} draggableId={task.id} index={index}>
-                          {(providedDraggable) => (
-                            <div
-                              ref={providedDraggable.innerRef}
-                              {...providedDraggable.draggableProps}
-                              {...providedDraggable.dragHandleProps}
-                            >
-                              <TaskCard
-                                task={task}
-                                categories={categories}
-                                onEdit={() => { setSelectedTask(task); setIsTaskDialogOpen(true); }}
-                                onDelete={handleDeleteTask}
-                                onUpdate={handleUpdateTask}
-                              />
-                            </div>
-                          )}
-                        </Draggable>
-                      ))}
-                    {provided.placeholder}
-                  </div>
-                </div>
-              )}
-            </Droppable>
-          ))}
-        </div>
-      </DragDropContext>
-
-      <TaskDialog
-        isOpen={isTaskDialogOpen}
-        setIsOpen={setIsTaskDialogOpen}
-        task={selectedTask}
-        categories={categories}
+      <TaskFilter
+        statusFilter={statusFilter}
+        setStatusFilter={setStatusFilter}
+        categoryFilter={categoryFilter}
+        setCategoryFilter={setCategoryFilter}
+        priorityFilter={priorityFilter}
+        setPriorityFilter={setPriorityFilter}
+        sectionFilter={sectionFilter}
+        setSectionFilter={setSectionFilter}
         sections={sections}
-        onSave={async (taskData: Partial<Task>) => { // Explicitly type taskData
-          if (selectedTask?.id) {
-            await handleUpdateTask(selectedTask.id, taskData);
-          } else {
-            await handleAddTask(taskData);
-          }
-          setIsTaskDialogOpen(false);
-          setSelectedTask(null);
-        }}
+        categories={allCategories}
       />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        {sections.map((section: TaskSection) => {
+          const sectionTasks = filteredTasks.filter((task: Task) => task.section_id === section.id);
+          return (
+            <div key={section.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">{section.name}</h2>
+                <span className="text-gray-500">{sectionTasks.length} tasks</span>
+              </div>
+              <TaskList
+                tasks={sectionTasks}
+                processedTasks={processedTasks}
+                sections={sections}
+                categories={allCategories}
+                onStatusChange={updateTask}
+                onUpdate={updateTask}
+                onDelete={deleteTask}
+                onOpenOverview={handleOpenOverview}
+                onOpenDetail={handleOpenDetail}
+                onAddTask={handleAddTask}
+                onReorderTasks={reorderTasks}
+                showDoTodayToggle={true}
+                toggleDoToday={toggleDoToday}
+                doTodayOffIds={doTodayOffIds}
+                isDemo={isDemo}
+                nextAvailableTask={nextAvailableTask}
+                currentDate={currentDate}
+                createSection={createSection}
+                updateSection={updateSection}
+                deleteSection={deleteSection}
+                updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+                archiveAllCompletedTasks={archiveAllCompletedTasks}
+                toggleAllDoToday={toggleAllDoToday}
+                setIsAddTaskDialogOpen={setIsAddTaskDialogOpen}
+                setPrefilledTaskData={setPrefilledTaskData}
+                dailyProgress={dailyProgress}
+                onOpenFocusView={handleOpenFocusView}
+                statusFilter={statusFilter}
+                setStatusFilter={setStatusFilter}
+                categoryFilter={categoryFilter}
+                setCategoryFilter={setCategoryFilter}
+                priorityFilter={priorityFilter}
+                setPriorityFilter={setPriorityFilter}
+                sectionFilter={sectionFilter}
+                setSectionFilter={setSectionFilter}
+              />
+            </div>
+          );
+        })}
+      </div>
+
+      <Dialog open={isAddTaskDialogOpen} onOpenChange={setIsAddTaskDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Add New Task</DialogTitle>
+          </DialogHeader>
+          <AddTaskForm
+            onAddTask={handleNewTaskSubmit}
+            onTaskAdded={() => setIsAddTaskDialogOpen(false)}
+            sections={sections}
+            allCategories={allCategories}
+            currentDate={currentDate}
+            createSection={createSection}
+            updateSection={updateSection}
+            deleteSection={deleteSection}
+            updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+            initialData={prefilledTaskData}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <TaskOverviewDialog
+        isOpen={isOverviewOpen}
+        onClose={() => setIsOverviewOpen(false)}
+        task={selectedTask}
+        onOpenDetail={handleOpenDetail}
+        onOpenFocusView={handleOpenFocusView}
+        updateTask={updateTask}
+        deleteTask={deleteTask}
+        sections={sections}
+        categories={allCategories}
+        allTasks={tasks}
+        onAddTask={handleAddTask}
+        onReorderTasks={reorderTasks}
+        createSection={createSection}
+        updateSection={updateSection}
+        deleteSection={deleteSection}
+        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+        createCategory={createCategory}
+        updateCategory={updateCategory}
+        deleteCategory={deleteCategory}
+      />
+
+      <TaskDetailDialog
+        isOpen={isDetailOpen}
+        onClose={() => setIsDetailOpen(false)}
+        task={selectedTask}
+        onUpdate={updateTask}
+        onDelete={deleteTask}
+        sections={sections}
+        categories={allCategories}
+        allTasks={tasks}
+        onAddTask={handleAddTask}
+        onReorderTasks={reorderTasks}
+        createSection={createSection}
+        updateSection={updateSection}
+        deleteSection={deleteSection}
+        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+        createCategory={createCategory}
+        updateCategory={updateCategory}
+        deleteCategory={deleteCategory}
+      />
+
+      {isFocusViewOpen && selectedTask && (
+        <FullScreenFocusView
+          task={selectedTask}
+          onClose={() => setIsFocusViewOpen(false)}
+          onComplete={() => {
+            updateTask(selectedTask.id, { status: 'completed' });
+            setIsFocusViewOpen(false);
+          }}
+          onSkip={() => {
+            updateTask(selectedTask.id, { status: 'skipped' });
+            setIsFocusViewOpen(false);
+          }}
+          onOpenDetail={handleOpenDetail}
+          updateTask={updateTask}
+          sections={sections}
+          categories={allCategories}
+          allTasks={tasks}
+          onAddTask={handleAddTask}
+          onReorderTasks={reorderTasks}
+          createSection={createSection}
+          updateSection={updateSection}
+          deleteSection={deleteSection}
+          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+          createCategory={createCategory}
+          updateCategory={updateCategory}
+          deleteCategory={deleteCategory}
+        />
+      )}
     </div>
   );
-}
+};
+
+export default TasksPage;

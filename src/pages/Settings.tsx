@@ -8,22 +8,24 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TimePicker } from '@/components/ui/time-picker';
+import TimePicker from '@/components/ui/time-picker'; // Corrected import
 import { format, parseISO } from 'date-fns';
 import { showError, showSuccess } from '@/utils/toast';
-import { UserSettings, WorkHour } from '@/types/task';
+import { UserSettings, WorkHour, WorkHourState } from '@/types/task'; // Import WorkHourState
+import ProjectTrackerSettings from '@/components/ProjectTrackerSettings'; // Corrected import
+import { SettingsPageProps } from '@/types/props';
 
-const SettingsPage: React.FC = () => {
+const SettingsPage: React.FC<SettingsPageProps> = () => {
   const { user } = useAuth();
   const userId = user?.id;
 
-  const { settings, loading: settingsLoading, updateSettings } = useSettings(userId);
-  const { allWorkHours, loading: workHoursLoading, saveWorkHours } = useWorkHours(userId);
+  const { settings, isLoading: settingsLoading, error: settingsError, updateSettings } = useSettings({ userId });
+  const { allWorkHours, isLoading: workHoursLoading, error: workHoursError, saveWorkHours } = useWorkHours({ userId });
 
   const [projectTrackerTitle, setProjectTrackerTitle] = useState('');
   const [scheduleShowFocusTasksOnly, setScheduleShowFocusTasksOnly] = useState(true);
   const [futureTasksDaysVisible, setFutureTasksDaysVisible] = useState(7);
-  const [localWorkHours, setLocalWorkHours] = useState<WorkHour[]>([]);
+  const [localWorkHours, setLocalWorkHours] = useState<WorkHourState[]>([]);
 
   useEffect(() => {
     if (settings) {
@@ -35,11 +37,23 @@ const SettingsPage: React.FC = () => {
 
   useEffect(() => {
     if (allWorkHours) {
-      setLocalWorkHours(allWorkHours);
+      // Initialize localWorkHours ensuring all days are present with defaults if missing
+      const allDaysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+      const initializedHours: WorkHourState[] = allDaysOfWeek.map(day => {
+        const existing = allWorkHours.find(wh => wh.day_of_week === day);
+        return {
+          id: existing?.id, // Keep existing ID if available
+          day_of_week: day,
+          start_time: existing?.start_time || '09:00:00',
+          end_time: existing?.end_time || '17:00:00',
+          enabled: existing?.enabled ?? false, // Default to false if not explicitly set
+        };
+      });
+      setLocalWorkHours(initializedHours);
     }
   }, [allWorkHours]);
 
-  const handleSaveSettings = async () => {
+  const handleSaveGeneralSettings = async () => {
     if (!userId) {
       showError('User not authenticated.');
       return;
@@ -50,33 +64,21 @@ const SettingsPage: React.FC = () => {
         schedule_show_focus_tasks_only: scheduleShowFocusTasksOnly,
         future_tasks_days_visible: futureTasksDaysVisible,
       });
-      showSuccess('Settings saved successfully!');
+      showSuccess('General settings saved successfully!');
     } catch (error) {
-      showError('Failed to save settings.');
-      console.error('Error saving settings:', error);
+      showError('Failed to save general settings.');
+      console.error('Error saving general settings:', error);
     }
   };
 
   const handleWorkHourChange = (day: string, field: 'start_time' | 'end_time' | 'enabled', value: string | boolean) => {
     setLocalWorkHours(prevHours => {
-      const existing = prevHours.find(wh => wh.day_of_week === day);
-      if (existing) {
-        return prevHours.map(wh =>
-          wh.day_of_week === day ? { ...wh, [field]: value } : wh
-        );
-      } else {
-        // Create a new entry if it doesn't exist
-        const newHour: WorkHour = {
-          id: crypto.randomUUID(), // Generate a new ID for new entries
-          user_id: userId!,
-          day_of_week: day,
-          start_time: '09:00:00', // Default start
-          end_time: '17:00:00',   // Default end
-          enabled: true,
-          ...({ [field]: value } as Partial<WorkHour>), // Apply the specific field change
-        };
-        return [...prevHours, newHour];
-      }
+      return prevHours.map(wh => {
+        if (wh.day_of_week === day) {
+          return { ...wh, [field]: value };
+        }
+        return wh;
+      });
     });
   };
 
@@ -86,7 +88,16 @@ const SettingsPage: React.FC = () => {
       return;
     }
     try {
-      await saveWorkHours(localWorkHours);
+      const hoursToSave: WorkHour[] = localWorkHours.map(localHour => ({
+        id: localHour.id || crypto.randomUUID(),
+        user_id: userId,
+        day_of_week: localHour.day_of_week,
+        start_time: localHour.start_time,
+        end_time: localHour.end_time,
+        enabled: localHour.enabled,
+      }));
+
+      await saveWorkHours(hoursToSave);
       showSuccess('Work hours saved successfully!');
     } catch (error) {
       showError('Failed to save work hours.');
@@ -97,6 +108,12 @@ const SettingsPage: React.FC = () => {
   if (settingsLoading || workHoursLoading) {
     return <div className="p-4 md:p-6">Loading settings...</div>;
   }
+
+  if (settingsError || workHoursError) {
+    return <div className="p-4 md:p-6 text-red-500">Error loading settings: {settingsError?.message || workHoursError?.message}</div>;
+  }
+
+  const allDaysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
   return (
     <div className="flex flex-col h-full p-4 md:p-6">
@@ -134,16 +151,18 @@ const SettingsPage: React.FC = () => {
                 min={1}
               />
             </div>
-            <Button onClick={handleSaveSettings}>Save General Settings</Button>
+            <Button onClick={handleSaveGeneralSettings}>Save General Settings</Button>
           </CardContent>
         </Card>
+
+        <ProjectTrackerSettings />
 
         <Card>
           <CardHeader>
             <CardTitle>Work Hours</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => {
+            {allDaysOfWeek.map(day => {
               const dayWorkHour = localWorkHours.find(wh => wh.day_of_week === day);
               const startTime = dayWorkHour?.start_time ? parseISO(`2000-01-01T${dayWorkHour.start_time}`) : undefined;
               const endTime = dayWorkHour?.end_time ? parseISO(`2000-01-01T${dayWorkHour.end_time}`) : undefined;

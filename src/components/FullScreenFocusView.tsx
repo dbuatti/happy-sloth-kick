@@ -12,9 +12,10 @@ import {
   Plus,
   Link,
   Image,
-} from 'lucide-react'; // Removed unused Checkbox, ListTodo, Timer, MessageSquare
+  Pause,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Task, TaskStatus, TaskPriority } from '@/types/task'; // Removed unused TaskSection, TaskCategory, RecurringType
+import { Task, TaskStatus, TaskPriority } from '@/types/task';
 import { format, isToday, isTomorrow, isPast, parseISO } from 'date-fns';
 import { getCategoryColorProps } from '@/utils/categoryColors';
 import TaskItem from './TaskItem';
@@ -214,7 +215,7 @@ const FullScreenFocusView: React.FC<FullScreenFocusViewProps> = ({
                     onStatusChange={handleSubtaskStatusChange}
                     onUpdate={updateTask}
                     onDelete={deleteTask}
-                    onOpenOverview={() => {}} // No overview for subtasks in focus view
+                    onOpenOverview={() => {}}
                     onOpenDetail={onOpenDetail}
                     onAddTask={onAddTask}
                     onReorderTasks={onReorderTasks}
@@ -247,11 +248,9 @@ const FullScreenFocusView: React.FC<FullScreenFocusViewProps> = ({
         </div>
 
         <div className="lg:col-span-1 space-y-6">
-          {/* Placeholder for Focus Tools Panel or other widgets */}
           <div className="bg-card p-6 rounded-lg shadow-md">
             <h3 className="text-xl font-semibold mb-4">Focus Tools</h3>
             <p className="text-gray-500">Timer, notes, and other focus-related tools can go here.</p>
-            {/* Example: Timer */}
             <div className="flex items-center justify-center space-x-4 mt-4">
               <Button variant="outline" size="icon">
                 <Play className="h-5 w-5" />

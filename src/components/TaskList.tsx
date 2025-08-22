@@ -1,8 +1,8 @@
 import React from 'react';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, Coordinates } from '@dnd-kit/core';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { arrayMove } from '@dnd-kit/sortable';
-import { Task, TaskSection } from '@/types/task'; // Removed unused TaskCategory
+import { Task, TaskSection } from '@/types/task';
 import TaskItem from './TaskItem';
 import { TaskListProps } from '@/types/props';
 
@@ -25,7 +25,7 @@ const TaskList: React.FC<TaskListProps> = ({
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
-      coordinateGetter: (event: KeyboardEvent): Coordinates | null => {
+      coordinateGetter: (event: KeyboardEvent) => {
         if (event.code === 'Space') {
           return { x: 0, y: 0 };
         }

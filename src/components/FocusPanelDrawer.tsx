@@ -1,56 +1,47 @@
 import React from 'react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import FocusToolsPanel from './FocusToolsPanel';
-import { Task, TaskSection, Category } from '@/hooks/useTasks';
-// Removed useAuth as it's not directly used in this component's logic
-
-interface FocusPanelDrawerProps {
-  isOpen: boolean;
-  onClose: () => void;
-  nextAvailableTask: Task | null;
-  tasks: Task[];
-  filteredTasks: Task[];
-  updateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
-  onOpenDetail: (task: Task) => void;
-  onDeleteTask: (taskId: string) => void;
-  sections: TaskSection[];
-  allCategories: Category[];
-  handleAddTask: (taskData: any) => Promise<any>; // Added handleAddTask
-  currentDate: Date; // Added currentDate
-}
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
+import { X } from 'lucide-react';
+import FocusToolsPanel from './FocusToolsPanel'; // Corrected import
+import { FocusPanelDrawerProps } from '@/types/props';
 
 const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
   isOpen,
   onClose,
-  nextAvailableTask,
-  tasks,
-  filteredTasks,
-  updateTask,
+  currentTask,
+  onCompleteCurrentTask,
+  onSkipCurrentTask,
   onOpenDetail,
-  onDeleteTask,
+  onOpenOverview,
+  updateTask,
   sections,
   allCategories,
-  handleAddTask, // Destructure handleAddTask
-  currentDate, // Destructure currentDate
+  handleAddTask,
+  currentDate,
+  isDemo,
 }) => {
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent side="right" className="w-full sm:max-w-md flex flex-col">
-        <SheetHeader>
+        <SheetHeader className="flex flex-row items-center justify-between">
           <SheetTitle>Focus Tools</SheetTitle>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="h-5 w-5" />
+          </Button>
         </SheetHeader>
-        <div className="flex-1 overflow-y-auto py-4">
+        <div className="flex-grow overflow-y-auto py-4">
           <FocusToolsPanel
-            nextAvailableTask={nextAvailableTask}
-            tasks={tasks}
-            filteredTasks={filteredTasks}
+            currentTask={currentTask}
+            onCompleteCurrentTask={onCompleteCurrentTask}
+            onSkipCurrentTask={onSkipCurrentTask}
+            onOpenDetail={onOpenDetail}
+            onOpenOverview={onOpenOverview}
             updateTask={updateTask}
-            onDeleteTask={onDeleteTask}
             sections={sections}
             allCategories={allCategories}
-            onOpenDetail={onOpenDetail}
-            handleAddTask={handleAddTask} // Pass handleAddTask
-            currentDate={currentDate} // Pass currentDate
+            handleAddTask={handleAddTask}
+            currentDate={currentDate}
+            isDemo={isDemo}
           />
         </div>
       </SheetContent>

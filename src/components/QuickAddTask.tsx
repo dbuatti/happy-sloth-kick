@@ -1,56 +1,88 @@
 import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus } from 'lucide-react';
-import { Task } from '@/hooks/useTasks';
+import { Task, TaskSection, TaskCategory } from '@/types/task';
+import { showError, showLoading, dismissToast, showSuccess } from '@/utils/toast';
+import { useSound } from '@/context/SoundContext';
+import { suggestTaskDetails } from '@/integrations/supabase/api';
+import { QuickAddTaskProps } from '@/types/props';
 
-interface QuickAddTaskProps {
-  sectionId: string | null;
-  onAddTask: (taskData: {
-    description: string;
-    section_id: string | null;
-    category: string;
-    priority: Task['priority'];
-  }) => Promise<any>;
-  defaultCategoryId: string;
-  isDemo?: boolean;
-}
+const QuickAddTask: React.FC<QuickAddTaskProps> = ({
+  onAddTask,
+  sections,
+  allCategories,
+  currentDate,
+  createSection,
+  updateSection,
+  deleteSection,
+  updateSectionIncludeInFocusMode,
+  setPrefilledTaskData,
+  isDemo,
+}) => {
+  const [quickAddTaskDescription, setQuickAddTaskDescription] = useState('');
+  const { playSound } = useSound();
 
-const QuickAddTask: React.FC<QuickAddTaskProps> = ({ sectionId, onAddTask, defaultCategoryId, isDemo = false }) => {
-  const [description, setDescription] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
+  const handleQuickAddTask = async () => {
+    if (!quickAddTaskDescription.trim()) {
+      showError('Task description cannot be empty.');
+      return;
+    }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!description.trim() || !defaultCategoryId) return;
+    playSound('add');
+    const loadingToastId = showLoading('Thinking...');
 
-    setIsSaving(true);
-    await onAddTask({
-      description: description.trim(),
-      section_id: sectionId,
-      category: defaultCategoryId,
-      priority: 'medium',
-    });
-    setIsSaving(false);
-    setDescription('');
+    try {
+      const categoriesForAI = allCategories.map(cat => ({ id: cat.id, name: cat.name }));
+      const suggestions = await suggestTaskDetails(quickAddTaskDescription.trim(), categoriesForAI, currentDate);
+      dismissToast(loadingToastId);
+
+      const suggestedCategoryId = allCategories.find(cat => cat.name.toLowerCase() === suggestions.suggestedCategory?.toLowerCase())?.id || allCategories.find(cat => cat.name.toLowerCase() === 'general')?.id || allCategories[0]?.id || null;
+      const suggestedSectionId = sections.find(sec => sec.name.toLowerCase() === suggestions.suggestedSection?.toLowerCase())?.id || null;
+
+      const success = await onAddTask({
+        description: suggestions.cleanedDescription,
+        category: suggestedCategoryId,
+        priority: suggestions.suggestedPriority,
+        due_date: suggestions.suggestedDueDate,
+        notes: suggestions.suggestedNotes,
+        remind_at: suggestions.suggestedRemindAt,
+        section_id: suggestedSectionId,
+        parent_task_id: null,
+        link: suggestions.suggestedLink,
+      });
+
+      if (success) {
+        setQuickAddTaskDescription('');
+        showSuccess('Task added with AI suggestions!');
+      } else {
+        showError('Failed to add task with AI suggestions.');
+      }
+    } catch (error) {
+      dismissToast(loadingToastId);
+      showError('Failed to get AI suggestions or add task.');
+      console.error('AI suggestion error:', error);
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex items-center gap-2 px-2 py-1">
-      <Plus className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+    <div className="flex space-x-2">
       <Input
-        placeholder="Add a task and press Enter..."
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-        className="h-8 border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 text-base"
-        disabled={isSaving || isDemo}
+        placeholder="Quick add a task (e.g., 'Call mom tomorrow high priority')"
+        value={quickAddTaskDescription}
+        onChange={(e) => setQuickAddTaskDescription(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === 'Enter' && !e.shiftKey) {
+          if (e.key === 'Enter') {
             e.preventDefault();
-            handleSubmit(e);
+            handleQuickAddTask();
           }
         }}
+        className="flex-grow"
       />
-    </form>
+      <Button onClick={handleQuickAddTask} size="icon">
+        <Plus className="h-4 w-4" />
+      </Button>
+    </div>
   );
 };
 

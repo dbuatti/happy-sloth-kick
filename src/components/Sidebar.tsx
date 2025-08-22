@@ -1,159 +1,108 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, Volume2, VolumeX } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { LayoutDashboard, ListTodo, Calendar, Archive, Settings, HelpCircle, LogOut, Sun, Moon, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
-import { Badge } from '@/components/ui/badge';
-import { useSound } from '@/context/SoundContext';
-import ThemeSelector from './ThemeSelector';
-import { navItems } from '@/lib/navItems';
-import { useSettings } from '@/context/SettingsContext';
 import { useAuth } from '@/context/AuthContext';
+import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
+import { useTheme } from '@/context/ThemeContext';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { SidebarProps } from '@/types/props';
 
-// Define PointerDownOutsideEvent type locally to resolve import issues
-type PointerDownOutsideEvent = CustomEvent<{ originalEvent: PointerEvent }>;
-
-interface SidebarProps {
-  children: React.ReactNode;
-  isDemo?: boolean;
-  demoUserId?: string;
-}
-
-const NavigationLinks = ({ onLinkClick, isDemo, demoUserId }: { onLinkClick?: () => void; isDemo?: boolean; demoUserId?: string; }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isDemo: propIsDemo, demoUserId }) => {
+  const { user, signOut: authSignOut } = useAuth();
+  const userId = user?.id || demoUserId;
+  const isDemo = propIsDemo || user?.id === 'd889323b-350c-4764-9788-6359f85f6142';
   const location = useLocation();
-  const { dailyTaskCount, loading: countLoading } = useDailyTaskCount({ userId: demoUserId });
-  const { settings } = useSettings();
-  const { user } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
-  const visibleNavItems = navItems.filter(item => {
-    // Hide Dev Space unless it's the specific user
-    if (item.path === '/dev-space') {
-      return user?.id === 'abc41fed-55ba-4249-90df-3b5a25b09e87';
-    }
-    if (!item.toggleable) return true;
-    return settings?.visible_pages?.[item.path] !== false;
-  });
+  const { dailyProgress, isLoading: dailyTaskCountLoading } = useDailyTaskCount(new Date(), userId);
 
-  return (
-    <nav className="flex-1 px-3 space-y-1">
-      {visibleNavItems.map((item) => {
-        const path = isDemo ? (item.path === '/dashboard' ? '/demo' : `/demo${item.path}`) : item.path;
-        const isActive = location.pathname === path;
-        const Icon = item.icon;
-        return (
-          <Link
-            key={item.path}
-            to={path}
-            className={cn(
-              "flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-              isActive
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'text-foreground/80 hover:bg-muted hover:text-foreground'
-            )}
-            onClick={onLinkClick}
-          >
-            <Icon className="h-4 w-4" />
-            <span className="font-medium text-sm">{item.name}</span>
-            {item.showCount && !countLoading && dailyTaskCount > 0 && (
-              <Badge className="ml-auto px-2.5 py-1 text-xs rounded-full bg-primary-foreground text-primary flex-shrink-0">
-                {dailyTaskCount}
-              </Badge>
-            )}
-          </Link>
-        );
-      })}
+  const navItems = [
+    {
+      name: 'Dashboard',
+      icon: LayoutDashboard,
+      path: isDemo ? '/demo/dashboard' : '/dashboard',
+      count: null,
+    },
+    {
+      name: 'My Hub',
+      icon: ListTodo,
+      path: isDemo ? '/demo/my-hub' : '/my-hub',
+      count: dailyTaskCountLoading ? null : dailyProgress.totalPendingCount,
+    },
+    {
+      name: 'Calendar',
+      icon: Calendar,
+      path: isDemo ? '/demo/calendar' : '/calendar',
+      count: null,
+    },
+    {
+      name: 'Archive',
+      icon: Archive,
+      path: isDemo ? '/demo/archive' : '/archive',
+      count: null,
+    },
+  ];
+
+  const settingsItems = [
+    { name: 'Settings', icon: Settings, path: '/settings' },
+    { name: 'Help', icon: HelpCircle, path: '/help' },
+  ];
+
+  const renderNavItems = (items: (typeof navItems[number] | typeof settingsItems[number])[]) => (
+    <nav className="grid items-start gap-2">
+      {items.map((item) => (
+        <Link
+          key={item.name}
+          to={item.path}
+          className={cn(
+            'flex items-center gap-3 rounded-lg px-3 py-2 text-gray-900 transition-all hover:text-gray-900 dark:text-gray-50 dark:hover:text-gray-50',
+            {
+              'bg-gray-100 dark:bg-gray-800': location.pathname === item.path,
+            }
+          )}
+        >
+          <item.icon className="h-4 w-4" />
+          {item.name}
+          {'count' in item && item.count !== null && (
+            <span className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">
+              {item.count}
+            </span>
+          )}
+        </Link>
+      ))}
     </nav>
   );
-};
-
-export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false, demoUserId }) => {
-  const isMobile = useIsMobile();
-  const { isSoundEnabled, toggleSound } = useSound();
-
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
-
-  if (isMobile) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <header className="flex items-center justify-between p-4 bg-card/80 backdrop-blur shadow-sm sticky top-0 z-50">
-          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label="Open menu" className="h-9 w-9">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent
-              side="left"
-              className="w-64 bg-card flex flex-col"
-              onPointerDownOutside={(e: PointerDownOutsideEvent) => {
-                if (e.target instanceof HTMLElement && e.target.closest('[data-radix-popper-content-wrapper]')) {
-                  e.preventDefault();
-                }
-              }}
-            >
-              <div className="p-4 flex justify-between items-center">
-                <Link to={isDemo ? '/demo' : '/dashboard'} className="hover:opacity-80 transition-opacity">
-                  <h1 className="text-2xl font-bubbly">TaskMaster</h1>
-                </Link>
-              </div>
-              <NavigationLinks onLinkClick={() => setIsSheetOpen(false)} isDemo={isDemo} demoUserId={demoUserId} />
-              <div className="p-4 border-t border-border flex justify-between items-center">
-                <p className="text-xs text-muted-foreground">
-                  &copy; {new Date().getFullYear()} TaskMaster
-                </p>
-                <div className="flex items-center space-x-1">
-                  <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"} className="h-8 w-8">
-                    {isSoundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-                  </Button>
-                  <ThemeSelector />
-                </div>
-              </div>
-            </SheetContent>
-          </Sheet>
-          <Link to={isDemo ? '/demo' : '/dashboard'} className="hover:opacity-80 transition-opacity">
-            <h1 className="text-xl font-bubbly sm:text-2xl">TaskMaster</h1> {/* Reduced font size for mobile */}
-          </Link>
-          <div className="flex items-center space-x-1">
-            <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"} className="h-8 w-8">
-              {isSoundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-            </Button>
-            <ThemeSelector />
-          </div>
-        </header>
-        <div className="flex-1 overflow-auto">
-          {children}
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="h-screen flex overflow-hidden bg-background">
-      <div className="w-64 bg-card/80 backdrop-blur shadow-md h-full flex flex-col flex-shrink-0">
-        <div className="p-4 flex justify-between items-center">
-          <Link to={isDemo ? '/demo' : '/dashboard'} className="hover:opacity-80 transition-opacity">
-            <h1 className="text-2xl font-bubbly">TaskMaster</h1>
+    <div className="hidden border-r bg-muted/40 md:block">
+      <div className="flex h-full max-h-screen flex-col gap-2">
+        <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+          <Link to="/" className="flex items-center gap-2 font-semibold">
+            <span className="text-lg">My Productivity App</span>
           </Link>
+          <Button variant="ghost" size="icon" className="ml-auto h-8 w-8" onClick={toggleTheme}>
+            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            <span className="sr-only">Toggle theme</span>
+          </Button>
         </div>
-        <NavigationLinks isDemo={isDemo} demoUserId={demoUserId} />
-        <div className="p-4 border-t border-border flex justify-between items-center">
-          <p className="text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} TaskMaster
-          </p>
-          <div className="flex items-center space-x-1">
-            <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"} className="h-8 w-8">
-              {isSoundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-            </Button>
-            <ThemeSelector />
+        <div className="flex-1">
+          <div className="grid items-start px-2 text-sm font-medium lg:px-4">
+            {renderNavItems(navItems)}
+            <div className="mt-4 border-t pt-4 dark:border-gray-700">
+              {renderNavItems(settingsItems)}
+            </div>
+            {user && (
+              <Button variant="ghost" className="w-full justify-start mt-4" onClick={() => authSignOut()}>
+                <LogOut className="h-4 w-4 mr-3" /> Log Out
+              </Button>
+            )}
           </div>
         </div>
-      </div>
-      <div className="flex-1 flex flex-col overflow-y-auto">
-        {children}
       </div>
     </div>
   );
 };
+
+export default Sidebar;

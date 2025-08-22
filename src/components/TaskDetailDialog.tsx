@@ -7,8 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Plus } from 'lucide-react';
 import { Task, TaskSection, TaskCategory, RecurringType, TaskPriority } from '@/types/task';
 import { format, parseISO } from 'date-fns';
-import DatePicker from '@/components/ui/date-picker'; // Corrected import
-import SelectDialog from '@/components/SelectDialog'; // Corrected import
+import DatePicker from '@/components/ui/date-picker';
+import SelectDialog from '@/components/SelectDialog';
 import { getCategoryColorProps } from '@/utils/categoryColors';
 import { TaskDetailDialogProps } from '@/types/props';
 
@@ -116,7 +116,7 @@ export const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
             <Textarea
               id="notes"
               value={editedNotes}
-              onChange={(e) => setEditedNotes(e.target.value)}
+              onChange={(e) => setNotes(e.target.value)}
               className="col-span-3"
             />
           </div>
@@ -233,8 +233,6 @@ export const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
             <div className="col-span-4 mt-4">
               <h3 className="text-lg font-semibold mb-2">Subtasks</h3>
               <div className="space-y-2">
-                {/* Subtasks would be rendered here, potentially using TaskItem */}
-                {/* For now, just a placeholder */}
                 {subtasks.map(sub => (
                   <div key={sub.id} className="flex items-center gap-2 pl-4">
                     <Plus className="h-4 w-4 text-gray-500" />

@@ -18,21 +18,24 @@ import {
   TaskPriority,
 } from '@/types/task';
 import { format } from 'date-fns';
-import DatePicker from '@/components/ui/date-picker'; // Corrected import
-import SelectDialog from '@/components/SelectDialog'; // Corrected import
-import { AddTaskFormProps } from '@/types/props'; // Import props interface
-import { DialogFooter } from '@/components/ui/dialog'; // Import DialogFooter
+import DatePicker from '@/components/ui/date-picker';
+import SelectDialog from '@/components/SelectDialog';
+import { AddTaskFormProps } from '@/types/props';
+import { DialogFooter } from '@/components/ui/dialog';
 
 const AddTaskForm: React.FC<AddTaskFormProps> = ({
   onAddTask,
   onTaskAdded,
   sections,
   allCategories,
-  currentDate, // Re-added as it's used for AI suggestions
+  currentDate,
   createSection,
   updateSection,
   deleteSection,
-  updateSectionIncludeInFocusMode, // Re-added as it's passed to SelectDialog
+  updateSectionIncludeInFocusMode,
+  createCategory,
+  updateCategory,
+  deleteCategory,
   initialData,
 }) => {
   const [description, setDescription] = useState(initialData?.description || '');
@@ -64,7 +67,6 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({
       section_id: selectedSection?.id || null,
       notes,
       recurring_type: recurringType,
-      // Add other fields as needed
     };
 
     await onAddTask(taskData);
@@ -132,7 +134,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({
           items={allCategories.map(cat => ({
             id: cat.id,
             name: cat.name,
-            color: cat.color, // Pass color directly
+            color: cat.color,
           }))}
           selectedItem={selectedCategory ? { id: selectedCategory.id, name: selectedCategory.name, color: selectedCategory.color } : null}
           onSelectItem={(item: { id: string; name: string; color?: string } | null) => setSelectedCategory(allCategories.find(cat => cat.id === item?.id) || null)}

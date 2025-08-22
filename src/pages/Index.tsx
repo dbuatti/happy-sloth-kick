@@ -4,20 +4,20 @@ import { useAuth } from '@/context/AuthContext';
 import { Loader2 } from 'lucide-react';
 
 const IndexPage: React.FC = () => {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isLoading) {
+    if (!authLoading) {
       if (user) {
         navigate('/dashboard');
       } else {
         navigate('/login');
       }
     }
-  }, [user, isLoading, navigate]);
+  }, [user, authLoading, navigate]);
 
-  if (isLoading) {
+  if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
@@ -25,7 +25,7 @@ const IndexPage: React.FC = () => {
     );
   }
 
-  return null; // Or a simple loading spinner if preferred
+  return null;
 };
 
 export default IndexPage;

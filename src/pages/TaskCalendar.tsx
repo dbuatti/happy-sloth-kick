@@ -1,199 +1,287 @@
 import React, { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar } from "@/components/ui/calendar";
-import { useTasks, Task } from '@/hooks/useTasks';
-import { format, parseISO, startOfDay } from 'date-fns';
-import { CalendarDays, ListTodo } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { useTasks } from '@/hooks/useTasks';
+import { Task, TaskSection, TaskCategory, TaskStatus, TaskPriority } from '@/types/task';
+import { format, startOfWeek, addDays, isSameDay, parseISO } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import TaskItem from '@/components/TaskItem';
-import TaskOverviewDialog from '@/components/TaskOverviewDialog';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useAllAppointments } from '@/hooks/useAllAppointments';
-import { Appointment } from '@/hooks/useAppointments';
-import TaskDetailDialog from '@/components/TaskDetailDialog'; // Import TaskDetailDialog
+import { TaskOverviewDialog } from '@/components/TaskOverviewDialog';
+import { TaskDetailDialog } from '@/components/TaskDetailDialog';
+import FullScreenFocusView from '@/components/FullScreenFocusView';
+import AddTaskForm from '@/components/AddTaskForm';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import TaskFilter from '@/components/TaskFilter';
+import { TaskCalendarProps } from '@/types/props';
 
-interface TaskCalendarProps {
-  isDemo?: boolean;
-  demoUserId?: string;
-}
+const TaskCalendarPage: React.FC<TaskCalendarProps> = ({ isDemo: propIsDemo, demoUserId }) => {
+  const { user } = useAuth();
+  const userId = user?.id || demoUserId;
+  const isDemo = propIsDemo || user?.id === 'd889323b-350c-4764-9788-6359f85f6142';
 
-const TaskCalendar: React.FC<TaskCalendarProps> = ({ isDemo = false, demoUserId }) => {
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
+  const [prefilledTaskData, setPrefilledTaskData] = useState<Partial<Task> | null>(null);
+  const [isOverviewOpen, setIsOverviewOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isFocusViewOpen, setIsFocusViewOpen] = useState(false);
 
   const {
-    tasks: allTasks,
-    filteredTasks,
-    loading,
-    updateTask,
-    deleteTask,
+    tasks,
+    processedTasks,
     sections,
     allCategories,
-    setFocusTask,
-    toggleDoToday,
-    doTodayOffIds,
+    handleAddTask,
+    updateTask,
+    deleteTask,
+    reorderTasks,
     createSection,
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode,
-  } = useTasks({ userId: demoUserId, currentDate: selectedDate || new Date() }); // Pass selectedDate
+    createCategory,
+    updateCategory,
+    deleteCategory,
+    isLoading,
+    error,
+    statusFilter,
+    setStatusFilter,
+    categoryFilter,
+    setCategoryFilter,
+    priorityFilter,
+    setPriorityFilter,
+    sectionFilter,
+    setSectionFilter,
+  } = useTasks({ userId: userId, currentDate: currentMonth, viewMode: 'all' });
 
-  const { appointments: allAppointments } = useAllAppointments();
-
-  const scheduledTasksMap = useMemo(() => {
-    const map = new Map<string, Appointment>();
-    if (allAppointments) {
-        allAppointments.forEach(app => {
-            if (app.task_id) {
-                map.set(app.task_id, app);
-            }
-        });
+  const daysInMonth = useMemo(() => {
+    const startDay = startOfWeek(currentMonth, { weekStartsOn: 1 }); // Monday start
+    const days = [];
+    for (let i = 0; i < 42; i++) { // 6 weeks to cover the month
+      days.push(addDays(startDay, i));
     }
-    return map;
-  }, [allAppointments]);
+    return days;
+  }, [currentMonth]);
 
-  const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
-  const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
-  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
-  const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
+  const handlePreviousMonth = () => {
+    setCurrentMonth((prev) => addDays(prev, -30)); // Approximation for previous month
+  };
 
-  const tasksByDueDate = useMemo(() => {
-    const groupedTasks = new Map<string, Task[]>();
-    filteredTasks.forEach(task => {
-      if (task.due_date && task.status !== 'archived') {
-        const dateKey = format(startOfDay(parseISO(task.due_date)), 'yyyy-MM-dd');
-        if (!groupedTasks.has(dateKey)) {
-          groupedTasks.set(dateKey, []);
-        }
-        groupedTasks.get(dateKey)!.push(task);
-      }
-    });
-    return groupedTasks;
-  }, [filteredTasks]);
+  const handleNextMonth = () => {
+    setCurrentMonth((prev) => addDays(prev, 30)); // Approximation for next month
+  };
 
-  const daysWithTasks = useMemo(() => {
-    return Array.from(tasksByDueDate.keys()).map(dateStr => parseISO(dateStr));
-  }, [tasksByDueDate]);
-
-  const selectedDayTasks = useMemo(() => {
-    if (!selectedDate) return [];
-    const dateKey = format(startOfDay(selectedDate), 'yyyy-MM-dd');
-    return tasksByDueDate.get(dateKey) || [];
-  }, [selectedDate, tasksByDueDate]);
+  const handleToday = () => {
+    setCurrentMonth(new Date());
+  };
 
   const handleOpenOverview = (task: Task) => {
-    setTaskToOverview(task);
-    setIsTaskOverviewOpen(true);
+    setSelectedTask(task);
+    setIsOverviewOpen(true);
   };
 
-  const handleOpenTaskDetail = (task: Task) => { // Defined handleOpenTaskDetail
-    setIsTaskOverviewOpen(false);
-    setTaskToEdit(task);
-    setIsTaskDetailOpen(true);
+  const handleOpenDetail = (task: Task) => {
+    setSelectedTask(task);
+    setIsDetailOpen(true);
   };
+
+  const handleOpenFocusView = (task: Task) => {
+    setSelectedTask(task);
+    setIsFocusViewOpen(true);
+  };
+
+  const handleNewTaskSubmit = async (taskData: Partial<Task>) => {
+    const newTask = await handleAddTask(taskData);
+    if (newTask) {
+      setIsAddTaskDialogOpen(false);
+      setPrefilledTaskData(null);
+    }
+    return newTask;
+  };
+
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(task => {
+      if (statusFilter !== 'all' && task.status !== statusFilter) return false;
+      if (categoryFilter !== 'all' && task.category !== categoryFilter) return false;
+      if (priorityFilter !== 'all' && task.priority !== priorityFilter) return false;
+      if (sectionFilter !== 'all' && task.section_id !== sectionFilter) return false;
+      return true;
+    });
+  }, [tasks, statusFilter, categoryFilter, priorityFilter, sectionFilter]);
+
+  if (isLoading) {
+    return <div className="p-4 md:p-6">Loading calendar...</div>;
+  }
+
+  if (error) {
+    return <div className="p-4 md:p-6 text-red-500">Error loading calendar: {error.message}</div>;
+  }
 
   return (
-    <div className="flex-1 flex flex-col">
-      <main className="flex-grow p-4 flex justify-center">
-        <Card className="w-full max-w-6xl mx-auto shadow-lg rounded-xl p-4">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
-              <CalendarDays className="h-7 w-7" /> Task Calendar
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="flex justify-center">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-                className="rounded-md w-full mx-auto"
-                modifiers={{
-                  hasTasks: daysWithTasks,
-                }}
-                modifiersClassNames={{
-                  hasTasks: 'rdp-day_hasTasks',
-                }}
-                components={{
-                  DayContent: ({ date }) => {
-                    return <span>{format(date, 'd')}</span>;
-                  },
-                }}
-              />
-            </div>
-            <div className="space-y-4">
-              <h3 className="text-xl font-semibold flex items-center gap-2">
-                <ListTodo className="h-5 w-5 text-primary" />
-                Tasks for {selectedDate ? format(selectedDate, 'MMMM d, yyyy') : '...'}
-              </h3>
-              {loading ? (
-                <div className="space-y-3">
-                  <Skeleton className="h-20 w-full rounded-xl" />
-                  <Skeleton className="h-20 w-full rounded-xl" />
-                </div>
-              ) : selectedDayTasks.length > 0 ? (
-                <ul className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
-                  {selectedDayTasks.map(task => (
-                    <li key={task.id}>
-                      <TaskItem
-                        task={task}
-                        allTasks={allTasks as Task[]} // Cast to Task[]
-                        onStatusChange={(taskId, newStatus) => updateTask(taskId, { status: newStatus })}
-                        onDelete={deleteTask}
-                        onUpdate={updateTask}
-                        sections={sections}
-                        onOpenOverview={handleOpenOverview}
-                        currentDate={selectedDate || new Date()}
-                        onMoveUp={async () => {}}
-                        onMoveDown={async () => {}}
-                        setFocusTask={setFocusTask}
-                        isDoToday={!doTodayOffIds.has(task.original_task_id || task.id)}
-                        toggleDoToday={toggleDoToday}
-                        scheduledTasksMap={scheduledTasksMap}
-                        isDemo={isDemo}
-                        level={0} // Pass level prop
-                      />
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <div className="text-center text-muted-foreground p-8 rounded-lg bg-muted/50">
-                  <p>No tasks scheduled for this day.</p>
-                </div>
+    <div className="flex flex-col h-full p-4 md:p-6">
+      <h1 className="text-3xl font-bold mb-6">Task Calendar</h1>
+
+      <div className="flex justify-between items-center mb-4">
+        <Button variant="ghost" size="icon" onClick={handlePreviousMonth}>
+          <ChevronLeft className="h-5 w-5" />
+        </Button>
+        <div className="flex flex-col items-center">
+          <h2 className="text-xl font-semibold">{format(currentMonth, 'MMMM yyyy')}</h2>
+          <Button variant="link" onClick={handleToday} className="text-sm text-blue-500">
+            Today
+          </Button>
+        </div>
+        <Button variant="ghost" size="icon" onClick={handleNextMonth}>
+          <ChevronRight className="h-5 w-5" />
+        </Button>
+      </div>
+
+      <TaskFilter
+        statusFilter={statusFilter}
+        setStatusFilter={setStatusFilter}
+        categoryFilter={categoryFilter}
+        setCategoryFilter={setCategoryFilter}
+        priorityFilter={priorityFilter}
+        setPriorityFilter={setPriorityFilter}
+        sectionFilter={sectionFilter}
+        setSectionFilter={setSectionFilter}
+        sections={sections}
+        categories={allCategories}
+      />
+
+      <div className="grid grid-cols-7 gap-1 text-center text-sm font-medium text-gray-500 mb-2">
+        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+          <div key={day}>{day}</div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-7 gap-1 flex-grow overflow-y-auto">
+        {daysInMonth.map((day) => {
+          const dayTasks = filteredTasks.filter((task) => task.due_date && isSameDay(parseISO(task.due_date), day));
+          const isCurrentMonth = day.getMonth() === currentMonth.getMonth();
+          const isTodayDay = isSameDay(day, new Date());
+
+          return (
+            <div
+              key={format(day, 'yyyy-MM-dd')}
+              className={cn(
+                'border rounded-md p-2 text-xs h-32 overflow-y-auto',
+                isCurrentMonth ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700 text-gray-400',
+                isTodayDay ? 'border-blue-500 ring-2 ring-blue-500' : ''
               )}
+            >
+              <div className={cn('font-bold mb-1', isTodayDay ? 'text-blue-600' : '')}>
+                {format(day, 'd')}
+              </div>
+              <div className="space-y-1">
+                {dayTasks.map((task) => (
+                  <div
+                    key={task.id}
+                    className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-sm px-1 py-0.5 truncate cursor-pointer"
+                    onClick={() => handleOpenOverview(task)}
+                  >
+                    {task.description}
+                  </div>
+                ))}
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      </main>
-      {taskToOverview && (
-        <TaskOverviewDialog
-          task={taskToOverview}
-          isOpen={isTaskOverviewOpen}
-          onClose={() => setIsTaskOverviewOpen(false)}
-          onEditClick={handleOpenTaskDetail}
-          onUpdate={updateTask}
-          onDelete={deleteTask}
+          );
+        })}
+      </div>
+
+      <Dialog open={isAddTaskDialogOpen} onOpenChange={setIsAddTaskDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Add New Task</DialogTitle>
+          </DialogHeader>
+          <AddTaskForm
+            onAddTask={handleNewTaskSubmit}
+            onTaskAdded={() => setIsAddTaskDialogOpen(false)}
+            sections={sections}
+            allCategories={allCategories}
+            currentDate={currentMonth}
+            createSection={createSection}
+            updateSection={updateSection}
+            deleteSection={deleteSection}
+            updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+            initialData={prefilledTaskData}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <TaskOverviewDialog
+        isOpen={isOverviewOpen}
+        onClose={() => setIsOverviewOpen(false)}
+        task={selectedTask}
+        onOpenDetail={handleOpenDetail}
+        onOpenFocusView={handleOpenFocusView}
+        updateTask={updateTask}
+        deleteTask={deleteTask}
+        sections={sections}
+        categories={allCategories}
+        allTasks={tasks}
+        onAddTask={handleAddTask}
+        onReorderTasks={reorderTasks}
+        createSection={createSection}
+        updateSection={updateSection}
+        deleteSection={deleteSection}
+        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+        createCategory={createCategory}
+        updateCategory={updateCategory}
+        deleteCategory={deleteCategory}
+      />
+
+      <TaskDetailDialog
+        isOpen={isDetailOpen}
+        onClose={() => setIsDetailOpen(false)}
+        task={selectedTask}
+        onUpdate={updateTask}
+        onDelete={deleteTask}
+        sections={sections}
+        categories={allCategories}
+        allTasks={tasks}
+        onAddTask={handleAddTask}
+        onReorderTasks={reorderTasks}
+        createSection={createSection}
+        updateSection={updateSection}
+        deleteSection={deleteSection}
+        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+        createCategory={createCategory}
+        updateCategory={updateCategory}
+        deleteCategory={deleteCategory}
+      />
+
+      {isFocusViewOpen && selectedTask && (
+        <FullScreenFocusView
+          task={selectedTask}
+          onClose={() => setIsFocusViewOpen(false)}
+          onComplete={() => {
+            updateTask(selectedTask.id, { status: 'completed' });
+            setIsFocusViewOpen(false);
+          }}
+          onSkip={() => {
+            updateTask(selectedTask.id, { status: 'skipped' });
+            setIsFocusViewOpen(false);
+          }}
+          onOpenDetail={handleOpenDetail}
+          updateTask={updateTask}
           sections={sections}
-          allCategories={allCategories}
-          allTasks={allTasks as Task[]} // Cast to Task[]
-        />
-      )}
-      {taskToEdit && (
-        <TaskDetailDialog
-          task={taskToEdit}
-          isOpen={isTaskDetailOpen}
-          onClose={() => setIsTaskDetailOpen(false)}
-          onUpdate={updateTask}
-          onDelete={deleteTask}
-          sections={sections}
-          allCategories={allCategories}
+          categories={allCategories}
+          allTasks={tasks}
+          onAddTask={handleAddTask}
+          onReorderTasks={reorderTasks}
           createSection={createSection}
           updateSection={updateSection}
           deleteSection={deleteSection}
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-          allTasks={allTasks as Task[]} // Cast to Task[]
+          createCategory={createCategory}
+          updateCategory={updateCategory}
+          deleteCategory={deleteCategory}
         />
       )}
     </div>
   );
 };
 
-export default TaskCalendar;
+export default TaskCalendarPage;

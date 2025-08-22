@@ -1,133 +1,183 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { CalendarDays } from 'lucide-react';
-import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import React, { useState } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import { useTasks } from '@/hooks/useTasks';
+import { useAppointments } from '@/hooks/useAppointments';
+import { useWorkHours } from '@/hooks/useWorkHours';
 import DailyScheduleView from '@/components/DailyScheduleView';
-import { Task, useTasks } from '@/hooks/useTasks';
-import TaskOverviewDialog from '@/components/TaskOverviewDialog';
-import TaskDetailDialog from '@/components/TaskDetailDialog';
-import { useSettings } from '@/context/SettingsContext';
+import { TaskOverviewDialog } from '@/components/TaskOverviewDialog';
+import { TaskDetailDialog } from '@/components/TaskDetailDialog';
+import FullScreenFocusView from '@/components/FullScreenFocusView';
+import { Task } from '@/types/task';
+import { TimeBlockSchedulePageProps } from '@/types/props'; // Assuming this prop type exists
 
-interface TimeBlockScheduleProps {
-  isDemo?: boolean;
-  demoUserId?: string;
-}
+const TimeBlockSchedulePage: React.FC<TimeBlockSchedulePageProps> = ({ isDemo: propIsDemo, demoUserId }) => {
+  const { user } = useAuth();
+  const userId = user?.id || demoUserId;
+  const isDemo = propIsDemo || user?.id === 'd889323b-350c-4764-9788-6359f85f6142';
 
-const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, demoUserId }) => {
-  useSettings(); 
+  const [isOverviewOpen, setIsOverviewOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isFocusViewOpen, setIsFocusViewOpen] = useState(false);
 
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentViewDate, setCurrentViewDate] = useState(new Date());
 
-  // Fetch allTasks here to pass to TaskDetailDialog
   const {
-    tasks: allTasks,
+    tasks,
     sections,
     allCategories,
+    handleAddTask,
     updateTask,
     deleteTask,
+    reorderTasks,
     createSection,
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode,
-  } = useTasks({ currentDate: new Date(), userId: demoUserId }); // Pass a dummy date for this global fetch
+    createCategory,
+    updateCategory,
+    deleteCategory,
+    isLoading: tasksLoading,
+    error: tasksError,
+  } = useTasks({ userId: userId, currentDate: currentViewDate, viewMode: 'all' });
 
-  const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
-  const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
-  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
-  const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
+  const {
+    appointments,
+    isLoading: appointmentsLoading,
+    error: appointmentsError,
+    addAppointment,
+    updateAppointment,
+    deleteAppointment,
+  } = useAppointments(userId);
+
+  const {
+    allWorkHours,
+    isLoading: workHoursLoading,
+    error: workHoursError,
+    saveWorkHours,
+  } = useWorkHours(userId);
+
+  const isLoading = tasksLoading || appointmentsLoading || workHoursLoading;
+  const error = tasksError || appointmentsError || workHoursError;
 
   const handleOpenTaskOverview = (task: Task) => {
-    setTaskToOverview(task);
-    setIsTaskOverviewOpen(true);
+    setSelectedTask(task);
+    setIsOverviewOpen(true);
   };
 
   const handleOpenTaskDetail = (task: Task) => {
-    setTaskToEdit(task);
-    setIsTaskDetailOpen(true);
+    setSelectedTask(task);
+    setIsDetailOpen(true);
   };
 
-  const handlePreviousDay = useCallback(() => {
-    setCurrentDate(prevDate => {
-      const newDate = new Date(prevDate);
-      newDate.setDate(prevDate.getDate() - 1);
-      return newDate;
-    });
-  }, []);
+  const handleOpenFocusView = (task: Task) => {
+    setSelectedTask(task);
+    setIsFocusViewOpen(true);
+  };
 
-  const handleNextDay = useCallback(() => {
-    setCurrentDate(prevDate => {
-      const newDate = new Date(prevDate);
-      newDate.setDate(prevDate.getDate() + 1);
-      return newDate;
-    });
-  }, []);
+  if (isLoading) {
+    return <div className="p-4 md:p-6">Loading schedule...</div>;
+  }
 
-  const handleGoToToday = useCallback(() => {
-    setCurrentDate(new Date());
-  }, []);
-
-  const shortcuts: ShortcutMap = useMemo(() => ({
-    'arrowleft': handlePreviousDay,
-    'arrowright': handleNextDay,
-    't': handleGoToToday,
-  }), [handlePreviousDay, handleNextDay, handleGoToToday]);
-  
-  useKeyboardShortcuts(shortcuts);
+  if (error) {
+    return <div className="p-4 md:p-6 text-red-500">Error loading schedule: {error.message}</div>;
+  }
 
   return (
-    <div className="flex-1 flex flex-col">
-      <main className="flex-grow p-4">
-        <Card className="w-full max-w-6xl mx-auto shadow-lg rounded-xl p-4">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
-              <CalendarDays className="h-7 w-7" /> Daily Schedule
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <DailyScheduleView
-              currentDate={currentDate}
-              setCurrentDate={setCurrentDate}
-              isDemo={isDemo}
-              demoUserId={demoUserId}
-              onOpenTaskOverview={handleOpenTaskOverview}
-            />
-          </CardContent>
-        </Card>
-      </main>
-      <footer className="p-4">
-        <p>&copy; {new Date().getFullYear()} TaskMaster. All rights reserved.</p>
-      </footer>
-      {taskToOverview && (
-        <TaskOverviewDialog
-          task={taskToOverview}
-          isOpen={isTaskOverviewOpen}
-          onClose={() => setIsTaskOverviewOpen(false)}
-          onEditClick={handleOpenTaskDetail}
-          onUpdate={updateTask}
-          onDelete={deleteTask}
+    <div className="flex flex-col h-full">
+      <h1 className="text-3xl font-bold p-4 md:p-6">Time Block Schedule</h1>
+      <DailyScheduleView
+        isDemo={isDemo}
+        onOpenTaskOverview={handleOpenTaskOverview}
+        currentViewDate={currentViewDate}
+        daysInGrid={[]} // This will be calculated internally by DailyScheduleView
+        allWorkHours={allWorkHours}
+        saveWorkHours={saveWorkHours}
+        appointments={appointments}
+        tasks={tasks}
+        sections={sections}
+        categories={allCategories}
+        addAppointment={addAppointment}
+        updateAppointment={updateAppointment}
+        deleteAppointment={deleteAppointment}
+        onAddTask={handleAddTask}
+        onUpdateTask={updateTask}
+        onOpenTaskDetail={handleOpenTaskDetail}
+        isLoading={isLoading}
+      />
+
+      <TaskOverviewDialog
+        isOpen={isOverviewOpen}
+        onClose={() => setIsOverviewOpen(false)}
+        task={selectedTask}
+        onOpenDetail={handleOpenTaskDetail}
+        onOpenFocusView={handleOpenFocusView}
+        updateTask={updateTask}
+        deleteTask={deleteTask}
+        sections={sections}
+        categories={allCategories}
+        allTasks={tasks}
+        onAddTask={handleAddTask}
+        onReorderTasks={reorderTasks}
+        createSection={createSection}
+        updateSection={updateSection}
+        deleteSection={deleteSection}
+        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+        createCategory={createCategory}
+        updateCategory={updateCategory}
+        deleteCategory={deleteCategory}
+      />
+
+      <TaskDetailDialog
+        isOpen={isDetailOpen}
+        onClose={() => setIsDetailOpen(false)}
+        task={selectedTask}
+        onUpdate={updateTask}
+        onDelete={deleteTask}
+        sections={sections}
+        categories={allCategories}
+        allTasks={tasks}
+        onAddTask={handleAddTask}
+        onReorderTasks={reorderTasks}
+        createSection={createSection}
+        updateSection={updateSection}
+        deleteSection={deleteSection}
+        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+        createCategory={createCategory}
+        updateCategory={updateCategory}
+        deleteCategory={deleteCategory}
+      />
+
+      {isFocusViewOpen && selectedTask && (
+        <FullScreenFocusView
+          task={selectedTask}
+          onClose={() => setIsFocusViewOpen(false)}
+          onComplete={() => {
+            updateTask(selectedTask.id, { status: 'completed' });
+            setIsFocusViewOpen(false);
+          }}
+          onSkip={() => {
+            updateTask(selectedTask.id, { status: 'skipped' });
+            setIsFocusViewOpen(false);
+          }}
+          onOpenDetail={handleOpenTaskDetail}
+          updateTask={updateTask}
           sections={sections}
-          allCategories={allCategories}
-          allTasks={allTasks as Task[]}
-        />
-      )}
-      {taskToEdit && (
-        <TaskDetailDialog
-          task={taskToEdit}
-          isOpen={isTaskDetailOpen}
-          onClose={() => setIsTaskDetailOpen(false)}
-          onUpdate={updateTask}
-          onDelete={deleteTask}
-          sections={sections}
-          allCategories={allCategories}
+          categories={allCategories}
+          allTasks={tasks}
+          onAddTask={handleAddTask}
+          onReorderTasks={reorderTasks}
           createSection={createSection}
           updateSection={updateSection}
           deleteSection={deleteSection}
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-          allTasks={allTasks as Task[]}
+          createCategory={createCategory}
+          updateCategory={updateCategory}
+          deleteCategory={deleteCategory}
         />
       )}
     </div>
   );
 };
 
-export default TimeBlockSchedule;
+export default TimeBlockSchedulePage;

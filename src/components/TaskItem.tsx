@@ -370,12 +370,11 @@ const TaskItem: React.FC<TaskItemProps> = ({
               </label>
               <Input
                 id="subtask-description"
-                value={editedDescription} // Reusing state for simplicity, but ideally separate for subtask form
+                value={editedDescription}
                 onChange={(e) => setEditedDescription(e.target.value)}
                 className="col-span-3"
               />
             </div>
-            {/* Add more fields for subtask if needed, e.g., due date, priority */}
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setIsAddSubtaskOpen(false)}>
