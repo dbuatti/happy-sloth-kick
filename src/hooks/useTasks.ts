@@ -1047,7 +1047,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
 
     if (viewMode === 'daily') {
       filtered = filtered.filter(task => {
-        // Condition 1: Was completed or archived today
+        // Condition 1: Was completed or archived today (based on local date part)
         if ((task.status === 'completed' || task.status === 'archived') && task.updated_at) {
             const updatedAtDate = new Date(task.updated_at); // Interprets UTC string in local timezone
             
@@ -1327,7 +1327,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     console.log("Processed Tasks count:", processedTasks.length);
 
     const tasksForToday = processedTasks.filter(task => {
-        // Condition 1: Was completed or archived today
+        // Condition 1: Was completed or archived today (based on local date part)
         if ((task.status === 'completed' || task.status === 'archived') && task.updated_at) {
             const updatedAtDate = new Date(task.updated_at); // Interprets UTC string in local timezone
             
@@ -1388,11 +1388,12 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
           updatedAtDate.getDate() === effectiveCurrentDate.getDate()
       );
 
-      const isCompletedOrArchived = (t.status === 'completed' || t.status === 'archived') && isUpdatedOnCurrentDate;
-      if (isCompletedOrArchived) {
-        console.log(`[Daily Progress Debug] Counting completed/archived task: ${t.description} (ID: ${t.id}, Status: ${t.status}, Updated: ${t.updated_at}), UpdatedAtLocal: ${updatedAtDate?.toLocaleString()}, CurrentDateLocal: ${effectiveCurrentDate.toLocaleString()}, IsUpdatedOnCurrentDate: ${isUpdatedOnCurrentDate}`);
+      // ONLY count tasks with status 'completed'
+      const isCompletedToday = (t.status === 'completed') && isUpdatedOnCurrentDate;
+      if (isCompletedToday) {
+        console.log(`[Daily Progress Debug] Counting completed task: ${t.description} (ID: ${t.id}, Status: ${t.status}, Updated: ${t.updated_at}), UpdatedAtLocal: ${updatedAtDate?.toLocaleString()}, CurrentDateLocal: ${effectiveCurrentDate.toLocaleString()}, IsUpdatedOnCurrentDate: ${isUpdatedOnCurrentDate}`);
       }
-      return isCompletedOrArchived;
+      return isCompletedToday;
     }).length;
     console.log("Completed count (from focusTasks):", completedCount);
     const totalCount = focusTasks.filter(t => t.status !== 'skipped').length;
