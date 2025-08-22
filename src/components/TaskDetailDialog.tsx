@@ -1,34 +1,39 @@
-"use client";
-
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Trash2, ListTodo } from 'lucide-react';
-import { Task, TaskSection, TaskCategory } from '@/types'; // Import types from @/types
-import { useTasks } from '@/hooks/useTasks'; // Keep useTasks for subtask updates and handleAddTask
-import TaskItem from './TaskItem'; // Import TaskItem for rendering subtasks
-import { useAuth } from '@/context/AuthContext';
+import { Textarea } from '@/components/ui/textarea';
+import { Plus } from 'lucide-react';
+import { Task, TaskSection, TaskCategory, TaskStatus, RecurringType, TaskPriority } from '@/types/task'; // Corrected import
+import { format, parseISO } from 'date-fns';
+import { DatePicker } from '@/components/ui/date-picker';
+import { SelectDialog } from '@/components/SelectDialog';
+import { getCategoryColorProps } from '@/utils/categoryColors';
 
 interface TaskDetailDialogProps {
   isOpen: boolean;
-  setIsOpen: (isOpen: boolean) => void;
+  onClose: () => void;
   task: Task | null;
-  allTasks: Task[]; // Pass all tasks for subtask filtering
+  allTasks: Task[];
   sections: TaskSection[];
   categories: TaskCategory[];
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<Task | null>;
   onDelete: (taskId: string) => Promise<void>;
-  onAddTask: (newTask: Partial<Task>) => Promise<Task | null>; // For adding subtasks
+  onAddTask: (taskData: Partial<Task>) => Promise<Task | null>;
+  onReorderTasks: (updates: { id: string; order: number | null; section_id: string | null; parent_task_id: string | null; }[]) => Promise<void>;
+  createSection: (name: string) => Promise<TaskSection | null>;
+  updateSection: (sectionId: string, newName: string) => Promise<TaskSection | null>;
+  deleteSection: (sectionId: string) => Promise<void>;
+  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<TaskSection | null>;
+  createCategory: (name: string, color: string) => Promise<TaskCategory | null>;
+  updateCategory: (categoryId: string, newName: string, newColor: string) => Promise<TaskCategory | null>;
+  deleteCategory: (categoryId: string) => Promise<void>;
 }
 
-export const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
+const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   isOpen,
-  setIsOpen,
+  onClose,
   task,
   allTasks,
   sections,
@@ -36,221 +41,258 @@ export const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   onUpdate,
   onDelete,
   onAddTask,
+  onReorderTasks,
+  createSection,
+  updateSection,
+  deleteSection,
+  updateSectionIncludeInFocusMode,
+  createCategory,
+  updateCategory,
+  deleteCategory,
 }) => {
-  const { user } = useAuth();
-  const userId = user?.id;
-
-  const [description, setDescription] = useState(task?.description || '');
-  const [notes, setNotes] = useState(task?.notes || '');
-  const [priority, setPriority] = useState<Task['priority']>(task?.priority || 'medium');
-  const [category, setCategory] = useState(task?.category || '');
-  const [sectionId, setSectionId] = useState(task?.section_id || '');
-  const [dueDate, setDueDate] = useState(task?.due_date ? new Date(task.due_date).toISOString().split('T')[0] : '');
-  const [status, setStatus] = useState<Task['status']>(task?.status || 'to-do');
-  const [newSubtaskDescription, setNewSubtaskDescription] = useState('');
+  const [editedDescription, setEditedDescription] = useState(task?.description || '');
+  const [editedNotes, setEditedNotes] = useState(task?.notes || '');
+  const [editedDueDate, setEditedDueDate] = useState<Date | undefined>(
+    task?.due_date ? parseISO(task.due_date) : undefined
+  );
+  const [editedPriority, setEditedPriority] = useState<TaskPriority>(task?.priority || null);
+  const [editedCategory, setEditedCategory] = useState<TaskCategory | null>(
+    task?.category ? categories.find((cat) => cat.id === task.category) || null : null
+  );
+  const [editedSection, setEditedSection] = useState<TaskSection | null>(
+    task?.section_id ? sections.find((sec) => sec.id === task.section_id) || null : null
+  );
+  const [editedRecurringType, setEditedRecurringType] = useState<RecurringType>(task?.recurring_type || 'none');
+  const [editedLink, setEditedLink] = useState(task?.link || '');
+  const [editedImageUrl, setEditedImageUrl] = useState(task?.image_url || '');
+  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
 
   useEffect(() => {
     if (task) {
-      setDescription(task.description || '');
-      setNotes(task.notes || '');
-      setPriority(task.priority || 'medium');
-      setCategory(task.category || '');
-      setSectionId(task.section_id || '');
-      setDueDate(task.due_date ? new Date(task.due_date).toISOString().split('T')[0] : '');
-      setStatus(task.status || 'to-do');
-    } else {
-      setDescription('');
-      setNotes('');
-      setPriority('medium');
-      setCategory('');
-      setSectionId('');
-      setDueDate('');
-      setStatus('to-do');
+      setEditedDescription(task.description || '');
+      setEditedNotes(task.notes || '');
+      setEditedDueDate(task.due_date ? parseISO(task.due_date) : undefined);
+      setEditedPriority(task.priority);
+      setEditedCategory(categories.find((cat) => cat.id === task.category) || null);
+      setEditedSection(sections.find((sec) => sec.id === task.section_id) || null);
+      setEditedRecurringType(task.recurring_type || 'none');
+      setEditedLink(task.link || '');
+      setEditedImageUrl(task.image_url || '');
     }
-    setNewSubtaskDescription('');
-  }, [task]);
+  }, [task, categories, sections]);
 
-  const handleSubmit = async () => {
-    if (!task) return;
-    const taskData: Partial<Task> = {
-      description: description.trim() || null,
-      notes: notes.trim() || null,
-      priority: priority,
-      category: category || null,
-      section_id: sectionId || null,
-      due_date: dueDate ? new Date(dueDate).toISOString() : null,
-      status: status,
+  const handleSave = async () => {
+    if (!task || !editedDescription.trim()) return;
+
+    const updates: Partial<Task> = {
+      description: editedDescription.trim(),
+      notes: editedNotes,
+      due_date: editedDueDate ? format(editedDueDate, 'yyyy-MM-dd') : null,
+      priority: editedPriority,
+      category: editedCategory?.id || null,
+      section_id: editedSection?.id || null,
+      recurring_type: editedRecurringType,
+      link: editedLink,
+      image_url: editedImageUrl,
     };
-    await onUpdate(task.id, taskData);
-    setIsOpen(false);
+    await onUpdate(task.id, updates);
+    onClose();
   };
 
-  const handleAddSubtask = async () => {
-    if (!task || !newSubtaskDescription.trim()) return;
-    await onAddTask({
-      description: newSubtaskDescription.trim(),
-      parent_task_id: task.id,
-      section_id: task.section_id, // Inherit section from parent
-      status: 'to-do',
-      user_id: userId || '',
-    });
-    setNewSubtaskDescription('');
+  const handleDelete = async () => {
+    if (!task) return;
+    await onDelete(task.id);
+    setIsConfirmDeleteOpen(false);
+    onClose();
   };
 
-  const subtasks = allTasks.filter(sub => sub.parent_task_id === task?.id);
+  const subtasks = allTasks.filter((subtask) => subtask.parent_task_id === task?.id);
+
+  if (!task) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{task ? 'Edit Task Details' : 'Add New Task'}</DialogTitle>
+          <DialogTitle>Task Details</DialogTitle>
         </DialogHeader>
-        {task && (
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="description" className="text-right">
-                Description
-              </Label>
-              <Input
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="col-span-3"
+        <div className="grid gap-4 py-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <label htmlFor="description" className="text-right">
+              Description
+            </label>
+            <Input
+              id="description"
+              value={editedDescription}
+              onChange={(e) => setEditedDescription(e.target.value)}
+              className="col-span-3"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <label htmlFor="notes" className="text-right">
+              Notes
+            </label>
+            <Textarea
+              id="notes"
+              value={editedNotes}
+              onChange={(e) => setEditedNotes(e.target.value)}
+              className="col-span-3"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <label htmlFor="due-date" className="text-right">
+              Due Date
+            </label>
+            <div className="col-span-3">
+              <DatePicker
+                date={editedDueDate}
+                setDate={setEditedDueDate}
+                placeholder="Select due date"
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="notes" className="text-right">
-                Notes
-              </Label>
-              <Textarea
-                id="notes"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="priority" className="text-right">
-                Priority
-              </Label>
-              <Select value={priority || ''} onValueChange={(value) => setPriority(value as Task['priority'])}>
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select priority" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                  <SelectItem value="urgent">Urgent</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="category" className="text-right">
-                Category
-              </Label>
-              <Select value={category || ''} onValueChange={setCategory}>
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="section" className="text-right">
-                Section
-              </Label>
-              <Select value={sectionId || ''} onValueChange={setSectionId}>
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select section" />
-                </SelectTrigger>
-                <SelectContent>
-                  {sections.map((sec) => (
-                    <SelectItem key={sec.id} value={sec.id}>
-                      {sec.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="dueDate" className="text-right">
-                Due Date
-              </Label>
-              <Input
-                id="dueDate"
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="status" className="text-right">
-                Status
-              </Label>
-              <Select value={status || ''} onValueChange={(value) => setStatus(value as Task['status'])}>
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="to-do">To-Do</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="skipped">Skipped</SelectItem>
-                  <SelectItem value="archived">Archived</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <label htmlFor="priority" className="text-right">
+              Priority
+            </label>
+            <Select
+              value={editedPriority || ''}
+              onValueChange={(value: TaskPriority) => setEditedPriority(value)}
+            >
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="Select priority" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="urgent">Urgent</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="null">None</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <label htmlFor="category" className="text-right">
+              Category
+            </label>
+            <SelectDialog
+              items={categories.map(cat => ({
+                id: cat.id,
+                name: cat.name,
+                color: getCategoryColorProps(cat.color).bg,
+              }))}
+              selectedItem={editedCategory ? { id: editedCategory.id, name: editedCategory.name, color: getCategoryColorProps(editedCategory.color).bg } : null}
+              onSelectItem={(item) => setEditedCategory(categories.find(cat => cat.id === item?.id) || null)}
+              createItem={createCategory}
+              updateItem={updateCategory}
+              deleteItem={deleteCategory}
+              placeholder="Select category"
+              className="col-span-3"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <label htmlFor="section" className="text-right">
+              Section
+            </label>
+            <SelectDialog
+              items={sections.map(sec => ({ id: sec.id, name: sec.name }))}
+              selectedItem={editedSection ? { id: editedSection.id, name: editedSection.name } : null}
+              onSelectItem={(item) => setEditedSection(sections.find(sec => sec.id === item?.id) || null)}
+              createItem={createSection}
+              updateItem={updateSection}
+              deleteItem={deleteSection}
+              placeholder="Select section"
+              className="col-span-3"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <label htmlFor="recurring-type" className="text-right">
+              Recurring
+            </label>
+            <Select
+              value={editedRecurringType}
+              onValueChange={(value: RecurringType) => setEditedRecurringType(value)}
+            >
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="Select recurrence" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                <SelectItem value="daily">Daily</SelectItem>
+                <SelectItem value="weekly">Weekly</SelectItem>
+                <SelectItem value="monthly">Monthly</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <label htmlFor="link" className="text-right">
+              Link
+            </label>
+            <Input
+              id="link"
+              value={editedLink}
+              onChange={(e) => setEditedLink(e.target.value)}
+              className="col-span-3"
+              placeholder="Optional link"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <label htmlFor="image-url" className="text-right">
+              Image URL
+            </label>
+            <Input
+              id="image-url"
+              value={editedImageUrl}
+              onChange={(e) => setEditedImageUrl(e.target.value)}
+              className="col-span-3"
+              placeholder="Optional image URL"
+            />
+          </div>
+          {subtasks.length > 0 && (
             <div className="col-span-4 mt-4">
               <h3 className="text-lg font-semibold mb-2">Subtasks</h3>
               <div className="space-y-2">
-                {subtasks.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">No subtasks yet.</p>
-                ) : (
-                  subtasks.map(subtask => (
-                    <TaskItem
-                      key={subtask.id}
-                      task={subtask}
-                      categories={categories}
-                      onEdit={(t) => {
-                        setIsOpen(false); // Close current dialog
-                        // You might want to open another TaskDetailDialog for the subtask
-                        // For now, just log or handle differently
-                        console.log("Edit subtask:", t);
-                      }}
-                      onDelete={onDelete}
-                      onUpdate={onUpdate}
-                      isSubtask={true}
-                    />
-                  ))
-                )}
-              </div>
-              <div className="flex items-center space-x-2 mt-4">
-                <Input
-                  placeholder="Add a new subtask..."
-                  value={newSubtaskDescription}
-                  onChange={(e) => setNewSubtaskDescription(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleAddSubtask()}
-                />
-                <Button onClick={handleAddSubtask} size="icon">
-                  <Plus className="h-4 w-4" />
-                </Button>
+                {/* Subtasks would be rendered here, potentially using TaskItem */}
+                {/* For now, just a placeholder */}
+                {subtasks.map(sub => (
+                  <div key={sub.id} className="flex items-center gap-2 pl-4">
+                    <Plus className="h-4 w-4 text-gray-500" />
+                    <span>{sub.description}</span>
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
-          <Button onClick={handleSubmit}>Save changes</Button>
+          <Button variant="destructive" onClick={() => setIsConfirmDeleteOpen(true)}>
+            Delete
+          </Button>
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave}>Save changes</Button>
         </DialogFooter>
       </DialogContent>
+
+      <Dialog open={isConfirmDeleteOpen} onOpenChange={setIsConfirmDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+          </DialogHeader>
+          <p>Are you sure you want to delete this task and all its subtasks?</p>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsConfirmDeleteOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDelete}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 };
+
+export default TaskDetailDialog;

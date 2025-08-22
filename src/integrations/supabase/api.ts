@@ -1,8 +1,8 @@
 import { supabase } from './client';
-import { Task, TaskSection, TaskCategory, DoTodayOffLog } from '@/types';
+import { Task, TaskSection, TaskCategory, DoTodayOffLog, Appointment } from '@/types/task'; // Corrected import
 
-// --- Task API Functions ---
-export const fetchTasksApi = async (userId: string, statusFilter?: Task['status'] | 'all', sectionFilter?: string | 'all', categoryFilter?: string | 'all', priorityFilter?: Task['priority'] | 'all', searchFilter?: string, dueDate?: Date | null, viewMode?: string) => {
+// --- Task related API calls ---
+export const fetchTasks = async (userId: string, viewMode: 'all' | 'focus' | 'archive' | 'today', currentDate: Date | null = null): Promise<Task[]> => {
   let query = supabase
     .from('tasks')
     .select(`
@@ -13,46 +13,18 @@ export const fetchTasksApi = async (userId: string, statusFilter?: Task['status'
     `)
     .eq('user_id', userId);
 
-  if (statusFilter && statusFilter !== 'all') {
-    query = query.eq('status', statusFilter);
-  } else if (viewMode === 'daily' || viewMode === 'focus') {
-    query = query.neq('status', 'archived');
-  } else if (viewMode === 'archive') {
+  if (viewMode === 'archive') {
     query = query.eq('status', 'archived');
+  } else {
+    query = query.neq('status', 'archived');
   }
 
-  if (sectionFilter && sectionFilter !== 'all') {
-    query = query.eq('section_id', sectionFilter);
+  if (viewMode === 'today' && currentDate) {
+    const todayStart = currentDate.toISOString().split('T')[0];
+    query = query.or(`due_date.eq.${todayStart},due_date.is.null`);
   }
 
-  if (categoryFilter && categoryFilter !== 'all') {
-    query = query.eq('category', categoryFilter);
-  }
-
-  if (priorityFilter && priorityFilter !== 'all') {
-    query = query.eq('priority', priorityFilter);
-  }
-
-  if (searchFilter) {
-    query = query.ilike('description', `%${searchFilter}%`);
-  }
-
-  if (dueDate) {
-    const startOfDay = new Date(dueDate);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(dueDate);
-    endOfDay.setHours(23, 59, 59, 999);
-    query = query.gte('due_date', startOfDay.toISOString()).lte('due_date', endOfDay.toISOString());
-  } else if (viewMode === 'daily') {
-    // For daily view, only show tasks due today or without a due date
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    query = query.or(`due_date.is.null,due_date.gte.${today.toISOString()},due_date.lt.${tomorrow.toISOString()}`);
-  }
-
-  const { data, error } = await query.order('order', { ascending: true }).order('created_at', { ascending: true });
+  const { data, error } = await query.order('order', { ascending: true }).order('created_at', { ascending: false });
 
   if (error) {
     console.error('Error fetching tasks:', error);
@@ -62,233 +34,208 @@ export const fetchTasksApi = async (userId: string, statusFilter?: Task['status'
   return data.map((task: any) => ({
     ...task,
     category_color: task.task_categories?.color || null,
-  })) as Task[];
+  }));
 };
 
-export const addTaskApi = async (userId: string, newTask: Partial<Task>): Promise<Task | null> => {
-  const { data, error } = await supabase
-    .from('tasks')
-    .insert({ ...newTask, user_id: userId })
-    .select(`
-      *,
-      task_categories (
-        color
-      )
-    `)
-    .single();
-
+export const addTask = async (taskData: Partial<Task>): Promise<Task | null> => {
+  const { data, error } = await supabase.from('tasks').insert(taskData).select().single();
   if (error) {
     console.error('Error adding task:', error);
     return null;
   }
-  return { ...data, category_color: data.task_categories?.color || null } as Task;
+  return data;
 };
 
-export const updateTaskApi = async (taskId: string, updates: Partial<Task>): Promise<Task | null> => {
-  const { data, error } = await supabase
-    .from('tasks')
-    .update(updates)
-    .eq('id', taskId)
-    .select(`
-      *,
-      task_categories (
-        color
-      )
-    `)
-    .single();
-
+export const updateTask = async (taskId: string, updates: Partial<Task>): Promise<Task | null> => {
+  const { data, error } = await supabase.from('tasks').update(updates).eq('id', taskId).select().single();
   if (error) {
     console.error('Error updating task:', error);
     return null;
   }
-  return { ...data, category_color: data.task_categories?.color || null } as Task;
+  return data;
 };
 
-export const deleteTaskApi = async (taskId: string): Promise<void> => {
-  const { error } = await supabase
-    .from('tasks')
-    .delete()
-    .eq('id', taskId);
-
+export const deleteTask = async (taskId: string): Promise<void> => {
+  const { error } = await supabase.from('tasks').delete().eq('id', taskId);
   if (error) {
     console.error('Error deleting task:', error);
     throw error;
   }
 };
 
-export const bulkUpdateTasksApi = async (updates: { id: string; updates: Partial<Task> }[]): Promise<void> => {
-  const { error } = await supabase.rpc('bulk_update_tasks', { updates_array: updates });
+export const bulkUpdateTasks = async (taskIds: string[], updates: Partial<Task>): Promise<void> => {
+  const { error } = await supabase.from('tasks').update(updates).in('id', taskIds);
   if (error) {
     console.error('Error bulk updating tasks:', error);
     throw error;
   }
 };
 
-export const updateTasksOrderApi = async (updates: { id: string; order: number | null; section_id: string | null; parent_task_id: string | null }[]): Promise<void> => {
-  const { error } = await supabase.rpc('update_tasks_order', { updates: updates });
+export const reorderTasks = async (updates: { id: string; order: number | null; section_id: string | null; parent_task_id: string | null; }[]): Promise<void> => {
+  const { error } = await supabase.rpc('update_tasks_order', { updates });
   if (error) {
-    console.error('Error updating tasks order:', error);
+    console.error('Error reordering tasks:', error);
     throw error;
   }
 };
 
-// --- Section API Functions ---
-export const fetchSectionsApi = async (userId: string): Promise<TaskSection[]> => {
+// --- Section related API calls ---
+export const fetchSections = async (userId: string): Promise<TaskSection[]> => {
   const { data, error } = await supabase
     .from('task_sections')
     .select('*')
     .eq('user_id', userId)
     .order('order', { ascending: true });
-
   if (error) {
     console.error('Error fetching sections:', error);
     return [];
   }
-  return data as TaskSection[];
+  return data;
 };
 
-export const createSectionApi = async (userId: string, name: string): Promise<TaskSection | null> => {
-  const { data, error } = await supabase
-    .from('task_sections')
-    .insert({ user_id: userId, name })
-    .select('*')
-    .single();
-
+export const createSection = async (userId: string, name: string): Promise<TaskSection | null> => {
+  const { data, error } = await supabase.from('task_sections').insert({ user_id: userId, name }).select().single();
   if (error) {
     console.error('Error creating section:', error);
     return null;
   }
-  return data as TaskSection;
+  return data;
 };
 
-export const updateSectionApi = async (sectionId: string, updates: Partial<TaskSection>): Promise<TaskSection | null> => {
-  const { data, error } = await supabase
-    .from('task_sections')
-    .update(updates)
-    .eq('id', sectionId)
-    .select('*')
-    .single();
-
+export const updateSection = async (sectionId: string, updates: Partial<TaskSection>): Promise<TaskSection | null> => {
+  const { data, error } = await supabase.from('task_sections').update(updates).eq('id', sectionId).select().single();
   if (error) {
     console.error('Error updating section:', error);
     return null;
   }
-  return data as TaskSection;
+  return data;
 };
 
-export const deleteSectionApi = async (sectionId: string): Promise<void> => {
-  const { error } = await supabase
-    .from('task_sections')
-    .delete()
-    .eq('id', sectionId);
-
+export const deleteSection = async (sectionId: string): Promise<void> => {
+  const { error } = await supabase.from('task_sections').delete().eq('id', sectionId);
   if (error) {
     console.error('Error deleting section:', error);
     throw error;
   }
 };
 
-export const reorderSectionsApi = async (updates: { id: string; order: number }[]): Promise<void> => {
-  const { error } = await supabase.rpc('bulk_update_task_sections_order', { updates_array: updates });
-  if (error) {
-    console.error('Error reordering sections:', error);
-    throw error;
-  }
-};
-
-// --- Category API Functions ---
-export const fetchCategoriesApi = async (userId: string): Promise<TaskCategory[]> => {
+// --- Category related API calls ---
+export const fetchCategories = async (userId: string): Promise<TaskCategory[]> => {
   const { data, error } = await supabase
     .from('task_categories')
     .select('*')
     .eq('user_id', userId)
     .order('name', { ascending: true });
-
   if (error) {
     console.error('Error fetching categories:', error);
     return [];
   }
-  return data as TaskCategory[];
+  return data;
 };
 
-export const createCategoryApi = async (userId: string, name: string, color: string): Promise<TaskCategory | null> => {
-  const { data, error } = await supabase
-    .from('task_categories')
-    .insert({ user_id: userId, name, color })
-    .select('*')
-    .single();
-
+export const createCategory = async (userId: string, name: string, color: string): Promise<TaskCategory | null> => {
+  const { data, error } = await supabase.from('task_categories').insert({ user_id: userId, name, color }).select().single();
   if (error) {
     console.error('Error creating category:', error);
     return null;
   }
-  return data as TaskCategory;
+  return data;
 };
 
-export const updateCategoryApi = async (categoryId: string, updates: Partial<TaskCategory>): Promise<TaskCategory | null> => {
-  const { data, error } = await supabase
-    .from('task_categories')
-    .update(updates)
-    .eq('id', categoryId)
-    .select('*')
-    .single();
-
+export const updateCategory = async (categoryId: string, updates: Partial<TaskCategory>): Promise<TaskCategory | null> => {
+  const { data, error } = await supabase.from('task_categories').update(updates).eq('id', categoryId).select().single();
   if (error) {
     console.error('Error updating category:', error);
     return null;
   }
-  return data as TaskCategory;
+  return data;
 };
 
-export const deleteCategoryApi = async (categoryId: string): Promise<void> => {
-  const { error } = await supabase
-    .from('task_categories')
-    .delete()
-    .eq('id', categoryId);
-
+export const deleteCategory = async (categoryId: string): Promise<void> => {
+  const { error } = await supabase.from('task_categories').delete().eq('id', categoryId);
   if (error) {
     console.error('Error deleting category:', error);
     throw error;
   }
 };
 
-// --- Do Today Off Log API Functions ---
-export const fetchDoTodayOffLogApi = async (userId: string, date: Date): Promise<DoTodayOffLog[]> => {
+// --- Do Today Off Log API calls ---
+export const fetchDoTodayOffLog = async (userId: string, date: Date): Promise<DoTodayOffLog[]> => {
   const { data, error } = await supabase
     .from('do_today_off_log')
     .select('*')
     .eq('user_id', userId)
     .eq('off_date', date.toISOString().split('T')[0]);
-
   if (error) {
     console.error('Error fetching do today off log:', error);
     return [];
   }
-  return data as DoTodayOffLog[];
+  return data;
 };
 
-export const addDoTodayOffLogApi = async (userId: string, taskId: string, date: Date): Promise<DoTodayOffLog | null> => {
-  const { data, error } = await supabase
-    .from('do_today_off_log')
-    .insert({ user_id: userId, task_id: taskId, off_date: date.toISOString().split('T')[0] })
-    .select('*')
-    .single();
-
+export const addDoTodayOffLog = async (userId: string, taskId: string, date: Date): Promise<void> => {
+  const { error } = await supabase.from('do_today_off_log').insert({ user_id: userId, task_id: taskId, off_date: date.toISOString().split('T')[0] });
   if (error) {
     console.error('Error adding do today off log:', error);
-    return null;
+    throw error;
   }
-  return data as DoTodayOffLog;
 };
 
-export const deleteDoTodayOffLogApi = async (logId: string): Promise<void> => {
-  const { error } = await supabase
-    .from('do_today_off_log')
-    .delete()
-    .eq('id', logId);
-
+export const deleteDoTodayOffLog = async (userId: string, taskId: string, date: Date): Promise<void> => {
+  const { error } = await supabase.from('do_today_off_log').delete().eq('user_id', userId).eq('task_id', taskId).eq('off_date', date.toISOString().split('T')[0]);
   if (error) {
     console.error('Error deleting do today off log:', error);
+    throw error;
+  }
+};
+
+// --- Daily Briefing API calls ---
+export const getDailyBriefing = async (userId: string) => {
+  // This is a placeholder. Implement actual daily briefing logic here.
+  // For example, fetch tasks, appointments, journal entries for the day.
+  console.log(`Fetching daily briefing for user: ${userId}`);
+  return {
+    tasksDueToday: 5,
+    appointmentsToday: 2,
+    focusTasks: 1,
+  };
+};
+
+// --- AI Suggestion API calls ---
+export const suggestTaskDetails = async (taskDescription: string) => {
+  // This is a placeholder. Implement actual AI suggestion logic here.
+  console.log(`Suggesting details for: ${taskDescription}`);
+  return {
+    suggestedCategory: 'Work',
+    suggestedPriority: 'medium',
+    suggestedDueDate: null,
+    suggestedNotes: 'AI suggested notes.',
+  };
+};
+
+// --- Appointment related API calls ---
+export const addAppointment = async (appointmentData: Partial<Appointment>): Promise<Appointment | null> => {
+  const { data, error } = await supabase.from('schedule_appointments').insert(appointmentData).select().single();
+  if (error) {
+    console.error('Error adding appointment:', error);
+    return null;
+  }
+  return data;
+};
+
+export const updateAppointment = async (appointmentId: string, updates: Partial<Appointment>): Promise<Appointment | null> => {
+  const { data, error } = await supabase.from('schedule_appointments').update(updates).eq('id', appointmentId).select().single();
+  if (error) {
+    console.error('Error updating appointment:', error);
+    return null;
+  }
+  return data;
+};
+
+export const deleteAppointment = async (appointmentId: string): Promise<void> => {
+  const { error } = await supabase.from('schedule_appointments').delete().eq('id', appointmentId);
+  if (error) {
+    console.error('Error deleting appointment:', error);
     throw error;
   }
 };

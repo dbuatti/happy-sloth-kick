@@ -1,489 +1,485 @@
-"use client";
-
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Task, TaskSection, TaskCategory, DoTodayOffLog } from '@/types';
+import {
+  Task,
+  TaskSection,
+  TaskCategory,
+  DoTodayOffLog,
+  TaskStatus,
+  RecurringType,
+  TaskPriority,
+} from '@/types/task'; // Corrected import
 import { useAuth } from '@/context/AuthContext';
 import {
-  fetchTasksApi, addTaskApi, updateTaskApi, deleteTaskApi, bulkUpdateTasksApi, updateTasksOrderApi,
-  fetchSectionsApi, createSectionApi, updateSectionApi, deleteSectionApi, reorderSectionsApi,
-  fetchCategoriesApi, createCategoryApi, updateCategoryApi, deleteCategoryApi,
-  fetchDoTodayOffLogApi, addDoTodayOffLogApi, deleteDoTodayOffLogApi
-} from '@/integrations/supabase/api';
+  fetchTasks,
+  addTask,
+  updateTask,
+  deleteTask,
+  bulkUpdateTasks,
+  reorderTasks,
+  fetchSections,
+  createSection,
+  updateSection,
+  deleteSection,
+  fetchCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+  fetchDoTodayOffLog,
+  addDoTodayOffLog,
+  deleteDoTodayOffLog,
+} from '@/integrations/supabase/api'; // Import all API functions
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { isSameDay, startOfDay, parseISO } from 'date-fns';
 import { showError, showSuccess } from '@/utils/toast';
-import { isSameDay, startOfDay } from 'date-fns';
 
 interface UseTasksOptions {
-  currentDate?: Date;
+  viewMode?: 'all' | 'focus' | 'archive' | 'today';
   userId?: string | null;
-  viewMode?: 'daily' | 'focus' | 'archive' | 'all';
+  currentDate?: Date;
 }
 
-export const useTasks = ({ currentDate = new Date(), userId: propUserId, viewMode = 'all' }: UseTasksOptions) => {
+export const useTasks = ({
+  viewMode = 'all',
+  userId: propUserId,
+  currentDate = new Date(),
+}: UseTasksOptions = {}) => {
   const { user } = useAuth();
-  const userId = propUserId || user?.id;
+  const activeUserId = propUserId || user?.id;
+  const queryClient = useQueryClient();
 
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [sections, setSections] = useState<TaskSection[]>([]);
-  const [categories, setCategories] = useState<TaskCategory[]>([]);
-  const [doTodayOffIds, setDoTodayOffIds] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const tasksQueryKey = ['tasks', activeUserId, viewMode, currentDate.toISOString().split('T')[0]];
+  const sectionsQueryKey = ['sections', activeUserId];
+  const categoriesQueryKey = ['categories', activeUserId];
+  const doTodayOffLogQueryKey = ['doTodayOffLog', activeUserId, currentDate.toISOString().split('T')[0]];
 
-  // Filters
-  const [searchFilter, setSearchFilter] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<Task['status'] | 'all'>(viewMode === 'archive' ? 'archived' : 'all');
-  const [categoryFilter, setCategoryFilter] = useState<string | 'all'>('all');
-  const [priorityFilter, setPriorityFilter] = useState<Task['priority'] | 'all'>('all');
-  const [sectionFilter, setSectionFilter] = useState<string | 'all'>('all');
+  const {
+    data: tasks = [],
+    isLoading: tasksLoading,
+    error: tasksError,
+  } = useQuery<Task[], Error>({
+    queryKey: tasksQueryKey,
+    queryFn: () => fetchTasks(activeUserId!, viewMode, currentDate),
+    enabled: !!activeUserId,
+  });
 
-  const fetchAllData = useCallback(async () => {
-    if (!userId) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const [fetchedTasks, fetchedSections, fetchedCategories, fetchedDoTodayOffLog] = await Promise.all([
-        fetchTasksApi(userId, statusFilter, sectionFilter, categoryFilter, priorityFilter, searchFilter, viewMode === 'daily' ? currentDate : null, viewMode),
-        fetchSectionsApi(userId),
-        fetchCategoriesApi(userId),
-        fetchDoTodayOffLogApi(userId, currentDate),
-      ]);
+  const {
+    data: sections = [],
+    isLoading: sectionsLoading,
+    error: sectionsError,
+  } = useQuery<TaskSection[], Error>({
+    queryKey: sectionsQueryKey,
+    queryFn: () => fetchSections(activeUserId!),
+    enabled: !!activeUserId,
+  });
 
-      setTasks(fetchedTasks);
-      setSections(fetchedSections);
-      setCategories(fetchedCategories);
-      setDoTodayOffIds(new Set(fetchedDoTodayOffLog.map(log => log.task_id)));
-    } catch (err) {
-      console.error("Failed to fetch all data:", err);
-      setError("Failed to load data.");
-      showError("Failed to load data.");
-    } finally {
-      setLoading(false);
-    }
-  }, [userId, currentDate, statusFilter, sectionFilter, categoryFilter, priorityFilter, searchFilter, viewMode]);
+  const {
+    data: categories = [],
+    isLoading: categoriesLoading,
+    error: categoriesError,
+  } = useQuery<TaskCategory[], Error>({
+    queryKey: categoriesQueryKey,
+    queryFn: () => fetchCategories(activeUserId!),
+    enabled: !!activeUserId,
+  });
 
-  useEffect(() => {
-    fetchAllData();
-  }, [fetchAllData]);
+  const {
+    data: doTodayOffLog = [],
+    isLoading: doTodayOffLogLoading,
+    error: doTodayOffLogError,
+  } = useQuery<DoTodayOffLog[], Error>({
+    queryKey: doTodayOffLogQueryKey,
+    queryFn: () => fetchDoTodayOffLog(activeUserId!, currentDate),
+    enabled: !!activeUserId && viewMode === 'today',
+  });
 
-  // --- Task Management ---
-  const addTask = useCallback(async (newTaskData: Partial<Task>) => {
-    if (!userId) {
-      showError("User not authenticated.");
-      return null;
-    }
-    try {
-      const task = await addTaskApi(userId, { ...newTaskData, user_id: userId });
-      if (task) {
-        setTasks(prev => [...prev, task]);
-        showSuccess("Task added!");
-        return task;
-      }
-    } catch (err) {
-      showError("Failed to add task.");
-    }
-    return null;
-  }, [userId]);
+  const doTodayOffIds = useMemo(
+    () => new Set(doTodayOffLog.map((log) => log.task_id)),
+    [doTodayOffLog]
+  );
 
-  const updateTask = useCallback(async (taskId: string, updates: Partial<Task>) => {
-    try {
-      const updated = await updateTaskApi(taskId, updates);
-      if (updated) {
-        setTasks(prev => prev.map(task => (task.id === taskId ? updated : task)));
-        showSuccess("Task updated!");
-        return updated;
-      }
-    } catch (err) {
-      showError("Failed to update task.");
-    }
-    return null;
-  }, []);
-
-  const deleteTask = useCallback(async (taskId: string) => {
-    try {
-      await deleteTaskApi(taskId);
-      setTasks(prev => prev.filter(task => task.id !== taskId));
-      showSuccess("Task deleted!");
-    } catch (err) {
-      showError("Failed to delete task.");
-    }
-  }, []);
-
-  const bulkUpdateTasks = useCallback(async (updates: { id: string; updates: Partial<Task> }[]) => {
-    try {
-      await bulkUpdateTasksApi(updates);
-      setTasks(prev => prev.map(task => {
-        const update = updates.find(u => u.id === task.id);
-        return update ? { ...task, ...update.updates } : task;
-      }));
-      showSuccess("Tasks updated!");
-    } catch (err) {
-      showError("Failed to bulk update tasks.");
-    }
-  }, []);
-
-  const reorderTasks = useCallback(async (updates: { id: string; order: number | null; section_id: string | null; parent_task_id: string | null }[]) => {
-    try {
-      await updateTasksOrderApi(updates);
-      // Re-fetch or optimistically update
-      setTasks(prev => {
-        const newTasks = [...prev];
-        updates.forEach(update => {
-          const index = newTasks.findIndex(t => t.id === update.id);
-          if (index !== -1) {
-            newTasks[index] = { ...newTasks[index], order: update.order, section_id: update.section_id, parent_task_id: update.parent_task_id };
-          }
-        });
-        return newTasks;
-      });
-      showSuccess("Tasks reordered!");
-    } catch (err) {
-      showError("Failed to reorder tasks.");
-    }
-  }, []);
-
-  const updateTaskParentAndOrder = useCallback(async (taskId: string, parentTaskId: string | null, newOrder: number | null) => {
-    try {
-      await updateTaskApi(taskId, { parent_task_id: parentTaskId, order: newOrder });
-      setTasks(prev => prev.map(task =>
-        task.id === taskId ? { ...task, parent_task_id: parentTaskId, order: newOrder } : task
-      ));
-      showSuccess("Task parent/order updated!");
-    } catch (err) {
-      showError("Failed to update task parent/order.");
-    }
-  }, []);
-
-  const archiveAllCompletedTasks = useCallback(async () => {
-    const completedTasks = tasks.filter(task => task.status === 'completed');
-    if (completedTasks.length === 0) {
-      showError("No completed tasks to archive.");
-      return;
-    }
-    const updates = completedTasks.map(task => ({ id: task.id, updates: { status: 'archived' as Task['status'] } }));
-    await bulkUpdateTasks(updates);
-    showSuccess("All completed tasks archived!");
-  }, [tasks, bulkUpdateTasks]);
-
-  const markAllTasksInSectionCompleted = useCallback(async (sectionId: string | null) => {
-    if (!sectionId) return;
-    const tasksToUpdate = tasks.filter(task => task.section_id === sectionId && task.status !== 'completed');
-    if (tasksToUpdate.length === 0) {
-      showError("No incomplete tasks in this section.");
-      return;
-    }
-    const updates = tasksToUpdate.map(task => ({ id: task.id, updates: { status: 'completed' as Task['status'] } }));
-    await bulkUpdateTasks(updates);
-    showSuccess("All tasks in section marked completed!");
-  }, [tasks, bulkUpdateTasks]);
-
-  // --- Section Management ---
-  const createSection = useCallback(async (name: string) => {
-    if (!userId) {
-      showError("User not authenticated.");
-      return null;
-    }
-    try {
-      const section = await createSectionApi(userId, name);
-      if (section) {
-        setSections(prev => [...prev, section]);
-        showSuccess("Section created!");
-        return section;
-      }
-    } catch (err) {
-      showError("Failed to create section.");
-    }
-    return null;
-  }, [userId]);
-
-  const updateSection = useCallback(async (sectionId: string, name: string) => {
-    try {
-      const updated = await updateSectionApi(sectionId, { name });
-      if (updated) {
-        setSections(prev => prev.map(section => (section.id === sectionId ? updated : section)));
-        showSuccess("Section updated!");
-        return updated;
-      }
-    } catch (err) {
-      showError("Failed to update section.");
-    }
-    return null;
-  }, []);
-
-  const deleteSection = useCallback(async (sectionId: string) => {
-    try {
-      await deleteSectionApi(sectionId);
-      setSections(prev => prev.filter(section => section.id !== sectionId));
-      showSuccess("Section deleted!");
-    } catch (err) {
-      showError("Failed to delete section.");
-    }
-  }, []);
-
-  const reorderSections = useCallback(async (updates: { id: string; order: number }[]) => {
-    try {
-      await reorderSectionsApi(updates);
-      setSections(prev => {
-        const newSections = [...prev];
-        updates.forEach(update => {
-          const index = newSections.findIndex(s => s.id === update.id);
-          if (index !== -1) {
-            newSections[index] = { ...newSections[index], order: update.order };
-          }
-        });
-        return newSections.sort((a, b) => (a.order || 0) - (b.order || 0));
-      });
-      showSuccess("Sections reordered!");
-    } catch (err) {
-      showError("Failed to reorder sections.");
-    }
-  }, []);
-
-  const updateSectionIncludeInFocusMode = useCallback(async (sectionId: string, include: boolean) => {
-    try {
-      const updated = await updateSectionApi(sectionId, { include_in_focus_mode: include });
-      if (updated) {
-        setSections(prev => prev.map(section => (section.id === sectionId ? updated : section)));
-        showSuccess("Section focus mode updated!");
-        return updated;
-      }
-    } catch (err) {
-      showError("Failed to update section focus mode.");
-    }
-    return null;
-  }, []);
-
-  // --- Category Management ---
-  const addCategory = useCallback(async (name: string, color: string) => {
-    if (!userId) {
-      showError("User not authenticated.");
-      return null;
-    }
-    try {
-      const category = await createCategoryApi(userId, name, color);
-      if (category) {
-        setCategories(prev => [...prev, category]);
-        showSuccess("Category added!");
-        return category;
-      }
-    } catch (err) {
-      showError("Failed to add category.");
-    }
-    return null;
-  }, [userId]);
-
-  const updateCategory = useCallback(async (categoryId: string, updates: Partial<TaskCategory>) => {
-    try {
-      const updated = await updateCategoryApi(categoryId, updates);
-      if (updated) {
-        setCategories(prev => prev.map(category => (category.id === categoryId ? updated : category)));
-        showSuccess("Category updated!");
-        return updated;
-      }
-    } catch (err) {
-      showError("Failed to update category.");
-    }
-    return null;
-  }, []);
-
-  const deleteCategory = useCallback(async (categoryId: string) => {
-    try {
-      await deleteCategoryApi(categoryId);
-      setCategories(prev => prev.filter(category => category.id !== categoryId));
-      showSuccess("Category deleted!");
-    } catch (err) {
-      showError("Failed to delete category.");
-    }
-  }, []);
-
-  // --- Do Today Off Log Management ---
-  const toggleDoToday = useCallback(async (taskId: string, isOff: boolean) => {
-    if (!userId) {
-      showError("User not authenticated.");
-      return;
-    }
-    try {
-      if (isOff) {
-        const log = await addDoTodayOffLogApi(userId, taskId, currentDate);
-        if (log) {
-          setDoTodayOffIds(prev => new Set(prev).add(taskId));
-          showSuccess("Task moved off 'Do Today'.");
-        }
-      } else {
-        const logToDelete = Array.from(doTodayOffIds).find(id => id === taskId);
-        if (logToDelete) {
-          // Need to fetch the actual log entry ID to delete it
-          const fetchedLogs = await fetchDoTodayOffLogApi(userId, currentDate);
-          const logEntry = fetchedLogs.find(log => log.task_id === taskId);
-          if (logEntry) {
-            await deleteDoTodayOffLogApi(logEntry.id);
-            setDoTodayOffIds(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(taskId);
-              return newSet;
-            });
-            showSuccess("Task moved back to 'Do Today'.");
-          }
-        }
-      }
-    } catch (err) {
-      showError(`Failed to toggle 'Do Today' status.`);
-    }
-  }, [userId, currentDate, doTodayOffIds]);
-
-  const toggleAllDoToday = useCallback(async (turnOff: boolean) => {
-    if (!userId) {
-      showError("User not authenticated.");
-      return;
-    }
-    const dailyTasks = tasks.filter(task =>
-      (task.due_date && isSameDay(new Date(task.due_date), currentDate)) || !task.due_date
-    );
-
-    if (turnOff) {
-      const tasksToTurnOff = dailyTasks.filter(task => !doTodayOffIds.has(task.id));
-      for (const task of tasksToTurnOff) {
-        await addDoTodayOffLogApi(userId, task.id, currentDate);
-      }
-      setDoTodayOffIds(prev => new Set([...prev, ...tasksToTurnOff.map(t => t.id)]));
-      showSuccess("All tasks moved off 'Do Today'.");
-    } else {
-      const tasksToTurnOn = dailyTasks.filter(task => doTodayOffIds.has(task.id));
-      const fetchedLogs = await fetchDoTodayOffLogApi(userId, currentDate);
-      for (const task of tasksToTurnOn) {
-        const logEntry = fetchedLogs.find(log => log.task_id === task.id);
-        if (logEntry) {
-          await deleteDoTodayOffLogApi(logEntry.id);
-        }
-      }
-      setDoTodayOffIds(prev => {
-        const newSet = new Set(prev);
-        tasksToTurnOn.forEach(t => newSet.delete(t.id));
-        return newSet;
-      });
-      showSuccess("All tasks moved back to 'Do Today'.");
-    }
-  }, [userId, tasks, doTodayOffIds, currentDate]);
-
-  // --- Derived State and Memoized Values ---
   const processedTasks = useMemo(() => {
-    return tasks.map(task => ({
-      ...task,
-      category_color: categories.find(cat => cat.id === task.category)?.color || null,
-    }));
+    return tasks.map((task) => {
+      const category = categories.find((cat) => cat.id === task.category);
+      return {
+        ...task,
+        category_color: category?.color || null,
+      };
+    });
   }, [tasks, categories]);
 
-  const filteredTasks = useMemo(() => {
-    let filtered = processedTasks;
+  const allCategories = useMemo(() => categories, [categories]);
 
-    if (searchFilter) {
-      filtered = filtered.filter(task =>
-        task.description?.toLowerCase().includes(searchFilter.toLowerCase()) ||
-        task.notes?.toLowerCase().includes(searchFilter.toLowerCase())
-      );
+  const handleAddTask = useCallback(
+    async (taskData: Partial<Task>): Promise<Task | null> => {
+      if (!activeUserId) {
+        showError('User not authenticated.');
+        return null;
+      }
+      try {
+        const newTask = await addTask({ ...taskData, user_id: activeUserId });
+        if (newTask) {
+          queryClient.invalidateQueries({ queryKey: tasksQueryKey });
+          showSuccess('Task added successfully!');
+          return newTask;
+        }
+        return null;
+      } catch (error) {
+        showError('Failed to add task.');
+        return null;
+      }
+    },
+    [activeUserId, queryClient, tasksQueryKey]
+  );
+
+  const handleUpdateTask = useCallback(
+    async (taskId: string, updates: Partial<Task>): Promise<Task | null> => {
+      try {
+        const updatedTask = await updateTask(taskId, updates);
+        if (updatedTask) {
+          queryClient.invalidateQueries({ queryKey: tasksQueryKey });
+          showSuccess('Task updated successfully!');
+          return updatedTask;
+        }
+        return null;
+      } catch (error) {
+        showError('Failed to update task.');
+        return null;
+      }
+    },
+    [queryClient, tasksQueryKey]
+  );
+
+  const handleDeleteTask = useCallback(
+    async (taskId: string): Promise<void> => {
+      try {
+        await deleteTask(taskId);
+        queryClient.invalidateQueries({ queryKey: tasksQueryKey });
+        showSuccess('Task deleted successfully!');
+      } catch (error) {
+        showError('Failed to delete task.');
+      }
+    },
+    [queryClient, tasksQueryKey]
+  );
+
+  const handleBulkUpdateTasks = useCallback(
+    async (taskIds: string[], updates: Partial<Task>): Promise<void> => {
+      try {
+        await bulkUpdateTasks(taskIds, updates);
+        queryClient.invalidateQueries({ queryKey: tasksQueryKey });
+        showSuccess('Tasks updated successfully!');
+      } catch (error) {
+        showError('Failed to bulk update tasks.');
+      }
+    },
+    [queryClient, tasksQueryKey]
+  );
+
+  const handleReorderTasks = useCallback(
+    async (
+      updates: {
+        id: string;
+        order: number | null;
+        section_id: string | null;
+        parent_task_id: string | null;
+      }[]
+    ): Promise<void> => {
+      try {
+        await reorderTasks(updates);
+        queryClient.invalidateQueries({ queryKey: tasksQueryKey });
+      } catch (error) {
+        showError('Failed to reorder tasks.');
+      }
+    },
+    [queryClient, tasksQueryKey]
+  );
+
+  const handleCreateSection = useCallback(
+    async (name: string): Promise<TaskSection | null> => {
+      if (!activeUserId) {
+        showError('User not authenticated.');
+        return null;
+      }
+      try {
+        const newSection = await createSection(activeUserId, name);
+        if (newSection) {
+          queryClient.invalidateQueries({ queryKey: sectionsQueryKey });
+          showSuccess('Section created successfully!');
+          return newSection;
+        }
+        return null;
+      } catch (error) {
+        showError('Failed to create section.');
+        return null;
+      }
+    },
+    [activeUserId, queryClient, sectionsQueryKey]
+  );
+
+  const handleUpdateSection = useCallback(
+    async (sectionId: string, newName: string): Promise<TaskSection | null> => {
+      try {
+        const updatedSection = await updateSection(sectionId, { name: newName });
+        if (updatedSection) {
+          queryClient.invalidateQueries({ queryKey: sectionsQueryKey });
+          showSuccess('Section updated successfully!');
+          return updatedSection;
+        }
+        return null;
+      } catch (error) {
+        showError('Failed to update section.');
+        return null;
+      }
+    },
+    [queryClient, sectionsQueryKey]
+  );
+
+  const handleDeleteSection = useCallback(
+    async (sectionId: string): Promise<void> => {
+      try {
+        await deleteSection(sectionId);
+        queryClient.invalidateQueries({ queryKey: sectionsQueryKey });
+        showSuccess('Section deleted successfully!');
+      } catch (error) {
+        showError('Failed to delete section.');
+      }
+    },
+    [queryClient, sectionsQueryKey]
+  );
+
+  const handleUpdateSectionIncludeInFocusMode = useCallback(
+    async (sectionId: string, include: boolean): Promise<TaskSection | null> => {
+      try {
+        const updatedSection = await updateSection(sectionId, { include_in_focus_mode: include });
+        if (updatedSection) {
+          queryClient.invalidateQueries({ queryKey: sectionsQueryKey });
+          showSuccess('Section updated successfully!');
+          return updatedSection;
+        }
+        return null;
+      } catch (error) {
+        showError('Failed to update section focus mode.');
+        return null;
+      }
+    },
+    [queryClient, sectionsQueryKey]
+  );
+
+  const handleCreateCategory = useCallback(
+    async (name: string, color: string): Promise<TaskCategory | null> => {
+      if (!activeUserId) {
+        showError('User not authenticated.');
+        return null;
+      }
+      try {
+        const newCategory = await createCategory(activeUserId, name, color);
+        if (newCategory) {
+          queryClient.invalidateQueries({ queryKey: categoriesQueryKey });
+          showSuccess('Category created successfully!');
+          return newCategory;
+        }
+        return null;
+      } catch (error) {
+        showError('Failed to create category.');
+        return null;
+      }
+    },
+    [activeUserId, queryClient, categoriesQueryKey]
+  );
+
+  const handleUpdateCategory = useCallback(
+    async (categoryId: string, newName: string, newColor: string): Promise<TaskCategory | null> => {
+      try {
+        const updatedCategory = await updateCategory(categoryId, { name: newName, color: newColor });
+        if (updatedCategory) {
+          queryClient.invalidateQueries({ queryKey: categoriesQueryKey });
+          showSuccess('Category updated successfully!');
+          return updatedCategory;
+        }
+        return null;
+      } catch (error) {
+        showError('Failed to update category.');
+        return null;
+      }
+    },
+    [queryClient, categoriesQueryKey]
+  );
+
+  const handleDeleteCategory = useCallback(
+    async (categoryId: string): Promise<void> => {
+      try {
+        await deleteCategory(categoryId);
+        queryClient.invalidateQueries({ queryKey: categoriesQueryKey });
+        showSuccess('Category deleted successfully!');
+      } catch (error) {
+        showError('Failed to delete category.');
+      }
+    },
+    [queryClient, categoriesQueryKey]
+  );
+
+  const toggleDoToday = useCallback(
+    async (taskId: string, isOff: boolean): Promise<void> => {
+      if (!activeUserId) {
+        showError('User not authenticated.');
+        return;
+      }
+      try {
+        if (isOff) {
+          await addDoTodayOffLog(activeUserId, taskId, currentDate);
+        } else {
+          await deleteDoTodayOffLog(activeUserId, taskId, currentDate);
+        }
+        queryClient.invalidateQueries({ queryKey: doTodayOffLogQueryKey });
+        queryClient.invalidateQueries({ queryKey: tasksQueryKey }); // Invalidate tasks to reflect changes
+      } catch (error) {
+        showError('Failed to update "Do Today" status.');
+      }
+    },
+    [activeUserId, currentDate, queryClient, doTodayOffLogQueryKey, tasksQueryKey]
+  );
+
+  const toggleAllDoToday = useCallback(
+    async (turnOff: boolean): Promise<void> => {
+      if (!activeUserId) {
+        showError('User not authenticated.');
+        return;
+      }
+      try {
+        const todayTasks = processedTasks.filter(
+          (task) =>
+            task.status === 'to-do' &&
+            (task.due_date === null || isSameDay(parseISO(task.due_date), currentDate)) &&
+            !task.parent_task_id
+        );
+
+        if (turnOff) {
+          // Add all today's tasks to doTodayOffLog
+          for (const task of todayTasks) {
+            if (!doTodayOffIds.has(task.id)) {
+              await addDoTodayOffLog(activeUserId, task.id, currentDate);
+            }
+          }
+          showSuccess('All "Do Today" tasks turned off.');
+        } else {
+          // Remove all today's tasks from doTodayOffLog
+          for (const task of todayTasks) {
+            if (doTodayOffIds.has(task.id)) {
+              await deleteDoTodayOffLog(activeUserId, task.id, currentDate);
+            }
+          }
+          showSuccess('All "Do Today" tasks turned on.');
+        }
+        queryClient.invalidateQueries({ queryKey: doTodayOffLogQueryKey });
+        queryClient.invalidateQueries({ queryKey: tasksQueryKey });
+      } catch (error) {
+        showError('Failed to update all "Do Today" tasks.');
+      }
+    },
+    [activeUserId, currentDate, processedTasks, doTodayOffIds, queryClient, doTodayOffLogQueryKey, tasksQueryKey]
+  );
+
+  const archiveAllCompletedTasks = useCallback(async (): Promise<void> => {
+    if (!activeUserId) {
+      showError('User not authenticated.');
+      return;
     }
+    try {
+      const completedTaskIds = tasks
+        .filter((task) => task.status === 'completed')
+        .map((task) => task.id);
 
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(task => task.status === statusFilter);
+      if (completedTaskIds.length > 0) {
+        await bulkUpdateTasks(completedTaskIds, { status: 'archived' });
+        queryClient.invalidateQueries({ queryKey: tasksQueryKey });
+        showSuccess('All completed tasks archived!');
+      } else {
+        showSuccess('No completed tasks to archive.');
+      }
+    } catch (error) {
+      showError('Failed to archive completed tasks.');
     }
+  }, [activeUserId, tasks, queryClient, tasksQueryKey]);
 
-    if (categoryFilter !== 'all') {
-      filtered = filtered.filter(task => task.category === categoryFilter);
-    }
+  const setFocusTask = useCallback(
+    async (taskId: string | null): Promise<void> => {
+      // This function would typically update user settings in the database
+      // For now, it's a placeholder.
+      console.log(`Setting focus task to: ${taskId}`);
+      showSuccess(`Focus task set to ${taskId || 'none'}`);
+    },
+    []
+  );
 
-    if (priorityFilter !== 'all') {
-      filtered = filtered.filter(task => task.priority === priorityFilter);
-    }
+  const todayStart = startOfDay(currentDate);
 
-    if (sectionFilter !== 'all') {
-      filtered = filtered.filter(task => task.section_id === sectionFilter);
-    }
+  const activeTasks = useMemo(() => {
+    return processedTasks
+      .filter(
+        (task: Task) =>
+          task.status !== 'archived' &&
+          (viewMode !== 'today' ||
+            (!doTodayOffIds.has(task.id) &&
+              (task.due_date === null || new Date(task.due_date) >= todayStart))) // Fixed new Date() for potential undefined
+      )
+      .sort((a, b) => {
+        const priorityOrder: { [key: string]: number } = {
+          urgent: 0,
+          high: 1,
+          medium: 2,
+          low: 3,
+          null: 4, // Explicitly handle null
+        };
+        const pA = priorityOrder[a.priority || 'null']; // Use 'null' string as key
+        const pB = priorityOrder[b.priority || 'null']; // Use 'null' string as key
+        if (pA !== pB) return pA - pB;
 
-    return filtered;
-  }, [processedTasks, searchFilter, statusFilter, categoryFilter, priorityFilter, sectionFilter]);
+        // Sort by due date if priorities are the same
+        if (a.due_date && b.due_date) {
+          return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+        }
+        if (a.due_date) return -1; // Tasks with due dates come first
+        if (b.due_date) return 1;
+        return 0;
+      });
+  }, [processedTasks, viewMode, doTodayOffIds, todayStart]);
 
   const nextAvailableTask = useMemo(() => {
-    const todayStart = startOfDay(currentDate);
-    const availableTasks = filteredTasks.filter(task =>
-      task.status === 'to-do' &&
-      !doTodayOffIds.has(task.id) &&
-      (task.due_date === null || new Date(task.due_date) >= todayStart)
-    ).sort((a, b) => {
-      // Sort by priority (urgent > high > medium > low)
-      const priorityOrder = { 'urgent': 0, 'high': 1, 'medium': 2, 'low': 3, null: 4, undefined: 4 };
-      const pA = priorityOrder[a.priority || null];
-      const pB = priorityOrder[b.priority || null];
-      if (pA !== pB) return pA - pB;
-
-      // Then by due date (earliest first, null last)
-      if (a.due_date && b.due_date) return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
-      if (a.due_date) return -1; // a has due date, b doesn't
-      if (b.due_date) return 1;  // b has due date, a doesn't
-
-      // Then by order
-      return (a.order || 0) - (b.order || 0);
-    });
-    return availableTasks.length > 0 ? availableTasks[0] : null;
-  }, [filteredTasks, doTodayOffIds, currentDate]);
-
-  const dailyProgress = useMemo(() => {
-    const dailyTasks = tasks.filter(task =>
-      (task.due_date && isSameDay(new Date(task.due_date), currentDate)) || !task.due_date
+    return activeTasks.find(
+      (task) =>
+        task.status === 'to-do' &&
+        !task.parent_task_id &&
+        (task.section_id === null ||
+          sections.find((s) => s.id === task.section_id)?.include_in_focus_mode)
     );
-    const totalDailyTasks = dailyTasks.length;
-    const completedDailyTasks = dailyTasks.filter(task => task.status === 'completed').length;
-    const progress = totalDailyTasks > 0 ? (completedDailyTasks / totalDailyTasks) * 100 : 0;
-    return { total: totalDailyTasks, completed: completedDailyTasks, progress };
-  }, [tasks, currentDate]);
-
-  const setFocusTask = useCallback(async (taskId: string | null) => {
-    // This function would typically interact with user settings, not directly with tasks
-    // For now, it's a placeholder.
-    console.log(`Setting focus task to: ${taskId}`);
-    showSuccess(`Focus task set to ${taskId || 'none'}. (Placeholder)`);
-  }, []);
+  }, [activeTasks, sections]);
 
   return {
     tasks,
     processedTasks,
-    filteredTasks,
+    activeTasks,
     nextAvailableTask,
     sections,
-    categories,
+    allCategories, // Export allCategories
     doTodayOffIds,
-    loading,
-    error,
-    addTask,
-    updateTask,
-    deleteTask,
-    bulkUpdateTasks,
-    reorderTasks,
-    updateTaskParentAndOrder,
-    archiveAllCompletedTasks,
-    markAllTasksInSectionCompleted,
-    createSection,
-    updateSection,
-    deleteSection,
-    reorderSections,
-    updateSectionIncludeInFocusMode,
-    addCategory,
-    updateCategory,
-    deleteCategory,
+    handleAddTask,
+    updateTask: handleUpdateTask,
+    deleteTask: handleDeleteTask,
+    bulkUpdateTasks: handleBulkUpdateTasks,
+    reorderTasks: handleReorderTasks,
+    createSection: handleCreateSection,
+    updateSection: handleUpdateSection,
+    deleteSection: handleDeleteSection,
+    updateSectionIncludeInFocusMode: handleUpdateSectionIncludeInFocusMode,
+    createCategory: handleCreateCategory,
+    updateCategory: handleUpdateCategory,
+    deleteCategory: handleDeleteCategory,
     toggleDoToday,
     toggleAllDoToday,
-    dailyProgress,
-    searchFilter,
-    setSearchFilter,
-    statusFilter,
-    setStatusFilter,
-    categoryFilter,
-    setCategoryFilter,
-    priorityFilter,
-    setPriorityFilter,
-    sectionFilter,
-    setSectionFilter,
-    setFocusTask, // Placeholder for setting focus task in user settings
+    archiveAllCompletedTasks,
+    setFocusTask,
+    isLoading: tasksLoading || sectionsLoading || categoriesLoading || doTodayOffLogLoading,
+    error: tasksError || sectionsError || categoriesError || doTodayOffLogError,
+    currentDate, // Export currentDate
   };
 };

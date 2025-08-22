@@ -1,137 +1,159 @@
 import React from 'react';
-import { Button } from "@/components/ui/button";
-import { CheckCircle2, Edit, Target, Link as LinkIcon, ClipboardCopy } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
-import { Task } from '@/hooks/useTasks';
+import { Task, TaskSection, TaskCategory, TaskStatus } from '@/types/task'; // Corrected import
 import { Skeleton } from '@/components/ui/skeleton';
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { showSuccess, showError } from '@/utils/toast';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"; // Import Card components
+import { format, isToday, isTomorrow, isPast, parseISO } from 'date-fns';
+import { getCategoryColorProps } from '@/utils/categoryColors';
+import { NextTaskCardProps } from '@/types/props'; // Import props interface
 
-interface NextTaskCardProps {
-  nextAvailableTask: Task | null;
-  updateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
-  onOpenOverview: (task: Task) => void;
-  loading: boolean;
-  onFocusViewOpen: () => void;
-}
+const NextTaskCard: React.FC<NextTaskCardProps> = ({
+  nextAvailableTask,
+  updateTask,
+  onOpenOverview,
+  onOpenDetail,
+  sections,
+  categories,
+  isDemo,
+}) => {
+  const handleStatusChange = async (
+    taskId: string,
+    newStatus: TaskStatus
+  ) => {
+    await updateTask(taskId, { status: newStatus });
+  };
 
-const NextTaskCard: React.FC<NextTaskCardProps> = ({ nextAvailableTask, updateTask, onOpenOverview, loading, onFocusViewOpen }) => {
-  const getPriorityDotColor = (priority: string) => {
+  const getDueDateText = (dueDate: string | null) => {
+    if (!dueDate) return null;
+    const date = parseISO(dueDate);
+    if (isToday(date)) return 'Today';
+    if (isTomorrow(date)) return 'Tomorrow';
+    if (isPast(date) && !isToday(date)) return 'Overdue';
+    return format(date, 'MMM d');
+  };
+
+  const getPriorityClasses = (priority: Task['priority']) => {
     switch (priority) {
-      case 'urgent': return 'bg-priority-urgent';
-      case 'high': return 'bg-priority-high';
-      case 'medium': return 'bg-priority-medium';
-      case 'low': return 'bg-priority-low';
-      default: return 'bg-gray-500';
+      case 'urgent':
+        return 'text-red-600 border-red-600 bg-red-50';
+      case 'high':
+        return 'text-orange-600 border-orange-600 bg-orange-50';
+      case 'medium':
+        return 'text-yellow-600 border-yellow-600 bg-yellow-50';
+      case 'low':
+        return 'text-green-600 border-green-600 bg-green-50';
+      default:
+        return 'text-gray-500 border-gray-500 bg-gray-50';
     }
   };
 
-  const handleMarkComplete = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (nextAvailableTask) {
-      await updateTask(nextAvailableTask.id, { status: 'completed' });
-    }
-  };
+  if (!nextAvailableTask) {
+    return (
+      <Card className="h-full flex flex-col">
+        <CardHeader>
+          <CardTitle className="text-lg">Next Task</CardTitle>
+        </CardHeader>
+        <CardContent className="flex-grow flex items-center justify-center text-center text-gray-500">
+          No tasks currently in focus.
+        </CardContent>
+      </Card>
+    );
+  }
 
-  const handleOpenOverviewClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (nextAvailableTask) {
-      onOpenOverview(nextAvailableTask);
-    }
-  };
-
-  const isUrl = (path: string) => path.startsWith('http://') || path.startsWith('https://');
-
-  const handleCopyPath = async (e: React.MouseEvent, path: string) => {
-    e.stopPropagation();
-    try {
-      await navigator.clipboard.writeText(path);
-      showSuccess('Path copied to clipboard!');
-    } catch (err) {
-      showError('Could not copy path.');
-    }
-  };
+  const category = categories.find((cat) => cat.id === nextAvailableTask.category);
+  const section = sections.find((sec) => sec.id === nextAvailableTask.section_id);
+  const categoryColorProps = category ? getCategoryColorProps(category.color) : null;
 
   return (
-    <Card
-      className="h-full shadow-lg rounded-xl flex flex-col justify-center cursor-pointer" // Adjusted classes
-      onClick={onFocusViewOpen}
-    >
-      <CardHeader className="pb-2">
-        <CardTitle className="text-xl font-bold flex items-center justify-center gap-2">
-          <Target className="h-5 w-5" /> Your Next Task
-        </CardTitle>
+    <Card className="h-full flex flex-col">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-lg">Next Task</CardTitle>
+        <Button variant="ghost" size="sm" onClick={() => onOpenDetail(nextAvailableTask)}>
+          Details
+        </Button>
       </CardHeader>
-      <CardContent className="flex-grow flex items-center justify-center pt-0"> {/* Adjusted padding */}
-        {loading ? (
-          <div className="space-y-3 w-full flex flex-col items-center">
-            <Skeleton className="h-6 w-3/4" />
-            <div className="flex gap-2">
-              <Skeleton className="h-9 w-24" />
-              <Skeleton className="h-9 w-24" />
-            </div>
-          </div>
-        ) : nextAvailableTask ? (
-          <div className="flex flex-col items-center text-center space-y-3">
-            <div className={cn("w-3 h-3 rounded-full", getPriorityDotColor(nextAvailableTask.priority))} />
-            <p className="text-xl sm:text-2xl font-bold leading-tight text-foreground line-clamp-2">
+      <CardContent className="flex-grow flex flex-col justify-between">
+        <div className="space-y-2">
+          <div className="flex items-start space-x-2">
+            <Checkbox
+              id={`task-${nextAvailableTask.id}`}
+              checked={nextAvailableTask.status === 'completed'}
+              onCheckedChange={(checked) =>
+                handleStatusChange(
+                  nextAvailableTask.id,
+                  checked ? 'completed' : 'to-do'
+                )
+              }
+              className="mt-1"
+            />
+            <label
+              htmlFor={`task-${nextAvailableTask.id}`}
+              className="flex-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
               {nextAvailableTask.description}
-            </p>
-            {nextAvailableTask.link && (
-              <div className="flex items-center justify-center gap-1 text-sm text-muted-foreground">
-                {isUrl(nextAvailableTask.link) ? (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <a
-                        href={nextAvailableTask.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-primary hover:underline"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <LinkIcon className="h-4 w-4" />
-                        <span className="truncate max-w-[150px]">{nextAvailableTask.link}</span>
-                      </a>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Open link: {nextAvailableTask.link}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                ) : (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-auto p-1 flex items-center gap-1 text-muted-foreground hover:text-primary"
-                        onClick={(e) => handleCopyPath(e, nextAvailableTask.link!)}
-                      >
-                        <ClipboardCopy className="h-4 w-4" />
-                        <span className="truncate max-w-[150px]">{nextAvailableTask.link}</span>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Copy path: {nextAvailableTask.link}</p>
-                    </TooltipContent>
-                  </Tooltip>
+            </label>
+          </div>
+          <div className="flex flex-wrap gap-2 text-xs text-gray-500">
+            {nextAvailableTask.priority && (
+              <Badge
+                variant="outline"
+                className={cn(
+                  'px-2 py-0.5 rounded-full border',
+                  getPriorityClasses(nextAvailableTask.priority)
                 )}
-              </div>
+              >
+                {nextAvailableTask.priority}
+              </Badge>
             )}
-            <div className="flex space-x-2">
-              <Button size="sm" onClick={handleMarkComplete}>
-                <CheckCircle2 className="mr-2 h-4 w-4" /> Done
-              </Button>
-              <Button size="sm" variant="outline" onClick={handleOpenOverviewClick}>
-                <Edit className="mr-2 h-4 w-4" /> Details
-              </Button>
-            </div>
+            {nextAvailableTask.due_date && (
+              <Badge
+                variant="outline"
+                className={cn(
+                  'px-2 py-0.5 rounded-full border',
+                  isPast(parseISO(nextAvailableTask.due_date)) && !isToday(parseISO(nextAvailableTask.due_date))
+                    ? 'border-red-500 text-red-500 bg-red-50'
+                    : 'border-gray-300 text-gray-600'
+                )}
+              >
+                <span className="mr-1">🗓️</span> {getDueDateText(nextAvailableTask.due_date)}
+              </Badge>
+            )}
+            {category && (
+              <Badge
+                variant="outline"
+                className={cn(
+                  'px-2 py-0.5 rounded-full border',
+                  categoryColorProps?.dotBorder,
+                  categoryColorProps?.dotColor,
+                  categoryColorProps?.backgroundClass
+                )}
+              >
+                <span
+                  className={cn(
+                    'w-2 h-2 rounded-full mr-1',
+                    categoryColorProps?.dotColor
+                  )}
+                  style={{ backgroundColor: categoryColorProps?.bg }}
+                />
+                {category.name}
+              </Badge>
+            )}
+            {section && (
+              <Badge variant="outline" className="px-2 py-0.5 rounded-full border border-gray-300 text-gray-600">
+                <span className="mr-1">📂</span> {section.name}
+              </Badge>
+            )}
           </div>
-        ) : (
-          <div className="text-center py-4 text-sm text-muted-foreground">
-            No pending tasks for today. Great job!
-          </div>
-        )}
+        </div>
+        <Button
+          variant="secondary"
+          className="w-full mt-4"
+          onClick={() => onOpenOverview(nextAvailableTask)}
+        >
+          Start Focus
+        </Button>
       </CardContent>
     </Card>
   );
