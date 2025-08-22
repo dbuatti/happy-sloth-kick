@@ -1,19 +1,19 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Edit3, Trash2, Plus, Eye, EyeOff } from 'lucide-react';
+import { Edit3, Trash2, Plus, Eye, EyeOff, MoreHorizontal } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 
-// Fix 1: Correct the import path for TaskSection type
-import { TaskSection } from '@/types/task';
+// Fix 1: Correct the import path for TaskSection
+interface TaskSection {
+  id: string;
+  name: string;
+  user_id: string;
+  order: number | null;
+  created_at: string | null;
+  include_in_focus_mode: boolean;
+}
 
 interface SectionHeaderProps {
   section: TaskSection;
@@ -36,6 +36,24 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(section.name);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    if (isMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isMenuOpen]);
 
   const handleStartEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -70,6 +88,22 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({
     }
     onDelete(section.id);
     showSuccess("Section deleted");
+  };
+
+  // Handle menu toggle for mobile
+  const toggleMenu = (e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation();
+    if (isDemo) return;
+    setIsMenuOpen(!isMenuOpen);
+  };
+
+  // Fix 2: Update handleMenuItemSelect to accept functions that may have parameters
+  const handleMenuItemSelect = (action: () => void) => {
+    return (e: React.MouseEvent) => {
+      e.stopPropagation();
+      action();
+      setIsMenuOpen(false);
+    };
   };
 
   return (
@@ -111,58 +145,65 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({
           <Plus className="h-4 w-4" />
         </Button>
         
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              className="h-8 w-8 p-0"
-              aria-label="Section options"
-              disabled={isDemo}
-              // Added onTouchEnd to handle mobile touch events
-              onTouchEnd={(e: React.TouchEvent) => {
-                e.stopPropagation();
-                // Ensure the dropdown opens on touch
-                const button = e.currentTarget;
-                const event = new MouseEvent('click', {
-                  bubbles: true,
-                  cancelable: true,
-                  view: window
-                });
-                button.dispatchEvent(event);
-              }}
-              // Keep onClick for desktop
-              onClick={(e: React.MouseEvent) => e.stopPropagation()}
+        {/* Custom mobile-friendly dropdown implementation */}
+        <div className="relative" ref={menuRef}>
+          <Button
+            variant="ghost"
+            className="h-8 w-8 p-0"
+            aria-label="Section options"
+            disabled={isDemo}
+            onClick={toggleMenu}
+            onTouchEnd={(e: React.TouchEvent) => {
+              e.preventDefault();
+              e.stopPropagation();
+              toggleMenu(e);
+            }}
+          >
+            <span className="sr-only">Open menu</span>
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+          
+          {isMenuOpen && (
+            <div 
+              className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-popover border border-border z-50"
+              onClick={(e) => e.stopPropagation()}
             >
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          {/* Fix 2: Correct the event handler type */}
-          <DropdownMenuContent align="end" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-            <DropdownMenuItem onSelect={handleStartEdit}>
-              <Edit3 className="mr-2 h-4 w-4" /> Rename
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => onToggleVisibility(section.id)}>
-              {section.include_in_focus_mode ? (
-                <>
-                  <EyeOff className="mr-2 h-4 w-4" /> Hide from Focus
-                </>
-              ) : (
-                <>
-                  <Eye className="mr-2 h-4 w-4" /> Show in Focus
-                </>
-              )}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem 
-              onSelect={handleDelete} 
-              className="text-destructive focus:text-destructive"
-              disabled={taskCount > 0}
-            >
-              <Trash2 className="mr-2 h-4 w-4" /> Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+              <div className="py-1" role="menu">
+                <button
+                  className="w-full text-left px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground flex items-center"
+                  role="menuitem"
+                  onClick={handleMenuItemSelect(() => handleStartEdit({} as React.MouseEvent))}
+                >
+                  <Edit3 className="mr-2 h-4 w-4" /> Rename
+                </button>
+                <button
+                  className="w-full text-left px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground flex items-center"
+                  role="menuitem"
+                  onClick={handleMenuItemSelect(() => onToggleVisibility(section.id))}
+                >
+                  {section.include_in_focus_mode ? (
+                    <>
+                      <EyeOff className="mr-2 h-4 w-4" /> Hide from Focus
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="mr-2 h-4 w-4" /> Show in Focus
+                    </>
+                  )}
+                </button>
+                <div className="border-t border-border my-1"></div>
+                <button
+                  className={`w-full text-left px-4 py-2 text-sm ${taskCount > 0 ? 'text-muted-foreground cursor-not-allowed' : 'text-destructive hover:bg-destructive hover:text-destructive-foreground'} flex items-center`}
+                  role="menuitem"
+                  onClick={handleMenuItemSelect(handleDelete)}
+                  disabled={taskCount > 0}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" /> Delete
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
