@@ -416,9 +416,9 @@ const TaskCard: React.FC<TaskCardProps> = ({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0"
-                onClick={(e) => { e.stopPropagation(); e.preventDefault(); }} // Added e.preventDefault()
-                onTouchStart={(e) => { e.stopPropagation(); e.preventDefault(); }} // Added e.preventDefault()
+                className="h-8 w-8 p-0 touch-action-manipulation" // Added touch-action-manipulation
+                onClick={(e) => { e.stopPropagation(); e.preventDefault(); }}
+                onTouchStart={(e) => { e.stopPropagation(); e.preventDefault(); }}
               >
                 <MoreVertical className="h-4 w-4" />
               </Button>
