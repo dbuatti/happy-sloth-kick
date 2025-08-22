@@ -1,111 +1,229 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { TwitterPicker } from 'react-color';
-import { QuickLink } from '@/types/task';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { QuickLink } from '@/hooks/useQuickLinks';
+import { UploadCloud, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { showError } from '@/utils/toast';
-import { categoryColors } from '@/utils/categoryColors';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface QuickLinkFormProps {
-  link?: QuickLink | null;
-  onSave: (data: Partial<QuickLink>) => Promise<void>;
-  onCancel: () => void;
-  onDelete?: (id: string) => Promise<void>;
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (data: { 
+    title: string; 
+    url: string; 
+    imageFile?: File | null;
+    image_url?: string | null;
+    emoji?: string | null;
+    backgroundColor?: string | null;
+    avatarText?: string | null;
+  }) => Promise<any>;
+  initialData?: QuickLink | null;
 }
 
-const QuickLinkForm: React.FC<QuickLinkFormProps> = ({ link, onSave, onCancel, onDelete }) => {
-  const [title, setTitle] = useState(link?.title || '');
-  const [url, setUrl] = useState(link?.url || '');
-  const [emoji, setEmoji] = useState(link?.emoji || '');
-  const [backgroundColor, setBackgroundColor] = useState(link?.background_color || '');
+const presetColors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899', '#6b7280'];
+
+const QuickLinkForm: React.FC<QuickLinkFormProps> = ({ isOpen, onClose, onSave, initialData }) => {
+  const [title, setTitle] = useState('');
+  const [url, setUrl] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const [avatarType, setAvatarType] = useState<'image' | 'emoji' | 'text'>('image');
+  const [emoji, setEmoji] = useState('');
+  const [avatarText, setAvatarText] = useState('');
+  const [backgroundColor, setBackgroundColor] = useState(presetColors[0]);
 
   useEffect(() => {
-    if (link) {
-      setTitle(link.title);
-      setUrl(link.url);
-      setEmoji(link.emoji || '');
-      setBackgroundColor(link.background_color || '');
-    } else {
-      setTitle('');
-      setUrl('');
-      setEmoji('');
-      setBackgroundColor('');
+    if (isOpen) {
+      setTitle(initialData?.title || '');
+      setUrl(initialData?.url || '');
+      setImageFile(null);
+      setImagePreview(initialData?.image_url || null);
+      setEmoji(initialData?.emoji || '');
+      setAvatarText(initialData?.avatar_text || '');
+      setBackgroundColor(initialData?.background_color || presetColors[0]);
+
+      if (initialData?.image_url) {
+        setAvatarType('image');
+      } else if (initialData?.emoji) {
+        setAvatarType('emoji');
+      } else if (initialData?.avatar_text) {
+        setAvatarType('text');
+      } else {
+        setAvatarType('image');
+      }
     }
-  }, [link]);
+  }, [isOpen, initialData]);
+
+  const handleFile = (file: File | null) => {
+    if (file && file.type.startsWith('image/')) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    } else if (file) {
+      showError('Please upload a valid image file.');
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => e.preventDefault();
+  const handleDragEnter = () => setIsDragging(true);
+  const handleDragLeave = () => setIsDragging(false);
+
+  const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
+    const items = event.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const file = items[i].getAsFile();
+        if (file) {
+          handleFile(file);
+          setAvatarType('image');
+        }
+        break;
+      }
+    }
+  };
 
   const handleSave = async () => {
     if (!title.trim() || !url.trim()) {
       showError('Title and URL are required.');
       return;
     }
+    setIsSaving(true);
 
-    const linkData: Partial<QuickLink> = {
-      title: title.trim(),
-      url: url.trim(),
-      emoji: emoji || null,
-      background_color: backgroundColor || null,
+    const saveData: Parameters<typeof onSave>[0] = { 
+      title, 
+      url,
     };
 
-    await onSave(linkData);
+    if (avatarType === 'image') {
+      saveData.imageFile = imageFile;
+      if (!imageFile) {
+        saveData.image_url = imagePreview;
+      }
+      saveData.emoji = null;
+      saveData.avatarText = null;
+      saveData.backgroundColor = null;
+    } else if (avatarType === 'emoji') {
+      saveData.image_url = null;
+      saveData.emoji = emoji;
+      saveData.avatarText = null;
+      saveData.backgroundColor = backgroundColor;
+    } else if (avatarType === 'text') {
+      saveData.image_url = null;
+      saveData.emoji = null;
+      saveData.avatarText = avatarText;
+      saveData.backgroundColor = backgroundColor;
+    }
+
+    await onSave(saveData);
+    setIsSaving(false);
+    onClose();
   };
 
-  const handleDelete = async () => {
-    if (link?.id && onDelete) {
-      await onDelete(link.id);
-    }
-  };
+  const ColorPalette = () => (
+    <div className="flex flex-wrap gap-2 mt-2">
+      {presetColors.map(color => (
+        <button
+          key={color}
+          type="button"
+          className={cn(
+            "w-8 h-8 rounded-full border-2 transition-all",
+            backgroundColor === color ? 'ring-2 ring-offset-2 ring-primary' : 'border-transparent'
+          )}
+          style={{ backgroundColor: color }}
+          onClick={() => setBackgroundColor(color)}
+        />
+      ))}
+    </div>
+  );
 
   return (
-    <Dialog open onOpenChange={onCancel}>
-      <DialogContent className="sm:max-w-[425px]">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent onPaste={handlePaste}>
         <DialogHeader>
-          <DialogTitle>{link ? 'Edit Quick Link' : 'Add New Quick Link'}</DialogTitle>
+          <DialogTitle>{initialData ? 'Edit Quick Link' : 'Add Quick Link'}</DialogTitle>
+          <DialogDescription>
+            {initialData ? 'Edit the details of your quick link.' : 'Fill in the details to add a new quick link.'}
+          </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="title" className="text-right">Title</Label>
-            <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} className="col-span-3" />
+        <div className="space-y-4 py-4">
+          <div>
+            <Label>Title</Label>
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Google Drive" />
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="url" className="text-right">URL</Label>
-            <Input id="url" value={url} onChange={(e) => setUrl(e.target.value)} className="col-span-3" />
+          <div>
+            <Label>URL</Label>
+            <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://..." />
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="emoji" className="text-right">Emoji</Label>
-            <Input id="emoji" value={emoji} onChange={(e) => setEmoji(e.target.value)} className="col-span-3" placeholder="e.g., 🚀" />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="background-color" className="text-right">Background</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="col-span-3 justify-start" style={{ backgroundColor: backgroundColor || 'transparent' }}>
-                  {backgroundColor || 'Select Color'}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <TwitterPicker
-                  color={backgroundColor}
-                  onChangeComplete={(color: any) => setBackgroundColor(color.hex)}
-                  colors={Object.keys(categoryColors).map(key => categoryColors[key].bg)}
-                />
-              </PopoverContent>
-            </Popover>
+          <div>
+            <Label>Icon Type</Label>
+            <Tabs value={avatarType} onValueChange={(value) => setAvatarType(value as any)} className="w-full mt-1">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="image">Image</TabsTrigger>
+                <TabsTrigger value="emoji">Emoji</TabsTrigger>
+                <TabsTrigger value="text">Text</TabsTrigger>
+              </TabsList>
+              <TabsContent value="image" className="mt-2">
+                <div
+                  className={cn(
+                    "relative border-2 border-dashed rounded-lg p-4 text-center transition-colors h-32 flex items-center justify-center",
+                    isDragging ? "border-primary bg-primary/10" : "border-border"
+                  )}
+                  onDrop={handleDrop} onDragOver={handleDragOver} onDragEnter={handleDragEnter} onDragLeave={handleDragLeave}
+                >
+                  {imagePreview ? (
+                    <>
+                      <img src={imagePreview} alt="Preview" className="rounded-full h-24 w-24 object-cover" />
+                      <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={() => { setImageFile(null); setImagePreview(null); }}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center space-y-2 text-muted-foreground">
+                      <UploadCloud className="h-8 w-8" />
+                      <p className="text-sm">Drag, paste, or <label htmlFor="file-upload" className="text-primary underline cursor-pointer">click to upload</label>.</p>
+                      <Input id="file-upload" type="file" accept="image/*" className="sr-only" onChange={(e) => handleFile(e.target.files?.[0] || null)} />
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+              <TabsContent value="emoji" className="mt-2">
+                <div className="space-y-2">
+                  <Label>Emoji</Label>
+                  <Input value={emoji} onChange={(e) => setEmoji(e.target.value)} placeholder="😊" maxLength={2} />
+                  <Label>Background Color</Label>
+                  <ColorPalette />
+                </div>
+              </TabsContent>
+              <TabsContent value="text" className="mt-2">
+                <div className="space-y-2">
+                  <Label>Text (1-2 letters)</Label>
+                  <Input value={avatarText} onChange={(e) => setAvatarText(e.target.value)} placeholder="JD" maxLength={2} />
+                  <Label>Background Color</Label>
+                  <ColorPalette />
+                </div>
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
         <DialogFooter>
-          {link && onDelete && (
-            <Button variant="destructive" onClick={handleDelete}>
-              Delete
-            </Button>
-          )}
-          <Button variant="secondary" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave}>
-            {link ? 'Save Changes' : 'Add Link'}
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving ? 'Saving...' : 'Save'}
           </Button>
         </DialogFooter>
       </DialogContent>

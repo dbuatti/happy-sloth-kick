@@ -1,298 +1,199 @@
 import React, { useState, useMemo } from 'react';
-import { useAuth } from '@/context/AuthContext';
-import { useTasks } from '@/hooks/useTasks';
-import { Task, TaskSection, TaskCategory, TaskStatus } from '@/types/task';
-import { format, startOfWeek, addDays, isSameDay, isPast, parseISO } from 'date-fns';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TaskOverviewDialog } from '@/components/TaskOverviewDialog';
-import { TaskDetailDialog } from '@/components/TaskDetailDialog';
-import FullScreenFocusView from '@/components/FullScreenFocusView';
-import AddTaskForm from '@/components/AddTaskForm';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { TaskCalendarPageProps } from '@/types/props';
-import { cn } from '@/lib/utils';
-import { getCategoryColorProps } from '@/utils/categoryColors';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Calendar } from "@/components/ui/calendar";
+import { useTasks, Task } from '@/hooks/useTasks';
+import { format, parseISO, startOfDay } from 'date-fns';
+import { CalendarDays, ListTodo } from 'lucide-react';
+import TaskItem from '@/components/TaskItem';
+import TaskOverviewDialog from '@/components/TaskOverviewDialog';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useAllAppointments } from '@/hooks/useAllAppointments';
+import { Appointment } from '@/hooks/useAppointments';
+import TaskDetailDialog from '@/components/TaskDetailDialog'; // Import TaskDetailDialog
 
-const TaskCalendarPage: React.FC<TaskCalendarPageProps> = ({ isDemo: propIsDemo, demoUserId }) => {
-  const { user } = useAuth();
-  const userId = user?.id || demoUserId;
-  const isDemo = propIsDemo || user?.id === 'd889323b-350c-4764-9788-6359f85f6142';
+interface TaskCalendarProps {
+  isDemo?: boolean;
+  demoUserId?: string;
+}
 
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
-  const [prefilledTaskData, setPrefilledTaskData] = useState<Partial<Task> | null>(null);
-  const [isOverviewOpen, setIsOverviewOpen] = useState(false);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
-  const [isFocusViewOpen, setIsFocusViewOpen] = useState(false);
+const TaskCalendar: React.FC<TaskCalendarProps> = ({ isDemo = false, demoUserId }) => {
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
 
   const {
-    tasks,
-    sections,
-    allCategories,
-    handleAddTask,
+    tasks: allTasks,
+    filteredTasks,
+    loading,
     updateTask,
     deleteTask,
-    reorderTasks,
+    sections,
+    allCategories,
+    setFocusTask,
+    toggleDoToday,
+    doTodayOffIds,
     createSection,
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode,
-    createCategory,
-    updateCategory,
-    deleteCategory,
-    isLoading,
-    error,
-  } = useTasks({ userId: userId, currentDate: currentMonth, viewMode: 'all' });
+  } = useTasks({ userId: demoUserId, currentDate: selectedDate || new Date() }); // Pass selectedDate
 
-  const handleOpenOverview = (task: Task) => {
-    setSelectedTask(task);
-    setIsOverviewOpen(true);
-  };
+  const { appointments: allAppointments } = useAllAppointments();
 
-  const handleOpenDetail = (task: Task) => {
-    setSelectedTask(task);
-    setIsDetailOpen(true);
-  };
-
-  const handleOpenFocusView = (task: Task) => {
-    setSelectedTask(task);
-    setIsFocusViewOpen(true);
-  };
-
-  const handleNewTaskSubmit = async (taskData: Partial<Task>) => {
-    const newTask = await handleAddTask(taskData);
-    if (newTask) {
-      setIsAddTaskDialogOpen(false);
-      setPrefilledTaskData(null);
+  const scheduledTasksMap = useMemo(() => {
+    const map = new Map<string, Appointment>();
+    if (allAppointments) {
+        allAppointments.forEach(app => {
+            if (app.task_id) {
+                map.set(app.task_id, app);
+            }
+        });
     }
-    return newTask;
-  };
+    return map;
+  }, [allAppointments]);
 
-  const daysInMonth = useMemo(() => {
-    const startDay = startOfWeek(currentMonth, { weekStartsOn: 1 });
-    const days = [];
-    for (let i = 0; i < 42; i++) { // 6 weeks to cover the month
-      days.push(addDays(startDay, i));
-    }
-    return days;
-  }, [currentMonth]);
+  const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
+  const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+  const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
 
-  const tasksByDay = useMemo(() => {
-    const map = new Map<string, Task[]>();
-    tasks.forEach(task => {
-      if (task.due_date) {
-        const dateKey = format(parseISO(task.due_date), 'yyyy-MM-dd');
-        if (!map.has(dateKey)) {
-          map.set(dateKey, []);
+  const tasksByDueDate = useMemo(() => {
+    const groupedTasks = new Map<string, Task[]>();
+    filteredTasks.forEach(task => {
+      if (task.due_date && task.status !== 'archived') {
+        const dateKey = format(startOfDay(parseISO(task.due_date)), 'yyyy-MM-dd');
+        if (!groupedTasks.has(dateKey)) {
+          groupedTasks.set(dateKey, []);
         }
-        map.get(dateKey)?.push(task);
+        groupedTasks.get(dateKey)!.push(task);
       }
     });
-    return map;
-  }, [tasks]);
+    return groupedTasks;
+  }, [filteredTasks]);
 
-  const goToPreviousMonth = () => {
-    setCurrentMonth(prev => addDays(prev, -30)); // Approximation for previous month
+  const daysWithTasks = useMemo(() => {
+    return Array.from(tasksByDueDate.keys()).map(dateStr => parseISO(dateStr));
+  }, [tasksByDueDate]);
+
+  const selectedDayTasks = useMemo(() => {
+    if (!selectedDate) return [];
+    const dateKey = format(startOfDay(selectedDate), 'yyyy-MM-dd');
+    return tasksByDueDate.get(dateKey) || [];
+  }, [selectedDate, tasksByDueDate]);
+
+  const handleOpenOverview = (task: Task) => {
+    setTaskToOverview(task);
+    setIsTaskOverviewOpen(true);
   };
 
-  const goToNextMonth = () => {
-    setCurrentMonth(prev => addDays(prev, 30)); // Approximation for next month
+  const handleOpenTaskDetail = (task: Task) => { // Defined handleOpenTaskDetail
+    setIsTaskOverviewOpen(false);
+    setTaskToEdit(task);
+    setIsTaskDetailOpen(true);
   };
-
-  if (isLoading) {
-    return <div className="p-4 md:p-6">Loading tasks calendar...</div>;
-  }
-
-  if (error) {
-    return <div className="p-4 md:p-6 text-red-500">Error loading tasks: {error.message}</div>;
-  }
 
   return (
-    <div className="flex flex-col h-full p-4 md:p-6">
-      <h1 className="text-3xl font-bold mb-6">Task Calendar</h1>
-
-      <div className="flex justify-between items-center mb-4">
-        <Button variant="outline" size="icon" onClick={goToPreviousMonth}>
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <h2 className="text-xl font-semibold">{format(currentMonth, 'MMMM yyyy')}</h2>
-        <Button variant="outline" size="icon" onClick={goToNextMonth}>
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-7 text-center text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-          <div key={day}>{day}</div>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-7 gap-1 flex-grow">
-        {daysInMonth.map((day, index) => {
-          const dateKey = format(day, 'yyyy-MM-dd');
-          const dayTasks = tasksByDay.get(dateKey) || [];
-          const isCurrentMonth = format(day, 'MM') === format(currentMonth, 'MM');
-          const isToday = isSameDay(day, new Date());
-          const isPastDay = isPast(day) && !isToday;
-
-          return (
-            <Card
-              key={index}
-              className={cn(
-                'relative h-32 flex flex-col p-1 text-xs overflow-hidden',
-                !isCurrentMonth && 'bg-gray-50 dark:bg-gray-700 text-gray-400 dark:text-gray-500',
-                isToday && 'border-2 border-blue-500',
-                isPastDay && 'opacity-70'
+    <div className="flex-1 flex flex-col">
+      <main className="flex-grow p-4 flex justify-center">
+        <Card className="w-full max-w-6xl mx-auto shadow-lg rounded-xl p-4">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
+              <CalendarDays className="h-7 w-7" /> Task Calendar
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="flex justify-center">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={setSelectedDate}
+                className="rounded-md w-full mx-auto"
+                modifiers={{
+                  hasTasks: daysWithTasks,
+                }}
+                modifiersClassNames={{
+                  hasTasks: 'rdp-day_hasTasks',
+                }}
+                components={{
+                  DayContent: ({ date }) => {
+                    return <span>{format(date, 'd')}</span>;
+                  },
+                }}
+              />
+            </div>
+            <div className="space-y-4">
+              <h3 className="text-xl font-semibold flex items-center gap-2">
+                <ListTodo className="h-5 w-5 text-primary" />
+                Tasks for {selectedDate ? format(selectedDate, 'MMMM d, yyyy') : '...'}
+              </h3>
+              {loading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-20 w-full rounded-xl" />
+                  <Skeleton className="h-20 w-full rounded-xl" />
+                </div>
+              ) : selectedDayTasks.length > 0 ? (
+                <ul className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
+                  {selectedDayTasks.map(task => (
+                    <li key={task.id}>
+                      <TaskItem
+                        task={task}
+                        allTasks={allTasks as Task[]} // Cast to Task[]
+                        onStatusChange={(taskId, newStatus) => updateTask(taskId, { status: newStatus })}
+                        onDelete={deleteTask}
+                        onUpdate={updateTask}
+                        sections={sections}
+                        onOpenOverview={handleOpenOverview}
+                        currentDate={selectedDate || new Date()}
+                        onMoveUp={async () => {}}
+                        onMoveDown={async () => {}}
+                        setFocusTask={setFocusTask}
+                        isDoToday={!doTodayOffIds.has(task.original_task_id || task.id)}
+                        toggleDoToday={toggleDoToday}
+                        scheduledTasksMap={scheduledTasksMap}
+                        isDemo={isDemo}
+                        level={0} // Pass level prop
+                      />
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="text-center text-muted-foreground p-8 rounded-lg bg-muted/50">
+                  <p>No tasks scheduled for this day.</p>
+                </div>
               )}
-            >
-              <CardHeader className="p-1 flex flex-row items-center justify-between">
-                <CardTitle className={cn("text-sm font-bold", isToday && "text-blue-600")}>
-                  {format(day, 'd')}
-                </CardTitle>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 opacity-0 group-hover:opacity-100"
-                  onClick={() => {
-                    setPrefilledTaskData({ due_date: format(day, 'yyyy-MM-dd') });
-                    setIsAddTaskDialogOpen(true);
-                  }}
-                >
-                  <Plus className="h-3 w-3" />
-                </Button>
-              </CardHeader>
-              <CardContent className="flex-grow overflow-y-auto p-0">
-                {dayTasks.map(task => {
-                  const category = allCategories.find(cat => cat.id === task.category);
-                  const categoryColorProps = category ? getCategoryColorProps(category.color) : null;
-                  return (
-                    <div
-                      key={task.id}
-                      className={cn(
-                        "flex items-center text-xs rounded-sm px-1 py-0.5 mb-0.5 cursor-pointer",
-                        task.status === 'completed' ? 'line-through text-gray-500' : '',
-                        categoryColorProps?.backgroundClass,
-                        categoryColorProps?.text
-                      )}
-                      onClick={() => handleOpenOverview(task)}
-                    >
-                      {categoryColorProps && (
-                        <span
-                          className={cn(
-                            'w-1.5 h-1.5 rounded-full mr-1',
-                            categoryColorProps.dotColor
-                          )}
-                          style={{ backgroundColor: categoryColorProps.bg }}
-                        />
-                      )}
-                      <span className="truncate">{task.description}</span>
-                    </div>
-                  );
-                })}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      <Dialog open={isAddTaskDialogOpen} onOpenChange={setIsAddTaskDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Add New Task</DialogTitle>
-          </DialogHeader>
-          <AddTaskForm
-            onAddTask={handleNewTaskSubmit}
-            onTaskAdded={() => setIsAddTaskDialogOpen(false)}
-            sections={sections}
-            allCategories={allCategories}
-            currentDate={currentMonth}
-            createSection={createSection}
-            updateSection={updateSection}
-            deleteSection={deleteSection}
-            updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-            createCategory={createCategory}
-            updateCategory={updateCategory}
-            deleteCategory={deleteCategory}
-            initialData={prefilledTaskData}
-          />
-        </DialogContent>
-      </Dialog>
-
-      <TaskOverviewDialog
-        isOpen={isOverviewOpen}
-        onClose={() => setIsOverviewOpen(false)}
-        task={selectedTask}
-        onOpenDetail={handleOpenDetail}
-        onOpenFocusView={handleOpenFocusView}
-        updateTask={updateTask}
-        deleteTask={deleteTask}
-        sections={sections}
-        categories={allCategories}
-        allTasks={tasks}
-        onAddTask={handleAddTask}
-        onReorderTasks={reorderTasks}
-        createSection={createSection}
-        updateSection={updateSection}
-        deleteSection={deleteSection}
-        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-        createCategory={createCategory}
-        updateCategory={updateCategory}
-        deleteCategory={deleteCategory}
-      />
-
-      <TaskDetailDialog
-        isOpen={isDetailOpen}
-        onClose={() => setIsDetailOpen(false)}
-        task={selectedTask}
-        onUpdate={updateTask}
-        onDelete={deleteTask}
-        sections={sections}
-        categories={allCategories}
-        allTasks={tasks}
-        onAddTask={handleAddTask}
-        onReorderTasks={reorderTasks}
-        createSection={createSection}
-        updateSection={updateSection}
-        deleteSection={deleteSection}
-        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-        createCategory={createCategory}
-        updateCategory={updateCategory}
-        deleteCategory={deleteCategory}
-      />
-
-      {isFocusViewOpen && selectedTask && (
-        <FullScreenFocusView
-          task={selectedTask}
-          onClose={() => setIsFocusViewOpen(false)}
-          onComplete={() => {
-            updateTask(selectedTask.id, { status: 'completed' });
-            setIsFocusViewOpen(false);
-          }}
-          onSkip={() => {
-            updateTask(selectedTask.id, { status: 'skipped' });
-            setIsFocusViewOpen(false);
-          }}
-          onOpenDetail={handleOpenDetail}
-          updateTask={updateTask}
+            </div>
+          </CardContent>
+        </Card>
+      </main>
+      {taskToOverview && (
+        <TaskOverviewDialog
+          task={taskToOverview}
+          isOpen={isTaskOverviewOpen}
+          onClose={() => setIsTaskOverviewOpen(false)}
+          onEditClick={handleOpenTaskDetail}
+          onUpdate={updateTask}
+          onDelete={deleteTask}
           sections={sections}
-          categories={allCategories}
-          allTasks={tasks}
-          onAddTask={handleAddTask}
-          onReorderTasks={reorderTasks}
+          allCategories={allCategories}
+          allTasks={allTasks as Task[]} // Cast to Task[]
+        />
+      )}
+      {taskToEdit && (
+        <TaskDetailDialog
+          task={taskToEdit}
+          isOpen={isTaskDetailOpen}
+          onClose={() => setIsTaskDetailOpen(false)}
+          onUpdate={updateTask}
+          onDelete={deleteTask}
+          sections={sections}
+          allCategories={allCategories}
           createSection={createSection}
           updateSection={updateSection}
           deleteSection={deleteSection}
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-          createCategory={createCategory}
-          updateCategory={updateCategory}
-          deleteCategory={deleteCategory}
+          allTasks={allTasks as Task[]} // Cast to Task[]
         />
       )}
     </div>
   );
 };
 
-export default TaskCalendarPage;
+export default TaskCalendar;

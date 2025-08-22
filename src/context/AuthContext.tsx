@@ -1,59 +1,39 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Session, User } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { User } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client'; // Updated import path
 
 interface AuthContextType {
-  session: Session | null;
   user: User | null;
-  isLoading: boolean;
-  signOut: () => Promise<void>;
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [session, setSession] = useState<Session | null>(null);
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, currentSession) => {
-        setSession(currentSession);
-        setUser(currentSession?.user || null);
-        setIsLoading(false);
-
-        if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-          // Optionally fetch profile data here if needed
-          // For now, we rely on user object from session
-        }
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (_event, session) => { // Renamed event to _event
+        setUser(session?.user || null);
+        setLoading(false);
       }
     );
 
+    // Check initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
       setUser(session?.user || null);
-      setIsLoading(false);
+      setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
-  const signOut = async () => {
-    setIsLoading(true);
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error('Error signing out:', error.message);
-      setIsLoading(false);
-      throw error;
-    }
-    setSession(null);
-    setUser(null);
-    setIsLoading(false);
-  };
-
   return (
-    <AuthContext.Provider value={{ session, user, isLoading, signOut }}>
+    <AuthContext.Provider value={{ user, loading }}>
       {children}
     </AuthContext.Provider>
   );

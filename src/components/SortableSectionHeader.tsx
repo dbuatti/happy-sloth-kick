@@ -8,33 +8,31 @@ import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Plus, CheckCircle2, ChevronDown, MoreHorizontal, Trash2, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { TaskSection } from '@/types';
+import { TaskSection } from '@/hooks/useTasks';
 
-type SectionPropType = Omit<TaskSection, 'created_at'> & { created_at?: string | null }; // Allow created_at to be null
-
-interface SectionHeaderProps {
-  section: SectionPropType;
-  taskCount: number;
-  onEdit: (sectionId: string, newName: string) => Promise<TaskSection | null>; // Updated return type
-  onDelete: (sectionId: string) => Promise<void>; // Updated return type
-  onAddTask: (sectionId: string | null) => void;
-  onMarkAllCompleted: (sectionId: string | null) => Promise<void>;
-  onToggleFocusMode: (sectionId: string, include: boolean) => Promise<TaskSection | null>; // Updated return type
-  isExpanded?: boolean;
-  toggleSection?: (sectionId: string) => void;
+interface SortableSectionHeaderProps {
+  section: TaskSection;
+  sectionTasksCount: number;
+  isExpanded: boolean;
+  toggleSection: (sectionId: string) => void;
+  handleAddTaskToSpecificSection: (sectionId: string | null) => void;
+  markAllTasksInSectionCompleted: (sectionId: string | null) => Promise<void>;
+  handleDeleteSectionClick: (sectionId: string) => void;
+  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
+  onUpdateSectionName: (sectionId: string, newName: string) => Promise<void>;
   isOverlay?: boolean;
 }
 
-export const SectionHeader: React.FC<SectionHeaderProps> = ({
+const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
   section,
-  taskCount,
-  onEdit,
-  onDelete,
-  onAddTask,
-  onMarkAllCompleted,
-  onToggleFocusMode,
-  isExpanded = true,
+  sectionTasksCount,
+  isExpanded,
   toggleSection,
+  handleAddTaskToSpecificSection,
+  markAllTasksInSectionCompleted,
+  handleDeleteSectionClick,
+  updateSectionIncludeInFocusMode,
+  onUpdateSectionName,
   isOverlay = false,
 }) => {
   const sortable = !isOverlay ? useSortable({ id: section.id, data: { type: 'section', section } }) : null;
@@ -72,10 +70,10 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
 
   const handleSaveEdit = useCallback(async () => {
     if (localSectionName.trim() && localSectionName.trim() !== section.name) {
-      await onEdit(section.id, localSectionName.trim());
+      await onUpdateSectionName(section.id, localSectionName.trim());
     }
     setIsEditingLocal(false);
-  }, [localSectionName, section.name, onEdit, section.id]);
+  }, [localSectionName, section.name, onUpdateSectionName, section.id]);
 
   const handleCancelEdit = useCallback(() => {
     setLocalSectionName(section.name);
@@ -106,11 +104,11 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
       {...(attributes || {})}
       {...(listeners || {})}
     >
-      <div
+      <div 
         className="relative flex items-center p-2 cursor-pointer bg-muted/30 rounded-lg"
-        onClick={!isOverlay && !isEditingLocal && toggleSection ? () => toggleSection(section.id) : undefined}
+        onClick={!isOverlay && !isEditingLocal ? () => toggleSection(section.id) : undefined}
       >
-        <div
+        <div 
           className="flex items-center flex-1 min-w-0"
         >
           {isEditingLocal ? (
@@ -136,7 +134,7 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
             </div>
           ) : (
             <>
-              <h3
+              <h3 
                 className="text-xl font-bold truncate cursor-text"
                 onClick={handleStartEdit}
                 data-no-dnd="true"
@@ -147,7 +145,7 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
                 "ml-2 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 transition-colors duration-200",
                 getTaskCountCircleClasses()
               )} data-no-dnd="true">
-                {taskCount}
+                {sectionTasksCount}
               </div>
             </>
           )}
@@ -157,13 +155,12 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
             <>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
                     className="h-8 w-8 p-0"
                     tabIndex={isOverlay ? -1 : 0}
                     onClick={(e) => e.stopPropagation()}
-                    data-dnd-ignore-active
                   >
                     <span>
                       <span className="sr-only">Open section menu</span>
@@ -172,34 +169,32 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onSelect={() => onAddTask(section.id)}>
+                  <DropdownMenuItem onSelect={() => handleAddTaskToSpecificSection(section.id)}>
                     <Plus className="mr-2 h-4 w-4" /> Add Task to Section
                   </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => onMarkAllCompleted(section.id)}>
+                  <DropdownMenuItem onSelect={() => markAllTasksInSectionCompleted(section.id)}>
                     <CheckCircle2 className="mr-2 h-4 w-4" /> Mark All Completed
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onSelect={() => onToggleFocusMode(section.id, !section.include_in_focus_mode)}>
+                  <DropdownMenuItem onSelect={() => updateSectionIncludeInFocusMode(section.id, !section.include_in_focus_mode)}>
                     {section.include_in_focus_mode ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
                     {section.include_in_focus_mode ? 'Exclude from Focus Mode' : 'Include in Focus Mode'}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onSelect={() => onDelete(section.id)} className="text-destructive focus:text-destructive">
+                  <DropdownMenuItem onSelect={() => handleDeleteSectionClick(section.id)} className="text-destructive focus:text-destructive">
                     <Trash2 className="mr-2 h-4 w-4" /> Delete Section
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              {toggleSection && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={(e) => { e.stopPropagation(); toggleSection(section.id); }}
-                  className="h-8 w-8 p-0"
-                  tabIndex={isOverlay ? -1 : 0}
-                >
-                  <ChevronDown className={cn("h-5 w-5 transition-transform", isExpanded ? "rotate-0" : "-rotate-90")} />
-                </Button>
-              )}
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={(e) => { e.stopPropagation(); toggleSection(section.id); }}
+                className="h-8 w-8 p-0"
+                tabIndex={isOverlay ? -1 : 0}
+              >
+                <ChevronDown className={cn("h-5 w-5 transition-transform", isExpanded ? "rotate-0" : "-rotate-90")} />
+              </Button>
             </>
           )}
         </div>
@@ -207,3 +202,5 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
     </div>
   );
 };
+
+export default SortableSectionHeader;

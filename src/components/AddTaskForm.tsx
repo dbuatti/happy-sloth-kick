@@ -1,211 +1,80 @@
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import {
-  TaskSection,
-  TaskCategory,
-  Task,
-  RecurringType,
-  TaskPriority,
-} from '@/types/task';
-import { format } from 'date-fns';
-import DatePicker from '@/components/ui/date-picker';
-import SelectDialog from '@/components/SelectDialog';
-import { AddTaskFormProps } from '@/types/props';
-import { DialogFooter } from '@/components/ui/dialog';
+import React from 'react';
+import TaskForm from './TaskForm';
+import { Task, TaskSection, Category } from '@/hooks/useTasks';
+// Removed useAuth as it's not directly used in this component's logic
+
+interface AddTaskFormProps {
+  onAddTask: (taskData: {
+    description: string;
+    category: string;
+    priority: string;
+    due_date: string | null;
+    notes: string | null;
+    remind_at: string | null;
+    section_id: string | null;
+    recurring_type: 'none' | 'daily' | 'weekly' | 'monthly';
+    parent_task_id: string | null;
+    link: string | null;
+    image_url: string | null;
+  }) => Promise<any>;
+  onTaskAdded?: () => void; // Callback for when task is successfully added
+  sections: TaskSection[];
+  allCategories: Category[];
+  autoFocus?: boolean;
+  preselectedSectionId?: string | null;
+  parentTaskId?: string | null; // For sub-tasks
+  currentDate: Date; // Added currentDate prop
+  // New props for section management
+  createSection: (name: string) => Promise<void>;
+  updateSection: (sectionId: string, newName: string) => Promise<void>;
+  deleteSection: (sectionId: string) => Promise<void>;
+  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
+  initialData?: Partial<Task> | null;
+}
 
 const AddTaskForm: React.FC<AddTaskFormProps> = ({
   onAddTask,
   onTaskAdded,
   sections,
   allCategories,
-  createSection,
+  autoFocus,
+  preselectedSectionId,
+  parentTaskId,
+  currentDate,
+  createSection, // Destructure new props
   updateSection,
   deleteSection,
-  // Removed unused: updateSectionIncludeInFocusMode,
-  createCategory,
-  updateCategory,
-  deleteCategory,
+  updateSectionIncludeInFocusMode,
   initialData,
 }) => {
-  const [description, setDescription] = useState(initialData?.description || '');
-  const [dueDate, setDueDate] = useState<Date | undefined>(
-    initialData?.due_date ? new Date(initialData.due_date) : undefined
-  );
-  const [priority, setPriority] = useState<TaskPriority>(initialData?.priority || null);
-  const [selectedCategory, setSelectedCategory] = useState<TaskCategory | null>(
-    initialData?.category
-      ? allCategories.find((cat) => cat.id === initialData.category) || null
-      : null
-  );
-  const [selectedSection, setSelectedSection] = useState<TaskSection | null>(
-    initialData?.section_id
-      ? sections.find((sec) => sec.id === initialData.section_id) || null
-      : null
-  );
-  const [notes, setNotes] = useState(initialData?.notes || '');
-  const [recurringType, setRecurringType] = useState<RecurringType>(initialData?.recurring_type || 'none');
+  // Removed userId as it's not directly used in this component's logic
+  // const { user } = useAuth(); 
+  // const userId = user?.id || null; 
 
-  const handleSave = async () => {
-    if (!description.trim()) return;
-
-    const taskData: Partial<Task> = {
-      description: description.trim(),
-      due_date: dueDate ? format(dueDate, 'yyyy-MM-dd') : null,
-      priority: priority,
-      category: selectedCategory?.id || null,
-      section_id: selectedSection?.id || null,
-      notes,
-      recurring_type: recurringType,
-    };
-
-    await onAddTask(taskData);
-    setDescription('');
-    setDueDate(undefined);
-    setPriority(null);
-    setSelectedCategory(null);
-    setSelectedSection(null);
-    setNotes('');
-    setRecurringType('none');
-    onTaskAdded?.();
+  const handleSave = async (taskData: Parameters<typeof onAddTask>[0]) => {
+    const success = await onAddTask(taskData);
+    if (success) {
+      onTaskAdded?.();
+    }
+    return success;
   };
 
   return (
-    <form className="grid gap-4 py-4" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="description" className="text-right">
-          Description
-        </Label>
-        <Input
-          id="description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="col-span-3"
-          required
-        />
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="due-date" className="text-right">
-          Due Date
-        </Label>
-        <div className="col-span-3">
-          <DatePicker
-            date={dueDate}
-            setDate={setDueDate}
-            placeholder="Select due date"
-          />
-        </div>
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="priority" className="text-right">
-          Priority
-        </Label>
-        <Select
-          value={priority || ''}
-          onValueChange={(value: string) => setPriority(value === 'null' ? null : value as TaskPriority)}
-        >
-          <SelectTrigger className="col-span-3">
-            <SelectValue placeholder="Select priority" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="urgent">Urgent</SelectItem>
-            <SelectItem value="high">High</SelectItem>
-            <SelectItem value="medium">Medium</SelectItem>
-            <SelectItem value="low">Low</SelectItem>
-            <SelectItem value="null">None</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="category" className="text-right">
-          Category
-        </Label>
-        <SelectDialog
-          items={allCategories.map(cat => ({
-            id: cat.id,
-            name: cat.name,
-            color: cat.color,
-          }))}
-          selectedItem={selectedCategory ? { id: selectedCategory.id, name: selectedCategory.name, color: selectedCategory.color } : null}
-          onSelectItem={(item) => setSelectedCategory(allCategories.find(cat => cat.id === item?.id) || null)}
-          createItem={async (name: string, color?: string) => {
-            const newCat = await createCategory(name, color || '#cccccc'); // Provide default color if undefined
-            return newCat ? { id: newCat.id, name: newCat.name, color: newCat.color } : null;
-          }}
-          updateItem={async (id: string, name: string, color?: string) => {
-            const updatedCat = await updateCategory(id, name, color || '#cccccc'); // Provide default color if undefined
-            return updatedCat ? { id: updatedCat.id, name: updatedCat.name, color: updatedCat.color } : null;
-          }}
-          deleteItem={deleteCategory}
-          placeholder="Select category"
-          className="col-span-3"
-          enableColorPicker
-        />
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="section" className="text-right">
-          Section
-        </Label>
-        <SelectDialog
-          items={sections.map(sec => ({ id: sec.id, name: sec.name }))}
-          selectedItem={selectedSection ? { id: selectedSection.id, name: selectedSection.name } : null}
-          onSelectItem={(item) => setSelectedSection(sections.find(sec => sec.id === item?.id) || null)}
-          createItem={async (name: string) => {
-            const newSec = await createSection(name);
-            return newSec ? { id: newSec.id, name: newSec.name } : null;
-          }}
-          updateItem={async (id: string, name: string) => {
-            const updatedSec = await updateSection(id, name);
-            return updatedSec ? { id: updatedSec.id, name: updatedSec.name } : null;
-          }}
-          deleteItem={deleteSection}
-          placeholder="Select section"
-          className="col-span-3"
-        />
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="notes" className="text-right">
-          Notes
-        </Label>
-        <Textarea
-          id="notes"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          className="col-span-3"
-        />
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="recurring-type" className="text-right">
-          Recurring
-        </Label>
-        <Select
-          value={recurringType}
-          onValueChange={(value: RecurringType) => setRecurringType(value)}
-        >
-          <SelectTrigger className="col-span-3">
-            <SelectValue placeholder="Select recurrence" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">None</SelectItem>
-            <SelectItem value="daily">Daily</SelectItem>
-            <SelectItem value="weekly">Weekly</SelectItem>
-            <SelectItem value="monthly">Monthly</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <DialogFooter>
-        <Button type="submit">Add Task</Button>
-      </DialogFooter>
-    </form>
+    <TaskForm
+      initialData={initialData as Task | null}
+      onSave={handleSave}
+      onCancel={onTaskAdded || (() => {})} // If onTaskAdded is not provided, use a no-op
+      sections={sections}
+      allCategories={allCategories}
+      autoFocus={autoFocus}
+      preselectedSectionId={preselectedSectionId}
+      parentTaskId={parentTaskId}
+      currentDate={currentDate}
+      createSection={createSection} // Pass new props
+      updateSection={updateSection}
+      deleteSection={deleteSection}
+      updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+    />
   );
 };
 

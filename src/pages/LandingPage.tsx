@@ -1,42 +1,76 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { CheckCircle2, Sparkles, LayoutDashboard, CalendarDays } from 'lucide-react';
 
 const LandingPage: React.FC = () => {
-  const { user, isLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
 
-  if (isLoading) {
+  useEffect(() => {
+    if (!authLoading && user) {
+      // If user is authenticated, redirect to the daily tasks page
+      navigate('/daily-tasks');
+    }
+  }, [user, authLoading, navigate]);
+
+  if (authLoading || user) {
+    // Show a loading spinner or nothing while checking auth status
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 text-white p-4">
-      <h1 className="text-5xl font-bold mb-6 text-center">Welcome to Your Productivity Hub</h1>
-      <p className="text-xl mb-8 text-center max-w-2xl">
-        Organize your life, track your goals, and boost your focus with our intuitive task management and scheduling app.
-      </p>
-      <div className="space-x-4">
-        {user ? (
-          <Button asChild size="lg" className="bg-white text-blue-600 hover:bg-gray-100">
-            <Link to="/dashboard">Go to Dashboard</Link>
-          </Button>
-        ) : (
-          <>
-            <Button asChild size="lg" className="bg-white text-blue-600 hover:bg-gray-100">
-              <Link to="/login">Sign In / Sign Up</Link>
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-background to-muted">
+      <header className="p-6 flex justify-between items-center">
+        <h1 className="text-4xl font-bold text-primary">TaskMaster</h1> {/* Increased font size */}
+        <Button onClick={() => navigate('/auth')} variant="default" className="h-10 text-base rounded-lg">Sign In / Sign Up</Button> {/* Added rounded-lg */}
+      </header>
+
+      <main className="flex-grow flex flex-col items-center justify-center text-center px-4 py-12 md:py-20"> {/* Increased vertical padding */}
+        <div className="max-w-4xl space-y-8"> {/* Increased max-width slightly */}
+          <h2 className="text-5xl md:text-7xl font-extrabold text-foreground leading-tight tracking-tight"> {/* Increased font size, added tracking */}
+            Master Your Day, Achieve Your Goals.
+          </h2>
+          <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto"> {/* Increased font size, added max-width for narrower text block */}
+            TaskMaster is your intelligent companion for daily productivity, mindful living, and personal growth.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4"> {/* Added pt-4 for more space */}
+            <Button size="lg" onClick={() => navigate('/auth')} className="h-14 px-8 text-lg rounded-lg shadow-md"> {/* Increased height, added shadow, rounded-lg */}
+              <Sparkles className="mr-2 h-5 w-5" /> Get Started - It's Free!
             </Button>
-            <Button asChild size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-blue-600">
-              <Link to="/demo/dashboard">Try Demo</Link>
+            <Button size="lg" variant="outline" onClick={() => navigate('/demo')} className="h-14 px-8 text-lg rounded-lg shadow-md"> {/* Increased height, added shadow, rounded-lg */}
+              <LayoutDashboard className="mr-2 h-5 w-5" /> View Live Demo
             </Button>
-          </>
-        )}
-      </div>
+          </div>
+        </div>
+
+        <div className="mt-20 md:mt-32 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl w-full"> {/* Increased top margin, max-width */}
+          <div className="bg-card p-8 rounded-2xl shadow-lg flex flex-col items-center text-center"> {/* Changed to rounded-2xl, increased padding */}
+            <CalendarDays className="h-14 w-14 text-primary mb-4" /> {/* Increased icon size */}
+            <h3 className="text-2xl font-semibold mb-2 text-foreground">Intuitive Daily Planning</h3> {/* Increased font size, ensured foreground color */}
+            <p className="text-muted-foreground text-base">Organize tasks, set priorities, and track progress with ease.</p> {/* Increased font size */}
+          </div>
+          <div className="bg-card p-8 rounded-2xl shadow-lg flex flex-col items-center text-center"> {/* Changed to rounded-2xl, increased padding */}
+            <CheckCircle2 className="h-14 w-14 text-primary mb-4" /> {/* Increased icon size */}
+            <h3 className="text-2xl font-semibold mb-2 text-foreground">Smart Productivity Tools</h3> {/* Increased font size, ensured foreground color */}
+            <p className="text-muted-foreground text-base">Focus mode, project balancing, and AI-powered suggestions.</p> {/* Increased font size */}
+          </div>
+          <div className="bg-card p-8 rounded-2xl shadow-lg flex flex-col items-center text-center"> {/* Changed to rounded-2xl, increased padding */}
+            <Sparkles className="h-14 w-14 text-primary mb-4" /> {/* Increased icon size */}
+            <h3 className="text-2xl font-semibold mb-2 text-foreground">Mindful Living Integration</h3> {/* Increased font size, ensured foreground color */}
+            <p className="text-muted-foreground text-base">Journals, meditations, and sensory tools for well-being.</p> {/* Increased font size */}
+          </div>
+        </div>
+      </main>
+
+      <footer className="p-6 text-center text-muted-foreground text-sm"> {/* Reduced font size slightly */}
+        <p>&copy; {new Date().getFullYear()} TaskMaster. All rights reserved.</p>
+      </footer>
     </div>
   );
 };

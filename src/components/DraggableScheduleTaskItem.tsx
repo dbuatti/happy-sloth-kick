@@ -1,96 +1,51 @@
 import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
-import { Task, TaskSection, TaskCategory, TaskPriority } from '@/types/task';
+import { Task, TaskSection } from '@/hooks/useTasks';
 import { cn } from '@/lib/utils';
-import { format, isToday, isTomorrow, isPast, parseISO } from 'date-fns';
-import { getCategoryColorProps } from '@/utils/categoryColors';
+import { GripVertical, FolderOpen } from 'lucide-react';
 
 interface DraggableScheduleTaskItemProps {
   task: Task;
   sections: TaskSection[];
-  categories: TaskCategory[];
-  onClick: (task: Task) => void;
-  className?: string;
 }
 
-const DraggableScheduleTaskItem: React.FC<DraggableScheduleTaskItemProps> = ({
-  task,
-  sections,
-  categories,
-  onClick,
-  className,
-}) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useDraggable({
+const DraggableScheduleTaskItem: React.FC<DraggableScheduleTaskItemProps> = ({ task, sections }) => {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `task-${task.id}`,
-    data: { type: 'Task', task },
+    data: { type: 'task', task, duration: 30 },
   });
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    zIndex: isDragging ? 100 : 'auto',
-    opacity: isDragging ? 0.5 : 1,
-  };
-
-  const category = categories.find((cat) => cat.id === task.category);
-  const section = sections.find((sec) => sec.id === task.section_id);
-  const categoryProps = category ? getCategoryColorProps(category.color) : null;
-
-  const getDueDateText = (dueDate: string | null) => {
-    if (!dueDate) return null;
-    const date = parseISO(dueDate);
-    if (isToday(date)) return 'Today';
-    if (isTomorrow(date)) return 'Tomorrow';
-    if (isPast(date) && !isToday(date)) return 'Overdue';
-    return format(date, 'MMM d');
-  };
-
-  const getPriorityClasses = () => {
-    switch (task.priority) {
-      case 'urgent':
-        return 'text-red-500';
-      case 'high':
-        return 'text-orange-500';
-      case 'medium':
-        return 'text-yellow-500';
-      case 'low':
-        return 'text-green-500';
-      default:
-        return 'text-gray-500';
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'urgent': return 'border-l-priority-urgent';
+      case 'high': return 'border-l-priority-high';
+      case 'medium': return 'border-l-priority-medium';
+      case 'low': return 'border-l-priority-low';
+      default: return 'border-l-gray-500';
     }
   };
+
+  const section = sections.find(s => s.id === task.section_id);
 
   return (
     <div
       ref={setNodeRef}
-      style={style}
-      {...listeners}
-      {...attributes}
-      onClick={() => onClick(task)}
       className={cn(
-        'flex flex-col p-2 rounded-md shadow-sm text-sm cursor-grab active:cursor-grabbing',
-        'bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600',
-        className
+        "p-2 rounded-md bg-card shadow-sm flex items-center gap-2 border-l-4 select-none",
+        getPriorityColor(task.priority),
+        isDragging && "opacity-50"
       )}
     >
-      <div className="font-medium truncate">{task.description}</div>
-      <div className="flex flex-wrap gap-1 text-xs text-gray-500">
-        {section && <span className="truncate">{section.name}</span>}
-        {category && categoryProps && (
-          <span className={cn("px-1.5 py-0.5 rounded-full text-white", categoryProps.backgroundClass)}>
-            {category.name}
-          </span>
-        )}
-        {task.priority && task.priority !== null && ( // Changed from 'none' to null
-          <span className={cn("flex items-center gap-1", getPriorityClasses())}>
-            {task.priority}
-          </span>
-        )}
-        {task.due_date && (
-          <span className={cn(isPast(parseISO(task.due_date)) && !isToday(parseISO(task.due_date)) ? 'text-red-500' : '')}>
-            {getDueDateText(task.due_date)}
-          </span>
+      <button {...listeners} {...attributes} className="cursor-grab touch-none p-1 -ml-1">
+        <GripVertical className="h-4 w-4 text-muted-foreground" />
+      </button>
+      <div className="flex-1 min-w-0">
+        <p className="font-semibold text-sm truncate">{task.description}</p>
+        {section && (
+          <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+            <FolderOpen className="h-3 w-3" />
+            <span>{section.name}</span>
+          </div>
         )}
       </div>
     </div>

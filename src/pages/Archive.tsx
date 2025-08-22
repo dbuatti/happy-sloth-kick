@@ -1,235 +1,161 @@
-import React, { useState, useMemo } from 'react';
-import { useTasks } from '@/hooks/useTasks';
-import { useAuth } from '@/context/AuthContext';
-import { Task, TaskSection, TaskCategory, TaskStatus, TaskPriority } from '@/types/task';
-import TaskList from '@/components/TaskList';
-import { TaskOverviewDialog } from '@/components/TaskOverviewDialog';
-import { TaskDetailDialog } from '@/components/TaskDetailDialog';
-import { Button } from '@/components/ui/button';
-import { Trash2 } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import TaskFilter from '@/components/TaskFilter';
-import { ArchivePageProps } from '@/types/props';
+import React, { useEffect, useState, useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Archive as ArchiveIcon } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useTasks, Task } from '@/hooks/useTasks';
+import TaskItem from '@/components/TaskItem';
+import TaskDetailDialog from '@/components/TaskDetailDialog';
+import TaskOverviewDialog from '@/components/TaskOverviewDialog';
+import { useAllAppointments } from '@/hooks/useAllAppointments';
+import { Appointment } from '@/hooks/useAppointments';
 
-const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo: propIsDemo, demoUserId }) => {
-  const { user } = useAuth();
-  const userId = user?.id || demoUserId;
-  const isDemo = propIsDemo || user?.id === 'd889323b-350c-4764-9788-6359f85f6142';
+interface ArchiveProps {
+  isDemo?: boolean;
+  demoUserId?: string;
+}
 
-  const [isOverviewOpen, setIsOverviewOpen] = useState(false);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
-  const [isConfirmDeleteAllOpen, setIsConfirmDeleteAllOpen] = useState(false);
-
+const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
   const {
-    tasks,
-    processedTasks,
-    sections,
-    allCategories,
-    handleAddTask,
+    tasks: allTasks, // Need all tasks for subtask filtering in overview
+    filteredTasks: archivedTasks, 
+    loading: archiveLoading,
     updateTask,
     deleteTask,
-    reorderTasks,
-    createSection,
+    sections,
+    allCategories,
+    setStatusFilter, // To ensure only archived tasks are fetched
+    createSection, // Destructure new props
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode,
-    createCategory,
-    updateCategory,
-    deleteCategory,
-    isLoading,
-    error,
-    statusFilter,
-    setStatusFilter,
-    categoryFilter,
-    setCategoryFilter,
-    priorityFilter,
-    setPriorityFilter,
-    sectionFilter,
-    setSectionFilter,
-  } = useTasks({ userId: userId, currentDate: new Date(), viewMode: 'archive' });
+    setFocusTask,
+    toggleDoToday,
+    doTodayOffIds,
+  } = useTasks({ viewMode: 'archive', userId: demoUserId, currentDate: new Date() }); // Pass new Date()
+
+  const { appointments: allAppointments } = useAllAppointments();
+
+  const scheduledTasksMap = useMemo(() => {
+    const map = new Map<string, Appointment>();
+    if (allAppointments) {
+        allAppointments.forEach(app => {
+            if (app.task_id) {
+                map.set(app.task_id, app);
+            }
+        });
+    }
+    return map;
+  }, [allAppointments]);
+
+  const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
+  const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
+  const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+
+  useEffect(() => {
+    setStatusFilter('archived');
+  }, [setStatusFilter]);
+
+  const handleTaskStatusChange = async (taskId: string, newStatus: Task['status']) => {
+    return await updateTask(taskId, { status: newStatus });
+  };
 
   const handleOpenOverview = (task: Task) => {
-    setSelectedTask(task);
-    setIsOverviewOpen(true);
+    setTaskToOverview(task);
+    setIsTaskOverviewOpen(true);
   };
 
-  const handleOpenDetail = (task: Task) => {
-    setSelectedTask(task);
-    setIsDetailOpen(true);
+  const handleEditTaskFromOverview = (task: Task) => {
+    setIsTaskOverviewOpen(false); // Close overview
+    setTaskToEdit(task);
+    setIsTaskDetailOpen(true); // Open edit dialog
   };
-
-  const handleDeleteAllArchived = async () => {
-    const archivedTaskIds = tasks.filter(task => task.status === 'archived').map(task => task.id);
-    if (archivedTaskIds.length > 0) {
-      for (const taskId of archivedTaskIds) {
-        await deleteTask(taskId);
-      }
-    }
-    setIsConfirmDeleteAllOpen(false);
-  };
-
-  const handleStatusChangeWrapper = async (taskId: string, newStatus: TaskStatus): Promise<Task | null> => {
-    return updateTask(taskId, { status: newStatus });
-  };
-
-  const filteredArchivedTasks = useMemo(() => {
-    return tasks.filter(task => {
-      if (statusFilter !== 'all' && task.status !== statusFilter) return false;
-      if (categoryFilter !== 'all' && task.category !== categoryFilter) return false;
-      if (priorityFilter !== 'all' && task.priority !== priorityFilter) return false;
-      if (sectionFilter !== 'all' && task.section_id !== sectionFilter) return false;
-      return true;
-    });
-  }, [tasks, statusFilter, categoryFilter, priorityFilter, sectionFilter]);
-
-  if (isLoading) {
-    return <div className="p-4 md:p-6">Loading archived tasks...</div>;
-  }
-
-  if (error) {
-    return <div className="p-4 md:p-6 text-red-500">Error loading archived tasks: {error.message}</div>;
-  }
 
   return (
-    <div className="flex flex-col h-full p-4 md:p-6">
-      <h1 className="text-3xl font-bold mb-6">Archived Tasks</h1>
-
-      <div className="flex justify-between items-center mb-4">
-        <TaskFilter
-          statusFilter={statusFilter}
-          setStatusFilter={setStatusFilter}
-          categoryFilter={categoryFilter}
-          setCategoryFilter={setCategoryFilter}
-          priorityFilter={priorityFilter}
-          setPriorityFilter={setPriorityFilter}
-          sectionFilter={sectionFilter}
-          setSectionFilter={setSectionFilter}
+    <div className="flex-1 flex flex-col">
+      <main className="flex-grow p-4 flex justify-center">
+        <Card className="w-full max-w-4xl mx-auto shadow-lg rounded-xl p-4">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
+              <ArchiveIcon className="h-7 w-7 text-primary" /> Archived Tasks
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            {archiveLoading ? (
+              <div className="space-y-3">
+                {[...Array(5)].map((_, i) => (
+                  <Skeleton key={i} className="h-20 w-full rounded-xl" />
+                ))}
+              </div>
+            ) : archivedTasks.length === 0 ? (
+              <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
+                <ArchiveIcon className="h-12 w-12 text-muted-foreground" />
+                <p className="text-lg font-medium mb-2">No archived tasks found.</p>
+                <p className="text-sm">Completed tasks will appear here once you archive them from your daily view.</p>
+              </div>
+            ) : (
+              <ul className="space-y-2">
+                {archivedTasks.map((task) => (
+                  <li key={task.id} className="relative rounded-xl p-2 transition-all duration-200 ease-in-out group hover:shadow-md">
+                    <TaskItem
+                      task={task}
+                      allTasks={allTasks as Task[]} // Cast to Task[]
+                      onStatusChange={handleTaskStatusChange}
+                      onDelete={deleteTask}
+                      onUpdate={updateTask}
+                      sections={sections}
+                      onOpenOverview={handleOpenOverview}
+                      currentDate={new Date()}
+                      onMoveUp={async () => {}}
+                      onMoveDown={async () => {}}
+                      setFocusTask={setFocusTask}
+                      isDoToday={!doTodayOffIds.has(task.original_task_id || task.id)}
+                      toggleDoToday={() => toggleDoToday(task)}
+                      scheduledTasksMap={scheduledTasksMap}
+                      isDemo={isDemo}
+                      level={0} // Pass level prop
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      </main>
+      {taskToOverview && (
+        <TaskOverviewDialog
+          task={taskToOverview}
+          isOpen={isTaskOverviewOpen}
+          onClose={() => {
+            setIsTaskOverviewOpen(false);
+            setTaskToOverview(null);
+          }}
+          onEditClick={handleEditTaskFromOverview}
+          onUpdate={updateTask}
+          onDelete={deleteTask}
+          sections={sections}
+          allCategories={allCategories}
+          allTasks={allTasks as Task[]} // Cast to Task[]
+        />
+      )}
+      {taskToEdit && (
+        <TaskDetailDialog
+          task={taskToEdit}
+          isOpen={isTaskDetailOpen}
+          onClose={() => setIsTaskDetailOpen(false)}
+          onUpdate={updateTask}
+          onDelete={deleteTask}
           sections={sections}
           allCategories={allCategories}
           createSection={createSection}
           updateSection={updateSection}
           deleteSection={deleteSection}
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-          createCategory={createCategory}
-          updateCategory={updateCategory}
-          deleteCategory={deleteCategory}
+          allTasks={allTasks as Task[]} // Cast to Task[]
         />
-        <Button variant="destructive" onClick={() => setIsConfirmDeleteAllOpen(true)}>
-          <Trash2 className="h-4 w-4 mr-2" /> Delete All Archived
-        </Button>
-      </div>
-
-      <div className="space-y-4">
-        {filteredArchivedTasks.length === 0 ? (
-          <p className="text-center text-gray-500">No archived tasks found.</p>
-        ) : (
-          <TaskList
-            tasks={filteredArchivedTasks}
-            processedTasks={processedTasks}
-            sections={sections}
-            allCategories={allCategories}
-            onStatusChange={handleStatusChangeWrapper}
-            onUpdate={updateTask}
-            onDelete={deleteTask}
-            onOpenOverview={handleOpenOverview}
-            onOpenDetail={handleOpenDetail}
-            onAddTask={handleAddTask}
-            onReorderTasks={reorderTasks}
-            showDoTodayToggle={false}
-            toggleDoToday={() => {}}
-            doTodayOffIds={new Set()}
-            isDemo={isDemo}
-            nextAvailableTask={null}
-            currentDate={new Date()}
-            createSection={createSection}
-            updateSection={updateSection}
-            deleteSection={deleteSection}
-            updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-            createCategory={createCategory}
-            updateCategory={updateCategory}
-            deleteCategory={deleteCategory}
-            archiveAllCompletedTasks={() => {}}
-            toggleAllDoToday={() => {}}
-            setIsAddTaskDialogOpen={() => {}}
-            setPrefilledTaskData={() => {}}
-            dailyProgress={{ totalPendingCount: 0, completedCount: 0, overdueCount: 0 }}
-            onOpenFocusView={() => {}}
-            statusFilter={statusFilter}
-            setStatusFilter={setStatusFilter}
-            categoryFilter={categoryFilter}
-            setCategoryFilter={setCategoryFilter}
-            priorityFilter={priorityFilter}
-            setPriorityFilter={setPriorityFilter}
-            sectionFilter={sectionFilter}
-            setSectionFilter={setSectionFilter}
-          />
-        )}
-      </div>
-
-      <TaskOverviewDialog
-        isOpen={isOverviewOpen}
-        onClose={() => setIsOverviewOpen(false)}
-        task={selectedTask}
-        onOpenDetail={handleOpenDetail}
-        onOpenFocusView={() => {}}
-        updateTask={updateTask}
-        deleteTask={deleteTask}
-        sections={sections}
-        allCategories={allCategories}
-        allTasks={tasks}
-        onAddTask={handleAddTask}
-        onReorderTasks={reorderTasks}
-        createSection={createSection}
-        updateSection={updateSection}
-        deleteSection={deleteSection}
-        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-        createCategory={createCategory}
-        updateCategory={updateCategory}
-        deleteCategory={deleteCategory}
-        onUpdate={updateTask}
-        onDelete={deleteTask}
-        onStatusChange={handleStatusChangeWrapper}
-      />
-
-      <TaskDetailDialog
-        isOpen={isDetailOpen}
-        onClose={() => setIsDetailOpen(false)}
-        task={selectedTask}
-        onUpdate={updateTask}
-        onDelete={deleteTask}
-        sections={sections}
-        allCategories={allCategories}
-        allTasks={tasks}
-        createSection={createSection}
-        updateSection={updateSection}
-        deleteSection={deleteSection}
-        createCategory={createCategory}
-        updateCategory={updateCategory}
-        deleteCategory={deleteCategory}
-        onAddTask={handleAddTask}
-        onReorderTasks={reorderTasks}
-        onStatusChange={handleStatusChangeWrapper}
-      />
-
-      <Dialog open={isConfirmDeleteAllOpen} onOpenChange={setIsConfirmDeleteAllOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Deletion</DialogTitle>
-          </DialogHeader>
-          <p>Are you sure you want to delete ALL archived tasks? This action cannot be undone.</p>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setIsConfirmDeleteAllOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleDeleteAllArchived}>
-              Delete All
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      )}
     </div>
   );
 };
 
-export default ArchivePage;
+export default Archive;

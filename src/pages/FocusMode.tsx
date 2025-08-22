@@ -1,180 +1,72 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/context/AuthContext';
-import { useTasks } from '@/hooks/useTasks';
-import { Task, TaskSection, TaskCategory, TaskStatus } from '@/types/task';
-import FullScreenFocusView from '@/components/FullScreenFocusView';
-import { TaskOverviewDialog } from '@/components/TaskOverviewDialog';
-import { TaskDetailDialog } from '@/components/TaskDetailDialog';
-import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { useTasks, Task } from '@/hooks/useTasks';
+import TaskDetailDialog from '@/components/TaskDetailDialog';
+import FocusToolsPanel from '@/components/FocusToolsPanel';
 
-interface FocusModePageProps {
-  isDemo?: boolean;
+interface FocusModeProps {
   demoUserId?: string;
 }
 
-const FocusModePage: React.FC<FocusModePageProps> = ({ isDemo: propIsDemo, demoUserId }) => {
-  const { user } = useAuth();
-  const userId = user?.id || demoUserId;
-  const isDemo = propIsDemo || user?.id === 'd889323b-350c-4764-9788-6359f85f6142';
-
-  const [currentDate] = useState(new Date());
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [isOverviewOpen, setIsOverviewOpen] = useState(false);
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
-
+const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
   const {
-    tasks,
-    nextAvailableTask,
+    filteredTasks,
+    updateTask,
     sections,
     allCategories,
-    handleAddTask,
-    updateTask,
-    deleteTask,
-    reorderTasks,
+    tasks,
+    nextAvailableTask,
     createSection,
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode,
-    createCategory,
-    updateCategory,
-    deleteCategory,
-    isLoading,
-    error,
-  } = useTasks({ userId: userId, currentDate: currentDate, viewMode: 'focus' });
+    handleAddTask,
+    currentDate,
+  } = useTasks({ viewMode: 'focus', userId: demoUserId, currentDate: new Date() }); // Pass new Date()
 
-  useEffect(() => {
-    if (!selectedTask && nextAvailableTask) {
-      setSelectedTask(nextAvailableTask);
-    }
-  }, [nextAvailableTask, selectedTask]);
-
-  const handleCompleteTask = async () => {
-    if (selectedTask) {
-      await updateTask(selectedTask.id, { status: 'completed' });
-      setSelectedTask(null); // Clear selected task to pick next available
-    }
-  };
-
-  const handleSkipTask = async () => {
-    if (selectedTask) {
-      await updateTask(selectedTask.id, { status: 'skipped' });
-      setSelectedTask(null); // Clear selected task to pick next available
-    }
-  };
+  const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
 
   const handleOpenDetail = (task: Task) => {
-    setSelectedTask(task);
-    setIsDetailOpen(true);
+    setTaskToEdit(task);
+    setIsTaskDetailOpen(true);
   };
-
-  const handleOpenOverview = (task: Task) => {
-    setSelectedTask(task);
-    setIsOverviewOpen(true);
-  };
-
-  const handleStatusChangeWrapper = async (taskId: string, newStatus: TaskStatus): Promise<Task | null> => {
-    return updateTask(taskId, { status: newStatus });
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return <div className="p-4 text-red-500">Error loading tasks: {error.message}</div>;
-  }
-
-  if (!selectedTask) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-4">
-        <h2 className="text-2xl font-bold mb-4">No tasks currently in focus mode.</h2>
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
-          Add some tasks or mark existing ones for focus mode to get started!
-        </p>
-        <Button onClick={() => { /* navigate to task list or add task dialog */ }}>
-          Add a Task
-        </Button>
-      </div>
-    );
-  }
 
   return (
-    <>
-      <FullScreenFocusView
-        task={selectedTask}
-        onClose={() => setSelectedTask(null)}
-        onComplete={handleCompleteTask}
-        onSkip={handleSkipTask}
-        onOpenDetail={handleOpenDetail}
-        updateTask={updateTask}
-        sections={sections}
-        allCategories={allCategories}
-        allTasks={tasks}
-        onAddTask={handleAddTask}
-        onReorderTasks={reorderTasks}
-        createSection={createSection}
-        updateSection={updateSection}
-        deleteSection={deleteSection}
-        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-        createCategory={createCategory}
-        updateCategory={updateCategory}
-        deleteCategory={deleteCategory}
-        onUpdate={updateTask}
-        onDelete={deleteTask}
-        onStatusChange={handleStatusChangeWrapper}
-      />
-
-      <TaskOverviewDialog
-        isOpen={isOverviewOpen}
-        onClose={() => setIsOverviewOpen(false)}
-        task={selectedTask}
-        onOpenDetail={handleOpenDetail}
-        onOpenFocusView={() => {}} // Not applicable from overview within focus mode
-        updateTask={updateTask}
-        deleteTask={deleteTask}
-        sections={sections}
-        allCategories={allCategories}
-        allTasks={tasks}
-        onAddTask={handleAddTask}
-        onReorderTasks={reorderTasks}
-        createSection={createSection}
-        updateSection={updateSection}
-        deleteSection={deleteSection}
-        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-        createCategory={createCategory}
-        updateCategory={updateCategory}
-        deleteCategory={deleteCategory}
-        onUpdate={updateTask}
-        onDelete={deleteTask}
-        onStatusChange={handleStatusChangeWrapper}
-      />
-
-      <TaskDetailDialog
-        isOpen={isDetailOpen}
-        onClose={() => setIsDetailOpen(false)}
-        task={selectedTask}
-        onUpdate={updateTask}
-        onDelete={deleteTask}
-        sections={sections}
-        allCategories={allCategories}
-        allTasks={tasks}
-        createSection={createSection}
-        updateSection={updateSection}
-        deleteSection={deleteSection}
-        createCategory={createCategory}
-        updateCategory={updateCategory}
-        deleteCategory={deleteCategory}
-        onAddTask={handleAddTask}
-        onReorderTasks={reorderTasks}
-        onStatusChange={handleStatusChangeWrapper}
-      />
-    </>
+    <div className="flex-1 flex flex-col">
+      <main className="flex-grow p-4 flex justify-center">
+        <div className="w-full max-w-4xl mx-auto space-y-6">
+          <FocusToolsPanel
+            nextAvailableTask={nextAvailableTask}
+            tasks={tasks as Task[]} // Cast to Task[]
+            filteredTasks={filteredTasks}
+            updateTask={updateTask}
+            onOpenDetail={handleOpenDetail}
+            onDeleteTask={() => { /* Delete not typically in focus mode */ }}
+            sections={sections}
+            allCategories={allCategories}
+            currentDate={currentDate}
+            handleAddTask={handleAddTask}
+          />
+        </div>
+      </main>
+      {taskToEdit && (
+        <TaskDetailDialog
+          task={taskToEdit}
+          isOpen={isTaskDetailOpen}
+          onClose={() => setIsTaskDetailOpen(false)}
+          onUpdate={updateTask}
+          onDelete={() => { /* Delete not typically in focus mode */ }}
+          sections={sections}
+          allCategories={allCategories}
+          createSection={createSection}
+          updateSection={updateSection}
+          deleteSection={deleteSection}
+          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+          allTasks={tasks as Task[]} // Cast to Task[]
+        />
+      )}
+    </div>
   );
 };
 
-export default FocusModePage;
+export default FocusMode;

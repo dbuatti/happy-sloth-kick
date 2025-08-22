@@ -1,119 +1,167 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import TimePicker from '@/components/ui/time-picker';
-import { format, parseISO } from 'date-fns';
-import { useWorkHours } from '@/hooks/useWorkHours';
-import { useAuth } from '@/context/AuthContext';
-import { showError, showSuccess } from '@/utils/toast';
-import { WorkHour } from '@/types/task';
-import { WorkHourState } from '@/types/props';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+// Removed useAuth as it's not directly used in this component
+import { Clock } from 'lucide-react';
+import { useWorkHours } from '@/hooks/useWorkHours'; // Import the refactored hook
+
+interface WorkHourState {
+  day_of_week: string;
+  start_time: string;
+  end_time: string;
+  enabled: boolean;
+  id?: string;
+}
 
 const WorkHoursSettings: React.FC = () => {
-  const { user } = useAuth();
-  const userId = user?.id;
-
-  const { allWorkHours, isLoading, error, saveWorkHours } = useWorkHours({ userId });
-
+  // Call useWorkHours without a date to get all work hours
+  const { workHours: fetchedWorkHours, loading, saveWorkHours, allDaysOfWeek, defaultTime } = useWorkHours();
+  
   const [localWorkHours, setLocalWorkHours] = useState<WorkHourState[]>([]);
-
-  const allDaysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-  // Removed unused: const defaultTime = '09:00:00'; // Default start time for new entries
+  const [isSaving, setIsSaving] = useState(false);
+  const [allStartTime, setAllStartTime] = useState(defaultTime.start);
+  const [allEndTime, setAllEndTime] = useState(defaultTime.end);
 
   useEffect(() => {
-    if (allWorkHours) {
-      const initializedHours: WorkHourState[] = allDaysOfWeek.map(day => {
-        const existing = allWorkHours.find(wh => wh.day_of_week === day);
-        return {
-          id: existing?.id,
-          day_of_week: day,
-          start_time: existing?.start_time || '09:00:00',
-          end_time: existing?.end_time || '17:00:00',
-          enabled: existing?.enabled ?? false,
-        };
-      });
-      setLocalWorkHours(initializedHours);
+    if (!loading && Array.isArray(fetchedWorkHours)) {
+      setLocalWorkHours(fetchedWorkHours);
+      // Set initial values for "Apply to All" based on a common default or first day
+      if (fetchedWorkHours.length > 0) {
+        setAllStartTime(fetchedWorkHours[0].start_time);
+        setAllEndTime(fetchedWorkHours[0].end_time);
+      }
     }
-  }, [allWorkHours]);
+  }, [fetchedWorkHours, loading]);
 
-  const handleWorkHourChange = (day: string, field: 'start_time' | 'end_time' | 'enabled', value: string | boolean) => {
-    setLocalWorkHours(prevHours => {
-      return prevHours.map(wh => {
-        if (wh.day_of_week === day) {
-          return { ...wh, [field]: value };
-        }
-        return wh;
-      });
-    });
+  const handleTimeChange = (day: string, field: 'start_time' | 'end_time', value: string) => {
+    setLocalWorkHours(prevHours =>
+      prevHours.map(wh =>
+        wh.day_of_week === day ? { ...wh, [field]: value } : wh
+      )
+    );
   };
 
-  const handleSaveWorkHours = async () => {
-    if (!userId) {
-      showError('User not authenticated.');
-      return;
-    }
-    try {
-      const hoursToSave: WorkHour[] = localWorkHours.map(localHour => ({
-        id: localHour.id || crypto.randomUUID(),
-        user_id: userId,
-        day_of_week: localHour.day_of_week,
-        start_time: localHour.start_time,
-        end_time: localHour.end_time,
-        enabled: localHour.enabled,
-      }));
-
-      await saveWorkHours(hoursToSave);
-      showSuccess('Work hours saved successfully!');
-    } catch (error: any) {
-      showError('Failed to save work hours.');
-      console.error('Error saving work hours:', error);
-    }
+  const handleEnabledChange = (day: string, checked: boolean) => {
+    setLocalWorkHours(prevHours =>
+      prevHours.map(wh =>
+        wh.day_of_week === day ? { ...wh, enabled: checked } : wh
+      )
+    );
   };
 
-  if (isLoading) {
-    return <div className="p-4">Loading work hours...</div>;
-  }
+  const handleSaveAllWorkHours = async () => {
+    setIsSaving(true);
+    await saveWorkHours(localWorkHours);
+    setIsSaving(false);
+  };
 
-  if (error) {
-    return <div className="p-4 text-red-500">Error loading work hours.</div>;
+  const handleSetAllHoursAndSave = async () => {
+    const updatedHours = localWorkHours.map(wh => ({
+      ...wh,
+      start_time: allStartTime,
+      end_time: allEndTime,
+      enabled: true, // Always enable when "Apply to All" is clicked
+    }));
+    setLocalWorkHours(updatedHours); // Update local state first
+    setIsSaving(true);
+    await saveWorkHours(updatedHours); // Then pass the updated state to save
+    setIsSaving(false);
+  };
+
+  if (loading) {
+    return (
+      <Card className="w-full shadow-lg rounded-xl">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-2xl font-bold flex items-center gap-2">
+            <Clock className="h-6 w-6 text-primary" /> Work Hours
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="text-center">Loading work hours...</div>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Work Hours</CardTitle>
+    <Card className="w-full shadow-lg rounded-xl">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-2xl font-bold flex items-center gap-2">
+          <Clock className="h-6 w-6 text-primary" /> Work Hours
+        </CardTitle>
+        <p className="text-sm text-muted-foreground">Set your daily working hours to help manage your productivity.</p>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {allDaysOfWeek.map(day => {
-          const dayWorkHour = localWorkHours.find(wh => wh.day_of_week === day);
-          const startTime = dayWorkHour?.start_time ? parseISO(`2000-01-01T${dayWorkHour.start_time}`) : undefined;
-          const endTime = dayWorkHour?.end_time ? parseISO(`2000-01-01T${dayWorkHour.end_time}`) : undefined;
-          const enabled = dayWorkHour?.enabled ?? false;
+      <CardContent className="space-y-4 pt-0">
+        <div className="rounded-xl p-3 bg-muted/50 shadow-sm">
+          <h3 className="text-lg font-semibold mb-3 text-foreground">Apply to All Days</h3>
+          <div className="flex flex-col gap-3">
+            <div className="grid grid-cols-2 items-center gap-2">
+              <div className="space-y-1">
+                <Label htmlFor="all-start-time">Start Time</Label>
+                <Input
+                  id="all-start-time"
+                  type="time"
+                  value={allStartTime}
+                  onChange={(e) => setAllStartTime(e.target.value)}
+                  className="w-full h-10 text-base"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="all-end-time">End Time</Label>
+                <Input
+                  id="all-end-time"
+                  type="time"
+                  value={allEndTime}
+                  onChange={(e) => setAllEndTime(e.target.value)}
+                  className="w-full h-10 text-base"
+                />
+              </div>
+            </div>
+            <Button onClick={handleSetAllHoursAndSave} className="w-full h-10 text-base" disabled={isSaving}>
+              Apply to All & Enable
+            </Button>
+          </div>
+        </div>
 
-          return (
-            <div key={day} className="flex items-center justify-between space-x-2">
-              <Label className="w-24 capitalize">{day}</Label>
-              <Switch
-                checked={enabled}
-                onCheckedChange={(checked: boolean) => handleWorkHourChange(day, 'enabled', checked)}
+        {localWorkHours.map(dayHour => (
+          <div key={dayHour.day_of_week} className="flex flex-col sm:flex-row sm:items-center gap-2 p-2 rounded-md shadow-sm bg-background">
+            <div className="flex items-center flex-1">
+              <Checkbox
+                id={`enable-${dayHour.day_of_week}`}
+                checked={dayHour.enabled}
+                onCheckedChange={(checked) => handleEnabledChange(dayHour.day_of_week, !!checked)}
+                disabled={isSaving}
+                className="h-5 w-5"
               />
-              <TimePicker
-                date={startTime}
-                setDate={(date: Date | undefined) => handleWorkHourChange(day, 'start_time', date ? format(date, 'HH:mm:ss') : '00:00:00')}
-                disabled={!enabled}
+              <Label htmlFor={`enable-${dayHour.day_of_week}`} className="ml-2 font-medium capitalize text-base">
+                {allDaysOfWeek.find(d => d.id === dayHour.day_of_week)?.name}
+              </Label>
+            </div>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Input
+                type="time"
+                value={dayHour.start_time}
+                onChange={(e) => handleTimeChange(dayHour.day_of_week, 'start_time', e.target.value)}
+                className="flex-1 h-10 text-base"
+                disabled={!dayHour.enabled || isSaving}
               />
-              <span>-</span>
-              <TimePicker
-                date={endTime}
-                setDate={(date: Date | undefined) => handleWorkHourChange(day, 'end_time', date ? format(date, 'HH:mm:ss') : '00:00:00')}
-                disabled={!enabled}
+              <span className="text-muted-foreground">-</span>
+              <Input
+                type="time"
+                value={dayHour.end_time}
+                onChange={(e) => handleTimeChange(dayHour.day_of_week, 'end_time', e.target.value)}
+                className="flex-1 h-10 text-base"
+                disabled={!dayHour.enabled || isSaving}
               />
             </div>
-          );
-        })}
-        <Button onClick={handleSaveWorkHours}>Save Work Hours</Button>
+          </div>
+        ))}
+        <Button onClick={handleSaveAllWorkHours} className="w-full mt-4 h-10 text-base" disabled={isSaving}>
+          {isSaving ? 'Saving...' : 'Save Work Hours'}
+        </Button>
       </CardContent>
     </Card>
   );

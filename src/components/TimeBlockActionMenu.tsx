@@ -1,80 +1,61 @@
 import React, { useState } from 'react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
-import { Plus, Calendar, ListTodo } from 'lucide-react';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Task, TaskSection } from '@/types/task';
-import { TimeBlockActionMenuProps } from '@/types/props';
+import { Calendar, ListTodo } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Task, TaskSection } from '@/hooks/useTasks';
 
-export const TimeBlockActionMenu: React.FC<TimeBlockActionMenuProps> = ({
-  block,
-  onAddAppointment,
-  onScheduleTask,
-  unscheduledTasks,
-  sections,
-}) => {
-  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
-  const [selectedAction, setSelectedAction] = useState<'addAppointment' | 'scheduleTask' | null>(null);
+interface TimeBlockActionMenuProps {
+  block: { start: Date; end: Date };
+  onAddAppointment: (block: { start: Date; end: Date }) => void;
+  onScheduleTask: (taskId: string, blockStart: Date) => void;
+  unscheduledTasks: Task[];
+  sections: TaskSection[];
+}
 
-  const handleSelectAction = (action: 'addAppointment' | 'scheduleTask') => {
-    setSelectedAction(action);
-    if (action === 'addAppointment') {
-      onAddAppointment(block);
-      setIsPopoverOpen(false);
-    }
-  };
+const TimeBlockActionMenu: React.FC<TimeBlockActionMenuProps> = ({ block, onAddAppointment, onScheduleTask, unscheduledTasks, sections }) => {
+  const [view, setView] = useState<'initial' | 'select-task'>('initial');
+
+  if (view === 'select-task') {
+    return (
+      <Select onValueChange={(taskId) => onScheduleTask(taskId, block.start)}>
+        <SelectTrigger className="w-[200px]">
+          <SelectValue placeholder="Select a task..." />
+        </SelectTrigger>
+        <SelectContent>
+          {unscheduledTasks.length > 0 ? (
+            unscheduledTasks.map(task => {
+              const section = sections.find(s => s.id === task.section_id);
+              return (
+                <SelectItem key={task.id} value={task.id}>
+                  <div className="flex flex-col items-start">
+                    <span>{task.description}</span>
+                    {section && (
+                      <span className="text-xs text-muted-foreground">{section.name}</span>
+                    )}
+                  </div>
+                </SelectItem>
+              );
+            })
+          ) : (
+            <div className="p-2 text-sm text-muted-foreground">No tasks to schedule.</div>
+          )}
+        </SelectContent>
+      </Select>
+    );
+  }
 
   return (
-    <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-        >
-          <Plus className="h-4 w-4" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-64 p-0">
-        <Command>
-          <CommandList>
-            <CommandGroup heading="Actions">
-              <CommandItem onSelect={() => handleSelectAction('addAppointment')}>
-                <Calendar className="mr-2 h-4 w-4" />
-                <span>Add Appointment</span>
-              </CommandItem>
-              <CommandItem onSelect={() => handleSelectAction('scheduleTask')}>
-                <ListTodo className="mr-2 h-4 w-4" />
-                <span>Schedule Task</span>
-              </CommandItem>
-            </CommandGroup>
-            {selectedAction === 'scheduleTask' && (
-              <>
-                <CommandSeparator />
-                <CommandInput placeholder="Search unscheduled tasks..." />
-                <CommandList>
-                  <CommandEmpty>No unscheduled tasks.</CommandEmpty>
-                  <CommandGroup heading="Unscheduled Tasks">
-                    {unscheduledTasks.map((task) => (
-                      <CommandItem
-                        key={task.id}
-                        value={task.description || ''}
-                        onSelect={() => {
-                          onScheduleTask(task.id, block.start);
-                          setIsPopoverOpen(false);
-                          setSelectedAction(null);
-                        }}
-                      >
-                        {task.description}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </>
-            )}
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+    <div className="flex flex-col space-y-1">
+      <Button variant="ghost" className="justify-start" onClick={() => onAddAppointment(block)}>
+        <Calendar className="mr-2 h-4 w-4" />
+        Add Appointment
+      </Button>
+      <Button variant="ghost" className="justify-start" onClick={() => setView('select-task')}>
+        <ListTodo className="mr-2 h-4 w-4" />
+        Schedule Task
+      </Button>
+    </div>
   );
 };
+
+export default TimeBlockActionMenu;
