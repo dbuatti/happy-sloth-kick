@@ -5,7 +5,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Plus, CheckCircle2, ChevronDown, MoreHorizontal, Trash2, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TaskSection } from '@/hooks/useTasks';
@@ -161,6 +161,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
                     className="h-8 w-8 p-0"
                     tabIndex={isOverlay ? -1 : 0}
                     onClick={(e) => e.stopPropagation()}
+                    data-dnd-ignore-active {/* Added this attribute */}
                   >
                     <span>
                       <span className="sr-only">Open section menu</span>
