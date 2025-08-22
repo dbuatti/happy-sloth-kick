@@ -321,7 +321,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
     <div
       ref={provided.innerRef}
       {...provided.draggableProps}
-      {...provided.dragHandleProps}
+      // Removed {...provided.dragHandleProps} from here
       onTouchStart={(e) => e.preventDefault()} // Prevent default touch start behavior
       onTouchMove={(e) => e.preventDefault()} // Prevent default touch move behavior
       className={cn(
@@ -363,6 +363,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
               htmlFor={`task-${task.id}`}
               className="flex-grow text-sm cursor-pointer truncate"
               onDoubleClick={() => setIsEditing(true)}
+              {...provided.dragHandleProps} // Added dragHandleProps here
             >
               {task.description}
             </label>
@@ -419,8 +420,8 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 variant="ghost"
                 size="sm"
                 className="h-8 w-8 p-0 touch-action-manipulation"
-                onClick={(e) => { e.stopPropagation(); e.preventDefault(); }} // Re-added
-                onTouchStart={(e) => { e.stopPropagation(); e.preventDefault(); }} // Re-added
+                onClick={(e) => { e.stopPropagation(); e.preventDefault(); }}
+                onTouchStart={(e) => { e.stopPropagation(); e.preventDefault(); }}
               >
                 <MoreVertical className="h-4 w-4" />
               </Button>
