@@ -321,7 +321,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
     <div
       ref={provided.innerRef}
       {...provided.draggableProps}
-      // Removed dragHandleProps from main container
+      {...provided.dragHandleProps}
       className={cn(
         "flex flex-col p-3 rounded-lg shadow-sm mb-2 border",
         isDragging ? "bg-blue-100 border-blue-400" : "bg-white border-gray-200",
@@ -361,7 +361,6 @@ const TaskCard: React.FC<TaskCardProps> = ({
               htmlFor={`task-${task.id}`}
               className="flex-grow text-sm cursor-pointer truncate"
               onDoubleClick={() => setIsEditing(true)}
-              {...provided.dragHandleProps} // Added dragHandleProps to the label
             >
               {task.description}
             </label>
@@ -421,16 +420,28 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 onClick={(e) => {
                   e.stopPropagation();
                   e.preventDefault();
+                  setShowMoreOptions(!showMoreOptions);
                 }}
                 onTouchStart={(e) => {
                   e.stopPropagation();
                   e.preventDefault();
                 }}
+                onTouchEnd={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  setShowMoreOptions(!showMoreOptions);
+                }}
               >
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56" onClick={(e) => e.stopPropagation()}>
+            <DropdownMenuContent 
+              align="end" 
+              className="w-56"
+              onClick={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
+              onTouchEnd={(e) => e.stopPropagation()}
+            >
               <DropdownMenuLabel>Task Actions</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => setIsEditing(true)}>
