@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import TasksPage from './pages/Tasks';
-import { SessionContextProvider } from '@supabase/auth-ui-react';
 import { supabase } from './integrations/supabase/client';
 import LoginPage from './pages/Login';
 import { useEffect, useState } from 'react';
@@ -31,26 +30,24 @@ function App() {
   }
 
   return (
-    <SessionContextProvider supabaseClient={supabase}>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route
-            path="/"
-            element={session ? <TasksPage /> : <Navigate to="/login" replace />}
-          />
-          <Route
-            path="/tasks"
-            element={session ? <TasksPage /> : <Navigate to="/login" replace />}
-          />
-          {/* Catch-all route: if authenticated, redirect to home; otherwise, redirect to login */}
-          <Route
-            path="*"
-            element={session ? <Navigate to="/" replace /> : <Navigate to="/login" replace />}
-          />
-        </Routes>
-      </BrowserRouter>
-    </SessionContextProvider>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route
+          path="/"
+          element={session ? <TasksPage /> : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/tasks"
+          element={session ? <TasksPage /> : <Navigate to="/login" replace />}
+        />
+        {/* Catch-all route: if authenticated, redirect to home; otherwise, redirect to login */}
+        <Route
+          path="*"
+          element={session ? <Navigate to="/" replace /> : <Navigate to="/login" replace />}
+        />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
