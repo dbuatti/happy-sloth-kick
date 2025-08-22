@@ -74,9 +74,8 @@ const TaskSection: React.FC<TaskSectionProps> = ({
           <div
             {...provided.droppableProps}
             ref={provided.innerRef}
-            // Removed onTouchStart and onTouchMove from here
             className={cn(
-              "min-h-[50px] rounded-md transition-colors touch-action-none",
+              "min-h-[50px] rounded-md transition-colors",
               snapshot.isDraggingOver ? "bg-blue-50" : "bg-transparent"
             )}
           >

@@ -321,11 +321,9 @@ const TaskCard: React.FC<TaskCardProps> = ({
     <div
       ref={provided.innerRef}
       {...provided.draggableProps}
-      // Removed {...provided.dragHandleProps} from here
-      onTouchStart={(e) => e.preventDefault()} // Prevent default touch start behavior
-      onTouchMove={(e) => e.preventDefault()} // Prevent default touch move behavior
+      // Removed dragHandleProps from main container
       className={cn(
-        "flex flex-col p-3 rounded-lg shadow-sm mb-2 border touch-action-none",
+        "flex flex-col p-3 rounded-lg shadow-sm mb-2 border",
         isDragging ? "bg-blue-100 border-blue-400" : "bg-white border-gray-200",
         task.status === "completed" && "opacity-70 line-through text-gray-500",
         isSubtask && "ml-6 bg-gray-50"
@@ -338,7 +336,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
             onCheckedChange={handleToggleComplete}
             className="mr-3"
             id={`task-${task.id}`}
-            onClick={(e) => e.stopPropagation()} // Prevent drag from starting on checkbox click
+            onClick={(e) => e.stopPropagation()}
           />
           {isEditing ? (
             <Input
@@ -356,14 +354,14 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 }
               }}
               className="flex-grow min-w-0"
-              onClick={(e) => e.stopPropagation()} // Prevent drag from starting on input click
+              onClick={(e) => e.stopPropagation()}
             />
           ) : (
             <label
               htmlFor={`task-${task.id}`}
               className="flex-grow text-sm cursor-pointer truncate"
               onDoubleClick={() => setIsEditing(true)}
-              {...provided.dragHandleProps} // Added dragHandleProps here
+              {...provided.dragHandleProps} // Added dragHandleProps to the label
             >
               {task.description}
             </label>
@@ -402,7 +400,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
             <Badge className="bg-blue-500 text-white px-2 py-0.5 text-xs">
               Today
             </Badge>
-            )}
+          )}
           {isDueTomorrow && (
             <Badge className="bg-indigo-500 text-white px-2 py-0.5 text-xs">
               Tomorrow
@@ -419,9 +417,15 @@ const TaskCard: React.FC<TaskCardProps> = ({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0 touch-action-manipulation"
-                onClick={(e) => { e.stopPropagation(); e.preventDefault(); }}
-                onTouchStart={(e) => { e.stopPropagation(); e.preventDefault(); }}
+                className="h-8 w-8 p-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                }}
+                onTouchStart={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                }}
               >
                 <MoreVertical className="h-4 w-4" />
               </Button>
@@ -479,7 +483,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 <AlertDialogTrigger asChild>
                   <DropdownMenuItem
                     onSelect={(e) => {
-                      e.preventDefault(); // Prevent dropdown from closing immediately
+                      e.preventDefault();
                       setShowDeleteDialog(true);
                     }}
                     className="text-red-600 focus:bg-red-100"
@@ -549,7 +553,6 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 selected={editedDueDate}
                 onSelect={(date) => {
                   setEditedDueDate(date);
-                  // Optionally call handleUpdateTask here or on popover close
                 }}
                 initialFocus
               />
@@ -559,7 +562,6 @@ const TaskCard: React.FC<TaskCardProps> = ({
                     variant="ghost"
                     onClick={() => {
                       setEditedDueDate(undefined);
-                      // handleUpdateTask();
                     }}
                     className="w-full"
                   >
@@ -590,7 +592,6 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 selected={editedRemindAt}
                 onSelect={(date) => {
                   setEditedRemindAt(date);
-                  // Optionally add time picker here
                 }}
                 initialFocus
               />
@@ -600,7 +601,6 @@ const TaskCard: React.FC<TaskCardProps> = ({
                     variant="ghost"
                     onClick={() => {
                       setEditedRemindAt(undefined);
-                      // handleUpdateTask();
                     }}
                     className="w-full"
                   >
@@ -715,7 +715,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
             size="sm"
             onClick={() => onToggleSubtasks && onToggleSubtasks(task.id)}
             className="w-full justify-start text-sm text-gray-600 hover:text-gray-800"
-            onClickCapture={(e) => e.stopPropagation()} // Prevent drag
+            onClickCapture={(e) => e.stopPropagation()}
           >
             {showSubtasks ? (
               <ChevronUp className="mr-2 h-4 w-4" />
