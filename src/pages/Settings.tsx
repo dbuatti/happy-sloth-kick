@@ -1,218 +1,181 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Settings as SettingsIcon, Sun, Moon, MessageSquare } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { Skeleton } from '@/components/ui/skeleton';
-import WorkHoursSettings from '@/components/WorkHoursSettings';
-import ProjectTrackerSettings from '@/components/ProjectTrackerSettings';
-import { useTheme } from 'next-themes';
-import TaskSettings from '@/components/TaskSettings';
-import PageToggleSettings from '@/components/PageToggleSettings';
-import ScheduleSettings from '@/components/ScheduleSettings';
+import { useSettings } from '@/hooks/useSettings';
+import { useWorkHours } from '@/hooks/useWorkHours';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { TimePicker } from '@/components/ui/time-picker';
+import { format, parseISO } from 'date-fns';
+import { showError, showSuccess } from '@/utils/toast';
+import { UserSettings, WorkHour } from '@/types/task';
 
-interface SettingsProps {
-  isDemo?: boolean;
-  demoUserId?: string;
-}
-
-const Settings: React.FC<SettingsProps> = ({ isDemo = false, demoUserId }) => {
+const SettingsPage: React.FC = () => {
   const { user } = useAuth();
-  const currentUserId = demoUserId || user?.id;
-  const { theme, setTheme } = useTheme();
+  const userId = user?.id;
 
-  const [profileLoading, setProfileLoading] = useState(true);
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const { settings, loading: settingsLoading, updateSettings } = useSettings(userId);
+  const { allWorkHours, loading: workHoursLoading, saveWorkHours } = useWorkHours(userId);
+
+  const [projectTrackerTitle, setProjectTrackerTitle] = useState('');
+  const [scheduleShowFocusTasksOnly, setScheduleShowFocusTasksOnly] = useState(true);
+  const [futureTasksDaysVisible, setFutureTasksDaysVisible] = useState(7);
+  const [localWorkHours, setLocalWorkHours] = useState<WorkHour[]>([]);
 
   useEffect(() => {
-    const getProfile = async () => {
-      try {
-        setProfileLoading(true);
-        if (!currentUserId) return;
-
-        const { data, error, status } = await supabase
-          .from('profiles')
-          .select(`id, first_name, last_name`)
-          .eq('id', currentUserId)
-          .single();
-
-        if (error && status !== 406) { // PGRST116 means no rows found
-          throw error;
-        }
-
-        if (data) {
-          setFirstName(data.first_name || '');
-          setLastName(data.last_name || '');
-        }
-      } catch (error: any) {
-        console.error('Error fetching profile:', error);
-        // Consider adding a toast error here if needed
-      } finally {
-        setProfileLoading(false);
-      }
-    };
-    if (currentUserId) {
-      getProfile();
+    if (settings) {
+      setProjectTrackerTitle(settings.project_tracker_title);
+      setScheduleShowFocusTasksOnly(settings.schedule_show_focus_tasks_only);
+      setFutureTasksDaysVisible(settings.future_tasks_days_visible);
     }
-  }, [currentUserId]);
+  }, [settings]);
 
-  const updateProfile = async (event: React.FormEvent) => {
-    event.preventDefault();
+  useEffect(() => {
+    if (allWorkHours) {
+      setLocalWorkHours(allWorkHours);
+    }
+  }, [allWorkHours]);
+
+  const handleSaveSettings = async () => {
+    if (!userId) {
+      showError('User not authenticated.');
+      return;
+    }
     try {
-      setIsSavingProfile(true);
-      if (!currentUserId) return;
-
-      const updates = {
-        id: currentUserId,
-        first_name: firstName,
-        last_name: lastName,
-      };
-
-      const { error } = await supabase.from('profiles').upsert(updates);
-
-      if (error) {
-        throw error;
-      }
-      // showSuccess('Profile updated successfully!'); // Re-add toast if needed
-    } catch (error: any) {
-      console.error('Error updating profile:', error);
-      // showError(error.message); // Re-add toast if needed
-    } finally {
-      setIsSavingProfile(false);
+      await updateSettings({
+        project_tracker_title: projectTrackerTitle,
+        schedule_show_focus_tasks_only: scheduleShowFocusTasksOnly,
+        future_tasks_days_visible: futureTasksDaysVisible,
+      });
+      showSuccess('Settings saved successfully!');
+    } catch (error) {
+      showError('Failed to save settings.');
+      console.error('Error saving settings:', error);
     }
   };
 
-  const handleSignOut = async () => {
+  const handleWorkHourChange = (day: string, field: 'start_time' | 'end_time' | 'enabled', value: string | boolean) => {
+    setLocalWorkHours(prevHours => {
+      const existing = prevHours.find(wh => wh.day_of_week === day);
+      if (existing) {
+        return prevHours.map(wh =>
+          wh.day_of_week === day ? { ...wh, [field]: value } : wh
+        );
+      } else {
+        // Create a new entry if it doesn't exist
+        const newHour: WorkHour = {
+          id: crypto.randomUUID(), // Generate a new ID for new entries
+          user_id: userId!,
+          day_of_week: day,
+          start_time: '09:00:00', // Default start
+          end_time: '17:00:00',   // Default end
+          enabled: true,
+          ...({ [field]: value } as Partial<WorkHour>), // Apply the specific field change
+        };
+        return [...prevHours, newHour];
+      }
+    });
+  };
+
+  const handleSaveWorkHours = async () => {
+    if (!userId) {
+      showError('User not authenticated.');
+      return;
+    }
     try {
-      setIsSavingProfile(true); // Use profile saving state for sign out button
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      // showSuccess('Signed out successfully!'); // Re-add toast if needed
-      window.location.href = '/'; 
-    } catch (error: any) {
-      console.error('Error signing out:', error);
-      // showError(error.message); // Re-add toast if needed
-    } finally {
-      setIsSavingProfile(false);
+      await saveWorkHours(localWorkHours);
+      showSuccess('Work hours saved successfully!');
+    } catch (error) {
+      showError('Failed to save work hours.');
+      console.error('Error saving work hours:', error);
     }
   };
+
+  if (settingsLoading || workHoursLoading) {
+    return <div className="p-4 md:p-6">Loading settings...</div>;
+  }
 
   return (
-    <div className="flex-1 flex flex-col">
-      <main className="flex-grow p-4 flex justify-center">
-        <Card className="w-full max-w-4xl mx-auto shadow-lg rounded-xl p-4">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
-              <SettingsIcon className="h-7 w-7 text-primary" /> Settings
-            </CardTitle>
+    <div className="flex flex-col h-full p-4 md:p-6">
+      <h1 className="text-3xl font-bold mb-6">Settings</h1>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>General Settings</CardTitle>
           </CardHeader>
-          <CardContent className="pt-0 space-y-6">
-            <Card className="w-full shadow-lg rounded-xl p-4">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-2xl font-bold text-center">Profile Settings</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                {profileLoading ? (
-                  <div className="space-y-4">
-                    <Skeleton className="h-10 w-full" />
-                    <Skeleton className="h-10 w-full" />
-                    <Skeleton className="h-10 w-full" />
-                    <Skeleton className="h-10 w-full" />
-                  </div>
-                ) : (
-                  <form onSubmit={updateProfile} className="space-y-4">
-                    <div>
-                      <label htmlFor="firstName" className="block text-sm font-medium text-foreground">First Name</label>
-                      <input
-                        id="firstName"
-                        type="text"
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                        className="mt-1 block w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 h-9"
-                        disabled={isDemo}
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="lastName" className="block text-sm font-medium text-foreground">Last Name</label>
-                      <input
-                        id="lastName"
-                        type="text"
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
-                        className="mt-1 block w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 h-9"
-                        disabled={isDemo}
-                      />
-                    </div>
-                    <Button type="submit" className="w-full h-9" disabled={isSavingProfile || isDemo}>
-                      {isSavingProfile ? 'Saving...' : 'Update Profile'}
-                    </Button>
-                    {!isDemo && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="w-full mt-4 h-9"
-                        onClick={handleSignOut}
-                        disabled={isSavingProfile}
-                      >
-                        Sign Out
-                      </Button>
-                    )}
-                  </form>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Theme Toggle */}
-            <Card className="w-full shadow-lg rounded-xl">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-2xl font-bold flex items-center gap-2">
-                  <Sun className="h-6 w-6 text-primary" /> Theme
-                </CardTitle>
-                <p className="text-sm text-muted-foreground">Switch between light and dark modes.</p>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="flex items-center justify-between">
-                  <label htmlFor="dark-mode-toggle" className="text-base font-medium">Dark Mode</label>
-                  <Button
-                    id="dark-mode-toggle"
-                    variant="outline"
-                    size="icon"
-                    className="h-9 w-9"
-                    onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                    aria-label="Toggle dark mode"
-                  >
-                    {theme === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <PageToggleSettings />
-            <TaskSettings />
-            <ScheduleSettings />
-            <WorkHoursSettings />
-            <ProjectTrackerSettings />
-
-            {/* Chat Link Placeholder */}
-            <Card className="w-full shadow-lg rounded-xl">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-2xl font-bold flex items-center gap-2">
-                  <MessageSquare className="h-6 w-6 text-primary" /> Support
-                </CardTitle>
-                <p className="text-sm text-muted-foreground">Need help? Contact our support team.</p>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <a href="#" className="text-blue-500 hover:underline text-sm">Chat with Support</a>
-              </CardContent>
-            </Card>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="project-tracker-title">Project Tracker Title</Label>
+              <Input
+                id="project-tracker-title"
+                value={projectTrackerTitle}
+                onChange={(e) => setProjectTrackerTitle(e.target.value)}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="schedule-focus-tasks">Show only focus tasks in schedule</Label>
+              <Switch
+                id="schedule-focus-tasks"
+                checked={scheduleShowFocusTasksOnly}
+                onCheckedChange={setScheduleShowFocusTasksOnly}
+              />
+            </div>
+            <div>
+              <Label htmlFor="future-tasks-days">Future tasks visible days</Label>
+              <Input
+                id="future-tasks-days"
+                type="number"
+                value={futureTasksDaysVisible}
+                onChange={(e) => setFutureTasksDaysVisible(parseInt(e.target.value))}
+                min={1}
+              />
+            </div>
+            <Button onClick={handleSaveSettings}>Save General Settings</Button>
           </CardContent>
         </Card>
-      </main>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Work Hours</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => {
+              const dayWorkHour = localWorkHours.find(wh => wh.day_of_week === day);
+              const startTime = dayWorkHour?.start_time ? parseISO(`2000-01-01T${dayWorkHour.start_time}`) : undefined;
+              const endTime = dayWorkHour?.end_time ? parseISO(`2000-01-01T${dayWorkHour.end_time}`) : undefined;
+              const enabled = dayWorkHour?.enabled ?? false;
+
+              return (
+                <div key={day} className="flex items-center justify-between space-x-2">
+                  <Label className="w-24 capitalize">{day}</Label>
+                  <Switch
+                    checked={enabled}
+                    onCheckedChange={(checked: boolean) => handleWorkHourChange(day, 'enabled', checked)}
+                  />
+                  <TimePicker
+                    date={startTime}
+                    setDate={(date: Date | undefined) => handleWorkHourChange(day, 'start_time', date ? format(date, 'HH:mm:ss') : '00:00:00')}
+                    disabled={!enabled}
+                  />
+                  <span>-</span>
+                  <TimePicker
+                    date={endTime}
+                    setDate={(date: Date | undefined) => handleWorkHourChange(day, 'end_time', date ? format(date, 'HH:mm:ss') : '00:00:00')}
+                    disabled={!enabled}
+                  />
+                </div>
+              );
+            })}
+            <Button onClick={handleSaveWorkHours}>Save Work Hours</Button>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
 
-export default Settings;
+export default SettingsPage;

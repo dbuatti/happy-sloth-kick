@@ -24,7 +24,7 @@ import {
   TaskCategory,
   RecurringType,
   TaskPriority,
-  TaskStatus, // Explicitly import TaskStatus
+  TaskStatus,
 } from '@/types/task';
 import { format, isToday, isTomorrow, isPast, parseISO } from 'date-fns';
 import { getCategoryColorProps } from '@/utils/categoryColors';
@@ -46,8 +46,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge'; // Import Badge
-import { TaskItemProps } from '@/types/props'; // Import props interface
+import { Badge } from '@/components/ui/badge';
+import { TaskItemProps } from '@/types/props';
 
 const TaskItem: React.FC<TaskItemProps> = ({
   task,

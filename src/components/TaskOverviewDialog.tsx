@@ -3,13 +3,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar, Tag, ListTodo, Edit, Trash2, Play, Pause, XCircle, EyeOff, Clock, Link, Image, MessageSquare, Plus } from 'lucide-react';
+import { Play, Check, X, Edit, Trash2, Plus, Link, Image } from 'lucide-react'; // Removed unused Calendar, Tag, ListTodo, Pause, XCircle, EyeOff, Clock, MessageSquare
 import { cn } from '@/lib/utils';
-import { Task, TaskSection, TaskCategory, TaskStatus, RecurringType, TaskPriority } from '@/types/task';
+import { Task, TaskStatus, TaskPriority } from '@/types/task'; // Removed unused TaskSection, TaskCategory, RecurringType
 import { format, isToday, isTomorrow, isPast, parseISO } from 'date-fns';
 import { getCategoryColorProps } from '@/utils/categoryColors';
 import TaskItem from './TaskItem';
 import { TaskOverviewDialogProps } from '@/types/props';
+import { Badge } from '@/components/ui/badge'; // Import Badge
 
 export const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
   isOpen,
@@ -24,22 +25,20 @@ export const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
   allTasks,
   onAddTask,
   onReorderTasks,
-  createSection,
-  updateSection,
-  deleteSection,
-  updateSectionIncludeInFocusMode,
-  createCategory,
-  updateCategory,
-  deleteCategory,
+  createSection, // Kept as it's passed to TaskItem for subtasks
+  updateSection, // Kept as it's passed to TaskItem for subtasks
+  deleteSection, // Kept as it's passed to TaskItem for subtasks
+  updateSectionIncludeInFocusMode, // Kept as it's passed to TaskItem for subtasks
+  createCategory, // Kept as it's passed to TaskItem for subtasks
+  updateCategory, // Kept as it's passed to TaskItem for subtasks
+  deleteCategory, // Kept as it's passed to TaskItem for subtasks
 }) => {
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
-  const [isAddSubtaskOpen, setIsAddSubtaskOpen] = useState(false);
   const [newSubtaskDescription, setNewSubtaskDescription] = useState('');
 
   useEffect(() => {
     if (!isOpen) {
       setIsConfirmDeleteOpen(false);
-      setIsAddSubtaskOpen(false);
       setNewSubtaskDescription('');
     }
   }, [isOpen]);
@@ -66,7 +65,6 @@ export const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
       due_date: task.due_date,
     });
     setNewSubtaskDescription('');
-    setIsAddSubtaskOpen(false);
   };
 
   const getDueDateText = (dueDate: string | null) => {
@@ -173,7 +171,7 @@ export const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
             <div>
               <h3 className="font-semibold">Link:</h3>
               <a href={task.link} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
-                {task.link}
+                <Link className="h-4 w-4 mr-1" /> {task.link}
               </a>
             </div>
           )}

@@ -1,25 +1,27 @@
-import React, { useState, useMemo } from 'react'; // Removed useEffect
+import React, { useState, useMemo } from 'react';
 import { useTasks } from '@/hooks/useTasks';
-import { Task, TaskSection, DailyTaskCount, TaskStatus, TaskPriority } from '@/types/task'; // Removed TaskCategory
-import TaskList from '@/components/TaskList'; // Corrected import
-import DailyTasksHeader from '@/components/DailyTasksHeader'; // Corrected import
+import { useAuth } from '@/context/AuthContext';
+import { Task, TaskSection, DailyTaskCount, TaskStatus, TaskPriority } from '@/types/task';
+import TaskList from '@/components/TaskList';
+import DailyTasksHeader from '@/components/DailyTasksHeader';
 import { TaskOverviewDialog } from '@/components/TaskOverviewDialog';
-import { TaskDetailDialog } from '@/components/TaskDetailDialog'; // Corrected import
+import { TaskDetailDialog } from '@/components/TaskDetailDialog';
 import FullScreenFocusView from '@/components/FullScreenFocusView';
-import AddTaskForm from '@/components/AddTaskForm'; // Corrected import
+import AddTaskForm from '@/components/AddTaskForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-import ManageSectionsDialog from '@/components/ManageSectionsDialog'; // Corrected import
-import ManageCategoriesDialog from '@/components/ManageCategoriesDialog'; // Corrected import
+import ManageSectionsDialog from '@/components/ManageSectionsDialog';
+import ManageCategoriesDialog from '@/components/ManageCategoriesDialog';
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
+import { MyHubProps } from '@/types/props'; // Import MyHubProps
 
-const MyHub: React.FC = () => {
+const MyHub: React.FC<MyHubProps> = ({ isDemo: propIsDemo, demoUserId }) => {
   const { user } = useAuth();
-  const userId = user?.id;
-  const isDemo = user?.id === 'd889323b-350c-4764-9788-6359f85f6142';
+  const userId = user?.id || demoUserId;
+  const isDemo = propIsDemo || user?.id === 'd889323b-350c-4764-9788-6359f85f6142';
 
-  const [currentDate] = useState(new Date()); // Removed setCurrentDate as it's not used to change the date
+  const [currentDate] = useState(new Date());
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
   const [prefilledTaskData, setPrefilledTaskData] = useState<Partial<Task> | null>(null);
   const [isOverviewOpen, setIsOverviewOpen] = useState(false);
@@ -195,7 +197,7 @@ const MyHub: React.FC = () => {
             onTaskAdded={() => setIsAddTaskDialogOpen(false)}
             sections={sections}
             allCategories={allCategories}
-            // currentDate={currentDate} // Removed as it's not directly used in the form logic
+            currentDate={currentDate}
             createSection={createSection}
             updateSection={updateSection}
             deleteSection={deleteSection}

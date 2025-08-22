@@ -18,20 +18,21 @@ import {
   TaskPriority,
 } from '@/types/task';
 import { format } from 'date-fns';
-import { DatePicker } from '@/components/ui/date-picker'; // Corrected import
-import { SelectDialog } from '@/components/SelectDialog'; // Corrected import
+import DatePicker from '@/components/ui/date-picker'; // Corrected import
+import SelectDialog from '@/components/SelectDialog'; // Corrected import
 import { AddTaskFormProps } from '@/types/props'; // Import props interface
+import { DialogFooter } from '@/components/ui/dialog'; // Import DialogFooter
 
 const AddTaskForm: React.FC<AddTaskFormProps> = ({
   onAddTask,
   onTaskAdded,
   sections,
   allCategories,
-  // currentDate, // Removed as it's not directly used in the form logic
+  currentDate, // Re-added as it's used for AI suggestions
   createSection,
   updateSection,
   deleteSection,
-  // updateSectionIncludeInFocusMode, // Removed as it's not directly used in the form logic
+  updateSectionIncludeInFocusMode, // Re-added as it's passed to SelectDialog
   initialData,
 }) => {
   const [description, setDescription] = useState(initialData?.description || '');
@@ -135,20 +136,9 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({
           }))}
           selectedItem={selectedCategory ? { id: selectedCategory.id, name: selectedCategory.name, color: selectedCategory.color } : null}
           onSelectItem={(item: { id: string; name: string; color?: string } | null) => setSelectedCategory(allCategories.find(cat => cat.id === item?.id) || null)}
-          createItem={(name: string, color: string) => {
-            // This needs to be handled by the parent component or a hook
-            // For now, it's a placeholder
-            console.log('Create category:', name, color);
-            return Promise.resolve(null);
-          }}
-          updateItem={(id: string, name: string, color: string) => {
-            console.log('Update category:', id, name, color);
-            return Promise.resolve(null);
-          }}
-          deleteItem={(id: string) => {
-            console.log('Delete category:', id);
-            return Promise.resolve();
-          }}
+          createItem={createCategory}
+          updateItem={updateCategory}
+          deleteItem={deleteCategory}
           placeholder="Select category"
           className="col-span-3"
         />

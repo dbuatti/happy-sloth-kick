@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
-import { Plus, Settings } from 'lucide-react'; // Removed unused Filter
-import { Task, TaskSection, TaskCategory, DailyTaskCount, TaskPriority } from '@/types/task'; // Added TaskPriority, removed unused cn
+import { Plus, Settings } from 'lucide-react';
+import { Task, TaskSection, TaskCategory } from '@/types/task'; // Removed unused DailyTaskCount, TaskPriority
 import { showError, showLoading, dismissToast, showSuccess } from '@/utils/toast';
 import { useSound } from '@/context/SoundContext';
 import { suggestTaskDetails } from '@/integrations/supabase/api';
@@ -25,8 +25,8 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   updateCategory,
   deleteCategory,
   onAddTask,
-  // setPrefilledTaskData, // Removed as it's not directly used here
-  // isDemo, // Removed as it's not directly used here
+  setPrefilledTaskData, // Re-added as it's used in the parent component
+  isDemo, // Re-added as it's used in the parent component
 }) => {
   const [quickAddTaskDescription, setQuickAddTaskDescription] = useState('');
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);

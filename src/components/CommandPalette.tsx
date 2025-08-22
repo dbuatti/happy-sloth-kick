@@ -1,255 +1,161 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, Command } from "@/components/ui/command";
-import { useTasks } from '@/hooks/useTasks';
-import { useAuth } from '@/context/AuthContext';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+  CommandShortcut,
+} from '@/components/ui/command';
+import { Button } from '@/components/ui/button';
+import { Plus, Search, LayoutDashboard, Calendar, ListTodo, Archive, Settings, HelpCircle, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Settings, BarChart3, Home, FolderOpen, ChevronLeft, ChevronRight, LogOut, LayoutGrid, CalendarClock, CalendarDays, Target, Archive as ArchiveIcon } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { showError, showSuccess } from "@/utils/toast";
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useAuth } from '@/context/AuthContext';
+import { useTasks } from '@/hooks/useTasks';
+import AddTaskForm from './AddTaskForm'; // Corrected import
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import AddTaskForm from './AddTaskForm';
-import { useSound } from '@/context/SoundContext';
+import { useIsMobile } from '@/hooks/useIsMobile';
+import { Task } from '@/types/task'; // Corrected import
 
-interface CommandPaletteProps {
-  isCommandPaletteOpen: boolean;
-  setIsCommandPaletteOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  currentDate: Date;
-  setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
-}
-
-const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, setIsCommandPaletteOpen, currentDate, setCurrentDate }) => {
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const { handleAddTask, sections, allCategories, createSection, updateSection, deleteSection, updateSectionIncludeInFocusMode } = useTasks({ currentDate }); // Removed setCurrentDate from props
-  const isMobile = useIsMobile();
-  const { playSound } = useSound();
-
+const CommandPalette: React.FC = () => {
+  const [open, setOpen] = useState(false);
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+  const userId = user?.id;
+  const isDemo = user?.id === 'd889323b-350c-4764-9788-6359f85f6142';
+
+  const {
+    sections,
+    allCategories,
+    handleAddTask,
+    createSection,
+    updateSection,
+    deleteSection,
+    updateSectionIncludeInFocusMode,
+    currentDate,
+  } = useTasks({ userId: userId, currentDate: new Date() });
+
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
-      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        setIsCommandPaletteOpen((prevOpen) => !prevOpen);
+        setOpen((open) => !open);
       }
     };
-    document.addEventListener("keydown", down);
-    return () => document.removeEventListener("keydown", down);
-  }, [setIsCommandPaletteOpen]);
+    document.addEventListener('keydown', down);
+    return () => document.removeEventListener('keydown', down);
+  }, []);
 
-  const handleSelect = useCallback((callback: () => void) => {
-    setIsCommandPaletteOpen(false);
-    playSound('success');
-    callback();
-  }, [playSound, setIsCommandPaletteOpen]);
+  const handleNavigation = useCallback((path: string) => {
+    setOpen(false);
+    navigate(path);
+  }, [navigate]);
 
-  const handleSignOut = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      showSuccess('Signed out successfully!');
-      navigate('/');
-    } catch (error: any) {
-      showError(error.message);
-    }
-  };
-
-  const handleNewTaskSubmit = async (taskData: any) => {
-    const success = await handleAddTask(taskData);
-    if (success) {
+  const handleNewTaskSubmit = async (taskData: Partial<Task>) => {
+    const newTask = await handleAddTask(taskData);
+    if (newTask) {
       setIsAddTaskDialogOpen(false);
-      playSound('success');
+      setOpen(false);
     }
-    return success;
+    return newTask;
   };
+
+  const renderAddTaskForm = () => (
+    <AddTaskForm
+      onAddTask={handleNewTaskSubmit}
+      onTaskAdded={() => setIsAddTaskDialogOpen(false)}
+      sections={sections}
+      allCategories={allCategories}
+      // currentDate={currentDate} // Removed as it's not directly used in the form logic
+      createSection={createSection}
+      updateSection={updateSection}
+      deleteSection={deleteSection}
+      updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+    />
+  );
 
   return (
     <>
-      {isMobile ? (
-        <Sheet open={isCommandPaletteOpen} onOpenChange={setIsCommandPaletteOpen}>
-          <SheetContent className="h-full">
-            <SheetHeader>
-              <SheetTitle>Command Palette</SheetTitle>
-            </SheetHeader>
-            <Command>
-              <CommandInput placeholder="Type a command or search..." />
-              <CommandList>
-                <CommandEmpty>No results found.</CommandEmpty>
+      <Button
+        variant="outline"
+        className="flex items-center justify-between w-full md:w-48 lg:w-64 text-sm text-muted-foreground px-3 py-2 rounded-md shadow-sm"
+        onClick={() => setOpen(true)}
+      >
+        <Search className="h-4 w-4 mr-2" />
+        Search...
+        <kbd className="pointer-events-none absolute right-1.5 top-1.5 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
+          <span className="text-xs">⌘</span>K
+        </kbd>
+      </Button>
 
-                <CommandGroup heading="Actions">
-                  <CommandItem onSelect={() => handleSelect(() => setIsAddTaskDialogOpen(true))}>
-                    <Plus className="mr-2 h-3.5 w-3.5" />
-                    <span>Add New Task</span>
-                  </CommandItem>
-                  <CommandItem onSelect={() => handleSelect(() => navigate('/'))}>
-                    <Home className="mr-2 h-3.5 w-3.5" />
-                    <span>Go to Daily Tasks</span>
-                  </CommandItem>
-                  <CommandItem onSelect={() => handleSelect(() => setCurrentDate(new Date()))}>
-                    <CalendarDays className="mr-2 h-3.5 w-3.5" />
-                    <span>Go to Today</span>
-                  </CommandItem>
-                  <CommandItem onSelect={() => handleSelect(() => navigate('/focus'))}>
-                    <Target className="mr-2 h-3.5 w-3.5" />
-                    <span>Go to Focus Mode</span>
-                  </CommandItem>
-                  <CommandItem onSelect={() => handleSelect(() => navigate('/projects'))}>
-                    <LayoutGrid className="mr-2 h-3.5 w-3.5" />
-                    <span>Go to Project Balance</span>
-                  </CommandItem>
-                  <CommandItem onSelect={() => handleSelect(() => navigate('/schedule'))}>
-                    <CalendarClock className="mr-2 h-3.5 w-3.5" />
-                    <span>Go to Time Blocks</span>
-                  </CommandItem>
-                  <CommandItem onSelect={() => handleSelect(() => navigate('/analytics'))}>
-                    <BarChart3 className="mr-2 h-3.5 w-3.5" />
-                    <span>Go to Analytics</span>
-                  </CommandItem>
-                  <CommandItem onSelect={() => handleSelect(() => navigate('/archive'))}>
-                    <ArchiveIcon className="mr-2 h-3.5 w-3.5" />
-                    <span>Go to Archive</span>
-                  </CommandItem>
-                  <CommandItem onSelect={() => handleSelect(() => navigate('/settings'))}>
-                    <Settings className="mr-2 h-3.5 w-3.5" />
-                    <span>Go to Settings</span>
-                  </CommandItem>
-                  <CommandItem onSelect={() => handleSelect(() => setCurrentDate(prev => new Date(prev.setDate(prev.getDate() - 1))))}>
-                    <ChevronLeft className="mr-2 h-3.5 w-3.5" />
-                    <span>Previous Day</span>
-                  </CommandItem>
-                  <CommandItem onSelect={() => handleSelect(() => setCurrentDate(prev => new Date(prev.setDate(prev.getDate() + 1))))}>
-                    <ChevronRight className="mr-2 h-3.5 w-3.5" />
-                    <span>Next Day</span>
-                  </CommandItem>
-                </CommandGroup>
-
-                {user && (
-                  <CommandGroup heading="Account">
-                    <CommandItem onSelect={() => handleSelect(handleSignOut)}>
-                      <LogOut className="mr-2 h-3.5 w-3.5" />
-                      <span>Sign Out</span>
-                    </CommandItem>
-                  </CommandGroup>
-                )}
-
-                {sections.length > 0 && (
-                  <CommandGroup heading="Sections">
-                    {sections.map(section => (
-                      <CommandItem key={section.id} onSelect={() => handleSelect(() => {
-                        navigate('/');
-                      })}>
-                        <FolderOpen className="mr-2 h-3.5 w-3.5" />
-                        <span>Go to {section.name}</span>
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                )}
-              </CommandList>
-            </Command>
-          </SheetContent>
-        </Sheet>
-      ) : (
-        <CommandDialog open={isCommandPaletteOpen} onOpenChange={setIsCommandPaletteOpen}>
-          <CommandInput placeholder="Type a command or search..." />
-          <CommandList>
-            <CommandEmpty>No results found.</CommandEmpty>
-
-            <CommandGroup heading="Actions">
-              <CommandItem onSelect={() => handleSelect(() => setIsAddTaskDialogOpen(true))}>
-                <Plus className="mr-2 h-3.5 w-3.5" />
-                <span>Add New Task</span>
-              </CommandItem>
-              <CommandItem onSelect={() => handleSelect(() => navigate('/'))}>
-                <Home className="mr-2 h-3.5 w-3.5" />
-                <span>Go to Daily Tasks</span>
-              </CommandItem>
-              <CommandItem onSelect={() => handleSelect(() => setCurrentDate(new Date()))}>
-                <CalendarDays className="mr-2 h-3.5 w-3.5" />
-                <span>Go to Today</span>
-              </CommandItem>
-              <CommandItem onSelect={() => handleSelect(() => navigate('/focus'))}>
-                <Target className="mr-2 h-3.5 w-3.5" />
-                <span>Go to Focus Mode</span>
-              </CommandItem>
-              <CommandItem onSelect={() => handleSelect(() => navigate('/projects'))}>
-                <LayoutGrid className="mr-2 h-3.5 w-3.5" />
-                <span>Go to Project Balance</span>
-              </CommandItem>
-              <CommandItem onSelect={() => handleSelect(() => navigate('/schedule'))}>
-                <CalendarClock className="mr-2 h-3.5 w-3.5" />
-                <span>Go to Time Blocks</span>
-              </CommandItem>
-              <CommandItem onSelect={() => handleSelect(() => navigate('/analytics'))}>
-                <BarChart3 className="mr-2 h-3.5 w-3.5" />
-                <span>Go to Analytics</span>
-              </CommandItem>
-              <CommandItem onSelect={() => handleSelect(() => navigate('/archive'))}>
-                <ArchiveIcon className="mr-2 h-3.5 w-3.5" />
-                <span>Go to Archive</span>
-              </CommandItem>
-              <CommandItem onSelect={() => handleSelect(() => navigate('/settings'))}>
-                <Settings className="mr-2 h-3.5 w-3.5" />
-                <span>Go to Settings</span>
-              </CommandItem>
-              <CommandItem onSelect={() => handleSelect(() => setCurrentDate(prev => new Date(prev.setDate(prev.getDate() - 1))))}>
-                <ChevronLeft className="mr-2 h-3.5 w-3.5" />
-                <span>Previous Day</span>
-              </CommandItem>
-              <CommandItem onSelect={() => handleSelect(() => setCurrentDate(prev => new Date(prev.setDate(prev.getDate() + 1))))}>
-                <ChevronRight className="mr-2 h-3.5 w-3.5" />
-                <span>Next Day</span>
-              </CommandItem>
-            </CommandGroup>
-
+      <CommandDialog open={open} onOpenChange={setOpen}>
+        <CommandInput placeholder="Type a command or search..." />
+        <CommandList>
+          <CommandEmpty>No results found.</CommandEmpty>
+          <CommandGroup heading="Suggestions">
+            <CommandItem onSelect={() => setIsAddTaskDialogOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              <span>Add New Task</span>
+            </CommandItem>
+            <CommandItem onSelect={() => handleNavigation(isDemo ? '/demo/dashboard' : '/dashboard')}>
+              <LayoutDashboard className="mr-2 h-4 w-4" />
+              <span>Dashboard</span>
+            </CommandItem>
+            <CommandItem onSelect={() => handleNavigation(isDemo ? '/demo/my-hub' : '/my-hub')}>
+              <ListTodo className="mr-2 h-4 w-4" />
+              <span>My Hub</span>
+            </CommandItem>
+            <CommandItem onSelect={() => handleNavigation(isDemo ? '/demo/calendar' : '/calendar')}>
+              <Calendar className="mr-2 h-4 w-4" />
+              <span>Calendar</span>
+            </CommandItem>
+            <CommandItem onSelect={() => handleNavigation(isDemo ? '/demo/archive' : '/archive')}>
+              <Archive className="mr-2 h-4 w-4" />
+              <span>Archive</span>
+            </CommandItem>
+          </CommandGroup>
+          <CommandSeparator />
+          <CommandGroup heading="Settings">
+            <CommandItem onSelect={() => handleNavigation('/settings')}>
+              <Settings className="mr-2 h-4 w-4" />
+              <span>Settings</span>
+            </CommandItem>
+            <CommandItem onSelect={() => handleNavigation('/help')}>
+              <HelpCircle className="mr-2 h-4 w-4" />
+              <span>Help</span>
+            </CommandItem>
             {user && (
-              <CommandGroup heading="Account">
-                <CommandItem onSelect={() => handleSelect(handleSignOut)}>
-                  <LogOut className="mr-2 h-3.5 w-3.5" />
-                  <span>Sign Out</span>
-                </CommandItem>
-              </CommandGroup>
+              <CommandItem onSelect={() => signOut()}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log Out</span>
+              </CommandItem>
             )}
-
-            {sections.length > 0 && (
-                  <CommandGroup heading="Sections">
-                    {sections.map(section => (
-                      <CommandItem key={section.id} onSelect={() => handleSelect(() => {
-                        navigate('/');
-                      })}>
-                        <FolderOpen className="mr-2 h-3.5 w-3.5" />
-                        <span>Go to {section.name}</span>
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                )}
-          </CommandList>
-        </CommandDialog>
-      )}
+          </CommandGroup>
+        </CommandList>
+      </CommandDialog>
 
       {isMobile ? (
         <Sheet open={isAddTaskDialogOpen} onOpenChange={setIsAddTaskDialogOpen}>
-          <SheetContent className="h-full sm:max-w-md">
+          <SheetContent side="bottom" className="h-3/4">
             <SheetHeader>
               <SheetTitle>Add New Task</SheetTitle>
-              <DialogDescription className="sr-only">
-                Fill in the details to add a new task from the command palette.
-              </DialogDescription>
             </SheetHeader>
-            <AddTaskForm onAddTask={handleNewTaskSubmit} onTaskAdded={() => setIsAddTaskDialogOpen(false)} sections={sections} allCategories={allCategories} currentDate={currentDate} createSection={createSection} updateSection={updateSection} deleteSection={deleteSection} updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode} />
+            {renderAddTaskForm()}
           </SheetContent>
         </Sheet>
       ) : (
         <Dialog open={isAddTaskDialogOpen} onOpenChange={setIsAddTaskDialogOpen}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
               <DialogTitle>Add New Task</DialogTitle>
-              <DialogDescription className="sr-only">
-                Fill in the details to add a new task from the command palette.
-              </DialogDescription>
             </DialogHeader>
-            <AddTaskForm onAddTask={handleNewTaskSubmit} onTaskAdded={() => setIsAddTaskDialogOpen(false)} sections={sections} allCategories={allCategories} currentDate={currentDate} createSection={createSection} updateSection={updateSection} deleteSection={deleteSection} updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode} />
+            {renderAddTaskForm()}
           </DialogContent>
         </Dialog>
       )}

@@ -1,195 +1,188 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'; // Import Card components
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, UploadCloud, X, Users } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
-import PersonAvatar from './PersonAvatar';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Plus, Edit, Trash2, User } from 'lucide-react';
+import { usePeopleMemory } from '@/hooks/usePeopleMemory';
+import { useAuth } from '@/context/AuthContext';
+import { PeopleMemory } from '@/types/task';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { cn } from '@/lib/utils';
-import { showError } from '@/utils/toast';
-import { usePeopleMemory, Person } from '@/hooks/usePeopleMemory';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { showError, showSuccess } from '@/utils/toast';
+import { PeopleMemoryCardProps } from '@/types/props';
 
 const PeopleMemoryCard: React.FC = () => {
-  const { people, loading, addPerson, updatePerson, deletePerson } = usePeopleMemory();
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingPerson, setEditingPerson] = useState<Person | null>(null);
+  const { user } = useAuth();
+  const userId = user?.id;
+
+  const {
+    people,
+    isLoading,
+    error,
+    addPerson,
+    updatePerson,
+    deletePerson,
+  } = usePeopleMemory(userId);
+
+  const [isPersonDialogOpen, setIsPersonDialogOpen] = useState(false);
+  const [editingPerson, setEditingPerson] = useState<PeopleMemory | null>(null);
+
   const [name, setName] = useState('');
   const [notes, setNotes] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
-  const [personToDelete, setPersonToDelete] = useState<string | null>(null);
-
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [currentImageFile, setCurrentImageFile] = useState<File | null>(null); // New state for the actual File object
-  const [isDragging, setIsDragging] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState('');
 
   useEffect(() => {
-    if (isFormOpen) {
-      setName(editingPerson?.name || '');
-      setNotes(editingPerson?.notes || '');
-      setCurrentImageFile(null); // Clear file input on open
-      setImagePreview(editingPerson?.avatar_url || null);
-    }
-  }, [isFormOpen, editingPerson]);
-
-  const handleOpenForm = (person: Person | null) => {
-    setEditingPerson(person);
-    setIsFormOpen(true);
-  };
-
-  const handleCloseForm = () => {
-    setIsFormOpen(false);
-    setEditingPerson(null);
-  };
-
-  const handleSave = async () => {
-    if (!name.trim()) return;
-    setIsSaving(true);
     if (editingPerson) {
-      await updatePerson({ id: editingPerson.id, updates: { name, notes, avatar_url: currentImageFile ? undefined : imagePreview }, avatarFile: currentImageFile });
+      setName(editingPerson.name);
+      setNotes(editingPerson.notes || '');
+      setAvatarUrl(editingPerson.avatar_url || '');
     } else {
-      await addPerson({ personData: { name, notes }, avatarFile: currentImageFile });
+      resetForm();
     }
-    setIsSaving(false);
-    handleCloseForm();
+  }, [editingPerson]);
+
+  const resetForm = () => {
+    setName('');
+    setNotes('');
+    setAvatarUrl('');
   };
 
-  const handleDeleteClick = (id: string) => {
-    setPersonToDelete(id);
+  const handleOpenDialog = (person: PeopleMemory | null) => {
+    setEditingPerson(person);
+    setIsPersonDialogOpen(true);
   };
 
-  const confirmDelete = async () => {
-    if (personToDelete) {
-      await deletePerson(personToDelete);
-      setPersonToDelete(null);
+  const handleSavePerson = async () => {
+    if (!name.trim()) {
+      showError('Name is required.');
+      return;
+    }
+
+    const personData: Partial<PeopleMemory> = {
+      name: name.trim(),
+      notes: notes,
+      avatar_url: avatarUrl,
+      user_id: userId!,
+    };
+
+    try {
+      if (editingPerson) {
+        await updatePerson(editingPerson.id, personData);
+        showSuccess('Person updated successfully!');
+      } else {
+        await addPerson(name.trim(), notes, avatarUrl);
+        showSuccess('Person added successfully!');
+      }
+      setIsPersonDialogOpen(false);
+    } catch (error) {
+      showError('Failed to save person.');
+      console.error('Error saving person:', error);
     }
   };
 
-  const handleFile = (file: File | null) => {
-    if (file && file.type.startsWith('image/')) {
-      setCurrentImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
-    } else if (file) {
-      showError('Please upload a valid image file.');
-    }
+  const handleDeletePerson = async (personId: string) => {
+    await deletePerson(personId);
+    showSuccess('Person deleted successfully!');
   };
 
-  const handleRemoveImage = () => {
-    setCurrentImageFile(null);
-    setImagePreview(null);
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFile(e.dataTransfer.files[0]);
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => e.preventDefault();
-  const handleDragEnter = () => setIsDragging(true);
-  const handleDragLeave = () => setIsDragging(false);
-
-  return (
-    <>
-      <Card className="h-full shadow-lg rounded-xl"> {/* Changed from fieldset to Card */}
-        <CardHeader className="pb-2"> {/* Adjusted padding */}
-          <CardTitle className="text-xl font-bold flex items-center justify-center gap-2"> {/* Adjusted font size and alignment */}
-            <Users className="h-5 w-5 text-primary" /> People Memory
-          </CardTitle>
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">People Memory</CardTitle>
         </CardHeader>
-        <CardContent className="flex-grow flex items-center justify-center pt-0"> {/* Adjusted padding */}
-          {loading ? (
-            <div className="flex flex-wrap items-center gap-4">
-              {[...Array(3)].map((_, i) => (
-                <Skeleton key={i} className="h-20 w-20 rounded-full" />
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-wrap items-center justify-center gap-4">
-              {people.map(person => (
-                <PersonAvatar
-                  key={person.id}
-                  person={person}
-                  onEdit={handleOpenForm}
-                  onDelete={handleDeleteClick}
-                  onUpdateAvatar={async (id, file) => { await updatePerson({ id, updates: {}, avatarFile: file }); }}
-                />
-              ))}
-              <Button variant="outline" className="h-20 w-20 rounded-full flex-shrink-0" onClick={() => handleOpenForm(null)}>
-                <Plus className="h-10 w-10" />
-              </Button>
-            </div>
-          )}
+        <CardContent className="space-y-2">
+          <div className="h-8 bg-gray-200 rounded w-full animate-pulse"></div>
+          <div className="h-8 bg-gray-200 rounded w-3/4 animate-pulse"></div>
         </CardContent>
       </Card>
+    );
+  }
 
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent>
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">People Memory</CardTitle>
+        </CardHeader>
+        <CardContent className="text-red-500">Error loading people memory.</CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-lg">People Memory</CardTitle>
+        <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(null)}>
+          <Plus className="h-4 w-4" />
+        </Button>
+      </CardHeader>
+      <CardContent className="space-y-2 max-h-48 overflow-y-auto">
+        {people.length === 0 ? (
+          <p className="text-gray-500 text-sm">No people added yet. Add someone to remember!</p>
+        ) : (
+          people.map((person) => (
+            <div key={person.id} className="flex items-center justify-between p-2 border rounded-md text-sm">
+              <div className="flex items-center flex-grow min-w-0">
+                <Avatar className="h-8 w-8 mr-2">
+                  <AvatarImage src={person.avatar_url || undefined} alt={person.name} />
+                  <AvatarFallback>
+                    <User className="h-4 w-4" />
+                  </AvatarFallback>
+                </Avatar>
+                <span className="font-medium truncate">{person.name}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(person)}>
+                  <Edit className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={() => handleDeletePerson(person.id)}>
+                  <Trash2 className="h-4 w-4 text-red-500" />
+                </Button>
+              </div>
+            </div>
+          ))
+        )}
+      </CardContent>
+
+      <Dialog open={isPersonDialogOpen} onOpenChange={setIsPersonDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>{editingPerson ? 'Edit Person' : 'Add Person'}</DialogTitle>
+            <DialogTitle>{editingPerson ? 'Edit Person' : 'Add New Person'}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div
-              className={cn(
-                "relative border-2 border-dashed rounded-lg p-4 text-center transition-colors h-32 flex items-center justify-center",
-                isDragging ? "border-primary bg-primary/10" : "border-border"
-              )}
-              onDrop={handleDrop} onDragOver={handleDragOver} onDragEnter={handleDragEnter} onDragLeave={handleDragLeave}
-            >
-              {imagePreview ? (
-                <>
-                  <img src={imagePreview} alt="Avatar preview" className="rounded-full h-24 w-24 object-cover" />
-                  <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={handleRemoveImage}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </>
-              ) : (
-                <div className="flex flex-col items-center justify-center space-y-2 text-muted-foreground">
-                  <UploadCloud className="h-8 w-8" />
-                  <p className="text-sm">Drag & drop an image here, or <label htmlFor="avatar-upload" className="text-primary underline cursor-pointer">click to upload</label>.</p>
-                  <Input id="avatar-upload" type="file" accept="image/*" className="sr-only" onChange={(e) => handleFile(e.target.files?.[0] || null)} />
-                </div>
-              )}
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">Name</Label>
+              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="col-span-3" required />
             </div>
-            <div>
-              <Label>Name</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Jane Doe" />
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="notes" className="text-right">Notes</Label>
+              <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} className="col-span-3" />
             </div>
-            <div>
-              <Label>Notes (Optional)</Label>
-              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g., Met at the conference, follow up about project X." />
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="avatar-url" className="text-right">Avatar URL</Label>
+              <Input id="avatar-url" value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} className="col-span-3" placeholder="Optional image URL" />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={handleCloseForm}>Cancel</Button>
-            <Button onClick={handleSave} disabled={isSaving || !name.trim()}>
-              {isSaving ? 'Saving...' : 'Save'}
+            {editingPerson && (
+              <Button variant="destructive" onClick={() => handleDeletePerson(editingPerson.id)}>
+                Delete
+              </Button>
+            )}
+            <Button variant="secondary" onClick={() => setIsPersonDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSavePerson}>
+              {editingPerson ? 'Save Changes' : 'Add Person'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <AlertDialog open={!!personToDelete} onOpenChange={() => setPersonToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently remove this person from your list.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+    </Card>
   );
 };
 

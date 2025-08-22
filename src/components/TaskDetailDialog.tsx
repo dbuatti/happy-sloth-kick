@@ -5,10 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Plus } from 'lucide-react';
-import { Task, TaskSection, TaskCategory, RecurringType, TaskPriority } from '@/types/task'; // Removed unused TaskStatus
+import { Task, TaskSection, TaskCategory, RecurringType, TaskPriority } from '@/types/task';
 import { format, parseISO } from 'date-fns';
-import { DatePicker } from '@/components/ui/date-picker'; // Corrected import
-import { SelectDialog } from '@/components/SelectDialog'; // Corrected import
+import DatePicker from '@/components/ui/date-picker'; // Corrected import
+import SelectDialog from '@/components/SelectDialog'; // Corrected import
 import { getCategoryColorProps } from '@/utils/categoryColors';
 import { TaskDetailDialogProps } from '@/types/props';
 
@@ -21,8 +21,8 @@ export const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   categories,
   onUpdate,
   onDelete,
-  onAddTask, // Kept as it's used for subtasks
-  onReorderTasks, // Kept as it might be used for subtasks
+  onAddTask,
+  onReorderTasks,
   createSection,
   updateSection,
   deleteSection,

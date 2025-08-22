@@ -1,10 +1,31 @@
-// ... existing imports ...
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
+import { Loader2 } from 'lucide-react';
 
-// Remove the incorrect Task import since we can't find the module
+const IndexPage: React.FC = () => {
+  const { user, isLoading } = useAuth();
+  const navigate = useNavigate();
 
-// ... existing code ...
+  useEffect(() => {
+    if (!isLoading) {
+      if (user) {
+        navigate('/dashboard');
+      } else {
+        navigate('/login');
+      }
+    }
+  }, [user, isLoading, navigate]);
 
-// Remove handleUpdateTask and handleToggleDoToday functions since they're not being used
-// These functions were causing TypeScript errors and are not referenced anywhere in the component
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+      </div>
+    );
+  }
 
-// ... rest of the component code ...
+  return null; // Or a simple loading spinner if preferred
+};
+
+export default IndexPage;
