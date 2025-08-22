@@ -1,124 +1,53 @@
-import { useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext';
-import { showError, showSuccess } from '@/utils/toast';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, UseMutateAsyncFunction } from "@tanstack/react-query";
+import { useSupabaseClient, useUser } from "@supabase/auth-helpers-react";
+import { UserSettings } from "@/types";
+import { toast } from "sonner";
 
-
-export interface UserSettings {
-  user_id: string;
-  project_tracker_title: string;
-  focused_task_id: string | null;
-  future_tasks_days_visible: number;
-  meditation_notes: string | null;
-  dashboard_layout: any | null; // jsonb can be any
-  visible_pages?: Record<string, boolean>;
-  schedule_show_focus_tasks_only: boolean;
-  dashboard_panel_sizes: number[] | null; // New: Stores the sizes of resizable panels
-}
-
-const defaultSettings: Omit<UserSettings, 'user_id'> = {
-  project_tracker_title: 'Project Balance Tracker',
-  focused_task_id: null,
-  future_tasks_days_visible: 7,
-  meditation_notes: null,
-  dashboard_layout: null,
-  visible_pages: {},
-  schedule_show_focus_tasks_only: true,
-  dashboard_panel_sizes: [66, 34], // Default sizes for the two main dashboard panels
-};
-
-export const useUserSettings = (props?: { userId?: string }) => {
-  const { user } = useAuth();
-  const userId = props?.userId || user?.id;
-  const isDemo = !!props?.userId;
+export const useUserSettings = () => {
+  const supabase = useSupabaseClient();
+  const user = useUser();
   const queryClient = useQueryClient();
 
-  const { data: settings = null, isLoading: loading, error } = useQuery<UserSettings | null, Error>({
-    queryKey: ['userSettings', userId],
+  const { data: settings, isLoading: loading } = useQuery<UserSettings | null, Error>({
+    queryKey: ["userSettings", user?.id],
     queryFn: async () => {
-      if (!userId) return null;
+      if (!user) return null;
       const { data, error } = await supabase
-        .from('user_settings')
-        .select('*')
-        .eq('user_id', userId)
+        .from("user_settings")
+        .select("*")
+        .eq("user_id", user.id)
         .single();
 
-      if (error && error.code !== 'PGRST116') { // PGRST116: no rows found
+      if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found, which is fine for initial settings
         throw error;
       }
-
-      if (data) {
-        return {
-          user_id: userId,
-          ...defaultSettings,
-          ...data,
-          dashboard_layout: { ...defaultSettings.dashboard_layout, ...(data.dashboard_layout || {}) },
-          dashboard_panel_sizes: data.dashboard_panel_sizes || defaultSettings.dashboard_panel_sizes,
-        };
-      } else {
-        // If in demo mode, don't try to insert. Just use defaults.
-        if (isDemo) {
-          return {
-            user_id: userId,
-            ...defaultSettings
-          };
-        }
-        // No settings found, create default ones for a real user
-        const { data: newData, error: insertError } = await supabase
-          .from('user_settings')
-          .insert({ user_id: userId, ...defaultSettings })
-          .select()
-          .single();
-        if (insertError) {
-          if (insertError.code === '23505') { // unique_violation, handle race condition
-            const { data: refetchedSettings, error: refetchError } = await supabase
-              .from('user_settings')
-              .select('*')
-              .eq('user_id', userId)
-              .single();
-            if (refetchError) throw refetchError;
-            return { ...defaultSettings, ...refetchedSettings, user_id: userId };
-          } else {
-            throw insertError;
-          }
-        } else {
-          return newData;
-        }
-      }
+      return data;
     },
-    enabled: !!userId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    enabled: !!user,
   });
 
-  useEffect(() => {
-    if (error) {
-      console.error('Error fetching user settings:', error);
-      showError('Failed to load user settings.');
-    }
-  }, [error]);
+  const updateSettings = useMutation({
+    mutationFn: async (newSettings: Partial<Omit<UserSettings, "user_id">>) => {
+      if (!user) throw new Error("User not authenticated.");
 
-  const updateSettingsMutation = useMutation<boolean, Error, Partial<Omit<UserSettings, 'user_id'>>>({
-    mutationFn: async (updates) => {
-      if (!userId) throw new Error('User not authenticated.');
-      const { error } = await supabase
-        .from('user_settings')
-        .update(updates)
-        .eq('user_id', userId);
+      const { data, error } = await supabase
+        .from("user_settings")
+        .upsert({ ...newSettings, user_id: user.id }, { onConflict: "user_id" })
+        .select()
+        .single();
 
       if (error) throw error;
-      return true;
+      return data;
     },
     onSuccess: () => {
-      showSuccess('Settings updated!');
-      queryClient.invalidateQueries({ queryKey: ['userSettings', userId] });
-      queryClient.invalidateQueries({ queryKey: ['dashboardData', userId] }); // Invalidate dashboard data if layout changes
+      queryClient.invalidateQueries({ queryKey: ["userSettings", user?.id] });
+      toast.success("Settings updated successfully!");
     },
-    onError: (err) => {
-      console.error('Error updating settings:', err);
-      showError('Failed to update settings.');
+    onError: (error) => {
+      toast.error("Failed to update settings.");
+      console.error("Error updating settings:", error);
     },
   });
 
-  return { settings, loading, updateSettings: updateSettingsMutation.mutateAsync };
+  return { settings, loading, updateSettings: updateSettings.mutateAsync };
 };
