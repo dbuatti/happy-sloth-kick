@@ -348,7 +348,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
               className="h-8 w-8 p-0"
               aria-label="More options"
               disabled={isOverlay || isDemo}
-              onClick={(e: React.MouseEvent) => e.stopPropagation()} // Added stopPropagation here
+              // Removed onClick={(e: React.MouseEvent) => e.stopPropagation()}
             >
               <span className="sr-only">Open menu</span>
               <MoreHorizontal className="h-4 w-4" />
