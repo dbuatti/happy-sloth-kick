@@ -81,12 +81,12 @@ const TaskSection: React.FC<TaskSectionProps> = ({
           >
             {getTopLevelTasks().map((task, index) => (
               <React.Fragment key={task.id}>
-                <Draggable draggableId={task.id} index={index}>
+                <Draggable draggableId={task.id} index={index} disableInteractiveElementBlocking={true}>
                   {(provided: DraggableProvided) => (
                     <TaskCard
                       task={task}
                       provided={provided}
-                      isDragging={snapshot.isDraggingOver} // Pass isDragging from snapshot
+                      isDragging={snapshot.isDraggingOver}
                       onTaskUpdate={onTaskUpdate}
                       onTaskDelete={onTaskDelete}
                       onAddTask={onAddTask}
@@ -105,7 +105,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({
                 {expandedTasks.has(task.id) && (
                   <div className="ml-6">
                     {getSubtasks(task.id).map((subtask, subtaskIndex) => (
-                      <Draggable draggableId={subtask.id} index={index + subtaskIndex + 1} key={subtask.id}>
+                      <Draggable draggableId={subtask.id} index={index + subtaskIndex + 1} key={subtask.id} disableInteractiveElementBlocking={true}>
                         {(provided: DraggableProvided) => (
                           <TaskCard
                             task={subtask}
