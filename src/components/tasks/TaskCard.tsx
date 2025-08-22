@@ -419,7 +419,8 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 variant="ghost"
                 size="sm"
                 className="h-8 w-8 p-0 touch-action-manipulation"
-                // Removed onClick and onTouchStart handlers to rely on disableInteractiveElementBlocking
+                onClick={(e) => { e.stopPropagation(); e.preventDefault(); }} // Re-added
+                onTouchStart={(e) => { e.stopPropagation(); e.preventDefault(); }} // Re-added
               >
                 <MoreVertical className="h-4 w-4" />
               </Button>
