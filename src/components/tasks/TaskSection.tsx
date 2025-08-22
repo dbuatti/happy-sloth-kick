@@ -1,134 +1,42 @@
-import React, { useState } from "react";
-import { Droppable, Draggable, DraggableProvided, DroppableProvided, DroppableStateSnapshot } from "@hello-pangea/dnd";
-import { Task, TaskSection as TaskSectionType } from "@/types";
-import TaskCard from "./TaskCard";
-import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import React from 'react';
+import { Droppable, Draggable, DraggableProvided } from '@hello-pangea/dnd'; // Import DraggableProvided
+import { TaskCard } from './TaskCard';
+import { Task } from '@/types';
+import { cn } from '@/lib/utils'; // Assuming cn is available for class merging
 
 interface TaskSectionProps {
-  section: TaskSectionType;
+  title: string;
   tasks: Task[];
-  onAddTask: (sectionId: string) => void;
-  onTaskUpdate: (updatedTask: Task) => void;
-  onTaskDelete: (taskId: string) => void;
-  onMoveTaskToSection: (taskId: string, sectionId: string | null) => void;
-  onMoveTaskToToday: (task: Task) => void;
-  onMoveTaskToTomorrow: (task: Task) => void;
-  onMoveTaskToThisWeek: (task: Task) => void;
-  onMoveTaskToFuture: (task: Task) => void;
-  allSections: TaskSectionType[];
+  droppableId: string;
+  onEdit: (task: Task) => void;
+  onDelete: (taskId: string) => void;
 }
 
-const TaskSection: React.FC<TaskSectionProps> = ({
-  section,
-  tasks,
-  onAddTask,
-  onTaskUpdate,
-  onTaskDelete,
-  onMoveTaskToSection,
-  onMoveTaskToToday,
-  onMoveTaskToTomorrow,
-  onMoveTaskToThisWeek,
-  onMoveTaskToFuture,
-  allSections,
-}) => {
-  const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
-
-  const handleToggleSubtasks = (taskId: string) => {
-    setExpandedTasks((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(taskId)) {
-        newSet.delete(taskId);
-      } else {
-        newSet.add(taskId);
-      }
-      return newSet;
-    });
-  };
-
-  const getSubtasks = (parentId: string) => {
-    return tasks.filter((task) => task.parent_task_id === parentId);
-  };
-
-  const getTopLevelTasks = () => {
-    return tasks.filter((task) => !task.parent_task_id);
-  };
-
+export const TaskSection: React.FC<TaskSectionProps> = ({ title, tasks, droppableId, onEdit, onDelete }) => {
   return (
-    <div className="bg-gray-50 p-4 rounded-lg shadow-sm mb-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-gray-800">{section.name}</h2>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onAddTask(section.id)}
-          className="text-blue-600 hover:text-blue-800"
-        >
-          <Plus className="mr-1 h-4 w-4" /> Add Task
-        </Button>
-      </div>
-
-      <Droppable droppableId={section.id}>
-        {(provided: DroppableProvided, snapshot: DroppableStateSnapshot) => (
+    <div className="bg-gray-100 p-4 rounded mb-4">
+      <h2 className="text-lg font-bold mb-2">{title}</h2>
+      <Droppable droppableId={droppableId}>
+        {(provided) => (
           <div
-            {...provided.droppableProps}
             ref={provided.innerRef}
-            // Removed onTouchStart and onTouchMove from here
+            {...provided.droppableProps}
             className={cn(
-              "min-h-[50px] rounded-md transition-colors touch-action-none",
-              snapshot.isDraggingOver ? "bg-blue-50" : "bg-transparent"
+              "min-h-[100px] touch-action-none", // Added touch-action-none
             )}
           >
-            {getTopLevelTasks().map((task, index) => (
-              <React.Fragment key={task.id}>
-                <Draggable draggableId={task.id} index={index} disableInteractiveElementBlocking={true}>
-                  {(provided: DraggableProvided) => (
-                    <TaskCard
-                      task={task}
-                      provided={provided}
-                      isDragging={snapshot.isDraggingOver}
-                      onTaskUpdate={onTaskUpdate}
-                      onTaskDelete={onTaskDelete}
-                      onAddTask={onAddTask}
-                      subtasks={getSubtasks(task.id)}
-                      onToggleSubtasks={handleToggleSubtasks}
-                      showSubtasks={expandedTasks.has(task.id)}
-                      onMoveTaskToSection={onMoveTaskToSection}
-                      onMoveTaskToToday={onMoveTaskToToday}
-                      onMoveTaskToTomorrow={onMoveTaskToTomorrow}
-                      onMoveTaskToThisWeek={onMoveTaskToThisWeek}
-                      onMoveTaskToFuture={onMoveTaskToFuture}
-                      allSections={allSections}
-                    />
-                  )}
-                </Draggable>
-                {expandedTasks.has(task.id) && (
-                  <div className="ml-6">
-                    {getSubtasks(task.id).map((subtask, subtaskIndex) => (
-                      <Draggable draggableId={subtask.id} index={index + subtaskIndex + 1} key={subtask.id} disableInteractiveElementBlocking={true}>
-                        {(provided: DraggableProvided) => (
-                          <TaskCard
-                            task={subtask}
-                            provided={provided}
-                            isDragging={snapshot.isDraggingOver}
-                            onTaskUpdate={onTaskUpdate}
-                            onTaskDelete={onTaskDelete}
-                            onAddTask={onAddTask}
-                            isSubtask={true}
-                            onMoveTaskToSection={onMoveTaskToSection}
-                            onMoveTaskToToday={onMoveTaskToToday}
-                            onMoveTaskToTomorrow={onMoveTaskToTomorrow}
-                            onMoveTaskToThisWeek={onMoveTaskToThisWeek}
-                            onMoveTaskToFuture={onMoveTaskToFuture}
-                            allSections={allSections}
-                          />
-                        )}
-                      </Draggable>
-                    ))}
-                  </div>
+            {tasks.map((task, index) => (
+              <Draggable draggableId={task.id} index={index} key={task.id} disableInteractiveElementBlocking={true}> {/* Added disableInteractiveElementBlocking */}
+                {(draggableProvided: DraggableProvided) => ( {/* Specify type for draggableProvided */}
+                  <TaskCard
+                    task={task}
+                    index={index}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                    provided={draggableProvided} // Pass draggableProvided to TaskCard
+                  />
                 )}
-              </React.Fragment>
+              </Draggable>
             ))}
             {provided.placeholder}
           </div>
@@ -137,5 +45,3 @@ const TaskSection: React.FC<TaskSectionProps> = ({
     </div>
   );
 };
-
-export default TaskSection;
