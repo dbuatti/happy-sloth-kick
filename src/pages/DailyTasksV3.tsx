@@ -10,14 +10,15 @@ import FullScreenFocusView from '@/components/FullScreenFocusView';
 import AddTaskForm from '@/components/AddTaskForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Archive } from 'lucide-react';
 import ManageSectionsDialog from '@/components/ManageSectionsDialog';
 import ManageCategoriesDialog from '@/components/ManageCategoriesDialog';
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
 import TaskFilter from '@/components/TaskFilter';
-import { DailyTasksV3Props } from '@/types/props';
+import { DailyTasksV3PageProps } from '@/types/props';
+import { Input } from '@/components/ui/input';
 
-const DailyTasksV3Page: React.FC<DailyTasksV3Props> = ({ isDemo: propIsDemo, demoUserId }) => {
+const DailyTasksV3Page: React.FC<DailyTasksV3PageProps> = ({ isDemo: propIsDemo, demoUserId }) => {
   const { user } = useAuth();
   const userId = user?.id || demoUserId;
   const isDemo = propIsDemo || user?.id === 'd889323b-350c-4764-9788-6359f85f6142';
@@ -66,7 +67,7 @@ const DailyTasksV3Page: React.FC<DailyTasksV3Props> = ({ isDemo: propIsDemo, dem
     setSectionFilter,
     searchFilter,
     setSearchFilter,
-  } = useTasks({ userId: userId, currentDate: currentDate, viewMode: 'today' }); // Changed viewMode to 'today' for daily tasks
+  } = useTasks({ userId: userId, currentDate: currentDate, viewMode: 'today' });
 
   const dailyProgress: DailyTaskCount = useDailyTaskCount(currentDate, userId);
 
@@ -141,9 +142,14 @@ const DailyTasksV3Page: React.FC<DailyTasksV3Props> = ({ isDemo: propIsDemo, dem
           onChange={(e) => setSearchFilter(e.target.value)}
           className="max-w-sm"
         />
-        <Button onClick={() => setIsAddTaskDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" /> Add Task
-        </Button>
+        <div className="flex space-x-2">
+          <Button onClick={() => setIsAddTaskDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" /> Add Task
+          </Button>
+          <Button variant="outline" onClick={archiveAllCompletedTasks}>
+            <Archive className="mr-2 h-4 w-4" /> Archive Completed
+          </Button>
+        </div>
       </div>
 
       <TaskFilter
@@ -225,6 +231,9 @@ const DailyTasksV3Page: React.FC<DailyTasksV3Props> = ({ isDemo: propIsDemo, dem
             updateSection={updateSection}
             deleteSection={deleteSection}
             updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+            createCategory={createCategory}
+            updateCategory={updateCategory}
+            deleteCategory={deleteCategory}
             initialData={prefilledTaskData}
           />
         </DialogContent>

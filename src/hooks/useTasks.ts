@@ -106,7 +106,7 @@ export const useTasks = ({ userId, currentDate, viewMode }: UseTasksProps) => {
 
     // Sort by priority (urgent > high > medium > low > null), then due date (earliest first), then order
     return focusTasks.sort((a, b) => {
-      const priorityOrder: Record<TaskPriority | 'null', number> = {
+      const priorityOrder: Record<NonNullable<TaskPriority> | 'null', number> = { // Fixed type here
         'urgent': 0, 'high': 1, 'medium': 2, 'low': 3, 'null': 4
       };
       if (priorityOrder[a.priority || 'null'] !== priorityOrder[b.priority || 'null']) {

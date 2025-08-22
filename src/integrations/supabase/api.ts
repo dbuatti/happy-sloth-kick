@@ -1,5 +1,5 @@
 import { supabase } from './client';
-import { Task, TaskSection, TaskCategory, DoTodayOffLog, Appointment, Project, UserSettings, WorkHour, QuickLink, WeeklyFocus, GratitudeJournalEntry, WorryJournalEntry, SleepRecord, PeopleMemory, CustomDashboardCard, TaskPriority } from '@/types/task';
+import { Task, TaskSection, TaskCategory, DoTodayOffLog, Appointment, Project, UserSettings, WorkHour, QuickLink, WeeklyFocus, GratitudeJournalEntry, WorryJournalEntry, SleepRecord, PeopleMemory, CustomDashboardCard, TaskPriority, DailyTaskCount } from '@/types/task';
 import { format } from 'date-fns';
 
 // --- Tasks ---

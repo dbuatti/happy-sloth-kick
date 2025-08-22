@@ -24,15 +24,15 @@ import {
   TaskCategory,
   RecurringType,
   TaskPriority,
-  TaskStatus,
+  TaskStatus, // Keep TaskStatus as it's used in onStatusChange
 } from '@/types/task';
 import { format, isToday, isTomorrow, isPast, parseISO } from 'date-fns';
 import { getCategoryColorProps } from '@/utils/categoryColors';
 import { useAuth } from '@/context/AuthContext';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { Input } from '@/components/ui/input';
-import {
+import { Input } from '@/components/ui/input'; // Keep Input as it's used
+import { // Keep Select imports as they are used
   Select,
   SelectContent,
   SelectItem,
@@ -166,16 +166,16 @@ const TaskItem: React.FC<TaskItemProps> = ({
     }
   };
 
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useDraggable({
+  const { attributes, listeners, setNodeRef, transform, isDragging: isDnDDragging } = useDraggable({ // Removed 'transition'
     id: task.id,
     data: { type: 'Task', task },
   });
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
-    zIndex: isDragging ? 100 : 'auto',
-    opacity: isDragging ? 0.5 : 1,
+    // Removed 'transition' as it's not directly from useDraggable
+    zIndex: isDnDDragging ? 100 : 'auto',
+    opacity: isDnDDragging ? 0.5 : 1,
   };
 
   return (
@@ -185,7 +185,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
         style={style}
         className={cn(
           'relative flex items-start p-2 rounded-md transition-all duration-200 ease-in-out group',
-          isDragging ? 'ring-2 ring-blue-500' : '',
+          isDnDDragging ? 'ring-2 ring-blue-500' : '',
           level > 0 ? `ml-${level * 4}` : '' // Indent subtasks
         )}
       >

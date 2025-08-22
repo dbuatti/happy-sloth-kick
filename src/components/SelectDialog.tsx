@@ -16,11 +16,12 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Plus, Edit, Trash2, X } from 'lucide-react';
+import { Plus, Edit, Trash2 } from 'lucide-react'; // Removed unused X
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { TwitterPicker } from 'react-color';
 import { getCategoryColorProps, categoryColors } from '@/utils/categoryColors';
 
+// Define a more flexible SelectDialogItem that can represent both TaskCategory and TaskSection
 interface SelectDialogItem {
   id: string;
   name: string;

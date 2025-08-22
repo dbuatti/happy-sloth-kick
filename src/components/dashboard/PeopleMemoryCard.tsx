@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { showError, showSuccess } from '@/utils/toast';
-import { PeopleMemoryCardProps } from '@/types/props';
+// Removed unused import: import { PeopleMemoryCardProps } from '@/types/props';
 
 const PeopleMemoryCard: React.FC = () => {
   const { user } = useAuth();

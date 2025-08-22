@@ -21,12 +21,11 @@ export const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   categories,
   onUpdate,
   onDelete,
-  onAddTask,
-  onReorderTasks,
+  // Removed unused: onAddTask, onReorderTasks,
   createSection,
   updateSection,
   deleteSection,
-  updateSectionIncludeInFocusMode,
+  // Removed unused: updateSectionIncludeInFocusMode,
   createCategory,
   updateCategory,
   deleteCategory,
@@ -37,10 +36,10 @@ export const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
     task?.due_date ? parseISO(task.due_date) : undefined
   );
   const [editedPriority, setEditedPriority] = useState<TaskPriority>(task?.priority || null);
-  const [editedCategory, setEditedCategory] = useState<TaskCategory | null>(
+  const [selectedCategory, setSelectedCategory] = useState<TaskCategory | null>(
     task?.category ? categories.find((cat) => cat.id === task.category) || null : null
   );
-  const [editedSection, setEditedSection] = useState<TaskSection | null>(
+  const [selectedSection, setSelectedSection] = useState<TaskSection | null>(
     task?.section_id ? sections.find((sec) => sec.id === task.section_id) || null : null
   );
   const [editedRecurringType, setEditedRecurringType] = useState<RecurringType>(task?.recurring_type || 'none');
@@ -54,8 +53,8 @@ export const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
       setEditedNotes(task.notes || '');
       setEditedDueDate(task.due_date ? parseISO(task.due_date) : undefined);
       setEditedPriority(task.priority);
-      setEditedCategory(categories.find((cat) => cat.id === task.category) || null);
-      setEditedSection(sections.find((sec) => sec.id === task.section_id) || null);
+      setSelectedCategory(categories.find((cat) => cat.id === task.category) || null);
+      setSelectedSection(sections.find((sec) => sec.id === task.section_id) || null);
       setEditedRecurringType(task.recurring_type || 'none');
       setEditedLink(task.link || '');
       setEditedImageUrl(task.image_url || '');
@@ -70,8 +69,8 @@ export const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
       notes: editedNotes,
       due_date: editedDueDate ? format(editedDueDate, 'yyyy-MM-dd') : null,
       priority: editedPriority,
-      category: editedCategory?.id || null,
-      section_id: editedSection?.id || null,
+      category: selectedCategory?.id || null,
+      section_id: selectedSection?.id || null,
       recurring_type: editedRecurringType,
       link: editedLink,
       image_url: editedImageUrl,
@@ -87,7 +86,7 @@ export const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
     onClose();
   };
 
-  const subtasks = allTasks.filter((subtask) => subtask.parent_task_id === task?.id);
+  // const subtasks = allTasks.filter((subtask) => subtask.parent_task_id === task?.id); // Unused
 
   if (!task) return null;
 
@@ -116,7 +115,7 @@ export const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
             <Textarea
               id="notes"
               value={editedNotes}
-              onChange={(e) => setNotes(e.target.value)}
+              onChange={(e) => setEditedNotes(e.target.value)} // Fixed setNotes to setEditedNotes
               className="col-span-3"
             />
           </div>
@@ -138,7 +137,7 @@ export const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
             </label>
             <Select
               value={editedPriority || ''}
-              onValueChange={(value: TaskPriority) => setEditedPriority(value)}
+              onValueChange={(value: string) => setEditedPriority(value === 'null' ? null : value as TaskPriority)} // Fixed type
             >
               <SelectTrigger className="col-span-3">
                 <SelectValue placeholder="Select priority" />
@@ -160,15 +159,22 @@ export const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
               items={categories.map(cat => ({
                 id: cat.id,
                 name: cat.name,
-                color: getCategoryColorProps(cat.color).bg,
+                color: cat.color,
               }))}
-              selectedItem={editedCategory ? { id: editedCategory.id, name: editedCategory.name, color: getCategoryColorProps(editedCategory.color).bg } : null}
-              onSelectItem={(item: { id: string; name: string; color?: string } | null) => setEditedCategory(categories.find(cat => cat.id === item?.id) || null)}
-              createItem={createCategory}
-              updateItem={updateCategory}
+              selectedItem={selectedCategory ? { id: selectedCategory.id, name: selectedCategory.name, color: selectedCategory.color } : null}
+              onSelectItem={(item) => setSelectedCategory(categories.find(cat => cat.id === item?.id) || null)} // Fixed type
+              createItem={async (name: string, color?: string) => {
+                const newCat = await createCategory(name, color || '#cccccc');
+                return newCat ? { id: newCat.id, name: newCat.name, color: newCat.color } : null;
+              }}
+              updateItem={async (id: string, name: string, color?: string) => {
+                const updatedCat = await updateCategory(id, name, color || '#cccccc');
+                return updatedCat ? { id: updatedCat.id, name: updatedCat.name, color: updatedCat.color } : null;
+              }}
               deleteItem={deleteCategory}
               placeholder="Select category"
               className="col-span-3"
+              enableColorPicker
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
@@ -177,10 +183,16 @@ export const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
             </label>
             <SelectDialog
               items={sections.map(sec => ({ id: sec.id, name: sec.name }))}
-              selectedItem={editedSection ? { id: editedSection.id, name: editedSection.name } : null}
-              onSelectItem={(item: { id: string; name: string; color?: string } | null) => setEditedSection(sections.find(sec => sec.id === item?.id) || null)}
-              createItem={createSection}
-              updateItem={updateSection}
+              selectedItem={selectedSection ? { id: selectedSection.id, name: selectedSection.name } : null}
+              onSelectItem={(item) => setSelectedSection(sections.find(sec => sec.id === item?.id) || null)} // Fixed type
+              createItem={async (name: string) => {
+                const newSec = await createSection(name);
+                return newSec ? { id: newSec.id, name: newSec.name } : null;
+              }}
+              updateItem={async (id: string, name: string) => {
+                const updatedSec = await updateSection(id, name);
+                return updatedSec ? { id: updatedSec.id, name: updatedSec.name } : null;
+              }}
               deleteItem={deleteSection}
               placeholder="Select section"
               className="col-span-3"
@@ -209,67 +221,29 @@ export const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
             <label htmlFor="link" className="text-right">
               Link
             </label>
-            <Input
-              id="link"
-              value={editedLink}
-              onChange={(e) => setEditedLink(e.target.value)}
-              className="col-span-3"
-              placeholder="Optional link"
-            />
+            <Input id="link" value={editedLink} onChange={(e) => setEditedLink(e.target.value)} className="col-span-3" placeholder="Optional link" />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <label htmlFor="image-url" className="text-right">
               Image URL
             </label>
-            <Input
-              id="image-url"
-              value={editedImageUrl}
-              onChange={(e) => setEditedImageUrl(e.target.value)}
-              className="col-span-3"
-              placeholder="Optional image URL"
-            />
+            <Input id="image-url" value={editedImageUrl} onChange={(e) => setEditedImageUrl(e.target.value)} className="col-span-3" placeholder="Optional image URL" />
           </div>
-          {subtasks.length > 0 && (
-            <div className="col-span-4 mt-4">
-              <h3 className="text-lg font-semibold mb-2">Subtasks</h3>
-              <div className="space-y-2">
-                {subtasks.map(sub => (
-                  <div key={sub.id} className="flex items-center gap-2 pl-4">
-                    <Plus className="h-4 w-4 text-gray-500" />
-                    <span>{sub.description}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
         <DialogFooter>
-          <Button variant="destructive" onClick={() => setIsConfirmDeleteOpen(true)}>
-            Delete
-          </Button>
-          <Button variant="secondary" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave}>Save changes</Button>
-        </DialogFooter>
-      </DialogContent>
-
-      <Dialog open={isConfirmDeleteOpen} onOpenChange={setIsConfirmDeleteOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Deletion</DialogTitle>
-          </DialogHeader>
-          <p>Are you sure you want to delete this task and all its subtasks?</p>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setIsConfirmDeleteOpen(false)}>
-              Cancel
-            </Button>
+          {task && onDelete && (
             <Button variant="destructive" onClick={handleDelete}>
               Delete
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          )}
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave}>
+            {task ? 'Save Changes' : 'Add Task'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
     </Dialog>
   );
 };

@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Play, Edit, Trash2, Plus, Link } from 'lucide-react'; // Removed unused Check, X, Image
+import { Play, Edit, Trash2, Plus, Link } from 'lucide-react'; // Removed unused Check, X, Image, Textarea
 import { cn } from '@/lib/utils';
 import { Task, TaskStatus, TaskPriority } from '@/types/task';
 import { format, isToday, isTomorrow, isPast, parseISO } from 'date-fns';
@@ -25,13 +24,7 @@ export const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
   allTasks,
   onAddTask,
   onReorderTasks,
-  createSection,
-  updateSection,
-  deleteSection,
-  updateSectionIncludeInFocusMode,
-  createCategory,
-  updateCategory,
-  deleteCategory,
+  // Removed unused: createSection, updateSection, deleteSection, updateSectionIncludeInFocusMode, createCategory, updateCategory, deleteCategory,
 }) => {
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
   const [newSubtaskDescription, setNewSubtaskDescription] = useState('');
@@ -43,7 +36,7 @@ export const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
     }
   }, [isOpen]);
 
-  const handleStatusChange = async (taskId: string, newStatus: TaskStatus): Promise<Task | null> => { // Corrected return type
+  const handleStatusChange = async (taskId: string, newStatus: TaskStatus): Promise<Task | null> => {
     const updatedTask = await updateTask(taskId, { status: newStatus });
     return updatedTask;
   };
@@ -198,7 +191,7 @@ export const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
                     onStatusChange={handleStatusChange}
                     onUpdate={updateTask}
                     onDelete={deleteTask}
-                    onOpenOverview={onOpenOverview}
+                    onOpenOverview={onOpenOverview} // This prop is correctly passed
                     onOpenDetail={onOpenDetail}
                     onAddTask={onAddTask}
                     onReorderTasks={onReorderTasks}

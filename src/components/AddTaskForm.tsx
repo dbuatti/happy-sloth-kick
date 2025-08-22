@@ -31,7 +31,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({
   createSection,
   updateSection,
   deleteSection,
-  updateSectionIncludeInFocusMode,
+  // Removed unused: updateSectionIncludeInFocusMode,
   createCategory,
   updateCategory,
   deleteCategory,
@@ -136,12 +136,19 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({
             color: cat.color,
           }))}
           selectedItem={selectedCategory ? { id: selectedCategory.id, name: selectedCategory.name, color: selectedCategory.color } : null}
-          onSelectItem={(item: { id: string; name: string; color?: string } | null) => setSelectedCategory(allCategories.find(cat => cat.id === item?.id) || null)}
-          createItem={createCategory}
-          updateItem={updateCategory}
+          onSelectItem={(item) => setSelectedCategory(allCategories.find(cat => cat.id === item?.id) || null)}
+          createItem={async (name: string, color?: string) => {
+            const newCat = await createCategory(name, color || '#cccccc'); // Provide default color if undefined
+            return newCat ? { id: newCat.id, name: newCat.name, color: newCat.color } : null;
+          }}
+          updateItem={async (id: string, name: string, color?: string) => {
+            const updatedCat = await updateCategory(id, name, color || '#cccccc'); // Provide default color if undefined
+            return updatedCat ? { id: updatedCat.id, name: updatedCat.name, color: updatedCat.color } : null;
+          }}
           deleteItem={deleteCategory}
           placeholder="Select category"
           className="col-span-3"
+          enableColorPicker
         />
       </div>
       <div className="grid grid-cols-4 items-center gap-4">
@@ -151,9 +158,15 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({
         <SelectDialog
           items={sections.map(sec => ({ id: sec.id, name: sec.name }))}
           selectedItem={selectedSection ? { id: selectedSection.id, name: selectedSection.name } : null}
-          onSelectItem={(item: { id: string; name: string; color?: string } | null) => setSelectedSection(sections.find(sec => sec.id === item?.id) || null)}
-          createItem={createSection}
-          updateItem={updateSection}
+          onSelectItem={(item) => setSelectedSection(sections.find(sec => sec.id === item?.id) || null)}
+          createItem={async (name: string) => {
+            const newSec = await createSection(name);
+            return newSec ? { id: newSec.id, name: newSec.name } : null;
+          }}
+          updateItem={async (id: string, name: string) => {
+            const updatedSec = await updateSection(id, name);
+            return updatedSec ? { id: updatedSec.id, name: updatedSec.name } : null;
+          }}
           deleteItem={deleteSection}
           placeholder="Select section"
           className="col-span-3"
