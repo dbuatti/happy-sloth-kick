@@ -1320,7 +1320,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
 
   const dailyProgress = useMemo(() => {
     if (viewMode !== 'daily') {
-      return { totalCount: 0, completedCount: 0, overdueCount: 0 };
+      return { totalPendingCount: 0, completedCount: 0, overdueCount: 0 };
     }
 
     console.log("Daily Progress Calculation for:", format(todayStart, 'yyyy-MM-dd'));
@@ -1396,15 +1396,17 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
       return isCompletedToday;
     }).length;
     console.log("Completed count (from focusTasks):", completedCount);
-    const totalCount = focusTasks.filter(t => t.status !== 'skipped').length;
     
+    const totalPendingCount = focusTasks.filter(t => t.status === 'to-do').length;
+    console.log("Pending count (from focusTasks):", totalPendingCount);
+
     const overdueCount = focusTasks.filter(t => {
-      if (!t.due_date || t.status === 'completed' || t.status === 'archived') return false;
+      if (!t.due_date || t.status !== 'to-do') return false; // Only count 'to-do' tasks as overdue
       const due = parseISO(t.due_date);
       return isValid(due) && isBefore(startOfDay(due), startOfDay(todayStart));
     }).length;
 
-    return { totalCount, completedCount, overdueCount };
+    return { totalPendingCount, completedCount, overdueCount };
   }, [processedTasks, viewMode, sections, doTodayOffIds, todayStart, effectiveCurrentDate]);
 
   return {

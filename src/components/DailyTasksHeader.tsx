@@ -49,7 +49,7 @@ interface DailyTasksHeaderProps {
   setIsAddTaskDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
   setPrefilledTaskData: React.Dispatch<React.SetStateAction<Partial<Task> | null>>;
   dailyProgress: {
-    totalCount: number;
+    totalPendingCount: number; // Updated from totalCount
     completedCount: number;
     overdueCount: number;
   };
@@ -82,6 +82,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   updateSection,
   deleteSection,
   updateSectionIncludeInFocusMode,
+  doTodayOffIds,
   archiveAllCompletedTasks,
   toggleAllDoToday,
   setIsAddTaskDialogOpen,
@@ -89,7 +90,6 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   dailyProgress,
   isDemo = false,
   toggleDoToday,
-  doTodayOffIds,
   onOpenFocusView,
 }) => {
   useDailyTaskCount(); 
@@ -101,7 +101,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
 
-  const { totalCount, completedCount, overdueCount } = dailyProgress;
+  const { totalPendingCount, completedCount, overdueCount } = dailyProgress; // Updated destructuring
 
   const handleQuickAdd = async () => {
     const description = quickAddTaskDescription.trim();
@@ -197,6 +197,8 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
     }
   };
 
+  const totalTasksForProgress = totalPendingCount + completedCount; // Calculate total for progress bar
+
   return (
     <div className="flex flex-col bg-gradient-to-br from-[hsl(var(--gradient-start-light))] to-[hsl(var(--gradient-end-light))] dark:from-[hsl(var(--gradient-start-dark))] dark:to-[hsl(var(--gradient-end-dark))] sticky top-0 z-10 shadow-sm">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 pt-4">
@@ -244,7 +246,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
           <span className="flex items-center gap-1">
             <ListTodo className="h-4 w-4 text-foreground" />
-            <span className="font-semibold text-foreground text-lg">{totalCount - completedCount} pending</span>
+            <span className="font-semibold text-foreground text-lg">{totalPendingCount} pending</span> {/* Updated to totalPendingCount */}
           </span>
           <span className="flex items-center gap-1">
             <CheckCircle2 className="h-4 w-4 text-primary" />
@@ -252,7 +254,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
           </span>
         </div>
         <Progress
-          value={totalCount > 0 ? (completedCount / totalCount) * 100 : 0}
+          value={totalTasksForProgress > 0 ? (completedCount / totalTasksForProgress) * 100 : 0} // Updated total for progress bar
           className="h-4 rounded-full"
           indicatorClassName="bg-gradient-to-r from-primary to-accent rounded-full"
         />
