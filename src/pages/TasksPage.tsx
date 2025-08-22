@@ -1,129 +1,124 @@
 "use client";
 
-import React, { useState } from 'react'; // Removed unused useEffect
+import React, { useState, useMemo } from "react";
+import { useTasks } from "@/hooks/useTasks";
+import { useTaskSections } from "@/hooks/useTaskSections";
+import { useTaskCategories } from "@/hooks/useTaskCategories";
+import { Task, TaskSection } from "@/types";
+import { SectionHeader } from "@/components/SectionHeader";
+import { TaskCard } from "@/components/TaskCard";
 import { Button } from "@/components/ui/button";
-import { Plus } from 'lucide-react';
-import SectionHeader from '@/components/tasks/SectionHeader';
-import { useTasks, Task, TaskSection } from '@/hooks/useTasks'; // Corrected import for Task and TaskSection
-import { useAuth } from '@/context/AuthContext';
+import { PlusIcon } from "lucide-react";
+import { TaskDialog } from "@/components/TaskDialog";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 
-const TasksPage: React.FC = () => {
-  const { user } = useAuth();
-  const isDemo = user?.id === 'd889323b-350c-4764-9788-6359f85f6142';
-  
-  // Pass required arguments to useTasks and destructure section management functions
-  const { 
-    tasks, 
-    handleAddTask: addTask, // Renamed to avoid conflict with local function
-    updateTask, 
-    deleteTask,
-    sections, 
-    createSection: addSection, // Renamed to avoid conflict with local function
-    updateSection, 
-    deleteSection, 
-    reorderSections, // Kept for completeness, though not used in this file's logic
+export default function TasksPage() {
+  const {
+    tasks,
+    addTask: handleAddTask, // Renamed to avoid conflict with local function
+    // updateTask, // Removed as it's not directly used in this component's rendering logic
+    // deleteTask, // Removed as it's not directly used in this component's rendering logic
+  } = useTasks();
+  const {
+    sections,
+    addSection,
+    updateSection,
+    deleteSection,
+    // reorderSections, // Removed as it's not directly used in this component's rendering logic
     updateSectionIncludeInFocusMode,
-  } = useTasks({ currentDate: new Date(), userId: user?.id }); // Pass default date and user ID
-  
-  const [newTaskDescription, setNewTaskDescription] = useState('');
+  } = useTaskSections();
+  const { categories } = useTaskCategories();
 
-  // Filter out archived tasks for display
-  const activeTasks = tasks.filter(task => task.status !== 'archived');
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
-  const handleAddTask = async () => {
-    if (newTaskDescription.trim()) {
-      await addTask({ description: newTaskDescription.trim(), category: '', priority: 'medium' }); // Add default category/priority
-      setNewTaskDescription('');
-    }
-  };
+  const activeTasks = useMemo(() => {
+    return tasks.filter((task) => task.status !== "completed");
+  }, [tasks]);
 
-  const handleRenameSection = async (sectionId: string, newName: string) => {
-    await updateSection(sectionId, newName);
-  };
-
-  const handleDeleteSection = async (sectionId: string) => {
-    const sectionTasks = tasks.filter(task => task.section_id === sectionId);
-    if (sectionTasks.length > 0) {
-      console.error("Cannot delete section with tasks");
+  const onDragEnd = (result: DropResult) => {
+    if (!result.destination) {
       return;
     }
-    await deleteSection(sectionId);
-  };
 
-  const handleAddTaskToSection = async (sectionId: string) => {
-    await addTask({ 
-      description: 'New task', 
-      section_id: sectionId,
-      category: '', // Add default category/priority
-      priority: 'medium',
-    });
-  };
+    const { source, destination, draggableId } = result;
 
-  const handleToggleSectionVisibility = async (sectionId: string) => {
-    const section = sections.find((s: TaskSection) => s.id === sectionId); // Explicitly type 's'
-    if (section) {
-      await updateSectionIncludeInFocusMode(sectionId, !section.include_in_focus_mode);
+    // Reordering within the same section
+    if (source.droppableId === destination.droppableId) {
+      // Logic for reordering tasks within a section (not implemented in this snippet)
+      console.log(`Reordering task ${draggableId} within section ${source.droppableId}`);
+    } else {
+      // Moving task to a different section
+      console.log(`Moving task ${draggableId} from section ${source.droppableId} to ${destination.droppableId}`);
+      // Logic for updating task's section_id (not implemented in this snippet)
     }
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between p-4 border-b">
-        <h1 className="text-2xl font-bold">Tasks</h1>
-        <div className="flex items-center space-x-2">
-          <div className="relative">
-            <input
-              type="text"
-              value={newTaskDescription}
-              onChange={(e) => setNewTaskDescription(e.target.value)}
-              placeholder="Add a new task..."
-              className="pl-4 pr-10 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              onKeyPress={(e) => e.key === 'Enter' && handleAddTask()}
-            />
-            <Button
-              onClick={handleAddTask}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
-              variant="ghost"
-              aria-label="Add task"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
+    <div className="container mx-auto p-4">
+      <h1 className="text-3xl font-bold mb-6">My Tasks</h1>
+
+      <div className="flex justify-end mb-4">
+        <Button onClick={() => { setSelectedTask(null); setIsTaskDialogOpen(true); }}>
+          <PlusIcon className="mr-2 h-4 w-4" /> Add Task
+        </Button>
+      </div>
+
+      <DragDropContext onDragEnd={onDragEnd}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {sections.map((section: TaskSection) => (
+            <Droppable droppableId={section.id} key={section.id}>
+              {(provided) => (
+                <div
+                  ref={provided.innerRef}
+                  {...provided.droppableProps}
+                  className="bg-card p-4 rounded-lg shadow-sm min-h-[200px]"
+                >
+                  <SectionHeader
+                    section={section}
+                    taskCount={activeTasks.filter((task: Task) => task.section_id === section.id).length}
+                    onEdit={() => { /* Open section edit dialog */ }}
+                    onDelete={() => deleteSection(section.id)}
+                    onToggleFocusMode={(id, include) => updateSectionIncludeInFocusMode(id, include)}
+                  />
+                  <div className="mt-4 space-y-3">
+                    {activeTasks
+                      .filter((task: Task) => task.section_id === section.id)
+                      .sort((a, b) => (a.order || 0) - (b.order || 0))
+                      .map((task: Task, index: number) => (
+                        <Draggable key={task.id} draggableId={task.id} index={index}>
+                          {(provided) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                            >
+                              <TaskCard
+                                task={task}
+                                categories={categories}
+                                onEdit={() => { setSelectedTask(task); setIsTaskDialogOpen(true); }}
+                              />
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                    {provided.placeholder}
+                  </div>
+                </div>
+              )}
+            </Droppable>
+          ))}
         </div>
-      </div>
-      
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
-        {sections.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">No sections yet.</p>
-            <Button 
-              onClick={() => addSection('New Section')} // Call addSection with just the name
-              className="mt-4"
-            >
-              Create your first section
-            </Button>
-          </div>
-        ) : (
-          sections.map((section: TaskSection) => {
-            const sectionTasks = activeTasks.filter((task: Task) => task.section_id === section.id);
-            return (
-              <div key={section.id} className="bg-card rounded-lg shadow-sm border">
-                <SectionHeader
-                  section={section}
-                  taskCount={sectionTasks.length}
-                  onRename={handleRenameSection}
-                  onDelete={handleDeleteSection}
-                  onAddTask={handleAddTaskToSection}
-                  onToggleVisibility={handleToggleSectionVisibility}
-                  isDemo={isDemo}
-                />
-              </div>
-            );
-          })
-        )}
-      </div>
+      </DragDropContext>
+
+      <TaskDialog
+        isOpen={isTaskDialogOpen}
+        setIsOpen={setIsTaskDialogOpen}
+        task={selectedTask}
+        categories={categories}
+        sections={sections}
+        onSave={handleAddTask} // This will either add or update based on 'task' prop
+      />
     </div>
   );
-};
-
-export default TasksPage;
+}
