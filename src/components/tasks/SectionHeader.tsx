@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Edit3, Trash2, Plus, Eye, EyeOff, MoreHorizontal } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 
-// Fix 1: Correct the import path for TaskSection
 interface TaskSection {
   id: string;
   name: string;
@@ -38,10 +37,12 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({
   const [editName, setEditName] = useState(section.name);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node) &&
+          buttonRef.current && !buttonRef.current.contains(event.target as Node)) {
         setIsMenuOpen(false);
       }
     };
@@ -97,7 +98,7 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({
     setIsMenuOpen(!isMenuOpen);
   };
 
-  // Fix 2: Update handleMenuItemSelect to accept functions that may have parameters
+  // Handle menu item selection
   const handleMenuItemSelect = (action: () => void) => {
     return (e: React.MouseEvent) => {
       e.stopPropagation();
@@ -146,8 +147,9 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({
         </Button>
         
         {/* Custom mobile-friendly dropdown implementation */}
-        <div className="relative" ref={menuRef}>
+        <div className="relative">
           <Button
+            ref={buttonRef}
             variant="ghost"
             className="h-8 w-8 p-0"
             aria-label="Section options"
@@ -165,6 +167,7 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({
           
           {isMenuOpen && (
             <div 
+              ref={menuRef}
               className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-popover border border-border z-50"
               onClick={(e) => e.stopPropagation()}
             >
