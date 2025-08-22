@@ -20,6 +20,10 @@ const SectionSelector: React.FC<SectionSelectorProps> = ({
   updateSection,
   deleteSection,
   updateSectionIncludeInFocusMode,
+  allCategories, // Added from TaskManagementProps
+  createCategory, // Added from TaskManagementProps
+  updateCategory, // Added from TaskManagementProps
+  deleteCategory, // Added from TaskManagementProps
 }) => {
   const [isManageSectionsOpen, setIsManageSectionsOpen] = React.useState(false);
 
@@ -50,6 +54,10 @@ const SectionSelector: React.FC<SectionSelectorProps> = ({
         updateSection={updateSection}
         deleteSection={deleteSection}
         updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+        allCategories={allCategories}
+        createCategory={createCategory}
+        updateCategory={updateCategory}
+        deleteCategory={deleteCategory}
       />
     </div>
   );

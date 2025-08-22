@@ -13,17 +13,16 @@ import {
   Edit,
   Plus,
   Link,
-  Pause,
-  X, // Imported X for the Skip button
-} from 'lucide-react'; // Removed unused Check, Trash2, Image
+  X,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Task, TaskStatus, TaskPriority } from '@/types/task'; // Keep Task, TaskStatus, TaskPriority
+import { Task, TaskStatus, TaskPriority, TaskSection, TaskCategory } from '@/types/task';
 import { format, isToday, isTomorrow, isPast, parseISO } from 'date-fns';
 import { getCategoryColorProps } from '@/utils/categoryColors';
 import TaskItem from './TaskItem';
 import { FullScreenFocusViewProps } from '@/types/props';
 import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea'; // Keep Textarea as it's used
+import { Textarea } from '@/components/ui/textarea';
 
 const FullScreenFocusView: React.FC<FullScreenFocusViewProps> = ({
   task,
@@ -31,19 +30,21 @@ const FullScreenFocusView: React.FC<FullScreenFocusViewProps> = ({
   onComplete,
   onSkip,
   onOpenDetail,
-  updateTask,
+  onUpdate, // Renamed from updateTask to onUpdate for consistency
   sections,
-  categories,
+  allCategories, // Renamed from categories to allCategories for consistency
   allTasks,
   onAddTask,
   onReorderTasks,
-  createSection, // Added missing prop
-  updateSection, // Added missing prop
-  deleteSection, // Added missing prop
-  updateSectionIncludeInFocusMode, // Added missing prop
-  createCategory, // Added missing prop
-  updateCategory, // Added missing prop
-  deleteCategory, // Added missing prop
+  createSection,
+  updateSection,
+  deleteSection,
+  updateSectionIncludeInFocusMode,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+  onDelete, // Added from TaskActionProps
+  onStatusChange, // Added from TaskActionProps
 }) => {
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
   const [newSubtaskDescription, setNewSubtaskDescription] = useState('');
@@ -55,12 +56,12 @@ const FullScreenFocusView: React.FC<FullScreenFocusViewProps> = ({
   }, [task, onClose]);
 
   const handleSubtaskStatusChange = async (subtaskId: string, newStatus: TaskStatus): Promise<Task | null> => {
-    const updatedTask = await updateTask(subtaskId, { status: newStatus });
+    const updatedTask = await onUpdate(subtaskId, { status: newStatus });
     return updatedTask;
   };
 
   const handleDeleteTask = async (taskId: string) => {
-    await updateTask(taskId, { status: 'archived' }); // Archive instead of delete directly
+    await onDelete(taskId); // Use onDelete from props
     setIsConfirmDeleteOpen(false);
     onClose();
   };
@@ -104,8 +105,8 @@ const FullScreenFocusView: React.FC<FullScreenFocusViewProps> = ({
 
   if (!task) return null;
 
-  const category = categories.find((cat) => cat.id === task.category);
-  const section = sections.find((sec) => sec.id === task.section_id);
+  const category = allCategories.find((cat: TaskCategory) => cat.id === task.category);
+  const section = sections.find((sec: TaskSection) => sec.id === task.section_id);
   const categoryColorProps = category ? getCategoryColorProps(category.color) : null;
 
   const subtasks = allTasks.filter((subtask) => subtask.parent_task_id === task.id);
@@ -230,7 +231,7 @@ const FullScreenFocusView: React.FC<FullScreenFocusViewProps> = ({
               <Plus className="h-4 w-4" />
             </Button>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 max-h-48 overflow-y-auto">
             {subtasks.length === 0 ? (
               <p className="text-gray-500">No subtasks yet. Add one above!</p>
             ) : (
@@ -240,10 +241,10 @@ const FullScreenFocusView: React.FC<FullScreenFocusViewProps> = ({
                   task={subtask}
                   allTasks={allTasks}
                   sections={sections}
-                  categories={categories}
+                  allCategories={allCategories}
                   onStatusChange={handleSubtaskStatusChange}
-                  onUpdate={updateTask}
-                  onDelete={handleDeleteTask}
+                  onUpdate={onUpdate}
+                  onDelete={onDelete}
                   onOpenOverview={() => {}} // Not applicable for subtasks in focus view
                   onOpenDetail={onOpenDetail}
                   onAddTask={onAddTask}

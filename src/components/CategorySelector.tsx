@@ -14,12 +14,17 @@ import { CategorySelectorProps } from '@/types/props';
 import { getCategoryColorProps } from '@/utils/categoryColors';
 
 const CategorySelector: React.FC<CategorySelectorProps> = ({
-  categories,
+  allCategories, // Renamed from categories to allCategories for consistency
   selectedCategory,
   onSelectCategory,
   createCategory,
   updateCategory,
   deleteCategory,
+  sections, // Added from TaskManagementProps
+  updateSection, // Added from TaskManagementProps
+  deleteSection, // Added from TaskManagementProps
+  updateSectionIncludeInFocusMode, // Added from TaskManagementProps
+  createSection, // Added from TaskManagementProps
 }) => {
   const [isManageCategoriesOpen, setIsManageCategoriesOpen] = React.useState(false);
 
@@ -31,7 +36,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Categories</SelectItem>
-          {categories.map((category) => (
+          {allCategories.map((category) => (
             <SelectItem key={category.id} value={category.id}>
               <div className="flex items-center">
                 <span
@@ -51,10 +56,15 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
       <ManageCategoriesDialog
         isOpen={isManageCategoriesOpen}
         onClose={() => setIsManageCategoriesOpen(false)}
-        categories={categories}
+        allCategories={allCategories}
         createCategory={createCategory}
         updateCategory={updateCategory}
         deleteCategory={deleteCategory}
+        sections={sections}
+        updateSection={updateSection}
+        deleteSection={deleteSection}
+        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+        createSection={createSection}
       />
     </div>
   );

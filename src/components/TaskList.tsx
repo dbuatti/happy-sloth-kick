@@ -1,10 +1,10 @@
 import React from 'react';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core'; // Removed Coordinates
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { restrictToVerticalAxis, restrictToParentElement } from '@dnd-kit/modifiers';
 import { arrayMove } from '@dnd-kit/sortable';
 import TaskItem from './TaskItem';
-import { TaskListProps, TaskItemProps } from '@/types/props';
+import { TaskListProps } from '@/types/props';
 import { Task, TaskStatus } from '@/types/task';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 
@@ -12,7 +12,7 @@ const TaskList: React.FC<TaskListProps> = ({
   tasks,
   processedTasks,
   sections,
-  categories,
+  allCategories, // Renamed from categories to allCategories for consistency
   onStatusChange,
   onUpdate,
   onDelete,
@@ -24,7 +24,22 @@ const TaskList: React.FC<TaskListProps> = ({
   toggleDoToday,
   doTodayOffIds,
   isDemo,
-  // Removed unused: nextAvailableTask, currentDate, archiveAllCompletedTasks, toggleAllDoToday, setIsAddTaskDialogOpen, setPrefilledTaskData, dailyProgress, onOpenFocusView, statusFilter, setStatusFilter, categoryFilter, setCategoryFilter, priorityFilter, setPriorityFilter, sectionFilter, setSectionFilter,
+  nextAvailableTask,
+  currentDate,
+  archiveAllCompletedTasks,
+  toggleAllDoToday,
+  setIsAddTaskDialogOpen,
+  setPrefilledTaskData,
+  dailyProgress,
+  onOpenFocusView,
+  statusFilter,
+  setStatusFilter,
+  categoryFilter,
+  setCategoryFilter,
+  priorityFilter,
+  setPriorityFilter,
+  sectionFilter,
+  setSectionFilter,
   createSection,
   updateSection,
   deleteSection,
@@ -81,7 +96,7 @@ const TaskList: React.FC<TaskListProps> = ({
                 task={task}
                 allTasks={tasks}
                 sections={sections}
-                categories={categories}
+                allCategories={allCategories}
                 onStatusChange={onStatusChange}
                 onUpdate={onUpdate}
                 onDelete={onDelete}

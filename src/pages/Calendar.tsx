@@ -3,7 +3,7 @@ import DailyScheduleView from '@/components/DailyScheduleView';
 import { TaskOverviewDialog } from '@/components/TaskOverviewDialog';
 import { TaskDetailDialog } from '@/components/TaskDetailDialog';
 import FullScreenFocusView from '@/components/FullScreenFocusView';
-import { Task } from '@/types/task';
+import { Task, TaskStatus } from '@/types/task';
 import { useTasks } from '@/hooks/useTasks';
 import { useAuth } from '@/context/AuthContext';
 import { useAppointments } from '@/hooks/useAppointments';
@@ -75,7 +75,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ isDemo: propIsDemo, demoUse
     setIsFocusViewOpen(true);
   };
 
-  const handleUpdateTaskStatus = async (taskId: string, newStatus: TaskStatus): Promise<Task | null> => {
+  const handleStatusChangeWrapper = async (taskId: string, newStatus: TaskStatus): Promise<Task | null> => {
     return updateTask(taskId, { status: newStatus });
   };
 
@@ -91,14 +91,24 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ isDemo: propIsDemo, demoUse
         appointments={appointments}
         tasks={tasks}
         sections={sections}
-        categories={allCategories}
+        allCategories={allCategories}
         addAppointment={addAppointment}
         updateAppointment={updateAppointment}
         deleteAppointment={deleteAppointment}
         onAddTask={handleAddTask}
-        onUpdateTask={updateTask}
+        onUpdate={updateTask}
         onOpenTaskDetail={handleOpenTaskDetail}
         isLoading={isLoading}
+        onDelete={deleteTask}
+        onReorderTasks={reorderTasks}
+        onStatusChange={handleStatusChangeWrapper}
+        createSection={createSection}
+        updateSection={updateSection}
+        deleteSection={deleteSection}
+        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+        createCategory={createCategory}
+        updateCategory={updateCategory}
+        deleteCategory={deleteCategory}
       />
 
       <TaskOverviewDialog
@@ -110,7 +120,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ isDemo: propIsDemo, demoUse
         updateTask={updateTask}
         deleteTask={deleteTask}
         sections={sections}
-        categories={allCategories}
+        allCategories={allCategories}
         allTasks={tasks}
         onAddTask={handleAddTask}
         onReorderTasks={reorderTasks}
@@ -121,6 +131,9 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ isDemo: propIsDemo, demoUse
         createCategory={createCategory}
         updateCategory={updateCategory}
         deleteCategory={deleteCategory}
+        onUpdate={updateTask}
+        onDelete={deleteTask}
+        onStatusChange={handleStatusChangeWrapper}
       />
 
       <TaskDetailDialog
@@ -130,7 +143,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ isDemo: propIsDemo, demoUse
         onUpdate={updateTask}
         onDelete={deleteTask}
         sections={sections}
-        categories={allCategories}
+        allCategories={allCategories}
         allTasks={tasks}
         createSection={createSection}
         updateSection={updateSection}
@@ -138,6 +151,9 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ isDemo: propIsDemo, demoUse
         createCategory={createCategory}
         updateCategory={updateCategory}
         deleteCategory={deleteCategory}
+        onAddTask={handleAddTask}
+        onReorderTasks={reorderTasks}
+        onStatusChange={handleStatusChangeWrapper}
       />
 
       {isFocusViewOpen && selectedTask && (
@@ -155,7 +171,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ isDemo: propIsDemo, demoUse
           onOpenDetail={handleOpenTaskDetail}
           updateTask={updateTask}
           sections={sections}
-          categories={allCategories}
+          allCategories={allCategories}
           allTasks={tasks}
           onAddTask={handleAddTask}
           onReorderTasks={reorderTasks}
@@ -166,6 +182,9 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ isDemo: propIsDemo, demoUse
           createCategory={createCategory}
           updateCategory={updateCategory}
           deleteCategory={deleteCategory}
+          onUpdate={updateTask}
+          onDelete={deleteTask}
+          onStatusChange={handleStatusChangeWrapper}
         />
       )}
     </div>

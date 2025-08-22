@@ -11,7 +11,6 @@ import AddTaskForm from '@/components/AddTaskForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-// Removed unused: ManageSectionsDialog, ManageCategoriesDialog
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
 import TaskFilter from '@/components/TaskFilter';
 import { TasksPageProps } from '@/types/props';
@@ -29,7 +28,6 @@ const TasksPage: React.FC<TasksPageProps> = ({ isDemo: propIsDemo, demoUserId })
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isFocusViewOpen, setIsFocusViewOpen] = useState(false);
-  // Removed unused: isManageSectionsOpen, setIsManageSectionsOpen, isManageCategoriesOpen, setIsManageCategoriesOpen
 
   const {
     tasks,
@@ -135,6 +133,10 @@ const TasksPage: React.FC<TasksPageProps> = ({ isDemo: propIsDemo, demoUserId })
         onAddTask={handleAddTask}
         setPrefilledTaskData={setPrefilledTaskData}
         isDemo={isDemo}
+        onUpdate={updateTask}
+        onDelete={deleteTask}
+        onReorderTasks={reorderTasks}
+        onStatusChange={handleStatusChangeWrapper}
       />
 
       <div className="flex justify-between items-center mb-4">
@@ -159,7 +161,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ isDemo: propIsDemo, demoUserId })
         sectionFilter={sectionFilter}
         setSectionFilter={setSectionFilter}
         sections={sections}
-        categories={allCategories}
+        allCategories={allCategories}
         createSection={createSection}
         updateSection={updateSection}
         deleteSection={deleteSection}
@@ -182,7 +184,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ isDemo: propIsDemo, demoUserId })
                 tasks={sectionTasks}
                 processedTasks={processedTasks}
                 sections={sections}
-                categories={allCategories}
+                allCategories={allCategories}
                 onStatusChange={handleStatusChangeWrapper}
                 onUpdate={updateTask}
                 onDelete={deleteTask}
@@ -200,6 +202,9 @@ const TasksPage: React.FC<TasksPageProps> = ({ isDemo: propIsDemo, demoUserId })
                 updateSection={updateSection}
                 deleteSection={deleteSection}
                 updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+                createCategory={createCategory}
+                updateCategory={updateCategory}
+                deleteCategory={deleteCategory}
                 archiveAllCompletedTasks={archiveAllCompletedTasks}
                 toggleAllDoToday={toggleAllDoToday}
                 setIsAddTaskDialogOpen={setIsAddTaskDialogOpen}
@@ -239,6 +244,10 @@ const TasksPage: React.FC<TasksPageProps> = ({ isDemo: propIsDemo, demoUserId })
             updateCategory={updateCategory}
             deleteCategory={deleteCategory}
             initialData={prefilledTaskData}
+            onUpdate={updateTask}
+            onDelete={deleteTask}
+            onReorderTasks={reorderTasks}
+            onStatusChange={handleStatusChangeWrapper}
           />
         </DialogContent>
       </Dialog>
@@ -252,7 +261,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ isDemo: propIsDemo, demoUserId })
         updateTask={updateTask}
         deleteTask={deleteTask}
         sections={sections}
-        categories={allCategories}
+        allCategories={allCategories}
         allTasks={tasks}
         onAddTask={handleAddTask}
         onReorderTasks={reorderTasks}
@@ -263,6 +272,9 @@ const TasksPage: React.FC<TasksPageProps> = ({ isDemo: propIsDemo, demoUserId })
         createCategory={createCategory}
         updateCategory={updateCategory}
         deleteCategory={deleteCategory}
+        onUpdate={updateTask}
+        onDelete={deleteTask}
+        onStatusChange={handleStatusChangeWrapper}
       />
 
       <TaskDetailDialog
@@ -272,7 +284,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ isDemo: propIsDemo, demoUserId })
         onUpdate={updateTask}
         onDelete={deleteTask}
         sections={sections}
-        categories={allCategories}
+        allCategories={allCategories}
         allTasks={tasks}
         createSection={createSection}
         updateSection={updateSection}
@@ -280,6 +292,9 @@ const TasksPage: React.FC<TasksPageProps> = ({ isDemo: propIsDemo, demoUserId })
         createCategory={createCategory}
         updateCategory={updateCategory}
         deleteCategory={deleteCategory}
+        onAddTask={handleAddTask}
+        onReorderTasks={reorderTasks}
+        onStatusChange={handleStatusChangeWrapper}
       />
 
       {isFocusViewOpen && selectedTask && (
@@ -297,7 +312,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ isDemo: propIsDemo, demoUserId })
           onOpenDetail={handleOpenDetail}
           updateTask={updateTask}
           sections={sections}
-          categories={allCategories}
+          allCategories={allCategories}
           allTasks={tasks}
           onAddTask={handleAddTask}
           onReorderTasks={reorderTasks}
@@ -308,6 +323,9 @@ const TasksPage: React.FC<TasksPageProps> = ({ isDemo: propIsDemo, demoUserId })
           createCategory={createCategory}
           updateCategory={updateCategory}
           deleteCategory={deleteCategory}
+          onUpdate={updateTask}
+          onDelete={deleteTask}
+          onStatusChange={handleStatusChangeWrapper}
         />
       )}
     </div>

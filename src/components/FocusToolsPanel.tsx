@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Play, Pause, SkipForward, Check, Edit, Plus, Link } from 'lucide-react';
 import { Task, TaskSection, TaskCategory } from '@/types/task';
 import { FocusToolsPanelProps } from '@/types/props';
+import TaskItem from './TaskItem'; // Added TaskItem import
 
 const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
   currentTask,
@@ -16,11 +17,11 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
   newSubtaskDescription,
   setNewSubtaskDescription,
   subtasks,
-  allTasks,
+  allTasks, // Added from TaskActionProps
   sections,
-  categories,
-  onUpdateTask,
-  onDeleteTask,
+  allCategories, // Renamed from categories to allCategories for consistency
+  onUpdate, // Renamed from onUpdateTask to onUpdate for consistency
+  onDelete, // Renamed from onDeleteTask to onDelete for consistency
   onOpenTaskOverview,
   onReorderTasks,
   createSection,
@@ -30,7 +31,12 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
   createCategory,
   updateCategory,
   deleteCategory,
+  onStatusChange, // Added from TaskActionProps
 }) => {
+  const handleSubtaskStatusChange = async (subtaskId: string, newStatus: TaskStatus): Promise<Task | null> => {
+    return onUpdate(subtaskId, { status: newStatus });
+  };
+
   return (
     <Card className="h-full">
       <CardHeader>
@@ -74,12 +80,28 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
                   <p className="text-gray-500 text-sm">No subtasks yet.</p>
                 ) : (
                   subtasks.map((subtask) => (
-                    <div key={subtask.id} className="flex items-center justify-between p-2 border rounded-md text-sm">
-                      <span>{subtask.description}</span>
-                      <Button variant="ghost" size="icon" onClick={() => onOpenTaskDetail(subtask)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <TaskItem
+                      key={subtask.id}
+                      task={subtask}
+                      allTasks={allTasks}
+                      sections={sections}
+                      allCategories={allCategories}
+                      onStatusChange={handleSubtaskStatusChange}
+                      onUpdate={onUpdate}
+                      onDelete={onDelete}
+                      onOpenOverview={onOpenTaskOverview}
+                      onOpenDetail={onOpenTaskDetail}
+                      onAddTask={() => Promise.resolve(null)} // Placeholder, as subtasks are added via onAddSubtask
+                      onReorderTasks={onReorderTasks}
+                      level={1}
+                      createSection={createSection}
+                      updateSection={updateSection}
+                      deleteSection={deleteSection}
+                      updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+                      createCategory={createCategory}
+                      updateCategory={updateCategory}
+                      deleteCategory={deleteCategory}
+                    />
                   ))
                 )}
               </div>

@@ -106,7 +106,7 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo: propIsDemo, demoUserI
           sectionFilter={sectionFilter}
           setSectionFilter={setSectionFilter}
           sections={sections}
-          categories={allCategories}
+          allCategories={allCategories}
           createSection={createSection}
           updateSection={updateSection}
           deleteSection={deleteSection}
@@ -128,7 +128,7 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo: propIsDemo, demoUserI
             tasks={filteredArchivedTasks}
             processedTasks={processedTasks}
             sections={sections}
-            categories={allCategories}
+            allCategories={allCategories}
             onStatusChange={handleStatusChangeWrapper}
             onUpdate={updateTask}
             onDelete={deleteTask}
@@ -146,6 +146,9 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo: propIsDemo, demoUserI
             updateSection={updateSection}
             deleteSection={deleteSection}
             updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+            createCategory={createCategory}
+            updateCategory={updateCategory}
+            deleteCategory={deleteCategory}
             archiveAllCompletedTasks={() => {}}
             toggleAllDoToday={() => {}}
             setIsAddTaskDialogOpen={() => {}}
@@ -173,7 +176,7 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo: propIsDemo, demoUserI
         updateTask={updateTask}
         deleteTask={deleteTask}
         sections={sections}
-        categories={allCategories}
+        allCategories={allCategories}
         allTasks={tasks}
         onAddTask={handleAddTask}
         onReorderTasks={reorderTasks}
@@ -184,6 +187,9 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo: propIsDemo, demoUserI
         createCategory={createCategory}
         updateCategory={updateCategory}
         deleteCategory={deleteCategory}
+        onUpdate={updateTask}
+        onDelete={deleteTask}
+        onStatusChange={handleStatusChangeWrapper}
       />
 
       <TaskDetailDialog
@@ -193,7 +199,7 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo: propIsDemo, demoUserI
         onUpdate={updateTask}
         onDelete={deleteTask}
         sections={sections}
-        categories={allCategories}
+        allCategories={allCategories}
         allTasks={tasks}
         createSection={createSection}
         updateSection={updateSection}
@@ -201,6 +207,9 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo: propIsDemo, demoUserI
         createCategory={createCategory}
         updateCategory={updateCategory}
         deleteCategory={deleteCategory}
+        onAddTask={handleAddTask}
+        onReorderTasks={reorderTasks}
+        onStatusChange={handleStatusChangeWrapper}
       />
 
       <Dialog open={isConfirmDeleteAllOpen} onOpenChange={setIsConfirmDeleteAllOpen}>

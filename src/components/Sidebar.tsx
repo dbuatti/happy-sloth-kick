@@ -1,107 +1,152 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { cn } from '@/lib/utils';
-import { LayoutDashboard, ListTodo, Calendar, Archive, Settings, HelpCircle, LogOut, Sun, Moon } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import {
+  LayoutDashboard,
+  ListTodo,
+  Calendar,
+  Archive,
+  Settings,
+  HelpCircle,
+  LogOut,
+  Moon,
+  Sun,
+  Menu,
+  Focus,
+  Bed,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/context/AuthContext';
-import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
 import { useTheme } from '@/context/ThemeContext';
 import { SidebarProps } from '@/types/props';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
-const Sidebar: React.FC<SidebarProps> = ({ isDemo: propIsDemo, demoUserId }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isDemo, demoUserId }) => {
   const { user, signOut } = useAuth();
-  const userId = user?.id || demoUserId;
-  const isDemo = propIsDemo || user?.id === 'd889323b-350c-4764-9788-6359f85f6142';
-  const location = useLocation();
-  const { theme, toggleTheme } = useTheme();
-
-  const dailyProgress = useDailyTaskCount(new Date(), userId);
-  const dailyTaskCountLoading = false; // useDailyTaskCount no longer returns isLoading directly
+  const { theme, setTheme } = useTheme();
+  const isMobile = useIsMobile();
 
   const navItems = [
-    {
-      name: 'Dashboard',
-      icon: LayoutDashboard,
-      path: isDemo ? '/demo/dashboard' : '/dashboard',
-      count: null,
-    },
-    {
-      name: 'My Hub',
-      icon: ListTodo,
-      path: isDemo ? '/demo/my-hub' : '/my-hub',
-      count: dailyTaskCountLoading ? null : dailyProgress.totalPendingCount,
-    },
-    {
-      name: 'Calendar',
-      icon: Calendar,
-      path: isDemo ? '/demo/calendar' : '/calendar',
-      count: null,
-    },
-    {
-      name: 'Archive',
-      icon: Archive,
-      path: isDemo ? '/demo/archive' : '/archive',
-      count: null,
-    },
+    { to: isDemo ? '/demo/dashboard' : '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { to: isDemo ? '/demo/my-hub' : '/my-hub', icon: ListTodo, label: 'My Hub' },
+    { to: isDemo ? '/demo/calendar' : '/calendar', icon: Calendar, label: 'Calendar' },
+    { to: isDemo ? '/demo/focus-mode' : '/focus-mode', icon: Focus, label: 'Focus Mode' },
+    { to: isDemo ? '/demo/sleep' : '/sleep', icon: Bed, label: 'Sleep' },
+    { to: isDemo ? '/demo/archive' : '/archive', icon: Archive, label: 'Archive' },
+    { to: '/settings', icon: Settings, label: 'Settings' },
+    { to: '/help', icon: HelpCircle, label: 'Help' },
   ];
 
-  const settingsItems = [
-    { name: 'Settings', icon: Settings, path: '/settings' },
-    { name: 'Help', icon: HelpCircle, path: '/help' },
-  ];
-
-  const renderNavItems = (items: (typeof navItems[number] | typeof settingsItems[number])[]) => (
-    <nav className="grid items-start gap-2">
-      {items.map((item) => (
-        <Link
-          key={item.name}
-          to={item.path}
-          className={cn(
-            'flex items-center gap-3 rounded-lg px-3 py-2 text-gray-900 transition-all hover:text-gray-900 dark:text-gray-50 dark:hover:text-gray-50',
-            {
-              'bg-gray-100 dark:bg-gray-800': location.pathname === item.path,
-            }
-          )}
-        >
-          <item.icon className="h-4 w-4" />
-          {item.name}
-          {'count' in item && item.count !== null && (
-            <span className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">
-              {item.count}
-            </span>
-          )}
-        </Link>
+  const renderNavItems = () => (
+    <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
+      {navItems.map((item) => (
+        <TooltipProvider key={item.to}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Link
+                to={item.to}
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+              >
+                <item.icon className="h-4 w-4" />
+                {item.label}
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent side="right">{item.label}</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       ))}
     </nav>
   );
 
-  return (
-    <div className="hidden border-r bg-muted/40 md:block">
-      <div className="flex h-full max-h-screen flex-col gap-2">
-        <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-          <Link to="/" className="flex items-center gap-2 font-semibold">
-            <span className="text-lg">My Productivity App</span>
-          </Link>
-          <Button variant="ghost" size="icon" className="ml-auto h-8 w-8" onClick={toggleTheme}>
-            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+  const renderThemeToggle = () => (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="mt-auto"
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          >
+            {theme === 'dark' ? (
+              <Sun className="h-5 w-5" />
+            ) : (
+              <Moon className="h-5 w-5" />
+            )}
             <span className="sr-only">Toggle theme</span>
           </Button>
-        </div>
-        <div className="flex-1">
-          <div className="grid items-start px-2 text-sm font-medium lg:px-4">
-            {renderNavItems(navItems)}
-            <div className="mt-4 border-t pt-4 dark:border-gray-700">
-              {renderNavItems(settingsItems)}
+        </TooltipTrigger>
+        <TooltipContent side="right">Toggle Theme</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+
+  const renderLogoutButton = () => (
+    user && (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="mt-2"
+              onClick={() => signOut()}
+            >
+              <LogOut className="h-5 w-5" />
+              <span className="sr-only">Log Out</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right">Log Out</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    )
+  );
+
+  if (isMobile) {
+    return (
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button size="icon" variant="outline" className="fixed top-4 left-4 z-40 sm:hidden">
+            <Menu className="h-5 w-5" />
+            <span className="sr-only">Toggle Menu</span>
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="sm:max-w-xs">
+          <div className="flex h-full max-h-screen flex-col gap-2">
+            <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+              <Link to="/" className="flex items-center gap-2 font-semibold">
+                <span>My Productivity App</span>
+              </Link>
             </div>
-            {user && (
-              <Button variant="ghost" className="w-full justify-start mt-4" onClick={() => signOut()}>
-                <LogOut className="h-4 w-4 mr-3" /> Log Out
-              </Button>
-            )}
+            <div className="flex-1">
+              {renderNavItems()}
+            </div>
+            <div className="mt-auto flex flex-col items-center p-4">
+              {renderThemeToggle()}
+              {renderLogoutButton()}
+            </div>
           </div>
-        </div>
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
+  return (
+    <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex md:w-[220px] lg:w-[280px]">
+      <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+        <Link to="/" className="flex items-center gap-2 font-semibold">
+          <span>My Productivity App</span>
+        </Link>
       </div>
-    </div>
+      <div className="flex-1">
+        {renderNavItems()}
+      </div>
+      <div className="mt-auto flex flex-col items-center p-4">
+        {renderThemeToggle()}
+        {renderLogoutButton()}
+      </div>
+    </aside>
   );
 };
 

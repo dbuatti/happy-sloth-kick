@@ -9,40 +9,34 @@ import SelectDialog from '@/components/SelectDialog';
 import { Task, TaskSection, TaskCategory, TaskPriority, RecurringType } from '@/types/task';
 import { format, parseISO } from 'date-fns';
 import { showError } from '@/utils/toast';
+import { AddTaskFormProps } from '@/types/props'; // Using AddTaskFormProps for consistency
 
-interface TaskFormProps {
-  initialData?: Partial<Task> | null;
-  onSave: (data: Partial<Task>) => Promise<void>;
-  onCancel: () => void;
-  sections: TaskSection[];
-  categories: TaskCategory[];
-  createSection: (name: string) => Promise<TaskSection | null>;
-  updateSection: (sectionId: string, newName: string) => Promise<TaskSection | null>;
-  deleteSection: (sectionId: string) => Promise<void>;
-  createCategory: (name: string, color: string) => Promise<TaskCategory | null>;
-  updateCategory: (categoryId: string, newName: string, newColor: string) => Promise<TaskCategory | null>;
-  deleteCategory: (categoryId: string) => Promise<void>;
-}
-
-const TaskForm: React.FC<TaskFormProps> = ({
+const TaskForm: React.FC<AddTaskFormProps> = ({ // Using AddTaskFormProps
   initialData,
-  onSave,
+  onSave: onAddTask, // Renamed onSave to onAddTask for consistency
   onCancel,
   sections,
-  categories,
+  allCategories, // Renamed from categories to allCategories for consistency
   createSection,
   updateSection,
   deleteSection,
   createCategory,
   updateCategory,
   deleteCategory,
+  onUpdate, // Added from TaskActionProps
+  onDelete, // Added from TaskActionProps
+  onReorderTasks, // Added from TaskActionProps
+  onStatusChange, // Added from TaskActionProps
+  currentDate, // Added from AddTaskFormProps
+  onTaskAdded, // Added from AddTaskFormProps
+  setPrefilledTaskData, // Added from AddTaskFormProps
 }) => {
   const [description, setDescription] = useState(initialData?.description || '');
   const [notes, setNotes] = useState(initialData?.notes || '');
   const [dueDate, setDueDate] = useState<Date | undefined>(initialData?.due_date ? parseISO(initialData.due_date) : undefined);
   const [priority, setPriority] = useState<TaskPriority>(initialData?.priority || null);
   const [selectedCategory, setSelectedCategory] = useState<TaskCategory | null>(
-    initialData?.category ? categories.find(cat => cat.id === initialData.category) || null : null
+    initialData?.category ? allCategories.find(cat => cat.id === initialData.category) || null : null
   );
   const [selectedSection, setSelectedSection] = useState<TaskSection | null>(
     initialData?.section_id ? sections.find(sec => sec.id === initialData.section_id) || null : null
@@ -57,13 +51,13 @@ const TaskForm: React.FC<TaskFormProps> = ({
       setNotes(initialData.notes || '');
       setDueDate(initialData.due_date ? parseISO(initialData.due_date) : undefined);
       setPriority(initialData.priority || null);
-      setSelectedCategory(categories.find(cat => cat.id === initialData.category) || null);
+      setSelectedCategory(allCategories.find(cat => cat.id === initialData.category) || null);
       setSelectedSection(sections.find(sec => sec.id === initialData.section_id) || null);
       setRecurringType(initialData.recurring_type || 'none');
       setLink(initialData.link || '');
       setImageUrl(initialData.image_url || '');
     }
-  }, [initialData, sections, categories]);
+  }, [initialData, sections, allCategories]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,7 +78,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
       image_url: imageUrl.trim() || null,
     };
 
-    await onSave(data);
+    await onAddTask(data);
   };
 
   return (
@@ -124,9 +118,9 @@ const TaskForm: React.FC<TaskFormProps> = ({
       <div className="grid grid-cols-4 items-center gap-4">
         <Label htmlFor="category" className="text-right">Category</Label>
         <SelectDialog
-          items={categories.map(cat => ({ id: cat.id, name: cat.name, color: cat.color }))}
+          items={allCategories.map(cat => ({ id: cat.id, name: cat.name, color: cat.color }))}
           selectedItem={selectedCategory ? { id: selectedCategory.id, name: selectedCategory.name, color: selectedCategory.color } : null}
-          onSelectItem={(item) => setSelectedCategory(categories.find(cat => cat.id === item?.id) || null)}
+          onSelectItem={(item) => setSelectedCategory(allCategories.find(cat => cat.id === item?.id) || null)}
           createItem={async (name: string, color?: string) => {
             const newCat = await createCategory(name, color || '#cccccc');
             return newCat ? { id: newCat.id, name: newCat.name, color: newCat.color } : null;

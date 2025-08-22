@@ -2,14 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Play, Edit, Trash2, Plus, Link } from 'lucide-react'; // Removed unused Check, X, Image, Textarea
+import { Play, Edit, Trash2, Plus, Link } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Task, TaskStatus, TaskPriority } from '@/types/task';
+import { Task, TaskStatus, TaskPriority, TaskSection, TaskCategory } from '@/types/task';
 import { format, isToday, isTomorrow, isPast, parseISO } from 'date-fns';
 import { getCategoryColorProps } from '@/utils/categoryColors';
 import TaskItem from './TaskItem';
 import { TaskOverviewDialogProps } from '@/types/props';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 
 export const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
   isOpen,
@@ -17,14 +18,21 @@ export const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
   task,
   onOpenDetail,
   onOpenFocusView,
-  updateTask,
-  deleteTask,
+  onUpdate, // Renamed from updateTask to onUpdate for consistency
+  onDelete, // Renamed from deleteTask to onDelete for consistency
   sections,
-  categories,
+  allCategories, // Renamed from categories to allCategories for consistency
   allTasks,
   onAddTask,
   onReorderTasks,
-  // Removed unused: createSection, updateSection, deleteSection, updateSectionIncludeInFocusMode, createCategory, updateCategory, deleteCategory,
+  createSection,
+  updateSection,
+  deleteSection,
+  updateSectionIncludeInFocusMode,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+  onStatusChange, // Added from TaskActionProps
 }) => {
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
   const [newSubtaskDescription, setNewSubtaskDescription] = useState('');
@@ -37,13 +45,13 @@ export const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
   }, [isOpen]);
 
   const handleStatusChange = async (taskId: string, newStatus: TaskStatus): Promise<Task | null> => {
-    const updatedTask = await updateTask(taskId, { status: newStatus });
+    const updatedTask = await onUpdate(taskId, { status: newStatus });
     return updatedTask;
   };
 
   const handleDelete = async () => {
     if (!task) return;
-    await deleteTask(task.id);
+    await onDelete(task.id);
     setIsConfirmDeleteOpen(false);
     onClose();
   };
@@ -87,8 +95,8 @@ export const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
 
   if (!task) return null;
 
-  const category = categories.find((cat) => cat.id === task.category);
-  const section = sections.find((sec) => sec.id === task.section_id);
+  const category = allCategories.find((cat: TaskCategory) => cat.id === task.category);
+  const section = sections.find((sec: TaskSection) => sec.id === task.section_id);
   const categoryColorProps = category ? getCategoryColorProps(category.color) : null;
 
   const subtasks = allTasks.filter((subtask) => subtask.parent_task_id === task.id);
@@ -157,7 +165,7 @@ export const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
           {task.notes && (
             <div>
               <h3 className="font-semibold">Notes:</h3>
-              <p className="text-gray-700 dark:text-gray-300">{task.notes}</p>
+              <Textarea readOnly value={task.notes} className="min-h-[100px]" />
             </div>
           )}
 
@@ -187,15 +195,22 @@ export const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
                     task={subtask}
                     allTasks={allTasks}
                     sections={sections}
-                    categories={categories}
+                    allCategories={allCategories}
                     onStatusChange={handleStatusChange}
-                    onUpdate={updateTask}
-                    onDelete={deleteTask}
-                    onOpenOverview={onOpenOverview} // This prop is correctly passed
+                    onUpdate={onUpdate}
+                    onDelete={onDelete}
+                    onOpenOverview={onOpenOverview}
                     onOpenDetail={onOpenDetail}
                     onAddTask={onAddTask}
                     onReorderTasks={onReorderTasks}
                     level={1}
+                    createSection={createSection}
+                    updateSection={updateSection}
+                    deleteSection={deleteSection}
+                    updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+                    createCategory={createCategory}
+                    updateCategory={updateCategory}
+                    deleteCategory={deleteCategory}
                   />
                 ))}
               </div>

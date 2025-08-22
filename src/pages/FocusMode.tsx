@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useTasks } from '@/hooks/useTasks';
-import { Task, TaskSection, TaskCategory } from '@/types/task';
+import { Task, TaskSection, TaskCategory, TaskStatus } from '@/types/task';
 import FullScreenFocusView from '@/components/FullScreenFocusView';
 import { TaskOverviewDialog } from '@/components/TaskOverviewDialog';
 import { TaskDetailDialog } from '@/components/TaskDetailDialog';
@@ -41,7 +41,7 @@ const FocusModePage: React.FC<FocusModePageProps> = ({ isDemo: propIsDemo, demoU
     deleteCategory,
     isLoading,
     error,
-  } = useTasks({ userId: userId, currentDate: currentDate, viewMode: 'focus' }); // Fixed prop passing
+  } = useTasks({ userId: userId, currentDate: currentDate, viewMode: 'focus' });
 
   useEffect(() => {
     if (!selectedTask && nextAvailableTask) {
@@ -71,6 +71,10 @@ const FocusModePage: React.FC<FocusModePageProps> = ({ isDemo: propIsDemo, demoU
   const handleOpenOverview = (task: Task) => {
     setSelectedTask(task);
     setIsOverviewOpen(true);
+  };
+
+  const handleStatusChangeWrapper = async (taskId: string, newStatus: TaskStatus): Promise<Task | null> => {
+    return updateTask(taskId, { status: newStatus });
   };
 
   if (isLoading) {
@@ -109,7 +113,7 @@ const FocusModePage: React.FC<FocusModePageProps> = ({ isDemo: propIsDemo, demoU
         onOpenDetail={handleOpenDetail}
         updateTask={updateTask}
         sections={sections}
-        categories={allCategories}
+        allCategories={allCategories}
         allTasks={tasks}
         onAddTask={handleAddTask}
         onReorderTasks={reorderTasks}
@@ -120,6 +124,9 @@ const FocusModePage: React.FC<FocusModePageProps> = ({ isDemo: propIsDemo, demoU
         createCategory={createCategory}
         updateCategory={updateCategory}
         deleteCategory={deleteCategory}
+        onUpdate={updateTask}
+        onDelete={deleteTask}
+        onStatusChange={handleStatusChangeWrapper}
       />
 
       <TaskOverviewDialog
@@ -131,7 +138,7 @@ const FocusModePage: React.FC<FocusModePageProps> = ({ isDemo: propIsDemo, demoU
         updateTask={updateTask}
         deleteTask={deleteTask}
         sections={sections}
-        categories={allCategories}
+        allCategories={allCategories}
         allTasks={tasks}
         onAddTask={handleAddTask}
         onReorderTasks={reorderTasks}
@@ -142,6 +149,9 @@ const FocusModePage: React.FC<FocusModePageProps> = ({ isDemo: propIsDemo, demoU
         createCategory={createCategory}
         updateCategory={updateCategory}
         deleteCategory={deleteCategory}
+        onUpdate={updateTask}
+        onDelete={deleteTask}
+        onStatusChange={handleStatusChangeWrapper}
       />
 
       <TaskDetailDialog
@@ -151,7 +161,7 @@ const FocusModePage: React.FC<FocusModePageProps> = ({ isDemo: propIsDemo, demoU
         onUpdate={updateTask}
         onDelete={deleteTask}
         sections={sections}
-        categories={allCategories}
+        allCategories={allCategories}
         allTasks={tasks}
         createSection={createSection}
         updateSection={updateSection}
@@ -159,6 +169,9 @@ const FocusModePage: React.FC<FocusModePageProps> = ({ isDemo: propIsDemo, demoU
         createCategory={createCategory}
         updateCategory={updateCategory}
         deleteCategory={deleteCategory}
+        onAddTask={handleAddTask}
+        onReorderTasks={reorderTasks}
+        onStatusChange={handleStatusChangeWrapper}
       />
     </>
   );

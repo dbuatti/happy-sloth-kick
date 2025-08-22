@@ -5,18 +5,10 @@ import {
   DailyTaskCount,
   Project,
   UserSettings,
-  CustomDashboardCard,
-  QuickLink,
-  WeeklyFocus,
-  GratitudeJournalEntry,
-  WorryJournalEntry,
-  SleepRecord,
-  PeopleMemory,
-  Appointment,
   WorkHour,
+  Appointment,
   TaskStatus,
   TaskPriority,
-  RecurringType,
 } from './task';
 import { Dispatch, SetStateAction } from 'react';
 
@@ -28,7 +20,7 @@ export interface BasePageProps {
 
 export interface TaskManagementProps {
   sections: TaskSection[];
-  categories: TaskCategory[];
+  allCategories: TaskCategory[];
   createSection: (name: string) => Promise<TaskSection | null>;
   updateSection: (sectionId: string, newName: string) => Promise<TaskSection | null>;
   deleteSection: (sectionId: string) => Promise<void>;
@@ -43,6 +35,7 @@ export interface TaskActionProps {
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<Task | null>;
   onDelete: (taskId: string) => Promise<void>;
   onReorderTasks: (updates: { id: string; order: number | null; section_id: string | null; parent_task_id: string | null; }[]) => Promise<void>;
+  onStatusChange: (taskId: string, newStatus: TaskStatus) => Promise<Task | null>;
 }
 
 // --- Component Specific Props ---
@@ -73,10 +66,9 @@ export interface TaskFilterProps extends TaskManagementProps {
   setSectionFilter: Dispatch<SetStateAction<string | 'all' | null>>;
 }
 
-export interface TaskListProps extends TaskManagementProps, TaskActionProps, TaskFilterProps {
+export interface TaskListProps extends TaskManagementProps, TaskActionProps {
   tasks: Task[];
   processedTasks: (Task & { isOverdue: boolean; isDueToday: boolean })[];
-  onStatusChange: (taskId: string, newStatus: TaskStatus) => Promise<Task | null>;
   onOpenOverview: (task: Task) => void;
   onOpenDetail: (task: Task) => void;
   showDoTodayToggle?: boolean;
@@ -91,12 +83,19 @@ export interface TaskListProps extends TaskManagementProps, TaskActionProps, Tas
   setPrefilledTaskData: (data: Partial<Task> | null) => void;
   dailyProgress: DailyTaskCount;
   onOpenFocusView: (task: Task) => void;
+  statusFilter: TaskStatus | 'all';
+  setStatusFilter: Dispatch<SetStateAction<TaskStatus | 'all'>>;
+  categoryFilter: string | 'all' | null;
+  setCategoryFilter: Dispatch<SetStateAction<string | 'all' | null>>;
+  priorityFilter: TaskPriority | 'all' | null;
+  setPriorityFilter: Dispatch<SetStateAction<TaskPriority | 'all' | null>>;
+  sectionFilter: string | 'all' | null;
+  setSectionFilter: Dispatch<SetStateAction<string | 'all' | null>>;
 }
 
 export interface TaskItemProps extends TaskManagementProps, TaskActionProps {
   task: Task;
   allTasks: Task[];
-  onStatusChange: (taskId: string, newStatus: TaskStatus) => Promise<Task | null>;
   onOpenOverview: (task: Task) => void;
   onOpenDetail: (task: Task) => void;
   showDoTodayToggle?: boolean;
@@ -137,7 +136,6 @@ export interface DraggableTaskListItemProps extends TaskManagementProps, TaskAct
   onDelete: (taskId: string) => Promise<void>;
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<Task | null>;
   allTasks: Task[];
-  onStatusChange: (taskId: string, newStatus: TaskStatus) => Promise<Task | null>;
   onOpenOverview: (task: Task) => void;
 }
 
@@ -242,12 +240,78 @@ export interface WorkHourState {
   enabled: boolean;
 }
 
+export interface SidebarProps {
+  isDemo?: boolean;
+  demoUserId?: string;
+}
+
+export interface DashboardStats {
+  tasksDueToday: number;
+  appointmentsToday: number;
+}
+
+export interface NextTaskCardProps {
+  nextAvailableTask: Task | null;
+  sections: TaskSection[];
+  allCategories: TaskCategory[];
+  onOpenOverview: (task: Task) => void;
+  onOpenFocusView: (task: Task) => void;
+}
+
+export interface CustomDashboardCardProps {
+  card: CustomDashboardCard;
+  onEdit: (card: CustomDashboardCard) => void;
+  onDelete: (cardId: string) => Promise<void>;
+  onReorder: (cardId: string, newOrder: number) => Promise<void>;
+}
+
+export interface ProjectBalanceCardProps {
+  project: Project;
+  onIncrement: (projectId: string) => Promise<void>;
+  onDecrement: (projectId: string) => Promise<void>;
+  onDelete: (projectId: string) => Promise<void>;
+  onEditNotes: (project: Project) => void;
+  totalCount: number;
+}
+
+export interface FocusPanelDrawerProps {
+  isOpen: boolean;
+  onClose: () => void;
+  currentTask: Task | null;
+  onCompleteTask: () => Promise<void>;
+  onSkipTask: () => Promise<void>;
+  onOpenDetail: (task: Task) => void;
+  onOpenOverview: (task: Task) => void;
+  updateTask: (taskId: string, updates: Partial<Task>) => Promise<Task | null>;
+  sections: TaskSection[];
+  allCategories: TaskCategory[];
+  allTasks: Task[];
+  onAddTask: (taskData: Partial<Task>) => Promise<Task | null>;
+  onReorderTasks: (updates: { id: string; order: number | null; section_id: string | null; parent_task_id: string | null; }[]) => Promise<void>;
+  createSection: (name: string) => Promise<TaskSection | null>;
+  updateSection: (sectionId: string, newName: string) => Promise<TaskSection | null>;
+  deleteSection: (sectionId: string) => Promise<void>;
+  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<TaskSection | null>;
+  createCategory: (name: string, color: string) => Promise<TaskCategory | null>;
+  updateCategory: (categoryId: string, newName: string, newColor: string) => Promise<TaskCategory | null>;
+  deleteCategory: (categoryId: string) => Promise<void>;
+}
+
+export interface TimeBlockActionMenuProps {
+  block: { start: Date; end: Date };
+  onAddAppointment: (block: { start: Date; end: Date }) => void;
+  onScheduleTask: (taskId: string, blockStart: Date) => Promise<void>;
+  unscheduledTasks: Task[];
+  sections: TaskSection[];
+}
+
 // --- Page Props ---
 export interface DashboardPageProps extends BasePageProps {}
 export interface MyHubPageProps extends BasePageProps {}
 export interface CalendarPageProps extends BasePageProps {}
 export interface ArchivePageProps extends BasePageProps {}
 export interface SettingsPageProps extends BasePageProps {}
+export interface HelpPageProps extends BasePageProps {}
 export interface ProjectBalanceTrackerPageProps extends BasePageProps {}
 export interface DailyTasksV3PageProps extends BasePageProps {}
 export interface TaskCalendarPageProps extends BasePageProps {}

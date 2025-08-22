@@ -11,7 +11,7 @@ import { QuickAddTaskProps } from '@/types/props';
 const QuickAddTask: React.FC<QuickAddTaskProps> = ({
   onAddTask,
   sections,
-  allCategories, // Renamed from categories to allCategories for clarity
+  allCategories,
   currentDate,
   setPrefilledTaskData,
   createSection,
@@ -21,6 +21,10 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
   createCategory,
   updateCategory,
   deleteCategory,
+  onUpdate,
+  onDelete,
+  onReorderTasks,
+  onStatusChange,
 }) => {
   const [quickAddTaskDescription, setQuickAddTaskDescription] = useState('');
   const { playSound } = useSound();

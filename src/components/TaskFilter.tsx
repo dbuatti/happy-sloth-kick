@@ -6,7 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { TaskStatus, TaskPriority } from '@/types/task'; // Removed TaskSection, TaskCategory
+import { TaskStatus, TaskPriority } from '@/types/task';
 import CategorySelector from './CategorySelector';
 import SectionSelector from './SectionSelector';
 import { TaskFilterProps } from '@/types/props';
@@ -21,7 +21,7 @@ const TaskFilter: React.FC<TaskFilterProps> = ({
   sectionFilter,
   setSectionFilter,
   sections,
-  categories,
+  allCategories, // Renamed from categories to allCategories for consistency
   createSection,
   updateSection,
   deleteSection,
@@ -46,12 +46,17 @@ const TaskFilter: React.FC<TaskFilterProps> = ({
       </Select>
 
       <CategorySelector
-        categories={categories}
+        allCategories={allCategories}
         selectedCategory={categoryFilter}
         onSelectCategory={setCategoryFilter}
         createCategory={createCategory}
         updateCategory={updateCategory}
         deleteCategory={deleteCategory}
+        sections={sections}
+        updateSection={updateSection}
+        deleteSection={deleteSection}
+        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+        createSection={createSection}
       />
 
       <Select value={priorityFilter || 'all'} onValueChange={(value: string) => setPriorityFilter(value === 'all' ? 'all' : value as TaskPriority)}>
@@ -75,6 +80,10 @@ const TaskFilter: React.FC<TaskFilterProps> = ({
         updateSection={updateSection}
         deleteSection={deleteSection}
         updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+        allCategories={allCategories}
+        createCategory={createCategory}
+        updateCategory={updateCategory}
+        deleteCategory={deleteCategory}
       />
     </div>
   );

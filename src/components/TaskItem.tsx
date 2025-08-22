@@ -24,15 +24,15 @@ import {
   TaskCategory,
   RecurringType,
   TaskPriority,
-  TaskStatus, // Keep TaskStatus as it's used in onStatusChange
+  TaskStatus,
 } from '@/types/task';
 import { format, isToday, isTomorrow, isPast, parseISO } from 'date-fns';
 import { getCategoryColorProps } from '@/utils/categoryColors';
 import { useAuth } from '@/context/AuthContext';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { Input } from '@/components/ui/input'; // Keep Input as it's used
-import { // Keep Select imports as they are used
+import { Input } from '@/components/ui/input';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -53,7 +53,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   task,
   allTasks,
   sections,
-  categories,
+  allCategories, // Renamed from categories to allCategories for consistency
   onStatusChange,
   onUpdate,
   onDelete,
@@ -66,6 +66,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
   isDoTodayOff = false,
   level = 0,
   isDemo,
+  createSection,
+  updateSection,
+  deleteSection,
+  updateSectionIncludeInFocusMode,
+  createCategory,
+  updateCategory,
+  deleteCategory,
 }) => {
   const { user } = useAuth();
   const userId = user?.id;
@@ -77,10 +84,10 @@ const TaskItem: React.FC<TaskItemProps> = ({
   );
   const [editedPriority, setEditedPriority] = useState<TaskPriority>(task.priority);
   const [editedCategory, setEditedCategory] = useState<TaskCategory | null>(
-    categories.find((cat) => cat.id === task.category) || null
+    allCategories.find((cat: TaskCategory) => cat.id === task.category) || null
   );
   const [editedSection, setEditedSection] = useState<TaskSection | null>(
-    sections.find((sec) => sec.id === task.section_id) || null
+    sections.find((sec: TaskSection) => sec.id === task.section_id) || null
   );
   const [editedRecurringType, setEditedRecurringType] = useState<RecurringType>(task.recurring_type || 'none');
   const [editedLink, setEditedLink] = useState(task.link || '');
@@ -116,8 +123,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
     setEditedNotes(task.notes || '');
     setEditedDueDate(task.due_date ? parseISO(task.due_date) : undefined);
     setEditedPriority(task.priority);
-    setEditedCategory(categories.find((cat) => cat.id === task.category) || null);
-    setEditedSection(sections.find((sec) => sec.id === task.section_id) || null);
+    setEditedCategory(allCategories.find((cat: TaskCategory) => cat.id === task.category) || null);
+    setEditedSection(sections.find((sec: TaskSection) => sec.id === task.section_id) || null);
     setEditedRecurringType(task.recurring_type || 'none');
     setEditedLink(task.link || '');
     setEditedImageUrl(task.image_url || '');
@@ -166,14 +173,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
     }
   };
 
-  const { attributes, listeners, setNodeRef, transform, isDragging: isDnDDragging } = useDraggable({ // Removed 'transition'
+  const { attributes, listeners, setNodeRef, transform, isDragging: isDnDDragging } = useDraggable({
     id: task.id,
     data: { type: 'Task', task },
   });
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    // Removed 'transition' as it's not directly from useDraggable
     zIndex: isDnDDragging ? 100 : 'auto',
     opacity: isDnDDragging ? 0.5 : 1,
   };
@@ -323,7 +329,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
               task={subtask}
               allTasks={allTasks}
               sections={sections}
-              categories={categories}
+              allCategories={allCategories}
               onStatusChange={onStatusChange}
               onUpdate={onUpdate}
               onDelete={onDelete}
@@ -333,6 +339,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
               onReorderTasks={onReorderTasks}
               level={level + 1}
               isDemo={isDemo}
+              createSection={createSection}
+              updateSection={updateSection}
+              deleteSection={deleteSection}
+              updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+              createCategory={createCategory}
+              updateCategory={updateCategory}
+              deleteCategory={deleteCategory}
             />
           ))}
         </div>

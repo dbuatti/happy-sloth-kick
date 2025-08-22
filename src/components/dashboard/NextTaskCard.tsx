@@ -1,28 +1,37 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { cn } from '@/lib/utils';
-import { Task, TaskStatus } from '@/types/task';
+import { ArrowRight, Play } from 'lucide-react';
+import { Task, TaskSection, TaskCategory, TaskPriority } from '@/types/task';
 import { format, isToday, isTomorrow, isPast, parseISO } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { getCategoryColorProps } from '@/utils/categoryColors';
 import { NextTaskCardProps } from '@/types/props';
 import { Badge } from '@/components/ui/badge';
 
 const NextTaskCard: React.FC<NextTaskCardProps> = ({
   nextAvailableTask,
-  updateTask,
-  onOpenOverview,
-  onOpenDetail,
   sections,
-  categories,
+  allCategories, // Renamed from categories to allCategories for consistency
+  onOpenOverview,
+  onOpenFocusView,
 }) => {
-  const handleStatusChange = async (
-    taskId: string,
-    newStatus: TaskStatus
-  ) => {
-    await updateTask(taskId, { status: newStatus });
-  };
+  if (!nextAvailableTask) {
+    return (
+      <Card className="h-full flex flex-col">
+        <CardHeader>
+          <CardTitle className="text-lg">Next Task</CardTitle>
+        </CardHeader>
+        <CardContent className="flex-grow flex items-center justify-center text-center text-gray-500">
+          No tasks currently in focus mode.
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const category = allCategories.find((cat: TaskCategory) => cat.id === nextAvailableTask.category);
+  const section = sections.find((sec: TaskSection) => sec.id === nextAvailableTask.section_id);
+  const categoryColorProps = category ? getCategoryColorProps(category.color) : null;
 
   const getDueDateText = (dueDate: string | null) => {
     if (!dueDate) return null;
@@ -33,7 +42,7 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({
     return format(date, 'MMM d');
   };
 
-  const getPriorityClasses = (priority: Task['priority']) => {
+  const getPriorityClasses = (priority: TaskPriority) => {
     switch (priority) {
       case 'urgent':
         return 'text-red-600 border-red-600 bg-red-50';
@@ -48,53 +57,15 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({
     }
   };
 
-  if (!nextAvailableTask) {
-    return (
-      <Card className="h-full flex flex-col">
-        <CardHeader>
-          <CardTitle className="text-lg">Next Task</CardTitle>
-        </CardHeader>
-        <CardContent className="flex-grow flex items-center justify-center text-center text-gray-500">
-          No tasks currently in focus.
-        </CardContent>
-      </Card>
-    );
-  }
-
-  const category = categories.find((cat) => cat.id === nextAvailableTask.category);
-  const section = sections.find((sec) => sec.id === nextAvailableTask.section_id);
-  const categoryColorProps = category ? getCategoryColorProps(category.color) : null;
-
   return (
     <Card className="h-full flex flex-col">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardHeader>
         <CardTitle className="text-lg">Next Task</CardTitle>
-        <Button variant="ghost" size="sm" onClick={() => onOpenDetail(nextAvailableTask)}>
-          Details
-        </Button>
       </CardHeader>
-      <CardContent className="flex-grow flex flex-col justify-between">
-        <div className="space-y-2">
-          <div className="flex items-start space-x-2">
-            <Checkbox
-              id={`task-${nextAvailableTask.id}`}
-              checked={nextAvailableTask.status === 'completed'}
-              onCheckedChange={(checked: boolean) =>
-                handleStatusChange(
-                  nextAvailableTask.id,
-                  checked ? 'completed' : 'to-do'
-                )
-              }
-              className="mt-1"
-            />
-            <label
-              htmlFor={`task-${nextAvailableTask.id}`}
-              className="flex-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >
-              {nextAvailableTask.description}
-            </label>
-          </div>
-          <div className="flex flex-wrap gap-2 text-xs text-gray-500">
+      <CardContent className="flex-grow flex flex-col justify-between space-y-4">
+        <div>
+          <p className="text-xl font-semibold mb-2">{nextAvailableTask.description}</p>
+          <div className="flex flex-wrap gap-2 text-sm text-gray-500">
             {nextAvailableTask.priority && (
               <Badge
                 variant="outline"
@@ -146,13 +117,14 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({
             )}
           </div>
         </div>
-        <Button
-          variant="secondary"
-          className="w-full mt-4"
-          onClick={() => onOpenOverview(nextAvailableTask)}
-        >
-          Start Focus
-        </Button>
+        <div className="flex space-x-2">
+          <Button variant="outline" className="flex-1" onClick={() => onOpenOverview(nextAvailableTask)}>
+            <ArrowRight className="mr-2 h-4 w-4" /> View Details
+          </Button>
+          <Button className="flex-1" onClick={() => onOpenFocusView(nextAvailableTask)}>
+            <Play className="mr-2 h-4 w-4" /> Start Focus
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

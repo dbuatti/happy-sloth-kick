@@ -3,7 +3,7 @@ import { format, addDays, startOfDay, setHours, setMinutes, isSameDay, startOfWe
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Appointment, Task, TaskSection, TaskCategory, WorkHour } from '@/types/task';
+import { Appointment, Task, TaskSection, TaskCategory, WorkHour, TaskStatus } from '@/types/task';
 import AppointmentForm from './AppointmentForm';
 import ScheduleGridContent from './ScheduleGridContent';
 import { DailyScheduleViewProps } from '@/types/props';
@@ -18,14 +18,24 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
   appointments,
   tasks,
   sections,
-  categories,
+  allCategories, // Renamed from categories to allCategories for consistency
   addAppointment,
   updateAppointment,
   deleteAppointment,
   onAddTask,
-  onUpdateTask,
+  onUpdate, // Renamed from onUpdateTask to onUpdate for consistency
   onOpenTaskDetail,
   isLoading,
+  onDelete, // Added from TaskActionProps
+  onReorderTasks, // Added from TaskActionProps
+  onStatusChange, // Added from TaskActionProps
+  createSection, // Added from TaskManagementProps
+  updateSection, // Added from TaskManagementProps
+  deleteSection, // Added from TaskManagementProps
+  updateSectionIncludeInFocusMode, // Added from TaskManagementProps
+  createCategory, // Added from TaskManagementProps
+  updateCategory, // Added from TaskManagementProps
+  deleteCategory, // Added from TaskManagementProps
 }) => {
   const [currentViewDate, setCurrentViewDate] = useState(initialViewDate);
   const [isAppointmentFormOpen, setIsAppointmentFormOpen] = useState(false);
@@ -166,7 +176,7 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
           onDelete={handleDeleteAppointment}
           tasks={tasks}
           sections={sections}
-          categories={categories}
+          allCategories={allCategories}
           currentDate={currentViewDate}
         />
       )}

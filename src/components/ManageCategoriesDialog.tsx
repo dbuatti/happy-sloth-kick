@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Plus, Edit, Trash2 } from 'lucide-react';
-import { TaskCategory } from '@/types/task'; // Removed CategoryColorKey
+import { TaskCategory } from '@/types/task';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { TwitterPicker } from 'react-color';
 import { getCategoryColorProps, categoryColors } from '@/utils/categoryColors';
@@ -19,10 +19,15 @@ import { ManageCategoriesDialogProps } from '@/types/props';
 const ManageCategoriesDialog: React.FC<ManageCategoriesDialogProps> = ({
   isOpen,
   onClose,
-  categories,
+  allCategories, // Renamed from categories to allCategories for consistency
   createCategory,
   updateCategory,
   deleteCategory,
+  sections, // Added from TaskManagementProps
+  updateSection, // Added from TaskManagementProps
+  deleteSection, // Added from TaskManagementProps
+  updateSectionIncludeInFocusMode, // Added from TaskManagementProps
+  createSection, // Added from TaskManagementProps
 }) => {
   const [isAddEditDialogOpen, setIsAddEditDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<TaskCategory | null>(null);
@@ -79,7 +84,7 @@ const ManageCategoriesDialog: React.FC<ManageCategoriesDialogProps> = ({
             <DialogTitle>Manage Categories</DialogTitle>
           </DialogHeader>
           <div className="space-y-2">
-            {categories.map((category) => (
+            {allCategories.map((category) => (
               <div key={category.id} className="flex items-center justify-between p-2 border rounded-md">
                 <div className="flex items-center">
                   <span
@@ -160,7 +165,7 @@ const ManageCategoriesDialog: React.FC<ManageCategoriesDialogProps> = ({
           <DialogHeader>
             <DialogTitle>Confirm Deletion</DialogTitle>
           </DialogHeader>
-          <p>Are you sure you want to delete "{categories.find(cat => cat.id === categoryToDelete)?.name}"?</p>
+          <p>Are you sure you want to delete "{allCategories.find(cat => cat.id === categoryToDelete)?.name}"?</p>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setIsConfirmDeleteOpen(false)}>
               Cancel

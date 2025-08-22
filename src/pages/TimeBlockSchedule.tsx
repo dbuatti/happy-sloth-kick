@@ -4,7 +4,7 @@ import { useTasks } from '@/hooks/useTasks';
 import { useAppointments } from '@/hooks/useAppointments';
 import { useWorkHours } from '@/hooks/useWorkHours';
 import { Task, Appointment, TaskSection, TaskCategory, TaskStatus } from '@/types/task';
-import { format, startOfWeek, addDays, isSameDay, parseISO, startOfDay, setHours, setMinutes } from 'date-fns';
+import { format, startOfWeek, addDays, isSameDay, parseISO, startOfDay, setHours, setMinutes, addMinutes } from 'date-fns';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,12 +13,11 @@ import { TaskDetailDialog } from '@/components/TaskDetailDialog';
 import FullScreenFocusView from '@/components/FullScreenFocusView';
 import AppointmentForm from '@/components/AppointmentForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import TimeBlock from '@/components/TimeBlock'; // Removed unused import
 import { TimeBlockSchedulePageProps } from '@/types/props';
 import { cn } from '@/lib/utils';
-import ScheduleGridContent from '@/components/ScheduleGridContent'; // Added ScheduleGridContent
+import ScheduleGridContent from '@/components/ScheduleGridContent';
 
-const TimeBlockSchedulePage: React.FC<TimeBlockSchedulePageProps> = ({ isDemo: propIsDemo, demoUserId }) => { // Fixed typo
+const TimeBlockSchedulePage: React.FC<TimeBlockSchedulePageProps> = ({ isDemo: propIsDemo, demoUserId }) => {
   const { user } = useAuth();
   const userId = user?.id || demoUserId;
   const isDemo = propIsDemo || user?.id === 'd889323b-350c-4764-9788-6359f85f6142';
@@ -139,7 +138,7 @@ const TimeBlockSchedulePage: React.FC<TimeBlockSchedulePageProps> = ({ isDemo: p
     setIsFocusViewOpen(true);
   };
 
-  const handleUpdateTaskStatus = async (taskId: string, newStatus: TaskStatus): Promise<Task | null> => {
+  const handleStatusChangeWrapper = async (taskId: string, newStatus: TaskStatus): Promise<Task | null> => {
     return updateTask(taskId, { status: newStatus });
   };
 
@@ -228,7 +227,7 @@ const TimeBlockSchedulePage: React.FC<TimeBlockSchedulePageProps> = ({ isDemo: p
           onDelete={handleDeleteAppointment}
           tasks={tasks}
           sections={sections}
-          categories={allCategories}
+          allCategories={allCategories}
           currentDate={currentWeekStart}
         />
       )}
@@ -242,7 +241,7 @@ const TimeBlockSchedulePage: React.FC<TimeBlockSchedulePageProps> = ({ isDemo: p
         updateTask={updateTask}
         deleteTask={deleteTask}
         sections={sections}
-        categories={allCategories}
+        allCategories={allCategories}
         allTasks={tasks}
         onAddTask={handleAddTask}
         onReorderTasks={reorderTasks}
@@ -253,6 +252,9 @@ const TimeBlockSchedulePage: React.FC<TimeBlockSchedulePageProps> = ({ isDemo: p
         createCategory={createCategory}
         updateCategory={updateCategory}
         deleteCategory={deleteCategory}
+        onUpdate={updateTask}
+        onDelete={deleteTask}
+        onStatusChange={handleStatusChangeWrapper}
       />
 
       <TaskDetailDialog
@@ -262,7 +264,7 @@ const TimeBlockSchedulePage: React.FC<TimeBlockSchedulePageProps> = ({ isDemo: p
         onUpdate={updateTask}
         onDelete={deleteTask}
         sections={sections}
-        categories={allCategories}
+        allCategories={allCategories}
         allTasks={tasks}
         createSection={createSection}
         updateSection={updateSection}
@@ -270,6 +272,9 @@ const TimeBlockSchedulePage: React.FC<TimeBlockSchedulePageProps> = ({ isDemo: p
         createCategory={createCategory}
         updateCategory={updateCategory}
         deleteCategory={deleteCategory}
+        onAddTask={handleAddTask}
+        onReorderTasks={reorderTasks}
+        onStatusChange={handleStatusChangeWrapper}
       />
 
       {isFocusViewOpen && selectedTask && (
@@ -287,7 +292,7 @@ const TimeBlockSchedulePage: React.FC<TimeBlockSchedulePageProps> = ({ isDemo: p
           onOpenDetail={handleOpenTaskDetail}
           updateTask={updateTask}
           sections={sections}
-          categories={allCategories}
+          allCategories={allCategories}
           allTasks={tasks}
           onAddTask={handleAddTask}
           onReorderTasks={reorderTasks}
@@ -298,6 +303,9 @@ const TimeBlockSchedulePage: React.FC<TimeBlockSchedulePageProps> = ({ isDemo: p
           createCategory={createCategory}
           updateCategory={updateCategory}
           deleteCategory={deleteCategory}
+          onUpdate={updateTask}
+          onDelete={deleteTask}
+          onStatusChange={handleStatusChangeWrapper}
         />
       )}
     </div>

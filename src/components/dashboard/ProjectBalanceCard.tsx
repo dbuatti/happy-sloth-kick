@@ -1,90 +1,61 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { Plus, Minus } from 'lucide-react';
+import { Plus, Minus, Trash2, Edit } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 import { ProjectBalanceCardProps } from '@/types/props';
-import { useProjects } from '@/hooks/useProjects';
-import { useAuth } from '@/context/AuthContext';
-import { Project } from '@/types/task';
+import { Project } from '@/types/task'; // Import Project type
 
-const ProjectBalanceCard: React.FC<ProjectBalanceCardProps> = ({ projects, title }) => {
-  const { user } = useAuth();
-  const userId = user?.id;
-
-  const {
-    incrementProjectCount,
-    decrementProjectCount,
-    isLoading,
-    error,
-  } = useProjects({ userId });
-
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">{title}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse"></div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">{title}</CardTitle>
-        </CardHeader>
-        <CardContent className="text-red-500">Error loading projects.</CardContent>
-      </Card>
-    );
-  }
-
-  const totalCount = projects.reduce((sum: number, project: Project) => sum + project.current_count, 0);
+const ProjectBalanceCard: React.FC<ProjectBalanceCardProps> = ({
+  project,
+  onIncrement,
+  onDecrement,
+  onDelete,
+  onEditNotes,
+  totalCount,
+}) => {
+  const progressValue = totalCount > 0 ? (project.current_count / totalCount) * 100 : 0;
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">{title}</CardTitle>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-lg">{project.name}</CardTitle>
+        <div className="flex items-center space-x-1">
+          <Button variant="ghost" size="icon" onClick={() => onEditNotes(project)}>
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => onDelete(project.id)}>
+            <Trash2 className="h-4 w-4 text-red-500" />
+          </Button>
+        </div>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {projects.length === 0 ? (
-          <p className="text-gray-500">No projects added yet.</p>
-        ) : (
-          projects.map((project: Project) => (
-            <div key={project.id} className="space-y-1">
-              <div className="flex justify-between items-center text-sm">
-                <span className="font-medium">{project.name}</span>
-                <span className="text-gray-600">{project.current_count}</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={() => incrementProjectCount(project.id)}
-                >
-                  <Plus className="h-3 w-3" />
-                </Button>
-                <Progress value={(project.current_count / totalCount) * 100 || 0} className="flex-grow h-2" />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={() => decrementProjectCount(project.id)}
-                >
-                  <Minus className="h-3 w-3" />
-                </Button>
-              </div>
-            </div>
-          ))
+      <CardContent className="space-y-2">
+        {project.description && <p className="text-sm text-gray-600">{project.description}</p>}
+        {project.link && (
+          <a href={project.link} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline text-sm block">
+            {project.link}
+          </a>
         )}
+        <div className="flex items-center space-x-2 mt-2">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => onDecrement(project.id)}
+          >
+            <Minus className="h-4 w-4" />
+          </Button>
+          <Progress value={progressValue} className="flex-grow h-2" />
+          <span className="text-sm font-medium">{project.current_count}</span>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => onIncrement(project.id)}
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

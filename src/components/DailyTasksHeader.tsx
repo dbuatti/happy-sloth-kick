@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { CalendarDays, Settings, XCircle, EyeOff } from 'lucide-react'; // Removed Plus, Archive
+import { CalendarDays, Settings, XCircle, EyeOff } from 'lucide-react';
 import {
   TaskSection,
   TaskCategory,
@@ -29,6 +29,10 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   onAddTask,
   setPrefilledTaskData,
   isDemo,
+  onUpdate, // Added from TaskActionProps
+  onDelete, // Added from TaskActionProps
+  onReorderTasks, // Added from TaskActionProps
+  onStatusChange, // Added from TaskActionProps
 }) => {
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
   const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
@@ -91,6 +95,10 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
           createCategory={createCategory}
           updateCategory={updateCategory}
           deleteCategory={deleteCategory}
+          onUpdate={onUpdate}
+          onDelete={onDelete}
+          onReorderTasks={onReorderTasks}
+          onStatusChange={onStatusChange}
         />
         <Button
           variant="outline"
@@ -119,10 +127,15 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
       <ManageCategoriesDialog
         isOpen={isManageCategoriesOpen}
         onClose={() => setIsManageCategoriesOpen(false)}
-        categories={allCategories}
+        allCategories={allCategories}
         createCategory={createCategory}
         updateCategory={updateCategory}
         deleteCategory={deleteCategory}
+        sections={sections}
+        updateSection={updateSection}
+        deleteSection={deleteSection}
+        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+        createSection={createSection}
       />
     </div>
   );
