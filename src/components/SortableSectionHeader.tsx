@@ -5,18 +5,13 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Plus, CheckCircle2, ChevronDown, MoreHorizontal, Trash2, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TaskSection } from '@/hooks/useTasks';
 
-// Define a type for the section prop that makes 'created_at' optional,
-// as the TaskSection from useTasks might not always include it,
-// but the base TaskSection type might define it as required.
-type SectionPropType = Omit<TaskSection, 'created_at'> & { created_at?: string };
-
 interface SortableSectionHeaderProps {
-  section: SectionPropType; // Changed from TaskSection to SectionPropType
+  section: TaskSection;
   sectionTasksCount: number;
   isExpanded: boolean;
   toggleSection: (sectionId: string) => void;
@@ -166,7 +161,6 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
                     className="h-8 w-8 p-0"
                     tabIndex={isOverlay ? -1 : 0}
                     onClick={(e) => e.stopPropagation()}
-                    data-dnd-ignore-active
                   >
                     <span>
                       <span className="sr-only">Open section menu</span>
