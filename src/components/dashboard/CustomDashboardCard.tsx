@@ -7,12 +7,12 @@ import { Edit, Trash2, GripVertical } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { CustomDashboardCardProps } from '@/types/props';
-import { CustomDashboardCard as CustomDashboardCardType } from '@/types/task'; // Import the type from task.ts
+import { CustomDashboardCard as CustomDashboardCardType } from '@/types/task';
 import { showError, showSuccess } from '@/utils/toast';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 
-const CustomDashboardCard: React.FC<CustomDashboardCardProps> = ({ card, onEdit, onDelete, onReorder }) => {
+const CustomDashboardCard: React.FC<CustomDashboardCardProps> = ({ card, onEdit, onDelete }) => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editedTitle, setEditedTitle] = useState(card.title);
   const [editedContent, setEditedContent] = useState(card.content || '');

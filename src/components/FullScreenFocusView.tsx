@@ -2,13 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import {
   Play,
   Edit,
   Plus,
@@ -30,9 +23,9 @@ const FullScreenFocusView: React.FC<FullScreenFocusViewProps> = ({
   onComplete,
   onSkip,
   onOpenDetail,
-  onUpdate, // Renamed from updateTask to onUpdate for consistency
+  onUpdate,
   sections,
-  allCategories, // Renamed from categories to allCategories for consistency
+  allCategories,
   allTasks,
   onAddTask,
   onReorderTasks,
@@ -43,10 +36,9 @@ const FullScreenFocusView: React.FC<FullScreenFocusViewProps> = ({
   createCategory,
   updateCategory,
   deleteCategory,
-  onDelete, // Added from TaskActionProps
-  onStatusChange, // Added from TaskActionProps
+  onDelete,
+  onStatusChange,
 }) => {
-  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
   const [newSubtaskDescription, setNewSubtaskDescription] = useState('');
 
   useEffect(() => {
@@ -61,8 +53,7 @@ const FullScreenFocusView: React.FC<FullScreenFocusViewProps> = ({
   };
 
   const handleDeleteTask = async (taskId: string) => {
-    await onDelete(taskId); // Use onDelete from props
-    setIsConfirmDeleteOpen(false);
+    await onDelete(taskId);
     onClose();
   };
 

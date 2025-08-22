@@ -18,10 +18,10 @@ export const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
   task,
   onOpenDetail,
   onOpenFocusView,
-  onUpdate, // Renamed from updateTask to onUpdate for consistency
-  onDelete, // Renamed from deleteTask to onDelete for consistency
+  onUpdate,
+  onDelete,
   sections,
-  allCategories, // Renamed from categories to allCategories for consistency
+  allCategories,
   allTasks,
   onAddTask,
   onReorderTasks,
@@ -32,7 +32,7 @@ export const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
   createCategory,
   updateCategory,
   deleteCategory,
-  onStatusChange, // Added from TaskActionProps
+  onStatusChange,
 }) => {
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
   const [newSubtaskDescription, setNewSubtaskDescription] = useState('');

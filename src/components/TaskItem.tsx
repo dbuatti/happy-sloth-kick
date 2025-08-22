@@ -53,7 +53,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   task,
   allTasks,
   sections,
-  allCategories, // Renamed from categories to allCategories for consistency
+  allCategories,
   onStatusChange,
   onUpdate,
   onDelete,

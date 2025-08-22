@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 const NextTaskCard: React.FC<NextTaskCardProps> = ({
   nextAvailableTask,
   sections,
-  allCategories, // Renamed from categories to allCategories for consistency
+  allCategories,
   onOpenOverview,
   onOpenFocusView,
 }) => {

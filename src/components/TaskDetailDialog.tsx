@@ -17,7 +17,7 @@ export const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   task,
   allTasks,
   sections,
-  allCategories, // Renamed from categories to allCategories for consistency
+  allCategories,
   onUpdate,
   onDelete,
   onAddTask,
@@ -26,7 +26,7 @@ export const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   createSection,
   updateSection,
   deleteSection,
-  updateSectionIncludeInFocusMode, // Added missing prop
+  updateSectionIncludeInFocusMode,
   createCategory,
   updateCategory,
   deleteCategory,
@@ -151,9 +151,9 @@ export const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
             </Select>
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <label htmlFor="category" className="text-right">
+            <Label htmlFor="category" className="text-right">
               Category
-            </label>
+            </Label>
             <SelectDialog
               items={allCategories.map(cat => ({
                 id: cat.id,
@@ -177,9 +177,9 @@ export const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <label htmlFor="section" className="text-right">
+            <Label htmlFor="section" className="text-right">
               Section
-            </label>
+            </Label>
             <SelectDialog
               items={sections.map(sec => ({ id: sec.id, name: sec.name }))}
               selectedItem={selectedSection ? { id: selectedSection.id, name: selectedSection.name } : null}
@@ -198,9 +198,9 @@ export const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <label htmlFor="recurring-type" className="text-right">
+            <Label htmlFor="recurring-type" className="text-right">
               Recurring
-            </label>
+            </Label>
             <Select
               value={recurringType}
               onValueChange={(value: RecurringType) => setRecurringType(value)}
@@ -217,15 +217,15 @@ export const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
             </Select>
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <label htmlFor="link" className="text-right">
+            <Label htmlFor="link" className="text-right">
               Link
-            </label>
+            </Label>
             <Input id="link" value={link} onChange={(e) => setLink(e.target.value)} className="col-span-3" placeholder="Optional link" />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <label htmlFor="image-url" className="text-right">
+            <Label htmlFor="image-url" className="text-right">
               Image URL
-            </label>
+            </Label>
             <Input id="image-url" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className="col-span-3" placeholder="Optional image URL" />
           </div>
         </div>

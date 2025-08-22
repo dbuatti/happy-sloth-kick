@@ -22,7 +22,7 @@ import { SidebarProps } from '@/types/props';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/useIsMobile';
 
-const Sidebar: React.FC<SidebarProps> = ({ isDemo, demoUserId }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isDemo }) => {
   const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
   const isMobile = useIsMobile();

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Plus, Minus, Trash2, Edit } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { ProjectBalanceCardProps } from '@/types/props';
-import { Project } from '@/types/task'; // Import Project type
+import { Project } from '@/types/task';
 
 const ProjectBalanceCard: React.FC<ProjectBalanceCardProps> = ({
   project,

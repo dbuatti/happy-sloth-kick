@@ -4,28 +4,15 @@ import { useTasks } from '@/hooks/useTasks';
 import { useProjects } from '@/hooks/useProjects';
 import { useSettings } from '@/hooks/useSettings';
 import { useCustomDashboardCards } from '@/hooks/useCustomDashboardCards';
-import { useQuickLinks } from '@/hooks/useQuickLinks';
-import { useWeeklyFocus } from '@/hooks/useWeeklyFocus';
-import { useGratitudeJournal } from '@/hooks/useGratitudeJournal';
-import { useWorryJournal } from '@/hooks/useWorryJournal';
-import { useSleepRecords } from '@/hooks/useSleepRecords';
-import { usePeopleMemory } from '@/hooks/usePeopleMemory';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
-import { Task, TaskSection, TaskCategory, Project, CustomDashboardCard as CustomDashboardCardType } from '@/types/task';
-import { format, startOfWeek } from 'date-fns';
-import { Button } from '@/components/ui/button';
+import { Task, Project, CustomDashboardCard as CustomDashboardCardType } from '@/types/task'; // Removed unused TaskSection, TaskCategory
+import { Button } from '@/components/ui/button'; // Added Button import
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import AddTaskForm from '@/components/AddTaskForm';
 import DailyBriefingCard from '@/components/dashboard/DailyBriefingCard';
 import NextTaskCard from '@/components/dashboard/NextTaskCard';
-import ProjectBalanceCard from '@/components/dashboard/ProjectBalanceCard';
 import CustomDashboardCard from '@/components/dashboard/CustomDashboardCard';
 import QuickLinks from '@/components/dashboard/QuickLinks';
-import WeeklyFocusCard from '@/components/dashboard/WeeklyFocusCard';
-import GratitudeJournalCard from '@/components/dashboard/GratitudeJournalCard';
-import WorryJournalCard from '@/components/dashboard/WorryJournalCard';
-import SleepTrackerCard from '@/components/dashboard/SleepTrackerCard';
-import PeopleMemoryCard from '@/components/dashboard/PeopleMemoryCard';
 import { DashboardPageProps, AddTaskFormProps, TaskOverviewDialogProps, TaskDetailDialogProps, FullScreenFocusViewProps } from '@/types/props';
 import { TaskOverviewDialog } from '@/components/TaskOverviewDialog';
 import { TaskDetailDialog } from '@/components/TaskDetailDialog';
@@ -33,7 +20,7 @@ import FullScreenFocusView from '@/components/FullScreenFocusView';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
 import { arrayMove } from '@dnd-kit/sortable';
-import { restrictToWindowEdges } from '@dnd-kit/modifiers';
+import { restrictToWindowEdges } from '@dnd-kit/modifiers'; // Corrected import
 
 const DashboardPage: React.FC<DashboardPageProps> = ({ isDemo: propIsDemo, demoUserId }) => {
   const { user } = useAuth();
@@ -47,7 +34,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isDemo: propIsDemo, demoU
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isFocusViewOpen, setIsFocusViewOpen] = useState(false);
-  const [isProjectNotesOpen, setIsProjectNotesOpen] = useState(false);
+  // Removed unused isProjectNotesOpen
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
   const {
@@ -67,21 +54,17 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isDemo: propIsDemo, demoU
     updateCategory,
     deleteCategory,
     onStatusChange,
+    isLoading: tasksLoading, // Destructured isLoading from useTasks
+    error: tasksError, // Destructured error from useTasks
   } = useTasks({ userId: userId, currentDate: currentDate, viewMode: 'all' });
 
   const {
-    projects,
+    updateProject,
     isLoading: projectsLoading,
     error: projectsError,
-    addProject,
-    updateProject,
-    deleteProject: deleteProjectHook,
-    incrementProjectCount,
-    decrementProjectCount,
-    resetAllProjectCounts,
   } = useProjects({ userId });
 
-  const { settings, isLoading: settingsLoading, error: settingsError } = useSettings({ userId });
+  const { isLoading: settingsLoading, error: settingsError } = useSettings({ userId });
   const { customDashboardCards, isLoading: cardsLoading, error: cardsError, upsertCustomDashboardCard, deleteCustomDashboardCard } = useCustomDashboardCards({ userId });
   const { dashboardStats, isLoading: statsLoading, error: statsError } = useDashboardStats({ userId });
 
@@ -109,29 +92,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isDemo: propIsDemo, demoU
     setIsFocusViewOpen(true);
   };
 
-  const handleEditProjectNotes = (project: Project) => {
-    setSelectedProject(project);
-    setIsProjectNotesOpen(true);
-  };
-
-  const handleSaveProjectNotes = async (notes: string) => {
-    if (selectedProject) {
-      await updateProject(selectedProject.id, { notes });
-      setSelectedProject({ ...selectedProject, notes });
-    }
-  };
-
-  const handleStatusChangeWrapper = async (taskId: string, newStatus: TaskStatus): Promise<Task | null> => {
-    return updateTask(taskId, { status: newStatus });
-  };
+  // Removed unused handleEditProjectNotes, handleSaveProjectNotes, handleStatusChangeWrapper
 
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
-      coordinateGetter: (args) => {
-        // Custom coordinate getter logic if needed, otherwise use default
-        return { x: 0, y: 0 }; // Placeholder
-      },
+      coordinateGetter: () => ({ x: 0, y: 0 }), // Placeholder, removed unused 'args'
     })
   );
 
@@ -182,8 +148,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isDemo: propIsDemo, demoU
     task: selectedTask,
     onOpenDetail: handleOpenDetail,
     onOpenFocusView: handleOpenFocusView,
-    updateTask: updateTask,
-    deleteTask: deleteTask,
+    onUpdate: updateTask, // Changed from updateTask
+    onDelete: deleteTask, // Changed from deleteTask
     sections: sections,
     allCategories: allCategories,
     allTasks: tasks,
@@ -196,8 +162,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isDemo: propIsDemo, demoU
     createCategory: createCategory,
     updateCategory: updateCategory,
     deleteCategory: deleteCategory,
-    onUpdate: updateTask,
-    onDelete: deleteTask,
     onStatusChange: onStatusChange,
   };
 
@@ -205,8 +169,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isDemo: propIsDemo, demoU
     isOpen: isDetailOpen,
     onClose: () => setIsDetailOpen(false),
     task: selectedTask,
-    onUpdate: updateTask,
-    onDelete: deleteTask,
+    onUpdate: updateTask, // Changed from updateTask
+    onDelete: deleteTask, // Changed from deleteTask
     sections: sections,
     allCategories: allCategories,
     allTasks: tasks,
@@ -234,7 +198,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isDemo: propIsDemo, demoU
       setIsFocusViewOpen(false);
     },
     onOpenDetail: handleOpenDetail,
-    updateTask: updateTask,
+    onUpdate: updateTask, // Changed from updateTask
     sections: sections,
     allCategories: allCategories,
     allTasks: tasks,
@@ -247,13 +211,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isDemo: propIsDemo, demoU
     createCategory: createCategory,
     updateCategory: updateCategory,
     deleteCategory: deleteCategory,
-    onUpdate: updateTask,
-    onDelete: deleteTask,
+    onDelete: deleteTask, // Changed from deleteTask
     onStatusChange: onStatusChange,
   };
-
-  const isLoading = tasksLoading || projectsLoading || settingsLoading || cardsLoading || statsLoading;
-  const error = tasksError || projectsError || settingsError || cardsError || statsError;
 
   if (isLoading) {
     return <div className="p-4 md:p-6">Loading dashboard...</div>;
@@ -271,7 +231,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isDemo: propIsDemo, demoU
         <DailyBriefingCard
           tasksDue={dashboardStats?.tasksDueToday || 0}
           appointmentsToday={dashboardStats?.appointmentsToday || 0}
-          tasksCompleted={0} // This needs to be calculated from tasks if needed
+          tasksCompleted={0}
           isLoading={statsLoading}
         />
         <NextTaskCard

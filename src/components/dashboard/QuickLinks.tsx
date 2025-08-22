@@ -13,7 +13,7 @@ interface QuickLinksProps {
   demoUserId?: string;
 }
 
-const QuickLinks: React.FC<QuickLinksProps> = ({ isDemo = false, demoUserId }) => {
+const QuickLinks: React.FC<QuickLinksProps> = ({ demoUserId }) => {
   const { user } = useAuth();
   const userId = user?.id || demoUserId;
 
@@ -25,7 +25,7 @@ const QuickLinks: React.FC<QuickLinksProps> = ({ isDemo = false, demoUserId }) =
     if (editingLink) {
       await updateQuickLink(editingLink.id, data);
     } else {
-      await addQuickLink(data.title!, data.url!, data.emoji, data.background_color);
+      await addQuickLink(data.title!, data.url!, data.emoji || null, data.background_color || null);
     }
     setIsFormOpen(false);
     setEditingLink(null);

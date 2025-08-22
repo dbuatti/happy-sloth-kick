@@ -21,7 +21,7 @@ function Login() {
               },
             },
           }}
-          theme="light" // Using light theme as default
+          theme="light"
         />
       </div>
     </div>

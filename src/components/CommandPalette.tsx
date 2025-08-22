@@ -9,12 +9,12 @@ import {
   CommandSeparator,
 } from '@/components/ui/command';
 import { Button } from '@/components/ui/button';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, ListTodo } from 'lucide-react';
 import { useTasks } from '@/hooks/useTasks';
 import { useAuth } from '@/context/AuthContext';
-import { Task, TaskSection, TaskCategory, TaskStatus } from '@/types/task';
+import { Task, TaskStatus } from '@/types/task'; // Removed unused TaskSection, TaskCategory
 import AddTaskForm from './AddTaskForm';
-import { AddTaskFormProps } from '@/types/props'; // Ensure this is correctly imported
+import { AddTaskFormProps } from '@/types/props';
 
 const CommandPalette: React.FC = () => {
   const [open, setOpen] = useState(false);
@@ -38,7 +38,7 @@ const CommandPalette: React.FC = () => {
     createCategory,
     updateCategory,
     deleteCategory,
-    onStatusChange, // Added from TaskActionProps
+    onStatusChange,
   } = useTasks({ userId: userId, currentDate: new Date(), viewMode: 'all' });
 
   const handleNewTaskSubmit = async (taskData: Partial<Task>) => {
@@ -56,27 +56,17 @@ const CommandPalette: React.FC = () => {
     setMode('addTask');
   }, []);
 
-  const handleOpenAddTaskWithPrefill = useCallback((data: Partial<Task>) => {
-    setPrefilledTaskData(data);
-    setMode('addTask');
-  }, []);
-
   const handleTaskSelect = useCallback((task: Task) => {
-    // For now, just log and close. In a real app, this might open a task detail dialog.
     console.log('Selected task:', task);
     setOpen(false);
   }, []);
-
-  const filteredTasks = useMemo(() => {
-    return tasks.filter(task => task.status !== 'completed' && task.status !== 'archived');
-  }, [tasks]);
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         setOpen((prev) => !prev);
-        setMode('search'); // Reset to search mode when opening with shortcut
+        setMode('search');
       }
     };
     document.addEventListener('keydown', down);
@@ -133,7 +123,7 @@ const CommandPalette: React.FC = () => {
               </CommandGroup>
               <CommandSeparator />
               <CommandGroup heading="Tasks">
-                {filteredTasks.map((task) => (
+                {tasks.map((task) => (
                   <CommandItem key={task.id} onSelect={() => handleTaskSelect(task)}>
                     <ListTodo className="mr-2 h-4 w-4" />
                     <span>{task.description}</span>

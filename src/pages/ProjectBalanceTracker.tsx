@@ -1,23 +1,99 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useTasks } from '@/hooks/useTasks';
 import { useProjects } from '@/hooks/useProjects';
-import { useSettings } from '@/hooks/useSettings';
-import { Project } from '@/types/task';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Task, TaskSection, TaskCategory, Project, TaskStatus } from '@/types/task';
+import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Plus, Minus, Edit, Trash2, RefreshCcw } from 'lucide-react';
-import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import ProjectTrackerSettings from '@/components/ProjectTrackerSettings';
-import { ProjectBalanceTrackerPageProps } from '@/types/props';
+import { Plus, Edit, Trash2 } from 'lucide-react';
+import AddTaskForm from '@/components/AddTaskForm';
+import ProjectBalanceCard from '@/components/dashboard/ProjectBalanceCard';
+import { TaskOverviewDialog } from '@/components/TaskOverviewDialog';
+import { TaskDetailDialog } from '@/components/TaskDetailDialog';
+import FullScreenFocusView from '@/components/FullScreenFocusView';
+import { ProjectBalanceTrackerPageProps, AddTaskFormProps, ProjectNotesDialogProps } from '@/types/props';
+
+interface ProjectFormState {
+  name: string;
+  description: string;
+  link: string;
+}
+
+const ProjectNotesDialog: React.FC<ProjectNotesDialogProps> = ({ isOpen, onClose, project, onSaveNotes }) => {
+  const [notes, setNotes] = useState(project.notes || '');
+
+  useEffect(() => {
+    setNotes(project.notes || '');
+  }, [project]);
+
+  const handleSave = async () => {
+    await onSaveNotes(notes);
+    onClose();
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Edit Notes for {project.name}</DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <Label htmlFor="project-notes">Notes</Label>
+          <Textarea
+            id="project-notes"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            className="min-h-[100px]"
+          />
+        </div>
+        <DialogFooter>
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button onClick={handleSave}>Save Notes</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 const ProjectBalanceTrackerPage: React.FC<ProjectBalanceTrackerPageProps> = ({ isDemo: propIsDemo, demoUserId }) => {
   const { user } = useAuth();
   const userId = user?.id || demoUserId;
   const isDemo = propIsDemo || user?.id === 'd889323b-350c-4764-9788-6359f85f6142';
+
+  const [currentDate] = useState(new Date());
+  const [isProjectFormOpen, setIsProjectFormOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [projectFormData, setProjectFormData] = useState<ProjectFormState>({ name: '', description: '', link: '' });
+  const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
+  const [prefilledTaskData, setPrefilledTaskData] = useState<Partial<Task> | null>(null);
+  const [isOverviewOpen, setIsOverviewOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isFocusViewOpen, setIsFocusViewOpen] = useState(false);
+  const [isProjectNotesOpen, setIsProjectNotesOpen] = useState(false);
+  const [selectedProjectForNotes, setSelectedProjectForNotes] = useState<Project | null>(null);
+
+  const {
+    tasks,
+    sections,
+    allCategories,
+    handleAddTask,
+    updateTask,
+    deleteTask,
+    reorderTasks,
+    createSection,
+    updateSection,
+    deleteSection,
+    updateSectionIncludeInFocusMode,
+    createCategory,
+    updateCategory,
+    deleteCategory,
+    onStatusChange,
+  } = useTasks({ userId: userId, currentDate: currentDate, viewMode: 'all' });
 
   const {
     projects,
@@ -29,152 +105,271 @@ const ProjectBalanceTrackerPage: React.FC<ProjectBalanceTrackerPageProps> = ({ i
     incrementProjectCount,
     decrementProjectCount,
     resetAllProjectCounts,
-    sortOption,
-    setSortOption,
   } = useProjects({ userId });
 
-  const { settings, isLoading: settingsLoading, error: settingsError } = useSettings({ userId });
-
-  const [isAddProjectDialogOpen, setIsAddProjectDialogOpen] = useState(false);
-  const [newProjectName, setNewProjectName] = useState('');
-  const [newProjectDescription, setNewProjectDescription] = useState('');
-  const [newProjectLink, setNewProjectLink] = useState('');
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-
-  const totalCount = useMemo(() => {
-    return projects.reduce((sum: number, project: Project) => sum + project.current_count, 0);
+  const totalProjectCount = useMemo(() => {
+    return projects.reduce((sum, project) => sum + project.current_count, 0);
   }, [projects]);
 
-  const handleAddProject = async () => {
-    if (!newProjectName.trim()) return;
-    await addProject(newProjectName.trim(), newProjectDescription.trim(), newProjectLink.trim());
-    setNewProjectName('');
-    setNewProjectDescription('');
-    setNewProjectLink('');
-    setIsAddProjectDialogOpen(false);
+  const handleOpenProjectForm = (project: Project | null = null) => {
+    setEditingProject(project);
+    if (project) {
+      setProjectFormData({ name: project.name, description: project.description || '', link: project.link || '' });
+    } else {
+      setProjectFormData({ name: '', description: '', link: '' });
+    }
+    setIsProjectFormOpen(true);
   };
 
-  const handleResetAllCountsConfirm = async () => {
-    await resetAllProjectCounts();
+  const handleSaveProject = async () => {
+    if (!projectFormData.name.trim()) return;
+    if (editingProject) {
+      await updateProject(editingProject.id, {
+        name: projectFormData.name.trim(),
+        description: projectFormData.description,
+        link: projectFormData.link,
+      });
+    } else {
+      await addProject(projectFormData.name.trim(), projectFormData.description, projectFormData.link);
+    }
+    setIsProjectFormOpen(false);
   };
 
-  if (projectsLoading || settingsLoading) {
+  const handleEditProjectNotes = (project: Project) => {
+    setSelectedProjectForNotes(project);
+    setIsProjectNotesOpen(true);
+  };
+
+  const handleSaveProjectNotes = async (notes: string) => {
+    if (selectedProjectForNotes) {
+      await updateProject(selectedProjectForNotes.id, { notes });
+      setSelectedProjectForNotes({ ...selectedProjectForNotes, notes });
+    }
+    setIsProjectNotesOpen(false);
+  };
+
+  const handleOpenOverview = (task: Task) => {
+    setSelectedTask(task);
+    setIsOverviewOpen(true);
+  };
+
+  const handleOpenDetail = (task: Task) => {
+    setSelectedTask(task);
+    setIsDetailOpen(true);
+  };
+
+  const handleOpenFocusView = (task: Task) => {
+    setSelectedTask(task);
+    setIsFocusViewOpen(true);
+  };
+
+  const handleNewTaskSubmit = async (taskData: Partial<Task>) => {
+    const newTask = await handleAddTask(taskData);
+    if (newTask) {
+      setIsAddTaskDialogOpen(false);
+      setPrefilledTaskData(null);
+    }
+    return newTask;
+  };
+
+  const handleStatusChangeWrapper = async (taskId: string, newStatus: TaskStatus): Promise<Task | null> => {
+    return updateTask(taskId, { status: newStatus });
+  };
+
+  const addTaskFormProps: AddTaskFormProps = {
+    onAddTask: handleNewTaskSubmit,
+    onTaskAdded: () => setIsAddTaskDialogOpen(false),
+    sections: sections,
+    allCategories: allCategories,
+    currentDate: currentDate,
+    createSection: createSection,
+    updateSection: updateSection,
+    deleteSection: deleteSection,
+    updateSectionIncludeInFocusMode: updateSectionIncludeInFocusMode,
+    createCategory: createCategory,
+    updateCategory: updateCategory,
+    deleteCategory: deleteCategory,
+    initialData: prefilledTaskData,
+    onUpdate: updateTask,
+    onDelete: deleteTask,
+    onReorderTasks: reorderTasks,
+    onStatusChange: onStatusChange,
+  };
+
+  if (projectsLoading) {
     return <div className="p-4 md:p-6">Loading projects...</div>;
   }
 
-  if (projectsError || settingsError) {
-    return <div className="p-4 md:p-6 text-red-500">Error loading projects: {projectsError?.message || settingsError?.message}</div>;
+  if (projectsError) {
+    return <div className="p-4 md:p-6 text-red-500">Error loading projects: {projectsError.message}</div>;
   }
 
   return (
     <div className="flex flex-col h-full p-4 md:p-6">
-      <h1 className="text-3xl font-bold mb-6">{settings?.project_tracker_title || 'Project Balance Tracker'}</h1>
+      <h1 className="text-3xl font-bold mb-6">Project Balance Tracker</h1>
 
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center space-x-2">
-          <Button onClick={() => setIsAddProjectDialogOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" /> Add Project
-          </Button>
-          <Button variant="outline" onClick={() => setIsSettingsOpen(true)}>
-            <Edit className="mr-2 h-4 w-4" /> Settings
-          </Button>
-        </div>
-        <Select value={sortOption} onValueChange={(value: string) => setSortOption(value)}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Sort by" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="name">Name</SelectItem>
-            <SelectItem value="countAsc">Count (Low to High)</SelectItem>
-            <SelectItem value="countDesc">Count (High to Low)</SelectItem>
-          </SelectContent>
-        </Select>
+      <div className="flex justify-between items-center mb-6">
+        <Button onClick={() => handleOpenProjectForm()}>
+          <Plus className="mr-2 h-4 w-4" /> Add New Project
+        </Button>
+        <Button variant="outline" onClick={resetAllProjectCounts}>
+          Reset All Counts
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         {projects.length === 0 ? (
-          <p className="text-center text-gray-500 col-span-full">No projects added yet. Click "Add Project" to get started!</p>
+          <p className="text-center text-gray-500 col-span-full">No projects yet. Add your first project!</p>
         ) : (
-          projects.map((project: Project) => (
-            <Card key={project.id}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-lg">{project.name}</CardTitle>
-                <div className="flex items-center space-x-1">
-                  <Button variant="ghost" size="icon" onClick={() => deleteProject(project.id)}>
-                    <Trash2 className="h-4 w-4 text-red-500" />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {project.description && <p className="text-sm text-gray-600">{project.description}</p>}
-                {project.link && (
-                  <a href={project.link} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline text-sm block">
-                    {project.link}
-                  </a>
-                )}
-                <div className="flex items-center space-x-2 mt-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => decrementProjectCount(project.id)}
-                  >
-                    <Minus className="h-4 w-4" />
-                  </Button>
-                  <Progress value={(project.current_count / totalCount) * 100 || 0} className="flex-grow h-2" />
-                  <span className="text-sm font-medium">{project.current_count}</span>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => incrementProjectCount(project.id)}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+          projects.map((project) => (
+            <ProjectBalanceCard
+              key={project.id}
+              project={project}
+              onIncrement={incrementProjectCount}
+              onDecrement={decrementProjectCount}
+              onDelete={deleteProject}
+              onEditNotes={handleEditProjectNotes}
+              totalCount={totalProjectCount}
+            />
           ))
         )}
       </div>
 
-      <Dialog open={isAddProjectDialogOpen} onOpenChange={setIsAddProjectDialogOpen}>
+      <Dialog open={isProjectFormOpen} onOpenChange={setIsProjectFormOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Add New Project</DialogTitle>
+            <DialogTitle>{editingProject ? 'Edit Project' : 'Add New Project'}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">Name</Label>
-              <Input id="name" value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} className="col-span-3" />
+              <Input
+                id="name"
+                value={projectFormData.name}
+                onChange={(e) => setProjectFormData({ ...projectFormData, name: e.target.value })}
+                className="col-span-3"
+              />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="description" className="text-right">Description</Label>
-              <Input id="description" value={newProjectDescription} onChange={(e) => setNewProjectDescription(e.target.value)} className="col-span-3" />
+              <Textarea
+                id="description"
+                value={projectFormData.description}
+                onChange={(e) => setProjectFormData({ ...projectFormData, description: e.target.value })}
+                className="col-span-3"
+              />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="link" className="text-right">Link</Label>
-              <Input id="link" value={newProjectLink} onChange={(e) => setNewProjectLink(e.target.value)} className="col-span-3" />
+              <Input
+                id="link"
+                value={projectFormData.link}
+                onChange={(e) => setProjectFormData({ ...projectFormData, link: e.target.value })}
+                className="col-span-3"
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="secondary" onClick={() => setIsAddProjectDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleAddProject}>Add Project</Button>
+            <Button variant="secondary" onClick={() => setIsProjectFormOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveProject}>{editingProject ? 'Save Changes' : 'Add Project'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+      {selectedProjectForNotes && (
+        <ProjectNotesDialog
+          isOpen={isProjectNotesOpen}
+          onClose={() => setIsProjectNotesOpen(false)}
+          project={selectedProjectForNotes}
+          onSaveNotes={handleSaveProjectNotes}
+        />
+      )}
+
+      <Dialog open={isAddTaskDialogOpen} onOpenChange={setIsAddTaskDialogOpen}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>Project Settings</DialogTitle>
+            <DialogTitle>Add New Task</DialogTitle>
           </DialogHeader>
-          <ProjectTrackerSettings />
-          <DialogFooter>
-            <Button variant="secondary" onClick={() => setIsSettingsOpen(false)}>Close</Button>
-          </DialogFooter>
+          <AddTaskForm {...addTaskFormProps} />
         </DialogContent>
       </Dialog>
+
+      <TaskOverviewDialog
+        isOpen={isOverviewOpen}
+        onClose={() => setIsOverviewOpen(false)}
+        task={selectedTask}
+        onOpenDetail={handleOpenDetail}
+        onOpenFocusView={handleOpenFocusView}
+        updateTask={updateTask}
+        deleteTask={deleteTask}
+        sections={sections}
+        allCategories={allCategories}
+        allTasks={tasks}
+        onAddTask={handleAddTask}
+        onReorderTasks={reorderTasks}
+        createSection={createSection}
+        updateSection={updateSection}
+        deleteSection={deleteSection}
+        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+        createCategory={createCategory}
+        updateCategory={updateCategory}
+        deleteCategory={deleteCategory}
+        onUpdate={updateTask}
+        onDelete={deleteTask}
+        onStatusChange={onStatusChange}
+      />
+
+      <TaskDetailDialog
+        isOpen={isDetailOpen}
+        onClose={() => setIsDetailOpen(false)}
+        task={selectedTask}
+        onUpdate={updateTask}
+        onDelete={deleteTask}
+        sections={sections}
+        allCategories={allCategories}
+        allTasks={tasks}
+        createSection={createSection}
+        updateSection={updateSection}
+        deleteSection={deleteSection}
+        createCategory={createCategory}
+        updateCategory={updateCategory}
+        deleteCategory={deleteCategory}
+        onAddTask={handleAddTask}
+        onReorderTasks={reorderTasks}
+        onStatusChange={onStatusChange}
+      />
+
+      {isFocusViewOpen && selectedTask && (
+        <FullScreenFocusView
+          task={selectedTask}
+          onClose={() => setIsFocusViewOpen(false)}
+          onComplete={() => {
+            updateTask(selectedTask.id, { status: 'completed' });
+            setIsFocusViewOpen(false);
+          }}
+          onSkip={() => {
+            updateTask(selectedTask.id, { status: 'skipped' });
+            setIsFocusViewOpen(false);
+          }}
+          onOpenDetail={handleOpenDetail}
+          updateTask={updateTask}
+          sections={sections}
+          allCategories={allCategories}
+          allTasks={tasks}
+          onAddTask={handleAddTask}
+          onReorderTasks={reorderTasks}
+          createSection={createSection}
+          updateSection={updateSection}
+          deleteSection={deleteSection}
+          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+          createCategory={createCategory}
+          updateCategory={updateCategory}
+          deleteCategory={deleteCategory}
+          onUpdate={updateTask}
+          onDelete={deleteTask}
+          onStatusChange={onStatusChange}
+        />
+      )}
     </div>
   );
 };

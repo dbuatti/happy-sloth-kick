@@ -9,6 +9,7 @@ import {
   Appointment,
   TaskStatus,
   TaskPriority,
+  CustomDashboardCard, // Imported CustomDashboardCard from task.ts
 } from './task';
 import { Dispatch, SetStateAction } from 'react';
 
@@ -242,7 +243,7 @@ export interface WorkHourState {
 
 export interface SidebarProps {
   isDemo?: boolean;
-  demoUserId?: string;
+  // Removed demoUserId as it's not used
 }
 
 export interface DashboardStats {
@@ -260,7 +261,7 @@ export interface NextTaskCardProps {
 
 export interface CustomDashboardCardProps {
   card: CustomDashboardCard;
-  onEdit: (card: CustomDashboardCard) => void;
+  onEdit: (card: CustomDashboardCard) => Promise<CustomDashboardCard | null>; // Changed return type
   onDelete: (cardId: string) => Promise<void>;
   onReorder: (cardId: string, newOrder: number) => Promise<void>;
 }

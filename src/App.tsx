@@ -8,7 +8,6 @@ import { SoundProvider } from './context/SoundContext';
 import { Toaster } from 'react-hot-toast';
 import Sidebar from './components/Sidebar';
 import CommandPalette from './components/CommandPalette';
-import IndexPage from './pages/Index';
 import LoginPage from './pages/Login';
 import DashboardPage from './pages/Dashboard';
 import MyHubPage from './pages/MyHub';
@@ -20,10 +19,10 @@ import ProjectBalanceTrackerPage from './pages/ProjectBalanceTracker';
 import DailyTasksV3Page from './pages/DailyTasksV3';
 import TaskCalendarPage from './pages/TaskCalendar';
 import TimeBlockSchedulePage from './pages/TimeBlockSchedule';
-import FocusModePage from './pages/FocusMode'; // Added FocusModePage
-import SleepPage from './pages/SleepPage'; // Added SleepPage
-import SleepDiaryView from './pages/SleepDiaryView'; // Added SleepDiaryView
-import LandingPage from './pages/LandingPage'; // Added LandingPage
+import FocusModePage from './pages/FocusMode';
+import SleepPage from './pages/SleepPage';
+import SleepDiaryView from './pages/SleepDiaryView';
+import LandingPage from './pages/LandingPage';
 import { useIsMobile } from './hooks/useIsMobile';
 import { Menu, LayoutDashboard, ListTodo, Calendar, Archive, Settings, HelpCircle, LogOut } from 'lucide-react';
 import { Button } from './components/ui/button';
@@ -48,8 +47,6 @@ const PrivateRoute: React.FC<{ children: React.ReactNode; isDemo?: boolean; demo
 const AppContent: React.FC = () => {
   const { user, signOut } = useAuth();
   const isMobile = useIsMobile();
-  // Removed unused: const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
-  // Removed unused: const [currentDate, setCurrentDate] = useState(new Date());
 
   const isDemoUser = user?.id === 'd889323b-350c-4764-9788-6359f85f6142';
 
@@ -109,7 +106,7 @@ const AppContent: React.FC = () => {
         </header>
         <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
           <Routes>
-            <Route path="/" element={<LandingPage />} /> {/* Changed IndexPage to LandingPage */}
+            <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
             <Route path="/my-hub" element={<PrivateRoute><MyHubPage /></PrivateRoute>} />
@@ -121,9 +118,9 @@ const AppContent: React.FC = () => {
             <Route path="/daily-tasks-v3" element={<PrivateRoute><DailyTasksV3Page /></PrivateRoute>} />
             <Route path="/task-calendar" element={<PrivateRoute><TaskCalendarPage /></PrivateRoute>} />
             <Route path="/time-block-schedule" element={<PrivateRoute><TimeBlockSchedulePage /></PrivateRoute>} />
-            <Route path="/focus-mode" element={<PrivateRoute><FocusModePage /></PrivateRoute>} /> {/* Added FocusModePage route */}
-            <Route path="/sleep" element={<PrivateRoute><SleepPage /></PrivateRoute>} /> {/* Added SleepPage route */}
-            <Route path="/sleep-diary-view" element={<PrivateRoute><SleepDiaryView /></PrivateRoute>} /> {/* Added SleepDiaryView route */}
+            <Route path="/focus-mode" element={<PrivateRoute><FocusModePage /></PrivateRoute>} />
+            <Route path="/sleep" element={<PrivateRoute><SleepPage /></PrivateRoute>} />
+            <Route path="/sleep-diary-view" element={<PrivateRoute><SleepDiaryView /></PrivateRoute>} />
 
             {/* Demo Routes */}
             <Route path="/demo/dashboard" element={<PrivateRoute isDemo={true} demoUserId="d889323b-350c-4764-9788-6359f85f6142"><DashboardPage isDemo={true} demoUserId="d889323b-350c-4764-9788-6359f85f6142" /></PrivateRoute>} />
@@ -133,9 +130,9 @@ const AppContent: React.FC = () => {
             <Route path="/demo/daily-tasks-v3" element={<PrivateRoute isDemo={true} demoUserId="d889323b-350c-4764-9788-6359f85f6142"><DailyTasksV3Page isDemo={true} demoUserId="d889323b-350c-4764-9788-6359f85f6142" /></PrivateRoute>} />
             <Route path="/demo/task-calendar" element={<PrivateRoute isDemo={true} demoUserId="d889323b-350c-4764-9788-6359f85f6142"><TaskCalendarPage isDemo={true} demoUserId="d889323b-350c-4764-9788-6359f85f6142" /></PrivateRoute>} />
             <Route path="/demo/time-block-schedule" element={<PrivateRoute isDemo={true} demoUserId="d889323b-350c-4764-9788-6359f85f6142"><TimeBlockSchedulePage isDemo={true} demoUserId="d889323b-350c-4764-9788-6359f85f6142" /></PrivateRoute>} />
-            <Route path="/demo/focus-mode" element={<PrivateRoute isDemo={true} demoUserId="d889323b-350c-4764-9788-6359f85f6142"><FocusModePage isDemo={true} demoUserId="d889323b-350c-4764-9788-6359f85f6142" /></PrivateRoute>} /> {/* Added FocusModePage demo route */}
-            <Route path="/demo/sleep" element={<PrivateRoute isDemo={true} demoUserId="d889323b-350c-4764-9788-6359f85f6142"><SleepPage isDemo={true} demoUserId="d889323b-350c-4764-9788-6359f85f6142" /></PrivateRoute>} /> {/* Added SleepPage demo route */}
-            <Route path="/demo/sleep-diary-view" element={<PrivateRoute isDemo={true} demoUserId="d889323b-350c-4764-9788-6359f85f6142"><SleepDiaryView isDemo={true} demoUserId="d889323b-350c-4764-9788-6359f85f6142" /></PrivateRoute>} /> {/* Added SleepDiaryView demo route */}
+            <Route path="/demo/focus-mode" element={<PrivateRoute isDemo={true} demoUserId="d889323b-350c-4764-9788-6359f85f6142"><FocusModePage isDemo={true} demoUserId="d889323b-350c-4764-9788-6359f85f6142" /></PrivateRoute>} />
+            <Route path="/demo/sleep" element={<PrivateRoute isDemo={true} demoUserId="d889323b-350c-4764-9788-6359f85f6142"><SleepPage isDemo={true} demoUserId="d889323b-350c-4764-9788-6359f85f6142" /></PrivateRoute>} />
+            <Route path="/demo/sleep-diary-view" element={<PrivateRoute isDemo={true} demoUserId="d889323b-350c-4764-9788-6359f85f6142"><SleepDiaryView isDemo={true} demoUserId="d889323b-350c-4764-9788-6359f85f6142" /></PrivateRoute>} />
           </Routes>
         </main>
       </div>
