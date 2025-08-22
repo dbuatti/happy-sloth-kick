@@ -321,7 +321,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
     <div
       ref={provided.innerRef}
       {...provided.draggableProps}
-      {...provided.dragHandleProps}
+      // Removed {...provided.dragHandleProps} from here
       className={cn(
         "flex flex-col p-3 rounded-lg shadow-sm mb-2 border",
         isDragging ? "bg-blue-100 border-blue-400" : "bg-white border-gray-200",
@@ -361,6 +361,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
               htmlFor={`task-${task.id}`}
               className="flex-grow text-sm cursor-pointer truncate"
               onDoubleClick={() => setIsEditing(true)}
+              {...provided.dragHandleProps} // Added dragHandleProps here
             >
               {task.description}
             </label>
@@ -416,7 +417,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0 touch-action-manipulation" // Added touch-action-manipulation
+                className="h-8 w-8 p-0 touch-action-manipulation"
                 onClick={(e) => { e.stopPropagation(); e.preventDefault(); }}
                 onTouchStart={(e) => { e.stopPropagation(); e.preventDefault(); }}
               >
