@@ -80,6 +80,9 @@ module.exports = {
         '.touch-action-manipulation': {
           'touch-action': 'manipulation',
         },
+        '.touch-action-none': { // Added new utility
+          'touch-action': 'none',
+        },
       }, ['responsive']);
     },
   ],

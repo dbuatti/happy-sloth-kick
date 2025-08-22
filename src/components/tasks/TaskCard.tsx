@@ -321,9 +321,9 @@ const TaskCard: React.FC<TaskCardProps> = ({
     <div
       ref={provided.innerRef}
       {...provided.draggableProps}
-      // Removed {...provided.dragHandleProps} from here
+      {...provided.dragHandleProps} // Moved dragHandleProps back here
       className={cn(
-        "flex flex-col p-3 rounded-lg shadow-sm mb-2 border",
+        "flex flex-col p-3 rounded-lg shadow-sm mb-2 border touch-action-none", // Added touch-action-none
         isDragging ? "bg-blue-100 border-blue-400" : "bg-white border-gray-200",
         task.status === "completed" && "opacity-70 line-through text-gray-500",
         isSubtask && "ml-6 bg-gray-50"
@@ -361,7 +361,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
               htmlFor={`task-${task.id}`}
               className="flex-grow text-sm cursor-pointer truncate"
               onDoubleClick={() => setIsEditing(true)}
-              {...provided.dragHandleProps} // Added dragHandleProps here
+              // Removed dragHandleProps from here
             >
               {task.description}
             </label>
