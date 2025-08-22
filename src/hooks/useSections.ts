@@ -3,28 +3,20 @@ import { supabase } from '@/integrations/supabase/client';
 import { TaskSection } from '@/types/task';
 import { useAuth } from '@/context/AuthContext';
 
-interface UseSectionsResult {
-  sections: TaskSection[];
-  loading: boolean;
-  addSection: (name: string, order?: number | null) => Promise<void>;
-  updateSection: (id: string, updates: Partial<TaskSection>) => Promise<void>;
-  deleteSection: (id: string) => Promise<void>;
-  reorderSections: (updates: { id: string; order: number }[]) => Promise<void>;
-  updateSectionIncludeInFocusMode: (id: string, include: boolean) => Promise<void>;
-}
-
-export const useSections = (): UseSectionsResult => {
+export const useSections = () => {
   const { user } = useAuth();
   const [sections, setSections] = useState<TaskSection[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchSections = useCallback(async () => {
     if (!user) {
+      setSections([]);
       setLoading(false);
       return;
     }
-
     setLoading(true);
+    setError(null);
     const { data, error } = await supabase
       .from('task_sections')
       .select('*')
@@ -32,9 +24,11 @@ export const useSections = (): UseSectionsResult => {
       .order('order', { ascending: true });
 
     if (error) {
+      setError(error.message);
       console.error('Error fetching sections:', error);
+      setSections([]);
     } else {
-      setSections(data as TaskSection[]);
+      setSections(data || []);
     }
     setLoading(false);
   }, [user]);
@@ -43,73 +37,108 @@ export const useSections = (): UseSectionsResult => {
     fetchSections();
   }, [fetchSections]);
 
-  const addSection = async (name: string, order: number | null = null) => {
-    if (!user) return;
+  const addSection = async (name: string, includeInFocusMode: boolean = true) => {
+    if (!user) {
+      setError('User not authenticated.');
+      return;
+    }
+    const newOrder = sections.length > 0 ? Math.max(...sections.map(s => s.order || 0)) + 1 : 0;
     const { data, error } = await supabase
       .from('task_sections')
-      .insert({ user_id: user.id, name, order })
-      .select();
+      .insert({ user_id: user.id, name, order: newOrder, include_in_focus_mode: includeInFocusMode })
+      .select()
+      .single();
+
     if (error) {
+      setError(error.message);
       console.error('Error adding section:', error);
     } else if (data) {
-      setSections((prev) => [...prev, data[0]]);
+      setSections(prev => [...prev, data]);
     }
   };
 
   const updateSection = async (id: string, updates: Partial<TaskSection>) => {
-    if (!user) return;
+    if (!user) {
+      setError('User not authenticated.');
+      return;
+    }
     const { data, error } = await supabase
       .from('task_sections')
       .update(updates)
       .eq('id', id)
       .eq('user_id', user.id)
-      .select();
+      .select()
+      .single();
+
     if (error) {
+      setError(error.message);
       console.error('Error updating section:', error);
     } else if (data) {
-      setSections((prev) => prev.map((section) => (section.id === id ? { ...section, ...data[0] } : section)));
+      setSections(prev => prev.map(s => (s.id === id ? data : s)));
     }
   };
 
   const deleteSection = async (id: string) => {
-    if (!user) return;
+    if (!user) {
+      setError('User not authenticated.');
+      return;
+    }
     const { error } = await supabase
       .from('task_sections')
       .delete()
       .eq('id', id)
       .eq('user_id', user.id);
+
     if (error) {
+      setError(error.message);
       console.error('Error deleting section:', error);
     } else {
-      setSections((prev) => prev.filter((section) => section.id !== id));
+      setSections(prev => prev.filter(s => s.id !== id));
     }
   };
 
-  const reorderSections = async (updates: { id: string; order: number }[]) => {
-    if (!user) return;
-    // This would typically involve a Supabase RPC function or multiple updates
-    // For simplicity, we'll just update the local state and re-fetch
-    // In a real app, you'd have a dedicated RPC for efficient reordering
-    await Promise.all(updates.map(update => 
-      supabase.from('task_sections')
-        .update({ order: update.order })
-        .eq('id', update.id)
-        .eq('user_id', user.id)
-    ));
-    fetchSections(); // Re-fetch to ensure correct order
+  const reorderSections = async (newOrder: { id: string; order: number }[]) => {
+    if (!user) {
+      setError('User not authenticated.');
+      return;
+    }
+    // Optimistically update UI
+    setSections(prev => {
+      const updated = [...prev];
+      newOrder.forEach(item => {
+        const index = updated.findIndex(s => s.id === item.id);
+        if (index !== -1) {
+          updated[index].order = item.order;
+        }
+      });
+      return updated.sort((a, b) => (a.order || 0) - (b.order || 0));
+    });
+
+    const { error } = await supabase
+      .from('task_sections')
+      .upsert(newOrder.map(item => ({ id: item.id, order: item.order, user_id: user.id })));
+
+    if (error) {
+      setError(error.message);
+      console.error('Error reordering sections:', error);
+      // Revert on error if necessary, or refetch
+      fetchSections();
+    }
   };
 
-  const updateSectionIncludeInFocusMode = async (id: string, include: boolean) => {
-    await updateSection(id, { include_in_focus_mode: include });
+  const updateSectionIncludeInFocusMode = async (sectionId: string, include: boolean) => {
+    await updateSection(sectionId, { include_in_focus_mode: include });
   };
 
   return {
     sections,
     loading,
+    error,
     addSection,
     updateSection,
     deleteSection,
     reorderSections,
     updateSectionIncludeInFocusMode,
+    fetchSections,
   };
 };
