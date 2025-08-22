@@ -75,7 +75,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({
             {...provided.droppableProps}
             ref={provided.innerRef}
             className={cn(
-              "min-h-[50px] rounded-md transition-colors",
+              "min-h-[50px] rounded-md transition-colors touch-action-none", // Added touch-action-none here
               snapshot.isDraggingOver ? "bg-blue-50" : "bg-transparent"
             )}
           >
