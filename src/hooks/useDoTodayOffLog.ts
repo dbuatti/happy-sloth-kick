@@ -1,23 +1,38 @@
-import { useQuery } from "@tanstack/react-query";
-import { useSupabaseClient, useUser } from "@supabase/auth-helpers-react";
-import { DoTodayOffLogEntry } from "@/types";
+// src/hooks/useDoTodayOffLog.ts
+import { useState, useEffect, useCallback } from 'react';
+import { DoTodayOffLogEntry } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
 
-export const useDoTodayOffLog = () => {
-  const supabase = useSupabaseClient();
-  const user = useUser();
+export const useDoTodayOffLog = (userId: string | undefined) => {
+  const [data, setData] = useState<DoTodayOffLogEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  return useQuery<DoTodayOffLogEntry[]>({
-    queryKey: ["do_today_off_log", user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-      const { data, error } = await supabase
-        .from("do_today_off_log")
-        .select("*")
-        .eq("user_id", user.id);
+  const refetch = useCallback(async () => {
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
 
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user?.id,
-  });
+    setLoading(true);
+    const { data: offLogData, error: offLogError } = await supabase
+      .from('do_today_off_log')
+      .select('*')
+      .eq('user_id', userId)
+      .order('off_date', { ascending: false });
+
+    if (offLogError) {
+      setError(offLogError.message);
+      setData([]);
+    } else {
+      setData(offLogData || []);
+    }
+    setLoading(false);
+  }, [userId]);
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
+
+  return { data, loading, error, refetch };
 };
