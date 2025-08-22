@@ -348,7 +348,20 @@ const TaskItem: React.FC<TaskItemProps> = ({
               className="h-8 w-8 p-0"
               aria-label="More options"
               disabled={isOverlay || isDemo}
-              onClick={(e: React.MouseEvent) => e.stopPropagation()} // Added stopPropagation here
+              // Added onTouchEnd to handle mobile touch events
+              onTouchEnd={(e: React.TouchEvent) => {
+                e.stopPropagation();
+                // Ensure the dropdown opens on touch
+                const button = e.currentTarget;
+                const event = new MouseEvent('click', {
+                  bubbles: true,
+                  cancelable: true,
+                  view: window
+                });
+                button.dispatchEvent(event);
+              }}
+              // Keep onClick for desktop
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
             >
               <span className="sr-only">Open menu</span>
               <MoreHorizontal className="h-4 w-4" />
