@@ -1049,12 +1049,13 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
       filtered = filtered.filter(task => {
         // Condition 1: Was completed or archived today
         if ((task.status === 'completed' || task.status === 'archived') && task.updated_at) {
-            const updatedAtUtcDateString = task.updated_at.split('T')[0];
+            // Parse the UTC updated_at string into a Date object, then format its *local* date part
+            const updatedAtLocalFormattedDate = format(parseISO(task.updated_at), 'yyyy-MM-dd');
             const currentFormattedDate = format(effectiveCurrentDate, 'yyyy-MM-dd');
             
-            const isUpdatedOnCurrentDate = updatedAtUtcDateString === currentFormattedDate;
+            const isUpdatedOnCurrentDate = updatedAtLocalFormattedDate === currentFormattedDate;
             
-            // console.log(`Task ${task.id} (${task.description}) status: ${task.status}, updated_at: ${task.updated_at}, updatedAtUtcDateString: ${updatedAtUtcDateString}, currentFormattedDate: ${currentFormattedDate}, isUpdatedOnCurrentDate: ${isUpdatedOnCurrentDate}`);
+            // console.log(`Task ${task.id} (${task.description}) status: ${task.status}, updated_at: ${task.updated_at}, updatedAtLocalFormattedDate: ${updatedAtLocalFormattedDate}, currentFormattedDate: ${currentFormattedDate}, isUpdatedOnCurrentDate: ${isUpdatedOnCurrentDate}`);
             if (isUpdatedOnCurrentDate) {
                 return true;
             }
@@ -1325,12 +1326,12 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     const tasksForToday = processedTasks.filter(task => {
         // Condition 1: Was completed or archived today
         if ((task.status === 'completed' || task.status === 'archived') && task.updated_at) {
-            const updatedAtUtcDateString = task.updated_at.split('T')[0];
+            const updatedAtLocalFormattedDate = format(parseISO(task.updated_at), 'yyyy-MM-dd');
             const currentFormattedDate = format(effectiveCurrentDate, 'yyyy-MM-dd');
             
-            const isUpdatedOnCurrentDate = updatedAtUtcDateString === currentFormattedDate;
+            const isUpdatedOnCurrentDate = updatedAtLocalFormattedDate === currentFormattedDate;
             
-            console.log(`Task ${task.id} (${task.description}) status: ${task.status}, updated_at: ${task.updated_at}, updatedAtUtcDateString: ${updatedAtUtcDateString}, currentFormattedDate: ${currentFormattedDate}, isUpdatedOnCurrentDate: ${isUpdatedOnCurrentDate}`);
+            console.log(`[TasksForToday Filter] Task: ${task.description}, Status: ${task.status}, Updated: ${task.updated_at}, UpdatedAtLocalFormattedDate: ${updatedAtLocalFormattedDate}, CurrentFormattedDate: ${currentFormattedDate}, IsUpdatedOnCurrentDate: ${isUpdatedOnCurrentDate}`);
             if (isUpdatedOnCurrentDate) {
                 return true;
             }
@@ -1371,9 +1372,9 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     console.log("Focus tasks count:", focusTasks.length);
 
     const completedCount = focusTasks.filter(t => {
-      const updatedAtUtcDateString = t.updated_at?.split('T')[0];
+      const updatedAtLocalFormattedDate = t.updated_at ? format(parseISO(t.updated_at), 'yyyy-MM-dd') : null;
       const currentFormattedDate = format(effectiveCurrentDate, 'yyyy-MM-dd');
-      const isUpdatedOnCurrentDate = updatedAtUtcDateString === currentFormattedDate;
+      const isUpdatedOnCurrentDate = updatedAtLocalFormattedDate === currentFormattedDate;
 
       const isCompletedOrArchived = (t.status === 'completed' || t.status === 'archived') && isUpdatedOnCurrentDate;
       if (isCompletedOrArchived) {
