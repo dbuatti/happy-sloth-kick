@@ -1,61 +1,42 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Plus, Edit, Trash2 } from 'lucide-react';
+import { TaskCategory } from '@/types'; // Import TaskCategory from @/types
+import { useTasks } from '@/hooks/useTasks'; // Use useTasks for category management
 import { categoryColorMap, CategoryColorKey, getCategoryColorProps } from '@/lib/categoryColors';
-import { TaskCategory } from '@/types/task'; // Corrected import
 import { useAuth } from '@/context/AuthContext';
-import { useTasks } from '@/hooks/useTasks'; // Import useTasks to get category management functions
-import { showError, showSuccess } from '@/utils/toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { cn } from '@/lib/utils';
 
 interface ManageCategoriesDialogProps {
   isOpen: boolean;
-  onClose: () => void;
+  setIsOpen: (isOpen: boolean) => void;
 }
 
-const ManageCategoriesDialog: React.FC<ManageCategoriesDialogProps> = ({ isOpen, onClose }) => {
+export const ManageCategoriesDialog: React.FC<ManageCategoriesDialogProps> = ({ isOpen, setIsOpen }) => {
   const { user } = useAuth();
-  const { categories, createCategory, updateCategory, deleteCategory } = useTasks({ currentDate: new Date(), userId: user?.id }); // Get category functions from useTasks
+  const userId = user?.id;
+  const { categories, addCategory, updateCategory, deleteCategory, tasks } = useTasks({ userId }); // Pass userId
 
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryColor, setNewCategoryColor] = useState<CategoryColorKey>('gray');
   const [editingCategory, setEditingCategory] = useState<TaskCategory | null>(null);
   const [editCategoryName, setEditCategoryName] = useState('');
   const [editCategoryColor, setEditCategoryColor] = useState<CategoryColorKey>('gray');
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<TaskCategory | null>(null);
 
-  useEffect(() => {
-    if (!isOpen) {
+  const handleAddCategory = async () => {
+    if (newCategoryName.trim() && newCategoryColor) {
+      await addCategory(newCategoryName.trim(), newCategoryColor);
       setNewCategoryName('');
       setNewCategoryColor('gray');
-      setEditingCategory(null);
-      setEditCategoryName('');
-      setEditCategoryColor('gray');
-      setCategoryToDelete(null);
-      setIsDeleteDialogOpen(false);
     }
-  }, [isOpen]);
-
-  const handleCreateCategory = async () => {
-    if (!newCategoryName.trim()) {
-      showError("Category name cannot be empty.");
-      return;
-    }
-    if (!user?.id) {
-      showError("User not authenticated.");
-      return;
-    }
-    await createCategory(newCategoryName.trim(), newCategoryColor);
-    showSuccess("Category created!");
-    setNewCategoryName('');
-    setNewCategoryColor('gray');
   };
 
   const handleStartEdit = (category: TaskCategory) => {
@@ -65,49 +46,41 @@ const ManageCategoriesDialog: React.FC<ManageCategoriesDialogProps> = ({ isOpen,
   };
 
   const handleSaveEdit = async () => {
-    if (!editingCategory || !editCategoryName.trim()) {
-      showError("Category name cannot be empty.");
-      return;
+    if (editingCategory && editCategoryName.trim() && editCategoryColor) {
+      await updateCategory(editingCategory.id, { name: editCategoryName.trim(), color: editCategoryColor });
+      setEditingCategory(null);
     }
-    if (!user?.id) {
-      showError("User not authenticated.");
-      return;
-    }
-    await updateCategory(editingCategory.id, editCategoryName.trim(), editCategoryColor);
-    showSuccess("Category updated!");
-    setEditingCategory(null);
-    setEditCategoryName('');
-    setEditCategoryColor('gray');
   };
 
   const handleCancelEdit = () => {
     setEditingCategory(null);
-    setEditCategoryName('');
-    setEditCategoryColor('gray');
   };
 
   const handleConfirmDelete = (category: TaskCategory) => {
     setCategoryToDelete(category);
-    setIsDeleteDialogOpen(true);
+    setShowDeleteConfirm(true);
   };
 
   const handleDeleteCategory = async () => {
-    if (categoryToDelete && user?.id) {
+    if (categoryToDelete) {
+      const categoryTasks = tasks.filter(task => task.category === categoryToDelete.id);
+      if (categoryTasks.length > 0) {
+        alert("Cannot delete category with associated tasks. Please reassign or delete tasks first.");
+        setShowDeleteConfirm(false);
+        setCategoryToDelete(null);
+        return;
+      }
       await deleteCategory(categoryToDelete.id);
-      showSuccess("Category deleted!");
+      setShowDeleteConfirm(false);
       setCategoryToDelete(null);
-      setIsDeleteDialogOpen(false);
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Manage Categories</DialogTitle>
-          <DialogDescription>
-            Add, edit, or delete your task categories.
-          </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="flex items-center space-x-2">
@@ -115,34 +88,29 @@ const ManageCategoriesDialog: React.FC<ManageCategoriesDialogProps> = ({ isOpen,
               placeholder="New category name"
               value={newCategoryName}
               onChange={(e) => setNewCategoryName(e.target.value)}
-              className="flex-1"
+              onKeyPress={(e) => e.key === 'Enter' && handleAddCategory()}
             />
-            <div className="relative">
-              <select
-                value={newCategoryColor}
-                onChange={(e) => setNewCategoryColor(e.target.value as CategoryColorKey)}
-                className={cn(
-                  "appearance-none border rounded-md py-2 pl-3 pr-8 text-sm leading-5 focus:outline-none focus:ring-2 focus:ring-primary",
-                  getCategoryColorProps(newCategoryColor).bgColorClass,
-                  "text-white"
-                )}
-              >
-                {Object.keys(categoryColorMap).map((colorKey) => (
-                  <option key={colorKey} value={colorKey} className={cn(getCategoryColorProps(colorKey as CategoryColorKey).bgColorClass, "text-white")}>
-                    {colorKey.charAt(0).toUpperCase() + colorKey.slice(1)}
-                  </option>
+            <Select value={newCategoryColor} onValueChange={(value) => setNewCategoryColor(value as CategoryColorKey)}>
+              <SelectTrigger className="w-[120px]">
+                <SelectValue placeholder="Color" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(categoryColorMap).map(([key, value]) => (
+                  <SelectItem key={key} value={key}>
+                    <div className="flex items-center">
+                      <span className="w-4 h-4 rounded-full mr-2" style={{ backgroundColor: value.bg }} />
+                      {key}
+                    </div>
+                  </SelectItem>
                 ))}
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-white">
-                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-              </div>
-            </div>
-            <Button onClick={handleCreateCategory} size="icon">
+              </SelectContent>
+            </Select>
+            <Button onClick={handleAddCategory} size="icon">
               <Plus className="h-4 w-4" />
             </Button>
           </div>
 
-          <div className="space-y-2 max-h-60 overflow-y-auto">
+          <div className="space-y-2">
             {categories.map((category) => (
               <div key={category.id} className="flex items-center justify-between p-2 border rounded-md">
                 {editingCategory?.id === category.id ? (
@@ -150,36 +118,32 @@ const ManageCategoriesDialog: React.FC<ManageCategoriesDialogProps> = ({ isOpen,
                     <Input
                       value={editCategoryName}
                       onChange={(e) => setEditCategoryName(e.target.value)}
-                      className="flex-1"
+                      onKeyPress={(e) => e.key === 'Enter' && handleSaveEdit()}
                     />
-                    <div className="relative">
-                      <select
-                        value={editCategoryColor}
-                        onChange={(e) => setEditCategoryColor(e.target.value as CategoryColorKey)}
-                        className={cn(
-                          "appearance-none border rounded-md py-2 pl-3 pr-8 text-sm leading-5 focus:outline-none focus:ring-2 focus:ring-primary",
-                          getCategoryColorProps(editCategoryColor).bgColorClass,
-                          "text-white"
-                        )}
-                      >
-                        {Object.keys(categoryColorMap).map((colorKey) => (
-                          <option key={colorKey} value={colorKey} className={cn(getCategoryColorProps(colorKey as CategoryColorKey).bgColorClass, "text-white")}>
-                            {colorKey.charAt(0).toUpperCase() + colorKey.slice(1)}
-                          </option>
+                    <Select value={editCategoryColor} onValueChange={(value) => setEditCategoryColor(value as CategoryColorKey)}>
+                      <SelectTrigger className="w-[120px]">
+                        <SelectValue placeholder="Color" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(categoryColorMap).map(([key, value]) => (
+                          <SelectItem key={key} value={key}>
+                            <div className="flex items-center">
+                              <span className="w-4 h-4 rounded-full mr-2" style={{ backgroundColor: value.bg }} />
+                              {key}
+                            </div>
+                          </SelectItem>
                         ))}
-                      </select>
-                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-white">
-                        <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-                      </div>
-                    </div>
+                      </SelectContent>
+                    </Select>
                     <Button onClick={handleSaveEdit} size="sm">Save</Button>
-                    <Button onClick={handleCancelEdit} variant="ghost" size="sm">Cancel</Button>
+                    <Button onClick={handleCancelEdit} variant="outline" size="sm">Cancel</Button>
                   </div>
                 ) : (
                   <>
-                    <span className={cn("px-2 py-0.5 rounded-full text-white text-sm", getCategoryColorProps(category.color as CategoryColorKey).bgColorClass)}>
-                      {category.name}
-                    </span>
+                    <div className="flex items-center space-x-2">
+                      <span className="w-4 h-4 rounded-full" style={{ backgroundColor: getCategoryColorProps(category.color as CategoryColorKey).bg }} />
+                      <span>{category.name}</span>
+                    </div>
                     <div className="flex space-x-1">
                       <Button variant="ghost" size="icon" onClick={() => handleStartEdit(category)}>
                         <Edit className="h-4 w-4" />
@@ -195,16 +159,16 @@ const ManageCategoriesDialog: React.FC<ManageCategoriesDialogProps> = ({ isOpen,
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Close</Button>
+          <Button variant="outline" onClick={() => setIsOpen(false)}>Close</Button>
         </DialogFooter>
       </DialogContent>
 
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the category "{categoryToDelete?.name}" and remove it from any tasks.
+              This action cannot be undone. This will permanently delete the category "{categoryToDelete?.name}" and any tasks associated with it will lose their category.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -216,5 +180,3 @@ const ManageCategoriesDialog: React.FC<ManageCategoriesDialogProps> = ({ isOpen,
     </Dialog>
   );
 };
-
-export default ManageCategoriesDialog;

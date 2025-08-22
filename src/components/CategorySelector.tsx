@@ -2,63 +2,49 @@
 
 import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { TaskCategory } from '@/types'; // Import TaskCategory from @/types
 import { getCategoryColorProps } from '@/lib/categoryColors';
-import { TaskCategory } from '@/types/task'; // Corrected import
-import { cn } from '@/lib/utils';
 
 interface CategorySelectorProps {
+  categories: TaskCategory[];
   selectedCategory: string | null;
   onSelectCategory: (categoryId: string | null) => void;
-  categories: TaskCategory[];
   placeholder?: string;
-  className?: string;
 }
 
-const CategorySelector: React.FC<CategorySelectorProps> = ({
+export const CategorySelector: React.FC<CategorySelectorProps> = ({
+  categories,
   selectedCategory,
   onSelectCategory,
-  categories,
   placeholder = "Select category",
-  className,
 }) => {
-  const currentCategory = categories.find(cat => cat.id === selectedCategory);
-  const currentCategoryProps = currentCategory ? getCategoryColorProps(currentCategory.color) : null;
-
   return (
     <Select
       value={selectedCategory || ""}
-      onValueChange={(value) => onSelectCategory(value === "null" ? null : value)}
+      onValueChange={(value) => onSelectCategory(value === "" ? null : value)}
     >
-      <SelectTrigger className={cn("w-full justify-start", className, currentCategoryProps?.backgroundClass, currentCategoryProps ? "text-white" : "")}>
-        <SelectValue placeholder={placeholder}>
-          {currentCategory ? (
-            <span className="flex items-center">
-              <span className={cn("w-2 h-2 rounded-full mr-2", currentCategoryProps?.dotColor)}></span>
-              {currentCategory.name}
-            </span>
-          ) : (
-            placeholder
-          )}
-        </SelectValue>
+      <SelectTrigger className="w-[180px]">
+        <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="null" className="text-muted-foreground">
-          No Category
+        <SelectItem value="">
+          <div className="flex items-center">
+            <span className="w-4 h-4 rounded-full mr-2 bg-gray-400" />
+            None
+          </div>
         </SelectItem>
-        {categories.map((category) => {
-          const { dotColor, name } = getCategoryColorProps(category.color);
-          return (
-            <SelectItem key={category.id} value={category.id}>
-              <span className="flex items-center">
-                <span className={cn("w-2 h-2 rounded-full mr-2", dotColor)}></span>
-                {name}
-              </span>
-            </SelectItem>
-          );
-        })}
+        {categories.map((category) => (
+          <SelectItem key={category.id} value={category.id}>
+            <div className="flex items-center">
+              <span
+                className="w-4 h-4 rounded-full mr-2"
+                style={{ backgroundColor: getCategoryColorProps(category.color as any).bg }}
+              />
+              {category.name}
+            </div>
+          </SelectItem>
+        ))}
       </SelectContent>
     </Select>
   );
 };
-
-export default CategorySelector;
