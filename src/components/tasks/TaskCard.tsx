@@ -401,7 +401,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
             <Badge className="bg-blue-500 text-white px-2 py-0.5 text-xs">
               Today
             </Badge>
-          )}
+            )}
           {isDueTomorrow && (
             <Badge className="bg-indigo-500 text-white px-2 py-0.5 text-xs">
               Tomorrow
@@ -419,8 +419,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 variant="ghost"
                 size="sm"
                 className="h-8 w-8 p-0 touch-action-manipulation"
-                onClick={(e) => { e.stopPropagation(); e.preventDefault(); }}
-                onTouchStart={(e) => { e.stopPropagation(); e.preventDefault(); }}
+                // Removed onClick and onTouchStart handlers to rely on disableInteractiveElementBlocking
               >
                 <MoreVertical className="h-4 w-4" />
               </Button>
