@@ -1,149 +1,120 @@
-import React, { useState } from 'react';
+"use client";
+
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
+import { Plus } from 'lucide-react';
+import SectionHeader from '@/components/tasks/SectionHeader';
 import { useTasks } from '@/hooks/useTasks';
 import { useSections } from '@/hooks/useSections';
 import { Task, TaskSection } from '@/types/task';
 import { useAuth } from '@/context/AuthContext';
-import { SectionHeader } from '@/components/SectionHeader'; // Assuming this component exists and is correctly typed
 
-function TasksPage() {
+const TasksPage: React.FC = () => {
   const { user } = useAuth();
-  const {
-    processedTasks: tasks, // Use processedTasks which includes category_color
-    addTask,
-    updateTask,
-    deleteTask,
-    loading: tasksLoading,
-    error: tasksError,
-  } = useTasks(user?.id);
-
-  const {
-    sections,
-    addSection,
-    updateSection,
-    deleteSection,
-    reorderSections, // Kept for completeness, though not used in this file's logic
-    updateSectionIncludeInFocusMode,
-    loading: sectionsLoading,
-    error: sectionsError,
-  } = useSections();
-
+  const isDemo = user?.id === 'd889323b-350c-4764-9788-6359f85f6142';
+  
+  const { tasks, addTask, updateTask, deleteTask } = useTasks();
+  const { sections, addSection, updateSection, deleteSection, reorderSections } = useSections();
+  
   const [newTaskDescription, setNewTaskDescription] = useState('');
-  const [newSectionName, setNewSectionName] = useState('');
+
+  // Filter out archived tasks for display
+  const activeTasks = tasks.filter(task => task.status !== 'archived');
 
   const handleAddTask = async () => {
-    if (newTaskDescription.trim() === '') return;
-    await addTask({
-      description: newTaskDescription,
-      status: 'to-do',
-      priority: 'medium',
-      order: 0, // Default order, can be adjusted later
-    });
-    setNewTaskDescription('');
-  };
-
-  const handleAddSection = async () => {
-    if (newSectionName.trim() === '') return;
-    await addSection(newSectionName);
-    setNewSectionName('');
-  };
-
-  const handleToggleSectionVisibility = async (sectionId: string) => {
-    const section = sections.find((s: TaskSection) => s.id === sectionId); // Explicitly type 's'
-    if (section) {
-      await updateSectionIncludeInFocusMode(sectionId, !section.include_in_focus_mode);
+    if (newTaskDescription.trim()) {
+      await addTask({ description: newTaskDescription.trim() });
+      setNewTaskDescription('');
     }
   };
 
-  const activeTasks = tasks.filter((task: Task) => task.status !== 'completed'); // Ensure task is of type Task
+  const handleRenameSection = async (sectionId: string, newName: string) => {
+    await updateSection(sectionId, { name: newName });
+  };
 
-  if (tasksLoading || sectionsLoading) {
-    return <div className="p-4">Loading tasks and sections...</div>;
-  }
+  const handleDeleteSection = async (sectionId: string) => {
+    const sectionTasks = tasks.filter(task => task.section_id === sectionId);
+    if (sectionTasks.length > 0) {
+      console.error("Cannot delete section with tasks");
+      return;
+    }
+    await deleteSection(sectionId);
+  };
 
-  if (tasksError || sectionsError) {
-    return <div className="p-4 text-red-500">Error: {tasksError || sectionsError}</div>;
-  }
+  const handleAddTaskToSection = async (sectionId: string) => {
+    await addTask({ 
+      description: 'New task', 
+      section_id: sectionId 
+    });
+  };
+
+  const handleToggleSectionVisibility = async (sectionId: string) => {
+    const section = sections.find(s => s.id === sectionId);
+    if (section) {
+      await updateSection(sectionId, { 
+        include_in_focus_mode: !section.include_in_focus_mode 
+      });
+    }
+  };
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">My Tasks</h1>
-
-      <div className="mb-4 flex space-x-2">
-        <input
-          type="text"
-          value={newTaskDescription}
-          onChange={(e) => setNewTaskDescription(e.target.value)}
-          placeholder="Add a new task"
-          className="flex-grow p-2 border rounded-md"
-        />
-        <Button onClick={handleAddTask}>Add Task</Button>
+    <div className="flex flex-col h-full">
+      <div className="flex items-center justify-between p-4 border-b">
+        <h1 className="text-2xl font-bold">Tasks</h1>
+        <div className="flex items-center space-x-2">
+          <div className="relative">
+            <input
+              type="text"
+              value={newTaskDescription}
+              onChange={(e) => setNewTaskDescription(e.target.value)}
+              placeholder="Add a new task..."
+              className="pl-4 pr-10 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              onKeyPress={(e) => e.key === 'Enter' && handleAddTask()}
+            />
+            <Button
+              onClick={handleAddTask}
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+              variant="ghost"
+              aria-label="Add task"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
       </div>
-
-      <div className="mb-6 flex space-x-2">
-        <input
-          type="text"
-          value={newSectionName}
-          onChange={(e) => setNewSectionName(e.target.value)}
-          placeholder="Add a new section"
-          className="flex-grow p-2 border rounded-md"
-        />
-        <Button onClick={handleAddSection}>Add Section</Button>
-      </div>
-
-      {sections.length === 0 && tasks.length === 0 ? (
-        <p className="text-gray-500">No tasks or sections yet. Start by adding one!</p>
-      ) : (
-        <div className="space-y-6">
-          {sections.map((section: TaskSection) => {
+      
+      <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        {sections.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">No sections yet.</p>
+            <Button 
+              onClick={() => addSection({ name: 'New Section' })}
+              className="mt-4"
+            >
+              Create your first section
+            </Button>
+          </div>
+        ) : (
+          sections.map((section: TaskSection) => {
             const sectionTasks = activeTasks.filter((task: Task) => task.section_id === section.id);
             return (
-              <div key={section.id} className="border rounded-lg p-4 shadow-sm">
+              <div key={section.id} className="bg-card rounded-lg shadow-sm border">
                 <SectionHeader
                   section={section}
                   taskCount={sectionTasks.length}
-                  onToggleVisibility={() => handleToggleSectionVisibility(section.id)}
+                  onRename={handleRenameSection}
+                  onDelete={handleDeleteSection}
+                  onAddTask={handleAddTaskToSection}
+                  onToggleVisibility={handleToggleSectionVisibility}
+                  isDemo={isDemo}
                 />
-                <div className="mt-4 space-y-2">
-                  {sectionTasks.length > 0 ? (
-                    sectionTasks.map((task: Task) => (
-                      <div key={task.id} className="flex items-center justify-between bg-gray-50 p-2 rounded-md">
-                        <span>{task.description}</span>
-                        <div className="flex space-x-2">
-                          <Button variant="outline" size="sm" onClick={() => updateTask(task.id, { status: 'completed' })}>Complete</Button>
-                          <Button variant="destructive" size="sm" onClick={() => deleteTask(task.id)}>Delete</Button>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-gray-400 text-sm">No tasks in this section.</p>
-                  )}
-                </div>
               </div>
             );
-          })}
-
-          {/* Tasks without a section */}
-          {activeTasks.filter(task => !task.section_id).length > 0 && (
-            <div className="border rounded-lg p-4 shadow-sm">
-              <h2 className="text-xl font-semibold mb-4">Uncategorized Tasks</h2>
-              <div className="space-y-2">
-                {activeTasks.filter(task => !task.section_id).map((task: Task) => (
-                  <div key={task.id} className="flex items-center justify-between bg-gray-50 p-2 rounded-md">
-                    <span>{task.description}</span>
-                    <div className="flex space-x-2">
-                      <Button variant="outline" size="sm" onClick={() => updateTask(task.id, { status: 'completed' })}>Complete</Button>
-                      <Button variant="destructive" size="sm" onClick={() => deleteTask(task.id)}>Delete</Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+          })
+        )}
+      </div>
     </div>
   );
-}
+};
 
 export default TasksPage;
