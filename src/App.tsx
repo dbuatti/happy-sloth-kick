@@ -20,15 +20,18 @@ import ProjectBalanceTrackerPage from './pages/ProjectBalanceTracker';
 import DailyTasksV3Page from './pages/DailyTasksV3';
 import TaskCalendarPage from './pages/TaskCalendar';
 import TimeBlockSchedulePage from './pages/TimeBlockSchedule';
-import { useIsMobile } from './hooks/useIsMobile'; // Corrected import
+import { useIsMobile } from './hooks/useIsMobile';
+import { Menu, LayoutDashboard, ListTodo, Calendar, Archive, Settings, HelpCircle, LogOut } from 'lucide-react'; // Added missing lucide-react imports
+import { Button } from './components/ui/button'; // Added missing Button import
+import { Sheet, SheetContent, SheetTrigger } from './components/ui/sheet'; // Added missing Sheet imports
 
 const queryClient = new QueryClient();
 
 const PrivateRoute: React.FC<{ children: React.ReactNode; isDemo?: boolean; demoUserId?: string }> = ({ children, isDemo, demoUserId }) => {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
 
-  if (isLoading) {
-    return <div>Loading authentication...</div>; // Or a more sophisticated loader
+  if (authLoading) {
+    return <div>Loading authentication...</div>;
   }
 
   if (!user && !isDemo) {
@@ -39,10 +42,10 @@ const PrivateRoute: React.FC<{ children: React.ReactNode; isDemo?: boolean; demo
 };
 
 const AppContent: React.FC = () => {
-  const { user } = useAuth();
+  const { user, signOut: authSignOut } = useAuth();
   const isMobile = useIsMobile();
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
-  const [currentDate, setCurrentDate] = useState(new Date()); // Example state for date
+  const [currentDate, setCurrentDate] = useState(new Date());
 
   const isDemoUser = user?.id === 'd889323b-350c-4764-9788-6359f85f6142';
 
@@ -90,7 +93,7 @@ const AppContent: React.FC = () => {
                     Help
                   </Link>
                   {user && (
-                    <Button variant="ghost" className="w-full justify-start" onClick={() => { /* signOut logic */ }}>
+                    <Button variant="ghost" className="w-full justify-start" onClick={() => authSignOut()}>
                       <LogOut className="h-5 w-5 mr-2" /> Log Out
                     </Button>
                   )}

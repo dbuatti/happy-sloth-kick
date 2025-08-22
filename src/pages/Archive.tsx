@@ -6,14 +6,15 @@ import TaskList from '@/components/TaskList';
 import { TaskOverviewDialog } from '@/components/TaskOverviewDialog';
 import { TaskDetailDialog } from '@/components/TaskDetailDialog';
 import { Button } from '@/components/ui/button';
-import { ArchiveRestore, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import TaskFilter from '@/components/TaskFilter';
+import { ArchivePageProps } from '@/types/props';
 
-const ArchivePage: React.FC = () => {
+const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo: propIsDemo, demoUserId }) => {
   const { user } = useAuth();
-  const userId = user?.id;
-  const isDemo = user?.id === 'd889323b-350c-4764-9788-6359f85f6142';
+  const userId = user?.id || demoUserId;
+  const isDemo = propIsDemo || user?.id === 'd889323b-350c-4764-9788-6359f85f6142';
 
   const [isOverviewOpen, setIsOverviewOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -28,7 +29,6 @@ const ArchivePage: React.FC = () => {
     handleAddTask,
     updateTask,
     deleteTask,
-    bulkUpdateTasks,
     reorderTasks,
     createSection,
     updateSection,
@@ -57,10 +57,6 @@ const ArchivePage: React.FC = () => {
   const handleOpenDetail = (task: Task) => {
     setSelectedTask(task);
     setIsDetailOpen(true);
-  };
-
-  const handleRestoreTask = async (taskId: string) => {
-    await updateTask(taskId, { status: 'to-do' });
   };
 
   const handleDeleteAllArchived = async () => {
@@ -129,7 +125,12 @@ const ArchivePage: React.FC = () => {
             onOpenDetail={handleOpenDetail}
             onAddTask={handleAddTask}
             onReorderTasks={reorderTasks}
-            currentDate={new Date()} // Pass a default date for archive view
+            showDoTodayToggle={false} // Not relevant for archive page
+            toggleDoToday={() => {}} // Not relevant for archive page
+            doTodayOffIds={new Set()} // Not relevant for archive page
+            isDemo={isDemo}
+            nextAvailableTask={null} // Not relevant for archive page
+            currentDate={new Date()}
             createSection={createSection}
             updateSection={updateSection}
             deleteSection={deleteSection}

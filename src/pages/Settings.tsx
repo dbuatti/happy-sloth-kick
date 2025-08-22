@@ -8,12 +8,12 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import TimePicker from '@/components/ui/time-picker'; // Corrected import
+import TimePicker from '@/components/ui/time-picker';
 import { format, parseISO } from 'date-fns';
 import { showError, showSuccess } from '@/utils/toast';
-import { UserSettings, WorkHour, WorkHourState } from '@/types/task'; // Import WorkHourState
-import ProjectTrackerSettings from '@/components/ProjectTrackerSettings'; // Corrected import
-import { SettingsPageProps } from '@/types/props';
+import { WorkHour } from '@/types/task';
+import { WorkHourState, SettingsPageProps } from '@/types/props';
+import ProjectTrackerSettings from '@/components/ProjectTrackerSettings';
 
 const SettingsPage: React.FC<SettingsPageProps> = () => {
   const { user } = useAuth();
@@ -37,16 +37,15 @@ const SettingsPage: React.FC<SettingsPageProps> = () => {
 
   useEffect(() => {
     if (allWorkHours) {
-      // Initialize localWorkHours ensuring all days are present with defaults if missing
       const allDaysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
       const initializedHours: WorkHourState[] = allDaysOfWeek.map(day => {
         const existing = allWorkHours.find(wh => wh.day_of_week === day);
         return {
-          id: existing?.id, // Keep existing ID if available
+          id: existing?.id,
           day_of_week: day,
           start_time: existing?.start_time || '09:00:00',
           end_time: existing?.end_time || '17:00:00',
-          enabled: existing?.enabled ?? false, // Default to false if not explicitly set
+          enabled: existing?.enabled ?? false,
         };
       });
       setLocalWorkHours(initializedHours);
@@ -65,7 +64,7 @@ const SettingsPage: React.FC<SettingsPageProps> = () => {
         future_tasks_days_visible: futureTasksDaysVisible,
       });
       showSuccess('General settings saved successfully!');
-    } catch (error) {
+    } catch (error: any) {
       showError('Failed to save general settings.');
       console.error('Error saving general settings:', error);
     }
@@ -99,7 +98,7 @@ const SettingsPage: React.FC<SettingsPageProps> = () => {
 
       await saveWorkHours(hoursToSave);
       showSuccess('Work hours saved successfully!');
-    } catch (error) {
+    } catch (error: any) {
       showError('Failed to save work hours.');
       console.error('Error saving work hours:', error);
     }
@@ -138,7 +137,7 @@ const SettingsPage: React.FC<SettingsPageProps> = () => {
               <Switch
                 id="schedule-focus-tasks"
                 checked={scheduleShowFocusTasksOnly}
-                onCheckedChange={setScheduleShowFocusTasksOnly}
+                onCheckedChange={(checked: boolean) => setScheduleShowFocusTasksOnly(checked)}
               />
             </div>
             <div>

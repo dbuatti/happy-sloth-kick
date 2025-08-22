@@ -6,16 +6,21 @@ import FullScreenFocusView from '@/components/FullScreenFocusView';
 import { Task } from '@/types/task';
 import { useTasks } from '@/hooks/useTasks';
 import { useAuth } from '@/context/AuthContext';
+import { useAppointments } from '@/hooks/useAppointments';
+import { useWorkHours } from '@/hooks/useWorkHours';
+import { CalendarPageProps } from '@/types/props';
 
-const CalendarPage: React.FC = () => {
+const CalendarPage: React.FC<CalendarPageProps> = ({ isDemo: propIsDemo, demoUserId }) => {
   const { user } = useAuth();
-  const userId = user?.id;
-  const isDemo = user?.id === 'd889323b-350c-4764-9788-6359f85f6142';
+  const userId = user?.id || demoUserId;
+  const isDemo = propIsDemo || user?.id === 'd889323b-350c-4764-9788-6359f85f6142';
 
   const [isOverviewOpen, setIsOverviewOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isFocusViewOpen, setIsFocusViewOpen] = useState(false);
+
+  const [currentViewDate, setCurrentViewDate] = useState(new Date());
 
   const {
     tasks,
@@ -32,7 +37,28 @@ const CalendarPage: React.FC = () => {
     createCategory,
     updateCategory,
     deleteCategory,
-  } = useTasks({ userId: userId, currentDate: new Date(), viewMode: 'all' });
+    isLoading: tasksLoading,
+    error: tasksError,
+  } = useTasks({ userId: userId, currentDate: currentViewDate, viewMode: 'all' });
+
+  const {
+    appointments,
+    isLoading: appointmentsLoading,
+    error: appointmentsError,
+    addAppointment,
+    updateAppointment,
+    deleteAppointment,
+  } = useAppointments({ userId });
+
+  const {
+    allWorkHours,
+    isLoading: workHoursLoading,
+    error: workHoursError,
+    saveWorkHours,
+  } = useWorkHours({ userId });
+
+  const isLoading = tasksLoading || appointmentsLoading || workHoursLoading;
+  const error = tasksError || appointmentsError || workHoursError;
 
   const handleOpenTaskOverview = (task: Task) => {
     setSelectedTask(task);
@@ -55,6 +81,21 @@ const CalendarPage: React.FC = () => {
       <DailyScheduleView
         isDemo={isDemo}
         onOpenTaskOverview={handleOpenTaskOverview}
+        currentViewDate={currentViewDate}
+        daysInGrid={[]} // This will be calculated internally by DailyScheduleView
+        allWorkHours={allWorkHours}
+        saveWorkHours={saveWorkHours}
+        appointments={appointments}
+        tasks={tasks}
+        sections={sections}
+        categories={allCategories}
+        addAppointment={addAppointment}
+        updateAppointment={updateAppointment}
+        deleteAppointment={deleteAppointment}
+        onAddTask={handleAddTask}
+        onUpdateTask={updateTask}
+        onOpenTaskDetail={handleOpenTaskDetail}
+        isLoading={isLoading}
       />
 
       <TaskOverviewDialog

@@ -3,18 +3,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import TimePicker from '@/components/ui/time-picker'; // Corrected import
+import TimePicker from '@/components/ui/time-picker';
 import { format, parseISO } from 'date-fns';
 import { useWorkHours } from '@/hooks/useWorkHours';
 import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess } from '@/utils/toast';
-import { WorkHour, WorkHourState } from '@/types/task'; // Import WorkHourState
+import { WorkHour } from '@/types/task';
+import { WorkHourState } from '@/types/props';
 
 const WorkHoursSettings: React.FC = () => {
   const { user } = useAuth();
   const userId = user?.id;
 
-  const { allWorkHours, isLoading, error, saveWorkHours } = useWorkHours(userId);
+  const { allWorkHours, isLoading, error, saveWorkHours } = useWorkHours({ userId });
 
   const [localWorkHours, setLocalWorkHours] = useState<WorkHourState[]>([]);
 
@@ -23,15 +24,14 @@ const WorkHoursSettings: React.FC = () => {
 
   useEffect(() => {
     if (allWorkHours) {
-      // Initialize localWorkHours ensuring all days are present with defaults if missing
       const initializedHours: WorkHourState[] = allDaysOfWeek.map(day => {
         const existing = allWorkHours.find(wh => wh.day_of_week === day);
         return {
-          id: existing?.id, // Keep existing ID if available
+          id: existing?.id,
           day_of_week: day,
           start_time: existing?.start_time || '09:00:00',
           end_time: existing?.end_time || '17:00:00',
-          enabled: existing?.enabled ?? false, // Default to false if not explicitly set
+          enabled: existing?.enabled ?? false,
         };
       });
       setLocalWorkHours(initializedHours);
@@ -55,9 +55,8 @@ const WorkHoursSettings: React.FC = () => {
       return;
     }
     try {
-      // Filter out days that are not enabled or have invalid times if necessary
       const hoursToSave: WorkHour[] = localWorkHours.map(localHour => ({
-        id: localHour.id || crypto.randomUUID(), // Ensure ID for upsert
+        id: localHour.id || crypto.randomUUID(),
         user_id: userId,
         day_of_week: localHour.day_of_week,
         start_time: localHour.start_time,
@@ -67,7 +66,7 @@ const WorkHoursSettings: React.FC = () => {
 
       await saveWorkHours(hoursToSave);
       showSuccess('Work hours saved successfully!');
-    } catch (error) {
+    } catch (error: any) {
       showError('Failed to save work hours.');
       console.error('Error saving work hours:', error);
     }

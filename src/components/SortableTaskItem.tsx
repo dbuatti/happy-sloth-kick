@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Task, TaskStatus } from '@/types/task';
+import { Task, TaskSection, TaskCategory, TaskStatus } from '@/types/task'; // Added missing imports
 import TaskItem from './TaskItem';
 import { SortableTaskItemProps } from '@/types/props';
 
@@ -35,8 +35,8 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
       <TaskItem
         task={task}
         allTasks={allTasks}
-        sections={[]} // Pass actual sections if available
-        categories={[]} // Pass actual categories if available
+        sections={[]} // Placeholder, pass actual sections if available
+        categories={[]} // Placeholder, pass actual categories if available
         onStatusChange={onStatusChange}
         onUpdate={onUpdate}
         onDelete={onDelete}

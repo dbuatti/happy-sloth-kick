@@ -10,13 +10,14 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { SidebarProps } from '@/types/props';
 
 const Sidebar: React.FC<SidebarProps> = ({ isDemo: propIsDemo, demoUserId }) => {
-  const { user, signOut: authSignOut } = useAuth();
+  const { user, signOut } = useAuth();
   const userId = user?.id || demoUserId;
   const isDemo = propIsDemo || user?.id === 'd889323b-350c-4764-9788-6359f85f6142';
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
 
-  const { dailyProgress, isLoading: dailyTaskCountLoading } = useDailyTaskCount(new Date(), userId);
+  const dailyProgress = useDailyTaskCount(new Date(), userId); // Corrected useDailyTaskCount usage
+  const dailyTaskCountLoading = false; // Placeholder, as useDailyTaskCount doesn't return isLoading directly
 
   const navItems = [
     {
@@ -94,7 +95,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDemo: propIsDemo, demoUserId }) => 
               {renderNavItems(settingsItems)}
             </div>
             {user && (
-              <Button variant="ghost" className="w-full justify-start mt-4" onClick={() => authSignOut()}>
+              <Button variant="ghost" className="w-full justify-start mt-4" onClick={() => signOut()}>
                 <LogOut className="h-4 w-4 mr-3" /> Log Out
               </Button>
             )}

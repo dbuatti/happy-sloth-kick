@@ -7,10 +7,15 @@ import {
 } from '@/integrations/supabase/api';
 import { WorkHour } from '@/types/task';
 import { showError, showSuccess } from '@/utils/toast';
+import { WorkHourState } from '@/types/props'; // Import WorkHourState
 
-export const useWorkHours = (userId?: string | null) => {
+interface UseWorkHoursProps {
+  userId?: string | null;
+}
+
+export const useWorkHours = (props?: UseWorkHoursProps) => {
   const { user } = useAuth();
-  const activeUserId = userId || user?.id;
+  const activeUserId = props?.userId || user?.id;
   const queryClient = useQueryClient();
 
   const workHoursQueryKey = ['userWorkHours', activeUserId];
@@ -36,7 +41,7 @@ export const useWorkHours = (userId?: string | null) => {
         await saveUserWorkHours(activeUserId, hoursArray);
         queryClient.invalidateQueries({ queryKey: workHoursQueryKey });
         showSuccess('Work hours saved successfully!');
-      } catch (err) {
+      } catch (err: any) {
         showError('Failed to save work hours.');
       }
     },

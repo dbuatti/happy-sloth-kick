@@ -58,7 +58,7 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
       } else {
         showError('Failed to add task with AI suggestions.');
       }
-    } catch (error) {
+    } catch (error: any) { // Explicitly type error
       dismissToast(loadingToastId);
       showError('Failed to get AI suggestions or add task.');
       console.error('AI suggestion error:', error);

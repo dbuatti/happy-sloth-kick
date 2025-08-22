@@ -31,9 +31,9 @@ const ProjectBalanceTrackerPage: React.FC<ProjectBalanceTrackerPageProps> = ({ i
     resetAllProjectCounts,
     sortOption,
     setSortOption,
-  } = useProjects(userId);
+  } = useProjects({ userId });
 
-  const { settings, isLoading: settingsLoading, error: settingsError } = useSettings(userId);
+  const { settings, isLoading: settingsLoading, error: settingsError } = useSettings({ userId });
 
   const [isAddProjectDialogOpen, setIsAddProjectDialogOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
@@ -42,7 +42,7 @@ const ProjectBalanceTrackerPage: React.FC<ProjectBalanceTrackerPageProps> = ({ i
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const totalCount = useMemo(() => {
-    return projects.reduce((sum, project) => sum + project.current_count, 0);
+    return projects.reduce((sum: number, project: Project) => sum + project.current_count, 0);
   }, [projects]);
 
   const handleAddProject = async () => {
@@ -79,7 +79,7 @@ const ProjectBalanceTrackerPage: React.FC<ProjectBalanceTrackerPageProps> = ({ i
             <Edit className="mr-2 h-4 w-4" /> Settings
           </Button>
         </div>
-        <Select value={sortOption} onValueChange={setSortOption}>
+        <Select value={sortOption} onValueChange={(value: string) => setSortOption(value)}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Sort by" />
           </SelectTrigger>
@@ -95,7 +95,7 @@ const ProjectBalanceTrackerPage: React.FC<ProjectBalanceTrackerPageProps> = ({ i
         {projects.length === 0 ? (
           <p className="text-center text-gray-500 col-span-full">No projects added yet. Click "Add Project" to get started!</p>
         ) : (
-          projects.map((project) => (
+          projects.map((project: Project) => (
             <Card key={project.id}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-lg">{project.name}</CardTitle>

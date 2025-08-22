@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import {
@@ -11,9 +11,13 @@ import { Project } from '@/types/task';
 import { showError, showSuccess } from '@/utils/toast';
 import { ProjectContextType } from '@/types/props';
 
-export const useProjects = (userId?: string | null) => {
+interface UseProjectsProps {
+  userId?: string | null;
+}
+
+export const useProjects = (props?: UseProjectsProps): ProjectContextType => {
   const { user } = useAuth();
-  const activeUserId = userId || user?.id;
+  const activeUserId = props?.userId || user?.id;
   const queryClient = useQueryClient();
 
   const projectsQueryKey = ['projects', activeUserId];
@@ -28,7 +32,7 @@ export const useProjects = (userId?: string | null) => {
     enabled: !!activeUserId,
   });
 
-  const [sortOption, setSortOption] = useState('name'); // Default sort option
+  const [sortOption, setSortOption] = useState('name');
 
   const addProjectCallback = useCallback(
     async (name: string, description: string | null, link: string | null): Promise<Project | null> => {
@@ -44,7 +48,7 @@ export const useProjects = (userId?: string | null) => {
           return newProject;
         }
         return null;
-      } catch (err) {
+      } catch (err: any) {
         showError('Failed to add project.');
         return null;
       }
@@ -62,7 +66,7 @@ export const useProjects = (userId?: string | null) => {
           return updatedProject;
         }
         return null;
-      } catch (err) {
+      } catch (err: any) {
         showError('Failed to update project.');
         return null;
       }
@@ -76,7 +80,7 @@ export const useProjects = (userId?: string | null) => {
         await deleteProject(projectId);
         queryClient.invalidateQueries({ queryKey: projectsQueryKey });
         showSuccess('Project deleted successfully!');
-      } catch (err) {
+      } catch (err: any) {
         showError('Failed to delete project.');
       }
     },
@@ -103,6 +107,27 @@ export const useProjects = (userId?: string | null) => {
     [projects, updateProjectCallback]
   );
 
+  const resetAllProjectCounts = useCallback(
+    async (): Promise<void> => {
+      if (!activeUserId) {
+        showError('User not authenticated.');
+        return;
+      }
+      try {
+        const projectUpdates = projects.map(p => ({ id: p.id, current_count: 0 }));
+        // Assuming a bulk update function or individual updates
+        for (const update of projectUpdates) {
+          await updateProject(update.id, { current_count: update.current_count });
+        }
+        queryClient.invalidateQueries({ queryKey: projectsQueryKey });
+        showSuccess('All project counts reset successfully!');
+      } catch (err: any) {
+        showError('Failed to reset all project counts.');
+      }
+    },
+    [activeUserId, projects, queryClient, projectsQueryKey]
+  );
+
   const sortedProjects = useMemo(() => {
     let sorted = [...projects];
     if (sortOption === 'name') {
@@ -119,12 +144,13 @@ export const useProjects = (userId?: string | null) => {
     projects: sortedProjects,
     isLoading,
     error,
-    sectionTitle: 'Project Balance Tracker', // Default title, can be overridden by settings
+    sectionTitle: 'Project Balance Tracker',
     addProject: addProjectCallback,
     updateProject: updateProjectCallback,
     deleteProject: deleteProjectCallback,
     incrementProjectCount,
     decrementProjectCount,
+    resetAllProjectCounts,
     sortOption,
     setSortOption,
   };

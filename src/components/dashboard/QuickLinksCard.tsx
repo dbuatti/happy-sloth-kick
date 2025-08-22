@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Edit, Trash2, Link as LinkIcon } from 'lucide-react';
+import { Plus, Edit, Trash2 } from 'lucide-react';
 import { QuickLink } from '@/types/task';
 import { useQuickLinks } from '@/hooks/useQuickLinks';
 import { useAuth } from '@/context/AuthContext';
@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { TwitterPicker } from 'react-color';
 import { QuickLinksCardProps } from '@/types/props';
+import { showError } from '@/utils/toast';
 
 const QuickLinksCard: React.FC = () => {
   const { user } = useAuth();
@@ -23,7 +24,7 @@ const QuickLinksCard: React.FC = () => {
     addQuickLink,
     updateQuickLink,
     deleteQuickLink,
-  } = useQuickLinks(userId);
+  } = useQuickLinks({ userId }); // Pass userId as an object
 
   const [isAddLinkDialogOpen, setIsAddLinkDialogOpen] = useState(false);
   const [isEditLinkDialogOpen, setIsEditLinkDialogOpen] = useState(false);

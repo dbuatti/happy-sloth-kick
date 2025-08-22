@@ -25,7 +25,7 @@ const SectionSelector: React.FC<SectionSelectorProps> = ({
 
   return (
     <div className="flex items-center space-x-2">
-      <Select value={selectedSection || 'all'} onValueChange={onSelectSection}>
+      <Select value={selectedSection || 'all'} onValueChange={(value: string) => onSelectSection(value)}>
         <SelectTrigger className="w-[180px]">
           <SelectValue placeholder="Select Section" />
         </SelectTrigger>

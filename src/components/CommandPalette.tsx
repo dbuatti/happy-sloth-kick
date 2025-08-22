@@ -23,7 +23,7 @@ const CommandPalette: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
   const navigate = useNavigate();
-  const { user, signOut: authSignOut } = useAuth();
+  const { user, signOut } = useAuth();
   const userId = user?.id;
   const isDemo = user?.id === 'd889323b-350c-4764-9788-6359f85f6142';
 
@@ -136,7 +136,7 @@ const CommandPalette: React.FC = () => {
               <span>Help</span>
             </CommandItem>
             {user && (
-              <CommandItem onSelect={() => authSignOut()}>
+              <CommandItem onSelect={() => signOut()}>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log Out</span>
               </CommandItem>

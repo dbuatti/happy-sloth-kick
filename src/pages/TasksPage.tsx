@@ -15,11 +15,12 @@ import ManageSectionsDialog from '@/components/ManageSectionsDialog';
 import ManageCategoriesDialog from '@/components/ManageCategoriesDialog';
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
 import TaskFilter from '@/components/TaskFilter';
+import { TasksPageProps } from '@/types/props'; // Import TasksPageProps
 
-const TasksPage: React.FC = () => {
+const TasksPage: React.FC<TasksPageProps> = ({ isDemo: propIsDemo, demoUserId }) => {
   const { user } = useAuth();
-  const userId = user?.id;
-  const isDemo = user?.id === 'd889323b-350c-4764-9788-6359f85f6142';
+  const userId = user?.id || demoUserId;
+  const isDemo = propIsDemo || user?.id === 'd889323b-350c-4764-9788-6359f85f6142';
 
   const [currentDate] = useState(new Date());
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
@@ -65,7 +66,7 @@ const TasksPage: React.FC = () => {
     setSectionFilter,
     searchFilter,
     setSearchFilter,
-  } = useTasks({ userId: userId, currentDate: currentDate, viewMode: 'all' }); // Changed viewMode to 'all' for a general tasks page
+  } = useTasks({ userId: userId, currentDate: currentDate, viewMode: 'all' });
 
   const dailyProgress: DailyTaskCount = useDailyTaskCount(currentDate, userId);
 
@@ -224,6 +225,9 @@ const TasksPage: React.FC = () => {
             updateSection={updateSection}
             deleteSection={deleteSection}
             updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+            createCategory={createCategory}
+            updateCategory={updateCategory}
+            deleteCategory={deleteCategory}
             initialData={prefilledTaskData}
           />
         </DialogContent>

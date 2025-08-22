@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import {
@@ -83,11 +83,11 @@ export const useQuickLinks = (props?: UseQuickLinksProps) => {
           user_id: activeUserId,
           title,
           url,
-          image_url: null, // Not currently supported in this component
-          link_order: quickLinks.length, // Append to end
+          image_url: null,
+          link_order: quickLinks.length,
           emoji,
           background_color: backgroundColor,
-          avatar_text: null, // Not currently supported
+          avatar_text: null,
         };
         const result = await addLinkMutation.mutateAsync(newLinkData);
         showSuccess('Quick link added successfully!');

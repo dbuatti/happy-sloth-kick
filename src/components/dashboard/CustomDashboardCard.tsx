@@ -15,7 +15,7 @@ const CustomDashboardCard: React.FC<CustomDashboardCardProps> = ({ card }) => {
   const { user } = useAuth();
   const userId = user?.id;
 
-  const { updateCustomDashboardCard, deleteCustomDashboardCard } = useCustomDashboardCards(userId);
+  const { updateCustomDashboardCard, deleteCustomDashboardCard } = useCustomDashboardCards({ userId });
 
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(card.title);

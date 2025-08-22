@@ -1,4 +1,4 @@
-import { Task, TaskSection, TaskCategory, DailyTaskCount, TaskStatus, RecurringType, TaskPriority, Appointment, Project, UserSettings, WorkHour, QuickLink, WeeklyFocus, GratitudeJournalEntry, WorryJournalEntry, SleepRecord, PeopleMemory, CustomDashboardCard } from './task';
+import { Task, TaskSection, TaskCategory, DailyTaskCount, TaskStatus, TaskPriority, Appointment, Project, UserSettings, WorkHour, QuickLink, WeeklyFocus, GratitudeJournalEntry, WorryJournalEntry, SleepRecord, PeopleMemory, CustomDashboardCard } from './task';
 
 export interface AddTaskFormProps {
   onAddTask: (taskData: Partial<Task>) => Promise<Task | null>;
@@ -10,6 +10,9 @@ export interface AddTaskFormProps {
   updateSection: (sectionId: string, newName: string) => Promise<TaskSection | null>;
   deleteSection: (sectionId: string) => Promise<void>;
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<TaskSection | null>;
+  createCategory: (name: string, color: string) => Promise<TaskCategory | null>;
+  updateCategory: (categoryId: string, newName: string, newColor: string) => Promise<TaskCategory | null>;
+  deleteCategory: (categoryId: string) => Promise<void>;
   initialData?: Partial<Task> | null;
 }
 
@@ -301,7 +304,7 @@ export interface FocusPanelDrawerProps {
   isDemo?: boolean;
 }
 
-export interface DailyTasksV3Props {
+export interface DailyTasksV3PageProps {
   isDemo?: boolean;
   demoUserId?: string;
 }
@@ -312,7 +315,7 @@ export interface SidebarProps {
 }
 
 export interface DashboardStats {
-  isLoading: boolean; // Changed from loading
+  isLoading: boolean;
   tasksDue: number;
   tasksCompleted: number;
   appointmentsToday: number;
@@ -471,12 +474,12 @@ export interface TimeBlockProps {
   unscheduledTasks: Task[];
 }
 
-export interface DashboardPageProps { // Renamed from DashboardProps
+export interface DashboardPageProps {
   isDemo?: boolean;
   demoUserId?: string;
 }
 
-export interface MyHubPageProps { // Renamed from MyHubProps
+export interface MyHubPageProps {
   isDemo?: boolean;
   demoUserId?: string;
 }
@@ -501,17 +504,17 @@ export interface ProjectBalanceTrackerPageProps {
   demoUserId?: string;
 }
 
-export interface DailyTasksV3PageProps { // Renamed from DailyTasksV3Props
+export interface DailyTasksV3PageProps {
   isDemo?: boolean;
   demoUserId?: string;
 }
 
-export interface TaskCalendarPageProps { // Renamed from TaskCalendarProps
+export interface TaskCalendarPageProps {
   isDemo?: boolean;
   demoUserId?: string;
 }
 
-export interface TimeBlockSchedulePageProps { // Renamed from TimeBlockSchedulePageProps
+export interface TimeBlockSchedulePageProps {
   isDemo?: boolean;
   demoUserId?: string;
 }
@@ -566,7 +569,7 @@ export interface SleepDiaryPageProps {
   demoUserId?: string;
 }
 
-export interface TasksPageProps { // Renamed from TasksPage
+export interface TasksPageProps {
   isDemo?: boolean;
   demoUserId?: string;
 }

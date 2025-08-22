@@ -6,7 +6,6 @@ import { Edit, Save, X } from 'lucide-react';
 import { useWeeklyFocus } from '@/hooks/useWeeklyFocus';
 import { useAuth } from '@/context/AuthContext';
 import { format, startOfWeek } from 'date-fns';
-import { WeeklyFocus } from '@/types/task';
 import { WeeklyFocusCardProps } from '@/types/props';
 
 const WeeklyFocusCard: React.FC = () => {
@@ -20,7 +19,7 @@ const WeeklyFocusCard: React.FC = () => {
     isLoading,
     error,
     updateWeeklyFocus,
-  } = useWeeklyFocus(userId, currentWeekStartDate);
+  } = useWeeklyFocus({ userId, weekStartDate: currentWeekStartDate }); // Pass userId and weekStartDate as an object
 
   const [isEditing, setIsEditing] = useState(false);
   const [primaryFocus, setPrimaryFocus] = useState('');

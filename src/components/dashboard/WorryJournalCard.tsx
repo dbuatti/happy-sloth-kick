@@ -19,7 +19,7 @@ const WorryJournalCard: React.FC = () => {
     error,
     addEntry,
     deleteEntry,
-  } = useWorryJournal(userId);
+  } = useWorryJournal({ userId }); // Pass userId as an object
 
   const [newThought, setNewThought] = useState('');
 
@@ -79,7 +79,7 @@ const WorryJournalCard: React.FC = () => {
           {entries.length === 0 ? (
             <p className="text-gray-500 text-sm">No entries yet. Write down your thoughts.</p>
           ) : (
-            entries.map((entry) => (
+            entries.map((entry: WorryJournalEntry) => ( // Explicitly type entry
               <div key={entry.id} className="flex items-start justify-between p-2 border rounded-md text-sm">
                 <p className="flex-grow pr-2">{entry.thought}</p>
                 <div className="flex-shrink-0 flex items-center space-x-2">

@@ -6,11 +6,11 @@ import { Plus, Edit, Trash2 } from 'lucide-react';
 import { useSleepRecords } from '@/hooks/useSleepRecords';
 import { useAuth } from '@/context/AuthContext';
 import { SleepRecord } from '@/types/task';
-import { format, parseISO, isValid } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { DatePicker } from '@/components/ui/date-picker';
-import { TimePicker } from '@/components/ui/time-picker';
+import DatePicker from '@/components/ui/date-picker';
+import TimePicker from '@/components/ui/time-picker';
 import { showError, showSuccess } from '@/utils/toast';
 import { SleepTrackerCardProps } from '@/types/props';
 
@@ -25,7 +25,7 @@ const SleepTrackerCard: React.FC = () => {
     addSleepRecord,
     updateSleepRecord,
     deleteSleepRecord,
-  } = useSleepRecords(userId);
+  } = useSleepRecords({ userId }); // Pass userId as an object
 
   const [isRecordDialogOpen, setIsRecordDialogOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<SleepRecord | null>(null);
@@ -105,7 +105,7 @@ const SleepTrackerCard: React.FC = () => {
         showSuccess('Sleep record added successfully!');
       }
       setIsRecordDialogOpen(false);
-    } catch (error) {
+    } catch (error: any) { // Explicitly type error
       showError('Failed to save sleep record.');
       console.error('Error saving sleep record:', error);
     }
@@ -153,7 +153,7 @@ const SleepTrackerCard: React.FC = () => {
         {sleepRecords.length === 0 ? (
           <p className="text-gray-500 text-sm">No sleep records yet. Add your first entry!</p>
         ) : (
-          sleepRecords.map((record) => (
+          sleepRecords.map((record: SleepRecord) => ( // Explicitly type record
             <div key={record.id} className="flex items-center justify-between p-2 border rounded-md text-sm">
               <div className="flex-grow">
                 <p className="font-medium">{format(parseISO(record.date), 'MMM d, yyyy')}</p>

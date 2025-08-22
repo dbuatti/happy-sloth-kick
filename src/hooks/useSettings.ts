@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import {
@@ -9,9 +9,13 @@ import { UserSettings } from '@/types/task';
 import { showError, showSuccess } from '@/utils/toast';
 import { SettingsContextType } from '@/types/props';
 
-export const useSettings = (userId?: string | null) => {
+interface UseSettingsProps {
+  userId?: string | null;
+}
+
+export const useSettings = (props?: UseSettingsProps): SettingsContextType => {
   const { user } = useAuth();
-  const activeUserId = userId || user?.id;
+  const activeUserId = props?.userId || user?.id;
   const queryClient = useQueryClient();
 
   const settingsQueryKey = ['userSettings', activeUserId];
@@ -50,7 +54,7 @@ export const useSettings = (userId?: string | null) => {
           return updated;
         }
         return null;
-      } catch (err) {
+      } catch (err: any) {
         showError('Failed to update settings.');
         return null;
       }
