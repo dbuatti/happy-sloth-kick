@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Play, Check, X, Edit, Trash2, Plus, Link, Image } from 'lucide-react';
+import { Play, Edit, Trash2, Plus, Link } from 'lucide-react'; // Removed unused Check, X, Image
 import { cn } from '@/lib/utils';
 import { Task, TaskStatus, TaskPriority } from '@/types/task';
 import { format, isToday, isTomorrow, isPast, parseISO } from 'date-fns';
@@ -43,8 +43,9 @@ export const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
     }
   }, [isOpen]);
 
-  const handleStatusChange = async (taskId: string, newStatus: TaskStatus) => {
-    await updateTask(taskId, { status: newStatus });
+  const handleStatusChange = async (taskId: string, newStatus: TaskStatus): Promise<Task | null> => { // Corrected return type
+    const updatedTask = await updateTask(taskId, { status: newStatus });
+    return updatedTask;
   };
 
   const handleDelete = async () => {

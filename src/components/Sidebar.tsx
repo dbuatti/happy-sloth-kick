@@ -1,13 +1,12 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, ListTodo, Calendar, Archive, Settings, HelpCircle, LogOut, Sun, Moon, Menu } from 'lucide-react';
+import { LayoutDashboard, ListTodo, Calendar, Archive, Settings, HelpCircle, LogOut, Sun, Moon } from 'lucide-react'; // Removed unused Menu
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
 import { useTheme } from '@/context/ThemeContext';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { SidebarProps } from '@/types/props';
+import { SidebarProps } from '@/types/props'; // Removed unused Sheet imports
 
 const Sidebar: React.FC<SidebarProps> = ({ isDemo: propIsDemo, demoUserId }) => {
   const { user, signOut } = useAuth();
@@ -16,7 +15,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDemo: propIsDemo, demoUserId }) => 
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
 
-  const dailyProgress = useDailyTaskCount(new Date(), userId); // Corrected useDailyTaskCount usage
+  const dailyProgress = useDailyTaskCount(new Date(), userId);
   const dailyTaskCountLoading = false; // Placeholder, as useDailyTaskCount doesn't return isLoading directly
 
   const navItems = [

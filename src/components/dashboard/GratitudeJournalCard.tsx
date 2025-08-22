@@ -19,7 +19,7 @@ const GratitudeJournalCard: React.FC = () => {
     error,
     addEntry,
     deleteEntry,
-  } = useGratitudeJournal({ userId }); // Pass userId as an object
+  } = useGratitudeJournal({ userId });
 
   const [newEntry, setNewEntry] = useState('');
 
@@ -79,7 +79,7 @@ const GratitudeJournalCard: React.FC = () => {
           {entries.length === 0 ? (
             <p className="text-gray-500 text-sm">No entries yet. Start writing!</p>
           ) : (
-            entries.map((entry: GratitudeJournalEntry) => ( // Explicitly type entry
+            entries.map((entry: GratitudeJournalEntry) => (
               <div key={entry.id} className="flex items-start justify-between p-2 border rounded-md text-sm">
                 <p className="flex-grow pr-2">{entry.entry}</p>
                 <div className="flex-shrink-0 flex items-center space-x-2">

@@ -112,7 +112,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({
         </Label>
         <Select
           value={priority || ''}
-          onValueChange={(value: TaskPriority | 'null') => setPriority(value === 'null' ? null : value)}
+          onValueChange={(value: string) => setPriority(value === 'null' ? null : value as TaskPriority)}
         >
           <SelectTrigger className="col-span-3">
             <SelectValue placeholder="Select priority" />

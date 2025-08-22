@@ -25,7 +25,7 @@ const SleepTrackerCard: React.FC = () => {
     addSleepRecord,
     updateSleepRecord,
     deleteSleepRecord,
-  } = useSleepRecords({ userId }); // Pass userId as an object
+  } = useSleepRecords({ userId });
 
   const [isRecordDialogOpen, setIsRecordDialogOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<SleepRecord | null>(null);
@@ -105,7 +105,7 @@ const SleepTrackerCard: React.FC = () => {
         showSuccess('Sleep record added successfully!');
       }
       setIsRecordDialogOpen(false);
-    } catch (error: any) { // Explicitly type error
+    } catch (error: any) {
       showError('Failed to save sleep record.');
       console.error('Error saving sleep record:', error);
     }
@@ -153,7 +153,7 @@ const SleepTrackerCard: React.FC = () => {
         {sleepRecords.length === 0 ? (
           <p className="text-gray-500 text-sm">No sleep records yet. Add your first entry!</p>
         ) : (
-          sleepRecords.map((record: SleepRecord) => ( // Explicitly type record
+          sleepRecords.map((record: SleepRecord) => (
             <div key={record.id} className="flex items-center justify-between p-2 border rounded-md text-sm">
               <div className="flex-grow">
                 <p className="font-medium">{format(parseISO(record.date), 'MMM d, yyyy')}</p>

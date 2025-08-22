@@ -24,7 +24,7 @@ const QuickLinksCard: React.FC = () => {
     addQuickLink,
     updateQuickLink,
     deleteQuickLink,
-  } = useQuickLinks({ userId }); // Pass userId as an object
+  } = useQuickLinks({ userId });
 
   const [isAddLinkDialogOpen, setIsAddLinkDialogOpen] = useState(false);
   const [isEditLinkDialogOpen, setIsEditLinkDialogOpen] = useState(false);
@@ -108,7 +108,7 @@ const QuickLinksCard: React.FC = () => {
         {quickLinks.length === 0 ? (
           <p className="text-gray-500">No quick links added yet.</p>
         ) : (
-          quickLinks.map((link) => (
+          quickLinks.map((link: QuickLink) => ( // Explicitly type link
             <div
               key={link.id}
               className="flex items-center justify-between p-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
@@ -173,7 +173,7 @@ const QuickLinksCard: React.FC = () => {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
-                  <TwitterPicker color={backgroundColor} onChangeComplete={(color) => setBackgroundColor(color.hex)} />
+                  <TwitterPicker color={backgroundColor} onChangeComplete={(color: any) => setBackgroundColor(color.hex)} />
                 </PopoverContent>
               </Popover>
             </div>
@@ -220,7 +220,7 @@ const QuickLinksCard: React.FC = () => {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
-                  <TwitterPicker color={backgroundColor} onChangeComplete={(color) => setBackgroundColor(color.hex)} />
+                  <TwitterPicker color={backgroundColor} onChangeComplete={(color: any) => setBackgroundColor(color.hex)} />
                 </PopoverContent>
               </Popover>
             </div>

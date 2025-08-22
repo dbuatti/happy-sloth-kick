@@ -69,7 +69,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
       } else {
         showError('Failed to add task with AI suggestions.');
       }
-    } catch (error) {
+    } catch (error: any) {
       dismissToast(loadingToastId);
       showError('Failed to get AI suggestions or add task.');
       console.error('AI suggestion error:', error);

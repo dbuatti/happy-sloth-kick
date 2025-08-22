@@ -24,7 +24,7 @@ const PeopleMemoryCard: React.FC = () => {
     addPerson,
     updatePerson,
     deletePerson,
-  } = usePeopleMemory({ userId }); // Pass userId as an object
+  } = usePeopleMemory({ userId });
 
   const [isPersonDialogOpen, setIsPersonDialogOpen] = useState(false);
   const [editingPerson, setEditingPerson] = useState<PeopleMemory | null>(null);
@@ -76,7 +76,7 @@ const PeopleMemoryCard: React.FC = () => {
         showSuccess('Person added successfully!');
       }
       setIsPersonDialogOpen(false);
-    } catch (error: any) { // Explicitly type error
+    } catch (error: any) {
       showError('Failed to save person.');
       console.error('Error saving person:', error);
     }
@@ -124,7 +124,7 @@ const PeopleMemoryCard: React.FC = () => {
         {people.length === 0 ? (
           <p className="text-gray-500 text-sm">No people added yet. Add someone to remember!</p>
         ) : (
-          people.map((person: PeopleMemory) => ( // Explicitly type person
+          people.map((person: PeopleMemory) => (
             <div key={person.id} className="flex items-center justify-between p-2 border rounded-md text-sm">
               <div className="flex items-center flex-grow min-w-0">
                 <Avatar className="h-8 w-8 mr-2">

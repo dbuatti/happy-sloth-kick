@@ -19,7 +19,7 @@ const WeeklyFocusCard: React.FC = () => {
     isLoading,
     error,
     updateWeeklyFocus,
-  } = useWeeklyFocus({ userId, weekStartDate: currentWeekStartDate }); // Pass userId and weekStartDate as an object
+  } = useWeeklyFocus({ userId, weekStartDate: currentWeekStartDate });
 
   const [isEditing, setIsEditing] = useState(false);
   const [primaryFocus, setPrimaryFocus] = useState('');

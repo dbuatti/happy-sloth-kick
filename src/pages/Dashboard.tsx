@@ -28,9 +28,9 @@ import WorryJournalCard from '@/components/dashboard/WorryJournalCard';
 import SleepTrackerCard from '@/components/dashboard/SleepTrackerCard';
 import PeopleMemoryCard from '@/components/dashboard/PeopleMemoryCard';
 import { format, startOfWeek } from 'date-fns';
-import { TaskOverviewDialog } from '@/components/TaskOverviewDialog'; // Added missing import
-import { TaskDetailDialog } from '@/components/TaskDetailDialog'; // Added missing import
-import FullScreenFocusView from '@/components/FullScreenFocusView'; // Added missing import
+import { TaskOverviewDialog } from '@/components/TaskOverviewDialog';
+import { TaskDetailDialog } from '@/components/TaskDetailDialog';
+import FullScreenFocusView from '@/components/FullScreenFocusView';
 
 const DashboardPage: React.FC<DashboardPageProps> = ({ isDemo: propIsDemo, demoUserId }) => {
   const { user } = useAuth();

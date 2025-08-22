@@ -1,5 +1,5 @@
 import React from 'react';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, Coordinates } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { arrayMove } from '@dnd-kit/sortable';
 import { Task, TaskSection } from '@/types/task';
@@ -25,11 +25,11 @@ const TaskList: React.FC<TaskListProps> = ({
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
-      coordinateGetter: (event: KeyboardEvent) => {
+      coordinateGetter: (event: KeyboardEvent): Coordinates | undefined => { // Corrected return type
         if (event.code === 'Space') {
           return { x: 0, y: 0 };
         }
-        return null;
+        return undefined; // Return undefined instead of null
       },
     })
   );
