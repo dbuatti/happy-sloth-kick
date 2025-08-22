@@ -1,191 +1,261 @@
-"use client";
-
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Trash2, ListTodo, Edit, Calendar, StickyNote, BellRing, FolderOpen, Repeat, Link as LinkIcon, ClipboardCopy } from 'lucide-react';
-import { Task, TaskSection, TaskCategory } from '@/types'; // Import types from @/types
-import { useSound } from '@/context/SoundContext'; // Assuming SoundContext exists
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Calendar, Tag, ListTodo, Edit, Trash2, Play, Pause, XCircle, EyeOff, Clock, Link, Image, MessageSquare, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import TaskItem from './TaskItem'; // Import TaskItem for rendering subtasks
-
-interface TaskOverviewDialogProps {
-  isOpen: boolean;
-  setIsOpen: (isOpen: boolean) => void;
-  task: Task | null;
-  allTasks: Task[]; // Pass all tasks for subtask filtering
-  sections: TaskSection[];
-  categories: TaskCategory[];
-  onEditClick: (task: Task) => void;
-  onUpdate: (taskId: string, updates: Partial<Task>) => Promise<Task | null>;
-  onDelete: (taskId: string) => Promise<void>;
-}
+import { Task, TaskSection, TaskCategory, TaskStatus, RecurringType, TaskPriority } from '@/types/task';
+import { format, isToday, isTomorrow, isPast, parseISO } from 'date-fns';
+import { getCategoryColorProps } from '@/utils/categoryColors';
+import TaskItem from './TaskItem';
+import { TaskOverviewDialogProps } from '@/types/props';
 
 export const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
   isOpen,
-  setIsOpen,
+  onClose,
   task,
-  allTasks,
+  onOpenDetail,
+  onOpenFocusView,
+  updateTask,
+  deleteTask,
   sections,
   categories,
-  onEditClick,
-  onUpdate,
-  onDelete,
+  allTasks,
+  onAddTask,
+  onReorderTasks,
+  createSection,
+  updateSection,
+  deleteSection,
+  updateSectionIncludeInFocusMode,
+  createCategory,
+  updateCategory,
+  deleteCategory,
 }) => {
-  const { playSound } = useSound();
-  const [localTask, setLocalTask] = useState<Task | null>(task);
+  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
+  const [isAddSubtaskOpen, setIsAddSubtaskOpen] = useState(false);
+  const [newSubtaskDescription, setNewSubtaskDescription] = useState('');
 
   useEffect(() => {
-    setLocalTask(task);
-  }, [task]);
-
-  const handleToggleComplete = useCallback(async () => {
-    if (!localTask) return;
-    const newStatus = localTask.status === 'completed' ? 'to-do' : 'completed';
-    const updatedTask = await onUpdate(localTask.id, { status: newStatus });
-    if (updatedTask) {
-      setLocalTask(updatedTask);
-      if (newStatus === 'completed') {
-        playSound('complete');
-      }
+    if (!isOpen) {
+      setIsConfirmDeleteOpen(false);
+      setIsAddSubtaskOpen(false);
+      setNewSubtaskDescription('');
     }
-  }, [localTask, onUpdate, playSound]);
+  }, [isOpen]);
 
-  const handleDelete = useCallback(async () => {
-    if (!localTask) return;
-    await onDelete(localTask.id);
-    setIsOpen(false);
-  }, [localTask, onDelete, setIsOpen]);
-
-  const handleEdit = useCallback(() => {
-    if (localTask) {
-      onEditClick(localTask);
-    }
-  }, [localTask, onEditClick]);
-
-  const getCategoryName = (categoryId: string | null | undefined) => {
-    return categories.find(cat => cat.id === categoryId)?.name || 'N/A';
+  const handleStatusChange = async (taskId: string, newStatus: TaskStatus) => {
+    await updateTask(taskId, { status: newStatus });
   };
 
-  const getSectionName = (sectionId: string | null | undefined) => {
-    return sections.find(sec => sec.id === sectionId)?.name || 'N/A';
+  const handleDelete = async () => {
+    if (!task) return;
+    await deleteTask(task.id);
+    setIsConfirmDeleteOpen(false);
+    onClose();
   };
 
-  const subtasks = allTasks.filter(sub => sub.parent_task_id === localTask?.id);
+  const handleAddSubtask = async () => {
+    if (!task || !newSubtaskDescription.trim()) return;
+    await onAddTask({
+      description: newSubtaskDescription.trim(),
+      parent_task_id: task.id,
+      section_id: task.section_id,
+      category: task.category,
+      priority: task.priority,
+      due_date: task.due_date,
+    });
+    setNewSubtaskDescription('');
+    setIsAddSubtaskOpen(false);
+  };
 
-  if (!localTask) return null;
+  const getDueDateText = (dueDate: string | null) => {
+    if (!dueDate) return null;
+    const date = parseISO(dueDate);
+    if (isToday(date)) return 'Today';
+    if (isTomorrow(date)) return 'Tomorrow';
+    if (isPast(date) && !isToday(date)) return 'Overdue';
+    return format(date, 'MMM d');
+  };
+
+  const getPriorityClasses = (priority: TaskPriority) => {
+    switch (priority) {
+      case 'urgent':
+        return 'text-red-600 border-red-600 bg-red-50';
+      case 'high':
+        return 'text-orange-600 border-orange-600 bg-orange-50';
+      case 'medium':
+        return 'text-yellow-600 border-yellow-600 bg-yellow-50';
+      case 'low':
+        return 'text-green-600 border-green-600 bg-green-50';
+      default:
+        return 'text-gray-500 border-gray-500 bg-gray-50';
+    }
+  };
+
+  if (!task) return null;
+
+  const category = categories.find((cat) => cat.id === task.category);
+  const section = sections.find((sec) => sec.id === task.section_id);
+  const categoryColorProps = category ? getCategoryColorProps(category.color) : null;
+
+  const subtasks = allTasks.filter((subtask) => subtask.parent_task_id === task.id);
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center space-x-2">
-            <Checkbox
-              checked={localTask.status === 'completed'}
-              onCheckedChange={handleToggleComplete}
-              className="h-5 w-5"
-            />
-            <span className={cn(localTask.status === 'completed' && 'line-through text-muted-foreground')}>
-              {localTask.description}
-            </span>
-          </DialogTitle>
+          <DialogTitle>Task Overview</DialogTitle>
         </DialogHeader>
-        <ScrollArea className="h-[calc(90vh-180px)] pr-4">
-          <div className="grid gap-4 py-4 text-sm">
-            <div className="flex items-center space-x-2">
-              <Edit className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium">Status:</span>
-              <span>{localTask.status}</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium">Due Date:</span>
-              <span>{localTask.due_date ? new Date(localTask.due_date).toLocaleDateString() : 'No due date'}</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <FolderOpen className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium">Section:</span>
-              <span>{getSectionName(localTask.section_id)}</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <ListTodo className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium">Category:</span>
-              <span>{getCategoryName(localTask.category)}</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <BellRing className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium">Priority:</span>
-              <span>{localTask.priority || 'N/A'}</span>
-            </div>
-            {localTask.recurring_type && localTask.recurring_type !== 'none' && (
-              <div className="flex items-center space-x-2">
-                <Repeat className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">Recurring:</span>
-                <span>{localTask.recurring_type}</span>
-              </div>
-            )}
-            {localTask.link && (
-              <div className="flex items-center space-x-2">
-                <LinkIcon className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">Link:</span>
-                <a href={localTask.link} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline flex items-center space-x-1">
-                  <span>{localTask.link}</span>
-                  <ClipboardCopy className="h-3 w-3" />
-                </a>
-              </div>
-            )}
-            {localTask.notes && (
-              <>
-                <Separator />
-                <div>
-                  <h3 className="font-medium flex items-center space-x-2 mb-2">
-                    <StickyNote className="h-4 w-4 text-muted-foreground" />
-                    <span>Notes:</span>
-                  </h3>
-                  <p className="text-muted-foreground whitespace-pre-wrap">{localTask.notes}</p>
-                </div>
-              </>
-            )}
+        <div className="grid gap-4 py-4">
+          <h2 className="text-2xl font-bold">{task.description}</h2>
 
-            {subtasks.length > 0 && (
-              <>
-                <Separator />
-                <div>
-                  <h3 className="font-medium flex items-center space-x-2 mb-2">
-                    <ListTodo className="h-4 w-4 text-muted-foreground" />
-                    <span>Subtasks:</span>
-                  </h3>
-                  <div className="space-y-2">
-                    {subtasks.map(subtask => (
-                      <TaskItem
-                        key={subtask.id}
-                        task={subtask}
-                        categories={categories}
-                        onEdit={onEditClick} // Pass onEditClick for subtasks
-                        onDelete={onDelete}
-                        onUpdate={onUpdate}
-                        allTasks={allTasks}
-                        isSubtask={true}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </>
+          <div className="flex flex-wrap gap-2 text-sm text-gray-500">
+            {task.priority && (
+              <Badge
+                variant="outline"
+                className={cn(
+                  'px-2 py-0.5 rounded-full border',
+                  getPriorityClasses(task.priority)
+                )}
+              >
+                {task.priority}
+              </Badge>
+            )}
+            {task.due_date && (
+              <Badge
+                variant="outline"
+                className={cn(
+                  'px-2 py-0.5 rounded-full border',
+                  isPast(parseISO(task.due_date)) && !isToday(parseISO(task.due_date))
+                    ? 'border-red-500 text-red-500 bg-red-50'
+                    : 'border-gray-300 text-gray-600'
+                )}
+              >
+                <span className="mr-1">🗓️</span> {getDueDateText(task.due_date)}
+              </Badge>
+            )}
+            {category && (
+              <Badge
+                variant="outline"
+                className={cn(
+                  'px-2 py-0.5 rounded-full border',
+                  categoryColorProps?.dotBorder,
+                  categoryColorProps?.dotColor,
+                  categoryColorProps?.backgroundClass
+                )}
+              >
+                <span
+                  className={cn(
+                    'w-2 h-2 rounded-full mr-1',
+                    categoryColorProps?.dotColor
+                  )}
+                  style={{ backgroundColor: categoryColorProps?.bg }}
+                />
+                {category.name}
+              </Badge>
+            )}
+            {section && (
+              <Badge variant="outline" className="px-2 py-0.5 rounded-full border border-gray-300 text-gray-600">
+                <span className="mr-1">📂</span> {section.name}
+              </Badge>
             )}
           </div>
-        </ScrollArea>
+
+          {task.notes && (
+            <div>
+              <h3 className="font-semibold">Notes:</h3>
+              <p className="text-gray-700 dark:text-gray-300">{task.notes}</p>
+            </div>
+          )}
+
+          {task.link && (
+            <div>
+              <h3 className="font-semibold">Link:</h3>
+              <a href={task.link} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                {task.link}
+              </a>
+            </div>
+          )}
+
+          {task.image_url && (
+            <div>
+              <h3 className="font-semibold">Image:</h3>
+              <img src={task.image_url} alt="Task related" className="max-w-full h-auto rounded-md mt-2" />
+            </div>
+          )}
+
+          {subtasks.length > 0 && (
+            <div className="mt-4">
+              <h3 className="text-lg font-semibold mb-2">Subtasks:</h3>
+              <div className="space-y-2">
+                {subtasks.map((subtask) => (
+                  <TaskItem
+                    key={subtask.id}
+                    task={subtask}
+                    allTasks={allTasks}
+                    sections={sections}
+                    categories={categories}
+                    onStatusChange={handleStatusChange}
+                    onUpdate={updateTask}
+                    onDelete={deleteTask}
+                    onOpenOverview={onOpenOverview}
+                    onOpenDetail={onOpenDetail}
+                    onAddTask={onAddTask}
+                    onReorderTasks={onReorderTasks}
+                    level={1}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center space-x-2 mt-4">
+            <Input
+              placeholder="Add a subtask..."
+              value={newSubtaskDescription}
+              onChange={(e) => setNewSubtaskDescription(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAddSubtask();
+                }
+              }}
+            />
+            <Button onClick={handleAddSubtask} size="icon">
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
         <DialogFooter>
-          <Button variant="outline" onClick={handleEdit}>
+          <Button variant="secondary" onClick={() => onOpenDetail(task)}>
             <Edit className="mr-2 h-4 w-4" /> Edit Details
           </Button>
-          <Button variant="destructive" onClick={handleDelete}>
-            <Trash2 className="mr-2 h-4 w-4" /> Delete Task
+          <Button onClick={() => onOpenFocusView(task)}>
+            <Play className="mr-2 h-4 w-4" /> Start Focus
+          </Button>
+          <Button variant="destructive" onClick={() => setIsConfirmDeleteOpen(true)}>
+            <Trash2 className="mr-2 h-4 w-4" /> Delete
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      <Dialog open={isConfirmDeleteOpen} onOpenChange={setIsConfirmDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+          </DialogHeader>
+          <p>Are you sure you want to delete this task and all its subtasks?</p>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsConfirmDeleteOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDelete}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 };

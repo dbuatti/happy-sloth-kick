@@ -3,16 +3,20 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import {
   fetchTasks,
-  fetchSections,
   fetchDoTodayOffLog,
-} from '@/integrations/supabase/api'; // Corrected import path for API functions
-import { Task, TaskSection, DoTodayOffLog, DailyTaskCount } from '@/types/task'; // Corrected import
+} from '@/integrations/supabase/api';
+import { Task, DoTodayOffLog, DailyTaskCount } from '@/types/task';
+import { isSameDay, parseISO } from 'date-fns';
 
 export const useDailyTaskCount = (currentDate: Date, userId?: string | null): DailyTaskCount => {
   const { user } = useAuth();
   const activeUserId = userId || user?.id;
 
-  const todayStart = useMemo(() => new Date(currentDate.setHours(0, 0, 0, 0)), [currentDate]);
+  const todayStart = useMemo(() => {
+    const date = new Date(currentDate);
+    date.setHours(0, 0, 0, 0);
+    return date;
+  }, [currentDate]);
 
   const { data: tasks = [] } = useQuery<Task[], Error>({
     queryKey: ['dailyTasksCount', activeUserId, todayStart.toISOString().split('T')[0]],
@@ -37,16 +41,23 @@ export const useDailyTaskCount = (currentDate: Date, userId?: string | null): Da
     let overdueCount = 0;
 
     tasks.forEach((task) => {
-      const isTodayTask =
-        !doTodayOffIds.has(task.id) &&
-        (task.due_date === null || new Date(task.due_date) >= todayStart);
+      // A task is considered "today's task" if it's not explicitly turned off for today
+      // and its due date is today or in the future, or it has no due date.
+      // For daily count, we consider all tasks that are not archived.
+      const isRelevantTask = task.status !== 'archived' && !doTodayOffIds.has(task.id);
 
-      if (isTodayTask) {
+      if (isRelevantTask) {
         if (task.status === 'completed') {
           completedCount++;
         } else if (task.status === 'to-do') {
-          totalPendingCount++;
-          if (task.due_date && new Date(task.due_date) < todayStart) {
+          // Only count tasks that are due today or have no due date, and are not overdue
+          const isDueTodayOrNoDueDate = !task.due_date || isSameDay(parseISO(task.due_date), todayStart);
+          const isOverdue = task.due_date && parseISO(task.due_date) < todayStart;
+
+          if (isDueTodayOrNoDueDate) {
+            totalPendingCount++;
+          }
+          if (isOverdue) {
             overdueCount++;
           }
         }

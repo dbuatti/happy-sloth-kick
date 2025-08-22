@@ -10,27 +10,16 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { cn } from '@/lib/utils';
 import {
   TaskSection,
   TaskCategory,
   Task,
   RecurringType,
   TaskPriority,
-} from '@/types/task'; // Corrected import
-import { useAuth } from '@/context/AuthContext';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import { CalendarIcon } from 'lucide-react';
-import { DatePicker } from '@/components/ui/date-picker';
+} from '@/types/task';
 import { format } from 'date-fns';
-import { Checkbox } from '@/components/ui/checkbox';
-import { SelectDialog } from '@/components/SelectDialog';
+import { DatePicker } from '@/components/ui/date-picker'; // Corrected import
+import { SelectDialog } from '@/components/SelectDialog'; // Corrected import
 import { AddTaskFormProps } from '@/types/props'; // Import props interface
 
 const AddTaskForm: React.FC<AddTaskFormProps> = ({
@@ -38,15 +27,13 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({
   onTaskAdded,
   sections,
   allCategories,
-  currentDate,
+  // currentDate, // Removed as it's not directly used in the form logic
   createSection,
   updateSection,
   deleteSection,
-  updateSectionIncludeInFocusMode,
+  // updateSectionIncludeInFocusMode, // Removed as it's not directly used in the form logic
   initialData,
 }) => {
-  const { user } = useAuth();
-  const userId = user?.id;
   const [description, setDescription] = useState(initialData?.description || '');
   const [dueDate, setDueDate] = useState<Date | undefined>(
     initialData?.due_date ? new Date(initialData.due_date) : undefined
@@ -64,13 +51,9 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({
   );
   const [notes, setNotes] = useState(initialData?.notes || '');
   const [recurringType, setRecurringType] = useState<RecurringType>(initialData?.recurring_type || 'none');
-  const [isDoToday, setIsDoToday] = useState(false); // This state might be handled externally or derived
-  const [isOverviewOpen, setIsOverviewOpen] = useState(false); // Unused, consider removing if not needed
-  const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
-  const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
 
   const handleSave = async () => {
-    if (!description.trim() || !userId) return;
+    if (!description.trim()) return;
 
     const taskData: Partial<Task> = {
       description: description.trim(),
@@ -91,7 +74,6 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({
     setSelectedSection(null);
     setNotes('');
     setRecurringType('none');
-    setIsDoToday(false);
     onTaskAdded?.();
   };
 
@@ -152,18 +134,18 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({
             color: cat.color, // Pass color directly
           }))}
           selectedItem={selectedCategory ? { id: selectedCategory.id, name: selectedCategory.name, color: selectedCategory.color } : null}
-          onSelectItem={(item) => setSelectedCategory(allCategories.find(cat => cat.id === item?.id) || null)}
-          createItem={(name, color) => {
+          onSelectItem={(item: { id: string; name: string; color?: string } | null) => setSelectedCategory(allCategories.find(cat => cat.id === item?.id) || null)}
+          createItem={(name: string, color: string) => {
             // This needs to be handled by the parent component or a hook
             // For now, it's a placeholder
             console.log('Create category:', name, color);
             return Promise.resolve(null);
           }}
-          updateItem={(id, name, color) => {
+          updateItem={(id: string, name: string, color: string) => {
             console.log('Update category:', id, name, color);
             return Promise.resolve(null);
           }}
-          deleteItem={(id) => {
+          deleteItem={(id: string) => {
             console.log('Delete category:', id);
             return Promise.resolve();
           }}
@@ -178,7 +160,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({
         <SelectDialog
           items={sections.map(sec => ({ id: sec.id, name: sec.name }))}
           selectedItem={selectedSection ? { id: selectedSection.id, name: selectedSection.name } : null}
-          onSelectItem={(item) => setSelectedSection(sections.find(sec => sec.id === item?.id) || null)}
+          onSelectItem={(item: { id: string; name: string; color?: string } | null) => setSelectedSection(sections.find(sec => sec.id === item?.id) || null)}
           createItem={createSection}
           updateItem={updateSection}
           deleteItem={deleteSection}

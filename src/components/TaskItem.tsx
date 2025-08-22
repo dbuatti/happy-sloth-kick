@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,19 +10,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
   MoreVertical,
-  ListTodo, // Import ListTodo
-  Calendar,
-  Tag,
+  ListTodo,
   Edit,
   Trash2,
-  Repeat,
-  ArrowRight,
   XCircle,
   EyeOff,
-  Clock,
-  Link,
-  Image,
-  MessageSquare,
   Plus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -30,25 +22,16 @@ import {
   Task,
   TaskSection,
   TaskCategory,
-  TaskStatus,
   RecurringType,
   TaskPriority,
-} from '@/types/task'; // Corrected import
+  TaskStatus, // Explicitly import TaskStatus
+} from '@/types/task';
 import { format, isToday, isTomorrow, isPast, parseISO } from 'date-fns';
 import { getCategoryColorProps } from '@/utils/categoryColors';
 import { useAuth } from '@/context/AuthContext';
-import { Draggable } from '@dnd-kit/core';
+import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command';
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -56,10 +39,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
   Dialog,
   DialogContent,
@@ -67,32 +46,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-
-interface TaskItemProps {
-  task: Task;
-  allTasks: Task[];
-  sections: TaskSection[];
-  categories: TaskCategory[];
-  onStatusChange: (taskId: string, newStatus: TaskStatus) => Promise<Task | null>;
-  onUpdate: (taskId: string, updates: Partial<Task>) => Promise<Task | null>;
-  onDelete: (taskId: string) => Promise<void>;
-  onOpenOverview: (task: Task) => void;
-  onOpenDetail: (task: Task) => void;
-  onAddTask: (taskData: Partial<Task>) => Promise<Task | null>;
-  onReorderTasks: (
-    updates: {
-      id: string;
-      order: number | null;
-      section_id: string | null;
-      parent_task_id: string | null;
-    }[]
-  ) => Promise<void>;
-  showDoTodayToggle?: boolean;
-  toggleDoToday?: (taskId: string, isOff: boolean) => Promise<void>;
-  isDoTodayOff?: boolean;
-  level?: number; // For subtasks indentation
-  isDemo?: boolean;
-}
+import { Badge } from '@/components/ui/badge'; // Import Badge
+import { TaskItemProps } from '@/types/props'; // Import props interface
 
 const TaskItem: React.FC<TaskItemProps> = ({
   task,
@@ -238,7 +193,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           <Checkbox
             id={`task-${task.id}`}
             checked={task.status === 'completed'}
-            onCheckedChange={(checked) =>
+            onCheckedChange={(checked: boolean) =>
               onStatusChange(task.id, checked ? 'completed' : 'to-do')
             }
             className="mr-2 mt-1"
@@ -410,9 +365,9 @@ const TaskItem: React.FC<TaskItemProps> = ({
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="subtask-description" className="text-right">
+              <label htmlFor="subtask-description" className="text-right">
                 Description
-              </Label>
+              </label>
               <Input
                 id="subtask-description"
                 value={editedDescription} // Reusing state for simplicity, but ideally separate for subtask form

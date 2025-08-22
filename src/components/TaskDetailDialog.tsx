@@ -5,33 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Plus } from 'lucide-react';
-import { Task, TaskSection, TaskCategory, TaskStatus, RecurringType, TaskPriority } from '@/types/task'; // Corrected import
+import { Task, TaskSection, TaskCategory, RecurringType, TaskPriority } from '@/types/task'; // Removed unused TaskStatus
 import { format, parseISO } from 'date-fns';
-import { DatePicker } from '@/components/ui/date-picker';
-import { SelectDialog } from '@/components/SelectDialog';
+import { DatePicker } from '@/components/ui/date-picker'; // Corrected import
+import { SelectDialog } from '@/components/SelectDialog'; // Corrected import
 import { getCategoryColorProps } from '@/utils/categoryColors';
+import { TaskDetailDialogProps } from '@/types/props';
 
-interface TaskDetailDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  task: Task | null;
-  allTasks: Task[];
-  sections: TaskSection[];
-  categories: TaskCategory[];
-  onUpdate: (taskId: string, updates: Partial<Task>) => Promise<Task | null>;
-  onDelete: (taskId: string) => Promise<void>;
-  onAddTask: (taskData: Partial<Task>) => Promise<Task | null>;
-  onReorderTasks: (updates: { id: string; order: number | null; section_id: string | null; parent_task_id: string | null; }[]) => Promise<void>;
-  createSection: (name: string) => Promise<TaskSection | null>;
-  updateSection: (sectionId: string, newName: string) => Promise<TaskSection | null>;
-  deleteSection: (sectionId: string) => Promise<void>;
-  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<TaskSection | null>;
-  createCategory: (name: string, color: string) => Promise<TaskCategory | null>;
-  updateCategory: (categoryId: string, newName: string, newColor: string) => Promise<TaskCategory | null>;
-  deleteCategory: (categoryId: string) => Promise<void>;
-}
-
-const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
+export const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   isOpen,
   onClose,
   task,
@@ -40,8 +21,8 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   categories,
   onUpdate,
   onDelete,
-  onAddTask,
-  onReorderTasks,
+  onAddTask, // Kept as it's used for subtasks
+  onReorderTasks, // Kept as it might be used for subtasks
   createSection,
   updateSection,
   deleteSection,
@@ -182,7 +163,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
                 color: getCategoryColorProps(cat.color).bg,
               }))}
               selectedItem={editedCategory ? { id: editedCategory.id, name: editedCategory.name, color: getCategoryColorProps(editedCategory.color).bg } : null}
-              onSelectItem={(item) => setEditedCategory(categories.find(cat => cat.id === item?.id) || null)}
+              onSelectItem={(item: { id: string; name: string; color?: string } | null) => setEditedCategory(categories.find(cat => cat.id === item?.id) || null)}
               createItem={createCategory}
               updateItem={updateCategory}
               deleteItem={deleteCategory}
@@ -197,7 +178,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
             <SelectDialog
               items={sections.map(sec => ({ id: sec.id, name: sec.name }))}
               selectedItem={editedSection ? { id: editedSection.id, name: editedSection.name } : null}
-              onSelectItem={(item) => setEditedSection(sections.find(sec => sec.id === item?.id) || null)}
+              onSelectItem={(item: { id: string; name: string; color?: string } | null) => setEditedSection(sections.find(sec => sec.id === item?.id) || null)}
               createItem={createSection}
               updateItem={updateSection}
               deleteItem={deleteSection}
@@ -294,5 +275,3 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
     </Dialog>
   );
 };
-
-export default TaskDetailDialog;

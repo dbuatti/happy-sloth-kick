@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   Task,
   TaskSection,
@@ -7,7 +7,8 @@ import {
   TaskStatus,
   RecurringType,
   TaskPriority,
-} from '@/types/task'; // Corrected import
+  DailyTaskCount,
+} from '@/types/task';
 import { useAuth } from '@/context/AuthContext';
 import {
   fetchTasks,
@@ -27,10 +28,11 @@ import {
   fetchDoTodayOffLog,
   addDoTodayOffLog,
   deleteDoTodayOffLog,
-} from '@/integrations/supabase/api'; // Import all API functions
+} from '@/integrations/supabase/api';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { isSameDay, startOfDay, parseISO } from 'date-fns';
 import { showError, showSuccess } from '@/utils/toast';
+import { useDailyTaskCount } from './useDailyTaskCount';
 
 interface UseTasksOptions {
   viewMode?: 'all' | 'focus' | 'archive' | 'today';
@@ -46,6 +48,14 @@ export const useTasks = ({
   const { user } = useAuth();
   const activeUserId = propUserId || user?.id;
   const queryClient = useQueryClient();
+
+  // State for filters
+  const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string | 'all' | null>('all');
+  const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all');
+  const [sectionFilter, setSectionFilter] = useState<string | 'all' | null>('all');
+  const [searchFilter, setSearchFilter] = useState<string>('');
+
 
   const tasksQueryKey = ['tasks', activeUserId, viewMode, currentDate.toISOString().split('T')[0]];
   const sectionsQueryKey = ['sections', activeUserId];
@@ -413,14 +423,43 @@ export const useTasks = ({
 
   const todayStart = startOfDay(currentDate);
 
+  const filteredAndSearchedTasks = useMemo(() => {
+    return processedTasks.filter((task) => {
+      // Apply viewMode specific filters first
+      const isViewModeMatch =
+        viewMode !== 'today' ||
+        (!doTodayOffIds.has(task.id) &&
+          (task.due_date === null || new Date(task.due_date) >= todayStart));
+
+      if (!isViewModeMatch) return false;
+
+      // Apply status filter
+      if (statusFilter !== 'all' && task.status !== statusFilter) return false;
+
+      // Apply category filter
+      if (categoryFilter !== 'all' && categoryFilter !== null && task.category !== categoryFilter) return false;
+
+      // Apply priority filter
+      if (priorityFilter !== 'all' && task.priority !== priorityFilter) return false;
+
+      // Apply section filter
+      if (sectionFilter !== 'all' && sectionFilter !== null && task.section_id !== sectionFilter) return false;
+
+      // Apply search filter
+      if (searchFilter && task.description && !task.description.toLowerCase().includes(searchFilter.toLowerCase())) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [processedTasks, viewMode, doTodayOffIds, todayStart, statusFilter, categoryFilter, priorityFilter, sectionFilter, searchFilter]);
+
+
   const activeTasks = useMemo(() => {
-    return processedTasks
+    return filteredAndSearchedTasks
       .filter(
         (task: Task) =>
-          task.status !== 'archived' &&
-          (viewMode !== 'today' ||
-            (!doTodayOffIds.has(task.id) &&
-              (task.due_date === null || new Date(task.due_date) >= todayStart))) // Fixed new Date() for potential undefined
+          task.status !== 'archived'
       )
       .sort((a, b) => {
         const priorityOrder: { [key: string]: number } = {
@@ -442,7 +481,7 @@ export const useTasks = ({
         if (b.due_date) return 1;
         return 0;
       });
-  }, [processedTasks, viewMode, doTodayOffIds, todayStart]);
+  }, [filteredAndSearchedTasks]);
 
   const nextAvailableTask = useMemo(() => {
     return activeTasks.find(
@@ -454,13 +493,16 @@ export const useTasks = ({
     );
   }, [activeTasks, sections]);
 
+  const dailyProgress: DailyTaskCount = useDailyTaskCount(currentDate, activeUserId);
+
   return {
     tasks,
     processedTasks,
     activeTasks,
+    filteredTasks: filteredAndSearchedTasks, // Expose filtered tasks
     nextAvailableTask,
     sections,
-    allCategories, // Export allCategories
+    allCategories,
     doTodayOffIds,
     handleAddTask,
     updateTask: handleUpdateTask,
@@ -480,6 +522,17 @@ export const useTasks = ({
     setFocusTask,
     isLoading: tasksLoading || sectionsLoading || categoriesLoading || doTodayOffLogLoading,
     error: tasksError || sectionsError || categoriesError || doTodayOffLogError,
-    currentDate, // Export currentDate
+    currentDate,
+    dailyProgress, // Expose dailyProgress
+    statusFilter,
+    setStatusFilter,
+    categoryFilter,
+    setCategoryFilter,
+    priorityFilter,
+    setPriorityFilter,
+    sectionFilter,
+    setSectionFilter,
+    searchFilter,
+    setSearchFilter,
   };
 };

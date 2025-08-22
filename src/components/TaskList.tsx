@@ -1,17 +1,13 @@
 import React from 'react';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, Coordinates } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { arrayMove } from '@dnd-kit/sortable';
-import { PlusIcon } from 'lucide-react';
-import { Task, TaskSection, TaskStatus } from '@/types/task'; // Corrected import
-import { useAuth } from '@/context/AuthContext';
+import { Task, TaskSection, TaskCategory } from '@/types/task'; // Removed unused types
 import TaskItem from './TaskItem';
-import { Button } from './ui/button';
-import { TaskListProps } from '@/types/props'; // Import props interface
+import { TaskListProps } from '@/types/props';
 
 const TaskList: React.FC<TaskListProps> = ({
   tasks,
-  processedTasks,
   sections,
   categories,
   onStatusChange,
@@ -25,34 +21,11 @@ const TaskList: React.FC<TaskListProps> = ({
   toggleDoToday,
   doTodayOffIds,
   isDemo,
-  nextAvailableTask,
-  currentDate,
-  createSection,
-  updateSection,
-  deleteSection,
-  updateSectionIncludeInFocusMode,
-  archiveAllCompletedTasks,
-  toggleAllDoToday,
-  setIsAddTaskDialogOpen,
-  setPrefilledTaskData,
-  dailyProgress,
-  onOpenFocusView,
-  statusFilter,
-  setStatusFilter,
-  categoryFilter,
-  setCategoryFilter,
-  priorityFilter,
-  setPriorityFilter,
-  sectionFilter,
-  setSectionFilter,
 }) => {
-  const { user } = useAuth();
-  const userId = user?.id;
-
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
-      coordinateGetter: (event) => {
+      coordinateGetter: (event: KeyboardEvent): Coordinates | null => { // Explicitly typed coordinateGetter
         if (event.code === 'Space') {
           return { x: 0, y: 0 };
         }
@@ -93,13 +66,13 @@ const TaskList: React.FC<TaskListProps> = ({
         // Moving to a different section (or from no section to a section)
         // Update the active task's section_id and place it at the overTask's order
         await onUpdate(activeTask.id, { section_id: overTask.section_id });
-        await onReorderTasks([{ id: activeTask.id, section_id: overTask.section_id, order: overTask.order }]);
+        await onReorderTasks([{ id: activeTask.id, section_id: overTask.section_id, order: overTask.order, parent_task_id: activeTask.parent_task_id }]);
       }
     } else if (overItem?.type === 'Section') {
       const overSection = overItem.section as TaskSection;
       // Moving a task to a new section, place it at the top of that section
       await onUpdate(activeTask.id, { section_id: overSection.id });
-      await onReorderTasks([{ id: activeTask.id, section_id: overSection.id, order: 0, parent_task_id: null }]);
+      await onReorderTasks([{ id: activeTask.id, section_id: overSection.id, order: 0, parent_task_id: activeTask.parent_task_id }]);
     }
   };
 
