@@ -1,5 +1,5 @@
 import React from 'react';
-import { format, isSameMinute, isSameHour, isSameDay, parseISO } from 'date-fns'; // Added parseISO
+import { format, isSameMinute, isSameHour, isSameDay, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Appointment, Task, TaskSection } from '@/types/task';
 import { TimeBlockActionMenu } from './TimeBlockActionMenu';
@@ -20,8 +20,8 @@ const TimeBlock: React.FC<TimeBlockProps> = ({
   const blockEnd = block.end;
 
   const relevantAppointments = appointments.filter(app => {
-    const appStart = parseISO(app.date + 'T' + app.start_time); // Use parseISO
-    const appEnd = parseISO(app.date + 'T' + app.end_time); // Use parseISO
+    const appStart = parseISO(app.date + 'T' + app.start_time);
+    const appEnd = parseISO(app.date + 'T' + app.end_time);
     return (
       isSameDay(appStart, blockStart) &&
       ((appStart < blockEnd && appEnd > blockStart) ||

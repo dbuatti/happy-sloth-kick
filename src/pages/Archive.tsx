@@ -125,22 +125,22 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo: propIsDemo, demoUserI
             onOpenDetail={handleOpenDetail}
             onAddTask={handleAddTask}
             onReorderTasks={reorderTasks}
-            showDoTodayToggle={false} // Not relevant for archive page
-            toggleDoToday={() => {}} // Not relevant for archive page
-            doTodayOffIds={new Set()} // Not relevant for archive page
+            showDoTodayToggle={false}
+            toggleDoToday={() => {}}
+            doTodayOffIds={new Set()}
             isDemo={isDemo}
-            nextAvailableTask={null} // Not relevant for archive page
+            nextAvailableTask={null}
             currentDate={new Date()}
             createSection={createSection}
             updateSection={updateSection}
             deleteSection={deleteSection}
             updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-            archiveAllCompletedTasks={() => {}} // Not relevant for archive page
-            toggleAllDoToday={() => {}} // Not relevant for archive page
-            setIsAddTaskDialogOpen={() => {}} // Not relevant for archive page
-            setPrefilledTaskData={() => {}} // Not relevant for archive page
-            dailyProgress={{ totalPendingCount: 0, completedCount: 0, overdueCount: 0 }} // Not relevant for archive page
-            onOpenFocusView={() => {}} // Not relevant for archive page
+            archiveAllCompletedTasks={() => {}}
+            toggleAllDoToday={() => {}}
+            setIsAddTaskDialogOpen={() => {}}
+            setPrefilledTaskData={() => {}}
+            dailyProgress={{ totalPendingCount: 0, completedCount: 0, overdueCount: 0 }}
+            onOpenFocusView={() => {}}
             statusFilter={statusFilter}
             setStatusFilter={setStatusFilter}
             categoryFilter={categoryFilter}
@@ -158,7 +158,7 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo: propIsDemo, demoUserI
         onClose={() => setIsOverviewOpen(false)}
         task={selectedTask}
         onOpenDetail={handleOpenDetail}
-        onOpenFocusView={() => {}} // No focus view from archive
+        onOpenFocusView={() => {}}
         updateTask={updateTask}
         deleteTask={deleteTask}
         sections={sections}

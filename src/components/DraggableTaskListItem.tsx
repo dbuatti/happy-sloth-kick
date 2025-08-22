@@ -45,6 +45,8 @@ const DraggableTaskListItem: React.FC<DraggableTaskListItemProps> = ({
         onDelete={onDelete}
         onOpenOverview={onOpenOverview}
         onOpenDetail={onEdit}
+        onAddTask={() => Promise.resolve(null)} // Placeholder
+        onReorderTasks={() => Promise.resolve()} // Placeholder
       />
     </div>
   );

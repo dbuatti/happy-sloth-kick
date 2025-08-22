@@ -7,7 +7,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from '@/components/ui/button';
-import { Plus, Settings } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import { TaskCategory } from '@/types/task';
 import ManageCategoriesDialog from './ManageCategoriesDialog';
 import { CategorySelectorProps } from '@/types/props';
@@ -25,7 +25,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
 
   return (
     <div className="flex items-center space-x-2">
-      <Select value={selectedCategory || 'all'} onValueChange={onSelectCategory}>
+      <Select value={selectedCategory || 'all'} onValueChange={(value: string) => onSelectCategory(value === 'all' ? 'all' : value)}>
         <SelectTrigger className="w-[180px]">
           <SelectValue placeholder="Select Category" />
         </SelectTrigger>

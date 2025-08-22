@@ -12,7 +12,6 @@ import { Label } from '@/components/ui/label';
 import DatePicker from '@/components/ui/date-picker';
 import TimePicker from '@/components/ui/time-picker';
 import { showError, showSuccess } from '@/utils/toast';
-import { SleepTrackerCardProps } from '@/types/props';
 
 const SleepTrackerCard: React.FC = () => {
   const { user } = useAuth();

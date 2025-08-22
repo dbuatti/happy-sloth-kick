@@ -7,7 +7,6 @@ import { useWorryJournal } from '@/hooks/useWorryJournal';
 import { useAuth } from '@/context/AuthContext';
 import { WorryJournalEntry } from '@/types/task';
 import { format } from 'date-fns';
-import { WorryJournalCardProps } from '@/types/props';
 
 const WorryJournalCard: React.FC = () => {
   const { user } = useAuth();

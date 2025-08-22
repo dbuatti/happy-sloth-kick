@@ -7,7 +7,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from '@/components/ui/button';
-import { Plus, Settings } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import { TaskSection } from '@/types/task';
 import ManageSectionsDialog from './ManageSectionsDialog';
 import { SectionSelectorProps } from '@/types/props';
@@ -25,7 +25,7 @@ const SectionSelector: React.FC<SectionSelectorProps> = ({
 
   return (
     <div className="flex items-center space-x-2">
-      <Select value={selectedSection || 'all'} onValueChange={(value: string) => onSelectSection(value)}>
+      <Select value={selectedSection || 'all'} onValueChange={(value: string) => onSelectSection(value === 'all' ? 'all' : value)}>
         <SelectTrigger className="w-[180px]">
           <SelectValue placeholder="Select Section" />
         </SelectTrigger>

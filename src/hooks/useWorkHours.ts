@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import {
@@ -7,7 +7,7 @@ import {
 } from '@/integrations/supabase/api';
 import { WorkHour } from '@/types/task';
 import { showError, showSuccess } from '@/utils/toast';
-import { WorkHourState } from '@/types/props'; // Import WorkHourState
+import { WorkHourState } from '@/types/props';
 
 interface UseWorkHoursProps {
   userId?: string | null;

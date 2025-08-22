@@ -15,7 +15,8 @@ import ManageSectionsDialog from '@/components/ManageSectionsDialog';
 import ManageCategoriesDialog from '@/components/ManageCategoriesDialog';
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
 import TaskFilter from '@/components/TaskFilter';
-import { TasksPageProps } from '@/types/props'; // Import TasksPageProps
+import { TasksPageProps } from '@/types/props';
+import { Input } from '@/components/ui/input';
 
 const TasksPage: React.FC<TasksPageProps> = ({ isDemo: propIsDemo, demoUserId }) => {
   const { user } = useAuth();

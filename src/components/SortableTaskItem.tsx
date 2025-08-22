@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Task, TaskSection, TaskCategory, TaskStatus } from '@/types/task'; // Added missing imports
+import { Task, TaskSection, TaskCategory, TaskStatus } from '@/types/task';
 import TaskItem from './TaskItem';
 import { SortableTaskItemProps } from '@/types/props';
 
@@ -42,6 +42,8 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         onDelete={onDelete}
         onOpenOverview={onOpenOverview}
         onOpenDetail={onEdit}
+        onAddTask={() => Promise.resolve(null)} // Placeholder
+        onReorderTasks={() => Promise.resolve()} // Placeholder
       />
     </div>
   );

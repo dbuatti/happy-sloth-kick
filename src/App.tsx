@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -21,9 +21,9 @@ import DailyTasksV3Page from './pages/DailyTasksV3';
 import TaskCalendarPage from './pages/TaskCalendar';
 import TimeBlockSchedulePage from './pages/TimeBlockSchedule';
 import { useIsMobile } from './hooks/useIsMobile';
-import { Menu, LayoutDashboard, ListTodo, Calendar, Archive, Settings, HelpCircle, LogOut } from 'lucide-react'; // Added missing lucide-react imports
-import { Button } from './components/ui/button'; // Added missing Button import
-import { Sheet, SheetContent, SheetTrigger } from './components/ui/sheet'; // Added missing Sheet imports
+import { Menu, LayoutDashboard, ListTodo, Calendar, Archive, Settings, HelpCircle, LogOut } from 'lucide-react';
+import { Button } from './components/ui/button';
+import { Sheet, SheetContent, SheetTrigger } from './components/ui/sheet';
 
 const queryClient = new QueryClient();
 
@@ -42,7 +42,7 @@ const PrivateRoute: React.FC<{ children: React.ReactNode; isDemo?: boolean; demo
 };
 
 const AppContent: React.FC = () => {
-  const { user, signOut: authSignOut } = useAuth();
+  const { user, signOut } = useAuth();
   const isMobile = useIsMobile();
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -93,7 +93,7 @@ const AppContent: React.FC = () => {
                     Help
                   </Link>
                   {user && (
-                    <Button variant="ghost" className="w-full justify-start" onClick={() => authSignOut()}>
+                    <Button variant="ghost" className="w-full justify-start" onClick={() => signOut()}>
                       <LogOut className="h-5 w-5 mr-2" /> Log Out
                     </Button>
                   )}

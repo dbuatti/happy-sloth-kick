@@ -13,12 +13,7 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
   sections,
   allCategories,
   currentDate,
-  createSection,
-  updateSection,
-  deleteSection,
-  updateSectionIncludeInFocusMode,
   setPrefilledTaskData,
-  isDemo,
 }) => {
   const [quickAddTaskDescription, setQuickAddTaskDescription] = useState('');
   const { playSound } = useSound();
@@ -58,7 +53,7 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
       } else {
         showError('Failed to add task with AI suggestions.');
       }
-    } catch (error: any) { // Explicitly type error
+    } catch (error: any) {
       dismissToast(loadingToastId);
       showError('Failed to get AI suggestions or add task.');
       console.error('AI suggestion error:', error);
