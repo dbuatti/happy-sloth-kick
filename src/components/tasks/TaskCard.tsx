@@ -21,7 +21,7 @@ import {
   ChevronUp,
   Plus,
 } from "lucide-react";
-import { Task, TaskSection } from "@/types"; // Removed TaskCategory, DoTodayOffLogEntry
+import { Task, TaskSection } from "@/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -180,7 +180,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
       .from("tasks")
       .delete()
       .eq("id", task.id)
-      .eq("user_id", user.id);
+      .eq("user.id", user.id);
 
     if (error) {
       toast.error("Failed to delete task: " + error.message);
@@ -223,7 +223,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
         return "bg-yellow-500";
       case "low":
         return "bg-green-500";
-      case "none": // Added 'none' case
+      case "none":
         return "bg-gray-500";
       default:
         return "bg-gray-500";
@@ -312,23 +312,20 @@ const TaskCard: React.FC<TaskCardProps> = ({
   const todaySection = allSections.find(
     (section) => section.name === "Today's Priorities" && section.user_id === user?.id
   );
-  // Removed unused thisWeekSection and futureSection
 
   const isTaskOffToday = doTodayOffLog?.some(
     (entry) => entry.task_id === task.id && isToday(parseISO(entry.off_date))
   );
 
-  const handleDragStop = (e: React.MouseEvent) => {
-    // Prevent click events from firing on draggable items after a drag
-    e.stopPropagation();
-  };
+  // Removed handleDragStop as it's no longer needed with disableInteractiveElementBlocking
+  // and was causing event propagation issues.
 
   return (
     <div
       ref={provided.innerRef}
       {...provided.draggableProps}
       {...provided.dragHandleProps}
-      onMouseUp={handleDragStop} // Use onMouseUp to prevent click after drag
+      // Removed onMouseUp={handleDragStop}
       className={cn(
         "flex flex-col p-3 rounded-lg shadow-sm mb-2 border",
         isDragging ? "bg-blue-100 border-blue-400" : "bg-white border-gray-200",
@@ -375,7 +372,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
         </div>
 
         <div className="flex items-center space-x-2 ml-2">
-          {task.priority !== "none" && ( // Corrected comparison
+          {task.priority !== "none" && (
             <Badge
               className={cn(
                 "text-white px-2 py-0.5 text-xs",
