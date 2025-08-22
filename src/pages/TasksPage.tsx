@@ -1,20 +1,29 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react'; // Removed unused useEffect
 import { Button } from "@/components/ui/button";
 import { Plus } from 'lucide-react';
 import SectionHeader from '@/components/tasks/SectionHeader';
-import { useTasks } from '@/hooks/useTasks';
-import { useSections } from '@/hooks/useSections';
-import { Task, TaskSection } from '@/types/task';
+import { useTasks, Task, TaskSection } from '@/hooks/useTasks'; // Corrected import for Task and TaskSection
 import { useAuth } from '@/context/AuthContext';
 
 const TasksPage: React.FC = () => {
   const { user } = useAuth();
   const isDemo = user?.id === 'd889323b-350c-4764-9788-6359f85f6142';
   
-  const { tasks, addTask, updateTask, deleteTask } = useTasks();
-  const { sections, addSection, updateSection, deleteSection, reorderSections } = useSections();
+  // Pass required arguments to useTasks and destructure section management functions
+  const { 
+    tasks, 
+    handleAddTask: addTask, // Renamed to avoid conflict with local function
+    updateTask, 
+    deleteTask,
+    sections, 
+    createSection: addSection, // Renamed to avoid conflict with local function
+    updateSection, 
+    deleteSection, 
+    reorderSections, // Kept for completeness, though not used in this file's logic
+    updateSectionIncludeInFocusMode,
+  } = useTasks({ currentDate: new Date(), userId: user?.id }); // Pass default date and user ID
   
   const [newTaskDescription, setNewTaskDescription] = useState('');
 
@@ -23,13 +32,13 @@ const TasksPage: React.FC = () => {
 
   const handleAddTask = async () => {
     if (newTaskDescription.trim()) {
-      await addTask({ description: newTaskDescription.trim() });
+      await addTask({ description: newTaskDescription.trim(), category: '', priority: 'medium' }); // Add default category/priority
       setNewTaskDescription('');
     }
   };
 
   const handleRenameSection = async (sectionId: string, newName: string) => {
-    await updateSection(sectionId, { name: newName });
+    await updateSection(sectionId, newName);
   };
 
   const handleDeleteSection = async (sectionId: string) => {
@@ -44,16 +53,16 @@ const TasksPage: React.FC = () => {
   const handleAddTaskToSection = async (sectionId: string) => {
     await addTask({ 
       description: 'New task', 
-      section_id: sectionId 
+      section_id: sectionId,
+      category: '', // Add default category/priority
+      priority: 'medium',
     });
   };
 
   const handleToggleSectionVisibility = async (sectionId: string) => {
-    const section = sections.find(s => s.id === sectionId);
+    const section = sections.find((s: TaskSection) => s.id === sectionId); // Explicitly type 's'
     if (section) {
-      await updateSection(sectionId, { 
-        include_in_focus_mode: !section.include_in_focus_mode 
-      });
+      await updateSectionIncludeInFocusMode(sectionId, !section.include_in_focus_mode);
     }
   };
 
@@ -88,7 +97,7 @@ const TasksPage: React.FC = () => {
           <div className="text-center py-12">
             <p className="text-muted-foreground">No sections yet.</p>
             <Button 
-              onClick={() => addSection({ name: 'New Section' })}
+              onClick={() => addSection('New Section')} // Call addSection with just the name
               className="mt-4"
             >
               Create your first section
