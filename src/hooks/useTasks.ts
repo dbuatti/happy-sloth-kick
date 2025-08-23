@@ -438,17 +438,16 @@ export const useTasks = ({ userId: propUserId, isDemo = false, demoUserId }: Use
       focused_task_id: newFocusedTaskId,
     }));
     // This should ideally call a mutation to update the backend
-    // For now, we'll just update the cache.
-    toast.success(newFocusedTaskId ? 'Task set as focus!' : 'Focus task cleared!');
+    // For now, we'll just update the cache
+    toast.success(newFocusedTaskId ? 'Task set as focus!' : 'Focus removed!');
   }, [currentUserId, queryClient]);
 
   const onLogDoTodayOff = useCallback(async (taskId: string) => {
     if (!currentUserId) return;
-    // This should ideally call a mutation to log the task as "do today off"
+    // This should ideally call a mutation to log 'do today off'
     // For now, we'll just log it.
     toast(`Task ${taskId} logged as "Do Today Off" (functionality to be implemented).`);
   }, [currentUserId]);
-
 
   return {
     tasks: filteredAndSortedTasks,

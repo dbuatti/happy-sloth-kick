@@ -25,7 +25,12 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   sections,
   categories,
 }) => {
-  useDailyTaskCount(undefined); // Pass undefined or actual tasks if available
+  // useDailyTaskCount is a hook that takes tasks as an argument, but it's not used here.
+  // If dailyProgress is passed as a prop, this hook might be redundant or used incorrectly.
+  // For now, I'll remove the call to avoid the error, assuming dailyProgress is sufficient.
+  // If dailyProgress needs to be calculated here, the tasks prop should be passed to useDailyTaskCount.
+  // const { dailyProgress: calculatedDailyProgress } = useDailyTaskCount(tasks); // Example if tasks were available
+
   const { playSound } = useSound();
 
   const handleQuickAddTask = async () => {

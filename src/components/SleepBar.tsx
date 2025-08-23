@@ -51,25 +51,15 @@ const SleepBar: React.FC<SleepBarProps> = ({ record }) => {
             <div className="text-sm text-gray-500 dark:text-gray-400">{format(parseISO(record.date), 'EEE, MMM d')}</div>
             <div className="relative w-full h-6 bg-gray-200 rounded-full overflow-hidden dark:bg-gray-700">
               <div
-                className="absolute h-full bg-gray-400"
-                style={{ width: `${preSleepOffsetPercentage}%`, left: 0 }}
-                title={`Time to fall asleep: ${timeToFallAsleep} min`}
-              ></div>
-              <div
-                className="absolute h-full bg-blue-500"
+                className="absolute h-full bg-blue-500 rounded-full"
                 style={{ width: `${sleepPercentage}%`, left: `${preSleepOffsetPercentage}%` }}
-                title={`Total sleep: ${sleepDuration} min`}
               ></div>
-              <div
-                className="absolute h-full bg-red-500"
-                style={{ width: `${interruptionsPercentage}%`, left: `${preSleepOffsetPercentage + sleepPercentage}%` }}
-                title={`Interruptions: ${interruptionsDuration} min`}
-              ></div>
-              <div
-                className="absolute h-full bg-gray-400"
-                style={{ width: `${postSleepOffsetPercentage}%`, left: `${preSleepOffsetPercentage + sleepPercentage + interruptionsPercentage}%` }}
-                title={`Time in bed after waking: ${sleepEndOffset} min`}
-              ></div>
+              {interruptionsPercentage > 0 && (
+                <div
+                  className="absolute h-full bg-red-500"
+                  style={{ width: `${interruptionsPercentage}%`, left: `${preSleepOffsetPercentage + sleepPercentage}%` }}
+                ></div>
+              )}
             </div>
           </div>
         </TooltipTrigger>
