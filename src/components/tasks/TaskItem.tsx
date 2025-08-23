@@ -1,6 +1,6 @@
-import React, { useState, memo } from 'react';
+import React, { useState } from 'react';
 import { format, parseISO, isToday, isPast } from 'date-fns';
-import { GripVertical, Check, X, Edit, Trash2, Plus, CalendarDays, Repeat, Star, Link, Image as ImageIcon, Bell } from 'lucide-react';
+import { GripVertical, Check, X, Edit, Trash2, Plus, CalendarDays, Repeat, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -22,7 +22,7 @@ interface TaskItemProps {
   onAddTask: (newTask: Partial<Task>) => void;
 }
 
-const TaskItem: React.FC<TaskItemProps> = memo(({
+const TaskItem: React.FC<TaskItemProps> = ({
   task,
   index,
   categories,
@@ -57,11 +57,10 @@ const TaskItem: React.FC<TaskItemProps> = memo(({
           ref={provided.innerRef}
           {...provided.draggableProps}
           className={cn(
-            'bg-white p-3 rounded-md shadow-sm border border-gray-200 mb-2 transition-all duration-200',
+            'bg-white p-3 rounded-md shadow-sm border border-gray-200 mb-2',
             task.status === 'completed' && 'opacity-60 line-through',
             isOverdue && 'border-red-400 bg-red-50',
-            isDueToday && 'border-orange-400 bg-orange-50',
-            'hover:shadow-md'
+            isDueToday && 'border-orange-400 bg-orange-50'
           )}
         >
           <div className="flex items-center justify-between">
@@ -69,14 +68,10 @@ const TaskItem: React.FC<TaskItemProps> = memo(({
               <span {...provided.dragHandleProps} className="mr-2 text-gray-400 cursor-grab">
                 <GripVertical className="h-4 w-4" />
               </span>
-              <Checkbox 
-                checked={task.status === 'completed'} 
-                onCheckedChange={handleToggleComplete} 
-                className="mr-3" 
-              />
+              <Checkbox checked={task.status === 'completed'} onCheckedChange={handleToggleComplete} className="mr-3" />
               <div className="flex-grow">
                 <p className="text-sm font-medium text-gray-800">{task.description}</p>
-                <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-gray-500">
+                <div className="flex items-center space-x-2 mt-1 text-xs text-gray-500">
                   {task.due_date && (
                     <span className="flex items-center">
                       <CalendarDays className="h-3 w-3 mr-1" /> {format(parseISO(task.due_date), 'MMM d')}
@@ -89,46 +84,7 @@ const TaskItem: React.FC<TaskItemProps> = memo(({
                       <Repeat className="h-3 w-3 mr-1" /> {task.recurring_type}
                     </span>
                   )}
-                  {task.link && (
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Link className="h-3 w-3" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Has link</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  )}
-                  {task.image_url && (
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <ImageIcon className="h-3 w-3" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Has image</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  )}
-                  {task.remind_at && (
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Bell className="h-3 w-3" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Has reminder</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  )}
                 </div>
-                {task.notes && (
-                  <p className="text-xs text-gray-600 mt-1 line-clamp-2">{task.notes}</p>
-                )}
               </div>
             </div>
             <div className="flex items-center space-x-1">
@@ -151,12 +107,7 @@ const TaskItem: React.FC<TaskItemProps> = memo(({
                   />
                 </DialogContent>
               </Dialog>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-7 w-7 text-red-500 hover:text-red-600" 
-                onClick={() => onDeleteTask(task.id)}
-              >
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 hover:text-red-600" onClick={() => onDeleteTask(task.id)}>
                 <Trash2 className="h-4 w-4" />
               </Button>
               <Dialog>
@@ -182,7 +133,7 @@ const TaskItem: React.FC<TaskItemProps> = memo(({
             </div>
           </div>
           {task.subtasks && task.subtasks.length > 0 && (
-            <div className="ml-8 mt-2 border-l-2 border-gray-200 pl-4">
+            <div className="ml-8 mt-2 border-l pl-4">
               {task.subtasks.map((subtask, subIndex) => (
                 <TaskItem
                   key={subtask.id}
@@ -201,8 +152,6 @@ const TaskItem: React.FC<TaskItemProps> = memo(({
       )}
     </Draggable>
   );
-});
-
-TaskItem.displayName = 'TaskItem';
+};
 
 export default TaskItem;
