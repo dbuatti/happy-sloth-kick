@@ -16,39 +16,68 @@ const buildTaskTree = (parentTasks: Task[], allTasks: Task[]): Task[] => {
 
 // Data Fetching Functions
 const fetchTaskSections = async (): Promise<TaskSection[]> => {
-  // Fetch sections
-  const { data: sections, error: sectionsError } = await supabase
-    .from('task_sections')
-    .select('*')
-    .order('order', { ascending: true });
+  // Use the new database function for efficient data fetching
+  const { data, error } = await supabase.rpc('get_user_tasks_with_sections');
+  
+  if (error) throw new Error(error.message);
 
-  if (sectionsError) throw new Error(sectionsError.message);
-
-  // Fetch all tasks for the user
-  const { data: tasks, error: tasksError } = await supabase
-    .from('tasks')
-    .select('*')
-    .order('order', { ascending: true });
-
-  if (tasksError) throw new Error(tasksError.message);
-
-  // Create a map of sections for quick lookup
-  const sectionMap = new Map<string, TaskSection>(
-    sections.map((section) => ({ ...section, tasks: [] })).map((section) => [section.id, section])
-  );
-
-  // Separate top-level tasks and subtasks
-  const topLevelTasks = tasks.filter((task) => !task.parent_task_id);
-  const tasksWithSubtasks = buildTaskTree(topLevelTasks, tasks);
-
-  // Assign tasks to their respective sections
-  tasksWithSubtasks.forEach((task) => {
-    if (task.section_id && sectionMap.has(task.section_id)) {
-      sectionMap.get(task.section_id)?.tasks.push(task);
+  // Group tasks by section
+  const sectionsMap = new Map<string, TaskSection>();
+  
+  data.forEach((row: any) => {
+    // Create section if it doesn't exist
+    if (row.section_id && !sectionsMap.has(row.section_id)) {
+      sectionsMap.set(row.section_id, {
+        id: row.section_id,
+        name: row.section_name,
+        user_id: '', // This will be set by the database
+        order: row.section_order,
+        created_at: row.section_created_at,
+        include_in_focus_mode: row.section_include_in_focus_mode,
+        tasks: []
+      });
+    }
+    
+    // Add task to section if it exists
+    if (row.task_id) {
+      const task: Task = {
+        id: row.task_id,
+        description: row.task_description,
+        status: row.task_status as any,
+        created_at: row.task_created_at,
+        user_id: '', // This will be set by the database
+        priority: row.task_priority as any,
+        due_date: row.task_due_date,
+        notes: row.task_notes,
+        remind_at: row.task_remind_at,
+        section_id: row.task_section_id,
+        order: row.task_order,
+        parent_task_id: row.task_parent_task_id,
+        recurring_type: row.task_recurring_type as any,
+        original_task_id: row.task_original_task_id,
+        category: row.task_category,
+        link: row.task_link,
+        image_url: row.task_image_url,
+        subtasks: []
+      };
+      
+      // Add task to its section
+      if (row.task_section_id && sectionsMap.has(row.task_section_id)) {
+        sectionsMap.get(row.task_section_id)?.tasks.push(task);
+      }
     }
   });
-
-  return Array.from(sectionMap.values());
+  
+  // Convert map to array and sort sections by order
+  const sections = Array.from(sectionsMap.values()).sort((a, b) => a.order - b.order);
+  
+  // Build task trees for each section
+  sections.forEach(section => {
+    const topLevelTasks = section.tasks.filter(task => !task.parent_task_id);
+    section.tasks = buildTaskTree(topLevelTasks, section.tasks);
+  });
+  
+  return sections;
 };
 
 const fetchTaskCategories = async (): Promise<TaskCategory[]> => {
