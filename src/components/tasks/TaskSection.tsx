@@ -74,10 +74,8 @@ const TaskSection: React.FC<TaskSectionProps> = ({
           <div
             {...provided.droppableProps}
             ref={provided.innerRef}
-            onTouchStart={(e) => e.preventDefault()} // Prevent default touch start behavior
-            onTouchMove={(e) => e.preventDefault()} // Prevent default touch move behavior
             className={cn(
-              "min-h-[50px] rounded-md transition-colors touch-action-none",
+              "min-h-[50px] rounded-md transition-colors touch-action-none", // Added touch-action-none here
               snapshot.isDraggingOver ? "bg-blue-50" : "bg-transparent"
             )}
           >
