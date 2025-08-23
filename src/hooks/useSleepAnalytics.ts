@@ -1,55 +1,38 @@
-import { useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from './useAuth';
-import { SleepRecord } from '@/types';
+import { useAuth } from '@/context/AuthContext'; // Corrected import path for useAuth
+import { SleepRecord, SleepAnalyticsData } from '@/types';
 import { useQuery } from '@tanstack/react-query';
-import { format, parseISO, differenceInMinutes } from 'date-fns';
+import { format, parseISO, differenceInMinutes, addDays, subDays } from 'date-fns';
 import moment from 'moment'; // Import moment
 
-interface SleepAnalyticsData {
-  date: string;
-  totalSleepMinutes: number;
-  timeInBedMinutes: number;
-  sleepEfficiency: number; // (totalSleepMinutes / timeInBedMinutes) * 100
-  sleepLatencyMinutes: number | null; // Time to fall asleep
-  interruptionsCount: number | null;
-  interruptionsDurationMinutes: number | null;
-  timesLeftBedCount: number | null;
-}
-
-const fetchSleepRecordsForAnalytics = async (userId: string, startOfRange: string, endOfRange: string): Promise<SleepRecord[]> => {
-  const { data, error } = await supabase
-    .from('sleep_records')
-    .select('*')
-    .eq('user_id', userId)
-    .gte('date', startOfRange)
-    .lte('date', endOfRange)
-    .order('date', { ascending: true });
-  if (error) throw error;
-  return data as SleepRecord[];
-};
-
 export const useSleepAnalytics = (startDate: Date, endDate: Date) => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth(); // Corrected destructuring
   const userId = user?.id;
 
-  const startOfRange = format(startDate, 'yyyy-MM-dd');
-  const endOfRange = format(endDate, 'yyyy-MM-dd');
-
-  const { data: rawRecords, isLoading, error } = useQuery<SleepRecord[], Error>({
-    queryKey: ['sleepAnalytics', userId, startOfRange, endOfRange],
+  const { data: sleepRecords, isLoading, error } = useQuery<SleepRecord[], Error>({
+    queryKey: ['sleepAnalytics', userId, startDate, endDate],
     queryFn: async () => {
       if (!userId) return [];
-      return fetchSleepRecordsForAnalytics(userId, startOfRange, endOfRange);
+      const { data, error } = await supabase
+        .from('sleep_records')
+        .select('*')
+        .eq('user_id', userId)
+        .gte('date', format(startDate, 'yyyy-MM-dd'))
+        .lte('date', format(endDate, 'yyyy-MM-dd'))
+        .order('date', { ascending: true });
+
+      if (error) throw error;
+      return data;
     },
     enabled: !!userId && !authLoading,
   });
 
   const analyticsData = useMemo(() => {
-    // Filter out incomplete records before processing
-    const validRecords = (rawRecords || []).filter((record: SleepRecord) => {
-      return record.bed_time && record.lights_off_time && record.wake_up_time && record.get_out_of_bed_time;
-    });
+    if (!sleepRecords || sleepRecords.length === 0) return [];
+
+    const validRecords = sleepRecords.filter(record =>
+      record.bed_time && record.lights_off_time && record.wake_up_time && record.get_out_of_bed_time
+    );
 
     const processedData: SleepAnalyticsData[] = validRecords.map((record: SleepRecord) => {
       // Handle overnight sleep: if wake_up_time is earlier than bed_time, assume it's the next day
@@ -60,36 +43,29 @@ export const useSleepAnalytics = (startDate: Date, endDate: Date) => {
 
       if (wakeUpTime.isBefore(bedTime)) {
         wakeUpTime = wakeUpTime.add(1, 'day');
-      }
-      if (getOutOfBedTime.isBefore(bedTime)) {
         getOutOfBedTime = getOutOfBedTime.add(1, 'day');
       }
       if (lightsOffTime.isBefore(bedTime)) {
         lightsOffTime = lightsOffTime.add(1, 'day');
       }
 
-      const timeInBedMinutes = differenceInMinutes(getOutOfBedTime.toDate(), bedTime.toDate());
-      const totalSleepMinutes = differenceInMinutes(wakeUpTime.toDate(), lightsOffTime.toDate()) - (record.sleep_interruptions_duration_minutes || 0);
+      const timeInBedMinutes = getOutOfBedTime.diff(bedTime, 'minutes');
+      const totalSleepMinutes = wakeUpTime.diff(lightsOffTime, 'minutes') - (record.sleep_interruptions_duration_minutes || 0);
       const sleepEfficiency = timeInBedMinutes > 0 ? (totalSleepMinutes / timeInBedMinutes) * 100 : 0;
 
       return {
         date: record.date,
-        totalSleepMinutes: Math.max(0, totalSleepMinutes),
-        timeInBedMinutes: Math.max(0, timeInBedMinutes),
-        sleepEfficiency: Math.max(0, Math.min(100, sleepEfficiency)),
-        sleepLatencyMinutes: record.time_to_fall_asleep_minutes,
-        interruptionsCount: record.sleep_interruptions_count,
-        interruptionsDurationMinutes: record.sleep_interruptions_duration_minutes,
-        timesLeftBedCount: record.times_left_bed_count,
+        totalSleepMinutes: totalSleepMinutes,
+        timeInBedMinutes: timeInBedMinutes,
+        sleepEfficiency: parseFloat(sleepEfficiency.toFixed(2)),
+        timeToFallAsleep: record.time_to_fall_asleep_minutes || 0,
+        interruptionsCount: record.sleep_interruptions_count || 0,
+        interruptionsDurationMinutes: record.sleep_interruptions_duration_minutes || 0,
       };
     });
 
     return processedData;
-  }, [rawRecords]);
+  }, [sleepRecords]);
 
-  return {
-    analyticsData,
-    isLoading,
-    error,
-  };
+  return { analyticsData, isLoading, error };
 };

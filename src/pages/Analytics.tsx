@@ -3,19 +3,25 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTasks } from '@/hooks/useTasks';
 import { Task, TaskCategory, AnalyticsTask } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
+import { format, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Calendar as CalendarIcon } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { cn } from '@/lib/utils';
-import { DateRange } from 'react-day-picker';
 
-const Analytics = () => {
-  const { user } = useAuth();
-  const currentUserId = user?.id;
-  const { tasks: allTasks, categories, loading, error } = useTasks({ userId: currentUserId! });
+interface AnalyticsData {
+  dailyAverage: number;
+  averageCompletion: number;
+  tasksCompleted: number;
+}
+
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#A28DFF', '#FF6F91'];
+
+const Analytics: React.FC<AnalyticsProps> = ({ isDemo = false, demoUserId }) => {
+  const { user, loading: authLoading } = useAuth();
+  const currentUserId = isDemo ? demoUserId : user?.id;
+
+  const { tasks, categories, isLoading: tasksLoading, error: tasksError } = useTasks({ userId: currentUserId! });
 
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: startOfMonth(new Date()),
@@ -23,41 +29,45 @@ const Analytics = () => {
   });
 
   const filteredTasks = useMemo(() => {
-    if (!allTasks || !dateRange?.from || !dateRange?.to) return [];
-    return allTasks.filter(task => {
-      const taskDate = new Date(task.created_at);
-      return taskDate >= dateRange.from! && taskDate <= dateRange.to!;
-    });
-  }, [allTasks, dateRange]);
+    if (!tasks) return [];
+    if (!dateRange?.from || !dateRange?.to) return tasks;
 
-  const tasksByDate = useMemo(() => {
-    const dailyCounts: { [key: string]: number } = {};
-    if (dateRange?.from && dateRange?.to) {
-      eachDayOfInterval({ start: dateRange.from, end: dateRange.to }).forEach(day => {
-        dailyCounts[format(day, 'yyyy-MM-dd')] = 0;
-      });
-    }
+    return tasks.filter(task =>
+      task.created_at && isWithinInterval(parseISO(task.created_at), { start: dateRange.from!, end: dateRange.to! })
+    );
+  }, [tasks, dateRange]);
 
+  const dailyTaskCompletion = useMemo(() => {
+    const counts: { [key: string]: { completed: number; total: number } } = {};
     (filteredTasks as AnalyticsTask[]).forEach(task => {
-      const date = format(new Date(task.created_at), 'yyyy-MM-dd');
-      if (dailyCounts[date] !== undefined) {
-        dailyCounts[date]++;
+      const date = format(parseISO(task.created_at), 'yyyy-MM-dd');
+      if (!counts[date]) {
+        counts[date] = { completed: 0, total: 0 };
+      }
+      counts[date].total++;
+      if (task.status === 'completed') {
+        counts[date].completed++;
       }
     });
 
-    return Object.keys(dailyCounts).map(date => ({
+    return Object.keys(counts).map(date => ({
       date,
-      count: dailyCounts[date],
+      completed: counts[date].completed,
+      total: counts[date].total,
+      completionRate: counts[date].total > 0 ? (counts[date].completed / counts[date].total) * 100 : 0,
     })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  }, [filteredTasks, dateRange]);
+  }, [filteredTasks]);
 
   const categoryCounts = useMemo(() => {
     const counts: { [key: string]: number } = {};
     (filteredTasks as AnalyticsTask[]).forEach(task => {
-      const category = categories.find(cat => cat.id === task.category)?.name || 'Uncategorized';
+      const category = categories?.find(cat => cat.id === task.category)?.name || 'Uncategorized';
       counts[category] = (counts[category] || 0) + 1;
     });
-    return Object.keys(counts).map(name => ({ name, value: counts[name] }));
+    return Object.keys(counts).map(category => ({
+      name: category,
+      value: counts[category],
+    }));
   }, [filteredTasks, categories]);
 
   const priorityCounts = useMemo(() => {
@@ -66,70 +76,74 @@ const Analytics = () => {
       const priority = task.priority || 'None';
       counts[priority] = (counts[priority] || 0) + 1;
     });
-    return Object.keys(counts).map(name => ({ name, value: counts[name] }));
+    return Object.keys(counts).map(priority => ({
+      name: priority,
+      value: counts[priority],
+    }));
   }, [filteredTasks]);
 
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
+  if (tasksLoading || authLoading) {
+    return <div className="flex justify-center items-center h-full">Loading analytics...</div>;
+  }
 
-  if (loading) return <div className="text-center py-8">Loading analytics...</div>;
-  if (error) return <div className="text-center py-8 text-red-500">Error: {error.message}</div>;
+  if (tasksError) {
+    return <div className="flex justify-center items-center h-full text-red-500">Error: {tasksError.message}</div>;
+  }
 
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-3xl font-bold mb-6">Task Analytics</h1>
 
-      <div className="mb-6 flex items-center space-x-4">
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              id="date"
-              variant={"outline"}
-              className={cn(
-                "w-[300px] justify-start text-left font-normal",
-                !dateRange?.from && "text-muted-foreground"
-              )}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {dateRange?.from ? (
-                dateRange.to ? (
-                  <>
-                    {format(dateRange.from, "LLL dd, y")} -{" "}
-                    {format(dateRange.to, "LLL dd, y")}
-                  </>
-                ) : (
-                  format(dateRange.from, "LLL dd, y")
-                )
-              ) : (
-                <span>Pick a date range</span>
-              )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              initialFocus
-              mode="range"
-              defaultMonth={dateRange?.from}
-              selected={dateRange}
-              onSelect={setDateRange}
-              numberOfMonths={2}
-            />
-          </PopoverContent>
-        </Popover>
+      <div className="mb-6 flex justify-end">
+        <DateRangePicker dateRange={dateRange} setDateRange={setDateRange} />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         <Card>
           <CardHeader>
-            <CardTitle>Tasks Created Over Time</CardTitle>
+            <CardTitle>Total Tasks</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-4xl font-bold">{filteredTasks.length}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Completed Tasks</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-4xl font-bold">{filteredTasks.filter(task => task.status === 'completed').length}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Completion Rate</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-4xl font-bold">
+              {filteredTasks.length > 0
+                ? ((filteredTasks.filter(task => task.status === 'completed').length / filteredTasks.length) * 100).toFixed(2)
+                : 0}
+              %
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Daily Task Completion</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={tasksByDate}>
+              <BarChart data={dailyTaskCompletion}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" tickFormatter={(dateStr) => format(new Date(dateStr), 'MMM dd')} />
-                <YAxis allowDecimals={false} />
+                <XAxis dataKey="date" />
+                <YAxis />
                 <Tooltip />
-                <Bar dataKey="count" fill="#8884d8" />
+                <Bar dataKey="completed" fill="#8884d8" name="Completed" />
+                <Bar dataKey="total" fill="#82ca9d" name="Total" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -150,36 +164,35 @@ const Analytics = () => {
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
-                  nameKey="name"
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                 >
                   {categoryCounts.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip />
-                <Legend />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Tasks by Priority</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={priorityCounts}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis allowDecimals={false} />
-                <Tooltip />
-                <Bar dataKey="value" fill="#82ca9d" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
       </div>
+
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>Tasks by Priority</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={priorityCounts}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="value" fill="#ffc658" />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
     </div>
   );
 };

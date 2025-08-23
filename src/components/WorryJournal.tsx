@@ -1,124 +1,133 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/context/AuthContext';
 import { WorryEntry, NewWorryEntryData } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { format } from 'date-fns';
-import { Trash2, Plus } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { format, parseISO } from 'date-fns';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-const WorryJournal = () => {
-  const { user } = useAuth();
+const WorryJournal: React.FC = () => {
+  const { user, loading: authLoading } = useAuth();
   const userId = user?.id;
-  const [entries, setEntries] = useState<WorryEntry[]>([]);
-  const [newThought, setNewThought] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const fetchEntries = async () => {
-    if (!userId) return;
-    setLoading(true);
-    setError(null);
-    try {
+  const [newWorry, setNewWorry] = useState('');
+
+  const { data: worries, isLoading, error } = useQuery<WorryEntry[], Error>({
+    queryKey: ['worryEntries', userId],
+    queryFn: async () => {
+      if (!userId) return [];
       const { data, error } = await supabase
         .from('worry_journal_entries')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
       if (error) throw error;
-      setEntries(data as WorryEntry[] || []);
-    } catch (error: any) {
-      setError(error.message);
-      console.error('Error fetching worry entries:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+      return data;
+    },
+    enabled: !!userId && !authLoading,
+  });
 
-  useEffect(() => {
-    fetchEntries();
-  }, [userId]);
-
-  const addEntry = async () => {
-    if (!userId || !newThought.trim()) return;
-    setError(null);
-    try {
-      const newEntryData: NewWorryEntryData & { user_id: string } = {
-        user_id: userId,
-        thought: newThought,
-      };
+  const addWorryMutation = useMutation<WorryEntry, Error, NewWorryEntryData, unknown>({
+    mutationFn: async (newWorryData) => {
+      if (!userId) throw new Error('User not authenticated');
       const { data, error } = await supabase
         .from('worry_journal_entries')
-        .insert(newEntryData)
+        .insert({ ...newWorryData, user_id: userId })
         .select('*')
         .single();
       if (error) throw error;
-      setEntries(prev => [data as WorryEntry, ...prev]);
-      setNewThought('');
-      toast.success('Worry recorded!');
-    } catch (error: any) {
-      setError(error.message);
-      console.error('Error adding worry entry:', error);
-      toast.error('Failed to record worry.');
-    }
-  };
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['worryEntries', userId] });
+      toast.success('Worry added!');
+      setNewWorry('');
+    },
+    onError: (err) => {
+      toast.error(`Failed to add worry: ${err.message}`);
+    },
+  });
 
-  const deleteEntry = async (id: string) => {
-    setError(null);
-    try {
+  const deleteWorryMutation = useMutation<void, Error, string, unknown>({
+    mutationFn: async (id) => {
+      if (!userId) throw new Error('User not authenticated');
       const { error } = await supabase
         .from('worry_journal_entries')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', userId);
       if (error) throw error;
-      setEntries(prev => prev.filter(entry => entry.id !== id));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['worryEntries', userId] });
       toast.success('Worry deleted!');
-    } catch (error: any) {
-      setError(error.message);
-      console.error('Error deleting worry entry:', error);
-      toast.error('Failed to delete worry.');
+    },
+    onError: (err) => {
+      toast.error(`Failed to delete worry: ${err.message}`);
+    },
+  });
+
+  const handleAddWorry = () => {
+    if (newWorry.trim()) {
+      addWorryMutation.mutate({ thought: newWorry.trim() });
     }
   };
 
-  if (loading) return <div className="text-center py-8">Loading worries...</div>;
-  if (error) return <div className="text-center py-8 text-red-500">Error: {error}</div>;
+  if (isLoading || authLoading) {
+    return <Card><CardContent>Loading worries...</CardContent></Card>;
+  }
+
+  if (error) {
+    return <Card><CardContent className="text-red-500">Error: {error.message}</CardContent></Card>;
+  }
 
   return (
-    <Card className="h-full flex flex-col">
+    <Card>
       <CardHeader>
         <CardTitle>Worry Journal</CardTitle>
       </CardHeader>
-      <CardContent className="flex-grow flex flex-col">
-        <div className="mb-4">
-          <Textarea
-            placeholder="Write down your worries or thoughts here..."
-            value={newThought}
-            onChange={(e) => setNewThought(e.target.value)}
-            rows={3}
-            className="mb-2"
-          />
-          <Button onClick={addEntry} className="w-full">
-            <Plus className="h-4 w-4 mr-2" /> Add Thought
-          </Button>
-        </div>
-
-        <div className="flex-grow overflow-y-auto space-y-4 pr-2">
-          {entries.length === 0 ? (
-            <p className="text-center text-gray-500 py-8">No worries recorded yet. Take a moment to reflect.</p>
+      <CardContent>
+        <div className="space-y-4">
+          <div className="flex flex-col space-y-2">
+            <Textarea
+              placeholder="Write down your worries here..."
+              value={newWorry}
+              onChange={(e) => setNewWorry(e.target.value)}
+              rows={3}
+            />
+            <Button onClick={handleAddWorry} disabled={addWorryMutation.isPending}>
+              <Plus className="mr-2 h-4 w-4" /> Add Worry
+            </Button>
+          </div>
+          {worries?.length === 0 ? (
+            <p className="text-center text-gray-500">No worries recorded yet. Take a moment to reflect.</p>
           ) : (
-            entries.map(entry => (
-              <div key={entry.id} className="bg-gray-50 p-3 rounded-lg shadow-sm flex justify-between items-start">
-                <div>
-                  <p className="text-sm text-gray-800 mb-1">{entry.thought}</p>
-                  <p className="text-xs text-gray-500">{format(new Date(entry.created_at!), 'PPP p')}</p>
+            <div className="space-y-3">
+              {worries?.map((worry) => (
+                <div key={worry.id} className="flex items-start justify-between p-3 border rounded-md bg-gray-50 dark:bg-gray-800">
+                  <div>
+                    <p className="text-sm">{worry.thought}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      {format(parseISO(worry.created_at), 'PPP p')}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => deleteWorryMutation.mutate(worry.id)}
+                    disabled={deleteWorryMutation.isPending}
+                    className="text-red-500 hover:bg-red-100 dark:hover:bg-red-900"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => deleteEntry(entry.id)}>
-                  <Trash2 className="h-4 w-4 text-red-500" />
-                </Button>
-              </div>
-            ))
+              ))}
+            </div>
           )}
         </div>
       </CardContent>

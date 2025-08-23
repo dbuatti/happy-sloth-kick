@@ -1,157 +1,138 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTasks } from '@/hooks/useTasks';
-import { Task, TaskCategory } from '@/types';
-import TaskItem from '@/components/TaskItem';
+import { Task, TaskCategory, TaskSection, NewTaskData, UpdateTaskData } from '@/types';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Filter } from 'lucide-react';
+import { Search, Archive as ArchiveIcon, RotateCcw } from 'lucide-react';
+import TaskList from '@/components/TaskList';
+import { toast } from 'react-hot-toast';
 
-const Archive = () => {
-  const { user } = useAuth();
-  const currentUserId = user?.id;
+const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
+  const { user, loading: authLoading } = useAuth();
+  const currentUserId = isDemo ? demoUserId : user?.id;
+
   const {
-    tasks: allTasks,
+    tasks,
     categories,
-    loading,
+    sections,
+    isLoading,
     error,
-    updateTask,
-    deleteTask,
-    addTask,
-    filterCategory,
+    updateTask: updateTaskMutation,
+    deleteTask: deleteTaskMutation,
+    addTask: addTaskMutation,
+    setFilterStatus,
     setFilterCategory,
-    filterPriority,
     setFilterPriority,
-    searchQuery,
     setSearchQuery,
+    setFilterDueDate,
     setShowCompleted,
   } = useTasks({ userId: currentUserId! });
 
-  // Ensure showCompleted is true for archive
   useEffect(() => {
-    setShowCompleted(true);
-  }, [setShowCompleted]);
+    setFilterStatus('archived');
+    setFilterCategory('all');
+    setFilterPriority('all');
+    setSearchQuery('');
+    setFilterDueDate(undefined);
+    setShowCompleted(true); // Show completed tasks in archive
+  }, [setFilterStatus, setFilterCategory, setFilterPriority, setSearchQuery, setFilterDueDate, setShowCompleted]);
 
   const archivedTasks = useMemo(() => {
-    return allTasks.filter(task => task.status === 'completed');
-  }, [allTasks]);
+    return tasks.filter(task => task.status === 'archived');
+  }, [tasks]);
 
-  const filteredArchivedTasks = useMemo(() => {
-    let filtered = archivedTasks;
-
-    // In archive, we always show completed tasks, so filterStatus is not directly used for 'completed'
-    // but can be used for other statuses if needed (e.g., 'to-do' tasks that were archived by mistake)
-    // For now, we assume all tasks in `archivedTasks` are 'completed'.
-
-    if (filterCategory !== 'all') {
-      filtered = filtered.filter(task => task.category === filterCategory);
+  const handleRestoreTask = async (taskId: string) => {
+    try {
+      await updateTaskMutation({ id: taskId, updates: { status: 'to-do' } });
+      toast.success('Task restored successfully!');
+    } catch (err) {
+      toast.error('Failed to restore task.');
+      console.error('Error restoring task:', err);
     }
-
-    if (filterPriority !== 'all') {
-      filtered = filtered.filter(task => task.priority === filterPriority);
-    }
-
-    if (searchQuery) {
-      filtered = filtered.filter(task =>
-        task.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        task.notes?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-    return filtered;
-  }, [archivedTasks, filterCategory, filterPriority, searchQuery]);
-
-  const renderSubtasks = (parentTaskId: string) => {
-    const subtasks = allTasks.filter(sub => sub.parent_task_id === parentTaskId);
-    return (
-      <div className="ml-4 border-l pl-4 space-y-2">
-        {subtasks.map(subtask => (
-          <TaskItem
-            key={subtask.id}
-            task={subtask}
-            categories={categories as TaskCategory[]}
-            onUpdateTask={updateTask}
-            onDeleteTask={deleteTask}
-            onAddSubtask={async (description) => { return await addTask(description, null, parentTaskId, null, null, 'medium'); }}
-            onToggleFocusMode={async () => {}}
-            onLogDoTodayOff={async () => {}}
-            isFocusedTask={false}
-            subtasks={[]} // Subtasks don't have further nested subtasks in this view
-            renderSubtasks={() => null}
-          />
-        ))}
-      </div>
-    );
   };
 
-  if (loading) return <div className="text-center py-8">Loading archive...</div>;
-  if (error) return <div className="text-center py-8 text-red-500">Error: {error.message}</div>;
+  const onUpdateTask = async (id: string, updates: Partial<Task>) => {
+    try {
+      await updateTaskMutation({ id, updates });
+    } catch (error) {
+      console.error('Error updating task:', error);
+      throw error;
+    }
+  };
+
+  const onDeleteTask = async (id: string) => {
+    try {
+      await deleteTaskMutation(id);
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      throw error;
+    }
+  };
+
+  const onAddSubtask = async (description: string, parentTaskId: string | null) => {
+    try {
+      const newTaskData: NewTaskData = {
+        description,
+        section_id: null,
+        parent_task_id: parentTaskId,
+        due_date: null,
+        category: null,
+        priority: 'medium',
+        status: 'to-do',
+        recurring_type: 'none',
+        original_task_id: null,
+        link: null,
+        image_url: null,
+        notes: null,
+        remind_at: null,
+      };
+      return await addTaskMutation(newTaskData);
+    } catch (error) {
+      console.error('Error adding subtask:', error);
+      throw error;
+    }
+  };
+
+  if (isLoading || authLoading) {
+    return <div className="flex justify-center items-center h-full">Loading archive...</div>;
+  }
+
+  if (error) {
+    return <div className="flex justify-center items-center h-full text-red-500">Error: {error.message}</div>;
+  }
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">Archived Tasks</h1>
+      <h1 className="text-3xl font-bold mb-6 flex items-center">
+        <ArchiveIcon className="mr-3 h-8 w-8" /> Archived Tasks
+      </h1>
 
-      <div className="flex flex-wrap gap-4 mb-6">
-        <div className="relative flex-grow">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-          <Input
-            type="text"
-            placeholder="Search tasks..."
-            className="pl-10 pr-4 py-2 w-full"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-
-        <Select value={filterCategory} onValueChange={setFilterCategory}>
-          <SelectTrigger className="w-[180px]">
-            <Filter className="mr-2 h-4 w-4 text-gray-500" />
-            <SelectValue placeholder="Filter by Category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
-            {(categories as TaskCategory[]).map(cat => (
-              <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={filterPriority} onValueChange={setFilterPriority}>
-          <SelectTrigger className="w-[180px]">
-            <Filter className="mr-2 h-4 w-4 text-gray-500" />
-            <SelectValue placeholder="Filter by Priority" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Priorities</SelectItem>
-            <SelectItem value="urgent">Urgent</SelectItem>
-            <SelectItem value="high">High</SelectItem>
-            <SelectItem value="medium">Medium</SelectItem>
-            <SelectItem value="low">Low</SelectItem>
-            <SelectItem value="none">None</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-4">
-        {filteredArchivedTasks.length === 0 ? (
-          <p className="text-center text-gray-500 py-8">No archived tasks found matching your criteria.</p>
-        ) : (
-          filteredArchivedTasks.filter(task => task.parent_task_id === null).map(task => (
-            <TaskItem
-              key={task.id}
-              task={task as Task}
+      {archivedTasks.length === 0 ? (
+        <p className="text-center text-gray-500">No archived tasks found.</p>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Archived Tasks</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TaskList
+              tasks={archivedTasks}
               categories={categories as TaskCategory[]}
-              onUpdateTask={updateTask}
-              onDeleteTask={deleteTask}
-              onAddSubtask={async (description) => { return await addTask(description, null, task.id, null, null, 'medium'); }}
-              onToggleFocusMode={async () => {}}
-              onLogDoTodayOff={async () => {}}
-              isFocusedTask={false}
-              subtasks={allTasks.filter(sub => sub.parent_task_id === task.id) as Task[]}
-              renderSubtasks={renderSubtasks}
+              sections={sections as TaskSection[]}
+              onUpdateTask={onUpdateTask}
+              onDeleteTask={onDeleteTask}
+              onAddSubtask={onAddSubtask}
+              onToggleFocusMode={async () => {}} // No focus mode in archive
+              onLogDoTodayOff={async () => {}} // No do today off in archive
+              showCompleted={true}
+              showFilters={false}
+              showSections={true}
             />
-          ))
-        )}
-      </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
