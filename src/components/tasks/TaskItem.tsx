@@ -1,436 +1,156 @@
-"use client";
-
-import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Checkbox } from "@/components/ui/checkbox";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock, ChevronRight } from 'lucide-react';
-import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
-import { cn } from "@/lib/utils";
-import { Task } from '@/hooks/useTasks';
-import { useSound } from '@/context/SoundContext';
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { CheckCircle2 } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
-import { Input } from '@/components/ui/input';
-import DoTodaySwitch from '@/components/DoTodaySwitch';
-import { showSuccess, showError } from '@/utils/toast';
-import { Appointment } from '@/hooks/useAppointments';
-
+import React, { useState } from 'react';
+import { format, parseISO, isToday, isPast } from 'date-fns';
+import { GripVertical, Check, X, Edit, Trash2, Plus, CalendarDays, Repeat, Star } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
+import PriorityBadge from './PriorityBadge';
+import CategoryBadge from './CategoryBadge';
+import TaskForm from './TaskForm';
+import { Task, TaskCategory, TaskSection } from '@/types/task-management';
+import { Draggable } from '@hello-pangea/dnd';
 
 interface TaskItemProps {
   task: Task;
-  allTasks: Task[];
-  onStatusChange: (taskId: string, newStatus: Task['status']) => Promise<string | null>;
-  onDelete: (taskId: string) => void;
-  onUpdate: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
-  sections: { id: string; name: string }[];
-  onOpenOverview: (task: Task) => void;
-  currentDate: Date;
-  onMoveUp: (taskId: string) => Promise<void>;
-  onMoveDown: (taskId: string) => Promise<void>;
-  level: number; // New prop for indentation level
-  isOverlay?: boolean; // New prop for drag overlay
-  hasSubtasks?: boolean;
-  isExpanded?: boolean;
-  toggleTask?: (taskId: string) => void;
-  setFocusTask: (taskId: string | null) => Promise<void>;
-  isDoToday: boolean; // This is a prop, not internal state
-  toggleDoToday: (task: Task) => void; // This is the function from useTasks
-  scheduledTasksMap: Map<string, Appointment>;
-  isDemo?: boolean;
+  index: number;
+  categories: TaskCategory[];
+  sections: TaskSection[];
+  onUpdateTask: (task: Partial<Task>) => void;
+  onDeleteTask: (taskId: string) => void;
+  onAddTask: (newTask: Partial<Task>) => void;
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
   task,
-  allTasks,
-  onStatusChange,
-  onDelete,
-  onUpdate,
+  index,
+  categories,
   sections,
-  onOpenOverview,
-  currentDate,
-  isOverlay = false,
-  hasSubtasks = false,
-  isExpanded = true,
-  toggleTask,
-  setFocusTask,
-  isDoToday, // Destructure prop
-  toggleDoToday, // Destructure prop
-  scheduledTasksMap,
-  isDemo = false,
+  onUpdateTask,
+  onDeleteTask,
+  onAddTask,
 }) => {
-  useAuth(); 
-  const { playSound } = useSound();
-  const [showCompletionEffect, setShowCompletionEffect] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [editText, setEditText] = useState(task.description || ''); // Initialize with empty string if null
-  const inputRef = useRef<HTMLInputElement>(null);
+  const category = categories.find((cat) => cat.id === task.category);
 
-  const scheduledAppointment = useMemo(() => scheduledTasksMap.get(task.id), [scheduledTasksMap, task.id]);
-
-  const originalTask = useMemo(() => {
-    if (!task.original_task_id) return null;
-    return allTasks.find(t => t.id === task.original_task_id);
-  }, [allTasks, task.original_task_id]);
-
-  const recurringType = originalTask ? originalTask.recurring_type : task?.recurring_type;
-
-  useEffect(() => {
-    if (isEditing && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
-    }
-  }, [isEditing]);
-
-  // Log the isDoToday prop whenever it changes
-  useEffect(() => {
-    console.log(`TaskItem: Task ${task.id} (${task.description}) - isDoToday prop changed to: ${isDoToday}`);
-  }, [isDoToday, task.id, task.description]);
-
-
-  const handleStartEdit = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (isOverlay || isDemo) return;
-    setIsEditing(true);
+  const handleToggleComplete = () => {
+    onUpdateTask({ ...task, status: task.status === 'completed' ? 'to-do' : 'completed' });
   };
 
-  const handleSaveEdit = async () => {
-    if (editText.trim() && editText.trim() !== (task.description || '')) { // Add null check for task.description
-      await onUpdate(task.id, { description: editText.trim() });
-    }
+  const handleSaveTask = (updatedTask: Partial<Task>) => {
+    onUpdateTask(updatedTask);
     setIsEditing(false);
   };
 
-  const handleCancelEdit = () => {
-    setEditText(task.description || ''); // Reset to original description or empty string
-    setIsEditing(false);
+  const handleAddSubtask = (newTask: Partial<Task>) => {
+    onAddTask({ ...newTask, parent_task_id: task.id, section_id: task.section_id });
   };
 
-  const handleInputKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      await handleSaveEdit();
-    } else if (e.key === 'Escape') {
-      handleCancelEdit();
-    }
-  };
-
-  const getPriorityDotColor = (priority: string) => {
-    switch (priority) {
-      case 'urgent': return 'bg-priority-urgent';
-      case 'high': return 'bg-priority-high';
-      case 'medium': return 'bg-priority-medium';
-      case 'low': return 'bg-priority-low';
-      default: return 'bg-gray-500';
-    }
-  };
-
-  const handleCheckboxChange = (checked: boolean) => {
-    if (isOverlay || isDemo) return;
-    onStatusChange(task.id, checked ? 'completed' : 'to-do');
-    if (checked) {
-      playSound('success');
-      setShowCompletionEffect(true);
-      setTimeout(() => {
-        setShowCompletionEffect(false);
-      }, 600);
-    }
-  };
-
-  const getDueDateDisplay = (dueDate: string | null) => {
-    if (!dueDate) return null;
-    const date = parseISO(dueDate);
-    if (!isValid(date)) return null;
-
-    if (isSameDay(date, currentDate)) {
-      return 'Today';
-    } else if (isPast(date) && !isSameDay(date, currentDate)) {
-      return format(date, 'MMM d');
-    } else {
-      return format(date, 'MMM d');
-    }
-  };
-
-  const isUrl = (path: string) => path.startsWith('http://') || path.startsWith('https://');
-
-  const handleCopyPath = async (e: React.MouseEvent, path: string) => {
-    e.stopPropagation();
-    try {
-      await navigator.clipboard.writeText(path);
-      showSuccess('Path copied to clipboard!');
-    } catch (err) {
-      showError('Could not copy path.');
-    }
-  };
-
-  const isOverdue = task.due_date && task.status !== 'completed' && isPast(parseISO(task.due_date)) && !isSameDay(parseISO(task.due_date), currentDate);
-  const isDueToday = task.due_date && task.status !== 'completed' && isSameDay(parseISO(task.due_date), currentDate);
-
-  const handleToggleDoTodaySwitch = (newCheckedState: boolean) => {
-    console.log(`[Do Today Debug] TaskItem: handleToggleDoTodaySwitch called for task ${task.id}. New state from switch: ${newCheckedState}`);
-    toggleDoToday(task); // Call the prop function from useTasks
-  };
+  const isOverdue = task.due_date && isPast(parseISO(task.due_date)) && task.status !== 'completed';
+  const isDueToday = task.due_date && isToday(parseISO(task.due_date)) && task.status !== 'completed';
 
   return (
-    <div
-      className={cn(
-        "relative flex items-center w-full rounded-lg transition-colors duration-200 py-2 pl-4",
-        task.status === 'completed' ? "text-muted-foreground bg-task-completed-bg" : "bg-card text-foreground",
-        !isDoToday && "opacity-40", // Apply opacity if NOT 'Do Today'
-        "group hover:bg-muted/50"
-      )}
-    >
-      {/* Priority Pill */}
-      <div className={cn("absolute left-0 top-0 h-full w-1.5 rounded-l-lg", getPriorityDotColor(task.priority))} />
-
-      <div className="flex-shrink-0 pr-1 flex items-center">
-        {hasSubtasks && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6"
-            onClick={(e: React.MouseEvent) => {
-              e.stopPropagation();
-              toggleTask?.(task.id);
-            }}
-            aria-label={isExpanded ? 'Collapse sub-tasks' : 'Expand sub-tasks'}
-          >
-            <ChevronRight className={cn("h-4 w-4 transition-transform", isExpanded ? "rotate-90" : "rotate-0")} />
-          </Button>
-        )}
-      </div>
-
-      {/* Checkbox Area */}
-      <div className="flex-shrink-0 pr-3">
-        <Checkbox
-          key={`${task.id}-${task.status}`}
-          checked={task.status === 'completed'}
-          onCheckedChange={handleCheckboxChange}
-          id={`task-${task.id}`}
-          onClick={(e: React.MouseEvent) => e.stopPropagation()}
-          className="flex-shrink-0 h-5 w-5 checkbox-root"
-          aria-label={`Mark task "${task.description}" as ${task.status === 'completed' ? 'to-do' : 'completed'}`}
-          disabled={isOverlay || isDemo}
-        />
-      </div>
-
-      {/* Clickable Content Area */}
-      <div 
-        className="flex-grow flex items-center space-x-2 min-w-0"
-        onClick={() => !isOverlay && !isEditing && onOpenOverview(task)}
-      >
-        <div className="flex-grow min-w-0 w-full">
-          {isEditing ? (
-            <Input
-              ref={inputRef}
-              value={editText || ''} // Ensure value is always a string
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditText(e.target.value)}
-              onBlur={handleSaveEdit}
-              onKeyDown={handleInputKeyDown}
-              className="h-auto text-lg leading-tight p-0 border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full"
-              onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
-            />
-          ) : (
-            <>
-              <span
-                className={cn(
-                  "text-lg leading-tight line-clamp-2",
-                  task.status === 'completed' ? 'line-through' : '',
-                  "inline-block cursor-text"
-                )}
-                onClick={handleStartEdit}
-              >
-                {task.description}
+    <Draggable draggableId={task.id} index={index}>
+      {(provided) => (
+        <div
+          ref={provided.innerRef}
+          {...provided.draggableProps}
+          className={cn(
+            'bg-white p-3 rounded-md shadow-sm border border-gray-200 mb-2',
+            task.status === 'completed' && 'opacity-60 line-through',
+            isOverdue && 'border-red-400 bg-red-50',
+            isDueToday && 'border-orange-400 bg-orange-50'
+          )}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center flex-grow">
+              <span {...provided.dragHandleProps} className="mr-2 text-gray-400 cursor-grab">
+                <GripVertical className="h-4 w-4" />
               </span>
-              {scheduledAppointment && (
-                <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                  <CalendarClock className="h-3 w-3" />
-                  <span>
-                    Scheduled: {format(parseISO(scheduledAppointment.date), 'dd/MM')} {format(parseISO(`1970-01-01T${scheduledAppointment.start_time}`), 'h:mm a')}
-                  </span>
+              <Checkbox checked={task.status === 'completed'} onCheckedChange={handleToggleComplete} className="mr-3" />
+              <div className="flex-grow">
+                <p className="text-sm font-medium text-gray-800">{task.description}</p>
+                <div className="flex items-center space-x-2 mt-1 text-xs text-gray-500">
+                  {task.due_date && (
+                    <span className="flex items-center">
+                      <CalendarDays className="h-3 w-3 mr-1" /> {format(parseISO(task.due_date), 'MMM d')}
+                    </span>
+                  )}
+                  {task.priority && <PriorityBadge priority={task.priority} />}
+                  {category && <CategoryBadge category={category} />}
+                  {task.recurring_type !== 'none' && (
+                    <span className="flex items-center">
+                      <Repeat className="h-3 w-3 mr-1" /> {task.recurring_type}
+                    </span>
+                  )}
                 </div>
-              )}
-            </>
-          )}
-        </div>
-
-        <div className="flex-shrink-0 flex items-center space-x-2">
-          {task.link && (
-            isUrl(task.link) ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <a
-                    href={task.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center flex-shrink-0 text-muted-foreground hover:text-primary"
-                    onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                  >
-                    <LinkIcon className="h-4 w-4" />
-                  </a>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Open link: {task.link}</p>
-                </TooltipContent>
-              </Tooltip>
-            ) : (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 flex-shrink-0 text-muted-foreground hover:text-primary"
-                    onClick={(e: React.MouseEvent) => handleCopyPath(e, task.link!)}
-                  >
-                    <ClipboardCopy className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Copy path: {task.link}</p>
-                </TooltipContent>
-              </Tooltip>
-            )
-          )}
-
-          {task.due_date && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className={cn(
-                  "inline-flex items-center flex-shrink-0 text-xs font-medium px-1 py-0.5 rounded-sm",
-                  "text-muted-foreground",
-                  isOverdue && "text-status-overdue",
-                  isDueToday && "text-status-due-today"
-                )}>
-                  <CalendarIcon className="h-3.5 w-3.5 mr-1" /> {getDueDateDisplay(task.due_date)}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Due: {format(parseISO(task.due_date), 'MMM d, yyyy')}</p>
-              </TooltipContent>
-            </Tooltip>
-          )}
-        </div>
-      </div>
-
-      {/* Actions Area */}
-      <div className="flex-shrink-0 flex items-center gap-1 pr-3">
-        {recurringType !== 'none' && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="h-8 w-8 flex items-center justify-center" aria-label="Recurring task">
-                <Repeat className="h-4 w-4 text-muted-foreground" />
               </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Recurring: {recurringType.charAt(0).toUpperCase() + recurringType.slice(1)}</p>
-            </TooltipContent>
-          </Tooltip>
-        )}
-        <DoTodaySwitch
-          isOn={isDoToday}
-          onToggle={handleToggleDoTodaySwitch}
-          taskId={task.id}
-          isDemo={isDemo}
-        />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              className="h-8 w-8 p-0"
-              aria-label="More options"
-              disabled={isOverlay || isDemo}
-              // Removed onClick={(e: React.MouseEvent) => e.stopPropagation()}
-            >
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-            <DropdownMenuItem onSelect={() => onOpenOverview(task)}>
-              <Edit className="mr-2 h-4 w-4" /> View Details
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => setFocusTask(task.id)}>
-              <Target className="mr-2 h-4 w-4" /> Set as Focus
-            </DropdownMenuItem>
-            {task.status === 'archived' && (
-              <DropdownMenuItem onSelect={async () => { await onStatusChange(task.id, 'to-do'); playSound('success'); }}>
-                <Undo2 className="mr-2 h-4 w-4" /> Restore
-              </DropdownMenuItem>
-            )}
-            {task.status !== 'archived' && (
-              <>
-                <DropdownMenuItem onSelect={async () => { await onStatusChange(task.id, 'to-do'); playSound('success'); }}>
-                  Mark as To-Do
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={async () => { await onStatusChange(task.id, 'completed'); playSound('success'); }}>
-                  Mark as Completed
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={async () => { await onStatusChange(task.id, 'skipped'); playSound('success'); }}>
-                  Mark as Skipped
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={async () => { await onStatusChange(task.id, 'archived'); playSound('success'); }}>
-                  <Archive className="mr-2 h-4 w-4" /> Archive
-                </DropdownMenuItem>
-              </>
-            )}
-            <DropdownMenuSeparator />
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger>
-                <FolderOpen className="mr-2 h-4 w-4" /> Move to Section
-              </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent>
-                {sections.length === 0 ? (
-                  <DropdownMenuItem disabled>No sections available</DropdownMenuItem>
-                ) : (
-                  <>
-                    <DropdownMenuItem
-                      onSelect={async () => {
-                        await onUpdate(task.id, { section_id: null });
-                        playSound('success');
-                      }}
-                      disabled={task.section_id === null}
-                    >
-                      No Section
-                    </DropdownMenuItem>
-                    {sections.map(section => (
-                      <DropdownMenuItem
-                        key={section.id}
-                        onSelect={async () => {
-                          await onUpdate(task.id, { section_id: section.id });
-                          playSound('success');
-                        }}
-                        disabled={task.section_id === section.id}
-                      >
-                        {section.name}
-                      </DropdownMenuItem>
-                    ))}
-                  </>
-                )}
-              </DropdownMenuSubContent>
-            </DropdownMenuSub>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => { onDelete(task.id); playSound('alert'); }} className="text-destructive focus:text-destructive">
-              <Trash2 className="mr-2 h-4 w-4" /> Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
-      {showCompletionEffect && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-          <CheckCircle2 className="h-14 w-14 text-primary animate-fade-in-out-check" />
+            </div>
+            <div className="flex items-center space-x-1">
+              <Dialog open={isEditing} onOpenChange={setIsEditing}>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsEditing(true)}>
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>{task.description}</DialogTitle>
+                  </DialogHeader>
+                  <TaskForm
+                    initialTask={task}
+                    onSave={handleSaveTask}
+                    onClose={() => setIsEditing(false)}
+                    categories={categories}
+                    sections={sections}
+                  />
+                </DialogContent>
+              </Dialog>
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 hover:text-red-600" onClick={() => onDeleteTask(task.id)}>
+                <Trash2 className="h-4 w-4" />
+              </Button>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-7 w-7">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Add Subtask to "{task.description}"</DialogTitle>
+                  </DialogHeader>
+                  <TaskForm
+                    parentTaskId={task.id}
+                    sectionId={task.section_id}
+                    onSave={handleAddSubtask}
+                    onClose={() => {}}
+                    categories={categories}
+                    sections={sections}
+                  />
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
+          {task.subtasks && task.subtasks.length > 0 && (
+            <div className="ml-8 mt-2 border-l pl-4">
+              {task.subtasks.map((subtask, subIndex) => (
+                <TaskItem
+                  key={subtask.id}
+                  task={subtask}
+                  index={subIndex}
+                  categories={categories}
+                  sections={sections}
+                  onUpdateTask={onUpdateTask}
+                  onDeleteTask={onDeleteTask}
+                  onAddTask={onAddTask}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
-    </div>
+    </Draggable>
   );
 };
 
