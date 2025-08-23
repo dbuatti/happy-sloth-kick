@@ -27,7 +27,8 @@ export const useSleepRecords = (date: Date) => {
         .eq('date', format(date, 'yyyy-MM-dd'))
         .single();
 
-      if (error && error.code !== 'PGRST116') throw error; // PGRST116 means no rows found
+      if (error && error.code === 'PGRST116') return null; // No rows found
+      if (error) throw error;
       return data;
     },
     enabled: !!userId && !authLoading,

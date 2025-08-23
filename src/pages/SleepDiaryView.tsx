@@ -1,5 +1,5 @@
-import React from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import React, { useEffect, useRef } from 'react';
+import { useAuth } from '@/context/AuthContext';
 import { useSleepDiary } from '@/hooks/useSleepDiary';
 import { SleepDiaryViewProps, SleepRecord } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,7 +20,30 @@ const SleepDiaryView: React.FC<SleepDiaryViewProps> = ({ isDemo = false, demoUse
     isFetchingNextPage,
   } = useSleepDiary(); // No userId prop needed here, it's handled internally
 
-  if (isLoading || authLoading) {
+  const observerTarget = useRef(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { threshold: 1 }
+    );
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
+    }
+
+    return () => {
+      if (observerTarget.current) {
+        observer.unobserve(observerTarget.current);
+      }
+    };
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+
+  if (isLoading && allSleepRecords.length === 0) {
     return <div className="flex justify-center items-center h-full">Loading sleep diary...</div>;
   }
 

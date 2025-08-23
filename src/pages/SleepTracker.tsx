@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/context/AuthContext';
 import { useSleepRecords } from '@/hooks/useSleepRecords';
-import { Calendar as CalendarIcon, Moon, Sun, Bed, Clock, RefreshCcw } from 'lucide-react';
+import { Calendar as CalendarIcon, Moon, Sun, Bed, Clock, RefreshCcw, Trash2, Save } from 'lucide-react'; // Added Trash2 and Save icons
 import { format, isSameDay, subDays, addDays } from 'date-fns'; // Removed parseISO as it's not used directly here
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'; // Added CardFooter
@@ -10,15 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { NewSleepRecordData, SleepRecord, SleepPageProps } from '@/types'; // Added SleepPageProps
+import { NewSleepRecordData, SleepRecord, SleepTrackerProps } from '@/types'; // Added SleepTrackerProps
 import { toast } from 'react-hot-toast';
-
-interface SleepTrackerProps {
-  currentDate: Date;
-  setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
-  isDemo?: boolean;
-  demoUserId?: string;
-}
 
 const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate, isDemo = false, demoUserId }) => {
   const { user, loading: authLoading } = useAuth();

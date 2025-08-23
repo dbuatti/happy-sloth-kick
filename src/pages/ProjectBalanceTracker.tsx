@@ -15,8 +15,8 @@ import { toast } from 'react-hot-toast';
 
 const ProjectBalanceTracker: React.FC<ProjectBalanceTrackerProps> = ({ isDemo = false, demoUserId }) => {
   const { user, loading: authLoading } = useAuth();
-  const currentUserId = isDemo ? demoUserId : user?.id; // Used currentUserId
-  const [sortOption, setSortOption] = useState<keyof Project>('created_at'); // Explicitly typed sortOption
+  const currentUserId = isDemo ? demoUserId : user?.id; // currentUserId is used in useProjects
+  const [sortOption, setSortOption] = useState('created_at');
   const { projects, isLoading, error, addProject, updateProject, deleteProject } = useProjects(sortOption);
 
   const [isAddProjectDialogOpen, setIsAddProjectDialogOpen] = useState(false);
@@ -219,7 +219,7 @@ const ProjectBalanceTracker: React.FC<ProjectBalanceTrackerProps> = ({ isDemo = 
 
         <div className="flex items-center space-x-2">
           <Label htmlFor="sort">Sort by:</Label>
-          <Select value={sortOption} onValueChange={(value) => setSortOption(value as keyof Project)}>
+          <Select value={sortOption} onValueChange={setSortOption}>
             <SelectTrigger id="sort" className="w-[180px]">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>

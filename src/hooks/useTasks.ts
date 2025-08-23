@@ -12,6 +12,7 @@ import {
   NewTaskSectionData,
   UpdateTaskSectionData,
   UseTasksProps,
+  TaskStatus, // Import TaskStatus
 } from '@/types';
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { v4 as uuidv4 } from 'uuid';
@@ -428,6 +429,27 @@ export const useTasks = ({ userId: propUserId, isDemo = false, demoUserId }: Use
     return { completed, total, percentage };
   }, [tasks]);
 
+  const onToggleFocusMode = useCallback(async (taskId: string) => {
+    if (!currentUserId) return;
+    const currentFocusedTaskId = queryClient.getQueryData(['userSettings', currentUserId])?.focused_task_id;
+    const newFocusedTaskId = currentFocusedTaskId === taskId ? null : taskId;
+    await queryClient.setQueryData(['userSettings', currentUserId], (oldSettings: any) => ({
+      ...oldSettings,
+      focused_task_id: newFocusedTaskId,
+    }));
+    // This should ideally call a mutation to update the backend
+    // For now, we'll just update the cache.
+    toast.success(newFocusedTaskId ? 'Task set as focus!' : 'Focus task cleared!');
+  }, [currentUserId, queryClient]);
+
+  const onLogDoTodayOff = useCallback(async (taskId: string) => {
+    if (!currentUserId) return;
+    // This should ideally call a mutation to log the task as "do today off"
+    // For now, we'll just log it.
+    toast(`Task ${taskId} logged as "Do Today Off" (functionality to be implemented).`);
+  }, [currentUserId]);
+
+
   return {
     tasks: filteredAndSortedTasks,
     categories,
@@ -459,5 +481,7 @@ export const useTasks = ({ userId: propUserId, isDemo = false, demoUserId }: Use
     setFilterDueDate,
     showCompleted,
     setShowCompleted,
+    onToggleFocusMode,
+    onLogDoTodayOff,
   };
 };
