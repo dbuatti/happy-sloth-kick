@@ -1,5 +1,5 @@
 import { useAuth } from '@/context/AuthContext';
-import { CustomCard, WeeklyFocus, NewCustomCardData, UpdateCustomCardData, UpdateWeeklyFocusData, Json, UserSettings } from '@/types';
+import { CustomCard, WeeklyFocus, NewCustomCardData, UpdateCustomCardData, UserSettings, Json } from '@/types';
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'react-hot-toast';
@@ -9,7 +9,7 @@ interface UseDashboardDataProps {
   userId?: string;
 }
 
-export const useDashboardData = ({ userId: propUserId }: UseDashboardDataProps) => {
+export const useDashboardData = ({ userId: propUserId }: UseDashboardDataProps = {}) => {
   const { user } = useAuth();
   const currentUserId = propUserId || user?.id;
   const queryClient = useQueryClient();

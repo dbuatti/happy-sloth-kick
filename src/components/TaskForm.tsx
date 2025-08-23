@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -28,8 +28,6 @@ const TaskForm: React.FC<TaskFormProps> = ({ initialData, onSave, onCancel, cate
       recurring_type: initialData?.recurring_type || 'none',
     }
   });
-
-  const dueDate = watch('due_date');
 
   useEffect(() => {
     reset({

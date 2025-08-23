@@ -1,56 +1,48 @@
 import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus } from 'lucide-react';
-import { Task } from '@/hooks/useTasks';
+import { Task } from '@/types'; // Import Task from '@/types'
+import { toast } from 'react-hot-toast';
 
 interface QuickAddTaskProps {
-  sectionId: string | null;
-  onAddTask: (taskData: {
-    description: string;
-    section_id: string | null;
-    category: string;
-    priority: Task['priority'];
-  }) => Promise<any>;
-  defaultCategoryId: string;
-  isDemo?: boolean;
+  onAddTask: (description: string, sectionId: string | null, parentTaskId: string | null, dueDate: Date | null, categoryId: string | null, priority: Task['priority']) => Promise<Task>;
 }
 
-const QuickAddTask: React.FC<QuickAddTaskProps> = ({ sectionId, onAddTask, defaultCategoryId, isDemo = false }) => {
+const QuickAddTask: React.FC<QuickAddTaskProps> = ({ onAddTask }) => {
   const [description, setDescription] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!description.trim() || !defaultCategoryId) return;
-
-    setIsSaving(true);
-    await onAddTask({
-      description: description.trim(),
-      section_id: sectionId,
-      category: defaultCategoryId,
-      priority: 'medium',
-    });
-    setIsSaving(false);
-    setDescription('');
+  const handleAddTask = async () => {
+    if (!description.trim()) {
+      toast.error('Task description cannot be empty.');
+      return;
+    }
+    try {
+      await onAddTask(description, null, null, null, null, 'medium');
+      setDescription('');
+      toast.success('Task added quickly!');
+    } catch (error) {
+      toast.error('Failed to add task.');
+      console.error('Error adding task:', error);
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex items-center gap-2 px-2 py-1">
-      <Plus className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+    <div className="flex w-full max-w-sm items-center space-x-2">
       <Input
-        placeholder="Add a task and press Enter..."
+        placeholder="Add a quick task..."
         value={description}
         onChange={(e) => setDescription(e.target.value)}
-        className="h-8 border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 text-base"
-        disabled={isSaving || isDemo}
         onKeyDown={(e) => {
-          if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleSubmit(e);
+          if (e.key === 'Enter') {
+            handleAddTask();
           }
         }}
       />
-    </form>
+      <Button onClick={handleAddTask}>
+        <Plus className="h-4 w-4" />
+      </Button>
+    </div>
   );
 };
 

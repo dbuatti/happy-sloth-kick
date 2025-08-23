@@ -1,10 +1,10 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { CustomCard as CustomCardType, UpdateCustomCardData, SortableCustomCardProps } from '@/types';
+import { SortableCustomCardProps } from '@/types';
 import CustomCard from './CustomCard';
 
-const SortableCustomCard: React.FC<SortableCustomCardProps> = ({ id, card, onSave, onDelete, isDragging: propIsDragging }) => {
+const SortableCustomCard: React.FC<SortableCustomCardProps> = ({ id, card, onSave, onDelete }) => {
   const {
     attributes,
     listeners,

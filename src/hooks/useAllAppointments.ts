@@ -1,30 +1,35 @@
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Appointment } from '@/types';
 import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
-export const useAllAppointments = () => {
-  const { user, loading: authLoading } = useAuth();
-  const userId = user?.id;
+interface UseAllAppointmentsProps {
+  userId?: string;
+}
+
+export const useAllAppointments = ({ userId: propUserId }: UseAllAppointmentsProps = {}) => {
+  const { user } = useAuth();
+  const currentUserId = propUserId || user?.id;
 
   const { data: allAppointments, isLoading, error } = useQuery<Appointment[], Error>({
-    queryKey: ['allAppointments', userId],
+    queryKey: ['allAppointments', currentUserId],
     queryFn: async () => {
-      if (!userId) return [];
+      if (!currentUserId) return [];
       const { data, error } = await supabase
         .from('schedule_appointments')
         .select('*')
-        .eq('user_id', userId)
-        .order('date', { ascending: true })
+        .eq('user_id', currentUserId)
+        .order('date', { ascending: false })
         .order('start_time', { ascending: true });
+
       if (error) throw error;
-      return data;
+      return data as Appointment[];
     },
-    enabled: !!userId && !authLoading,
+    enabled: !!currentUserId,
   });
 
   return {
-    allAppointments,
+    allAppointments: allAppointments || [],
     isLoading,
     error,
   };

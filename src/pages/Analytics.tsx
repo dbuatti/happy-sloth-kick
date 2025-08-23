@@ -1,23 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useTasks } from '@/hooks/useTasks';
-import { Task, TaskCategory, AnalyticsTask, AnalyticsProps } from '@/types';
+import { Task, TaskCategory, AnalyticsProps } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { format, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
 import { DateRange } from 'react-day-picker';
-
-interface AnalyticsData {
-  dailyAverage: number;
-  totalCompleted: number;
-  categoryDistribution: { name: string; value: number; color: string }[];
-  priorityDistribution: { name: string; value: number; color: string }[];
-  completionTrend: { date: string; completed: number }[];
-}
-
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
+import { startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
 
 const Analytics: React.FC<AnalyticsProps> = ({ isDemo = false, demoUserId }) => {
   const { user, loading: authLoading } = useAuth();
@@ -25,160 +14,116 @@ const Analytics: React.FC<AnalyticsProps> = ({ isDemo = false, demoUserId }) => 
 
   const { tasks, categories, isLoading, error } = useTasks({ userId: currentUserId, isDemo, demoUserId });
 
+  const defaultMonth = startOfMonth(new Date());
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: startOfMonth(new Date()),
-    to: new Date(),
+    from: defaultMonth,
+    to: endOfMonth(defaultMonth),
   });
 
   const filteredTasks = useMemo(() => {
-    if (!tasks || !dateRange?.from || !dateRange?.to) return [];
-    const start = startOfMonth(dateRange.from);
-    const end = endOfMonth(dateRange.to);
-
-    return tasks.filter(task =>
-      task.status === 'completed' &&
-      task.created_at &&
-      isWithinInterval(parseISO(task.created_at), { start, end })
-    );
+    if (!tasks) return [];
+    return tasks.filter(task => {
+      if (!task.created_at || !dateRange?.from || !dateRange?.to) return true; // Include if no date or no range
+      const taskDate = parseISO(task.created_at);
+      return isWithinInterval(taskDate, { start: dateRange.from, end: dateRange.to });
+    });
   }, [tasks, dateRange]);
 
-  const analyticsData: AnalyticsData = useMemo(() => {
-    const totalCompleted = filteredTasks.length;
+  const completedTasks = filteredTasks.filter(task => task.status === 'completed').length;
+  const totalTasks = filteredTasks.length;
+  const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
-    const categoryCounts = categories.map(cat => ({
+  const categoryCounts = useMemo(() => {
+    if (!categories) return [];
+    return categories.map((cat: TaskCategory) => ({
       name: cat.name,
-      value: filteredTasks.filter(task => task.category?.id === cat.id).length,
+      value: filteredTasks.filter((task: Task) => task.category === cat.id).length,
       color: cat.color,
     }));
+  }, [categories, filteredTasks]);
 
-    const priorityCounts = [
-      { name: 'Urgent', value: filteredTasks.filter(task => task.priority === 'urgent').length, color: '#EF4444' },
-      { name: 'High', value: filteredTasks.filter(task => task.priority === 'high').length, color: '#F97316' },
-      { name: 'Medium', value: filteredTasks.filter(task => task.priority === 'medium').length, color: '#F59E0B' },
-      { name: 'Low', value: filteredTasks.filter(task => task.priority === 'low').length, color: '#22C55E' },
-    ];
+  if (authLoading || isLoading) {
+    return <div className="p-4 text-center">Loading analytics...</div>;
+  }
 
-    const completionTrendMap = new Map<string, number>();
-    filteredTasks.forEach(task => {
-      const date = format(parseISO(task.created_at), 'yyyy-MM-dd');
-      completionTrendMap.set(date, (completionTrendMap.get(date) || 0) + 1);
-    });
-    const completionTrend = Array.from(completionTrendMap.entries())
-      .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
-      .map(([date, completed]) => ({ date, completed }));
-
-    const dailyAverage = totalCompleted / (completionTrend.length || 1);
-
-    return {
-      dailyAverage,
-      totalCompleted,
-      categoryDistribution: categoryCounts.filter(c => c.value > 0),
-      priorityDistribution: priorityCounts.filter(p => p.value > 0),
-      completionTrend,
-    };
-  }, [filteredTasks, categories]);
-
-  if (isLoading || authLoading) return <p>Loading analytics...</p>;
-  if (error) return <p>Error: {error.message}</p>;
+  if (error) {
+    return <div className="p-4 text-red-500">Error loading data: {error.message}</div>;
+  }
 
   return (
-    <div className="p-4">
-      <h1 className="text-3xl font-bold mb-6">Analytics</h1>
-
-      <div className="mb-6">
-        <DateRangePicker
-          dateRange={dateRange}
-          setDateRange={setDateRange}
-        />
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      <div className="flex items-center justify-between space-y-2">
+        <h2 className="text-3xl font-bold tracking-tight">Analytics</h2>
+        <DateRangePicker dateRange={dateRange} setDateRange={setDateRange} />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
-          <CardHeader>
-            <CardTitle>Total Tasks Completed</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Tasks</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-4xl font-bold">{analyticsData.totalCompleted}</p>
+            <div className="text-2xl font-bold">{totalTasks}</div>
+            <p className="text-xs text-muted-foreground">
+              Tasks in selected period
+            </p>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader>
-            <CardTitle>Average Daily Completion</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Completed Tasks</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-4xl font-bold">{analyticsData.dailyAverage.toFixed(1)}</p>
+            <div className="text-2xl font-bold">{completedTasks}</div>
+            <p className="text-xs text-muted-foreground">
+              Tasks marked as done
+            </p>
           </CardContent>
         </Card>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
-          <CardHeader>
-            <CardTitle>Tasks Completed by Category</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Completion Rate</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={analyticsData.categoryDistribution}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                >
-                  {analyticsData.categoryDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+            <div className="text-2xl font-bold">{completionRate.toFixed(1)}%</div>
+            <p className="text-xs text-muted-foreground">
+              Percentage of tasks completed
+            </p>
           </CardContent>
         </Card>
-
         <Card>
-          <CardHeader>
-            <CardTitle>Tasks Completed by Priority</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Categories</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={analyticsData.priorityDistribution}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                >
-                  {analyticsData.priorityDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+            <div className="text-2xl font-bold">{categories?.length || 0}</div>
+            <p className="text-xs text-muted-foreground">
+              Active categories
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      <Card className="mt-6">
+      <Card>
         <CardHeader>
-          <CardTitle>Daily Completion Trend</CardTitle>
+          <CardTitle>Tasks by Category</CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={analyticsData.completionTrend}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="completed" fill="#82ca9d" />
-            </BarChart>
-          </ResponsiveContainer>
+          {categoryCounts.length === 0 ? (
+            <p className="text-muted-foreground">No categories with tasks in this period.</p>
+          ) : (
+            <div className="space-y-2">
+              {categoryCounts.map(cat => (
+                <div key={cat.name} className="flex items-center justify-between p-2 border rounded-md">
+                  <div className="flex items-center">
+                    <span className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: cat.color }} />
+                    <span className="font-medium">{cat.name}</span>
+                  </div>
+                  <span>{cat.value} tasks</span>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

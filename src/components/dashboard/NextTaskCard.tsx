@@ -1,14 +1,12 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { Task, UpdateTaskData } from '@/types';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Task, NextTaskCardProps } from '@/types';
 import { format, isToday, isPast } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, ChevronRight } from 'lucide-react';
-import { NextTaskCardProps } from '@/types';
 import { toast } from 'react-hot-toast';
 
-const NextTaskCard: React.FC<NextTaskCardProps> = ({ tasks, onUpdateTask, onDeleteTask, onToggleFocusMode, onLogDoTodayOff }) => {
+const NextTaskCard: React.FC<NextTaskCardProps> = ({ tasks, onUpdateTask }) => {
   const sortedTasks = tasks
     .filter((task: Task) => task.status === 'to-do' && !task.parent_task_id)
     .sort((a: Task, b: Task) => {

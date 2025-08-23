@@ -8,11 +8,12 @@ import { useQuickLinks } from '@/hooks/useQuickLinks';
 import { QuickLink, NewQuickLinkData, UpdateQuickLinkData, QuickLinksProps } from '@/types';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '@/context/AuthContext';
+import { DialogTrigger } from '@radix-ui/react-dialog';
 
 const QuickLinks: React.FC<QuickLinksProps> = ({ isDemo = false, demoUserId }) => {
   const { user } = useAuth();
   const currentUserId = isDemo ? demoUserId : user?.id;
-  const { quickLinks, isLoading, error, addQuickLink, updateQuickLink, deleteQuickLink } = useQuickLinks();
+  const { quickLinks, isLoading, error, addQuickLink, updateQuickLink, deleteQuickLink } = useQuickLinks({ userId: currentUserId });
 
   const [isAddLinkDialogOpen, setIsAddLinkDialogOpen] = useState(false);
   const [isEditLinkDialogOpen, setIsEditLinkDialogOpen] = useState(false);
@@ -74,9 +75,11 @@ const QuickLinks: React.FC<QuickLinksProps> = ({ isDemo = false, demoUserId }) =
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-lg font-semibold">Quick Links</CardTitle>
         <Dialog open={isAddLinkDialogOpen} onOpenChange={setIsAddLinkDialogOpen}>
-          <Button variant="ghost" size="sm" onClick={() => setIsAddLinkDialogOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" /> Add Link
-          </Button>
+          <DialogTrigger asChild>
+            <Button variant="ghost" size="sm">
+              <Plus className="mr-2 h-4 w-4" /> Add Link
+            </Button>
+          </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>Add New Quick Link</DialogTitle>
@@ -86,11 +89,11 @@ const QuickLinks: React.FC<QuickLinksProps> = ({ isDemo = false, demoUserId }) =
         </Dialog>
       </CardHeader>
       <CardContent>
-        {quickLinks.length === 0 ? (
+        {quickLinks && quickLinks.length === 0 ? (
           <p className="text-muted-foreground">No quick links added yet.</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {quickLinks.map((link) => (
+            {quickLinks && quickLinks.map((link) => (
               <div
                 key={link.id}
                 className="relative flex flex-col items-center justify-center p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow"

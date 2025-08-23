@@ -1,140 +1,56 @@
-import React, { useState } from "react";
-import { Droppable, Draggable, DraggableProvided, DroppableProvided, DroppableStateSnapshot } from "@hello-pangea/dnd";
-import { Task, TaskSection as TaskSectionType } from "@/types";
-import TaskCard from "./TaskCard";
-import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import React from 'react';
+import { DraggableProvided, DraggableStateSnapshot } from 'react-beautiful-dnd';
+import { Task, TaskCategory, TaskSection, UpdateTaskData, DoTodayOffLogEntry } from '@/types';
+import TaskCard from './TaskCard';
 
 interface TaskSectionProps {
-  section: TaskSectionType;
+  section: TaskSection;
   tasks: Task[];
-  onAddTask: (sectionId: string) => void;
-  onTaskUpdate: (updatedTask: Task) => void;
-  onTaskDelete: (taskId: string) => void;
-  onMoveTaskToSection: (taskId: string, sectionId: string | null) => void;
-  onMoveTaskToToday: (task: Task) => void;
-  onMoveTaskToTomorrow: (task: Task) => void;
-  onMoveTaskToThisWeek: (task: Task) => void;
-  onMoveTaskToFuture: (task: Task) => void;
-  allSections: TaskSectionType[];
+  categories: TaskCategory[];
+  sections: TaskSection[];
+  onTaskUpdate: (id: string, updates: UpdateTaskData) => Promise<Task>;
+  onTaskDelete: (id: string) => Promise<void>;
+  onAddTask: (description: string, sectionId: string | null, parentTaskId: string | null, dueDate: Date | null, categoryId: string | null, priority: string) => Promise<Task>;
+  onAddSubtask: (description: string, parentTaskId: string | null) => Promise<Task>;
+  onToggleFocusMode: (taskId: string, isFocused: boolean) => Promise<void>;
+  onLogDoTodayOff: (taskId: string) => Promise<void>;
+  doTodayOffLog: DoTodayOffLogEntry[] | undefined;
 }
 
-const TaskSection: React.FC<TaskSectionProps> = ({
+const TaskSectionComponent: React.FC<TaskSectionProps> = ({
   section,
   tasks,
-  onAddTask,
+  categories,
+  sections: allSections,
   onTaskUpdate,
   onTaskDelete,
-  onMoveTaskToSection,
-  onMoveTaskToToday,
-  onMoveTaskToTomorrow,
-  onMoveTaskToThisWeek,
-  onMoveTaskToFuture,
-  allSections,
+  onAddTask,
+  onAddSubtask,
+  onToggleFocusMode,
+  onLogDoTodayOff,
+  doTodayOffLog,
 }) => {
-  const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
-
-  const handleToggleSubtasks = (taskId: string) => {
-    setExpandedTasks((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(taskId)) {
-        newSet.delete(taskId);
-      } else {
-        newSet.add(taskId);
-      }
-      return newSet;
-    });
-  };
-
-  const getSubtasks = (parentId: string) => {
-    return tasks.filter((task) => task.parent_task_id === parentId);
-  };
-
-  const getTopLevelTasks = () => {
-    return tasks.filter((task) => !task.parent_task_id);
-  };
+  const sectionTasks = tasks.filter(task => task.section_id === section.id && !task.parent_task_id);
 
   return (
-    <div className="bg-gray-50 p-4 rounded-lg shadow-sm mb-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-gray-800">{section.name}</h2>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onAddTask(section.id)}
-          className="text-blue-600 hover:text-blue-800"
-        >
-          <Plus className="mr-1 h-4 w-4" /> Add Task
-        </Button>
-      </div>
-
-      <Droppable droppableId={section.id}>
-        {(provided: DroppableProvided, snapshot: DroppableStateSnapshot) => (
-          <div
-            {...provided.droppableProps}
-            ref={provided.innerRef}
-            className={cn(
-              "min-h-[50px] rounded-md transition-colors touch-action-none", // Added touch-action-none here
-              snapshot.isDraggingOver ? "bg-blue-50" : "bg-transparent"
-            )}
-          >
-            {getTopLevelTasks().map((task, index) => (
-              <React.Fragment key={task.id}>
-                <Draggable draggableId={task.id} index={index} disableInteractiveElementBlocking={true}>
-                  {(provided: DraggableProvided) => (
-                    <TaskCard
-                      task={task}
-                      provided={provided}
-                      isDragging={snapshot.isDraggingOver}
-                      onTaskUpdate={onTaskUpdate}
-                      onTaskDelete={onTaskDelete}
-                      onAddTask={onAddTask}
-                      subtasks={getSubtasks(task.id)}
-                      onToggleSubtasks={handleToggleSubtasks}
-                      showSubtasks={expandedTasks.has(task.id)}
-                      onMoveTaskToSection={onMoveTaskToSection}
-                      onMoveTaskToToday={onMoveTaskToToday}
-                      onMoveTaskToTomorrow={onMoveTaskToTomorrow}
-                      onMoveTaskToThisWeek={onMoveTaskToThisWeek}
-                      onMoveTaskToFuture={onMoveTaskToFuture}
-                      allSections={allSections}
-                    />
-                  )}
-                </Draggable>
-                {expandedTasks.has(task.id) && (
-                  <div className="ml-6">
-                    {getSubtasks(task.id).map((subtask, subtaskIndex) => (
-                      <Draggable draggableId={subtask.id} index={index + subtaskIndex + 1} key={subtask.id} disableInteractiveElementBlocking={true}>
-                        {(provided: DraggableProvided) => (
-                          <TaskCard
-                            task={subtask}
-                            provided={provided}
-                            isDragging={snapshot.isDraggingOver}
-                            onTaskUpdate={onTaskUpdate}
-                            onTaskDelete={onTaskDelete}
-                            onAddTask={onAddTask}
-                            isSubtask={true}
-                            onMoveTaskToSection={onMoveTaskToSection}
-                            onMoveTaskToToday={onMoveTaskToToday}
-                            onMoveTaskToTomorrow={onMoveTaskToTomorrow}
-                            onMoveTaskToThisWeek={onMoveTaskToThisWeek}
-                            onMoveTaskToFuture={onMoveTaskToFuture}
-                            allSections={allSections}
-                          />
-                        )}
-                      </Draggable>
-                    ))}
-                  </div>
-                )}
-              </React.Fragment>
-            ))}
-            {provided.placeholder}
-          </div>
-        )}
-      </Droppable>
+    <div className="space-y-2">
+      {sectionTasks.map((task, index) => (
+        <TaskCard
+          key={task.id}
+          task={task}
+          categories={categories}
+          sections={allSections}
+          onUpdateTask={onTaskUpdate}
+          onDeleteTask={onTaskDelete}
+          onAddSubtask={onAddSubtask}
+          onToggleFocusMode={onToggleFocusMode}
+          onLogDoTodayOff={onLogDoTodayOff}
+          tasks={tasks} // Pass all tasks for subtasks
+          doTodayOffLog={doTodayOffLog}
+        />
+      ))}
     </div>
   );
 };
 
-export default TaskSection;
+export default TaskSectionComponent;

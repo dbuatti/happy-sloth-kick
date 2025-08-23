@@ -1,29 +1,22 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useTasks } from '@/hooks/useTasks';
 import { useSettings } from '@/context/SettingsContext';
 import TaskList from '@/components/TaskList';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Settings as SettingsIcon, LayoutDashboard, Calendar, ListTodo, Brain, Moon, Link, Users, Archive } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar as DatePicker } from '@/components/ui/calendar';
-import { format, startOfDay } from 'date-fns';
-import { cn } from '@/lib/utils';
+import { Plus } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import AddTaskForm from '@/components/AddTaskForm';
-import { Task, TaskCategory, TaskSection, NewTaskData, UpdateTaskData, NewTaskSectionData, UpdateTaskSectionData, IndexProps } from '@/types';
+import { startOfDay } from 'date-fns';
+import { Task, UpdateTaskData, IndexProps } from '@/types';
 import { toast } from 'react-hot-toast';
+import { DialogTrigger } from '@radix-ui/react-dialog';
 
 const Index: React.FC<IndexProps> = ({ isDemo = false, demoUserId }) => {
   const { user } = useAuth();
   const currentUserId = isDemo ? demoUserId : user?.id;
-  const { settings, updateSettings } = useSettings();
+  const { settings } = useSettings();
   const navigate = useNavigate();
 
   const {
@@ -37,7 +30,7 @@ const Index: React.FC<IndexProps> = ({ isDemo = false, demoUserId }) => {
     deleteTask,
     onToggleFocusMode,
     onLogDoTodayOff,
-    createCategory,
+    addCategory: createCategory,
     updateCategory,
     deleteCategory,
     addSection: createSection,
@@ -48,41 +41,27 @@ const Index: React.FC<IndexProps> = ({ isDemo = false, demoUserId }) => {
   } = useTasks({ userId: currentUserId, isDemo, demoUserId });
 
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
-  const [newTaskDescription, setNewTaskDescription] = useState('');
-  const [newTaskNotes, setNewTaskNotes] = useState('');
-  const [newTaskDueDate, setNewTaskDueDate] = useState<Date | null>(null);
-  const [newTaskCategoryId, setNewTaskCategoryId] = useState<string | null>(null);
-  const [newTaskSectionId, setNewTaskSectionId] = useState<string | null>(null);
-  const [newTaskPriority, setNewTaskPriority] = useState<Task['priority']>('medium');
 
-  const handleAddTask = async () => {
-    if (!newTaskDescription.trim()) {
-      toast.error('Task description cannot be empty.');
-      return;
-    }
+  const handleAddTask = async (description: string, sectionId: string | null, parentTaskId: string | null, dueDate: Date | null, categoryId: string | null, priority: string) => {
     try {
       const data = await addTask({
-        description: newTaskDescription,
-        section_id: newTaskSectionId,
-        parent_task_id: null,
-        due_date: newTaskDueDate ? newTaskDueDate.toISOString() : null,
-        category: newTaskCategoryId,
-        priority: newTaskPriority,
+        description,
+        section_id: sectionId,
+        parent_task_id: parentTaskId,
+        due_date: dueDate ? dueDate.toISOString() : null,
+        category: categoryId,
+        priority: priority as Task['priority'],
         status: 'to-do',
       });
       if (data) {
         toast.success('Task added successfully!');
-        setNewTaskDescription('');
-        setNewTaskNotes('');
-        setNewTaskDueDate(null);
-        setNewTaskCategoryId(null);
-        setNewTaskSectionId(null);
-        setNewTaskPriority('medium');
         setIsAddTaskDialogOpen(false);
       }
+      return data;
     } catch (error: any) {
       toast.error('Failed to add task: ' + error.message);
       console.error('Error adding task:', error);
+      throw error;
     }
   };
 
@@ -200,7 +179,7 @@ const Index: React.FC<IndexProps> = ({ isDemo = false, demoUserId }) => {
         sections={fetchedSections || []}
         onUpdateTask={handleUpdateTask}
         onDeleteTask={handleDeleteTask}
-        onAddTask={handleNewTaskFormSubmit}
+        onAddTask={handleAddTask}
         onAddSubtask={handleAddSubtask}
         onToggleFocusMode={handleToggleFocusMode}
         onLogDoTodayOff={handleLogDoTodayOff}

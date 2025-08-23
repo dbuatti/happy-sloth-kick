@@ -12,6 +12,7 @@ import {
   UseTasksProps,
   TaskStatus,
   UserSettings,
+  DoTodayOffLogEntry,
 } from '@/types';
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -242,7 +243,6 @@ export const useTasks = ({ userId: propUserId, isDemo = false, demoUserId }: Use
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task_sections', currentUserId] });
-      queryClient.invalidateQueries({ queryKey: ['tasks', currentUserId] }); // Tasks might need section name updates
     },
   });
 

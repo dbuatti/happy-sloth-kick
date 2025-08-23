@@ -1,4 +1,3 @@
-import { useAuth } from '@/context/AuthContext';
 import { DoTodayOffLogEntry, NewDoTodayOffLogEntryData } from '@/types';
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -49,7 +48,7 @@ export const useDoTodayOffLog = ({ userId }: UseDoTodayOffLogProps) => {
         .from('do_today_off_log')
         .delete()
         .eq('id', id)
-        .eq('user_id', userId); // Ensure RLS
+        .eq('user_id', userId);
 
       if (error) throw error;
     },

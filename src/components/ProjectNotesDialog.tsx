@@ -10,24 +10,28 @@ interface ProjectNotesDialogProps {
   isOpen: boolean;
   onClose: () => void;
   project: Project;
-  onUpdateProject: (id: string, updates: UpdateProjectData) => Promise<Project>;
 }
 
-const ProjectNotesDialog: React.FC<ProjectNotesDialogProps> = ({ isOpen, onClose, project, onUpdateProject }) => {
+const ProjectNotesDialog: React.FC<ProjectNotesDialogProps> = ({ isOpen, onClose, project }) => {
+  const { updateProject } = useProjects({});
   const [notes, setNotes] = useState(project.notes || '');
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     setNotes(project.notes || '');
-  }, [project.notes]);
+  }, [project]);
 
   const handleSaveNotes = async () => {
+    setIsSaving(true);
     try {
-      await onUpdateProject(project.id, { notes });
-      toast.success('Project notes updated!');
+      await updateProject({ id: project.id, updates: { notes } });
+      toast.success('Project notes saved!');
       onClose();
     } catch (error) {
-      toast.error('Failed to update notes.');
-      console.error(error);
+      toast.error('Failed to save notes.');
+      console.error('Error saving project notes:', error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -37,17 +41,19 @@ const ProjectNotesDialog: React.FC<ProjectNotesDialogProps> = ({ isOpen, onClose
         <DialogHeader>
           <DialogTitle>Notes for {project.name}</DialogTitle>
         </DialogHeader>
-        <div className="py-4">
+        <div className="grid gap-4 py-4">
           <Textarea
+            placeholder="Add notes for this project..."
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="Add notes for this project..."
-            rows={10}
+            className="min-h-[200px]"
           />
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSaveNotes}>Save Notes</Button>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={handleSaveNotes} disabled={isSaving}>
+            {isSaving ? 'Saving...' : 'Save Notes'}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

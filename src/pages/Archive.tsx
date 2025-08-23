@@ -1,12 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useTasks } from '@/hooks/useTasks';
-import { Task, TaskCategory, TaskSection, NewTaskData, UpdateTaskData, ArchiveProps } from '@/types';
+import { Task, ArchiveProps } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Archive as ArchiveIcon, RotateCcw } from 'lucide-react';
-import TaskList from '@/components/TaskList';
+import { RotateCcw, Trash2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
@@ -15,86 +14,82 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
 
   const {
     tasks,
-    categories,
-    sections,
     isLoading,
     error,
     updateTask,
     deleteTask,
-    onAddSubtask,
-    createCategory,
-    updateCategory,
-    deleteCategory,
-    createSection,
-    updateSection,
-    deleteSection,
-    updateSectionIncludeInFocusMode,
   } = useTasks({ userId: currentUserId, isDemo, demoUserId });
 
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const archivedTasks = useMemo(() => {
-    return tasks.filter(task => task.status === 'archived');
+    return tasks.filter((task: Task) => task.status === 'archived');
   }, [tasks]);
 
   const filteredArchivedTasks = useMemo(() => {
+    if (!searchQuery) return archivedTasks;
     return archivedTasks.filter(task =>
-      task.description.toLowerCase().includes(searchTerm.toLowerCase())
+      task.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      task.notes?.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [archivedTasks, searchTerm]);
+  }, [archivedTasks, searchQuery]);
 
   const handleRestoreTask = async (taskId: string) => {
     try {
-      await updateTask(taskId, { status: 'to-do' });
+      await updateTask({ id: taskId, updates: { status: 'to-do' } });
       toast.success('Task restored successfully!');
-    } catch (err) {
-      toast.error('Failed to restore task.');
-      console.error(err);
+    } catch (error: any) {
+      toast.error('Failed to restore task: ' + error.message);
+      console.error('Error restoring task:', error);
     }
   };
 
   const handleDeleteTask = async (taskId: string) => {
-    if (window.confirm('Are you sure you want to permanently delete this task?')) {
+    if (window.confirm('Are you sure you want to permanently delete this task? This action cannot be undone.')) {
       try {
         await deleteTask(taskId);
         toast.success('Task permanently deleted!');
-      } catch (err) {
-        toast.error('Failed to delete task.');
-        console.error(err);
+      } catch (error: any) {
+        toast.error('Failed to delete task: ' + error.message);
+        console.error('Error deleting task:', error);
       }
     }
   };
 
-  if (isLoading || authLoading) return <p>Loading archive...</p>;
-  if (error) return <p>Error: {error.message}</p>;
+  if (authLoading || isLoading) {
+    return <div className="p-4 text-center">Loading archive...</div>;
+  }
+
+  if (error) {
+    return <div className="p-4 text-red-500">Error loading data: {error.message}</div>;
+  }
 
   return (
-    <div className="p-4">
-      <h1 className="text-3xl font-bold mb-6">Archive</h1>
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      <div className="flex items-center justify-between space-y-2">
+        <h2 className="text-3xl font-bold tracking-tight">Archive</h2>
+      </div>
 
-      <Card className="mb-6">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-lg font-medium">Archived Tasks</CardTitle>
+          <CardTitle>Archived Tasks</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center space-x-2 mb-4">
-            <Input
-              placeholder="Search archived tasks..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-sm"
-            />
-          </div>
-
+          <Input
+            placeholder="Search archived tasks..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="mb-4"
+          />
           {filteredArchivedTasks.length === 0 ? (
             <p className="text-muted-foreground">No archived tasks found.</p>
           ) : (
-            <div className="space-y-3">
-              {filteredArchivedTasks.map(task => (
-                <div key={task.id} className="flex items-center justify-between p-3 border rounded-md bg-gray-50">
-                  <span className="text-sm">{task.description}</span>
+            <div className="space-y-2">
+              {filteredArchivedTasks.map((task) => (
+                <div key={task.id} className="flex items-center justify-between p-3 border rounded-md">
+                  <span className="text-sm line-through text-muted-foreground">{task.description}</span>
                   <div className="flex space-x-2">
-                    <Button variant="ghost" size="sm" onClick={() => handleRestoreTask(task.id)}>
+                    <Button variant="outline" size="sm" onClick={() => handleRestoreTask(task.id)}>
                       <RotateCcw className="mr-2 h-4 w-4" /> Restore
                     </Button>
                     <Button variant="destructive" size="sm" onClick={() => handleDeleteTask(task.id)}>

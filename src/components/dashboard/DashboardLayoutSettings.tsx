@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Label } from "@/components/ui/label";
 import { Switch } from '@/components/ui/switch';
 import { useDashboardData } from '@/hooks/useDashboardData';
-import { UserSettings, CustomCard, Json } from '@/types';
+import { UserSettings, Json } from '@/types';
 import { useSettings } from '@/context/SettingsContext';
 import { toast } from 'react-hot-toast';
 

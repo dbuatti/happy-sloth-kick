@@ -1,12 +1,12 @@
-import React from 'react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import React, { useState } from 'react';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
+import { PanelLeftOpen } from 'lucide-react';
 import FocusToolsPanel from './FocusToolsPanel';
-import { Task, TaskSection, TaskCategory, UpdateTaskData, FocusModeProps } from '@/types';
+import { Task, TaskSection, TaskCategory, UpdateTaskData, DoTodayOffLogEntry } from '@/types';
 
 interface FocusPanelDrawerProps {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  focusedTask: Task | undefined;
+  focusedTask: Task | null;
   focusModeTasks: Task[];
   allCategories: TaskCategory[];
   allSections: TaskSection[];
@@ -15,11 +15,12 @@ interface FocusPanelDrawerProps {
   onAddSubtask: (description: string, parentTaskId: string | null) => Promise<Task>;
   onToggleFocusMode: (taskId: string, isFocused: boolean) => Promise<void>;
   onLogDoTodayOff: (taskId: string) => Promise<void>;
+  onCompleteTask: (taskId: string) => Promise<void>;
+  onSkipTask: (taskId: string) => Promise<void>;
+  doTodayOffLog: DoTodayOffLogEntry[] | undefined;
 }
 
 const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
-  isOpen,
-  onOpenChange,
   focusedTask,
   focusModeTasks,
   allCategories,
@@ -29,14 +30,24 @@ const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
   onAddSubtask,
   onToggleFocusMode,
   onLogDoTodayOff,
+  onCompleteTask,
+  onSkipTask,
+  doTodayOffLog,
 }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
-    <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-md">
+    <Sheet open={isOpen} onOpenChange={setIsOpen}>
+      <SheetTrigger asChild>
+        <Button variant="outline" size="icon" className="fixed bottom-4 right-4 z-50">
+          <PanelLeftOpen className="h-5 w-5" />
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="right" className="w-full sm:max-w-md flex flex-col">
         <SheetHeader>
-          <SheetTitle>Focus Tools</SheetTitle>
+          <SheetTitle>Focus Panel</SheetTitle>
         </SheetHeader>
-        <div className="py-4">
+        <div className="flex-1 overflow-y-auto py-4">
           <FocusToolsPanel
             focusedTask={focusedTask}
             focusModeTasks={focusModeTasks}
@@ -47,6 +58,9 @@ const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
             onAddSubtask={onAddSubtask}
             onToggleFocusMode={onToggleFocusMode}
             onLogDoTodayOff={onLogDoTodayOff}
+            onCompleteTask={onCompleteTask}
+            onSkipTask={onSkipTask}
+            doTodayOffLog={doTodayOffLog}
           />
         </div>
       </SheetContent>

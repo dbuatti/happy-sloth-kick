@@ -1,4 +1,4 @@
-import React, { createContext, useContext, ReactNode } from 'react';
+import { createContext, useContext, ReactNode } from 'react';
 import { useUserSettings } from '@/hooks/useUserSettings';
 import { UserSettings } from '@/types';
 

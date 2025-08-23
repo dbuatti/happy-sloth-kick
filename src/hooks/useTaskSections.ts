@@ -1,84 +1,93 @@
-import { useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { TaskSection, NewTaskSectionData, UpdateTaskSectionData } from '@/types';
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'react-hot-toast';
 
-export const useTaskSections = () => {
-  const { user, loading: authLoading } = useAuth();
-  const userId = user?.id;
+interface UseTaskSectionsProps {
+  userId?: string;
+}
+
+export const useTaskSections = ({ userId: propUserId }: UseTaskSectionsProps = {}) => {
+  const { user } = useAuth();
+  const currentUserId = propUserId || user?.id;
   const queryClient = useQueryClient();
 
-  const invalidateTaskSectionsQueries = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['task_sections', userId] });
-  }, [queryClient, userId]);
-
-  const { data: sections, isLoading, error } = useQuery<TaskSection[], Error>({
-    queryKey: ['task_sections', userId],
+  const { data: taskSections, isLoading, error } = useQuery<TaskSection[], Error>({
+    queryKey: ['task_sections', currentUserId],
     queryFn: async () => {
-      if (!userId) return [];
+      if (!currentUserId) return [];
       const { data, error } = await supabase
         .from('task_sections')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', currentUserId)
         .order('order', { ascending: true });
+
       if (error) throw error;
-      return data;
+      return data as TaskSection[];
     },
-    enabled: !!userId && !authLoading,
+    enabled: !!currentUserId,
   });
 
   const addSectionMutation = useMutation<TaskSection, Error, NewTaskSectionData, unknown>({
     mutationFn: async (newSectionData) => {
-      if (!userId) throw new Error('User not authenticated');
+      if (!currentUserId) throw new Error('User not authenticated');
       const { data, error } = await supabase
         .from('task_sections')
-        .insert({ ...newSectionData, user_id: userId })
-        .select('*')
+        .insert({ ...newSectionData, user_id: currentUserId })
+        .select()
         .single();
+
       if (error) throw error;
-      return data;
+      return data as TaskSection;
     },
     onSuccess: () => {
-      invalidateTaskSectionsQueries();
+      queryClient.invalidateQueries({ queryKey: ['task_sections', currentUserId] });
+      toast.success('Section added!');
     },
   });
 
   const updateSectionMutation = useMutation<TaskSection, Error, { id: string; updates: UpdateTaskSectionData }, unknown>({
     mutationFn: async ({ id, updates }) => {
-      if (!userId) throw new Error('User not authenticated');
+      if (!currentUserId) throw new Error('User not authenticated');
       const { data, error } = await supabase
         .from('task_sections')
         .update(updates)
         .eq('id', id)
-        .eq('user_id', userId)
-        .select('*')
+        .eq('user_id', currentUserId)
+        .select()
         .single();
+
       if (error) throw error;
-      return data;
+      return data as TaskSection;
     },
     onSuccess: () => {
-      invalidateTaskSectionsQueries();
+      queryClient.invalidateQueries({ queryKey: ['task_sections', currentUserId] });
+      queryClient.invalidateQueries({ queryKey: ['tasks', currentUserId] }); // Tasks might need section name updates
+      toast.success('Section updated!');
     },
   });
 
   const deleteSectionMutation = useMutation<void, Error, string, unknown>({
     mutationFn: async (id) => {
-      if (!userId) throw new Error('User not authenticated');
+      if (!currentUserId) throw new Error('User not authenticated');
       const { error } = await supabase
         .from('task_sections')
         .delete()
         .eq('id', id)
-        .eq('user_id', userId);
+        .eq('user_id', currentUserId);
+
       if (error) throw error;
     },
     onSuccess: () => {
-      invalidateTaskSectionsQueries();
+      queryClient.invalidateQueries({ queryKey: ['task_sections', currentUserId] });
+      queryClient.invalidateQueries({ queryKey: ['tasks', currentUserId] }); // Tasks might need section name updates
+      toast.success('Section deleted!');
     },
   });
 
   return {
-    sections,
+    taskSections: taskSections || [],
     isLoading,
     error,
     addSection: addSectionMutation.mutateAsync,

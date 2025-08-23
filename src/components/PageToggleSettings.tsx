@@ -6,52 +6,48 @@ import { useSettings } from '@/context/SettingsContext';
 import { Json } from '@/types';
 import { toast } from 'react-hot-toast';
 
-const pageOptions = [
-  { id: 'dashboard', name: 'Dashboard' },
-  { id: 'daily_tasks', name: 'Daily Tasks' },
-  { id: 'task_calendar', name: 'Task Calendar' },
-  { id: 'time_block_schedule', name: 'Time Block Schedule' },
-  { id: 'focus_mode', name: 'Focus Mode' },
-  { id: 'sleep_tracker', name: 'Sleep Tracker' },
-  { id: 'dev_space', name: 'Dev Space' },
-  { id: 'people_memory', name: 'People Memory' },
-  { id: 'archive', name: 'Archive' },
-];
-
 const PageToggleSettings: React.FC = () => {
-  const { settings, loading, updateSettings } = useSettings();
+  const { settings, updateSettings } = useSettings();
 
-  const handleTogglePageVisibility = async (pageId: string, checked: boolean) => {
+  const handleTogglePageVisibility = async (pageKey: string, isVisible: boolean) => {
+    const newVisiblePages = { ...(settings?.visible_pages as Json), [pageKey]: isVisible };
     try {
-      const updatedVisiblePages = {
-        ...(settings?.visible_pages as Record<string, boolean> || {}),
-        [pageId]: checked,
-      };
-      await updateSettings({ visible_pages: updatedVisiblePages as Json });
+      await updateSettings({ visible_pages: newVisiblePages as Json });
       toast.success('Page visibility updated!');
     } catch (error) {
       toast.error('Failed to update page visibility.');
-      console.error(error);
+      console.error('Error updating page visibility:', error);
     }
   };
 
-  if (loading) {
-    return <p>Loading settings...</p>;
-  }
+  const availablePages = [
+    { key: 'dashboard', label: 'Dashboard' },
+    { key: 'tasks', label: 'Tasks' },
+    { key: 'schedule', label: 'Schedule' },
+    { key: 'focusMode', label: 'Focus Mode' },
+    { key: 'devSpace', label: 'Dev Space' },
+    { key: 'sleepTracker', label: 'Sleep Tracker' },
+    { key: 'myHub', label: 'My Hub' },
+    { key: 'archive', label: 'Archive' },
+    { key: 'analytics', label: 'Analytics' },
+    { key: 'projectTracker', label: 'Project Tracker' },
+    { key: 'gratitudeJournal', label: 'Gratitude Journal' },
+    { key: 'worryJournal', label: 'Worry Journal' },
+  ];
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg font-medium">Page Visibility</CardTitle>
+        <CardTitle>Page Visibility</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {pageOptions.map((page) => (
-          <div key={page.id} className="flex items-center justify-between">
-            <Label htmlFor={`toggle-${page.id}`}>{page.name}</Label>
+        {availablePages.map((page) => (
+          <div key={page.key} className="flex items-center justify-between">
+            <Label htmlFor={`toggle-${page.key}`}>{page.label}</Label>
             <Switch
-              id={`toggle-${page.id}`}
-              checked={settings?.visible_pages?.[page.id] ?? true} // Default to true if not set
-              onCheckedChange={(checked) => handleTogglePageVisibility(page.id, checked)}
+              id={`toggle-${page.key}`}
+              checked={settings?.visible_pages?.[page.key] ?? true}
+              onCheckedChange={(checked) => handleTogglePageVisibility(page.key, checked)}
             />
           </div>
         ))}

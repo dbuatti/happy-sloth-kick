@@ -5,24 +5,37 @@ import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { toast } from 'react-hot-toast';
 
-export const useSleepRecords = (userId?: string) => {
-  const { user, loading: authLoading } = useAuth();
-  const currentUserId = userId || user?.id;
+interface UseSleepRecordsProps {
+  userId?: string;
+  date?: Date;
+}
+
+export const useSleepRecords = ({ userId: propUserId, date }: UseSleepRecordsProps) => {
+  const { user } = useAuth();
+  const currentUserId = propUserId || user?.id;
   const queryClient = useQueryClient();
 
-  const { data: sleepRecords, isLoading, error, refetch } = useQuery<SleepRecord[], Error>({
-    queryKey: ['sleepRecords', currentUserId],
+  const formattedDate = date ? format(date, 'yyyy-MM-dd') : undefined;
+
+  const { data: sleepRecords, isLoading, error } = useQuery<SleepRecord[], Error>({
+    queryKey: ['sleepRecords', currentUserId, formattedDate],
     queryFn: async () => {
       if (!currentUserId) return [];
-      const { data, error } = await supabase
+      let query = supabase
         .from('sleep_records')
         .select('*')
-        .eq('user_id', currentUserId)
-        .order('date', { ascending: false });
+        .eq('user_id', currentUserId);
+
+      if (formattedDate) {
+        query = query.eq('date', formattedDate);
+      }
+
+      const { data, error } = await query.order('date', { ascending: false });
+
       if (error) throw error;
-      return data;
+      return data as SleepRecord[];
     },
-    enabled: !!currentUserId && !authLoading,
+    enabled: !!currentUserId,
   });
 
   const addSleepRecordMutation = useMutation<SleepRecord, Error, NewSleepRecordData, unknown>({
@@ -31,13 +44,15 @@ export const useSleepRecords = (userId?: string) => {
       const { data, error } = await supabase
         .from('sleep_records')
         .insert({ ...newRecordData, user_id: currentUserId })
-        .select('*')
+        .select()
         .single();
+
       if (error) throw error;
-      return data;
+      return data as SleepRecord;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sleepRecords', currentUserId] });
+      queryClient.invalidateQueries({ queryKey: ['sleepAnalytics', currentUserId] });
       toast.success('Sleep record added!');
     },
   });
@@ -49,13 +64,16 @@ export const useSleepRecords = (userId?: string) => {
         .from('sleep_records')
         .update(updates)
         .eq('id', id)
-        .select('*')
+        .eq('user_id', currentUserId)
+        .select()
         .single();
+
       if (error) throw error;
-      return data;
+      return data as SleepRecord;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sleepRecords', currentUserId] });
+      queryClient.invalidateQueries({ queryKey: ['sleepAnalytics', currentUserId] });
       toast.success('Sleep record updated!');
     },
   });
@@ -66,11 +84,14 @@ export const useSleepRecords = (userId?: string) => {
       const { error } = await supabase
         .from('sleep_records')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', currentUserId);
+
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sleepRecords', currentUserId] });
+      queryClient.invalidateQueries({ queryKey: ['sleepAnalytics', currentUserId] });
       toast.success('Sleep record deleted!');
     },
   });
@@ -79,7 +100,6 @@ export const useSleepRecords = (userId?: string) => {
     sleepRecords,
     isLoading,
     error,
-    refetchSleepRecords: refetch,
     addSleepRecord: addSleepRecordMutation.mutateAsync,
     updateSleepRecord: updateSleepRecordMutation.mutateAsync,
     deleteSleepRecord: deleteSleepRecordMutation.mutateAsync,

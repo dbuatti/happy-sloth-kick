@@ -1,5 +1,5 @@
 import { useAuth } from '@/context/AuthContext';
-import { UserSettings, Json } from '@/types';
+import { UserSettings } from '@/types';
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 

@@ -3,20 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useTasks } from '@/hooks/useTasks';
 import { useSettings } from '@/context/SettingsContext';
-import TaskItem from '@/components/tasks/TaskItem';
-import { Task, TaskSection, TaskCategory, NewTaskData, UpdateTaskData, FocusModeProps, UserSettings } from '@/types';
+import { Task, TaskSection, TaskCategory, FocusModeProps, UserSettings } from '@/types';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { Play, Pause, SkipForward, CheckCircle2, XCircle, Timer } from 'lucide-react';
+import { Play, Pause, SkipForward, CheckCircle2, Timer } from 'lucide-react';
 import { format, addMinutes, isPast, isSameDay, startOfDay } from 'date-fns';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'react-hot-toast';
 import FocusToolsPanel from '@/components/FocusToolsPanel';
 import FocusPanelDrawer from '@/components/FocusPanelDrawer';
+import TaskItem from '@/components/tasks/TaskItem';
 
 const FocusMode: React.FC<FocusModeProps> = ({ isDemo = false, demoUserId }) => {
   const { user, loading: authLoading } = useAuth();

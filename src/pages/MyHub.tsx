@@ -1,45 +1,29 @@
-import React, { useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { DateRange } from 'react-day-picker';
-import { startOfMonth, endOfMonth } from 'date-fns';
-import SleepDashboard from './SleepDashboard';
-import SleepDiaryView from './SleepDiaryView';
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MyHubProps } from '@/types';
+import { useAuth } from '@/context/AuthContext';
+import GratitudeJournal from '@/components/GratitudeJournal';
+import WorryJournal from '@/components/WorryJournal';
 
 const MyHub: React.FC<MyHubProps> = ({ isDemo = false, demoUserId }) => {
   const { user, loading: authLoading } = useAuth();
   const currentUserId = isDemo ? demoUserId : user?.id;
 
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: startOfMonth(new Date()),
-    to: endOfMonth(new Date()),
-  });
-
   if (authLoading) {
-    return <div className="flex justify-center items-center h-full">Loading...</div>;
-  }
-
-  if (!currentUserId) {
-    return <div className="flex justify-center items-center h-full text-red-500">User not authenticated.</div>;
+    return <div className="p-4 text-center">Loading My Hub...</div>;
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">My Hub</h1>
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      <div className="flex items-center justify-between space-y-2">
+        <h2 className="text-3xl font-bold tracking-tight">My Hub</h2>
+      </div>
 
-      <Tabs defaultValue="dashboard" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="dashboard">Sleep Dashboard</TabsTrigger>
-          <TabsTrigger value="diary">Sleep Diary</TabsTrigger>
-        </TabsList>
-        <TabsContent value="dashboard" className="mt-4">
-          <SleepDashboard dateRange={dateRange} setDateRange={setDateRange} demoUserId={demoUserId} />
-        </TabsContent>
-        <TabsContent value="diary" className="mt-4">
-          <SleepDiaryView isDemo={isDemo} demoUserId={demoUserId} />
-        </TabsContent>
-      </Tabs>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <GratitudeJournal isDemo={isDemo} demoUserId={demoUserId} />
+        <WorryJournal isDemo={isDemo} demoUserId={demoUserId} />
+        {/* Add other personal growth components here */}
+      </div>
     </div>
   );
 };

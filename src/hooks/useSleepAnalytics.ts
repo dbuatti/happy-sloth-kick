@@ -2,48 +2,49 @@ import { useAuth } from '@/context/AuthContext';
 import { SleepRecord, SleepAnalyticsData } from '@/types';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { differenceInMinutes, parseISO, isValid, startOfDay, endOfDay } from 'date-fns';
+import { parseISO, differenceInMinutes, addMinutes, isBefore, isValid, isAfter } from 'date-fns';
 
-export const useSleepAnalytics = (startDate: Date, endDate: Date, userId?: string) => {
-  const { user, loading: authLoading } = useAuth();
-  const currentUserId = userId || user?.id;
+interface UseSleepAnalyticsProps {
+  userId?: string;
+  startDate?: Date;
+  endDate?: Date;
+}
+
+export const useSleepAnalytics = ({ userId: propUserId, startDate, endDate }: UseSleepAnalyticsProps) => {
+  const { user } = useAuth();
+  const currentUserId = propUserId || user?.id;
+
+  const formattedStartDate = startDate ? startDate.toISOString().split('T')[0] : undefined;
+  const formattedEndDate = endDate ? endDate.toISOString().split('T')[0] : undefined;
 
   const { data: sleepAnalytics, isLoading, error } = useQuery<SleepAnalyticsData, Error>({
-    queryKey: ['sleepAnalytics', currentUserId, startDate, endDate],
+    queryKey: ['sleepAnalytics', currentUserId, formattedStartDate, formattedEndDate],
     queryFn: async () => {
-      if (!currentUserId) return {} as SleepAnalyticsData;
+      if (!currentUserId) throw new Error('User not authenticated');
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('sleep_records')
         .select('*')
-        .eq('user_id', currentUserId)
-        .gte('date', startOfDay(startDate).toISOString().split('T')[0])
-        .lte('date', endOfDay(endDate).toISOString().split('T')[0])
-        .order('date', { ascending: true });
+        .eq('user_id', currentUserId);
+
+      if (formattedStartDate) {
+        query = query.gte('date', formattedStartDate);
+      }
+      if (formattedEndDate) {
+        query = query.lte('date', formattedEndDate);
+      }
+
+      const { data, error } = await query.order('date', { ascending: false });
 
       if (error) throw error;
 
       const records = data as SleepRecord[];
 
-      if (records.length === 0) {
-        return {
-          totalSleepDuration: 0,
-          averageSleepDuration: 0,
-          sleepEfficiency: 0,
-          bedTimeConsistency: 0,
-          wakeUpTimeConsistency: 0,
-          sleepInterruptions: 0,
-          timeToFallAsleep: 0,
-        };
-      }
-
       let totalSleepDuration = 0;
-      let totalTimeInBed = 0;
-      let totalInterruptions = 0;
       let totalTimeToFallAsleep = 0;
-
-      const bedTimes: Date[] = [];
-      const wakeUpTimes: Date[] = [];
+      let totalInterruptionsCount = 0;
+      let totalInterruptionsDuration = 0;
+      let validRecordsCount = 0;
 
       records.forEach(record => {
         const bedTime = record.bed_time ? parseISO(`2000-01-01T${record.bed_time}`) : null;
@@ -52,14 +53,12 @@ export const useSleepAnalytics = (startDate: Date, endDate: Date, userId?: strin
         const getOutOfBedTime = record.get_out_of_bed_time ? parseISO(`2000-01-01T${record.get_out_of_bed_time}`) : null;
 
         if (bedTime && wakeUpTime && isValid(bedTime) && isValid(wakeUpTime)) {
-          // Adjust wakeUpTime if it's on the next day (common for sleep tracking)
           let adjustedWakeUpTime = wakeUpTime;
           if (isBefore(adjustedWakeUpTime, bedTime)) {
             adjustedWakeUpTime = addMinutes(adjustedWakeUpTime, 24 * 60);
           }
           totalSleepDuration += differenceInMinutes(adjustedWakeUpTime, bedTime);
-          bedTimes.push(bedTime);
-          wakeUpTimes.push(adjustedWakeUpTime);
+          validRecordsCount++;
         }
 
         if (bedTime && getOutOfBedTime && isValid(bedTime) && isValid(getOutOfBedTime)) {
@@ -67,35 +66,31 @@ export const useSleepAnalytics = (startDate: Date, endDate: Date, userId?: strin
           if (isBefore(adjustedGetOutOfBedTime, bedTime)) {
             adjustedGetOutOfBedTime = addMinutes(adjustedGetOutOfBedTime, 24 * 60);
           }
-          totalTimeInBed += differenceInMinutes(adjustedGetOutOfBedTime, bedTime);
+          // This is just for calculation, not directly used in totalSleepDuration
         }
 
-        if (record.sleep_interruptions_count) {
-          totalInterruptions += record.sleep_interruptions_count;
-        }
-        if (record.time_to_fall_asleep_minutes) {
-          totalTimeToFallAsleep += record.time_to_fall_asleep_minutes;
-        }
+        totalTimeToFallAsleep += record.time_to_fall_asleep_minutes || 0;
+        totalInterruptionsCount += record.sleep_interruptions_count || 0;
+        totalInterruptionsDuration += record.sleep_interruptions_duration_minutes || 0;
       });
 
-      const averageSleepDuration = records.length > 0 ? totalSleepDuration / records.length : 0;
-      const sleepEfficiency = totalTimeInBed > 0 ? (totalSleepDuration / totalTimeInBed) * 100 : 0;
+      const averageSleepDuration = validRecordsCount > 0 ? totalSleepDuration / validRecordsCount : 0;
+      const averageTimeToFallAsleep = validRecordsCount > 0 ? totalTimeToFallAsleep / validRecordsCount : 0;
+      const averageInterruptions = validRecordsCount > 0 ? totalInterruptionsCount / validRecordsCount : 0;
 
-      // Consistency calculations (simplified for now)
-      const bedTimeConsistency = bedTimes.length > 1 ? calculateTimeConsistency(bedTimes) : 100;
-      const wakeUpTimeConsistency = wakeUpTimes.length > 1 ? calculateTimeConsistency(wakeUpTimes) : 100;
+      // Simplified sleep efficiency calculation (can be more complex)
+      const sleepEfficiency = validRecordsCount > 0 ? (averageSleepDuration / (averageSleepDuration + averageTimeToFallAsleep + averageInterruptions)) * 100 : 0;
 
       return {
         totalSleepDuration,
         averageSleepDuration,
         sleepEfficiency,
-        bedTimeConsistency,
-        wakeUpTimeConsistency,
-        sleepInterruptions: totalInterruptions,
-        timeToFallAsleep: totalTimeToFallAsleep / records.length,
+        timeToFallAsleep: averageTimeToFallAsleep,
+        sleepInterruptions: averageInterruptions,
+        records,
       };
     },
-    enabled: !!currentUserId && !authLoading,
+    enabled: !!currentUserId,
   });
 
   return {
@@ -103,19 +98,4 @@ export const useSleepAnalytics = (startDate: Date, endDate: Date, userId?: strin
     isLoading,
     error,
   };
-};
-
-// Helper function to calculate time consistency (e.g., standard deviation of times)
-const calculateTimeConsistency = (times: Date[]): number => {
-  if (times.length < 2) return 100; // Perfectly consistent if only one or no entries
-
-  const minutesOfDay = times.map(time => time.getHours() * 60 + time.getMinutes());
-  const mean = minutesOfDay.reduce((sum, val) => sum + val, 0) / minutesOfDay.length;
-  const variance = minutesOfDay.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / minutesOfDay.length;
-  const stdDev = Math.sqrt(variance);
-
-  // A simple way to convert stdDev to a "consistency score" (higher is better)
-  // This is a heuristic and can be adjusted. Max stdDev for times is 12 hours * 60 min = 720 min
-  const maxStdDev = 720;
-  return Math.max(0, 100 - (stdDev / maxStdDev) * 100);
 };

@@ -1,67 +1,71 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Edit, Save, X } from 'lucide-react';
+import { Edit, Save } from 'lucide-react';
 import { useSettings } from '@/context/SettingsContext';
 import { toast } from 'react-hot-toast';
 
 const ProjectTrackerSettings: React.FC = () => {
-  const { settings, updateSettings, loading: settingsLoading } = useSettings();
+  const { settings, updateSettings, isLoading: settingsLoading } = useSettings();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [projectTrackerTitle, setProjectTrackerTitle] = useState(settings?.project_tracker_title || 'Project Balance Tracker');
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    setProjectTrackerTitle(settings?.project_tracker_title || 'Project Balance Tracker');
-  }, [settings?.project_tracker_title]);
+    if (settings) {
+      setProjectTrackerTitle(settings.project_tracker_title || 'Project Balance Tracker');
+    }
+  }, [settings]);
 
   const handleSaveTitle = async () => {
-    if (!projectTrackerTitle.trim()) {
-      toast.error('Title cannot be empty.');
-      return;
-    }
+    setIsSaving(true);
     try {
-      await updateSettings({ project_tracker_title: projectTrackerTitle.trim() });
-      setIsEditingTitle(false);
+      await updateSettings({ project_tracker_title: projectTrackerTitle });
       toast.success('Project tracker title updated!');
+      setIsEditingTitle(false);
     } catch (error) {
       toast.error('Failed to update title.');
-      console.error(error);
+      console.error('Error updating project tracker title:', error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
   if (settingsLoading) {
-    return <p>Loading settings...</p>;
+    return (
+      <Card>
+        <CardHeader><CardTitle>Project Tracker Settings</CardTitle></CardHeader>
+        <CardContent><p>Loading settings...</p></CardContent>
+      </Card>
+    );
   }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg font-medium">Project Tracker Settings</CardTitle>
+        <CardTitle>Project Tracker Settings</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between">
-          <Label htmlFor="projectTrackerTitle" className="text-base">Tracker Title</Label>
+          <Label htmlFor="project-tracker-title">Tracker Title</Label>
           {isEditingTitle ? (
             <div className="flex items-center space-x-2">
               <Input
-                id="projectTrackerTitle"
+                id="project-tracker-title"
                 value={projectTrackerTitle}
                 onChange={(e) => setProjectTrackerTitle(e.target.value)}
-                className="w-64"
+                className="w-48"
               />
-              <Button size="sm" onClick={handleSaveTitle}>
+              <Button size="sm" onClick={handleSaveTitle} disabled={isSaving}>
                 <Save className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => { setIsEditingTitle(false); setProjectTrackerTitle(settings?.project_tracker_title || 'Project Balance Tracker'); }}>
-                <X className="h-4 w-4" />
               </Button>
             </div>
           ) : (
             <div className="flex items-center space-x-2">
-              <span className="text-muted-foreground">{settings?.project_tracker_title}</span>
-              <Button variant="ghost" size="sm" onClick={() => setIsEditingTitle(true)}>
+              <span>{projectTrackerTitle}</span>
+              <Button variant="ghost" size="icon" onClick={() => setIsEditingTitle(true)}>
                 <Edit className="h-4 w-4" />
               </Button>
             </div>

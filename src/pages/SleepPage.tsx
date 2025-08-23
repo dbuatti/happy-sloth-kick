@@ -1,37 +1,33 @@
 import React, { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar as CalendarIcon, BarChart, BookOpen } from 'lucide-react';
 import SleepTracker from './SleepTracker';
 import SleepDashboard from './SleepDashboard';
 import SleepDiaryView from './SleepDiaryView';
 import { SleepPageProps } from '@/types';
-import { format, startOfDay } from 'date-fns';
+import { startOfDay } from 'date-fns';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const SleepPage: React.FC<SleepPageProps> = ({ isDemo = false, demoUserId }) => {
   const [currentDate, setCurrentDate] = useState(startOfDay(new Date()));
 
   return (
-    <div className="p-4">
-      <h1 className="text-3xl font-bold mb-6">Sleep Management</h1>
-      <Tabs defaultValue="tracker" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="tracker">
-            <CalendarIcon className="mr-2 h-4 w-4" /> Tracker
-          </TabsTrigger>
-          <TabsTrigger value="dashboard">
-            <BarChart className="mr-2 h-4 w-4" /> Dashboard
-          </TabsTrigger>
-          <TabsTrigger value="diary">
-            <BookOpen className="mr-2 h-4 w-4" /> Diary
-          </TabsTrigger>
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      <div className="flex items-center justify-between space-y-2">
+        <h2 className="text-3xl font-bold tracking-tight">Sleep Management</h2>
+      </div>
+
+      <Tabs defaultValue="tracker" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="tracker">Tracker</TabsTrigger>
+          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+          <TabsTrigger value="diary">Diary</TabsTrigger>
         </TabsList>
-        <TabsContent value="tracker">
+        <TabsContent value="tracker" className="space-y-4">
           <SleepTracker currentDate={currentDate} setCurrentDate={setCurrentDate} isDemo={isDemo} demoUserId={demoUserId} />
         </TabsContent>
-        <TabsContent value="dashboard">
+        <TabsContent value="dashboard" className="space-y-4">
           <SleepDashboard isDemo={isDemo} demoUserId={demoUserId} />
         </TabsContent>
-        <TabsContent value="diary">
+        <TabsContent value="diary" className="space-y-4">
           <SleepDiaryView isDemo={isDemo} demoUserId={demoUserId} />
         </TabsContent>
       </Tabs>

@@ -8,7 +8,7 @@ import { MeditationNotesCardProps } from '@/types';
 import { useSettings } from '@/context/SettingsContext';
 import { toast } from 'react-hot-toast';
 
-const MeditationNotes: React.FC<MeditationNotesCardProps> = ({ isDemo = false, demoUserId }) => {
+const MeditationNotes: React.FC<MeditationNotesCardProps> = () => {
   const { settings, isLoading, error, updateSettings } = useSettings();
   const [notes, setNotes] = useState(settings?.meditation_notes || '');
   const [isSaving, setIsSaving] = useState(false);

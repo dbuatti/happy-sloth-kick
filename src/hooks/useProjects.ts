@@ -4,12 +4,16 @@ import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'react-hot-toast';
 
-export const useProjects = (userId?: string) => {
-  const { user, loading: authLoading } = useAuth();
-  const currentUserId = userId || user?.id;
+interface UseProjectsProps {
+  userId?: string;
+}
+
+export const useProjects = ({ userId: propUserId }: UseProjectsProps = {}) => {
+  const { user } = useAuth();
+  const currentUserId = propUserId || user?.id;
   const queryClient = useQueryClient();
 
-  const { data: projects, isLoading, error, refetch } = useQuery<Project[], Error>({
+  const { data: projects, isLoading, error } = useQuery<Project[], Error>({
     queryKey: ['projects', currentUserId],
     queryFn: async () => {
       if (!currentUserId) return [];
@@ -17,11 +21,12 @@ export const useProjects = (userId?: string) => {
         .from('projects')
         .select('*')
         .eq('user_id', currentUserId)
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: false });
+
       if (error) throw error;
-      return data;
+      return data as Project[];
     },
-    enabled: !!currentUserId && !authLoading,
+    enabled: !!currentUserId,
   });
 
   const addProjectMutation = useMutation<Project, Error, NewProjectData, unknown>({
@@ -30,10 +35,11 @@ export const useProjects = (userId?: string) => {
       const { data, error } = await supabase
         .from('projects')
         .insert({ ...newProjectData, user_id: currentUserId })
-        .select('*')
+        .select()
         .single();
+
       if (error) throw error;
-      return data;
+      return data as Project;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects', currentUserId] });
@@ -48,10 +54,12 @@ export const useProjects = (userId?: string) => {
         .from('projects')
         .update(updates)
         .eq('id', id)
-        .select('*')
+        .eq('user_id', currentUserId)
+        .select()
         .single();
+
       if (error) throw error;
-      return data;
+      return data as Project;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects', currentUserId] });
@@ -65,7 +73,9 @@ export const useProjects = (userId?: string) => {
       const { error } = await supabase
         .from('projects')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', currentUserId);
+
       if (error) throw error;
     },
     onSuccess: () => {
@@ -75,10 +85,9 @@ export const useProjects = (userId?: string) => {
   });
 
   return {
-    projects,
+    projects: projects || [],
     isLoading,
     error,
-    refetchProjects: refetch,
     addProject: addProjectMutation.mutateAsync,
     updateProject: updateProjectMutation.mutateAsync,
     deleteProject: deleteProjectMutation.mutateAsync,

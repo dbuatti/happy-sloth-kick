@@ -1,14 +1,14 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useTasks } from '@/hooks/useTasks';
 import { useAppointments } from '@/hooks/useAppointments';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useSettings } from '@/context/SettingsContext';
-import { Task, TaskCategory, TaskSection, Appointment, CustomCard, WeeklyFocus, NewTaskData, UpdateTaskData, NewCustomCardData, UpdateCustomCardData, DashboardProps, Json } from '@/types';
+import { Task, TaskCategory, TaskSection, Appointment, CustomCard, WeeklyFocus, NewTaskData, UpdateTaskData, DashboardProps, Json } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, X, Save, LayoutDashboard } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Plus, LayoutDashboard } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import DailySchedulePreview from '@/components/dashboard/DailySchedulePreview';
 import NextTaskCard from '@/components/dashboard/NextTaskCard';
 import QuickLinks from '@/components/dashboard/QuickLinks';
@@ -16,7 +16,7 @@ import PeopleMemoryCard from '@/components/dashboard/PeopleMemoryCard';
 import MeditationNotes from '@/components/dashboard/MeditationNotes';
 import WeeklyFocusCard from '@/components/dashboard/WeeklyFocus';
 import { ResponsiveGridLayout } from '@/components/ui/responsive-grid-layout';
-import { DndContext, closestCorners, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverlay } from '@dnd-kit/core';
+import { DndContext, closestCorners, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import SortableCustomCard from '@/components/dashboard/SortableCustomCard';
 import AddTaskForm from '@/components/AddTaskForm';
@@ -24,11 +24,15 @@ import TaskList from '@/components/TaskList';
 import DashboardLayoutSettings from '@/components/dashboard/DashboardLayoutSettings';
 import { toast } from 'react-hot-toast';
 import { format, startOfDay } from 'date-fns';
+import { useQueryClient } from '@tanstack/react-query';
+import { DialogTrigger } from '@radix-ui/react-dialog';
+import { Layout } from 'react-grid-layout';
 
 const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => {
   const { user, loading: authLoading } = useAuth();
   const currentUserId = isDemo ? demoUserId : user?.id;
   const { settings, updateSettings } = useSettings();
+  const queryClient = useQueryClient();
 
   const today = startOfDay(new Date());
 
@@ -43,7 +47,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
     deleteTask,
     onToggleFocusMode,
     onLogDoTodayOff,
-    createCategory,
+    addCategory: createCategory,
     updateCategory,
     deleteCategory,
     addSection,
@@ -99,9 +103,11 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
         toast.success('Task added successfully!');
         setIsAddTaskDialogOpen(false);
       }
+      return data;
     } catch (error: any) {
       toast.error('Failed to add task: ' + error.message);
       console.error('Error adding task:', error);
+      throw error;
     }
   };
 
@@ -138,14 +144,6 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
       console.error('Error adding subtask:', error);
       throw error;
     }
-  };
-
-  const handleToggleFocusMode = async (taskId: string, isFocused: boolean) => {
-    await onToggleFocusMode(taskId, isFocused);
-  };
-
-  const handleLogDoTodayOff = async (taskId: string) => {
-    await onLogDoTodayOff(taskId);
   };
 
   const handleNewTaskFormSubmit = async (description: string, sectionId: string | null, parentTaskId: string | null, dueDate: Date | null, categoryId: string | null, priority: string) => {
@@ -223,7 +221,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
   const renderCard = (card: CustomCard) => {
     switch (card.title) {
       case 'Daily Schedule':
-        return <DailySchedulePreview appointments={appointments} isLoading={appointmentsLoading} error={appointmentsError} />;
+        return <DailySchedulePreview appointments={appointments || []} isLoading={appointmentsLoading} error={appointmentsError} />;
       case 'Next Task':
         return <NextTaskCard tasks={tasks} onUpdateTask={onUpdateTask} onDeleteTask={deleteTask} onToggleFocusMode={onToggleFocusMode} onLogDoTodayOff={onLogDoTodayOff} />;
       case 'Quick Links':

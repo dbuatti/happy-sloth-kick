@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
-import { Person, PersonAvatarProps, UpdatePersonData } from '@/types';
+import { Person, PersonAvatarProps } from '@/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, Image as ImageIcon } from 'lucide-react';
+import { Image as ImageIcon } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'react-hot-toast';
 
-const PersonAvatar: React.FC<PersonAvatarProps> = ({ person, onEdit, onDelete, onUpdateAvatar }) => {
+const PersonAvatar: React.FC<PersonAvatarProps> = ({ person, onEdit, onUpdateAvatar }) => {
   const [isEditingAvatar, setIsEditingAvatar] = useState(false);
   const [newAvatarUrl, setNewAvatarUrl] = useState(person.avatar_url || '');
   const [isUploading, setIsUploading] = useState(false);

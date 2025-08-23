@@ -1,11 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { WeeklyFocus, UpdateWeeklyFocusData, WeeklyFocusCardProps } from '@/types';
-import { useDashboardData } from '@/hooks/useDashboardData';
 import EditableCard from './EditableCard';
 import { toast } from 'react-hot-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useAuth } from '@/context/AuthContext';
 
 const WeeklyFocus: React.FC<WeeklyFocusCardProps> = ({
   weeklyFocus,
@@ -13,9 +10,6 @@ const WeeklyFocus: React.FC<WeeklyFocusCardProps> = ({
   primaryFocus: initialPrimaryFocus,
   secondaryFocus: initialSecondaryFocus,
   tertiaryFocus: initialTertiaryFocus,
-  setPrimaryFocus,
-  setSecondaryFocus,
-  setTertiaryFocus,
 }) => {
   const [primaryFocus, setLocalPrimaryFocus] = useState(initialPrimaryFocus);
   const [secondaryFocus, setLocalSecondaryFocus] = useState(initialSecondaryFocus);

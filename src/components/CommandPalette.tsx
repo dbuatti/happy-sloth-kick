@@ -1,142 +1,125 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { useSettings } from '@/context/SettingsContext';
 import { useTasks } from '@/hooks/useTasks';
-import { Task, TaskCategory, TaskSection, NewTaskData, CommandPaletteProps } from '@/types';
-import { Plus, LayoutDashboard, Calendar, ListTodo, Brain, Moon, Link, Users, Archive, Settings, LogOut } from 'lucide-react';
+import { useSettings } from '@/context/SettingsContext';
+import { Task, CommandPaletteProps } from '@/types';
+import { Plus, LayoutDashboard, Calendar, ListTodo, Brain, Moon, Users, Archive, Settings, LogOut, Command } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { CommandInput, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
 import AddTaskForm from './AddTaskForm';
-import { format, startOfDay } from 'date-fns';
+import { startOfDay } from 'date-fns';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { toast } from 'react-hot-toast';
 
-const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, setIsCommandPaletteOpen, currentDate, setCurrentDate }) => {
+const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, setIsCommandPaletteOpen, currentDate }) => {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
-  const { settings, updateSettings } = useSettings();
+  const { user, signOut: authSignOut } = useAuth();
+  const { settings } = useSettings();
 
   const {
     tasks,
     categories,
     sections,
     addTask,
-    createSection,
+    addSection: createSection,
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode,
   } = useTasks({ userId: user?.id });
 
   const [search, setSearch] = useState('');
-  const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
-
-  const handleSelect = useCallback((path: string) => {
-    navigate(path);
-    setIsCommandPaletteOpen(false);
-  }, [navigate, setIsCommandPaletteOpen]);
+  const [isAddTaskSheetOpen, setIsAddTaskSheetOpen] = useState(false);
 
   const handleSignOut = async () => {
-    try {
-      await signOut();
-      toast.success('Signed out successfully!');
-      setIsCommandPaletteOpen(false);
-    } catch (error) {
-      console.error('Error signing out:', error);
-      toast.error('Failed to sign out.');
-    }
-  };
-
-  const handleNewTaskSubmit = async (data: NewTaskData) => {
-    try {
-      await addTask(data);
-      toast.success('Task added successfully!');
-      setIsAddTaskDialogOpen(false);
-      setIsCommandPaletteOpen(false);
-    } catch (error) {
-      toast.error('Failed to add task.');
-      console.error(error);
-    }
+    await authSignOut();
+    navigate('/login');
+    toast.success('Logged out successfully!');
   };
 
   const menuItems = useMemo(() => [
-    { heading: 'Navigation', items: [
-      { value: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, onSelect: () => handleSelect('/') },
-      { value: 'daily-tasks', label: 'Daily Tasks', icon: ListTodo, onSelect: () => handleSelect('/daily-tasks') },
-      { value: 'task-calendar', label: 'Task Calendar', icon: Calendar, onSelect: () => handleSelect('/task-calendar') },
-      { value: 'time-block-schedule', label: 'Time Block Schedule', icon: Calendar, onSelect: () => handleSelect('/time-block-schedule') },
-      { value: 'focus-mode', label: 'Focus Mode', icon: Brain, onSelect: () => handleSelect('/focus-mode') },
-      { value: 'sleep-tracker', label: 'Sleep Tracker', icon: Moon, onSelect: () => handleSelect('/sleep-tracker') },
-      { value: 'dev-space', label: 'Dev Space', icon: Link, onSelect: () => handleSelect('/dev-space') },
-      { value: 'people-memory', label: 'People Memory', icon: Users, onSelect: () => handleSelect('/people-memory') },
-      { value: 'archive', label: 'Archive', icon: Archive, onSelect: () => handleSelect('/archive') },
-      { value: 'settings', label: 'Settings', icon: Settings, onSelect: () => handleSelect('/settings') },
-    ]},
-    { heading: 'Actions', items: [
-      { value: 'add-task', label: 'Add New Task', icon: Plus, onSelect: () => setIsAddTaskDialogOpen(true) },
-      { value: 'sign-out', label: 'Sign Out', icon: LogOut, onSelect: handleSignOut },
-    ]},
-  ], [handleSelect, handleSignOut]);
+    {
+      heading: 'Navigation',
+      items: [
+        { label: 'Dashboard', value: 'dashboard', icon: LayoutDashboard, onSelect: () => navigate('/dashboard') },
+        { label: 'Tasks', value: 'tasks', icon: ListTodo, onSelect: () => navigate('/') },
+        { label: 'Schedule', value: 'schedule', icon: Calendar, onSelect: () => navigate('/schedule') },
+        { label: 'Focus Mode', value: 'focus mode', icon: Brain, onSelect: () => navigate('/focus-mode') },
+        { label: 'Dev Space', value: 'dev space', icon: Moon, onSelect: () => navigate('/dev-space') },
+        { label: 'Sleep Tracker', value: 'sleep tracker', icon: Moon, onSelect: () => navigate('/sleep-tracker') },
+        { label: 'My Hub', value: 'my hub', icon: Users, onSelect: () => navigate('/my-hub') },
+        { label: 'Archive', value: 'archive', icon: Archive, onSelect: () => navigate('/archive') },
+        { label: 'Settings', value: 'settings', icon: Settings, onSelect: () => navigate('/settings') },
+      ],
+    },
+    {
+      heading: 'Actions',
+      items: [
+        { label: 'Add New Task', value: 'add new task', icon: Plus, onSelect: () => setIsAddTaskSheetOpen(true) },
+        { label: 'Logout', value: 'logout', icon: LogOut, onSelect: handleSignOut },
+      ],
+    },
+  ], [navigate, handleSignOut]);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        setIsCommandPaletteOpen((open) => !open);
+        setIsCommandPaletteOpen((open: boolean) => !open);
       }
     };
+
     document.addEventListener('keydown', down);
     return () => document.removeEventListener('keydown', down);
   }, [setIsCommandPaletteOpen]);
 
   return (
-    <>
-      <Dialog open={isCommandPaletteOpen} onOpenChange={setIsCommandPaletteOpen}>
-        <DialogContent className="p-0 max-w-lg">
-          <Command>
-            <CommandInput placeholder="Type a command or search..." value={search} onValueChange={setSearch} />
-            <CommandList>
-              <CommandEmpty>No results found.</CommandEmpty>
-              {menuItems.map((group) => (
-                <CommandGroup key={group.heading} heading={group.heading}>
-                  {group.items
-                    .filter(item => item.label.toLowerCase().includes(search.toLowerCase()))
-                    .map((item) => (
-                      <CommandItem key={item.value} value={item.value} onSelect={item.onSelect}>
-                        <item.icon className="mr-2 h-4 w-4" />
-                        {item.label}
-                      </CommandItem>
-                    ))}
-                </CommandGroup>
-              ))}
-            </CommandList>
-          </Command>
-        </DialogContent>
-      </Dialog>
+    <Dialog open={isCommandPaletteOpen} onOpenChange={setIsCommandPaletteOpen}>
+      <DialogContent className="p-0 max-w-lg">
+        <Command>
+          <CommandInput placeholder="Type a command or search..." value={search} onValueChange={setSearch} />
+          <CommandList>
+            <CommandEmpty>No results found.</CommandEmpty>
+            {menuItems.map((group) => (
+              <CommandGroup key={group.heading} heading={group.heading}>
+                {group.items
+                  .filter((item) => item.label.toLowerCase().includes(search.toLowerCase()))
+                  .map((item) => (
+                    <CommandItem key={item.value} value={item.value} onSelect={() => {
+                      item.onSelect();
+                      setIsCommandPaletteOpen(false);
+                      setSearch('');
+                    }}>
+                      <item.icon className="mr-2 h-4 w-4" />
+                      {item.label}
+                    </CommandItem>
+                  ))}
+              </CommandGroup>
+            ))}
+          </CommandList>
+        </Command>
+      </DialogContent>
 
-      <Sheet open={isAddTaskDialogOpen} onOpenChange={setIsAddTaskDialogOpen}>
-        <SheetContent side="right" className="w-full sm:max-w-md">
+      <Sheet open={isAddTaskSheetOpen} onOpenChange={setIsAddTaskSheetOpen}>
+        <SheetContent>
           <SheetHeader>
             <SheetTitle>Add New Task</SheetTitle>
           </SheetHeader>
-          <div className="py-4">
-            <AddTaskForm
-              onAddTask={handleNewTaskSubmit}
-              onTaskAdded={() => setIsAddTaskDialogOpen(false)}
-              categories={categories || []}
-              sections={sections || []}
-              currentDate={currentDate}
-              createSection={createSection}
-              updateSection={updateSection}
-              deleteSection={deleteSection}
-              updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode.mutateAsync}
-              showCompleted={settings?.visible_pages?.show_completed_tasks ?? false}
-            />
-          </div>
+          <AddTaskForm
+            onAddTask={addTask}
+            categories={categories || []}
+            sections={sections || []}
+            currentDate={currentDate}
+            createSection={createSection}
+            updateSection={updateSection}
+            deleteSection={deleteSection}
+            updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+            showCompleted={settings?.visible_pages?.show_completed_tasks ?? false}
+            onClose={() => setIsAddTaskSheetOpen(false)}
+          />
         </SheetContent>
       </Sheet>
-    </>
+    </Dialog>
   );
 };
 

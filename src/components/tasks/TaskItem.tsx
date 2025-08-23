@@ -28,7 +28,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
 
   const categoryProps = task.category
-    ? getCategoryColorProps(categories.find(cat => cat.id === task.category)?.color as CategoryColorKey)
+    ? getCategoryColorProps(categories.find((cat: TaskCategory) => cat.id === task.category)?.color as CategoryColorKey)
     : { backgroundClass: 'bg-gray-100', textColor: 'text-gray-800' };
 
   const handleToggleComplete = async (checked: boolean) => {
@@ -54,10 +54,10 @@ const TaskItem: React.FC<TaskItemProps> = ({
   }, [doTodayOffLog, task.id]);
 
   const subtasks = useMemo(() => {
-    return tasks.filter(sub => sub.parent_task_id === task.id);
+    return tasks.filter((sub: Task) => sub.parent_task_id === task.id);
   }, [tasks, task.id]);
 
-  const section = useMemo(() => sections.find(sec => sec.id === task.section_id), [sections, task.section_id]);
+  const section = useMemo(() => sections.find((sec: TaskSection) => sec.id === task.section_id), [sections, task.section_id]);
 
   const isOverdue = task.due_date && isPast(parseISO(task.due_date)) && !isSameDay(parseISO(task.due_date), new Date());
   const isDueToday = task.due_date && isSameDay(parseISO(task.due_date), new Date());
@@ -83,7 +83,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             {task.category && (
               <span className={cn("px-2 py-0.5 rounded-full", categoryProps.backgroundClass, categoryProps.textColor)}>
-                {categories.find(cat => cat.id === task.category)?.name || 'Uncategorized'}
+                {categories.find((cat: TaskCategory) => cat.id === task.category)?.name || 'Uncategorized'}
               </span>
             )}
             {task.priority && task.priority !== 'medium' && (
@@ -134,18 +134,26 @@ const TaskItem: React.FC<TaskItemProps> = ({
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => onToggleFocusMode(task.id, !section?.include_in_focus_mode)}>
+            <DropdownMenuItem onClick={() => onToggleFocusMode(task.id, !(section?.include_in_focus_mode ?? true))}>
               {section?.include_in_focus_mode ? (
-                <EyeOff className="mr-2 h-4 w-4" /> Remove from Focus
+                <>
+                  <EyeOff className="mr-2 h-4 w-4" /> Remove from Focus
+                </>
               ) : (
-                <Eye className="mr-2 h-4 w-4" /> Add to Focus
+                <>
+                  <Eye className="mr-2 h-4 w-4" /> Add to Focus
+                </>
               )}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={handleToggleDoTodayOff}>
               {isTaskOffToday ? (
-                <ListTodo className="mr-2 h-4 w-4" /> Mark "Do Today"
+                <>
+                  <ListTodo className="mr-2 h-4 w-4" /> Mark "Do Today"
+                </>
               ) : (
-                <X className="mr-2 h-4 w-4" /> Mark "Do Today Off"
+                <>
+                  <X className="mr-2 h-4 w-4" /> Mark "Do Today Off"
+                </>
               )}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -157,7 +165,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
       </div>
       {subtasks.length > 0 && (
         <div className="ml-6 mt-2 space-y-2 border-l-2 pl-4">
-          {subtasks.map(subtask => (
+          {subtasks.map((subtask: Task) => (
             <TaskItem
               key={subtask.id}
               task={subtask}

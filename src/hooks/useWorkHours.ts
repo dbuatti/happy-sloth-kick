@@ -4,12 +4,16 @@ import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'react-hot-toast';
 
-export const useWorkHours = (userId?: string) => {
-  const { user, loading: authLoading } = useAuth();
-  const currentUserId = userId || user?.id;
+interface UseWorkHoursProps {
+  userId?: string;
+}
+
+export const useWorkHours = ({ userId: propUserId }: UseWorkHoursProps = {}) => {
+  const { user } = useAuth();
+  const currentUserId = propUserId || user?.id;
   const queryClient = useQueryClient();
 
-  const { data: workHours, isLoading, error, refetch } = useQuery<WorkHour[], Error>({
+  const { data: workHours, isLoading, error } = useQuery<WorkHour[], Error>({
     queryKey: ['workHours', currentUserId],
     queryFn: async () => {
       if (!currentUserId) return [];
@@ -17,11 +21,12 @@ export const useWorkHours = (userId?: string) => {
         .from('user_work_hours')
         .select('*')
         .eq('user_id', currentUserId)
-        .order('day_of_week', { ascending: true }); // Assuming a default order
+        .order('day_of_week', { ascending: true }); // Order by day of week for consistent display
+
       if (error) throw error;
-      return data;
+      return data as WorkHour[];
     },
-    enabled: !!currentUserId && !authLoading,
+    enabled: !!currentUserId,
   });
 
   const addWorkHourMutation = useMutation<WorkHour, Error, NewWorkHourData, unknown>({
@@ -30,10 +35,11 @@ export const useWorkHours = (userId?: string) => {
       const { data, error } = await supabase
         .from('user_work_hours')
         .insert({ ...newWorkHourData, user_id: currentUserId })
-        .select('*')
+        .select()
         .single();
+
       if (error) throw error;
-      return data;
+      return data as WorkHour;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workHours', currentUserId] });
@@ -48,10 +54,12 @@ export const useWorkHours = (userId?: string) => {
         .from('user_work_hours')
         .update(updates)
         .eq('id', id)
-        .select('*')
+        .eq('user_id', currentUserId)
+        .select()
         .single();
+
       if (error) throw error;
-      return data;
+      return data as WorkHour;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workHours', currentUserId] });
@@ -65,7 +73,9 @@ export const useWorkHours = (userId?: string) => {
       const { error } = await supabase
         .from('user_work_hours')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', currentUserId);
+
       if (error) throw error;
     },
     onSuccess: () => {
@@ -75,10 +85,9 @@ export const useWorkHours = (userId?: string) => {
   });
 
   return {
-    workHours,
+    workHours: workHours || [],
     isLoading,
     error,
-    refetchWorkHours: refetch,
     addWorkHour: addWorkHourMutation.mutateAsync,
     updateWorkHour: updateWorkHourMutation.mutateAsync,
     deleteWorkHour: deleteWorkHourMutation.mutateAsync,

@@ -1,17 +1,17 @@
-import React, { useState, useMemo } from 'react';
-import { Button } from '@/components/ui/button';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Play, Pause, SkipForward, CheckCircle2, XCircle, Timer, Settings as SettingsIcon } from 'lucide-react';
+import { Play, Pause, SkipForward, CheckCircle2, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Task, TaskSection, TaskCategory, UpdateTaskData } from '@/types';
+import { Task, TaskSection, TaskCategory, UpdateTaskData, DoTodayOffLogEntry } from '@/types';
 import TaskOverviewDialog from './TaskOverviewDialog';
 import { useSound } from '@/context/SoundContext';
-import { toast } from 'react-hot-toast';
 import { useSettings } from '@/context/SettingsContext';
+import { toast } from 'react-hot-toast';
 
 interface FocusToolsPanelProps {
-  focusedTask: Task | undefined;
+  focusedTask: Task | null;
   focusModeTasks: Task[];
   allCategories: TaskCategory[];
   allSections: TaskSection[];
@@ -20,6 +20,9 @@ interface FocusToolsPanelProps {
   onAddSubtask: (description: string, parentTaskId: string | null) => Promise<Task>;
   onToggleFocusMode: (taskId: string, isFocused: boolean) => Promise<void>;
   onLogDoTodayOff: (taskId: string) => Promise<void>;
+  onCompleteTask: (taskId: string) => Promise<void>;
+  onSkipTask: (taskId: string) => Promise<void>;
+  doTodayOffLog: DoTodayOffLogEntry[] | undefined;
 }
 
 const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
@@ -32,129 +35,85 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
   onAddSubtask,
   onToggleFocusMode,
   onLogDoTodayOff,
+  onCompleteTask,
+  onSkipTask,
+  doTodayOffLog,
 }) => {
   const { playSound } = useSound();
   const { updateSettings } = useSettings();
-
-  const [timerMinutes, setTimerMinutes] = useState(25);
-  const [timerSeconds, setTimerSeconds] = useState(0);
-  const [isActive, setIsActive] = useState(false);
-  const [sessionType, setSessionType] = useState<'focus' | 'break'>('focus');
-  const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [selectedTaskForOverview, setSelectedTaskForOverview] = useState<Task | null>(null);
 
-  const progressPercentage = useMemo(() => {
-    const totalDuration = 25 * 60; // Assuming 25 min focus sessions
-    const elapsedSeconds = (25 - timerMinutes) * 60 + (60 - timerSeconds);
-    return (elapsedSeconds / totalDuration) * 100;
-  }, [timerMinutes, timerSeconds]);
-
-  const handleStartPause = () => {
-    setIsActive(prev => !prev);
-  };
-
-  const handleReset = () => {
-    setIsActive(false);
-    setTimerMinutes(25);
-    setTimerSeconds(0);
-    setSessionType('focus');
-  };
-
   const handleSkipTask = async (taskId: string) => {
-    await updateSettings({ focused_task_id: null });
-    toast.success('Task skipped!');
+    await onSkipTask(taskId);
   };
 
   const handleCompleteTask = async (taskId: string) => {
-    try {
-      await onUpdateTask(taskId, { status: 'completed' });
-      await updateSettings({ focused_task_id: null });
-      toast.success('Task completed!');
-    } catch (error) {
-      toast.error('Failed to complete task.');
-      console.error(error);
-    }
+    await onCompleteTask(taskId);
   };
 
   const openTaskOverview = (task: Task) => {
     setSelectedTaskForOverview(task);
-    setIsTaskOverviewOpen(true);
   };
 
   return (
     <div className="space-y-6">
-      {/* Focus Timer Section */}
-      <Card className="flex flex-col items-center justify-center p-6">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">Focus Timer</CardTitle>
+          <CardTitle>Focus Tools</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col items-center space-y-6">
-          <div className="text-7xl font-bold tabular-nums">
-            {String(timerMinutes).padStart(2, '0')}:{String(timerSeconds).padStart(2, '0')}
-          </div>
-          <Progress value={progressPercentage} className="w-full max-w-sm" />
-          <div className="flex space-x-4">
-            <Button onClick={handleStartPause} size="lg">
-              {isActive ? <Pause className="mr-2 h-5 w-5" /> : <Play className="mr-2 h-5 w-5" />}
-              {isActive ? 'Pause' : 'Start'}
-            </Button>
-            <Button onClick={handleReset} variant="outline" size="lg">
-              <XCircle className="mr-2 h-5 w-5" /> Reset
-            </Button>
-          </div>
-          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-            <Timer className="h-4 w-4" />
-            <span>{sessionType === 'focus' ? 'Focus Session' : 'Break'}</span>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Focused Task Section */}
-      <Card className="p-6">
-        <CardHeader>
-          <CardTitle className="text-2xl">Current Focus Task</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           {focusedTask ? (
-            <div className="space-y-4">
-              <TaskItem
-                task={focusedTask}
-                categories={allCategories}
-                sections={allSections}
-                onUpdateTask={onUpdateTask}
-                onDeleteTask={onDeleteTask}
-                onAddSubtask={onAddSubtask}
-                onToggleFocusMode={onToggleFocusMode}
-                onLogDoTodayOff={onLogDoTodayOff}
-              />
-              <div className="flex space-x-2">
-                <Button onClick={() => handleCompleteTask(focusedTask.id)} variant="default">
-                  <CheckCircle2 className="mr-2 h-4 w-4" /> Mark as Complete
-                </Button>
-                <Button onClick={() => handleSkipTask(focusedTask.id)} variant="outline">
-                  <SkipForward className="mr-2 h-4 w-4" /> Skip Task
-                </Button>
-              </div>
+            <div className="space-y-2">
+              <Button className="w-full" onClick={() => openTaskOverview(focusedTask)}>
+                <Eye className="mr-2 h-4 w-4" /> View Focused Task
+              </Button>
+              <Button variant="secondary" className="w-full" onClick={() => handleSkipTask(focusedTask.id)}>
+                <SkipForward className="mr-2 h-4 w-4" /> Skip Task
+              </Button>
+              <Button className="w-full" onClick={() => handleCompleteTask(focusedTask.id)}>
+                <CheckCircle2 className="mr-2 h-4 w-4" /> Complete Task
+              </Button>
             </div>
           ) : (
-            <p className="text-muted-foreground">No task currently focused. Select one from the list below.</p>
+            <p className="text-muted-foreground">No task currently focused. Select one from the list.</p>
           )}
         </CardContent>
       </Card>
 
-      {/* Task Overview Dialog */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Available Tasks</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {focusModeTasks.length === 0 ? (
+            <p className="text-muted-foreground">No tasks available in focus mode sections.</p>
+          ) : (
+            <div className="space-y-2">
+              {focusModeTasks.map((task) => (
+                <div key={task.id} className="flex items-center justify-between p-2 border rounded-md">
+                  <span className="text-sm">{task.description}</span>
+                  <Button variant="ghost" size="sm" onClick={() => updateSettings({ focused_task_id: task.id })}>
+                    Focus
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {selectedTaskForOverview && (
         <TaskOverviewDialog
-          isOpen={isTaskOverviewOpen}
-          onOpenChange={setIsTaskOverviewOpen}
           task={selectedTaskForOverview}
-          categories={allCategories}
-          sections={allSections}
+          isOpen={!!selectedTaskForOverview}
+          onOpenChange={(open) => !open && setSelectedTaskForOverview(null)}
           onUpdateTask={onUpdateTask}
           onDeleteTask={onDeleteTask}
           onAddSubtask={onAddSubtask}
           onToggleFocusMode={onToggleFocusMode}
           onLogDoTodayOff={onLogDoTodayOff}
+          categories={allCategories}
+          sections={allSections}
         />
       )}
     </div>

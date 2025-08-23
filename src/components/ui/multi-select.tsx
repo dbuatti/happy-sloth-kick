@@ -1,7 +1,5 @@
-"use client";
-
 import * as React from "react";
-import { X as XIcon, ChevronDown } from "lucide-react";
+import { X, Check, ChevronDown } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -19,22 +17,23 @@ import {
 } from "@/components/ui/popover";
 import { MultiSelectProps, MultiSelectOption } from "@/types";
 
-export function MultiSelect({
+const MultiSelect: React.FC<MultiSelectProps> = ({
   options,
   value,
   onChange,
   placeholder,
-}: MultiSelectProps) {
+  className,
+}) => {
   const [open, setOpen] = React.useState(false);
 
   const handleSelect = (optionValue: string) => {
     const newValue = value.includes(optionValue)
-      ? value.filter((val) => val !== optionValue)
+      ? value.filter((val: string) => val !== optionValue)
       : [...value, optionValue];
     onChange(newValue);
   };
 
-  const selectedOptions = options.filter((option) =>
+  const selectedOptions = options.filter((option: MultiSelectOption) =>
     value.includes(option.value)
   );
 
@@ -45,19 +44,19 @@ export function MultiSelect({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-full justify-between h-auto min-h-[36px]"
+          className={cn("w-full justify-between", className)}
         >
           <div className="flex flex-wrap gap-1">
             {selectedOptions.length > 0 ? (
-              selectedOptions.map((option) => (
+              selectedOptions.map((option: MultiSelectOption) => (
                 <Badge
                   key={option.value}
                   variant="secondary"
-                  className="flex items-center gap-1"
+                  className="flex items-center"
                 >
                   {option.label}
-                  <XIcon
-                    className="h-3 w-3 cursor-pointer"
+                  <X
+                    className="ml-1 h-3 w-3 cursor-pointer"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleSelect(option.value);
@@ -76,15 +75,17 @@ export function MultiSelect({
         <Command>
           <CommandList>
             <CommandGroup>
-              {options.map((option) => (
+              {options.map((option: MultiSelectOption) => (
                 <CommandItem
                   key={option.value}
                   onSelect={() => handleSelect(option.value)}
-                  className={cn(
-                    "cursor-pointer",
-                    value.includes(option.value) && "bg-accent text-accent-foreground"
-                  )}
                 >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      value.includes(option.value) ? "opacity-100" : "opacity-0"
+                    )}
+                  />
                   {option.label}
                 </CommandItem>
               ))}
@@ -94,4 +95,6 @@ export function MultiSelect({
       </PopoverContent>
     </Popover>
   );
-}
+};
+
+export { MultiSelect };

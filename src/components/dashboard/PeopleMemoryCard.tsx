@@ -4,12 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Plus, Edit, Trash2 } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import PersonAvatar from './PersonAvatar';
 import { usePeopleMemory } from '@/hooks/usePeopleMemory';
 import { Person, NewPersonData, UpdatePersonData, PeopleMemoryCardProps } from '@/types';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '@/context/AuthContext';
+import { DialogTrigger } from '@radix-ui/react-dialog';
 
 const PeopleMemoryCard: React.FC<PeopleMemoryCardProps> = ({ isDemo = false, demoUserId }) => {
   const { user } = useAuth();
@@ -130,11 +131,11 @@ const PeopleMemoryCard: React.FC<PeopleMemoryCardProps> = ({ isDemo = false, dem
         </Dialog>
       </CardHeader>
       <CardContent>
-        {people.length === 0 ? (
+        {people && people.length === 0 ? (
           <p className="text-muted-foreground">No people added to memory yet.</p>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {people.map((person) => (
+            {people && people.map((person) => (
               <div key={person.id} className="flex flex-col items-center text-center p-2">
                 <PersonAvatar
                   person={person}

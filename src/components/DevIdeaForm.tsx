@@ -1,22 +1,18 @@
 import React, { useEffect } from 'react';
-import { useForm, Controller } from 'react-hook-form';
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DevIdea, DevIdeaTag, NewDevIdeaData, UpdateDevIdeaData, MultiSelectOption } from '@/types';
-import { useAuth } from '@/context/AuthContext';
+import { useForm, Controller } from 'react-hook-form';
 import { MultiSelect } from '@/components/ui/multi-select';
-import { toast } from 'react-hot-toast';
 
 interface DevIdeaFormProps {
-  initialData?: Partial<DevIdea>;
-  onSave: (data: NewDevIdeaData | (UpdateDevIdeaData & { tagIds?: string[] })) => Promise<any>;
+  initialData?: DevIdea | null;
+  onSave: (data: NewDevIdeaData | UpdateDevIdeaData) => Promise<void>;
   onCancel: () => void;
   tags: DevIdeaTag[];
-  onCreateTag: (data: { name: string; color: string }) => Promise<DevIdeaTag>;
-  onDeleteTag: (id: string) => Promise<void>;
 }
 
 const DevIdeaForm: React.FC<DevIdeaFormProps> = ({
@@ -24,11 +20,8 @@ const DevIdeaForm: React.FC<DevIdeaFormProps> = ({
   onSave,
   onCancel,
   tags,
-  onCreateTag,
-  onDeleteTag,
 }) => {
-  const { user } = useAuth();
-  const { register, handleSubmit, control, reset, setValue, watch, formState: { errors } } = useForm<NewDevIdeaData | (UpdateDevIdeaData & { tagIds?: string[] })>({
+  const { register, handleSubmit, control, reset, formState: { errors } } = useForm<NewDevIdeaData | (UpdateDevIdeaData & { tagIds?: string[] })>({
     defaultValues: {
       title: initialData?.title || '',
       description: initialData?.description || '',
@@ -36,11 +29,9 @@ const DevIdeaForm: React.FC<DevIdeaFormProps> = ({
       priority: initialData?.priority || 'medium',
       image_url: initialData?.image_url || '',
       local_file_path: initialData?.local_file_path || '',
-      tagIds: initialData?.tags?.map(tag => tag.id) || [],
-    },
+      tagIds: initialData?.tags?.map((tag: DevIdeaTag) => tag.id) || [],
+    }
   });
-
-  const selectedTagIds = watch('tagIds');
 
   useEffect(() => {
     reset({
@@ -50,43 +41,30 @@ const DevIdeaForm: React.FC<DevIdeaFormProps> = ({
       priority: initialData?.priority || 'medium',
       image_url: initialData?.image_url || '',
       local_file_path: initialData?.local_file_path || '',
-      tagIds: initialData?.tags?.map(tag => tag.id) || [],
+      tagIds: initialData?.tags?.map((tag: DevIdeaTag) => tag.id) || [],
     });
   }, [initialData, reset]);
 
   const onSubmit = async (data: NewDevIdeaData | (UpdateDevIdeaData & { tagIds?: string[] })) => {
-    try {
-      await onSave(data);
-      toast.success('Idea saved successfully!');
-    } catch (error) {
-      console.error('Failed to save idea:', error);
-      toast.error('Failed to save idea.');
-    }
-  };
-
-  const handleTagChange = (selected: string[]) => {
-    setValue('tagIds', selected);
+    await onSave(data);
   };
 
   const tagOptions: MultiSelectOption[] = tags.map(tag => ({
-    label: tag.name,
     value: tag.id,
+    label: tag.name,
   }));
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div>
         <Label htmlFor="title">Title</Label>
-        <Input
-          id="title"
-          {...register('title', { required: 'Title is required' })}
-        />
+        <Input id="title" {...register('title', { required: 'Title is required' })} />
         {errors.title && <p className="text-red-500 text-sm">{errors.title.message}</p>}
       </div>
 
       <div>
         <Label htmlFor="description">Description</Label>
-        <Textarea id="description" {...register('description')} rows={3} />
+        <Textarea id="description" {...register('description')} />
       </div>
 
       <div>
@@ -124,6 +102,7 @@ const DevIdeaForm: React.FC<DevIdeaFormProps> = ({
                 <SelectItem value="low">Low</SelectItem>
                 <SelectItem value="medium">Medium</SelectItem>
                 <SelectItem value="high">High</SelectItem>
+                <SelectItem value="urgent">Urgent</SelectItem>
               </SelectContent>
             </Select>
           )}
@@ -131,13 +110,13 @@ const DevIdeaForm: React.FC<DevIdeaFormProps> = ({
       </div>
 
       <div>
-        <Label htmlFor="image_url">Image URL</Label>
-        <Input id="image_url" {...register('image_url')} placeholder="e.g. https://example.com/image.jpg" />
+        <Label htmlFor="imageUrl">Image URL</Label>
+        <Input id="imageUrl" {...register('image_url')} />
       </div>
 
       <div>
-        <Label htmlFor="local_file_path">Local File Path</Label>
-        <Input id="local_file_path" {...register('local_file_path')} placeholder="e.g. /Users/username/Documents/my-idea.md" />
+        <Label htmlFor="localFilePath">Local File Path</Label>
+        <Input id="localFilePath" {...register('local_file_path')} />
       </div>
 
       <div>
@@ -149,7 +128,7 @@ const DevIdeaForm: React.FC<DevIdeaFormProps> = ({
             <MultiSelect
               options={tagOptions}
               value={field.value || []}
-              onChange={handleTagChange}
+              onChange={field.onChange}
               placeholder="Select tags"
             />
           )}
@@ -157,10 +136,8 @@ const DevIdeaForm: React.FC<DevIdeaFormProps> = ({
       </div>
 
       <div className="flex justify-end space-x-2">
-        <Button type="button" variant="ghost" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button type="submit">Save Idea</Button>
+        <Button type="button" variant="ghost" onClick={onCancel}>Cancel</Button>
+        <Button type="submit">{initialData ? 'Save Changes' : 'Add Idea'}</Button>
       </div>
     </form>
   );

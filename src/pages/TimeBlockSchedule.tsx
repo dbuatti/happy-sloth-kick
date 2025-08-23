@@ -1,10 +1,10 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useTasks } from '@/hooks/useTasks';
 import { useAppointments } from '@/hooks/useAppointments';
 import { useWorkHours } from '@/hooks/useWorkHours';
 import { useSettings } from '@/context/SettingsContext';
-import { Task, TaskCategory, TaskSection, Appointment, WorkHour, NewTaskData, UpdateTaskData, NewAppointmentData, UpdateAppointmentData, ProjectBalanceTrackerProps, TimeBlockScheduleProps } from '@/types';
+import { Task, TaskCategory, TaskSection, Appointment, WorkHour, NewTaskData, UpdateTaskData, NewAppointmentData, UpdateAppointmentData, ProjectBalanceTrackerProps, TimeBlockScheduleProps, UserSettings } from '@/types';
 import { format, startOfDay, addDays, subDays, parseISO } from 'date-fns';
 import { Calendar as CalendarIcon, Clock, Plus, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,23 +13,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { cn } from '@/lib/utils';
+import { Switch } from '@/components/ui/switch';
 import ScheduleGridContent from '@/components/ScheduleGridContent';
 import WorkHoursSettings from '@/components/WorkHoursSettings';
 import { toast } from 'react-hot-toast';
-import { Switch } from '@/components/ui/switch';
 
 const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, demoUserId }) => {
   const { user, loading: authLoading } = useAuth();
   const currentUserId = isDemo ? demoUserId : user?.id;
-  const { settings, updateSettings, loading: settingsLoading } = useSettings();
 
   const [selectedDate, setSelectedDate] = useState(startOfDay(new Date()));
   const [isWorkHoursModalOpen, setIsWorkHoursModalOpen] = useState(false);
-  const [workStartTime, setWorkStartTime] = useState('09:00');
-  const [workEndTime, setWorkEndTime] = useState('17:00');
-  const [showFocusTasksOnly, setShowFocusTasksOnly] = useState(settings?.schedule_show_focus_tasks_only ?? true);
+  const [showFocusTasksOnly, setShowFocusTasksOnly] = useState(true);
 
   const {
     tasks,
@@ -40,9 +35,10 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
     addTask,
     updateTask,
     deleteTask,
-    onAddSubtask,
     onToggleFocusMode,
+    onLogDoTodayOff,
     updateSectionIncludeInFocusMode,
+    doTodayOffLog,
   } = useTasks({ userId: currentUserId, isDemo, demoUserId });
 
   const {
@@ -52,100 +48,68 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
     addAppointment,
     updateAppointment,
     deleteAppointment,
-  } = useAppointments(selectedDate);
+  } = useAppointments({ userId: currentUserId, date: selectedDate });
 
   const {
     workHours,
     isLoading: workHoursLoading,
     error: workHoursError,
-    updateWorkHour,
     addWorkHour,
-  } = useWorkHours(currentUserId);
+    updateWorkHour,
+    deleteWorkHour,
+  } = useWorkHours({ userId: currentUserId });
 
-  const isLoading = authLoading || tasksLoading || appointmentsLoading || workHoursLoading || settingsLoading;
-  const error = tasksError || appointmentsError || workHoursError;
+  const { settings, isLoading: settingsLoading, error: settingsError, updateSettings } = useSettings();
 
   useEffect(() => {
     setShowFocusTasksOnly(settings?.schedule_show_focus_tasks_only ?? true);
   }, [settings?.schedule_show_focus_tasks_only]);
 
-  const handlePreviousDay = () => {
-    setSelectedDate(prev => subDays(prev, 1));
-  };
+  const handleSaveWorkHours = async (updatedWorkHours: WorkHour[]) => {
+    if (!currentUserId) return;
 
-  const handleNextDay = () => {
-    setSelectedDate(prev => addDays(prev, 1));
-  };
-
-  const handleToday = () => {
-    setSelectedDate(startOfDay(new Date()));
+    for (const updatedHour of updatedWorkHours) {
+      const existingHour = workHours.find(wh => wh.id === updatedHour.id);
+      if (existingHour) {
+        await updateWorkHour({ id: existingHour.id, updates: updatedHour });
+      } else if (updatedHour.enabled) {
+        await addWorkHour(updatedHour);
+      }
+    }
+    // Also handle deletion if a work hour was disabled and doesn't exist in the new list
+    for (const existingHour of workHours) {
+      if (!updatedWorkHours.some(uh => uh.id === existingHour.id) && !existingHour.enabled) {
+        await deleteWorkHour(existingHour.id);
+      }
+    }
   };
 
   const handleToggleShowFocusTasksOnly = async (checked: boolean) => {
     setShowFocusTasksOnly(checked);
-    await updateSettings({ schedule_show_focus_tasks_only: checked });
-  };
-
-  const handleOpenWorkHoursModal = useCallback(async () => {
-    const dayOfWeek = format(selectedDate, 'EEEE').toLowerCase();
-    const currentDayWorkHour = workHours?.find(wh => wh.day_of_week === dayOfWeek);
-    if (currentDayWorkHour) {
-      setWorkStartTime(currentDayWorkHour.start_time.substring(0, 5));
-      setWorkEndTime(currentDayWorkHour.end_time.substring(0, 5));
-    } else {
-      setWorkStartTime('09:00');
-      setWorkEndTime('17:00');
-    }
-    setIsWorkHoursModalOpen(true);
-  }, [selectedDate, workHours]);
-
-  const handleSaveWorkHours = async (dayOfWeek: string, startTime: string, endTime: string, enabled: boolean) => {
-    const existingWorkHour = workHours?.find(wh => wh.day_of_week === dayOfWeek);
-    const updates: UpdateWorkHourData = {
-      start_time: startTime + ':00',
-      end_time: endTime + ':00',
-      enabled: enabled,
-    };
-
     try {
-      if (existingWorkHour) {
-        await updateWorkHour({ id: existingWorkHour.id, updates });
-      } else {
-        await addWorkHour({ day_of_week: dayOfWeek, start_time: startTime + ':00', end_time: endTime + ':00', enabled: enabled, user_id: currentUserId! });
-      }
-      toast.success('Work hours updated!');
-      setIsWorkHoursModalOpen(false);
-    } catch (err) {
-      toast.error('Failed to save work hours.');
-      console.error(err);
+      await updateSettings({ schedule_show_focus_tasks_only: checked });
+      toast.success('Setting updated!');
+    } catch (error) {
+      toast.error('Failed to update setting.');
+      console.error('Error updating setting:', error);
     }
   };
 
-  if (!currentUserId) {
-    return <p>Please log in to view your time block schedule.</p>;
+  if (authLoading || tasksLoading || appointmentsLoading || workHoursLoading || settingsLoading) {
+    return <div className="p-4 text-center">Loading schedule...</div>;
   }
 
-  if (isLoading) {
-    return <p>Loading schedule...</p>;
-  }
-
-  if (error) {
-    return <p>Error: {error.message}</p>;
+  if (tasksError || appointmentsError || workHoursError || settingsError) {
+    return <div className="p-4 text-red-500">Error loading data: {tasksError?.message || appointmentsError?.message || workHoursError?.message || settingsError?.message}</div>;
   }
 
   return (
-    <div className="p-4 h-full flex flex-col">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-3xl font-bold">Time Block Schedule</h1>
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      <div className="flex items-center justify-between space-y-2">
+        <h2 className="text-3xl font-bold tracking-tight">Time Block Schedule</h2>
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" onClick={handlePreviousDay}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleToday}>
-            Today
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleNextDay}>
-            <ChevronRight className="h-4 w-4" />
+          <Button variant="outline" size="sm" onClick={() => setSelectedDate(subDays(selectedDate, 1))}>
+            <ChevronLeft className="h-4 w-4" /> Previous Day
           </Button>
           <Popover>
             <PopoverTrigger asChild>
@@ -169,13 +133,16 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
               />
             </PopoverContent>
           </Popover>
-          <Button variant="outline" onClick={() => setIsWorkHoursModalOpen(true)}>
-            <Settings className="mr-2 h-4 w-4" /> Work Hours
+          <Button variant="outline" size="sm" onClick={() => setSelectedDate(addDays(selectedDate, 1))}>
+            Next Day <ChevronRight className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setIsWorkHoursModalOpen(true)}>
+            <Clock className="mr-2 h-4 w-4" /> Work Hours
           </Button>
           <div className="flex items-center space-x-2">
-            <Label htmlFor="focus-tasks-toggle">Focus Tasks Only</Label>
+            <Label htmlFor="show-focus-tasks-only">Focus Tasks Only</Label>
             <Switch
-              id="focus-tasks-toggle"
+              id="show-focus-tasks-only"
               checked={showFocusTasksOnly}
               onCheckedChange={handleToggleShowFocusTasksOnly}
             />
@@ -183,32 +150,31 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
         </div>
       </div>
 
-      <Card className="flex-1 overflow-hidden">
-        <CardContent className="h-full p-0">
-          <ScheduleGridContent
-            currentDate={selectedDate}
-            appointments={appointments || []}
-            tasks={tasks || []}
-            workHours={workHours || []}
-            allCategories={allCategories || []}
-            allSections={allSections || []}
-            showFocusTasksOnly={showFocusTasksOnly}
-            onAddAppointment={addAppointment}
-            onUpdateAppointment={updateAppointment}
-            onDeleteAppointment={deleteAppointment}
-            onAddTask={addTask}
-            onUpdateTask={onUpdateTask}
-            onDeleteTask={deleteTask}
-            onAddSubtask={onAddSubtask}
-            onToggleFocusMode={onToggleFocusMode}
-          />
-        </CardContent>
-      </Card>
+      <ScheduleGridContent
+        currentDate={selectedDate}
+        workHours={workHours}
+        tasks={tasks}
+        appointments={appointments}
+        allCategories={allCategories}
+        allSections={allSections}
+        onAddAppointment={addAppointment}
+        onUpdateAppointment={updateAppointment}
+        onDeleteAppointment={deleteAppointment}
+        onAddTask={addTask}
+        onUpdateTask={updateTask}
+        onDeleteTask={deleteTask}
+        onAddSubtask={addTask}
+        onToggleFocusMode={onToggleFocusMode}
+        onLogDoTodayOff={onLogDoTodayOff}
+        onUpdateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+        showFocusTasksOnly={showFocusTasksOnly}
+        doTodayOffLog={doTodayOffLog}
+      />
 
       <WorkHoursSettings
         isOpen={isWorkHoursModalOpen}
         onClose={() => setIsWorkHoursModalOpen(false)}
-        workHours={workHours || []}
+        workHours={workHours}
         onSaveWorkHours={handleSaveWorkHours}
       />
     </div>

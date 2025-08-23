@@ -1,16 +1,17 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { DevIdea, UpdateDevIdeaData, SortableCustomCardProps } from '@/types'; // Corrected import for DevIdea
+import { DevIdea, SortableCustomCardProps } from '@/types';
 import DevIdeaCard from './DevIdeaCard';
 
 interface SortableDevIdeaCardProps {
   id: string;
   idea: DevIdea;
   onEdit: (idea: DevIdea) => void;
-  onDelete: (id: string) => void;
-  onUpdateStatus: (id: string, status: DevIdea['status']) => void;
-  onUpdatePriority: (id: string, priority: DevIdea['priority']) => void;
+  onDelete: (id: string) => Promise<void>;
+  onUpdateStatus: (id: string, status: DevIdea['status']) => Promise<void>;
+  onUpdatePriority: (id: string, priority: DevIdea['priority']) => Promise<void>;
+  isDragging?: boolean;
 }
 
 const SortableDevIdeaCard: React.FC<SortableDevIdeaCardProps> = ({
@@ -34,7 +35,7 @@ const SortableDevIdeaCard: React.FC<SortableDevIdeaCardProps> = ({
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 10 : 0,
+    zIndex: isDragging ? 1000 : 1,
   };
 
   return (

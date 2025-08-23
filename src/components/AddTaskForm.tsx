@@ -4,13 +4,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar as CalendarIcon, Plus } from 'lucide-react';
+import { Calendar as CalendarIcon } from 'lucide-react';
 import { format, startOfDay } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
-import TaskForm from './TaskForm';
-import { Task, TaskSection, TaskCategory, NewTaskData, UpdateTaskData, NewTaskSectionData, UpdateTaskSectionData, AddTaskFormProps } from '@/types';
+import { Task, TaskSection, TaskCategory, NewTaskSectionData, UpdateTaskSectionData, AddTaskFormProps } from '@/types';
 import { toast } from 'react-hot-toast';
 
 const AddTaskForm: React.FC<AddTaskFormProps> = ({

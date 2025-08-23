@@ -1,58 +1,48 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Plus, RefreshCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Task, TaskSection, TaskCategory, NewTaskData } from '@/types';
+import { Task, TaskSection, TaskCategory, NewTaskData, DailyTasksHeaderProps, DoTodayOffLogEntry } from '@/types';
 import { showError, showLoading, dismissToast } from '@/utils/toast';
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
 import { useSound } from '@/context/SoundContext';
-
-interface DailyTasksHeaderProps {
-  currentDate: Date;
-  onAddTask: (data: NewTaskData) => Promise<Task>;
-  onRefreshTasks: () => void;
-  dailyProgress: { completed: number; total: number };
-  sections: TaskSection[];
-  categories: TaskCategory[];
-}
+import { format, isToday, parseISO } from 'date-fns';
 
 const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   onAddTask,
   onRefreshTasks,
-  dailyProgress,
+  tasks,
+  categories,
+  sections,
+  doTodayOffLog,
 }) => {
   const { playSound } = useSound();
 
-  const handleRefresh = async () => {
+  const totalTasks = tasks.filter(task => task.status === 'to-do' && !task.parent_task_id).length;
+  const completedTasks = tasks.filter(task => task.status === 'completed' && !task.parent_task_id).length;
+  const progress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+
+  const handleRefresh = () => {
     playSound('refresh');
-    const toastId = showLoading('Refreshing tasks...');
-    try {
-      await onRefreshTasks();
-      dismissToast(toastId);
-      // toast.success('Tasks refreshed!'); // Handled by onRefreshTasks success
-    } catch (error) {
-      dismissToast(toastId);
-      showError('Failed to refresh tasks.');
-      console.error('Error refreshing tasks:', error);
-    }
+    onRefreshTasks();
   };
 
   return (
-    <div className="flex items-center justify-between mb-4">
-      <div className="flex items-center space-x-4">
-        <h2 className="text-2xl font-bold">Daily Tasks</h2>
-        <Button variant="outline" size="sm" onClick={handleRefresh}>
+    <Card className="p-4 flex items-center justify-between">
+      <div>
+        <h3 className="text-lg font-semibold">Today's Progress</h3>
+        <p className="text-sm text-muted-foreground">{completedTasks} / {totalTasks} tasks completed</p>
+        <Progress value={progress} className="w-[150px] mt-2" />
+      </div>
+      <div className="flex space-x-2">
+        <Button variant="outline" onClick={handleRefresh}>
           <RefreshCcw className="mr-2 h-4 w-4" /> Refresh
         </Button>
+        {/* Add Task button is typically handled by a separate component or dialog */}
       </div>
-      <div className="flex items-center space-x-2">
-        <span className="text-sm text-muted-foreground">
-          {dailyProgress.completed}/{dailyProgress.total} tasks completed
-        </span>
-        <Progress value={(dailyProgress.completed / dailyProgress.total) * 100} className="w-[100px]" />
-      </div>
-    </div>
+    </Card>
   );
 };
 
