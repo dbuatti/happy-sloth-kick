@@ -1,82 +1,94 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from './useAuth';
+import { useAuth } from '@/context/AuthContext';
 import { SleepRecord, NewSleepRecordData, UpdateSleepRecordData } from '@/types';
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 
-const fetchSleepRecord = async (userId: string, date: string): Promise<SleepRecord | null> => {
-  const { data, error } = await supabase
-    .from('sleep_records')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('date', date)
-    .single();
-
-  if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
-    throw error;
-  }
-  return data as SleepRecord | null;
-};
-
-const saveSleepRecord = async (record: NewSleepRecordData & { user_id: string }): Promise<SleepRecord> => {
-  const { data, error } = await supabase
-    .from('sleep_records')
-    .insert(record)
-    .select('*')
-    .single();
-  if (error) throw error;
-  return data as SleepRecord;
-};
-
-const updateSleepRecord = async (id: string, updates: UpdateSleepRecordData): Promise<SleepRecord> => {
-  const { data, error } = await supabase
-    .from('sleep_records')
-    .update(updates)
-    .eq('id', id)
-    .select('*')
-    .single();
-  if (error) throw error;
-  return data as SleepRecord;
-};
-
 export const useSleepRecords = (date: Date) => {
-  const { userId, isLoading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const userId = user?.id;
   const queryClient = useQueryClient();
-  const formattedDate = format(date, 'yyyy-MM-dd');
+
+  const invalidateSleepRecordsQueries = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['sleepRecords', userId, format(date, 'yyyy-MM-dd')] });
+    queryClient.invalidateQueries({ queryKey: ['sleepAnalytics', userId] }); // Invalidate analytics too
+    queryClient.invalidateQueries({ queryKey: ['sleepDiary', userId] }); // Invalidate diary too
+  }, [queryClient, userId, date]);
 
   const { data: sleepRecord, isLoading, error } = useQuery<SleepRecord | null, Error>({
-    queryKey: ['sleepRecord', userId, formattedDate],
+    queryKey: ['sleepRecords', userId, format(date, 'yyyy-MM-dd')],
     queryFn: async () => {
       if (!userId) return null;
-      return fetchSleepRecord(userId, formattedDate);
+      const { data, error } = await supabase
+        .from('sleep_records')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('date', format(date, 'yyyy-MM-dd'))
+        .single();
+
+      if (error && error.code === 'PGRST116') return null; // No rows found
+      if (error) throw error;
+      return data;
     },
     enabled: !!userId && !authLoading,
   });
 
-  const invalidateSleepRecordQueries = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['sleepRecord', userId, formattedDate] });
-    queryClient.invalidateQueries({ queryKey: ['sleepAnalytics', userId] }); // Invalidate analytics too
-    queryClient.invalidateQueries({ queryKey: ['sleepDiary', userId] }); // Invalidate diary too
-  }, [queryClient, userId, formattedDate]);
-
-  const saveSleepRecordMutation = useMutation<SleepRecord, Error, NewSleepRecordData>({
-    mutationFn: async (dataToSave) => {
-      if (!userId) throw new Error('User not authenticated.');
-      const existingRecord = await fetchSleepRecord(userId, dataToSave.date);
-      if (existingRecord) {
-        return updateSleepRecord(existingRecord.id, dataToSave);
-      } else {
-        return saveSleepRecord({ ...dataToSave, user_id: userId });
-      }
+  const addSleepRecordMutation = useMutation<SleepRecord, Error, NewSleepRecordData, unknown>({
+    mutationFn: async (newRecordData) => {
+      if (!userId) throw new Error('User not authenticated');
+      const { data, error } = await supabase
+        .from('sleep_records')
+        .insert({ ...newRecordData, user_id: userId })
+        .select('*')
+        .single();
+      if (error) throw error;
+      return data;
     },
-    onSuccess: invalidateSleepRecordQueries,
+    onSuccess: () => {
+      invalidateSleepRecordsQueries();
+    },
+  });
+
+  const updateSleepRecordMutation = useMutation<SleepRecord, Error, { id: string; updates: UpdateSleepRecordData }, unknown>({
+    mutationFn: async ({ id, updates }) => {
+      if (!userId) throw new Error('User not authenticated');
+      const { data, error } = await supabase
+        .from('sleep_records')
+        .update(updates)
+        .eq('id', id)
+        .eq('user_id', userId)
+        .select('*')
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      invalidateSleepRecordsQueries();
+    },
+  });
+
+  const deleteSleepRecordMutation = useMutation<void, Error, string, unknown>({
+    mutationFn: async (id) => {
+      if (!userId) throw new Error('User not authenticated');
+      const { error } = await supabase
+        .from('sleep_records')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', userId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      invalidateSleepRecordsQueries();
+    },
   });
 
   return {
     sleepRecord,
     isLoading,
     error,
-    saveSleepRecord: saveSleepRecordMutation.mutateAsync,
+    addSleepRecord: addSleepRecordMutation.mutateAsync,
+    updateSleepRecord: updateSleepRecordMutation.mutateAsync,
+    deleteSleepRecord: deleteSleepRecordMutation.mutateAsync,
   };
 };

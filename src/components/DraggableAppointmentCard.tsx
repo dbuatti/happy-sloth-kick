@@ -1,50 +1,35 @@
 import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import { Appointment } from '@/hooks/useAppointments';
-import { Task } from '@/hooks/useTasks';
+import { Appointment, Task } from '@/types'; // Corrected imports
 import AppointmentCard from './AppointmentCard';
-import { differenceInMinutes, parseISO, isValid } from 'date-fns';
 
 interface DraggableAppointmentCardProps {
   appointment: Appointment;
-  task?: Task;
   onEdit: (appointment: Appointment) => void;
-  onUnschedule: (appointmentId: string) => void;
-  trackIndex: number; // New prop
-  totalTracks: number; // New prop
-  style?: React.CSSProperties; // Make style prop optional
+  onDelete: (id: string) => void;
+  linkedTask?: Task;
 }
 
-const DraggableAppointmentCard: React.FC<DraggableAppointmentCardProps> = (props) => {
-  const { appointment, trackIndex, totalTracks } = props; // Destructure new props
-
-  const startTime = appointment.start_time ? parseISO(`2000-01-01T${appointment.start_time}`) : null;
-  const endTime = appointment.end_time ? parseISO(`2000-01-01T${appointment.end_time}`) : null;
-  const duration = startTime && endTime && isValid(startTime) && isValid(endTime) ? differenceInMinutes(endTime, startTime) : 0;
-
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: `appointment-${appointment.id}`,
+const DraggableAppointmentCard: React.FC<DraggableAppointmentCardProps> = ({ appointment, onEdit, onDelete, linkedTask }) => {
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+    id: appointment.id,
     data: {
-      type: 'appointment',
+      type: 'Appointment',
       appointment,
-      duration,
     },
   });
 
-  const draggableStyle: React.CSSProperties = {
-    opacity: isDragging ? 0.5 : 1,
-    ...props.style, // Merge passed style with draggable style
-    position: 'relative', // Make this container relative for absolute children
-    height: '100%', // Ensure it fills its grid row height
-  };
+  const style = transform ? {
+    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+  } : undefined;
 
   return (
-    <div ref={setNodeRef} style={draggableStyle} {...attributes} {...listeners} className="cursor-grab touch-none select-none">
+    <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
       <AppointmentCard
-        {...props}
-        // Pass positioning props to AppointmentCard for absolute positioning within this div
-        trackIndex={trackIndex} // Pass trackIndex
-        totalTracks={totalTracks} // Pass totalTracks
+        appointment={appointment}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        linkedTask={linkedTask}
       />
     </div>
   );

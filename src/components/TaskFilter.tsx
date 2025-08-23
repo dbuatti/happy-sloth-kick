@@ -1,190 +1,148 @@
-import { useState } from 'react';
-import { Button } from "@/components/ui/button";
+import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Search, Filter, X, ListRestart } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
-import { TaskSection, Category } from '@/hooks/useTasks';
+import { TaskSection, TaskCategory } from '@/types'; // Corrected import for Category to TaskCategory
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 interface TaskFilterProps {
-  currentDate: Date;
-  setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
-  searchFilter: string;
-  setSearchFilter: (value: string) => void;
-  statusFilter: string;
-  setStatusFilter: (value: string) => void;
-  categoryFilter: string;
-  setCategoryFilter: (value: string) => void;
-  priorityFilter: string;
-  setPriorityFilter: (value: string) => void;
-  sectionFilter: string;
-  setSectionFilter: (value: string) => void;
+  filterStatus: string;
+  setFilterStatus: (status: string) => void;
+  filterCategory: string;
+  setFilterCategory: (categoryId: string) => void;
+  filterPriority: string;
+  setFilterPriority: (priority: string) => void;
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
+  filterDueDate: Date | undefined;
+  setFilterDueDate: (date: Date | undefined) => void;
+  showCompleted: boolean;
+  setShowCompleted: (show: boolean) => void;
+  categories: TaskCategory[];
   sections: TaskSection[];
-  allCategories: Category[];
-  searchRef: React.RefObject<HTMLInputElement>;
 }
 
 const TaskFilter: React.FC<TaskFilterProps> = ({
-  searchFilter,
-  setSearchFilter,
-  statusFilter,
-  setStatusFilter,
-  categoryFilter,
-  setCategoryFilter,
-  priorityFilter,
-  setPriorityFilter,
-  sectionFilter,
-  setSectionFilter,
+  filterStatus,
+  setFilterStatus,
+  filterCategory,
+  setFilterCategory,
+  filterPriority,
+  setFilterPriority,
+  searchQuery,
+  setSearchQuery,
+  filterDueDate,
+  setFilterDueDate,
+  showCompleted,
+  setShowCompleted,
+  categories,
   sections,
-  allCategories,
-  searchRef,
 }) => {
-  const [showAdvanced, setShowAdvanced] = useState(false);
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchFilter(e.target.value);
-  };
-
-  const handleClearSearch = () => {
-    setSearchFilter('');
-  };
-
-  const handleStatusChange = (value: string) => {
-    setStatusFilter(value);
-  };
-
-  const handleCategoryChange = (value: string) => {
-    setCategoryFilter(value);
-  };
-
-  const handlePriorityChange = (value: string) => {
-    setPriorityFilter(value);
-  };
-
-  const handleSectionChange = (value: string) => {
-    setSectionFilter(value);
-  };
-
-  const clearAllFilters = () => {
-    setSearchFilter('');
-    setStatusFilter('all');
-    setCategoryFilter('all');
-    setPriorityFilter('all');
-    setSectionFilter('all');
-    setShowAdvanced(false);
-  };
-
-  const isAnyFilterActive = searchFilter !== '' || statusFilter !== 'all' || categoryFilter !== 'all' || priorityFilter !== 'all' || sectionFilter !== 'all';
-
   return (
-    <div className="flex flex-col sm:flex-row gap-3 px-4 py-3"> {/* Removed mb-4, adjusted padding */}
-      <div className="relative flex-1">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+    <div className="flex flex-wrap items-center gap-4 mb-6">
+      <div className="flex items-center gap-2">
+        <Label htmlFor="status-filter">Status:</Label>
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger id="status-filter" className="w-[120px]">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+            <SelectItem value="to-do">To Do</SelectItem>
+            <SelectItem value="completed">Completed</SelectItem>
+            <SelectItem value="archived">Archived</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Label htmlFor="category-filter">Category:</Label>
+        <Select value={filterCategory} onValueChange={setFilterCategory}>
+          <SelectTrigger id="category-filter" className="w-[150px]">
+            <SelectValue placeholder="Category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+            {categories.map(category => (
+              <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Label htmlFor="priority-filter">Priority:</Label>
+        <Select value={filterPriority} onValueChange={setFilterPriority}>
+          <SelectTrigger id="priority-filter" className="w-[120px]">
+            <SelectValue placeholder="Priority" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+            <SelectItem value="urgent">Urgent</SelectItem>
+            <SelectItem value="high">High</SelectItem>
+            <SelectItem value="medium">Medium</SelectItem>
+            <SelectItem value="low">Low</SelectItem>
+            <SelectItem value="none">None</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Label htmlFor="search-query">Search:</Label>
         <Input
-          ref={searchRef}
+          id="search-query"
           placeholder="Search tasks..."
-          value={searchFilter}
-          onChange={handleSearchChange}
-          className="pl-10 h-9"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-[200px]"
         />
-        {searchFilter && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="absolute right-2 top-1/2 h-7 w-7 -translate-y-1/2 p-0"
-            onClick={handleClearSearch}
-          >
-            <X className="h-3.5 w-3.5" />
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Label htmlFor="due-date-filter">Due Date:</Label>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant={"outline"}
+              className={cn(
+                "w-[180px] justify-start text-left font-normal",
+                !filterDueDate && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {filterDueDate ? format(filterDueDate, "PPP") : <span>Pick a date</span>}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0">
+            <Calendar
+              mode="single"
+              selected={filterDueDate}
+              onSelect={setFilterDueDate}
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
+        {filterDueDate && (
+          <Button variant="ghost" size="sm" onClick={() => setFilterDueDate(undefined)}>
+            Clear
           </Button>
         )}
       </div>
 
-      <div className="flex gap-2">
-        <Popover open={showAdvanced} onOpenChange={setShowAdvanced}>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className="gap-2 h-9">
-              <Filter className="h-4 w-4" />
-              Filter
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-80 p-4">
-            <div className="grid gap-4">
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select value={statusFilter} onValueChange={handleStatusChange}>
-                  <SelectTrigger className="h-9">
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent className="z-[9999]">
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="to-do">To Do</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="skipped">Skipped</SelectItem>
-                    <SelectItem value="archived">Archived</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Category</Label>
-                <Select value={categoryFilter} onValueChange={handleCategoryChange}>
-                  <SelectTrigger className="h-9">
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent className="z-[9999]">
-                    <SelectItem value="all">All</SelectItem>
-                    {allCategories.map(cat => (
-                      <SelectItem key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Priority</Label>
-                <Select value={priorityFilter} onValueChange={handlePriorityChange}>
-                  <SelectTrigger className="h-9">
-                    <SelectValue placeholder="Select priority" />
-                  </SelectTrigger>
-                  <SelectContent className="z-[9999]">
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="urgent">Urgent</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Section</Label>
-                <Select value={sectionFilter} onValueChange={handleSectionChange}>
-                  <SelectTrigger className="h-9">
-                    <SelectValue placeholder="Select section" />
-                  </SelectTrigger>
-                  <SelectContent className="z-[9999]">
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="no-section">No Section</SelectItem>
-                    {sections.map(section => (
-                      <SelectItem key={section.id} value={section.id}>
-                        {section.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </PopoverContent>
-        </Popover>
-        {isAnyFilterActive && (
-          <Button variant="outline" onClick={clearAllFilters} className="gap-2 h-9">
-            <ListRestart className="h-4 w-4" />
-            Clear Filters
-          </Button>
-        )}
+      <div className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          id="show-completed"
+          checked={showCompleted}
+          onChange={(e) => setShowCompleted(e.target.checked)}
+          className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+        />
+        <Label htmlFor="show-completed">Show Completed</Label>
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext'; // Corrected import path for useAuth
 import {
   Task,
   TaskCategory,
@@ -19,16 +20,16 @@ import { isSameDay, isPast, startOfDay } from 'date-fns';
 
 // Helper to clean task data for DB insertion/update
 const cleanTaskForDb = (task: Partial<Task> & { user_id: string }): Omit<NewTaskData, 'category_color' | 'is_daily_recurring'> => {
-  const cleaned: OOmit<NewTaskData, 'category_color' | 'is_daily_recurring'> = {
+  const cleaned: Omit<NewTaskData, 'category_color' | 'is_daily_recurring'> = { // Corrected OOmit to Omit
     user_id: task.user_id,
-    description: task.description || '', // Ensure description is always a string
+    description: task.description || '',
     status: task.status || 'to-do',
     priority: task.priority || 'medium',
     due_date: task.due_date || null,
     notes: task.notes || null,
     remind_at: task.remind_at || null,
     section_id: task.section_id || null,
-    order: task.order ?? 0, // Use nullish coalescing for order
+    order: task.order ?? 0,
     parent_task_id: task.parent_task_id || null,
     recurring_type: task.recurring_type || 'none',
     original_task_id: task.original_task_id || null,
@@ -103,7 +104,7 @@ export const useTasks = ({ userId: propUserId, isDemo = false, demoUserId }: Use
         .eq('user_id', currentUserId)
         .order('order', { ascending: true });
       if (error) throw error;
-      return data;
+      return data as TaskSection[]; // Explicitly cast to TaskSection[]
     },
     enabled: !!currentUserId && !authLoading,
   });
@@ -114,7 +115,7 @@ export const useTasks = ({ userId: propUserId, isDemo = false, demoUserId }: Use
       if (!currentUserId) throw new Error('User not authenticated');
       const { data, error } = await supabase
         .from('tasks')
-        .insert(cleanTaskForDb({ ...newTaskData, user_id: currentUserId }))
+        .insert(cleanTaskForDb({ ...newTaskData, user_id: currentUserId } as Partial<Task> & { user_id: string })) // Corrected type assertion
         .select('*, category(color, name)')
         .single();
       if (error) throw error;
@@ -222,7 +223,7 @@ export const useTasks = ({ userId: propUserId, isDemo = false, demoUserId }: Use
         .select('*')
         .single();
       if (error) throw error;
-      return data;
+      return data as TaskSection; // Explicitly cast
     },
     onSuccess: () => {
       invalidateSectionsQueries();
@@ -241,7 +242,7 @@ export const useTasks = ({ userId: propUserId, isDemo = false, demoUserId }: Use
         .select('*')
         .single();
       if (error) throw error;
-      return data;
+      return data as TaskSection; // Explicitly cast
     },
     onSuccess: () => {
       invalidateSectionsQueries();
@@ -268,7 +269,7 @@ export const useTasks = ({ userId: propUserId, isDemo = false, demoUserId }: Use
   const updateSectionsOrderMutation = useMutation<void, Error, { id: string; order: number; name: string; user_id: string; include_in_focus_mode: boolean | null }[], unknown>({
     mutationFn: async (updates) => {
       if (!currentUserId) throw new Error('User not authenticated');
-      const { error } = await supabase.rpc('update_sections_order', { updates });
+      const { error } = await supabase.rpc('update_sections_order', { updates: updates as any }); // Cast to any for rpc
       if (error) throw error;
     },
     onSuccess: () => {
@@ -297,17 +298,17 @@ export const useTasks = ({ userId: propUserId, isDemo = false, demoUserId }: Use
     if (activeIndex === -1) return;
 
     let newTasks = [...tasks];
-    let newOrder = 0;
+    // let newOrder = 0; // Removed unused variable
 
     if (overId === null) {
       // Dropped into a section or general area
       const siblings = newTasks.filter(t => t.parent_task_id === parentTaskId && t.section_id === sectionId);
       newTasks = arrayMove(siblings, activeIndex, siblings.length - 1);
-      newOrder = siblings.length - 1;
+      // newOrder = siblings.length - 1; // Removed unused variable
     } else {
       // Dropped onto another task
       newTasks = arrayMove(newTasks, activeIndex, overIndex);
-      newOrder = overIndex;
+      // newOrder = overIndex; // Removed unused variable
     }
 
     const updates = newTasks.map((task, index) => ({
@@ -323,14 +324,14 @@ export const useTasks = ({ userId: propUserId, isDemo = false, demoUserId }: Use
   const reorderSections = useCallback(async (activeId: string, overId: string | null) => {
     if (!sections) return;
 
-    const activeIndex = sections.findIndex(s => s.id === activeId);
-    const overIndex = sections.findIndex(s => s.id === overId);
+    const activeIndex = sections.findIndex((s: TaskSection) => s.id === activeId); // Explicitly typed s
+    const overIndex = sections.findIndex((s: TaskSection) => s.id === overId); // Explicitly typed s
 
     if (activeIndex === -1) return;
 
     const newSections = arrayMove(sections, activeIndex, overIndex);
 
-    const updates = newSections.map((section, index) => ({
+    const updates = newSections.map((section: TaskSection, index) => ({ // Explicitly typed section
       id: section.id,
       name: section.name,
       order: index,

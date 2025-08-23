@@ -1,10 +1,11 @@
 import React, { useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from 'recharts';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
-import { DateRange } from 'react-day-picker';
+import { format, startOfMonth, endOfMonth, parseISO } from 'date-fns'; // Added parseISO
+import { DateRange } from 'react-day-picker'; // Keep DateRange import
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useSleepAnalytics } from '@/hooks/useSleepAnalytics';
 import { SleepAnalyticsData, SleepDashboardProps } from '@/types';
+import { DateRangePicker } from '@/components/ui/date-range-picker'; // Added DateRangePicker import
 
 const SleepDashboard: React.FC<SleepDashboardProps> = ({ dateRange, setDateRange }) => {
   const { analyticsData, isLoading, error } = useSleepAnalytics(
@@ -24,12 +25,12 @@ const SleepDashboard: React.FC<SleepDashboardProps> = ({ dateRange, setDateRange
       };
     }
 
-    const totalSleepSum = analyticsData.reduce((sum, d) => sum + d.totalSleepMinutes, 0);
-    const timeInBedSum = analyticsData.reduce((sum, d) => sum + d.timeInBedMinutes, 0);
-    const timeToFallAsleepSum = analyticsData.reduce((sum, d) => sum + d.timeToFallAsleep, 0);
-    const sleepEfficiencySum = analyticsData.reduce((sum, d) => sum + d.sleepEfficiency, 0);
-    const interruptionsCountSum = analyticsData.reduce((sum, d) => sum + d.interruptionsCount, 0);
-    const interruptionsDurationSum = analyticsData.reduce((sum, d) => sum + d.interruptionsDurationMinutes, 0);
+    const totalSleepSum = analyticsData.reduce((sum: number, d: SleepAnalyticsData) => sum + d.totalSleepMinutes, 0);
+    const timeInBedSum = analyticsData.reduce((sum: number, d: SleepAnalyticsData) => sum + d.timeInBedMinutes, 0);
+    const timeToFallAsleepSum = analyticsData.reduce((sum: number, d: SleepAnalyticsData) => sum + d.timeToFallAsleep, 0);
+    const sleepEfficiencySum = analyticsData.reduce((sum: number, d: SleepAnalyticsData) => sum + d.sleepEfficiency, 0);
+    const interruptionsCountSum = analyticsData.reduce((sum: number, d: SleepAnalyticsData) => sum + d.interruptionsCount, 0);
+    const interruptionsDurationSum = analyticsData.reduce((sum: number, d: SleepAnalyticsData) => sum + d.interruptionsDurationMinutes, 0);
 
     const count = analyticsData.length;
 

@@ -1,126 +1,115 @@
-import React, { useState } from 'react';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Badge } from "@/components/ui/badge";
+import React, { useState, useCallback } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { X, Tag, Plus } from 'lucide-react';
-import { DevIdeaTag } from '@/hooks/useDevIdeas';
+import { DevIdeaTag, NewDevIdeaTagData } from '@/types'; // Corrected import
 import { getRandomTagColor } from '@/lib/tagColors';
+import { toast } from 'react-hot-toast';
 
 interface TagInputProps {
-  allTags: DevIdeaTag[];
   selectedTags: DevIdeaTag[];
-  setSelectedTags: React.Dispatch<React.SetStateAction<DevIdeaTag[]>>;
-  onAddTag: (name: string, color: string) => Promise<DevIdeaTag | null>;
+  allTags: DevIdeaTag[];
+  onAddTag: (tagName: string, color: string) => Promise<DevIdeaTag | undefined>;
+  onRemoveTag: (tagId: string) => void;
+  onSelectExistingTag: (tag: DevIdeaTag) => void;
 }
 
-const TagInput: React.FC<TagInputProps> = ({ allTags, selectedTags, setSelectedTags, onAddTag }) => {
-  const [open, setOpen] = useState(false);
+const TagInput: React.FC<TagInputProps> = ({
+  selectedTags,
+  allTags,
+  onAddTag,
+  onRemoveTag,
+  onSelectExistingTag,
+}) => {
   const [inputValue, setInputValue] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
-  const handleSelectTag = (tag: DevIdeaTag) => {
-    if (!selectedTags.some(t => t.id === tag.id)) {
-      setSelectedTags(prev => [...prev, tag]);
-    }
-    setInputValue('');
-    setOpen(false);
-  };
-
-  const handleCreateTag = async () => {
-    const newTagName = inputValue.trim();
-    if (newTagName && !allTags.some(t => t.name.toLowerCase() === newTagName.toLowerCase())) {
-      const newTag = await onAddTag(newTagName, getRandomTagColor());
-      if (newTag) {
-        handleSelectTag(newTag);
-      }
-    }
-  };
-
-  const handleRemoveTag = (tagId: string) => {
-    setSelectedTags(prev => prev.filter(t => t.id !== tagId));
-  };
-
-  const handleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      const exactMatch = filteredTags.find(t => t.name.toLowerCase() === inputValue.trim().toLowerCase());
-      if (exactMatch) {
-        handleSelectTag(exactMatch);
-      } else if (canCreate) {
-        await handleCreateTag();
-      }
-    }
-  };
-
-  const filteredTags = allTags.filter(tag => 
-    !selectedTags.some(selected => selected.id === tag.id) &&
-    tag.name.toLowerCase().includes(inputValue.toLowerCase())
+  const availableTags = allTags.filter(
+    (tag) => !selectedTags.some((selected) => selected.id === tag.id)
   );
 
-  const canCreate = inputValue.trim().length > 0 && !allTags.some(t => t.name.toLowerCase() === inputValue.trim().toLowerCase());
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInputValue(e.target.value);
+    setShowSuggestions(true);
+  };
+
+  const handleAddTag = useCallback(async () => {
+    if (inputValue.trim() === '') return;
+
+    const existingTag = allTags.find(
+      (tag) => tag.name.toLowerCase() === inputValue.trim().toLowerCase()
+    );
+
+    if (existingTag) {
+      onSelectExistingTag(existingTag);
+    } else {
+      const newColor = getRandomTagColor();
+      try {
+        await onAddTag(inputValue.trim(), newColor);
+        toast.success(`Tag "${inputValue.trim()}" added!`);
+      } catch (error) {
+        toast.error(`Failed to add tag: ${(error as Error).message}`);
+      }
+    }
+    setInputValue('');
+    setShowSuggestions(false);
+  }, [inputValue, allTags, onAddTag, onSelectExistingTag]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddTag();
+    }
+  };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <div className="border rounded-md p-2 min-h-[40px]">
-        <div className="flex flex-wrap gap-1 mb-1">
-          {selectedTags.map(tag => (
-            <Badge key={tag.id} style={{ backgroundColor: tag.color }} className="text-white">
-              {tag.name}
-              <button
-                type="button"
-                className="ml-1 rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                onClick={() => handleRemoveTag(tag.id)}
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
+    <div className="relative">
+      <div className="flex flex-wrap gap-2 mb-2">
+        {selectedTags.map((tag) => (
+          <Badge key={tag.id} style={{ backgroundColor: tag.color }} className="text-white flex items-center">
+            {tag.name}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="ml-1 h-4 w-4 p-0 text-white hover:bg-white/20"
+              onClick={() => onRemoveTag(tag.id)}
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </Badge>
+        ))}
+      </div>
+      <div className="flex space-x-2">
+        <Input
+          placeholder="Add new tag or select existing..."
+          value={inputValue}
+          onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
+          onFocus={() => setShowSuggestions(true)}
+          onBlur={() => setTimeout(() => setShowSuggestions(false), 100)} // Delay to allow click on suggestions
+        />
+        <Button onClick={handleAddTag}>
+          <Plus className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {showSuggestions && availableTags.length > 0 && (
+        <div className="absolute z-10 w-full bg-white border rounded-md shadow-lg mt-1 dark:bg-gray-800 dark:border-gray-700">
+          {availableTags.map((tag) => (
+            <div
+              key={tag.id}
+              className="px-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+              onMouseDown={() => onSelectExistingTag(tag)} // Use onMouseDown to prevent blur from closing before click
+            >
+              <Badge style={{ backgroundColor: tag.color }} className="text-white mr-2">
+                {tag.name}
+              </Badge>
+            </div>
           ))}
         </div>
-        <PopoverTrigger asChild>
-          <input
-            placeholder="Add a tag..."
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            className="w-full bg-transparent outline-none placeholder:text-muted-foreground"
-          />
-        </PopoverTrigger>
-      </div>
-      <PopoverContent className="w-[200px] p-0">
-        <Command>
-          <CommandInput placeholder="Search or create tag..." className="h-9" />
-          <CommandList>
-            <CommandGroup>
-              {filteredTags.map((tag) => (
-                <CommandItem
-                  key={tag.id}
-                  value={tag.name}
-                  onSelect={() => handleSelectTag(tag)}
-                >
-                  <Tag className="mr-2 h-4 w-4" style={{ color: tag.color }} />
-                  {tag.name}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-            <CommandEmpty>
-              {canCreate ? (
-                <div
-                  className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent"
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    handleCreateTag();
-                  }}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create "{inputValue.trim()}"
-                </div>
-              ) : (
-                <div className="py-6 text-center text-sm">No tags found.</div>
-              )}
-            </CommandEmpty>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+      )}
+    </div>
   );
 };
 

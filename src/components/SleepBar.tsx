@@ -1,92 +1,69 @@
 import React from 'react';
-import { SleepRecord } from '@/hooks/useSleepRecords';
+import { SleepRecord } from '@/types'; // Corrected import
 import { format, parseISO, differenceInMinutes, addMinutes, isValid } from 'date-fns';
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Info } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface SleepBarProps {
   record: SleepRecord;
 }
 
-// The timeline view spans from 6 PM to 12 PM (noon) the next day = 18 hours.
-const TOTAL_MINUTES_IN_VIEW = 18 * 60;
-const VIEW_START_HOUR = 18; // 6 PM
-
-const timeToPercentage = (time: Date) => {
-  let hours = time.getHours();
-  const minutes = time.getMinutes();
-  
-  // Adjust hours for the timeline (e.g., 18:00 is 0%, 00:00 is 33.3%, 12:00 is 100%)
-  if (hours < VIEW_START_HOUR) {
-    hours += 24; // Treat 1 AM as 25, etc.
-  }
-  
-  const minutesFromStart = (hours - VIEW_START_HOUR) * 60 + minutes;
-  return (minutesFromStart / TOTAL_MINUTES_IN_VIEW) * 100;
-};
-
 const SleepBar: React.FC<SleepBarProps> = ({ record }) => {
-  if (!record.bed_time || !record.wake_up_time) {
-    return <div className="h-8 flex items-center text-xs text-muted-foreground pl-2">Incomplete data</div>;
+  if (!record || !record.bed_time || !record.wake_up_time) {
+    return null;
   }
 
-  // Parse times, handling overnight logic
-  let bedTime = parseISO(`${record.date}T${record.bed_time}`);
-  if (bedTime.getHours() >= 12) { // If bed time is in the PM, it's for the previous calendar day's sleep record
-      bedTime = addMinutes(bedTime, -1440);
-  }
+  const bedTime = parseISO(`${record.date}T${record.bed_time}`);
   const wakeUpTime = parseISO(`${record.date}T${record.wake_up_time}`);
+  const lightsOffTime = record.lights_off_time ? parseISO(`${record.date}T${record.lights_off_time}`) : bedTime;
+  const getOutOfBedTime = record.get_out_of_bed_time ? parseISO(`${record.date}T${record.get_out_of_bed_time}`) : wakeUpTime;
 
-  if (!isValid(bedTime) || !isValid(wakeUpTime)) {
-    return <div className="h-8 flex items-center text-xs text-muted-foreground pl-2">Invalid time data</div>;
+  // Adjust wakeUpTime/getOutOfBedTime if sleep spans across midnight
+  let adjustedWakeUpTime = wakeUpTime;
+  let adjustedGetOutOfBedTime = getOutOfBedTime;
+  if (wakeUpTime.getTime() < bedTime.getTime()) {
+    adjustedWakeUpTime = addMinutes(wakeUpTime, 24 * 60);
+    adjustedGetOutOfBedTime = addMinutes(getOutOfBedTime, 24 * 60);
   }
 
-  const timeToFallAsleep = record.time_to_fall_asleep_minutes ?? 0;
-  const lightsOffTime = addMinutes(bedTime, timeToFallAsleep);
-  const totalSleepMinutes = differenceInMinutes(wakeUpTime, lightsOffTime) - (record.sleep_interruptions_duration_minutes ?? 0);
+  const totalDuration = differenceInMinutes(adjustedGetOutOfBedTime, bedTime);
+  const sleepDuration = differenceInMinutes(adjustedWakeUpTime, lightsOffTime) - (record.sleep_interruptions_duration_minutes || 0);
+  const timeToFallAsleep = record.time_to_fall_asleep_minutes || 0;
 
-  const barStartPercent = timeToPercentage(bedTime);
-  const barEndPercent = timeToPercentage(wakeUpTime);
-  const barWidthPercent = barEndPercent - barStartPercent;
+  const sleepEfficiency = totalDuration > 0 ? (sleepDuration / totalDuration) * 100 : 0;
 
-  const timeInBedMinutes = differenceInMinutes(wakeUpTime, bedTime);
-  const timeToFallAsleepWidthPercent = timeInBedMinutes > 0 ? (timeToFallAsleep / timeInBedMinutes) * 100 : 0;
+  const bedTimeStr = format(bedTime, 'h:mm a');
+  const wakeUpTimeStr = format(adjustedWakeUpTime, 'h:mm a');
+  const sleepDurationHours = Math.floor(sleepDuration / 60);
+  const sleepDurationMinutes = sleepDuration % 60;
 
   return (
-    <div className="h-8 flex items-center" style={{ paddingLeft: `${barStartPercent}%`, width: `${barWidthPercent}%` }}>
+    <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <div className="w-full h-6 bg-yellow-500 rounded-md flex items-center relative overflow-hidden border border-black/20 cursor-pointer">
-            {/* Time to fall asleep */}
-            <div className="bg-blue-500 h-full" style={{ width: `${timeToFallAsleepWidthPercent}%` }}></div>
-            
-            {/* Interruptions */}
-            {Array.from({ length: record.sleep_interruptions_count ?? 0 }).map((_, i) => (
-              <div key={i} className="absolute h-full w-px bg-black/30" style={{ left: `${timeToFallAsleepWidthPercent + (i + 1) * (100 - timeToFallAsleepWidthPercent) / ((record.sleep_interruptions_count ?? 0) + 1)}%` }}></div>
-            ))}
-
-            <span className="absolute left-1/2 -translate-x-1/2 text-xs font-bold text-black mix-blend-overlay whitespace-nowrap">
-              {Math.floor(totalSleepMinutes / 60)}h {totalSleepMinutes % 60}m
-            </span>
+          <div className="flex flex-col items-center space-y-1 w-full">
+            <div className="text-sm text-gray-500 dark:text-gray-400">{format(parseISO(record.date), 'EEE, MMM d')}</div>
+            <div className="relative w-full h-6 bg-gray-200 rounded-full overflow-hidden dark:bg-gray-700">
+              <div
+                className="absolute h-full bg-blue-500 rounded-full"
+                style={{ width: `${sleepEfficiency}%` }}
+              ></div>
+            </div>
           </div>
         </TooltipTrigger>
         <TooltipContent>
-          <p><strong>Date:</strong> {format(parseISO(record.date), 'EEE, MMM d')}</p>
-          <p><strong>In Bed:</strong> {format(bedTime, 'p')}</p>
-          <p><strong>Asleep:</strong> {format(lightsOffTime, 'p')}</p>
-          <p><strong>Woke Up:</strong> {format(wakeUpTime, 'p')}</p>
-          <p><strong>Total Sleep:</strong> {Math.floor(totalSleepMinutes / 60)}h {totalSleepMinutes % 60}m</p>
+          <p><strong>Date:</strong> {format(parseISO(record.date), 'PPP')}</p>
+          <p><strong>Bed Time:</strong> {bedTimeStr}</p>
+          <p><strong>Wake Up Time:</strong> {wakeUpTimeStr}</p>
+          <p><strong>Total Sleep:</strong> {sleepDurationHours}h {sleepDurationMinutes}m</p>
+          <p><strong>Time to Fall Asleep:</strong> {timeToFallAsleep} min</p>
+          <p><strong>Sleep Efficiency:</strong> {sleepEfficiency.toFixed(1)}%</p>
+          {record.sleep_interruptions_count && record.sleep_interruptions_count > 0 && (
+            <p><strong>Interruptions:</strong> {record.sleep_interruptions_count} ({record.sleep_interruptions_duration_minutes} min)</p>
+          )}
         </TooltipContent>
       </Tooltip>
-      <Tooltip>
-        <TooltipTrigger asChild>
-            <Info className="h-4 w-4 text-muted-foreground ml-2 cursor-pointer flex-shrink-0" />
-        </TooltipTrigger>
-        <TooltipContent>
-            <p>Click the bar for full details</p>
-        </TooltipContent>
-      </Tooltip>
-    </div>
+    </TooltipProvider>
   );
 };
 

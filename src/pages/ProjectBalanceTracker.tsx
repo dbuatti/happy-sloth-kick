@@ -1,22 +1,22 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProjects } from '@/hooks/useProjects';
-import { Project, NewProjectData, ProjectBalanceTrackerProps } from '@/types';
+import { Project, NewProjectData, UpdateProjectData, ProjectBalanceTrackerProps } from '@/types'; // Added UpdateProjectData
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import Confetti from 'react-confetti';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, ExternalLink, Edit, Trash2, CheckCircle2 } from 'lucide-react';
+import { Plus, ExternalLink, Edit, Trash2 } from 'lucide-react'; // Removed CheckCircle2
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { toast } from 'react-hot-toast';
 
 const ProjectBalanceTracker: React.FC<ProjectBalanceTrackerProps> = ({ isDemo = false, demoUserId }) => {
   const { user, loading: authLoading } = useAuth();
-  const currentUserId = isDemo ? demoUserId : user?.id;
-  const [sortOption, setSortOption] = useState('created_at');
+  const currentUserId = isDemo ? demoUserId : user?.id; // Used currentUserId
+  const [sortOption, setSortOption] = useState<keyof Project>('created_at'); // Explicitly typed sortOption
   const { projects, isLoading, error, addProject, updateProject, deleteProject } = useProjects(sortOption);
 
   const [isAddProjectDialogOpen, setIsAddProjectDialogOpen] = useState(false);
@@ -74,7 +74,7 @@ const ProjectBalanceTracker: React.FC<ProjectBalanceTrackerProps> = ({ isDemo = 
       return;
     }
     try {
-      const updates: UpdateProjectData = {
+      const updates: UpdateProjectData = { // Corrected type
         name: editProjectName.trim(),
         description: editProjectDescription.trim() || null,
         link: editProjectLink.trim() || null,
@@ -219,7 +219,7 @@ const ProjectBalanceTracker: React.FC<ProjectBalanceTrackerProps> = ({ isDemo = 
 
         <div className="flex items-center space-x-2">
           <Label htmlFor="sort">Sort by:</Label>
-          <Select value={sortOption} onValueChange={setSortOption}>
+          <Select value={sortOption} onValueChange={(value) => setSortOption(value as keyof Project)}>
             <SelectTrigger id="sort" className="w-[180px]">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
