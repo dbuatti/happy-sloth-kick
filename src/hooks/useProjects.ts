@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Project, NewProjectData, UpdateProjectData } from '@/types';
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
 
-export const useProjects = (sortOption: keyof Project = 'created_at') => { // Changed sortOption type
+export const useProjects = (sortOption: string = 'created_at') => {
   const { user, loading: authLoading } = useAuth();
   const userId = user?.id;
   const queryClient = useQueryClient();
@@ -21,7 +21,7 @@ export const useProjects = (sortOption: keyof Project = 'created_at') => { // Ch
         .from('projects')
         .select('*')
         .eq('user_id', userId)
-        .order(sortOption, { ascending: true }); // Removed type assertion
+        .order(sortOption as keyof Project, { ascending: true }); // Cast sortOption to keyof Project
       if (error) throw error;
       return data;
     },

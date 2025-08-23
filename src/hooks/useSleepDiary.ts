@@ -1,59 +1,49 @@
-import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { SleepRecord } from '@/types';
 import { useInfiniteQuery, InfiniteData } from '@tanstack/react-query'; // Added InfiniteData
+import { format } from 'date-fns';
 
-interface UseSleepDiaryProps {
-  userId?: string;
-}
-
-export const useSleepDiary = ({ userId }: UseSleepDiaryProps) => {
+export const useSleepDiary = () => {
   const { user, loading: authLoading } = useAuth();
-  const currentUserId = userId || user?.id;
+  const userId = user?.id;
 
   const {
     data,
+    isLoading,
+    error,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-    isLoading,
-    error,
-  } = useInfiniteQuery<SleepRecord[], Error, InfiniteData<SleepRecord[]>, string[], number>({
-    queryKey: ['sleepDiary', currentUserId!],
+  } = useInfiniteQuery<SleepRecord[], Error, InfiniteData<SleepRecord[]>, string[], number>({ // Corrected type for data
+    queryKey: ['sleepDiary', userId!],
     queryFn: async ({ pageParam = 0 }) => {
-      if (!currentUserId) return [];
+      if (!userId) return [];
       const { data, error } = await supabase
         .from('sleep_records')
         .select('*')
-        .eq('user_id', currentUserId)
+        .eq('user_id', userId)
         .order('date', { ascending: false })
         .range(pageParam * 10, (pageParam + 1) * 10 - 1); // Fetch 10 records per page
       if (error) throw error;
       return data;
     },
+    initialPageParam: 0, // Added initialPageParam
     getNextPageParam: (lastPage, allPages) => {
       if (lastPage.length === 0) return undefined;
       return allPages.length;
     },
-    initialPageParam: 0, // Added initialPageParam
-    enabled: !!currentUserId && !authLoading,
+    enabled: !!userId && !authLoading,
   });
 
-  const allSleepRecords = data?.pages.flat() || [];
-
-  const loadMore = useCallback(() => {
-    if (hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
-    }
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+  const allSleepRecords = data?.pages.flat() || []; // Corrected access to data.pages
 
   return {
     allSleepRecords,
     isLoading,
     error,
-    loadMore,
-    hasMore: hasNextPage,
+    fetchNextPage,
+    hasNextPage,
     isFetchingNextPage,
   };
 };

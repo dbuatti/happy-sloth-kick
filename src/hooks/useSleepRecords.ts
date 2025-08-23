@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback } from 'react'; // Kept useCallback as it's used
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { SleepRecord, NewSleepRecordData, UpdateSleepRecordData } from '@/types';
@@ -11,10 +11,10 @@ export const useSleepRecords = (date: Date) => {
   const queryClient = useQueryClient();
 
   const invalidateSleepRecordsQueries = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['sleepRecords', userId, format(date, 'yyyy-MM-dd')] });
+    queryClient.invalidateQueries({ queryKey: ['sleepRecords', userId] });
     queryClient.invalidateQueries({ queryKey: ['sleepAnalytics', userId] }); // Invalidate analytics too
     queryClient.invalidateQueries({ queryKey: ['sleepDiary', userId] }); // Invalidate diary too
-  }, [queryClient, userId, date]);
+  }, [queryClient, userId]);
 
   const { data: sleepRecord, isLoading, error } = useQuery<SleepRecord | null, Error>({
     queryKey: ['sleepRecords', userId, format(date, 'yyyy-MM-dd')],
@@ -27,8 +27,7 @@ export const useSleepRecords = (date: Date) => {
         .eq('date', format(date, 'yyyy-MM-dd'))
         .single();
 
-      if (error && error.code === 'PGRST116') return null; // No rows found
-      if (error) throw error;
+      if (error && error.code !== 'PGRST116') throw error; // PGRST116 means no rows found
       return data;
     },
     enabled: !!userId && !authLoading,

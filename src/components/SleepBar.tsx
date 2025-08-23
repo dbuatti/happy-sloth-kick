@@ -1,69 +1,98 @@
 import React from 'react';
-import { SleepRecord } from '@/types'; // Corrected import
+import { SleepRecord } from '@/types'; // Imported from centralized types
 import { format, parseISO, differenceInMinutes, addMinutes, isValid } from 'date-fns';
-import { Progress } from '@/components/ui/progress';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 
 interface SleepBarProps {
   record: SleepRecord;
 }
 
 const SleepBar: React.FC<SleepBarProps> = ({ record }) => {
-  if (!record || !record.bed_time || !record.wake_up_time) {
-    return null;
+  const bedTime = record.bed_time ? parseISO(`2000-01-01T${record.bed_time}`) : null;
+  const lightsOffTime = record.lights_off_time ? parseISO(`2000-01-01T${record.lights_off_time}`) : null;
+  const wakeUpTime = record.wake_up_time ? parseISO(`2000-01-01T${record.wake_up_time}`) : null;
+  const getOutOfBedTime = record.get_out_of_bed_time ? parseISO(`2000-01-01T${record.get_out_of_bed_time}`) : null;
+
+  if (!bedTime || !lightsOffTime || !wakeUpTime || !getOutOfBedTime || !isValid(bedTime) || !isValid(lightsOffTime) || !isValid(wakeUpTime) || !isValid(getOutOfBedTime)) {
+    return <div className="text-sm text-red-500">Invalid sleep data</div>;
   }
 
-  const bedTime = parseISO(`${record.date}T${record.bed_time}`);
-  const wakeUpTime = parseISO(`${record.date}T${record.wake_up_time}`);
-  const lightsOffTime = record.lights_off_time ? parseISO(`${record.date}T${record.lights_off_time}`) : bedTime;
-  const getOutOfBedTime = record.get_out_of_bed_time ? parseISO(`${record.date}T${record.get_out_of_bed_time}`) : wakeUpTime;
-
-  // Adjust wakeUpTime/getOutOfBedTime if sleep spans across midnight
+  // Adjust wakeUpTime and getOutOfBedTime if sleep spans across midnight
   let adjustedWakeUpTime = wakeUpTime;
   let adjustedGetOutOfBedTime = getOutOfBedTime;
   if (wakeUpTime.getTime() < bedTime.getTime()) {
     adjustedWakeUpTime = addMinutes(wakeUpTime, 24 * 60);
     adjustedGetOutOfBedTime = addMinutes(getOutOfBedTime, 24 * 60);
   }
+  if (lightsOffTime.getTime() < bedTime.getTime()) {
+    lightsOffTime = addMinutes(lightsOffTime, 24 * 60);
+  }
 
   const totalDuration = differenceInMinutes(adjustedGetOutOfBedTime, bedTime);
-  const sleepDuration = differenceInMinutes(adjustedWakeUpTime, lightsOffTime) - (record.sleep_interruptions_duration_minutes || 0);
+  const sleepDuration = differenceInMinutes(adjustedWakeUpTime, lightsOffTime);
   const timeToFallAsleep = record.time_to_fall_asleep_minutes || 0;
+  const interruptionsDuration = record.sleep_interruptions_duration_minutes || 0;
 
-  const sleepEfficiency = totalDuration > 0 ? (sleepDuration / totalDuration) * 100 : 0;
+  const sleepStartOffset = differenceInMinutes(lightsOffTime, bedTime);
+  const sleepEndOffset = differenceInMinutes(adjustedGetOutOfBedTime, adjustedWakeUpTime);
 
-  const bedTimeStr = format(bedTime, 'h:mm a');
-  const wakeUpTimeStr = format(adjustedWakeUpTime, 'h:mm a');
-  const sleepDurationHours = Math.floor(sleepDuration / 60);
-  const sleepDurationMinutes = sleepDuration % 60;
+  const sleepPercentage = (sleepDuration / totalDuration) * 100;
+  const timeToFallAsleepPercentage = (timeToFallAsleep / totalDuration) * 100;
+  const interruptionsPercentage = (interruptionsDuration / totalDuration) * 100;
+  const preSleepOffsetPercentage = (sleepStartOffset / totalDuration) * 100;
+  const postSleepOffsetPercentage = (sleepEndOffset / totalDuration) * 100;
 
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div className="flex flex-col items-center space-y-1 w-full">
-            <div className="text-sm text-gray-500 dark:text-gray-400">{format(parseISO(record.date), 'EEE, MMM d')}</div>
-            <div className="relative w-full h-6 bg-gray-200 rounded-full overflow-hidden dark:bg-gray-700">
-              <div
-                className="absolute h-full bg-blue-500 rounded-full"
-                style={{ width: `${sleepEfficiency}%` }}
-              ></div>
-            </div>
-          </div>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p><strong>Date:</strong> {format(parseISO(record.date), 'PPP')}</p>
-          <p><strong>Bed Time:</strong> {bedTimeStr}</p>
-          <p><strong>Wake Up Time:</strong> {wakeUpTimeStr}</p>
-          <p><strong>Total Sleep:</strong> {sleepDurationHours}h {sleepDurationMinutes}m</p>
-          <p><strong>Time to Fall Asleep:</strong> {timeToFallAsleep} min</p>
-          <p><strong>Sleep Efficiency:</strong> {sleepEfficiency.toFixed(1)}%</p>
-          {record.sleep_interruptions_count && record.sleep_interruptions_count > 0 && (
-            <p><strong>Interruptions:</strong> {record.sleep_interruptions_count} ({record.sleep_interruptions_duration_minutes} min)</p>
-          )}
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <div className="relative w-full h-8 bg-gray-200 rounded-md overflow-hidden flex items-center text-xs text-white">
+      {/* Pre-sleep offset (time in bed before lights off) */}
+      {preSleepOffsetPercentage > 0 && (
+        <div
+          className="h-full bg-gray-400 flex items-center justify-center"
+          style={{ width: `${preSleepOffsetPercentage}%` }}
+          title={`Time to fall asleep: ${timeToFallAsleep} min`}
+        >
+          {/* {timeToFallAsleep > 0 && `${timeToFallAsleep}m`} */}
+        </div>
+      )}
+
+      {/* Actual Sleep */}
+      {sleepPercentage > 0 && (
+        <div
+          className="h-full bg-blue-500 flex items-center justify-center"
+          style={{ width: `${sleepPercentage}%` }}
+          title={`Total sleep: ${sleepDuration} min`}
+        >
+          {/* {sleepDuration > 0 && `${sleepDuration}m`} */}
+        </div>
+      )}
+
+      {/* Interruptions */}
+      {interruptionsPercentage > 0 && (
+        <div
+          className="h-full bg-red-500 flex items-center justify-center"
+          style={{ width: `${interruptionsPercentage}%` }}
+          title={`Interruptions: ${interruptionsDuration} min`}
+        >
+          {/* {interruptionsDuration > 0 && `${interruptionsDuration}m`} */}
+        </div>
+      )}
+
+      {/* Post-sleep offset (time in bed after waking up) */}
+      {postSleepOffsetPercentage > 0 && (
+        <div
+          className="h-full bg-gray-400 flex items-center justify-center"
+          style={{ width: `${postSleepOffsetPercentage}%` }}
+          title={`Time in bed after waking: ${sleepEndOffset} min`}
+        >
+          {/* {sleepEndOffset > 0 && `${sleepEndOffset}m`} */}
+        </div>
+      )}
+
+      <div className="absolute inset-0 flex justify-between items-center px-2 text-gray-800 dark:text-gray-200">
+        <span>{format(bedTime, 'HH:mm')}</span>
+        <span>{format(adjustedGetOutOfBedTime, 'HH:mm')}</span>
+      </div>
+    </div>
   );
 };
 

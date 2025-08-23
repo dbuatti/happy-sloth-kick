@@ -1,4 +1,4 @@
-import { Tables, Json } from './supabase';
+import { Tables, Json, Enums } from './supabase';
 
 // Re-export all types from supabase.ts
 export * from './supabase';
@@ -8,8 +8,11 @@ export type Task = Tables<'tasks'> & {
   category_color?: string;
   is_daily_recurring?: boolean;
 };
+// Ensure Task['status'] includes 'archived'
+export type TaskStatus = Enums<'task_status'> | 'archived'; // Assuming 'task_status' is the enum name
+
 export type TaskCategory = Tables<'task_categories'>;
-export type TaskSection = Tables<'task_sections'>;
+export type TaskSection = Tables<'task_sections'>; // order is number | null in DB, so it should be here too.
 export type Project = Tables<'projects'>;
 export type Appointment = Tables<'schedule_appointments'>;
 export type WorryEntry = Tables<'worry_journal_entries'>;
@@ -25,7 +28,7 @@ export type WeeklyFocus = Tables<'weekly_focus'>;
 export type SleepRecord = Tables<'sleep_records'>;
 export type WorkHour = Tables<'user_work_hours'>;
 export type DoTodayOffLogEntry = Tables<'do_today_off_log'>;
-export type UserSettings = Tables<'user_settings'>;
+export type UserSettings = Tables<'user_settings'>; // This uses Json type internally
 export type AuthUser = Tables<'profiles'>;
 
 // New types for inserts/updates
@@ -38,8 +41,8 @@ export type UpdateTaskCategoryData = Partial<Omit<Tables<'task_categories'>, 'id
 export type NewTaskSectionData = Omit<Tables<'task_sections'>, 'id' | 'user_id' | 'created_at'>;
 export type UpdateTaskSectionData = Partial<Omit<Tables<'task_sections'>, 'id' | 'user_id' | 'created_at'>>;
 
-export type NewTaskData = Omit<Tables<'tasks'>, 'id' | 'user_id' | 'created_at' | 'updated_at'>;
-export type UpdateTaskData = Partial<Omit<Tables<'tasks'>, 'id' | 'user_id' | 'created_at' | 'updated_at'>>;
+export type NewTaskData = Omit<Tables<'tasks'>, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'status'> & { status?: TaskStatus }; // Allow status to be optional and use TaskStatus
+export type UpdateTaskData = Partial<Omit<Tables<'tasks'>, 'id' | 'user_id' | 'created_at' | 'updated_at'>> & { status?: TaskStatus };
 
 export type NewProjectData = Omit<Tables<'projects'>, 'id' | 'user_id' | 'created_at' | 'current_count'>;
 export type UpdateProjectData = Partial<Omit<Tables<'projects'>, 'id' | 'user_id' | 'created_at'>>;
@@ -181,4 +184,16 @@ export interface SidebarProps {
   isDemo?: boolean;
   demoUserId?: string;
   setIsCommandPaletteOpen: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
+export interface SleepTrackerProps {
+  currentDate: Date;
+  setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
+  isDemo?: boolean;
+  demoUserId?: string;
+}
+
+export interface QuickLinksProps {
+  isDemo?: boolean;
+  demoUserId?: string;
 }

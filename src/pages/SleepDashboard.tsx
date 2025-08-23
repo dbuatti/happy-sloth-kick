@@ -1,11 +1,11 @@
 import React, { useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from 'recharts';
 import { format, startOfMonth, endOfMonth, parseISO } from 'date-fns'; // Added parseISO
-import { DateRange } from 'react-day-picker'; // Keep DateRange import
+import { DateRange } from 'react-day-picker'; // Kept DateRange for DateRangePicker prop type
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useSleepAnalytics } from '@/hooks/useSleepAnalytics';
 import { SleepAnalyticsData, SleepDashboardProps } from '@/types';
-import { DateRangePicker } from '@/components/ui/date-range-picker'; // Added DateRangePicker import
+import { DateRangePicker } from '@/components/ui/date-range-picker'; // Imported DateRangePicker
 
 const SleepDashboard: React.FC<SleepDashboardProps> = ({ dateRange, setDateRange }) => {
   const { analyticsData, isLoading, error } = useSleepAnalytics(

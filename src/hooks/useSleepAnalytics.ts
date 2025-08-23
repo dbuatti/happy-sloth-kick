@@ -1,10 +1,10 @@
-import { useMemo } from 'react'; // Added useMemo import
+import { useMemo } from 'react'; // Added useMemo
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext';
-import { SleepRecord, SleepAnalyticsData } from '@/types'; // Corrected imports
+import { useAuth } from '@/context/AuthContext'; // Corrected import path for useAuth
+import { SleepRecord, SleepAnalyticsData } from '@/types';
 import { useQuery } from '@tanstack/react-query';
 import { format, parseISO } from 'date-fns'; // Removed unused imports
-import moment from 'moment';
+import moment from 'moment'; // Import moment
 
 export const useSleepAnalytics = (startDate: Date, endDate: Date) => {
   const { user, loading: authLoading } = useAuth();
@@ -36,6 +36,7 @@ export const useSleepAnalytics = (startDate: Date, endDate: Date) => {
     );
 
     const processedData: SleepAnalyticsData[] = validRecords.map((record: SleepRecord) => {
+      // Handle overnight sleep: if wake_up_time is earlier than bed_time, assume it's the next day
       let bedTime = moment(`${record.date}T${record.bed_time}`);
       let lightsOffTime = moment(`${record.date}T${record.lights_off_time}`);
       let wakeUpTime = moment(`${record.date}T${record.wake_up_time}`);
