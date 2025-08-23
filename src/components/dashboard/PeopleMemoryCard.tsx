@@ -4,12 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Plus, User, ImageOff, Edit, Trash2 } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog'; // Added DialogTrigger
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { usePeopleMemory } from '@/hooks/usePeopleMemory';
-import { Person, NewPersonData, UpdatePersonData } from '@/types';
+import { Person, NewPersonData, UpdatePersonData } from '@/types'; // Corrected imports
 import { toast } from 'react-hot-toast';
 import { Textarea } from '@/components/ui/textarea';
+import PersonAvatar from './PersonAvatar'; // Import PersonAvatar
 
 const PeopleMemoryCard: React.FC = () => {
   const { people, isLoading, error, addPerson, updatePerson, deletePerson } = usePeopleMemory();
@@ -78,7 +79,7 @@ const PeopleMemoryCard: React.FC = () => {
   };
 
   const handleDeletePerson = async (personId: string) => {
-    if (window.confirm('Are you sure you want to delete this person from your memory?')) {
+    if (window.confirm('Are you sure you want to delete this person?')) {
       try {
         await deletePerson(personId);
         toast.success('Person deleted successfully!');
@@ -117,12 +118,12 @@ const PeopleMemoryCard: React.FC = () => {
                 <Input id="name" value={newPersonName} onChange={(e) => setNewPersonName(e.target.value)} className="col-span-3" />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="notes" className="text-right">Notes</Label>
-                <Textarea id="notes" value={newPersonNotes} onChange={(e) => setNewPersonNotes(e.target.value)} className="col-span-3" />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="avatarUrl" className="text-right">Avatar URL</Label>
                 <Input id="avatarUrl" value={newPersonAvatarUrl} onChange={(e) => setNewPersonAvatarUrl(e.target.value)} className="col-span-3" />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="notes" className="text-right">Notes</Label>
+                <Textarea id="notes" value={newPersonNotes} onChange={(e) => setNewPersonNotes(e.target.value)} className="col-span-3" />
               </div>
             </div>
             <DialogFooter>
@@ -133,23 +134,15 @@ const PeopleMemoryCard: React.FC = () => {
       </CardHeader>
       <CardContent className="flex-grow overflow-y-auto">
         {people?.length === 0 ? (
-          <p className="text-sm text-gray-500 text-center">No people added yet. Add someone to remember!</p>
+          <p className="text-sm text-gray-500">No people added yet. Add someone to remember!</p>
         ) : (
           <div className="space-y-3">
-            {people?.map((person) => (
+            {people?.map((person: Person) => (
               <div key={person.id} className="flex items-center justify-between p-2 border rounded-md">
                 <div className="flex items-center space-x-3">
-                  <Avatar>
-                    {person.avatar_url ? (
-                      <AvatarImage src={person.avatar_url} alt={person.name} />
-                    ) : (
-                      <AvatarFallback className="text-sm">
-                        {person.name.split(' ').map((n: string) => n[0]).join('')}
-                      </AvatarFallback>
-                    )}
-                  </Avatar>
+                  <PersonAvatar person={person} />
                   <div>
-                    <p className="font-medium text-sm">{person.name}</p>
+                    <p className="font-medium">{person.name}</p>
                     {person.notes && <p className="text-xs text-gray-500 line-clamp-1">{person.notes}</p>}
                   </div>
                 </div>
@@ -179,12 +172,12 @@ const PeopleMemoryCard: React.FC = () => {
               <Input id="edit-name" value={editPersonName} onChange={(e) => setEditPersonName(e.target.value)} className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-notes" className="text-right">Notes</Label>
-              <Textarea id="edit-notes" value={editPersonNotes} onChange={(e) => setEditPersonNotes(e.target.value)} className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-avatarUrl" className="text-right">Avatar URL</Label>
               <Input id="edit-avatarUrl" value={editPersonAvatarUrl} onChange={(e) => setEditPersonAvatarUrl(e.target.value)} className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-notes" className="text-right">Notes</Label>
+              <Textarea id="edit-notes" value={editPersonNotes} onChange={(e) => setEditPersonNotes(e.target.value)} className="col-span-3" />
             </div>
           </div>
           <DialogFooter>

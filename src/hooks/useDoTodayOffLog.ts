@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { DoTodayOffLogEntry, NewDoTodayOffLogEntryData } from '@/types'; // Corrected import
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
-import { format } from 'date-fns';
+import { format, startOfDay } from 'date-fns';
 
 export const useDoTodayOffLog = () => {
   const { user, loading: authLoading } = useAuth();
@@ -22,7 +22,7 @@ export const useDoTodayOffLog = () => {
         .from('do_today_off_log')
         .select('*')
         .eq('user_id', userId)
-        .order('off_date', { ascending: false });
+        .gte('off_date', format(startOfDay(new Date()), 'yyyy-MM-dd')); // Only fetch entries from today onwards
       if (error) throw error;
       return data;
     },

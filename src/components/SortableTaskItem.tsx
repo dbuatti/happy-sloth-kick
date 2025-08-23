@@ -1,16 +1,16 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Task, TaskCategory, TaskSection } from '@/types';
+import { Task, TaskCategory, TaskSection, NewTaskData, UpdateTaskData } from '@/types'; // Corrected imports
 import TaskItem from './TaskItem';
 
 interface SortableTaskItemProps {
   task: Task;
   categories: TaskCategory[];
   sections: TaskSection[];
-  onUpdateTask: (id: string, updates: Partial<Task>) => Promise<void>;
+  onUpdateTask: (id: string, updates: UpdateTaskData) => Promise<Task>; // Changed to return Task
   onDeleteTask: (id: string) => Promise<void>;
-  onAddSubtask: (description: string, parentTaskId: string | null) => Promise<void>;
+  onAddSubtask: (description: string, parentTaskId: string | null) => Promise<Task>; // Changed to return Task
   onToggleFocusMode: (taskId: string) => void;
   onLogDoTodayOff: (taskId: string) => void;
 }
@@ -38,7 +38,6 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 10 : 0,
-    opacity: isDragging ? 0.8 : 1,
   };
 
   return (

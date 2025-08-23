@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useForm, Controller } from 'react-hook-form';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,9 +10,8 @@ import { Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-import { Task, TaskSection, TaskCategory, NewTaskData, UpdateTaskData } from '@/types'; // Corrected imports
-import { useForm, Controller } from 'react-hook-form';
-import { toast } from 'react-hot-toast';
+import CategorySelector from './CategorySelector';
+import { Task, TaskSection, TaskCategory, NewTaskData, UpdateTaskData, TaskStatus } from '@/types'; // Corrected imports
 
 interface TaskFormProps {
   initialData?: Task | null;
@@ -39,14 +39,18 @@ const TaskForm: React.FC<TaskFormProps> = ({
       section_id: null,
       parent_task_id: null,
       recurring_type: 'none',
-      original_task_id: null,
       category: null,
       link: null,
       image_url: null,
     }
   });
 
-  const dueDate = watch('due_date');
+  const selectedDueDate = watch('due_date');
+  const selectedCategory = watch('category');
+  const selectedSection = watch('section_id');
+  const selectedStatus = watch('status');
+  const selectedPriority = watch('priority');
+  const selectedRecurringType = watch('recurring_type');
 
   useEffect(() => {
     if (initialData) {
@@ -60,7 +64,6 @@ const TaskForm: React.FC<TaskFormProps> = ({
         section_id: initialData.section_id || null,
         parent_task_id: initialData.parent_task_id || null,
         recurring_type: initialData.recurring_type || 'none',
-        original_task_id: initialData.original_task_id || null,
         category: initialData.category || null,
         link: initialData.link || null,
         image_url: initialData.image_url || null,
@@ -70,21 +73,18 @@ const TaskForm: React.FC<TaskFormProps> = ({
     }
   }, [initialData, reset]);
 
-  const handleFormSubmit = (data: NewTaskData | UpdateTaskData) => {
-    if (!data.description.trim()) {
-      toast.error('Task description cannot be empty.');
-      return;
-    }
-    onSubmit(data);
+  const handleDateSelect = (date: Date | undefined) => {
+    setValue('due_date', date ? format(date, 'yyyy-MM-dd') : null, { shouldDirty: true });
   };
 
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div>
         <Label htmlFor="description">Description</Label>
         <Input id="description" {...register('description', { required: 'Description is required' })} />
         {errors.description && <p className="text-red-500 text-sm">{errors.description.message}</p>}
       </div>
+
       <div>
         <Label htmlFor="status">Status</Label>
         <Controller
@@ -97,7 +97,6 @@ const TaskForm: React.FC<TaskFormProps> = ({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="to-do">To Do</SelectItem>
-                <SelectItem value="in-progress">In Progress</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>
                 <SelectItem value="archived">Archived</SelectItem>
               </SelectContent>
@@ -105,6 +104,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
           )}
         />
       </div>
+
       <div>
         <Label htmlFor="priority">Priority</Label>
         <Controller
@@ -126,61 +126,15 @@ const TaskForm: React.FC<TaskFormProps> = ({
           )}
         />
       </div>
+
+      <CategorySelector
+        categories={categories}
+        selectedCategory={selectedCategory}
+        onSelectCategory={(id) => setValue('category', id, { shouldDirty: true })}
+      />
+
       <div>
-        <Label htmlFor="due_date">Due Date</Label>
-        <Controller
-          name="due_date"
-          control={control}
-          render={({ field }) => (
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !field.value && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {field.value ? format(new Date(field.value), "PPP") : <span>Pick a date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={field.value ? new Date(field.value) : undefined}
-                  onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : null)}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          )}
-        />
-      </div>
-      <div>
-        <Label htmlFor="category">Category</Label>
-        <Controller
-          name="category"
-          control={control}
-          render={({ field }) => (
-            <Select onValueChange={field.onChange} value={field.value || ''}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">No Category</SelectItem>
-                {categories.map(category => (
-                  <SelectItem key={category.id} value={category.id}>
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        />
-      </div>
-      <div>
-        <Label htmlFor="section_id">Section</Label>
+        <Label htmlFor="section">Section</Label>
         <Controller
           name="section_id"
           control={control}
@@ -201,6 +155,33 @@ const TaskForm: React.FC<TaskFormProps> = ({
           )}
         />
       </div>
+
+      <div>
+        <Label htmlFor="due_date">Due Date</Label>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant={"outline"}
+              className={cn(
+                "w-full justify-start text-left font-normal",
+                !selectedDueDate && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {selectedDueDate ? format(new Date(selectedDueDate), "PPP") : <span>Pick a date</span>}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0">
+            <Calendar
+              mode="single"
+              selected={selectedDueDate ? new Date(selectedDueDate) : undefined}
+              onSelect={handleDateSelect}
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
+
       <div>
         <Label htmlFor="recurring_type">Recurring Type</Label>
         <Controller
@@ -221,18 +202,22 @@ const TaskForm: React.FC<TaskFormProps> = ({
           )}
         />
       </div>
+
       <div>
         <Label htmlFor="notes">Notes</Label>
         <Textarea id="notes" {...register('notes')} />
       </div>
+
       <div>
         <Label htmlFor="link">Link</Label>
         <Input id="link" {...register('link')} />
       </div>
+
       <div>
         <Label htmlFor="image_url">Image URL</Label>
         <Input id="image_url" {...register('image_url')} />
       </div>
+
       <div className="flex justify-end space-x-2">
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel

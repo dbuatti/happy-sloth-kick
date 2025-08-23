@@ -1,8 +1,15 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Plus, Edit, Trash2, Eye, EyeOff, X } from 'lucide-react';
 import { TaskSection, NewTaskSectionData, UpdateTaskSectionData } from '@/types'; // Corrected import
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -42,9 +49,8 @@ const ManageSectionsDialog: React.FC<ManageSectionsDialogProps> = ({
       await onCreateSection({ name: newSectionName.trim(), order: sections.length, include_in_focus_mode: true });
       toast.success('Section created!');
       setNewSectionName('');
-    } catch (err) {
-      toast.error(`Failed to create section: ${(err as Error).message}`);
-      console.error('Error creating section:', err);
+    } catch (error) {
+      toast.error(`Failed to create section: ${(error as Error).message}`);
     }
   };
 
@@ -62,9 +68,8 @@ const ManageSectionsDialog: React.FC<ManageSectionsDialogProps> = ({
       await onUpdateSection(editingSection.id, { name: editSectionName.trim() });
       toast.success('Section updated!');
       setEditingSection(null);
-    } catch (err) {
-      toast.error(`Failed to update section: ${(err as Error).message}`);
-      console.error('Error updating section:', err);
+    } catch (error) {
+      toast.error(`Failed to update section: ${(error as Error).message}`);
     }
   };
 
@@ -74,25 +79,24 @@ const ManageSectionsDialog: React.FC<ManageSectionsDialogProps> = ({
   };
 
   const handleDelete = async () => {
-    if (!sectionToDelete) return;
-    try {
-      await onDeleteSection(sectionToDelete);
-      toast.success('Section deleted!');
-      setSectionToDelete(null);
-      setIsConfirmDeleteDialogOpen(false);
-    } catch (err) {
-      toast.error(`Failed to delete section: ${(err as Error).message}`);
-      console.error('Error deleting section:', err);
+    if (sectionToDelete) {
+      try {
+        await onDeleteSection(sectionToDelete);
+        toast.success('Section deleted!');
+        setSectionToDelete(null);
+        setIsConfirmDeleteDialogOpen(false);
+      } catch (error) {
+        toast.error(`Failed to delete section: ${(error as Error).message}`);
+      }
     }
   };
 
-  const handleToggleFocusMode = async (section: TaskSection) => {
+  const handleToggleFocusMode = async (id: string, include: boolean) => {
     try {
-      await onUpdateSectionIncludeInFocusMode(section.id, !section.include_in_focus_mode);
-      toast.success(`Section "${section.name}" ${section.include_in_focus_mode ? 'excluded from' : 'included in'} Focus Mode.`);
-    } catch (err) {
-      toast.error(`Failed to update Focus Mode setting: ${(err as Error).message}`);
-      console.error('Error updating focus mode setting:', err);
+      await onUpdateSectionIncludeInFocusMode(id, include);
+      toast.success(`Section ${include ? 'included in' : 'excluded from'} focus mode!`);
+    } catch (error) {
+      toast.error(`Failed to update focus mode setting: ${(error as Error).message}`);
     }
   };
 
@@ -128,12 +132,14 @@ const ManageSectionsDialog: React.FC<ManageSectionsDialogProps> = ({
                   </>
                 ) : (
                   <>
-                    <div className="flex-grow p-2 rounded-md border">
-                      {section.name}
-                    </div>
-                    <Button variant="ghost" size="sm" onClick={() => handleToggleFocusMode(section)}>
-                      {section.include_in_focus_mode ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                    </Button>
+                    <span className="flex-grow p-2 rounded-md border">{section.name}</span>
+                    <Switch
+                      checked={section.include_in_focus_mode ?? true} // Default to true if null/undefined
+                      onCheckedChange={(checked) => handleToggleFocusMode(section.id, checked)}
+                      aria-label={`Toggle ${section.name} in focus mode`}
+                    >
+                      {section.include_in_focus_mode ? <Eye /> : <EyeOff />}
+                    </Switch>
                     <Button variant="ghost" size="sm" onClick={() => handleEdit(section)}><Edit className="h-4 w-4" /></Button>
                     <Button variant="ghost" size="sm" onClick={() => confirmDelete(section.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
                   </>
@@ -152,12 +158,12 @@ const ManageSectionsDialog: React.FC<ManageSectionsDialogProps> = ({
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the section and all tasks within it will become unassigned.
+              This action cannot be undone. This will permanently delete the section and all tasks within it.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Continue</AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

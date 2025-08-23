@@ -9,7 +9,7 @@ export const useTaskSections = () => {
   const userId = user?.id;
   const queryClient = useQueryClient();
 
-  const invalidateSectionsQueries = useCallback(() => {
+  const invalidateTaskSectionsQueries = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['task_sections', userId] });
   }, [queryClient, userId]);
 
@@ -28,7 +28,7 @@ export const useTaskSections = () => {
     enabled: !!userId && !authLoading,
   });
 
-  const createSectionMutation = useMutation<TaskSection, Error, NewTaskSectionData, unknown>({
+  const addSectionMutation = useMutation<TaskSection, Error, NewTaskSectionData, unknown>({
     mutationFn: async (newSectionData) => {
       if (!userId) throw new Error('User not authenticated');
       const { data, error } = await supabase
@@ -40,7 +40,7 @@ export const useTaskSections = () => {
       return data;
     },
     onSuccess: () => {
-      invalidateSectionsQueries();
+      invalidateTaskSectionsQueries();
     },
   });
 
@@ -58,7 +58,7 @@ export const useTaskSections = () => {
       return data;
     },
     onSuccess: () => {
-      invalidateSectionsQueries();
+      invalidateTaskSectionsQueries();
     },
   });
 
@@ -73,7 +73,7 @@ export const useTaskSections = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      invalidateSectionsQueries();
+      invalidateTaskSectionsQueries();
     },
   });
 
@@ -81,7 +81,7 @@ export const useTaskSections = () => {
     sections,
     isLoading,
     error,
-    createSection: createSectionMutation.mutateAsync,
+    addSection: addSectionMutation.mutateAsync,
     updateSection: updateSectionMutation.mutateAsync,
     deleteSection: deleteSectionMutation.mutateAsync,
   };

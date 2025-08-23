@@ -3,11 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { useWorkHours } from '@/hooks/useWorkHours';
 import { WorkHour, NewWorkHourData, UpdateWorkHourData } from '@/types'; // Corrected imports
 import { toast } from 'react-hot-toast';
-import { Save, Plus, Trash2 } from 'lucide-react';
 
 const daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
@@ -37,26 +36,21 @@ const WorkHoursSettings: React.FC = () => {
   const handleSave = async () => {
     if (!editingDay) return;
 
-    const updates: UpdateWorkHourData = {
+    const currentWorkHour = workHours?.find(wh => wh.day_of_week === editingDay);
+    const updates: NewWorkHourData | UpdateWorkHourData = {
+      day_of_week: editingDay,
       start_time: startTime + ':00',
       end_time: endTime + ':00',
       enabled: enabled,
     };
 
     try {
-      const existingWorkHour = workHours?.find(wh => wh.day_of_week === editingDay);
-      if (existingWorkHour) {
-        await updateWorkHour({ id: existingWorkHour.id, updates });
-        toast.success(`Work hours for ${editingDay} updated!`);
+      if (currentWorkHour) {
+        await updateWorkHour({ id: currentWorkHour.id, updates });
+        toast.success('Work hours updated!');
       } else {
-        const newWorkHourData: NewWorkHourData = {
-          day_of_week: editingDay,
-          start_time: startTime + ':00',
-          end_time: endTime + ':00',
-          enabled: enabled,
-        };
-        await addWorkHour(newWorkHourData);
-        toast.success(`Work hours for ${editingDay} added!`);
+        await addWorkHour(updates as NewWorkHourData); // Cast to NewWorkHourData for add
+        toast.success('Work hours added!');
       }
       setEditingDay(null);
     } catch (err) {
@@ -65,20 +59,28 @@ const WorkHoursSettings: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete these work hours?')) {
+  const handleToggleEnabled = async (day: string, checked: boolean) => {
+    const currentWorkHour = workHours?.find(wh => wh.day_of_week === day);
+    if (currentWorkHour) {
       try {
-        await deleteWorkHour(id);
-        toast.success('Work hours deleted!');
+        await updateWorkHour({ id: currentWorkHour.id, updates: { enabled: checked } });
+        toast.success('Work hours status updated!');
       } catch (err) {
-        toast.error(`Failed to delete work hours: ${(err as Error).message}`);
-        console.error('Error deleting work hours:', err);
+        toast.error(`Failed to update status: ${(err as Error).message}`);
+      }
+    } else if (checked) {
+      // If enabling for a day with no existing record, create a default one
+      try {
+        await addWorkHour({ day_of_week: day, start_time: '09:00:00', end_time: '17:00:00', enabled: true });
+        toast.success('Default work hours added!');
+      } catch (err) {
+        toast.error(`Failed to add default work hours: ${(err as Error).message}`);
       }
     }
   };
 
   if (isLoading) {
-    return <Card><CardContent>Loading work hours settings...</CardContent></Card>;
+    return <Card><CardContent>Loading work hours...</CardContent></Card>;
   }
 
   if (error) {
@@ -93,52 +95,59 @@ const WorkHoursSettings: React.FC = () => {
       <CardContent>
         <div className="space-y-4">
           {daysOfWeek.map(day => {
-            const workHour = workHours?.find(wh => wh.day_of_week === day);
-            const isEditing = editingDay === day;
+            const currentWorkHour = workHours?.find(wh => wh.day_of_week === day);
+            const isEnabled = currentWorkHour?.enabled ?? false;
+
             return (
               <div key={day} className="flex items-center justify-between p-2 border rounded-md">
                 <span className="capitalize font-medium">{day}</span>
-                {isEditing ? (
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={enabled}
-                      onChange={(e) => setEnabled(e.target.checked)}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="w-24" />
-                    <span>-</span>
-                    <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="w-24" />
-                    <Button size="sm" onClick={handleSave}><Save className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="sm" onClick={() => setEditingDay(null)}><X className="h-4 w-4" /></Button>
-                  </div>
-                ) : (
-                  <div className="flex items-center space-x-2">
-                    {workHour ? (
-                      workHour.enabled ? (
-                        <span className="text-sm text-gray-700 dark:text-gray-300">
-                          {workHour.start_time?.substring(0, 5)} - {workHour.end_time?.substring(0, 5)}
-                        </span>
-                      ) : (
-                        <span className="text-sm text-gray-500 italic">Disabled</span>
-                      )
-                    ) : (
-                      <span className="text-sm text-gray-500 italic">Not set</span>
-                    )}
-                    <Button variant="ghost" size="sm" onClick={() => setEditingDay(day)}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    {workHour && (
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(workHour.id)}>
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                      </Button>
-                    )}
-                  </div>
-                )}
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    checked={isEnabled}
+                    onCheckedChange={(checked) => handleToggleEnabled(day, checked)}
+                  />
+                  <Button variant="ghost" size="sm" onClick={() => setEditingDay(day)}>
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             );
           })}
         </div>
+
+        {editingDay && (
+          <div className="mt-6 p-4 border rounded-md space-y-4">
+            <h3 className="text-lg font-semibold capitalize">Edit {editingDay} Work Hours</h3>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="editEnabled"
+                checked={enabled}
+                onChange={(e) => setEnabled(e.target.checked)}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <Label htmlFor="editEnabled">Enable Work Hours</Label>
+            </div>
+            {enabled && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="startTime">Start Time</Label>
+                    <Input id="startTime" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="endTime">End Time</Label>
+                    <Input id="endTime" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+                  </div>
+                </div>
+              </>
+            )}
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setEditingDay(null)}>Cancel</Button>
+              <Button onClick={handleSave}>Save Changes</Button>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
