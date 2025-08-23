@@ -1,48 +1,38 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Task } from '@/hooks/useTasks';
-import TaskItem from './TaskItem';
-import { cn } from '@/lib/utils';
-import { Appointment } from '@/hooks/useAppointments';
+import { Task } from '@/types';
+import TaskItem from './TaskItem'; // Assuming TaskItem is correctly typed
+import { TaskCategory } from '@/types';
 
 interface SortableTaskItemProps {
   task: Task;
-  onStatusChange: (taskId: string, newStatus: Task['status']) => Promise<string | null>;
+  allTasks: Task[];
+  categories: TaskCategory[];
+  onStatusChange: (taskId: string, newStatus: Task['status']) => Promise<string>;
   onDelete: (taskId: string) => void;
-  onUpdate: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
-  sections: { id: string; name: string }[];
-  onOpenOverview: (task: Task) => void;
-  currentDate: Date;
-  onMoveUp: (taskId: string) => Promise<void>;
-  onMoveDown: (taskId: string) => Promise<void>;
-  level: number; // New prop for indentation level
-  allTasks: Task[]; // Pass all tasks to filter subtasks
-  isOverlay?: boolean; // New prop for drag overlay
-  expandedTasks: Record<string, boolean>;
-  toggleTask: (taskId: string) => void;
-  setFocusTask: (taskId: string | null) => Promise<void>;
-  isDoToday: boolean;
-  toggleDoToday: (task: Task) => void;
-  doTodayOffIds: Set<string>;
-  scheduledTasksMap: Map<string, Appointment>;
-  isDemo?: boolean;
+  onUpdate: (taskId: string, updates: Partial<Task>) => Promise<string>;
+  onAddSubtask: (description: string, parentTaskId: string) => Promise<void>;
+  onToggleFocusMode: (taskId: string, isFocused: boolean) => Promise<void>;
+  onLogDoTodayOff: (taskId: string) => Promise<void>;
+  isFocusedTask: boolean;
+  isDragging: boolean;
+  onDragStart: (e: React.DragEvent, task: Task) => void;
 }
 
 const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   task,
-  level,
   allTasks,
-  isOverlay = false, // Default to false
-  expandedTasks,
-  toggleTask,
-  setFocusTask,
-  isDoToday,
-  toggleDoToday,
-  doTodayOffIds,
-  scheduledTasksMap,
-  isDemo = false,
-  ...rest
+  categories,
+  onStatusChange,
+  onDelete,
+  onUpdate,
+  onAddSubtask,
+  onToggleFocusMode,
+  onLogDoTodayOff,
+  isFocusedTask,
+  isDragging,
+  onDragStart,
 }) => {
   const {
     attributes,
@@ -50,79 +40,55 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
     setNodeRef,
     transform,
     transition,
-    isDragging,
-  } = useSortable({ id: task.id, data: { type: 'task', task } });
+  } = useSortable({ id: task.id });
 
-  const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform || null), // Correctly handle null transform
+  const style = {
+    transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging && !isOverlay ? 0 : 1,
-    visibility: isDragging && !isOverlay ? 'hidden' : 'visible',
-    paddingLeft: `${level * 12}px`,
   };
 
-  const directSubtasks = allTasks.filter(t => t.parent_task_id === task.id)
-                                 .sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
+  const directSubtasks = allTasks.filter(sub => sub.parent_task_id === task.id);
 
-  const isExpanded = expandedTasks[task.id] !== false;
-
-  if (isDragging && !isOverlay) {
-    return <div ref={setNodeRef} style={style} className="h-16 bg-muted/50 border-2 border-dashed border-border rounded-lg" />;
-  }
+  const renderSubtasks = (parentTaskId: string) => {
+    return allTasks
+      .filter(sub => sub.parent_task_id === parentTaskId)
+      .sort((a, b) => (a.order || 0) - (b.order || 0))
+      .map(subtask => (
+        <SortableTaskItem
+          key={subtask.id}
+          task={subtask}
+          allTasks={allTasks}
+          categories={categories}
+          onStatusChange={onStatusChange}
+          onDelete={onDelete}
+          onUpdate={onUpdate}
+          onAddSubtask={onAddSubtask}
+          onToggleFocusMode={onToggleFocusMode}
+          onLogDoTodayOff={onLogDoTodayOff}
+          isFocusedTask={isFocusedTask} // Subtasks inherit focus status from parent for now
+          isDragging={isDragging}
+          onDragStart={onDragStart}
+        />
+      ));
+  };
 
   return (
-    <li
-      ref={setNodeRef}
-      style={style}
-      className={cn(
-        "relative last:border-b-0 group select-none",
-        isOverlay ? "shadow-xl ring-2 ring-primary bg-card rounded-lg" : "",
-        level > 0 ? "border-l border-l-primary/50" : "",
-        "flex items-center"
-      )}
-      {...attributes}
-      {...listeners}
-    >
-      <div className="flex-1"> {/* This div now contains the TaskItem and subtasks */}
-        <TaskItem
-          task={task}
-          hasSubtasks={directSubtasks.length > 0}
-          isExpanded={isExpanded}
-          toggleTask={toggleTask}
-          allTasks={allTasks}
-          {...rest}
-          isOverlay={isOverlay}
-          setFocusTask={setFocusTask}
-          isDoToday={isDoToday}
-          toggleDoToday={toggleDoToday}
-          scheduledTasksMap={scheduledTasksMap}
-          isDemo={isDemo}
-          level={level} // Pass level prop
-        />
-        {isExpanded && directSubtasks.length > 0 && (
-          <ul className="list-none mt-1.5 space-y-1.5">
-            {directSubtasks.map(subtask => (
-              <SortableTaskItem
-                key={subtask.id}
-                task={subtask}
-                level={level + 1}
-                allTasks={allTasks}
-                {...rest}
-                expandedTasks={expandedTasks}
-                toggleTask={toggleTask}
-                isOverlay={isOverlay}
-                setFocusTask={setFocusTask}
-                isDoToday={!doTodayOffIds.has(subtask.original_task_id || subtask.id)}
-                toggleDoToday={toggleDoToday}
-                doTodayOffIds={doTodayOffIds}
-                scheduledTasksMap={scheduledTasksMap}
-                isDemo={isDemo}
-              />
-            ))}
-          </ul>
-        )}
-      </div>
-    </li>
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <TaskItem
+        task={task}
+        categories={categories}
+        onUpdateTask={onUpdate}
+        onDeleteTask={onDelete}
+        onAddSubtask={onAddSubtask}
+        onToggleFocusMode={onToggleFocusMode}
+        onLogDoTodayOff={onLogDoTodayOff}
+        isFocusedTask={isFocusedTask}
+        subtasks={directSubtasks}
+        renderSubtasks={renderSubtasks}
+        isDragging={isDragging}
+        onDragStart={onDragStart}
+      />
+    </div>
   );
 };
 

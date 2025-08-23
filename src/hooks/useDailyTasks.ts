@@ -17,22 +17,24 @@ interface UseDailyTasksResult {
   logDoTodayOff: (taskId: string) => Promise<void>;
 }
 
-export const useDailyTasks = (userId: string | undefined): UseDailyTasksResult => {
+export const useDailyTasks = (userId: string | undefined, isDemo: boolean = false, demoUserId: string | undefined = undefined): UseDailyTasksResult => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [sections, setSections] = useState<TaskSection[]>([]);
   const [categories, setCategories] = useState<TaskCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const currentUserId = isDemo ? demoUserId : userId;
+
   const fetchTasks = useCallback(async () => {
-    if (!userId) return;
+    if (!currentUserId) return;
     setLoading(true);
     setError(null);
     try {
       const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
         .select('*, task_categories(name, color)')
-        .eq('user_id', userId)
+        .eq('user_id', currentUserId)
         .order('order', { ascending: true })
         .order('created_at', { ascending: true });
 
@@ -41,7 +43,7 @@ export const useDailyTasks = (userId: string | undefined): UseDailyTasksResult =
       const { data: sectionsData, error: sectionsError } = await supabase
         .from('task_sections')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', currentUserId)
         .order('order', { ascending: true });
 
       if (sectionsError) throw sectionsError;
@@ -49,7 +51,7 @@ export const useDailyTasks = (userId: string | undefined): UseDailyTasksResult =
       const { data: categoriesData, error: categoriesError } = await supabase
         .from('task_categories')
         .select('*')
-        .eq('user_id', userId);
+        .eq('user_id', currentUserId);
 
       if (categoriesError) throw categoriesError;
 
@@ -63,19 +65,19 @@ export const useDailyTasks = (userId: string | undefined): UseDailyTasksResult =
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, [currentUserId]);
 
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks]);
 
   const addTask = useCallback(async (description: string, sectionId: string | null, parentTaskId?: string | null) => {
-    if (!userId) return;
+    if (!currentUserId) return;
     try {
       const { data, error: insertError } = await supabase
         .from('tasks')
         .insert({
-          user_id: userId,
+          user_id: currentUserId,
           description,
           status: 'to-do',
           section_id: sectionId,
@@ -92,16 +94,16 @@ export const useDailyTasks = (userId: string | undefined): UseDailyTasksResult =
       console.error('Error adding task:', err.message);
       toast.error(`Failed to add task: ${err.message}`);
     }
-  }, [userId, tasks]);
+  }, [currentUserId, tasks]);
 
   const updateTask = useCallback(async (id: string, updates: Partial<Task>) => {
-    if (!userId) return;
+    if (!currentUserId) return;
     try {
       const { error: updateError } = await supabase
         .from('tasks')
         .update(updates)
         .eq('id', id)
-        .eq('user_id', userId);
+        .eq('user_id', currentUserId);
 
       if (updateError) throw updateError;
       setTasks(prev => prev.map(task => (task.id === id ? { ...task, ...updates } : task)));
@@ -110,16 +112,16 @@ export const useDailyTasks = (userId: string | undefined): UseDailyTasksResult =
       console.error('Error updating task:', err.message);
       toast.error(`Failed to update task: ${err.message}`);
     }
-  }, [userId]);
+  }, [currentUserId]);
 
   const deleteTask = useCallback(async (id: string) => {
-    if (!userId) return;
+    if (!currentUserId) return;
     try {
       const { error: deleteError } = await supabase
         .from('tasks')
         .delete()
         .eq('id', id)
-        .eq('user_id', userId);
+        .eq('user_id', currentUserId);
 
       if (deleteError) throw deleteError;
       setTasks(prev => prev.filter(task => task.id !== id && task.parent_task_id !== id)); // Also remove subtasks
@@ -128,10 +130,10 @@ export const useDailyTasks = (userId: string | undefined): UseDailyTasksResult =
       console.error('Error deleting task:', err.message);
       toast.error(`Failed to delete task: ${err.message}`);
     }
-  }, [userId]);
+  }, [currentUserId]);
 
   const reorderTasks = useCallback(async (updates: { id: string; order: number; parent_task_id: string | null; section_id: string | null }[]) => {
-    if (!userId) return;
+    if (!currentUserId) return;
     try {
       // Optimistically update UI
       setTasks(prevTasks => {
@@ -160,15 +162,15 @@ export const useDailyTasks = (userId: string | undefined): UseDailyTasksResult =
       toast.error(`Failed to reorder tasks: ${err.message}`);
       fetchTasks(); // Revert to original state on error
     }
-  }, [userId, fetchTasks]);
+  }, [currentUserId, fetchTasks]);
 
   const toggleFocusMode = useCallback(async (taskId: string, isFocused: boolean) => {
-    if (!userId) return;
+    if (!currentUserId) return;
     try {
       const { error: updateError } = await supabase
         .from('user_settings')
         .update({ focused_task_id: isFocused ? taskId : null })
-        .eq('user_id', userId);
+        .eq('user_id', currentUserId);
 
       if (updateError) throw updateError;
       toast.success(isFocused ? 'Task added to focus!' : 'Task removed from focus!');
@@ -176,14 +178,14 @@ export const useDailyTasks = (userId: string | undefined): UseDailyTasksResult =
       console.error('Error toggling focus mode:', err.message);
       toast.error(`Failed to update focus mode: ${err.message}`);
     }
-  }, [userId]);
+  }, [currentUserId]);
 
   const logDoTodayOff = useCallback(async (taskId: string) => {
-    if (!userId) return;
+    if (!currentUserId) return;
     try {
       const { error: insertError } = await supabase
         .from('do_today_off_log')
-        .insert({ user_id: userId, task_id: taskId, off_date: new Date().toISOString().split('T')[0] });
+        .insert({ user_id: currentUserId, task_id: taskId, off_date: new Date().toISOString().split('T')[0] });
 
       if (insertError) throw insertError;
       toast.success('Task moved off "Do Today"!');
@@ -191,7 +193,7 @@ export const useDailyTasks = (userId: string | undefined): UseDailyTasksResult =
       console.error('Error logging "Do Today Off":', err.message);
       toast.error(`Failed to log "Do Today Off": ${err.message}`);
     }
-  }, [userId]);
+  }, [currentUserId]);
 
   return {
     tasks,

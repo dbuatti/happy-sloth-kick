@@ -3,12 +3,18 @@ import { useAuth } from '@/hooks/useAuth';
 import { useDailyTasks } from '@/hooks/useDailyTasks';
 import { Task } from '@/types';
 import TaskSection from '@/components/TaskSection';
-import { toast } from 'react-hot-toast';
+// import { toast } from 'react-hot-toast'; // Removed unused import
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { format, addDays, subDays, isSameDay } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client'; // Added supabase import
 
-const DailyTasksV3: React.FC = () => {
+interface DailyTasksV3Props {
+  isDemo?: boolean;
+  demoUserId?: string;
+}
+
+const DailyTasksV3: React.FC<DailyTasksV3Props> = ({ isDemo = false, demoUserId }) => {
   const { user } = useAuth();
   const {
     tasks,
@@ -22,20 +28,22 @@ const DailyTasksV3: React.FC = () => {
     reorderTasks,
     toggleFocusMode,
     logDoTodayOff,
-  } = useDailyTasks(user?.id);
+  } = useDailyTasks(user?.id, isDemo, demoUserId);
 
   const [focusedTaskId, setFocusedTaskId] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
 
+  const currentUserId = isDemo ? demoUserId : user?.id;
+
   useEffect(() => {
     const fetchFocusedTask = async () => {
-      if (user?.id) {
+      if (currentUserId) {
         const { data, error } = await supabase
           .from('user_settings')
           .select('focused_task_id')
-          .eq('user_id', user.id)
+          .eq('user_id', currentUserId)
           .single();
         if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
           console.error('Error fetching focused task:', error.message);
@@ -44,7 +52,7 @@ const DailyTasksV3: React.FC = () => {
       }
     };
     fetchFocusedTask();
-  }, [user?.id]);
+  }, [currentUserId]);
 
   const handleDragStart = (e: React.DragEvent, task: Task) => {
     e.stopPropagation();

@@ -4,7 +4,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Plus, Trash2, Edit, Flag, Calendar, XCircle, Focus } from 'lucide-react';
+import { MoreHorizontal, Plus, Trash2, Edit, Flag, XCircle, Focus } from 'lucide-react'; // Removed Calendar
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -42,7 +42,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   onDragStart,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [editedDescription, setEditedDescription] = useState(task.description);
+  const [editedDescription, setEditedDescription] = useState(task.description || ''); // Handle null description
   const [showNewSubtaskInput, setShowNewSubtaskInput] = useState(false);
   const [newSubtaskDescription, setNewSubtaskDescription] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -62,16 +62,16 @@ const TaskItem: React.FC<TaskItemProps> = ({
     }
   };
 
-  const handleDateSelect = async (date: Date | undefined) => {
+  const handleDateSelect = (date: Date | undefined) => { // Made synchronous
     if (date) {
-      await onUpdateTask(task.id, { due_date: date.toISOString() });
+      onUpdateTask(task.id, { due_date: date.toISOString() });
     } else {
-      await onUpdateTask(task.id, { due_date: null });
+      onUpdateTask(task.id, { due_date: null });
     }
     setShowDatePicker(false);
   };
 
-  const getPriorityColor = (priority: string) => {
+  const getPriorityColor = (priority: string | null) => { // Allow null priority
     switch (priority) {
       case 'urgent': return 'text-red-500';
       case 'high': return 'text-orange-500';

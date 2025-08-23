@@ -3,7 +3,7 @@ import { Task, TaskCategory, TaskSection as TaskSectionType } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus } from 'lucide-react';
-import { cn } from '@/lib/utils';
+// import { cn } from '@/lib/utils'; // Removed unused import
 import TaskItem from './TaskItem';
 
 interface TaskSectionProps {

@@ -1,13 +1,13 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Archive as ArchiveIcon } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useTasks, Task } from '@/hooks/useTasks';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { useTasks } from '@/hooks/useTasks';
+import { Task, TaskCategory, TaskSection } from '@/types';
 import TaskItem from '@/components/TaskItem';
-import TaskDetailDialog from '@/components/TaskDetailDialog';
-import TaskOverviewDialog from '@/components/TaskOverviewDialog';
-import { useAllAppointments } from '@/hooks/useAllAppointments';
-import { Appointment } from '@/hooks/useAppointments';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Search, Filter } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface ArchiveProps {
   isDemo?: boolean;
@@ -15,145 +15,124 @@ interface ArchiveProps {
 }
 
 const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
+  const { user } = useAuth();
+  const currentUserId = isDemo ? demoUserId : user?.id;
+
   const {
-    tasks: allTasks, // Need all tasks for subtask filtering in overview
-    filteredTasks: archivedTasks, 
-    loading: archiveLoading,
+    tasks: allTasks,
+    sections,
+    categories,
+    loading,
+    error,
     updateTask,
     deleteTask,
-    sections,
-    allCategories,
-    setStatusFilter, // To ensure only archived tasks are fetched
-    createSection, // Destructure new props
-    updateSection,
-    deleteSection,
-    updateSectionIncludeInFocusMode,
-    setFocusTask,
-    toggleDoToday,
-    doTodayOffIds,
-  } = useTasks({ viewMode: 'archive', userId: demoUserId, currentDate: new Date() }); // Pass new Date()
+    addTask, // Assuming addTask is available from useTasks
+  } = useTasks(currentUserId);
 
-  const { appointments: allAppointments } = useAllAppointments();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState<Task['status'] | 'all'>('all');
+  const [filterCategory, setFilterCategory] = useState<string | 'all'>('all');
 
-  const scheduledTasksMap = useMemo(() => {
-    const map = new Map<string, Appointment>();
-    if (allAppointments) {
-        allAppointments.forEach(app => {
-            if (app.task_id) {
-                map.set(app.task_id, app);
-            }
-        });
-    }
-    return map;
-  }, [allAppointments]);
+  const archivedTasks = allTasks.filter(task => task.status === 'completed');
 
-  const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
-  const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
-  const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
-  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+  const filteredArchivedTasks = archivedTasks.filter(task => {
+    const matchesSearch = task.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = filterStatus === 'all' || task.status === filterStatus;
+    const matchesCategory = filterCategory === 'all' || task.category === filterCategory;
+    return matchesSearch && matchesStatus && matchesCategory;
+  });
 
-  useEffect(() => {
-    setStatusFilter('archived');
-  }, [setStatusFilter]);
+  if (loading) return <div className="p-4 text-center">Loading archive...</div>;
+  if (error) return <div className="p-4 text-center text-red-500">Error: {error}</div>;
 
-  const handleTaskStatusChange = async (taskId: string, newStatus: Task['status']) => {
-    return await updateTask(taskId, { status: newStatus });
-  };
-
-  const handleOpenOverview = (task: Task) => {
-    setTaskToOverview(task);
-    setIsTaskOverviewOpen(true);
-  };
-
-  const handleEditTaskFromOverview = (task: Task) => {
-    setIsTaskOverviewOpen(false); // Close overview
-    setTaskToEdit(task);
-    setIsTaskDetailOpen(true); // Open edit dialog
+  const renderSubtasks = (parentTaskId: string) => {
+    return allTasks
+      .filter(sub => sub.parent_task_id === parentTaskId)
+      .map(subtask => (
+        <TaskItem
+          key={subtask.id}
+          task={subtask as Task}
+          categories={categories}
+          onUpdateTask={updateTask}
+          onDeleteTask={deleteTask}
+          onAddSubtask={async (description, parentTaskId) => { await addTask(description, null, parentTaskId); }}
+          onToggleFocusMode={() => {}}
+          onLogDoTodayOff={() => {}}
+          isFocusedTask={false}
+          subtasks={[]} // Recursion handled by renderSubtasks in TaskItem
+          renderSubtasks={() => null}
+          isDragging={false}
+          onDragStart={() => {}}
+        />
+      ));
   };
 
   return (
-    <div className="flex-1 flex flex-col">
-      <main className="flex-grow p-4 flex justify-center">
-        <Card className="w-full max-w-4xl mx-auto shadow-lg rounded-xl p-4">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
-              <ArchiveIcon className="h-7 w-7 text-primary" /> Archived Tasks
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            {archiveLoading ? (
-              <div className="space-y-3">
-                {[...Array(5)].map((_, i) => (
-                  <Skeleton key={i} className="h-20 w-full rounded-xl" />
-                ))}
-              </div>
-            ) : archivedTasks.length === 0 ? (
-              <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
-                <ArchiveIcon className="h-12 w-12 text-muted-foreground" />
-                <p className="text-lg font-medium mb-2">No archived tasks found.</p>
-                <p className="text-sm">Completed tasks will appear here once you archive them from your daily view.</p>
-              </div>
-            ) : (
-              <ul className="space-y-2">
-                {archivedTasks.map((task) => (
-                  <li key={task.id} className="relative rounded-xl p-2 transition-all duration-200 ease-in-out group hover:shadow-md">
-                    <TaskItem
-                      task={task}
-                      allTasks={allTasks as Task[]} // Cast to Task[]
-                      onStatusChange={handleTaskStatusChange}
-                      onDelete={deleteTask}
-                      onUpdate={updateTask}
-                      sections={sections}
-                      onOpenOverview={handleOpenOverview}
-                      currentDate={new Date()}
-                      onMoveUp={async () => {}}
-                      onMoveDown={async () => {}}
-                      setFocusTask={setFocusTask}
-                      isDoToday={!doTodayOffIds.has(task.original_task_id || task.id)}
-                      toggleDoToday={() => toggleDoToday(task)}
-                      scheduledTasksMap={scheduledTasksMap}
-                      isDemo={isDemo}
-                      level={0} // Pass level prop
-                    />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-      </main>
-      {taskToOverview && (
-        <TaskOverviewDialog
-          task={taskToOverview}
-          isOpen={isTaskOverviewOpen}
-          onClose={() => {
-            setIsTaskOverviewOpen(false);
-            setTaskToOverview(null);
-          }}
-          onEditClick={handleEditTaskFromOverview}
-          onUpdate={updateTask}
-          onDelete={deleteTask}
-          sections={sections}
-          allCategories={allCategories}
-          allTasks={allTasks as Task[]} // Cast to Task[]
-        />
-      )}
-      {taskToEdit && (
-        <TaskDetailDialog
-          task={taskToEdit}
-          isOpen={isTaskDetailOpen}
-          onClose={() => setIsTaskDetailOpen(false)}
-          onUpdate={updateTask}
-          onDelete={deleteTask}
-          sections={sections}
-          allCategories={allCategories}
-          createSection={createSection}
-          updateSection={updateSection}
-          deleteSection={deleteSection}
-          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-          allTasks={allTasks as Task[]} // Cast to Task[]
-        />
-      )}
+    <div className="container mx-auto p-4">
+      <h1 className="text-3xl font-bold mb-6">Archived Tasks</h1>
+
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="relative flex-grow">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+          <Input
+            placeholder="Search archived tasks..."
+            className="pl-9"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <div className="flex gap-2">
+          <Select value={filterStatus} onValueChange={(value: Task['status'] | 'all') => setFilterStatus(value)}>
+            <SelectTrigger className="w-[180px]">
+              <Filter className="mr-2 h-4 w-4" />
+              <SelectValue placeholder="Filter by Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="to-do">To-Do</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filterCategory} onValueChange={(value: string | 'all') => setFilterCategory(value)}>
+            <SelectTrigger className="w-[180px]">
+              <Filter className="mr-2 h-4 w-4" />
+              <SelectValue placeholder="Filter by Category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              {categories.map(cat => (
+                <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        {filteredArchivedTasks.length === 0 ? (
+          <p className="text-center text-gray-500">No archived tasks found matching your criteria.</p>
+        ) : (
+          filteredArchivedTasks
+            .filter(task => !task.parent_task_id) // Only show top-level tasks
+            .map(task => (
+              <TaskItem
+                key={task.id}
+                task={task}
+                categories={categories}
+                onUpdateTask={updateTask}
+                onDeleteTask={deleteTask}
+                onAddSubtask={async (description, parentTaskId) => { await addTask(description, null, parentTaskId); }}
+                onToggleFocusMode={() => {}}
+                onLogDoTodayOff={() => {}}
+                isFocusedTask={false}
+                subtasks={allTasks.filter(sub => sub.parent_task_id === task.id)}
+                renderSubtasks={renderSubtasks}
+                isDragging={false}
+                onDragStart={() => {}}
+              />
+            ))
+        )}
+      </div>
     </div>
   );
 };

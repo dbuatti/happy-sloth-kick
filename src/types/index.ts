@@ -6,6 +6,8 @@ export type Enums<T extends keyof Database['public']['Enums']> =
   Database['public']['Enums'][T];
 
 export type Task = Tables<'tasks'> & {
+  description: string | null; // Allow description to be null
+  priority: 'urgent' | 'high' | 'medium' | 'low' | 'none' | null; // Allow priority to be null
   task_categories?: { name: string; color: string } | null;
 };
 export type TaskCategory = Tables<'task_categories'>;

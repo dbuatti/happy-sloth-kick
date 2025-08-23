@@ -1,15 +1,25 @@
-import React, { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar } from "@/components/ui/calendar";
-import { useTasks, Task } from '@/hooks/useTasks';
-import { format, parseISO, startOfDay } from 'date-fns';
-import { CalendarDays, ListTodo } from 'lucide-react';
-import TaskItem from '@/components/TaskItem';
-import TaskOverviewDialog from '@/components/TaskOverviewDialog';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useAllAppointments } from '@/hooks/useAllAppointments';
-import { Appointment } from '@/hooks/useAppointments';
-import TaskDetailDialog from '@/components/TaskDetailDialog'; // Import TaskDetailDialog
+import React, { useState, useEffect } from 'react';
+import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar';
+import moment from 'moment';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { useAuth } from '@/hooks/useAuth';
+import { useTasks } from '@/hooks/useTasks'; // Assuming useTasks exists and is correctly typed
+import { Task, ScheduleAppointment } from '@/types';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarIcon, Clock, Plus } from 'lucide-react';
+import { format } from 'date-fns';
+import { Calendar } from '@/components/ui/calendar';
+import TaskItem from '@/components/TaskItem'; // Assuming TaskItem is correctly typed
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'react-hot-toast';
+import { cn } from '@/lib/utils';
+
+const localizer = momentLocalizer(moment);
 
 interface TaskCalendarProps {
   isDemo?: boolean;
@@ -17,181 +27,264 @@ interface TaskCalendarProps {
 }
 
 const TaskCalendar: React.FC<TaskCalendarProps> = ({ isDemo = false, demoUserId }) => {
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const { user } = useAuth();
+  const currentUserId = isDemo ? demoUserId : user?.id;
 
   const {
     tasks: allTasks,
-    filteredTasks,
+    sections,
+    categories,
     loading,
+    error,
+    addTask,
     updateTask,
     deleteTask,
-    sections,
-    allCategories,
-    setFocusTask,
-    toggleDoToday,
-    doTodayOffIds,
-    createSection,
-    updateSection,
-    deleteSection,
-    updateSectionIncludeInFocusMode,
-  } = useTasks({ userId: demoUserId, currentDate: selectedDate || new Date() }); // Pass selectedDate
+  } = useTasks(currentUserId); // Assuming useTasks accepts userId, isDemo, demoUserId
 
-  const { appointments: allAppointments } = useAllAppointments();
+  const [events, setEvents] = useState<any[]>([]);
+  const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
+  const [newAppointment, setNewAppointment] = useState<Partial<ScheduleAppointment>>({
+    title: '',
+    date: new Date().toISOString().split('T')[0],
+    start_time: '09:00:00',
+    end_time: '10:00:00',
+    color: '#3b82f6', // Default blue
+  });
 
-  const scheduledTasksMap = useMemo(() => {
-    const map = new Map<string, Appointment>();
-    if (allAppointments) {
-        allAppointments.forEach(app => {
-            if (app.task_id) {
-                map.set(app.task_id, app);
-            }
-        });
+  useEffect(() => {
+    if (allTasks.length > 0) {
+      const taskEvents = allTasks
+        .filter(task => task.due_date)
+        .map(task => ({
+          id: task.id,
+          title: task.description,
+          start: new Date(task.due_date!),
+          end: new Date(task.due_date!),
+          allDay: true,
+          resource: { type: 'task', task },
+        }));
+      setEvents(prev => [...prev.filter(e => e.resource.type !== 'task'), ...taskEvents]);
     }
-    return map;
-  }, [allAppointments]);
+  }, [allTasks]);
 
-  const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
-  const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
-  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
-  const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      if (!currentUserId) return;
+      const { data, error } = await supabase
+        .from('schedule_appointments')
+        .select('*')
+        .eq('user_id', currentUserId);
 
-  const tasksByDueDate = useMemo(() => {
-    const groupedTasks = new Map<string, Task[]>();
-    filteredTasks.forEach(task => {
-      if (task.due_date && task.status !== 'archived') {
-        const dateKey = format(startOfDay(parseISO(task.due_date)), 'yyyy-MM-dd');
-        if (!groupedTasks.has(dateKey)) {
-          groupedTasks.set(dateKey, []);
-        }
-        groupedTasks.get(dateKey)!.push(task);
+      if (error) {
+        console.error('Error fetching appointments:', error.message);
+        toast.error('Failed to load appointments.');
+        return;
       }
+
+      const appointmentEvents = data.map(app => ({
+        id: app.id,
+        title: app.title,
+        start: new Date(`${app.date}T${app.start_time}`),
+        end: new Date(`${app.date}T${app.end_time}`),
+        allDay: false,
+        resource: { type: 'appointment', appointment: app },
+        style: { backgroundColor: app.color },
+      }));
+      setEvents(prev => [...prev.filter(e => e.resource.type !== 'appointment'), ...appointmentEvents]);
+    };
+
+    fetchAppointments();
+  }, [currentUserId]);
+
+  const handleSelectEvent = (event: any) => {
+    setSelectedEvent(event);
+    setIsModalOpen(true);
+  };
+
+  const handleAddAppointment = async () => {
+    if (!currentUserId || !newAppointment.title || !newAppointment.date || !newAppointment.start_time || !newAppointment.end_time) {
+      toast.error('Please fill all required fields for the appointment.');
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('schedule_appointments')
+      .insert({
+        ...newAppointment,
+        user_id: currentUserId,
+      } as ScheduleAppointment)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error adding appointment:', error.message);
+      toast.error('Failed to add appointment.');
+      return;
+    }
+
+    setEvents(prev => [
+      ...prev,
+      {
+        id: data.id,
+        title: data.title,
+        start: new Date(`${data.date}T${data.start_time}`),
+        end: new Date(`${data.date}T${data.end_time}`),
+        allDay: false,
+        resource: { type: 'appointment', appointment: data },
+        style: { backgroundColor: data.color },
+      },
+    ]);
+    toast.success('Appointment added!');
+    setIsAppointmentModalOpen(false);
+    setNewAppointment({
+      title: '',
+      date: new Date().toISOString().split('T')[0],
+      start_time: '09:00:00',
+      end_time: '10:00:00',
+      color: '#3b82f6',
     });
-    return groupedTasks;
-  }, [filteredTasks]);
-
-  const daysWithTasks = useMemo(() => {
-    return Array.from(tasksByDueDate.keys()).map(dateStr => parseISO(dateStr));
-  }, [tasksByDueDate]);
-
-  const selectedDayTasks = useMemo(() => {
-    if (!selectedDate) return [];
-    const dateKey = format(startOfDay(selectedDate), 'yyyy-MM-dd');
-    return tasksByDueDate.get(dateKey) || [];
-  }, [selectedDate, tasksByDueDate]);
-
-  const handleOpenOverview = (task: Task) => {
-    setTaskToOverview(task);
-    setIsTaskOverviewOpen(true);
   };
 
-  const handleOpenTaskDetail = (task: Task) => { // Defined handleOpenTaskDetail
-    setIsTaskOverviewOpen(false);
-    setTaskToEdit(task);
-    setIsTaskDetailOpen(true);
-  };
+  if (loading) return <div className="p-4 text-center">Loading calendar...</div>;
+  if (error) return <div className="p-4 text-center text-red-500">Error: {error}</div>;
 
   return (
-    <div className="flex-1 flex flex-col">
-      <main className="flex-grow p-4 flex justify-center">
-        <Card className="w-full max-w-6xl mx-auto shadow-lg rounded-xl p-4">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
-              <CalendarDays className="h-7 w-7" /> Task Calendar
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="flex justify-center">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-                className="rounded-md w-full mx-auto"
-                modifiers={{
-                  hasTasks: daysWithTasks,
-                }}
-                modifiersClassNames={{
-                  hasTasks: 'rdp-day_hasTasks',
-                }}
-                components={{
-                  DayContent: ({ date }) => {
-                    return <span>{format(date, 'd')}</span>;
-                  },
-                }}
+    <div className="container mx-auto p-4">
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-3xl font-bold">Calendar</h1>
+        <Dialog open={isAppointmentModalOpen} onOpenChange={setIsAppointmentModalOpen}>
+          <DialogTrigger asChild>
+            <Button><Plus className="mr-2 h-4 w-4" /> Add Appointment</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add New Appointment</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <Input
+                placeholder="Appointment Title"
+                value={newAppointment.title}
+                onChange={(e) => setNewAppointment({ ...newAppointment, title: e.target.value })}
+              />
+              <div className="flex items-center space-x-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-[240px] justify-start text-left font-normal",
+                        !newAppointment.date && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {newAppointment.date ? format(new Date(newAppointment.date), "PPP") : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={newAppointment.date ? new Date(newAppointment.date) : undefined}
+                      onSelect={(date) => setNewAppointment({ ...newAppointment, date: date?.toISOString().split('T')[0] })}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                <Input
+                  type="time"
+                  value={newAppointment.start_time}
+                  onChange={(e) => setNewAppointment({ ...newAppointment, start_time: e.target.value })}
+                  className="w-auto"
+                />
+                <Input
+                  type="time"
+                  value={newAppointment.end_time}
+                  onChange={(e) => setNewAppointment({ ...newAppointment, end_time: e.target.value })}
+                  className="w-auto"
+                />
+              </div>
+              <Input
+                type="color"
+                value={newAppointment.color}
+                onChange={(e) => setNewAppointment({ ...newAppointment, color: e.target.value })}
+                className="w-full h-10"
               />
             </div>
-            <div className="space-y-4">
-              <h3 className="text-xl font-semibold flex items-center gap-2">
-                <ListTodo className="h-5 w-5 text-primary" />
-                Tasks for {selectedDate ? format(selectedDate, 'MMMM d, yyyy') : '...'}
-              </h3>
-              {loading ? (
-                <div className="space-y-3">
-                  <Skeleton className="h-20 w-full rounded-xl" />
-                  <Skeleton className="h-20 w-full rounded-xl" />
-                </div>
-              ) : selectedDayTasks.length > 0 ? (
-                <ul className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
-                  {selectedDayTasks.map(task => (
-                    <li key={task.id}>
+            <Button onClick={handleAddAppointment}>Save Appointment</Button>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <div className="h-[700px]">
+        <BigCalendar
+          localizer={localizer}
+          events={events}
+          startAccessor="start"
+          endAccessor="end"
+          onSelectEvent={handleSelectEvent}
+          eventPropGetter={(event) => ({
+            style: event.resource.type === 'appointment' ? event.style : {},
+          })}
+        />
+      </div>
+
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{selectedEvent?.title}</DialogTitle>
+          </DialogHeader>
+          {selectedEvent?.resource.type === 'task' && selectedEvent.resource.task && (
+            <div className="py-4">
+              <h3 className="text-lg font-semibold mb-2">Task Details</h3>
+              <TaskItem
+                task={selectedEvent.resource.task as Task}
+                categories={categories}
+                onUpdateTask={async (taskId: string, updates: Partial<Task>) => { await updateTask(taskId, updates); setIsModalOpen(false); }}
+                onDeleteTask={async (taskId: string) => { await deleteTask(taskId); setIsModalOpen(false); }}
+                onAddSubtask={async (description: string, parentTaskId: string) => { await addTask(description, null, parentTaskId); }}
+                onToggleFocusMode={() => {}} // Not directly applicable here
+                onLogDoTodayOff={() => {}} // Not directly applicable here
+                isFocusedTask={false}
+                subtasks={allTasks.filter(t => t.parent_task_id === selectedEvent.resource.task.id)}
+                renderSubtasks={(parentTaskId) => (
+                  allTasks
+                    .filter(t => t.parent_task_id === parentTaskId)
+                    .map(subtask => (
                       <TaskItem
-                        task={task}
-                        allTasks={allTasks as Task[]} // Cast to Task[]
-                        onStatusChange={(taskId, newStatus) => updateTask(taskId, { status: newStatus })}
-                        onDelete={deleteTask}
-                        onUpdate={updateTask}
-                        sections={sections}
-                        onOpenOverview={handleOpenOverview}
-                        currentDate={selectedDate || new Date()}
-                        onMoveUp={async () => {}}
-                        onMoveDown={async () => {}}
-                        setFocusTask={setFocusTask}
-                        isDoToday={!doTodayOffIds.has(task.original_task_id || task.id)}
-                        toggleDoToday={toggleDoToday}
-                        scheduledTasksMap={scheduledTasksMap}
-                        isDemo={isDemo}
-                        level={0} // Pass level prop
+                        key={subtask.id}
+                        task={subtask as Task}
+                        categories={categories}
+                        onUpdateTask={async (taskId: string, updates: Partial<Task>) => { await updateTask(taskId, updates); }}
+                        onDeleteTask={async (taskId: string) => { await deleteTask(taskId); }}
+                        onAddSubtask={async (description: string, parentTaskId: string) => { await addTask(description, null, parentTaskId); }}
+                        onToggleFocusMode={() => {}}
+                        onLogDoTodayOff={() => {}}
+                        isFocusedTask={false}
+                        subtasks={[]} // Recursion handled by renderSubtasks in TaskItem
+                        renderSubtasks={() => null}
+                        isDragging={false}
+                        onDragStart={() => {}}
                       />
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <div className="text-center text-muted-foreground p-8 rounded-lg bg-muted/50">
-                  <p>No tasks scheduled for this day.</p>
-                </div>
-              )}
+                    ))
+                )}
+                isDragging={false}
+                onDragStart={() => {}}
+              />
             </div>
-          </CardContent>
-        </Card>
-      </main>
-      {taskToOverview && (
-        <TaskOverviewDialog
-          task={taskToOverview}
-          isOpen={isTaskOverviewOpen}
-          onClose={() => setIsTaskOverviewOpen(false)}
-          onEditClick={handleOpenTaskDetail}
-          onUpdate={updateTask}
-          onDelete={deleteTask}
-          sections={sections}
-          allCategories={allCategories}
-          allTasks={allTasks as Task[]} // Cast to Task[]
-        />
-      )}
-      {taskToEdit && (
-        <TaskDetailDialog
-          task={taskToEdit}
-          isOpen={isTaskDetailOpen}
-          onClose={() => setIsTaskDetailOpen(false)}
-          onUpdate={updateTask}
-          onDelete={deleteTask}
-          sections={sections}
-          allCategories={allCategories}
-          createSection={createSection}
-          updateSection={updateSection}
-          deleteSection={deleteSection}
-          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-          allTasks={allTasks as Task[]} // Cast to Task[]
-        />
-      )}
+          )}
+          {selectedEvent?.resource.type === 'appointment' && selectedEvent.resource.appointment && (
+            <div className="py-4">
+              <h3 className="text-lg font-semibold mb-2">Appointment Details</h3>
+              <p><strong>Title:</strong> {selectedEvent.resource.appointment.title}</p>
+              <p><strong>Date:</strong> {format(new Date(selectedEvent.resource.appointment.date), 'PPP')}</p>
+              <p><strong>Time:</strong> {selectedEvent.resource.appointment.start_time} - {selectedEvent.resource.appointment.end_time}</p>
+              {selectedEvent.resource.appointment.description && <p><strong>Description:</strong> {selectedEvent.resource.appointment.description}</p>}
+            </div>
+          )}
+          <Button onClick={() => setIsModalOpen(false)}>Close</Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
