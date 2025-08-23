@@ -2,268 +2,282 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTasks } from '@/hooks/useTasks';
 import { useSettings } from '@/context/SettingsContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Play, Check, X, Lightbulb, Timer } from 'lucide-react';
 import TaskItem from '@/components/TaskItem';
-import { Task, TaskSection } from '@/types';
+import { Task, TaskSection, TaskCategory, NewTaskData, UpdateTaskData, FocusModeProps } from '@/types';
+import { Progress } from '@/components/ui/progress';
+import { format, addMinutes, isPast, isSameDay, startOfDay } from 'date-fns';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'react-hot-toast';
+import { Play, Pause, SkipForward, CheckCircle2, XCircle, Timer, Settings as SettingsIcon } from 'lucide-react';
 
-interface FocusModeProps {
-  isDemo?: boolean;
-  demoUserId?: string;
-}
-
-const FocusMode: React.FC<FocusModeProps> = ({ isDemo = false, demoUserId }) => {
-  const { user } = useAuth();
-  const currentUserId = isDemo ? demoUserId : user?.id;
+const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
+  const { user, loading: authLoading } = useAuth();
+  const currentUserId = demoUserId || user?.id;
   const { settings, updateSettings } = useSettings();
+
   const {
     tasks,
     categories: allCategories,
-    sections,
-    loading,
-    error,
+    sections: allSections,
+    isLoading: tasksLoading,
+    error: tasksError,
+    addTask,
     updateTask,
     deleteTask,
-    addTask,
     onToggleFocusMode,
     onLogDoTodayOff,
   } = useTasks({ userId: currentUserId! });
 
-  const [isMeditationModalOpen, setIsMeditationModalOpen] = useState(false);
-  const [meditationNotes, setMeditationNotes] = useState(settings?.meditation_notes || '');
-
-  const [isBreakTimerActive, setIsBreakTimerActive] = useState(false);
+  const [focusTimeRemaining, setFocusTimeRemaining] = useState(0); // in seconds
+  const [isFocusTimerActive, setIsFocusTimerActive] = useState(false);
+  const [focusDuration, setFocusDuration] = useState(25 * 60); // Default 25 minutes
   const [breakTimeRemaining, setBreakTimeRemaining] = useState(0); // in seconds
-  const [breakDuration] = useState(5 * 60); // Default 5 minutes
-
-  const focusModeSections = useMemo(() => {
-    return (sections as TaskSection[]).filter(section => section.include_in_focus_mode);
-  }, [sections]);
-
-  const focusModeTasks = useMemo(() => {
-    const focusSectionIds = new Set(focusModeSections.map(s => s.id));
-    return tasks.filter(task =>
-      task.status !== 'completed' &&
-      task.parent_task_id === null &&
-      task.section_id &&
-      focusSectionIds.has(task.section_id)
-    ).sort((a, b) => {
-      const priorityOrder: { [key: string]: number } = { 'urgent': 0, 'high': 1, 'medium': 2, 'low': 3, 'none': 4 };
-      const aPriority = priorityOrder[a.priority || 'none'];
-      const bPriority = priorityOrder[b.priority || 'none'];
-
-      if (aPriority !== bPriority) {
-        return aPriority - bPriority;
-      }
-
-      if (a.due_date && b.due_date) {
-        return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
-      }
-      if (a.due_date) return -1;
-      if (b.due_date) return 1;
-
-      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-    });
-  }, [tasks, focusModeSections]);
+  const [isBreakTimerActive, setIsBreakTimerActive] = useState(false);
+  const [breakDuration, setBreakDuration] = useState(5 * 60); // Default 5 minutes
 
   const focusedTask = useMemo(() => {
-    if (settings?.focused_task_id) {
-      return tasks.find(task => task.id === settings.focused_task_id);
+    return tasks?.find(task => task.id === settings?.focused_task_id);
+  }, [tasks, settings?.focused_task_id]);
+
+  const focusModeTasks = useMemo(() => {
+    if (!tasks || !allSections) return [];
+    return tasks.filter(task =>
+      task.status !== 'completed' &&
+      task.status !== 'archived' &&
+      allSections.some(section => section.id === task.section_id && section.include_in_focus_mode)
+    ).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  }, [tasks, allSections]);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+
+    if (isFocusTimerActive && focusTimeRemaining > 0) {
+      timer = setInterval(() => {
+        setFocusTimeRemaining((prev) => prev - 1);
+      }, 1000);
+    } else if (isFocusTimerActive && focusTimeRemaining === 0) {
+      setIsFocusTimerActive(false);
+      toast.success('Focus session complete! Time for a break.');
+      startBreakTimer();
     }
-    return focusModeTasks[0] || null;
-  }, [settings?.focused_task_id, focusModeTasks, tasks]);
 
-  const handleCompleteTask = async (taskId: string) => {
-    await updateTask(taskId, { status: 'completed' });
-    if (settings?.focused_task_id === taskId) {
-      await updateSettings({ focused_task_id: null });
+    if (isBreakTimerActive && breakTimeRemaining > 0) {
+      timer = setInterval(() => {
+        setBreakTimeRemaining((prev) => prev - 1);
+      }, 1000);
+    } else if (isBreakTimerActive && breakTimeRemaining === 0) {
+      setIsBreakTimerActive(false);
+      toast('Break over! Ready for another focus session?');
     }
-    toast.success('Task completed! Great job!');
+
+    return () => clearInterval(timer);
+  }, [isFocusTimerActive, focusTimeRemaining, isBreakTimerActive, breakTimeRemaining]);
+
+  const startFocusTimer = () => {
+    setIsBreakTimerActive(false);
+    setBreakTimeRemaining(0);
+    setFocusTimeRemaining(focusDuration);
+    setIsFocusTimerActive(true);
+    toast.success('Focus session started!');
   };
 
-  const handleSkipTask = async (taskId: string) => {
-    await updateSettings({ focused_task_id: null });
-    toast('Task skipped for now.', { icon: '👋' });
+  const pauseFocusTimer = () => {
+    setIsFocusTimerActive(false);
+    toast('Focus session paused.');
   };
 
-  const handleSetFocusedTask = async (taskId: string) => {
-    await updateSettings({ focused_task_id: taskId });
-    toast.success('New task focused!');
-  };
-
-  const handleSaveMeditationNotes = async () => {
-    await updateSettings({ meditation_notes: meditationNotes });
-    setIsMeditationModalOpen(false);
-    toast.success('Meditation notes saved!');
+  const stopFocusTimer = () => {
+    setIsFocusTimerActive(false);
+    setFocusTimeRemaining(0);
+    toast('Focus session stopped.');
   };
 
   const startBreakTimer = () => {
+    setIsFocusTimerActive(false);
+    setFocusTimeRemaining(0);
     setBreakTimeRemaining(breakDuration);
     setIsBreakTimerActive(true);
-    toast.info(`Starting a ${breakDuration / 60}-minute break!`);
+    toast(`Starting a ${breakDuration / 60}-minute break!`);
   };
 
   const stopBreakTimer = () => {
     setIsBreakTimerActive(false);
     setBreakTimeRemaining(0);
-    toast.info('Break timer stopped.');
+    toast('Break timer stopped.');
   };
 
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (isBreakTimerActive && breakTimeRemaining > 0) {
-      timer = setInterval(() => {
-        setBreakTimeRemaining(prev => prev - 1);
-      }, 1000);
-    } else if (breakTimeRemaining === 0 && isBreakTimerActive) {
-      setIsBreakTimerActive(false);
-      toast.success('Break time is over! Back to focus!');
+  const handleCompleteTask = async (taskId: string) => {
+    await updateTask({ id: taskId, updates: { status: 'completed' } });
+    if (settings?.focused_task_id === taskId) {
+      await updateSettings({ focused_task_id: null });
+      toast.success('Focused task completed!');
+    } else {
+      toast.success('Task completed!');
     }
-    return () => clearInterval(timer);
-  }, [isBreakTimerActive, breakTimeRemaining]);
-
-  const formatTime = (totalSeconds: number) => {
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  const renderSubtasks = (parentTaskId: string) => {
-    const subtasks = tasks.filter(sub => sub.parent_task_id === parentTaskId);
-    return (
-      <div className="ml-4 border-l pl-4 space-y-2">
-        {subtasks.map(subtask => (
-          <TaskItem
-            key={subtask.id}
-            task={subtask}
-            categories={allCategories}
-            onUpdateTask={updateTask}
-            onDeleteTask={deleteTask}
-            onAddSubtask={async (description) => { return await addTask(description, null, parentTaskId, null, null, 'medium'); }}
-            onToggleFocusMode={onToggleFocusMode}
-            onLogDoTodayOff={onLogDoTodayOff}
-            isFocusedTask={settings?.focused_task_id === subtask.id}
-            subtasks={[]}
-            renderSubtasks={() => null}
-          />
-        ))}
-      </div>
-    );
+  const handleSkipTask = async (taskId: string) => {
+    await updateSettings({ focused_task_id: null });
+    toast('Focused task skipped.');
   };
 
-  if (loading) return <div className="text-center py-8">Loading focus mode...</div>;
-  if (error) return <div className="text-center py-8 text-red-500">Error: {error.message}</div>;
+  const handleSetFocusTask = async (taskId: string) => {
+    await updateSettings({ focused_task_id: taskId });
+    toast.success('Task set as current focus!');
+  };
+
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  if (tasksLoading || authLoading) {
+    return <div className="flex justify-center items-center h-full">Loading focus mode...</div>;
+  }
+
+  if (tasksError) {
+    return <div className="flex justify-center items-center h-full text-red-500">Error: {tasksError.message}</div>;
+  }
 
   return (
-    <div className="container mx-auto p-4 h-full flex flex-col">
+    <div className="container mx-auto p-4">
       <h1 className="text-3xl font-bold mb-6">Focus Mode</h1>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow">
-        {/* Current Focus Task */}
-        <Card className="lg:col-span-2 flex flex-col">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Current Focus</CardTitle>
-            <div className="flex space-x-2">
-              <Button variant="outline" onClick={() => setIsMeditationModalOpen(true)}>
-                <Lightbulb className="h-4 w-4 mr-2" /> Meditation Notes
-              </Button>
-              <Button variant="outline" onClick={isBreakTimerActive ? stopBreakTimer : startBreakTimer}>
-                <Timer className="h-4 w-4 mr-2" /> {isBreakTimerActive ? `Stop Break (${formatTime(breakTimeRemaining)})` : 'Start Break'}
-              </Button>
-            </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Focus Timer Section */}
+        <Card className="flex flex-col items-center justify-center p-6">
+          <CardHeader>
+            <CardTitle className="text-2xl">Focus Timer</CardTitle>
           </CardHeader>
-          <CardContent className="flex-grow flex flex-col justify-center items-center p-6">
-            {focusedTask ? (
-              <div className="w-full max-w-2xl">
-                <h2 className="text-2xl font-bold mb-4 text-center">{focusedTask.description}</h2>
-                <div className="space-y-2">
-                  <TaskItem
-                    key={focusedTask.id}
-                    task={focusedTask}
-                    categories={allCategories}
-                    onUpdateTask={updateTask}
-                    onDeleteTask={deleteTask}
-                    onAddSubtask={async (description) => { return await addTask(description, null, focusedTask.id, null, null, 'medium'); }}
-                    onToggleFocusMode={onToggleFocusMode}
-                    onLogDoTodayOff={onLogDoTodayOff}
-                    isFocusedTask={true}
-                    subtasks={tasks.filter(sub => sub.parent_task_id === focusedTask.id)}
-                    renderSubtasks={renderSubtasks}
-                  />
-                </div>
-                <div className="flex justify-center space-x-4 mt-6">
-                  <Button size="lg" onClick={() => handleCompleteTask(focusedTask.id)}>
-                    <Check className="h-5 w-5 mr-2" /> Mark Complete
-                  </Button>
-                  <Button variant="outline" size="lg" onClick={() => handleSkipTask(focusedTask.id)}>
-                    <X className="h-5 w-5 mr-2" /> Skip for Now
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center text-gray-500">
-                <p className="text-lg mb-2">No tasks currently in focus mode.</p>
-                <p className="text-sm">Add tasks to focus mode sections or select one from the list.</p>
-              </div>
-            )}
+          <CardContent className="flex flex-col items-center space-y-6">
+            <div className="text-7xl font-bold tabular-nums">
+              {formatTime(isFocusTimerActive ? focusTimeRemaining : breakTimeRemaining)}
+            </div>
+            <Progress value={(isFocusTimerActive ? (focusDuration - focusTimeRemaining) : (breakDuration - breakTimeRemaining)) / (isFocusTimerActive ? focusDuration : breakDuration) * 100} className="w-full max-w-md" />
+            <div className="flex space-x-4">
+              {!isFocusTimerActive && !isBreakTimerActive && (
+                <Button onClick={startFocusTimer} size="lg">
+                  <Play className="mr-2 h-5 w-5" /> Start Focus
+                </Button>
+              )}
+              {isFocusTimerActive && (
+                <Button onClick={pauseFocusTimer} size="lg" variant="outline">
+                  <Pause className="mr-2 h-5 w-5" /> Pause
+                </Button>
+              )}
+              {isFocusTimerActive && (
+                <Button onClick={stopFocusTimer} size="lg" variant="destructive">
+                  <XCircle className="mr-2 h-5 w-5" /> Stop
+                </Button>
+              )}
+              {!isBreakTimerActive && (isFocusTimerActive || focusTimeRemaining === 0) && (
+                <Button onClick={startBreakTimer} size="lg" variant="secondary">
+                  <Timer className="mr-2 h-5 w-5" /> Start Break
+                </Button>
+              )}
+              {isBreakTimerActive && (
+                <Button onClick={stopBreakTimer} size="lg" variant="destructive">
+                  <XCircle className="mr-2 h-5 w-5" /> Stop Break
+                </Button>
+              )}
+            </div>
+            <div className="flex items-center space-x-2">
+              <Label htmlFor="focusDuration">Focus Duration (min):</Label>
+              <Input
+                id="focusDuration"
+                type="number"
+                value={focusDuration / 60}
+                onChange={(e) => setFocusDuration(parseInt(e.target.value) * 60)}
+                className="w-20"
+                min="1"
+              />
+              <Label htmlFor="breakDuration">Break Duration (min):</Label>
+              <Input
+                id="breakDuration"
+                type="number"
+                value={breakDuration / 60}
+                onChange={(e) => setBreakDuration(parseInt(e.target.value) * 60)}
+                className="w-20"
+                min="1"
+              />
+            </div>
           </CardContent>
         </Card>
 
-        {/* Upcoming Focus Tasks */}
-        <Card className="flex flex-col">
+        {/* Focused Task Section */}
+        <Card className="p-6">
           <CardHeader>
-            <CardTitle>Upcoming Focus Tasks</CardTitle>
+            <CardTitle className="text-2xl">Current Focus Task</CardTitle>
           </CardHeader>
-          <CardContent className="flex-grow overflow-y-auto space-y-3">
-            {focusModeTasks.filter(task => task.id !== focusedTask?.id).length === 0 ? (
-              <p className="text-center text-gray-500 py-8">No upcoming tasks in focus mode sections.</p>
+          <CardContent>
+            {focusedTask ? (
+              <div className="space-y-4">
+                <TaskItem
+                  task={focusedTask}
+                  categories={allCategories}
+                  onUpdateTask={updateTask}
+                  onDeleteTask={deleteTask}
+                  onAddSubtask={onAddSubtask}
+                  onToggleFocusMode={onToggleFocusMode}
+                  onLogDoTodayOff={onLogDoTodayOff}
+                />
+                <div className="flex space-x-2">
+                  <Button onClick={() => handleCompleteTask(focusedTask.id)} variant="success">
+                    <CheckCircle2 className="mr-2 h-4 w-4" /> Mark as Complete
+                  </Button>
+                  <Button onClick={() => handleSkipTask(focusedTask.id)} variant="outline">
+                    <SkipForward className="mr-2 h-4 w-4" /> Skip Task
+                  </Button>
+                </div>
+              </div>
             ) : (
-              focusModeTasks.filter(task => task.id !== focusedTask?.id).map(task => (
-                <div key={task.id} className="flex items-center justify-between p-2 border rounded-md hover:bg-gray-50">
+              <p className="text-gray-500">No task currently focused. Select one from the list below.</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Focus Mode Task List */}
+      <Card className="mt-6 p-6">
+        <CardHeader>
+          <CardTitle className="text-2xl">Tasks for Focus Mode</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {focusModeTasks.length === 0 ? (
+            <p className="text-center text-gray-500">No tasks configured for focus mode. Enable focus mode for sections in settings.</p>
+          ) : (
+            <div className="space-y-3">
+              {focusModeTasks.map(task => (
+                <div key={task.id} className="flex items-center justify-between">
                   <TaskItem
                     task={task}
                     categories={allCategories}
                     onUpdateTask={updateTask}
                     onDeleteTask={deleteTask}
-                    onAddSubtask={async (description) => { return await addTask(description, null, task.id, null, null, 'medium'); }}
+                    onAddSubtask={onAddSubtask}
                     onToggleFocusMode={onToggleFocusMode}
                     onLogDoTodayOff={onLogDoTodayOff}
-                    isFocusedTask={false}
-                    subtasks={[]}
-                    renderSubtasks={() => null}
                   />
-                  <Button variant="ghost" size="sm" onClick={() => handleSetFocusedTask(task.id)}>
-                    <Play className="h-4 w-4" />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleSetFocusTask(task.id)}
+                    disabled={settings?.focused_task_id === task.id}
+                  >
+                    Set Focus
                   </Button>
                 </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Meditation Notes Modal */}
-      <Dialog open={isMeditationModalOpen} onOpenChange={setIsMeditationModalOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Meditation Notes</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <Textarea
-              placeholder="Jot down any insights, feelings, or observations from your meditation session..."
-              value={meditationNotes || ''}
-              onChange={(e) => setMeditationNotes(e.target.value)}
-              rows={8}
-            />
-          </div>
-          <DialogFooter>
-            <Button type="submit" onClick={handleSaveMeditationNotes}>Save Notes</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

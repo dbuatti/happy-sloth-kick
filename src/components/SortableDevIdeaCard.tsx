@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { DevIdea } from '@/types'; // Import from centralized types
+import { DevIdea } from '@/types';
 import DevIdeaCard from './DevIdeaCard';
 
 interface SortableDevIdeaCardProps {
@@ -10,21 +10,18 @@ interface SortableDevIdeaCardProps {
   onDelete: (id: string) => void;
 }
 
-export const SortableDevIdeaCard: React.FC<SortableDevIdeaCardProps> = ({ idea, onEdit, onDelete }) => {
+const SortableDevIdeaCard: React.FC<SortableDevIdeaCardProps> = ({ idea, onEdit, onDelete }) => {
   const {
     attributes,
     listeners,
     setNodeRef,
     transform,
     transition,
-    isDragging,
   } = useSortable({ id: idea.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    zIndex: isDragging ? 100 : 0,
-    opacity: isDragging ? 0.8 : 1,
   };
 
   return (
@@ -33,3 +30,5 @@ export const SortableDevIdeaCard: React.FC<SortableDevIdeaCardProps> = ({ idea, 
     </div>
   );
 };
+
+export default SortableDevIdeaCard;
