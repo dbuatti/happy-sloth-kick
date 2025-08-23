@@ -1,6 +1,5 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext'; // Corrected import path for useAuth
 import {
   Task,
   TaskCategory,
@@ -12,55 +11,20 @@ import {
   NewTaskSectionData,
   UpdateTaskSectionData,
   UseTasksProps,
-  TaskStatus, // Import TaskStatus
+  TaskStatus,
+  DoTodayOffLogEntry,
 } from '@/types';
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
-import { v4 as uuidv4 } from 'uuid';
 import { arrayMove } from '@dnd-kit/sortable';
-import { isSameDay, isPast, startOfDay } from 'date-fns';
-
-// Helper to clean task data for DB insertion/update
-const cleanTaskForDb = (task: Partial<Task> & { user_id: string }): Omit<NewTaskData, 'category_color' | 'is_daily_recurring'> => {
-  const cleaned: Omit<NewTaskData, 'category_color' | 'is_daily_recurring'> = { // Corrected OOmit to Omit
-    user_id: task.user_id,
-    description: task.description || '',
-    status: task.status || 'to-do',
-    priority: task.priority || 'medium',
-    due_date: task.due_date || null,
-    notes: task.notes || null,
-    remind_at: task.remind_at || null,
-    section_id: task.section_id || null,
-    order: task.order ?? 0,
-    parent_task_id: task.parent_task_id || null,
-    recurring_type: task.recurring_type || 'none',
-    original_task_id: task.original_task_id || null,
-    category: task.category || null,
-    link: task.link || null,
-    image_url: task.image_url || null,
-  };
-  return cleaned;
-};
+import { toast } from 'react-hot-toast';
+import { isToday, parseISO } from 'date-fns';
 
 export const useTasks = ({ userId: propUserId, isDemo = false, demoUserId }: UseTasksProps) => {
   const { user, loading: authLoading } = useAuth();
-  const currentUserId = isDemo ? demoUserId : user?.id;
+  const currentUserId = isDemo ? demoUserId : propUserId || user?.id;
   const queryClient = useQueryClient();
 
-  const invalidateTasksQueries = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['tasks', currentUserId] });
-    queryClient.invalidateQueries({ queryKey: ['dailyTaskCount', currentUserId] });
-  }, [queryClient, currentUserId]);
-
-  const invalidateCategoriesQueries = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['task_categories', currentUserId] });
-  }, [queryClient, currentUserId]);
-
-  const invalidateSectionsQueries = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['task_sections', currentUserId] });
-  }, [queryClient, currentUserId]);
-
-  // Fetch Tasks
-  const { data: tasks, isLoading: tasksLoading, error: tasksError } = useQuery<Task[], Error>({
+  const { data: tasks, isLoading, error, refetch } = useQuery<Task[], Error>({
     queryKey: ['tasks', currentUserId],
     queryFn: async () => {
       if (!currentUserId) return [];
@@ -72,13 +36,12 @@ export const useTasks = ({ userId: propUserId, isDemo = false, demoUserId }: Use
       if (error) throw error;
       return data.map(task => ({
         ...task,
-        category_color: task.category ? (task.category as unknown as TaskCategory).color : undefined,
+        category: task.category ? { ...task.category, id: task.category.id } : null,
       })) as Task[];
     },
     enabled: !!currentUserId && !authLoading,
   });
 
-  // Fetch Categories
   const { data: categories, isLoading: categoriesLoading, error: categoriesError } = useQuery<TaskCategory[], Error>({
     queryKey: ['task_categories', currentUserId],
     queryFn: async () => {
@@ -94,7 +57,6 @@ export const useTasks = ({ userId: propUserId, isDemo = false, demoUserId }: Use
     enabled: !!currentUserId && !authLoading,
   });
 
-  // Fetch Sections
   const { data: sections, isLoading: sectionsLoading, error: sectionsError } = useQuery<TaskSection[], Error>({
     queryKey: ['task_sections', currentUserId],
     queryFn: async () => {
@@ -105,81 +67,103 @@ export const useTasks = ({ userId: propUserId, isDemo = false, demoUserId }: Use
         .eq('user_id', currentUserId)
         .order('order', { ascending: true });
       if (error) throw error;
-      return data as TaskSection[]; // Explicitly cast to TaskSection[]
+      return data as TaskSection[];
     },
     enabled: !!currentUserId && !authLoading,
   });
 
-  // Add Task
+  const { data: doTodayOffLog } = useQuery<DoTodayOffLogEntry[], Error>({
+    queryKey: ['doTodayOffLog', currentUserId],
+    queryFn: async () => {
+      if (!currentUserId) return [];
+      const { data, error } = await supabase
+        .from('do_today_off_log')
+        .select('*')
+        .eq('user_id', currentUserId);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!currentUserId && !authLoading,
+  });
+
+  const cleanTaskForDb = (task: Partial<NewTaskData | UpdateTaskData>) => {
+    const cleaned: Partial<NewTaskData | UpdateTaskData> = { ...task };
+    // Remove properties that are not part of the DB schema or are handled separately
+    delete (cleaned as any).category_color;
+    delete (cleaned as any).is_daily_recurring;
+    return cleaned;
+  };
+
   const addTaskMutation = useMutation<Task, Error, NewTaskData, unknown>({
     mutationFn: async (newTaskData) => {
       if (!currentUserId) throw new Error('User not authenticated');
       const { data, error } = await supabase
         .from('tasks')
-        .insert(cleanTaskForDb({ ...newTaskData, user_id: currentUserId } as Partial<Task> & { user_id: string })) // Corrected type assertion
+        .insert(cleanTaskForDb({ ...newTaskData, user_id: currentUserId }))
         .select('*, category(color, name)')
         .single();
       if (error) throw error;
-      return { ...data, category_color: data.category ? (data.category as unknown as TaskCategory).color : undefined } as Task;
+      return data as Task;
     },
-    onSuccess: () => {
-      invalidateTasksQueries();
+    onSuccess: (newTask) => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', currentUserId] });
+      queryClient.invalidateQueries({ queryKey: ['userSettings', currentUserId] }); // Invalidate settings to update focused task count
+      toast.success('Task added!');
     },
   });
 
-  // Update Task
   const updateTaskMutation = useMutation<Task, Error, { id: string; updates: UpdateTaskData }, unknown>({
     mutationFn: async ({ id, updates }) => {
       if (!currentUserId) throw new Error('User not authenticated');
       const { data, error } = await supabase
         .from('tasks')
-        .update(cleanTaskForDb({ ...updates, user_id: currentUserId } as Partial<Task> & { user_id: string }))
+        .update(cleanTaskForDb(updates))
         .eq('id', id)
-        .eq('user_id', currentUserId)
         .select('*, category(color, name)')
         .single();
       if (error) throw error;
-      return { ...data, category_color: data.category ? (data.category as unknown as TaskCategory).color : undefined } as Task;
+      return data as Task;
     },
-    onSuccess: () => {
-      invalidateTasksQueries();
+    onSuccess: (updatedTask) => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', currentUserId] });
+      queryClient.invalidateQueries({ queryKey: ['userSettings', currentUserId] }); // Invalidate settings to update focused task count
+      toast.success('Task updated!');
     },
   });
 
-  // Delete Task
   const deleteTaskMutation = useMutation<void, Error, string, unknown>({
     mutationFn: async (id) => {
       if (!currentUserId) throw new Error('User not authenticated');
       const { error } = await supabase
         .from('tasks')
         .delete()
-        .eq('id', id)
-        .eq('user_id', currentUserId);
+        .eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
-      invalidateTasksQueries();
+      queryClient.invalidateQueries({ queryKey: ['tasks', currentUserId] });
+      queryClient.invalidateQueries({ queryKey: ['userSettings', currentUserId] }); // Invalidate settings to update focused task count
+      toast.success('Task deleted!');
     },
   });
 
-  // Create Category
   const createCategoryMutation = useMutation<TaskCategory, Error, NewTaskCategoryData, unknown>({
     mutationFn: async (newCategoryData) => {
       if (!currentUserId) throw new Error('User not authenticated');
       const { data, error } = await supabase
         .from('task_categories')
         .insert({ ...newCategoryData, user_id: currentUserId })
-        .select('*')
+        .select()
         .single();
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
-      invalidateCategoriesQueries();
+      queryClient.invalidateQueries({ queryKey: ['task_categories', currentUserId] });
+      toast.success('Category created!');
     },
   });
 
-  // Update Category
   const updateCategoryMutation = useMutation<TaskCategory, Error, { id: string; updates: UpdateTaskCategoryData }, unknown>({
     mutationFn: async ({ id, updates }) => {
       if (!currentUserId) throw new Error('User not authenticated');
@@ -187,51 +171,51 @@ export const useTasks = ({ userId: propUserId, isDemo = false, demoUserId }: Use
         .from('task_categories')
         .update(updates)
         .eq('id', id)
-        .eq('user_id', currentUserId)
-        .select('*')
+        .select()
         .single();
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
-      invalidateCategoriesQueries();
+      queryClient.invalidateQueries({ queryKey: ['task_categories', currentUserId] });
+      queryClient.invalidateQueries({ queryKey: ['tasks', currentUserId] }); // Tasks might need category name/color update
+      toast.success('Category updated!');
     },
   });
 
-  // Delete Category
   const deleteCategoryMutation = useMutation<void, Error, string, unknown>({
     mutationFn: async (id) => {
       if (!currentUserId) throw new Error('User not authenticated');
       const { error } = await supabase
         .from('task_categories')
         .delete()
-        .eq('id', id)
-        .eq('user_id', currentUserId);
+        .eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
-      invalidateCategoriesQueries();
+      queryClient.invalidateQueries({ queryKey: ['task_categories', currentUserId] });
+      queryClient.invalidateQueries({ queryKey: ['tasks', currentUserId] }); // Tasks might lose category reference
+      toast.success('Category deleted!');
     },
   });
 
-  // Create Section
   const createSectionMutation = useMutation<TaskSection, Error, NewTaskSectionData, unknown>({
     mutationFn: async (newSectionData) => {
       if (!currentUserId) throw new Error('User not authenticated');
       const { data, error } = await supabase
         .from('task_sections')
         .insert({ ...newSectionData, user_id: currentUserId })
-        .select('*')
+        .select()
         .single();
       if (error) throw error;
-      return data as TaskSection; // Explicitly cast
+      return data as TaskSection;
     },
     onSuccess: () => {
-      invalidateSectionsQueries();
+      queryClient.invalidateQueries({ queryKey: ['task_sections', currentUserId] });
+      toast.success('Section created!');
     },
   });
 
-  // Update Section
   const updateSectionMutation = useMutation<TaskSection, Error, { id: string; updates: UpdateTaskSectionData }, unknown>({
     mutationFn: async ({ id, updates }) => {
       if (!currentUserId) throw new Error('User not authenticated');
@@ -239,248 +223,223 @@ export const useTasks = ({ userId: propUserId, isDemo = false, demoUserId }: Use
         .from('task_sections')
         .update(updates)
         .eq('id', id)
-        .eq('user_id', currentUserId)
-        .select('*')
+        .select()
         .single();
       if (error) throw error;
-      return data as TaskSection; // Explicitly cast
+      return data as TaskSection;
     },
     onSuccess: () => {
-      invalidateSectionsQueries();
+      queryClient.invalidateQueries({ queryKey: ['task_sections', currentUserId] });
+      queryClient.invalidateQueries({ queryKey: ['tasks', currentUserId] }); // Tasks might need section name update
+      toast.success('Section updated!');
     },
   });
 
-  // Delete Section
   const deleteSectionMutation = useMutation<void, Error, string, unknown>({
     mutationFn: async (id) => {
       if (!currentUserId) throw new Error('User not authenticated');
       const { error } = await supabase
         .from('task_sections')
         .delete()
-        .eq('id', id)
-        .eq('user_id', currentUserId);
+        .eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
-      invalidateSectionsQueries();
+      queryClient.invalidateQueries({ queryKey: ['task_sections', currentUserId] });
+      queryClient.invalidateQueries({ queryKey: ['tasks', currentUserId] }); // Tasks might lose section reference
+      toast.success('Section deleted!');
     },
   });
 
-  // Update sections order
-  const updateSectionsOrderMutation = useMutation<void, Error, { id: string; order: number; name: string; user_id: string; include_in_focus_mode: boolean | null }[], unknown>({
-    mutationFn: async (updates) => {
+  const updateSectionIncludeInFocusModeMutation = useMutation<void, Error, { sectionId: string; include: boolean }, unknown>({
+    mutationFn: async ({ sectionId, include }) => {
+      if (!currentUserId) throw new Error('User not authenticated');
+      const { error } = await supabase
+        .from('task_sections')
+        .update({ include_in_focus_mode: include })
+        .eq('id', sectionId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['task_sections', currentUserId] });
+      toast.success('Focus mode setting updated for section!');
+    },
+  });
+
+  const reorderTasksMutation = useMutation<void, Error, { updates: { id: string; order: number; parent_task_id: string | null; section_id: string | null }[] }, unknown>({
+    mutationFn: async ({ updates }) => {
+      if (!currentUserId) throw new Error('User not authenticated');
+      const { error } = await supabase.rpc('update_tasks_order', { updates: updates as any }); // Cast to any for rpc
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', currentUserId] });
+    },
+  });
+
+  const reorderSectionsMutation = useMutation<void, Error, { updates: { id: string; order: number; name: string; include_in_focus_mode: boolean | null }[] }, unknown>({
+    mutationFn: async ({ updates }) => {
       if (!currentUserId) throw new Error('User not authenticated');
       const { error } = await supabase.rpc('update_sections_order', { updates: updates as any }); // Cast to any for rpc
       if (error) throw error;
     },
     onSuccess: () => {
-      invalidateSectionsQueries();
+      queryClient.invalidateQueries({ queryKey: ['task_sections', currentUserId] });
     },
   });
 
-  // Update tasks order
-  const updateTasksOrderMutation = useMutation<void, Error, { id: string; order: number | null; parent_task_id: string | null; section_id: string | null }[], unknown>({
-    mutationFn: async (updates) => {
+  const logDoTodayOffMutation = useMutation<DoTodayOffLogEntry, Error, { taskId: string; offDate: Date }, unknown>({
+    mutationFn: async ({ taskId, offDate }) => {
       if (!currentUserId) throw new Error('User not authenticated');
-      const { error } = await supabase.rpc('update_tasks_order', { updates });
+      const { data, error } = await supabase
+        .from('do_today_off_log')
+        .insert({ user_id: currentUserId, task_id: taskId, off_date: offDate.toISOString().split('T')[0] })
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['doTodayOffLog', currentUserId] });
+      toast.success('Task logged as "Do Today Off"!');
+    },
+  });
+
+  const removeDoTodayOffLogEntryMutation = useMutation<void, Error, string, unknown>({
+    mutationFn: async (logEntryId) => {
+      if (!currentUserId) throw new Error('User not authenticated');
+      const { error } = await supabase
+        .from('do_today_off_log')
+        .delete()
+        .eq('id', logEntryId);
       if (error) throw error;
     },
     onSuccess: () => {
-      invalidateTasksQueries();
+      queryClient.invalidateQueries({ queryKey: ['doTodayOffLog', currentUserId] });
+      toast.success('Task removed from "Do Today Off" log!');
     },
   });
 
-  const reorderTasks = useCallback(async (activeId: string, overId: string | null, parentTaskId: string | null, sectionId: string | null) => {
-    if (!tasks) return;
-
-    const activeIndex = tasks.findIndex(t => t.id === activeId);
-    const overIndex = tasks.findIndex(t => t.id === overId);
-
-    if (activeIndex === -1) return;
-
-    let newTasks = [...tasks];
-    // let newOrder = 0; // Removed unused variable
-
-    if (overId === null) {
-      // Dropped into a section or general area
-      const siblings = newTasks.filter(t => t.parent_task_id === parentTaskId && t.section_id === sectionId);
-      newTasks = arrayMove(siblings, activeIndex, siblings.length - 1);
-      // newOrder = siblings.length - 1; // Removed unused variable
-    } else {
-      // Dropped onto another task
-      newTasks = arrayMove(newTasks, activeIndex, overIndex);
-      // newOrder = overIndex; // Removed unused variable
-    }
-
-    const updates = newTasks.map((task, index) => ({
-      id: task.id,
-      order: index,
-      parent_task_id: parentTaskId,
+  const addTask = async (
+    description: string,
+    sectionId: string | null,
+    parentTaskId: string | null,
+    dueDate: Date | null,
+    categoryId: string | null,
+    priority: string
+  ) => {
+    const newTaskData: NewTaskData = {
+      description,
+      user_id: currentUserId!,
       section_id: sectionId,
-    }));
+      parent_task_id: parentTaskId,
+      due_date: dueDate ? dueDate.toISOString() : null,
+      category: categoryId,
+      priority,
+    };
+    return addTaskMutation.mutateAsync(newTaskData);
+  };
 
-    await updateTasksOrderMutation.mutateAsync(updates);
-  }, [tasks, updateTasksOrderMutation]);
+  const updateTask = async (id: string, updates: UpdateTaskData) => {
+    return updateTaskMutation.mutateAsync({ id, updates });
+  };
 
-  const reorderSections = useCallback(async (activeId: string, overId: string | null) => {
-    if (!sections) return;
+  const deleteTask = async (id: string) => {
+    return deleteTaskMutation.mutateAsync(id);
+  };
 
-    const activeIndex = sections.findIndex((s: TaskSection) => s.id === activeId); // Explicitly typed s
-    const overIndex = sections.findIndex((s: TaskSection) => s.id === overId); // Explicitly typed s
+  const createCategory = async (data: NewTaskCategoryData) => {
+    return createCategoryMutation.mutateAsync(data);
+  };
 
-    if (activeIndex === -1) return;
+  const updateCategory = async (id: string, updates: UpdateTaskCategoryData) => {
+    return updateCategoryMutation.mutateAsync({ id, updates });
+  };
 
-    const newSections = arrayMove(sections, activeIndex, overIndex);
+  const deleteCategory = async (id: string) => {
+    return deleteCategoryMutation.mutateAsync(id);
+  };
 
-    const updates = newSections.map((section: TaskSection, index) => ({ // Explicitly typed section
-      id: section.id,
-      name: section.name,
-      order: index,
-      user_id: section.user_id,
-      include_in_focus_mode: section.include_in_focus_mode,
-    }));
+  const createSection = async (data: NewTaskSectionData) => {
+    return createSectionMutation.mutateAsync(data);
+  };
 
-    await updateSectionsOrderMutation.mutateAsync(updates);
-  }, [sections, updateSectionsOrderMutation]);
+  const updateSection = async (id: string, updates: UpdateTaskSectionData) => {
+    return updateSectionMutation.mutateAsync({ id, updates });
+  };
 
-  const updateSectionIncludeInFocusMode = useCallback(async (sectionId: string, include: boolean) => {
-    await updateSectionMutation.mutateAsync({ id: sectionId, updates: { include_in_focus_mode: include } });
-  }, [updateSectionMutation]);
+  const deleteSection = async (id: string) => {
+    return deleteSectionMutation.mutateAsync(id);
+  };
 
-  // --- Filtering and Sorting Logic for TaskList ---
-  const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [filterCategory, setFilterCategory] = useState<string>('all');
-  const [filterPriority, setFilterPriority] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [filterDueDate, setFilterDueDate] = useState<Date | undefined>(undefined);
-  const [showCompleted, setShowCompleted] = useState<boolean>(false);
+  const updateSectionIncludeInFocusMode = async (sectionId: string, include: boolean) => {
+    return updateSectionIncludeInFocusModeMutation.mutateAsync({ sectionId, include });
+  };
 
-  const filteredAndSortedTasks = useMemo(() => {
-    if (!tasks) return [];
+  const reorderTasks = async (activeId: string, overId: string, newParentTaskId: string | null, newSectionId: string | null, newOrder: number) => {
+    const updates = [{ id: activeId, order: newOrder, parent_task_id: newParentTaskId, section_id: newSectionId }];
+    return reorderTasksMutation.mutateAsync({ updates });
+  };
 
-    let filtered = tasks;
+  const reorderSections = async (updates: { id: string; order: number; name: string; include_in_focus_mode: boolean | null }[]) => {
+    return reorderSectionsMutation.mutateAsync({ updates });
+  };
 
-    if (filterStatus !== 'all') {
-      filtered = filtered.filter(task => task.status === filterStatus);
-    }
-
-    if (filterCategory !== 'all') {
-      filtered = filtered.filter(task => task.category === filterCategory);
-    }
-
-    if (filterPriority !== 'all') {
-      filtered = filtered.filter(task => task.priority === filterPriority);
-    }
-
-    if (searchQuery) {
-      filtered = filtered.filter(task =>
-        task.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        task.notes?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    if (filterDueDate) {
-      filtered = filtered.filter(task => task.due_date && isSameDay(new Date(task.due_date), filterDueDate));
-    }
-
-    if (!showCompleted) {
-      filtered = filtered.filter(task => task.status !== 'completed');
-    }
-
-    // Sort by due date (closest first), then priority, then order
-    filtered.sort((a, b) => {
-      // Sort by due date
-      if (a.due_date && b.due_date) {
-        const dateA = new Date(a.due_date);
-        const dateB = new Date(b.due_date);
-        if (isPast(dateA) && !isPast(dateB)) return 1; // Past dates come after future dates
-        if (!isPast(dateA) && isPast(dateB)) return -1;
-        return dateA.getTime() - dateB.getTime();
-      }
-      if (a.due_date) return -1; // Tasks with due dates come before tasks without
-      if (b.due_date) return 1;
-
-      // Then by priority (urgent > high > medium > low > none)
-      const priorityOrder: { [key: string]: number } = { 'urgent': 0, 'high': 1, 'medium': 2, 'low': 3, 'none': 4 };
-      const pA = priorityOrder[a.priority || 'none'];
-      const pB = priorityOrder[b.priority || 'none'];
-      if (pA !== pB) return pA - pB;
-
-      // Finally by explicit order
-      if (a.order !== null && b.order !== null) {
-        return a.order - b.order;
-      }
-      return 0;
-    });
-
-    return filtered;
-  }, [tasks, filterStatus, filterCategory, filterPriority, searchQuery, filterDueDate, showCompleted]);
-
-  const dailyProgress = useMemo(() => {
-    if (!tasks) return { completed: 0, total: 0, percentage: 0 };
-    const today = startOfDay(new Date());
-    const dailyTasks = tasks.filter(task =>
-      task.recurring_type === 'daily' ||
-      (task.due_date && isSameDay(new Date(task.due_date), today))
-    );
-    const completed = dailyTasks.filter(task => task.status === 'completed').length;
-    const total = dailyTasks.length;
-    const percentage = total > 0 ? (completed / total) * 100 : 0;
-    return { completed, total, percentage };
-  }, [tasks]);
-
-  const onToggleFocusMode = useCallback(async (taskId: string) => {
+  const onToggleFocusMode = async (taskId: string, isFocused: boolean) => {
     if (!currentUserId) return;
-    const currentFocusedTaskId = queryClient.getQueryData(['userSettings', currentUserId])?.focused_task_id;
+    const currentFocusedTaskId = (queryClient.getQueryData(['userSettings', currentUserId]) as UserSettings)?.focused_task_id;
     const newFocusedTaskId = currentFocusedTaskId === taskId ? null : taskId;
-    await queryClient.setQueryData(['userSettings', currentUserId], (oldSettings: any) => ({
-      ...oldSettings,
-      focused_task_id: newFocusedTaskId,
-    }));
-    // This should ideally call a mutation to update the backend
-    // For now, we'll just update the cache
-    toast.success(newFocusedTaskId ? 'Task set as focus!' : 'Focus removed!');
-  }, [currentUserId, queryClient]);
 
-  const onLogDoTodayOff = useCallback(async (taskId: string) => {
+    await supabase
+      .from('user_settings')
+      .update({ focused_task_id: newFocusedTaskId })
+      .eq('user_id', currentUserId);
+
+    queryClient.invalidateQueries({ queryKey: ['userSettings', currentUserId] });
+    toast.success(newFocusedTaskId ? 'Task set as focus!' : 'Focus removed!');
+  };
+
+  const onLogDoTodayOff = async (taskId: string) => {
     if (!currentUserId) return;
-    // This should ideally call a mutation to log 'do today off'
-    // For now, we'll just log it.
-    toast(`Task ${taskId} logged as "Do Today Off" (functionality to be implemented).`);
-  }, [currentUserId]);
+    const existingLogEntry = doTodayOffLog?.find(
+      (entry: DoTodayOffLogEntry) => entry.task_id === taskId && isToday(parseISO(entry.off_date))
+    );
+
+    if (existingLogEntry) {
+      await removeDoTodayOffLogEntryMutation.mutateAsync(existingLogEntry.id);
+    } else {
+      await logDoTodayOffMutation.mutateAsync({ taskId, offDate: new Date() });
+    }
+  };
+
+  const sortedTasks = tasks?.sort((a, b) => {
+    if (a.order !== null && b.order !== null) {
+      return a.order - b.order;
+    }
+    return 0;
+  }) || [];
 
   return {
-    tasks: filteredAndSortedTasks,
+    tasks: sortedTasks,
     categories,
     sections,
-    isLoading: tasksLoading || categoriesLoading || sectionsLoading || authLoading,
-    error: tasksError || categoriesError || sectionsError,
-    addTask: addTaskMutation.mutateAsync,
-    updateTask: updateTaskMutation.mutateAsync,
-    deleteTask: deleteTaskMutation.mutateAsync,
-    createCategory: createCategoryMutation.mutateAsync,
-    updateCategory: updateCategoryMutation.mutateAsync,
-    deleteCategory: deleteCategoryMutation.mutateAsync,
-    createSection: createSectionMutation.mutateAsync,
-    updateSection: updateSectionMutation.mutateAsync,
-    deleteSection: deleteSectionMutation.mutateAsync,
+    isLoading: isLoading || categoriesLoading || sectionsLoading || authLoading,
+    error: error || categoriesError || sectionsError,
+    addTask,
+    updateTask,
+    deleteTask,
+    createCategory,
+    updateCategory,
+    deleteCategory,
+    createSection,
+    updateSection,
+    deleteSection,
+    updateSectionIncludeInFocusMode,
     reorderTasks,
     reorderSections,
-    updateSectionIncludeInFocusMode,
-    dailyProgress,
-    filterStatus,
-    setFilterStatus,
-    filterCategory,
-    setFilterCategory,
-    filterPriority,
-    setFilterPriority,
-    searchQuery,
-    setSearchQuery,
-    filterDueDate,
-    setFilterDueDate,
-    showCompleted,
-    setShowCompleted,
     onToggleFocusMode,
     onLogDoTodayOff,
+    doTodayOffLog,
+    refetchTasks: refetch,
   };
 };

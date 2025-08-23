@@ -1,69 +1,42 @@
-import { useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { UserSettings, Json } from '@/types';
+import { UserSettings } from '@/types'; // Removed Json as it's not directly used here
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
-const defaultSettings: Omit<UserSettings, 'user_id'> = {
-  project_tracker_title: 'Project Balance Tracker',
-  focused_task_id: null,
-  meditation_notes: null,
-  dashboard_layout: null,
-  visible_pages: null,
-  schedule_show_focus_tasks_only: true,
-  future_tasks_days_visible: 7,
-};
-
-export const useUserSettings = () => {
+export const useUserSettings = (userId?: string) => {
   const { user, loading: authLoading } = useAuth();
-  const userId = user?.id;
+  const currentUserId = userId || user?.id;
   const queryClient = useQueryClient();
 
-  const invalidateSettingsQueries = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['userSettings', userId] });
-  }, [queryClient, userId]);
-
   const { data: settings, isLoading, error } = useQuery<UserSettings, Error>({
-    queryKey: ['userSettings', userId],
+    queryKey: ['userSettings', currentUserId],
     queryFn: async () => {
-      if (!userId) return { user_id: '', ...defaultSettings }; // Return default settings if no user
+      if (!currentUserId) return { user_id: '', project_tracker_title: 'Project Balance Tracker', future_tasks_days_visible: 7, schedule_show_focus_tasks_only: true }; // Default settings
       const { data, error } = await supabase
         .from('user_settings')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', currentUserId)
         .single();
-
-      if (error && error.code === 'PGRST116') { // No rows found
-        // Insert default settings if none exist
-        const { data: newSettings, error: insertError } = await supabase
-          .from('user_settings')
-          .insert({ user_id: userId, ...defaultSettings })
-          .select('*')
-          .single();
-        if (insertError) throw insertError;
-        return newSettings;
-      }
-      if (error) throw error;
-      return data;
+      if (error && error.code !== 'PGRST116') throw error; // PGRST116 means no rows found
+      return data || { user_id: currentUserId, project_tracker_title: 'Project Balance Tracker', future_tasks_days_visible: 7, schedule_show_focus_tasks_only: true };
     },
-    enabled: !!userId && !authLoading,
-    initialData: { user_id: userId || '', ...defaultSettings }, // Provide initial data to prevent undefined
+    enabled: !!currentUserId && !authLoading,
   });
 
   const updateSettingsMutation = useMutation<UserSettings, Error, Partial<UserSettings>, unknown>({
     mutationFn: async (updates) => {
-      if (!userId) throw new Error('User not authenticated');
+      if (!currentUserId) throw new Error('User not authenticated');
       const { data, error } = await supabase
         .from('user_settings')
         .update(updates)
-        .eq('user_id', userId)
-        .select('*')
+        .eq('user_id', currentUserId)
+        .select()
         .single();
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      invalidateSettingsQueries();
+    onSuccess: (data) => {
+      queryClient.setQueryData(['userSettings', currentUserId], data);
     },
   });
 

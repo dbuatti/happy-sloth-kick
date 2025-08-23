@@ -1,28 +1,25 @@
-import { useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Appointment, NewAppointmentData, UpdateAppointmentData } from '@/types';
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
-import { format } from 'date-fns';
+import { format, startOfDay } from 'date-fns';
+import { toast } from 'react-hot-toast';
 
 export const useAppointments = (date: Date) => {
   const { user, loading: authLoading } = useAuth();
   const userId = user?.id;
   const queryClient = useQueryClient();
-
-  const invalidateAppointmentsQueries = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['appointments', userId] });
-  }, [queryClient, userId]);
+  const formattedDate = format(startOfDay(date), 'yyyy-MM-dd');
 
   const { data: appointments, isLoading, error } = useQuery<Appointment[], Error>({
-    queryKey: ['appointments', userId, format(date, 'yyyy-MM-dd')],
+    queryKey: ['appointments', userId, formattedDate],
     queryFn: async () => {
       if (!userId) return [];
       const { data, error } = await supabase
         .from('schedule_appointments')
         .select('*')
         .eq('user_id', userId)
-        .eq('date', format(date, 'yyyy-MM-dd'))
+        .eq('date', formattedDate)
         .order('start_time', { ascending: true });
       if (error) throw error;
       return data;
@@ -36,13 +33,14 @@ export const useAppointments = (date: Date) => {
       const { data, error } = await supabase
         .from('schedule_appointments')
         .insert({ ...newAppointmentData, user_id: userId })
-        .select('*')
+        .select()
         .single();
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
-      invalidateAppointmentsQueries();
+      queryClient.invalidateQueries({ queryKey: ['appointments', userId, formattedDate] });
+      toast.success('Appointment added!');
     },
   });
 
@@ -53,14 +51,14 @@ export const useAppointments = (date: Date) => {
         .from('schedule_appointments')
         .update(updates)
         .eq('id', id)
-        .eq('user_id', userId)
-        .select('*')
+        .select()
         .single();
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
-      invalidateAppointmentsQueries();
+      queryClient.invalidateQueries({ queryKey: ['appointments', userId, formattedDate] });
+      toast.success('Appointment updated!');
     },
   });
 
@@ -70,27 +68,28 @@ export const useAppointments = (date: Date) => {
       const { error } = await supabase
         .from('schedule_appointments')
         .delete()
-        .eq('id', id)
-        .eq('user_id', userId);
+        .eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
-      invalidateAppointmentsQueries();
+      queryClient.invalidateQueries({ queryKey: ['appointments', userId, formattedDate] });
+      toast.success('Appointment deleted!');
     },
   });
 
-  const clearAppointmentsForDayMutation = useMutation<void, Error, Date, unknown>({
-    mutationFn: async (day) => {
+  const clearAppointmentsForDayMutation = useMutation<void, Error, string, unknown>({
+    mutationFn: async (dateToClear) => {
       if (!userId) throw new Error('User not authenticated');
       const { error } = await supabase
         .from('schedule_appointments')
         .delete()
         .eq('user_id', userId)
-        .eq('date', format(day, 'yyyy-MM-dd'));
+        .eq('date', dateToClear);
       if (error) throw error;
     },
-    onSuccess: () => {
-      invalidateAppointmentsQueries();
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['appointments', userId, variables] });
+      toast.success(`All appointments for ${variables} cleared!`);
     },
   });
 
