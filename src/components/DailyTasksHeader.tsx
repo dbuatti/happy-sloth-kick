@@ -1,80 +1,56 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import { Plus, RefreshCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Task, TaskSection, TaskCategory, NewTaskData } from '@/types'; // Corrected imports
+import { Task, TaskSection, TaskCategory, NewTaskData } from '@/types';
 import { showError, showLoading, dismissToast } from '@/utils/toast';
-import { useDailyTaskCount } from '@/hooks/useDailyTaskCount'; // Corrected import
+import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
 import { useSound } from '@/context/SoundContext';
-import { toast } from 'react-hot-toast';
 
 interface DailyTasksHeaderProps {
   currentDate: Date;
-  onAddTask: (taskData: NewTaskData) => Promise<Task>; // Changed signature to accept NewTaskData object
+  onAddTask: (data: NewTaskData) => Promise<Task>;
   onRefreshTasks: () => void;
-  dailyProgress: { completed: number; total: number; percentage: number };
+  dailyProgress: { completed: number; total: number };
   sections: TaskSection[];
   categories: TaskCategory[];
 }
 
 const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
-  currentDate,
   onAddTask,
   onRefreshTasks,
   dailyProgress,
-  sections,
-  categories,
 }) => {
-  // useDailyTaskCount is a hook that takes tasks as an argument, but it's not used here.
-  // If dailyProgress is passed as a prop, this hook might be redundant or used incorrectly.
-  // For now, I'll remove the call to avoid the error, assuming dailyProgress is sufficient.
-  // If dailyProgress needs to be calculated here, the tasks prop should be passed to useDailyTaskCount.
-  // const { dailyProgress: calculatedDailyProgress } = useDailyTaskCount(tasks); // Example if tasks were available
-
   const { playSound } = useSound();
 
-  const handleQuickAddTask = async () => {
-    const description = prompt('Enter new task description:');
-    if (description) {
-      const loadingToastId = showLoading('Adding task...');
-      try {
-        const newTaskData: NewTaskData = {
-          description,
-          status: 'to-do',
-          priority: 'medium',
-          due_date: null,
-          notes: null,
-          remind_at: null,
-          section_id: null,
-          parent_task_id: null,
-          recurring_type: 'none',
-          original_task_id: null,
-          category: null,
-          link: null,
-          image_url: null,
-        };
-        await onAddTask(newTaskData);
-        dismissToast(loadingToastId);
-        playSound('add');
-        toast.success('Task added!');
-      } catch (error) {
-        dismissToast(loadingToastId);
-        showError('Failed to add task.');
-        console.error('Error adding task:', error);
-      }
+  const handleRefresh = async () => {
+    playSound('refresh');
+    const toastId = showLoading('Refreshing tasks...');
+    try {
+      await onRefreshTasks();
+      dismissToast(toastId);
+      // toast.success('Tasks refreshed!'); // Handled by onRefreshTasks success
+    } catch (error) {
+      dismissToast(toastId);
+      showError('Failed to refresh tasks.');
+      console.error('Error refreshing tasks:', error);
     }
   };
 
   return (
-    <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
-      <h2 className="text-2xl font-semibold mb-4 sm:mb-0">Daily Tasks</h2>
-      <div className="flex space-x-2">
-        <Button onClick={handleQuickAddTask} variant="outline">
-          <Plus className="mr-2 h-4 w-4" /> Quick Add Task
-        </Button>
-        <Button onClick={onRefreshTasks} variant="outline">
+    <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center space-x-4">
+        <h2 className="text-2xl font-bold">Daily Tasks</h2>
+        <Button variant="outline" size="sm" onClick={handleRefresh}>
           <RefreshCcw className="mr-2 h-4 w-4" /> Refresh
         </Button>
+      </div>
+      <div className="flex items-center space-x-2">
+        <span className="text-sm text-muted-foreground">
+          {dailyProgress.completed}/{dailyProgress.total} tasks completed
+        </span>
+        <Progress value={(dailyProgress.completed / dailyProgress.total) * 100} className="w-[100px]" />
       </div>
     </div>
   );

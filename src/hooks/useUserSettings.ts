@@ -1,5 +1,5 @@
 import { useAuth } from '@/context/AuthContext';
-import { UserSettings } from '@/types'; // Removed Json as it's not directly used here
+import { UserSettings, Json } from '@/types';
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -8,7 +8,7 @@ export const useUserSettings = (userId?: string) => {
   const currentUserId = userId || user?.id;
   const queryClient = useQueryClient();
 
-  const { data: settings, isLoading, error } = useQuery<UserSettings, Error>({
+  const { data: userSettings, isLoading, error } = useQuery<UserSettings, Error>({
     queryKey: ['userSettings', currentUserId],
     queryFn: async () => {
       if (!currentUserId) return { user_id: '', project_tracker_title: 'Project Balance Tracker', future_tasks_days_visible: 7, schedule_show_focus_tasks_only: true }; // Default settings
@@ -17,8 +17,24 @@ export const useUserSettings = (userId?: string) => {
         .select('*')
         .eq('user_id', currentUserId)
         .single();
-      if (error && error.code !== 'PGRST116') throw error; // PGRST116 means no rows found
-      return data || { user_id: currentUserId, project_tracker_title: 'Project Balance Tracker', future_tasks_days_visible: 7, schedule_show_focus_tasks_only: true };
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found, which is fine for initial load
+        throw error;
+      }
+
+      // If no settings exist, create default ones
+      if (!data) {
+        const { data: newSettings, error: insertError } = await supabase
+          .from('user_settings')
+          .insert({ user_id: currentUserId, project_tracker_title: 'Project Balance Tracker', future_tasks_days_visible: 7, schedule_show_focus_tasks_only: true })
+          .select('*')
+          .single();
+
+        if (insertError) throw insertError;
+        return newSettings;
+      }
+
+      return data;
     },
     enabled: !!currentUserId && !authLoading,
   });
@@ -30,8 +46,9 @@ export const useUserSettings = (userId?: string) => {
         .from('user_settings')
         .update(updates)
         .eq('user_id', currentUserId)
-        .select()
+        .select('*')
         .single();
+
       if (error) throw error;
       return data;
     },
@@ -41,7 +58,7 @@ export const useUserSettings = (userId?: string) => {
   });
 
   return {
-    settings,
+    userSettings,
     isLoading,
     error,
     updateSettings: updateSettingsMutation.mutateAsync,

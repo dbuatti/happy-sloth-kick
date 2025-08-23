@@ -1,117 +1,86 @@
-import { useState, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { WorkHour, NewWorkHourData, UpdateWorkHourData } from '@/types';
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'react-hot-toast';
 
-export const useWorkHours = () => {
+export const useWorkHours = (userId?: string) => {
   const { user, loading: authLoading } = useAuth();
-  const userId = user?.id;
+  const currentUserId = userId || user?.id;
   const queryClient = useQueryClient();
 
-  const invalidateWorkHoursQueries = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['workHours', userId] });
-  }, [queryClient, userId]);
-
-  const { data: workHours, isLoading, error } = useQuery<WorkHour[], Error>({
-    queryKey: ['workHours', userId],
+  const { data: workHours, isLoading, error, refetch } = useQuery<WorkHour[], Error>({
+    queryKey: ['workHours', currentUserId],
     queryFn: async () => {
-      if (!userId) return [];
+      if (!currentUserId) return [];
       const { data, error } = await supabase
         .from('user_work_hours')
         .select('*')
-        .eq('user_id', userId)
-        .order('day_of_week', { ascending: true }); // Assuming day_of_week can be ordered or mapped
+        .eq('user_id', currentUserId)
+        .order('day_of_week', { ascending: true }); // Assuming a default order
       if (error) throw error;
       return data;
     },
-    enabled: !!userId && !authLoading,
+    enabled: !!currentUserId && !authLoading,
   });
 
   const addWorkHourMutation = useMutation<WorkHour, Error, NewWorkHourData, unknown>({
     mutationFn: async (newWorkHourData) => {
-      if (!userId) throw new Error('User not authenticated');
+      if (!currentUserId) throw new Error('User not authenticated');
       const { data, error } = await supabase
         .from('user_work_hours')
-        .insert({ ...newWorkHourData, user_id: userId })
+        .insert({ ...newWorkHourData, user_id: currentUserId })
         .select('*')
         .single();
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
-      invalidateWorkHoursQueries();
+      queryClient.invalidateQueries({ queryKey: ['workHours', currentUserId] });
+      toast.success('Work hour added!');
     },
   });
 
   const updateWorkHourMutation = useMutation<WorkHour, Error, { id: string; updates: UpdateWorkHourData }, unknown>({
     mutationFn: async ({ id, updates }) => {
-      if (!userId) throw new Error('User not authenticated');
+      if (!currentUserId) throw new Error('User not authenticated');
       const { data, error } = await supabase
         .from('user_work_hours')
         .update(updates)
         .eq('id', id)
-        .eq('user_id', userId)
         .select('*')
         .single();
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
-      invalidateWorkHoursQueries();
+      queryClient.invalidateQueries({ queryKey: ['workHours', currentUserId] });
+      toast.success('Work hour updated!');
     },
   });
 
   const deleteWorkHourMutation = useMutation<void, Error, string, unknown>({
     mutationFn: async (id) => {
-      if (!userId) throw new Error('User not authenticated');
+      if (!currentUserId) throw new Error('User not authenticated');
       const { error } = await supabase
         .from('user_work_hours')
         .delete()
-        .eq('id', id)
-        .eq('user_id', userId);
+        .eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
-      invalidateWorkHoursQueries();
+      queryClient.invalidateQueries({ queryKey: ['workHours', currentUserId] });
+      toast.success('Work hour deleted!');
     },
   });
-
-  // For fetching a single day's work hour (e.g., for DailyScheduleView)
-  const [singleDayWorkHour, setSingleDayWorkHour] = useState<WorkHour | null>(null);
-  const [isLoadingSingleDay, setIsLoadingSingleDay] = useState(false);
-  const [errorSingleDay, setErrorSingleDay] = useState<Error | null>(null);
-
-  const fetchWorkHourForDay = useCallback(async (dayOfWeek: string) => {
-    setIsLoadingSingleDay(true);
-    setErrorSingleDay(null);
-    try {
-      if (!userId) throw new Error('User not authenticated');
-      const { data, error } = await supabase
-        .from('user_work_hours')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('day_of_week', dayOfWeek)
-        .single();
-      if (error && error.code !== 'PGRST116') throw error; // PGRST116 means no rows found
-      setSingleDayWorkHour(data);
-    } catch (err) {
-      setErrorSingleDay(err as Error);
-    } finally {
-      setIsLoadingSingleDay(false);
-    }
-  }, [userId]);
 
   return {
     workHours,
     isLoading,
     error,
+    refetchWorkHours: refetch,
     addWorkHour: addWorkHourMutation.mutateAsync,
     updateWorkHour: updateWorkHourMutation.mutateAsync,
     deleteWorkHour: deleteWorkHourMutation.mutateAsync,
-    fetchWorkHourForDay,
-    singleDayWorkHour,
-    isLoadingSingleDay,
-    errorSingleDay,
   };
 };

@@ -1,42 +1,38 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { useSettings } from '@/context/SettingsContext';
+import React, { useState, useMemo } from 'react';
+import { useAuth } from '@/context/AuthContext';
 import { useTasks } from '@/hooks/useTasks';
 import { useAppointments } from '@/hooks/useAppointments';
 import { useDashboardData } from '@/hooks/useDashboardData';
-import { Task, TaskCategory, TaskSection, Appointment, CustomCard, WeeklyFocus, NewCustomCardData, UpdateCustomCardData, UpdateWeeklyFocusData, NewTaskData, UpdateTaskData, DashboardProps } from '@/types'; // Corrected imports
-import { Responsive, WidthProvider } from 'react-grid-layout';
-import 'react-grid-layout/css/styles.css';
-import 'react-resizable/css/styles.css';
+import { useSettings } from '@/context/SettingsContext';
+import { Task, TaskCategory, TaskSection, Appointment, CustomCard, WeeklyFocus, NewTaskData, UpdateTaskData, NewCustomCardData, UpdateCustomCardData, DashboardProps } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, X, Settings as SettingsIcon, Sparkles } from 'lucide-react'; // Removed LayoutDashboard
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog'; // Added DialogTrigger
+import { Plus, X, Save, LayoutDashboard } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { HexColorPicker } from 'react-colorful';
+import { ResponsiveGridLayout } from '@/components/ui/responsive-grid-layout';
+import { DndContext, closestCorners, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverlay } from '@dnd-kit/core';
+import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import DailySchedulePreview from '@/components/dashboard/DailySchedulePreview';
 import NextTaskCard from '@/components/dashboard/NextTaskCard';
 import QuickLinks from '@/components/dashboard/QuickLinks';
 import PeopleMemoryCard from '@/components/dashboard/PeopleMemoryCard';
-import WorryJournal from '@/components/WorryJournal';
-import GratitudeJournal from '@/components/GratitudeJournal';
 import MeditationNotes from '@/components/dashboard/MeditationNotes';
-import CustomCardComponent from '@/components/dashboard/CustomCard';
-import WeeklyFocusComponent from '@/components/dashboard/WeeklyFocus';
-import TaskList from '@/components/TaskList';
-import { format, startOfDay } from 'date-fns';
-import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
-import { toast } from 'react-hot-toast';
+import GratitudeJournal from '@/components/GratitudeJournal';
+import WorryJournal from '@/components/WorryJournal';
+import WeeklyFocusCard from '@/components/dashboard/WeeklyFocus';
+import SortableCustomCard from '@/components/dashboard/SortableCustomCard';
 import DashboardLayoutSettings from '@/components/dashboard/DashboardLayoutSettings';
-
-const ResponsiveGridLayout = WidthProvider(Responsive);
+import { toast } from 'react-hot-toast';
+import { format, startOfDay } from 'date-fns';
 
 const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => {
   const { user, loading: authLoading } = useAuth();
   const currentUserId = isDemo ? demoUserId : user?.id;
-  const { settings, updateSettings } = useSettings();
+  const { settings, updateSettings, loading: settingsLoading } = useSettings();
+
+  const today = startOfDay(new Date());
 
   const {
     tasks,
@@ -47,28 +43,25 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
     addTask,
     updateTask,
     deleteTask,
+    onAddSubtask,
+    onToggleFocusMode,
+    onLogDoTodayOff,
     createCategory,
     updateCategory,
     deleteCategory,
     createSection,
     updateSection,
     deleteSection,
-    reorderTasks,
-    reorderSections,
     updateSectionIncludeInFocusMode,
-    onToggleFocusMode,
-    onLogDoTodayOff,
-  } = useTasks({ userId: currentUserId! });
+  } = useTasks({ userId: currentUserId, isDemo, demoUserId });
 
-  const today = startOfDay(new Date());
   const {
     appointments,
     isLoading: appointmentsLoading,
     error: appointmentsError,
     addAppointment,
-    updateAppointment: updateSingleAppointment,
-    deleteAppointment: deleteSingleAppointment,
-    clearAppointmentsForDay,
+    updateAppointment,
+    deleteAppointment,
   } = useAppointments(today);
 
   const {
@@ -80,161 +73,309 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
     updateCustomCard,
     deleteCustomCard,
     updateWeeklyFocus,
-    defaultDashboardLayout,
-  } = useDashboardData();
+    updateDashboardLayout,
+  } = useDashboardData(isDemo, demoUserId);
 
-  const { dailyProgress } = useDailyTaskCount(tasks);
-
-  const [layout, setLayout] = useState<any>(settings?.dashboard_layout || defaultDashboardLayout);
   const [isAddCardDialogOpen, setIsAddCardDialogOpen] = useState(false);
   const [newCardTitle, setNewCardTitle] = useState('');
   const [newCardContent, setNewCardContent] = useState('');
   const [newCardEmoji, setNewCardEmoji] = useState('');
   const [isLayoutSettingsOpen, setIsLayoutSettingsOpen] = useState(false);
+  const [activeId, setActiveId] = useState<string | null>(null);
 
-  const [primaryFocus, setPrimaryFocus] = useState(weeklyFocus?.primary_focus || '');
-  const [secondaryFocus, setSecondaryFocus] = useState(weeklyFocus?.secondary_focus || '');
-  const [tertiaryFocus, setTertiaryFocus] = useState(weeklyFocus?.tertiary_focus || '');
+  const isLoading = authLoading || tasksLoading || appointmentsLoading || dashboardDataLoading || settingsLoading;
+  const error = tasksError || appointmentsError || dashboardDataError;
 
-  useEffect(() => {
-    setPrimaryFocus(weeklyFocus?.primary_focus || '');
-    setSecondaryFocus(weeklyFocus?.secondary_focus || '');
-    setTertiaryFocus(weeklyFocus?.tertiary_focus || '');
-  }, [weeklyFocus]);
-
-  const handleLayoutChange = (newLayout: any) => {
-    setLayout(newLayout);
-    updateSettings({ dashboard_layout: newLayout });
-  };
-
-  const handleAddCustomCard = async () => {
+  const handleAddCard = async () => {
     if (!newCardTitle.trim()) {
       toast.error('Card title cannot be empty.');
       return;
     }
     try {
-      const newCardData: NewCustomCardData = {
+      const newCard: NewCustomCardData = {
         title: newCardTitle.trim(),
         content: newCardContent.trim() || null,
         emoji: newCardEmoji.trim() || null,
         card_order: customCards ? customCards.length : 0,
-        is_visible: true,
+        user_id: currentUserId!,
       };
-      await addCustomCard(newCardData);
-      toast.success('Custom card added!');
+      await addCustomCard(newCard);
       setNewCardTitle('');
       setNewCardContent('');
       setNewCardEmoji('');
       setIsAddCardDialogOpen(false);
     } catch (err) {
-      toast.error(`Failed to add custom card: ${(err as Error).message}`);
-      console.error('Error adding custom card:', err);
+      toast.error('Failed to add custom card.');
+      console.error(err);
+    }
+  };
+
+  const handleUpdateCard = async (id: string, updates: UpdateCustomCardData) => {
+    try {
+      await updateCustomCard({ id, updates });
+    } catch (err) {
+      toast.error('Failed to update custom card.');
+      console.error(err);
+    }
+  };
+
+  const handleDeleteCard = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this custom card?')) {
+      try {
+        await deleteCustomCard(id);
+      } catch (err) {
+        toast.error('Failed to delete custom card.');
+        console.error(err);
+      }
     }
   };
 
   const handleUpdateWeeklyFocus = async () => {
+    if (!weeklyFocus) return;
     try {
-      const updates: UpdateWeeklyFocusData = {
-        primary_focus: primaryFocus.trim() || null,
-        secondary_focus: secondaryFocus.trim() || null,
-        tertiary_focus: tertiaryFocus.trim() || null,
-      };
-      await updateWeeklyFocus(updates);
-      toast.success('Weekly focus updated!');
+      await updateWeeklyFocus({
+        primary_focus: weeklyFocus.primary_focus,
+        secondary_focus: weeklyFocus.secondary_focus,
+        tertiary_focus: weeklyFocus.tertiary_focus,
+      });
     } catch (err) {
-      toast.error(`Failed to update weekly focus: ${(err as Error).message}`);
-      console.error('Error updating weekly focus:', err);
+      toast.error('Failed to update weekly focus.');
+      console.error(err);
     }
   };
 
-  const isLoadingData = tasksLoading || appointmentsLoading || dashboardDataLoading || authLoading;
-  const hasError = tasksError || appointmentsError || dashboardDataError;
+  const renderCardContent = (card: CustomCard) => {
+    switch (card.title) {
+      case 'Daily Schedule':
+        return <DailySchedulePreview appointments={appointments || []} onAddAppointment={() => { /* TODO: open appointment form */ }} />;
+      case 'Next Task':
+        return <NextTaskCard tasks={tasks || []} onToggleFocusMode={onToggleFocusMode} />;
+      case 'Quick Links':
+        return <QuickLinks isDemo={isDemo} demoUserId={demoUserId} />;
+      case 'People Memory':
+        return <PeopleMemoryCard isDemo={isDemo} demoUserId={demoUserId} />;
+      case 'Meditation Notes':
+        return <MeditationNotes />;
+      case 'Gratitude Journal':
+        return <GratitudeJournal isDemo={isDemo} demoUserId={demoUserId} />;
+      case 'Worry Journal':
+        return <WorryJournal isDemo={isDemo} demoUserId={demoUserId} />;
+      case 'Weekly Focus':
+        return (
+          <WeeklyFocusCard
+            weeklyFocus={weeklyFocus}
+            updateWeeklyFocus={updateWeeklyFocus}
+            primaryFocus={weeklyFocus?.primary_focus || ''}
+            secondaryFocus={weeklyFocus?.secondary_focus || ''}
+            tertiaryFocus={weeklyFocus?.tertiary_focus || ''}
+            setPrimaryFocus={(value) => updateWeeklyFocus({ primary_focus: value })}
+            setSecondaryFocus={(value) => updateWeeklyFocus({ secondary_focus: value })}
+            setTertiaryFocus={(value) => updateWeeklyFocus({ tertiary_focus: value })}
+          />
+        );
+      case 'My Tasks':
+        return (
+          <TaskList
+            tasks={tasks || []}
+            categories={allCategories || []}
+            sections={allSections || []}
+            isLoading={tasksLoading}
+            error={tasksError}
+            onAddTask={addTask}
+            onUpdateTask={onUpdateTask}
+            onDeleteTask={deleteTask}
+            onAddSubtask={onAddSubtask}
+            onToggleFocusMode={onToggleFocusMode}
+            onLogDoTodayOff={onLogDoTodayOff}
+            createCategory={createCategory}
+            updateCategory={updateCategory}
+            deleteCategory={deleteCategory}
+            createSection={createSection}
+            updateSection={updateSection}
+            deleteSection={deleteSection}
+            reorderTasks={() => {}} // Not directly reordering from here
+            reorderSections={() => {}} // Not directly reordering from here
+            updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+            showCompleted={settings?.visible_pages?.show_completed_tasks ?? false}
+            toggleShowCompleted={() => updateSettings({ visible_pages: { ...settings?.visible_pages, show_completed_tasks: !(settings?.visible_pages?.show_completed_tasks ?? false) } as Json })}
+          />
+        );
+      default:
+        return (
+          <CardContent>
+            <p className="text-sm text-muted-foreground">{card.content}</p>
+          </CardContent>
+        );
+    }
+  };
 
-  if (isLoadingData) {
-    return <div className="flex justify-center items-center h-full">Loading dashboard...</div>;
+  const handleDragStart = (event: any) => {
+    setActiveId(event.active.id);
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!active || !over || active.id === over.id) return;
+
+    const oldIndex = customCards?.findIndex(card => card.id === active.id);
+    const newIndex = customCards?.findIndex(card => card.id === over.id);
+
+    if (oldIndex !== undefined && newIndex !== undefined && oldIndex !== -1 && newIndex !== -1 && customCards) {
+      const newOrder = arrayMove(customCards, oldIndex, newIndex);
+      const updates = newOrder.map((card, index) => ({
+        id: card.id,
+        card_order: index,
+      }));
+
+      // Optimistic update
+      queryClient.setQueryData(['customCards', currentUserId], newOrder);
+
+      try {
+        // This would ideally be a single RPC call to update multiple orders
+        await Promise.all(updates.map(update => updateCustomCard({ id: update.id, updates: { card_order: update.card_order } })));
+      } catch (e) {
+        toast.error('Failed to reorder cards.');
+        queryClient.invalidateQueries({ queryKey: ['customCards', currentUserId] }); // Rollback on error
+      }
+    }
+    setActiveId(null);
+  };
+
+  const dragOverlayContent = activeId ? (
+    customCards?.find((card) => card.id === activeId) ? (
+      <SortableCustomCard
+        id={activeId}
+        card={customCards.find((card) => card.id === activeId)!}
+        onUpdateCard={handleUpdateCard}
+        onDeleteCard={handleDeleteCard}
+      />
+    ) : null
+  ) : null;
+
+  if (!currentUserId) {
+    return <p>Please log in to view your dashboard.</p>;
   }
 
-  if (hasError) {
-    return <div className="flex justify-center items-center h-full text-red-500">Error: {hasError.message}</div>;
+  if (isLoading) {
+    return <p>Loading dashboard...</p>;
   }
 
-  const allCards = useMemo(() => {
-    const staticCards = [
-      { id: 'welcome-card', component: <CustomCardComponent card={{ id: 'welcome-card', user_id: currentUserId!, title: 'Welcome!', emoji: '👋', content: 'This is your new dashboard. You can add, edit, and remove these custom cards as you like!', card_order: 0, created_at: '', updated_at: '', is_visible: true }} /> },
-      { id: 'weekly-focus', component: <WeeklyFocusComponent weeklyFocus={weeklyFocus} onUpdateWeeklyFocus={handleUpdateWeeklyFocus} setPrimaryFocus={setPrimaryFocus} setSecondaryFocus={setSecondaryFocus} setTertiaryFocus={setTertiaryFocus} primaryFocus={primaryFocus} secondaryFocus={secondaryFocus} tertiaryFocus={tertiaryFocus} /> },
-      { id: 'daily-schedule-preview', component: <DailySchedulePreview appointments={appointments || []} onAddAppointment={() => toast('Add appointment functionality to be implemented.')} /> },
-      { id: 'next-task', component: <NextTaskCard tasks={tasks || []} onToggleFocusMode={onToggleFocusMode} /> },
-      { id: 'quick-links', component: <QuickLinks isDemo={isDemo} demoUserId={demoUserId} /> },
-      { id: 'people-memory', component: <PeopleMemoryCard /> },
-      { id: 'meditation-notes', component: <MeditationNotes /> },
-      { id: 'gratitude-journal', component: <GratitudeJournal /> },
-      { id: 'worry-journal', component: <WorryJournal /> },
-    ];
+  if (error) {
+    return <p>Error: {error.message}</p>;
+  }
 
-    const dynamicCards = (customCards || []).map(card => ({
-      id: card.id,
-      component: <CustomCardComponent card={card} onUpdate={updateCustomCard} onDelete={deleteCustomCard} />,
+  const layout = settings?.dashboard_layout as ReactGridLayout.Layout[] || customCards?.map((card, index) => ({
+    i: card.id,
+    x: (index * 2) % 12, // Simple layout for new cards
+    y: Math.floor(index / 6) * 2,
+    w: 2,
+    h: 2,
+  })) || [];
+
+  const handleLayoutChange = (currentLayout: ReactGridLayout.Layout[]) => {
+    const newLayout = currentLayout.map(item => ({
+      i: item.i,
+      x: item.x,
+      y: item.y,
+      w: item.w,
+      h: item.h,
     }));
-
-    return [...staticCards, ...dynamicCards];
-  }, [customCards, weeklyFocus, appointments, tasks, onToggleFocusMode, isDemo, demoUserId, primaryFocus, secondaryFocus, tertiaryFocus, updateCustomCard, deleteCustomCard, handleUpdateWeeklyFocus, currentUserId]);
+    updateDashboardLayout(newLayout as Json);
+  };
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
-
-      <div className="flex justify-end space-x-2 mb-4">
-        <Dialog open={isAddCardDialogOpen} onOpenChange={setIsAddCardDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" /> Add Custom Card
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Add New Custom Card</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="cardTitle" className="text-right">Title</Label>
-                <Input id="cardTitle" value={newCardTitle} onChange={(e) => setNewCardTitle(e.target.value)} className="col-span-3" />
+    <div className="p-4">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <div className="flex space-x-2">
+          <Dialog open={isAddCardDialogOpen} onOpenChange={setIsAddCardDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" /> Add Card
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Add New Dashboard Card</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="cardTitle" className="text-right">
+                    Title
+                  </label>
+                  <Input
+                    id="cardTitle"
+                    value={newCardTitle}
+                    onChange={(e) => setNewCardTitle(e.target.value)}
+                    className="col-span-3"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="cardContent" className="text-right">
+                    Content
+                  </label>
+                  <Textarea
+                    id="cardContent"
+                    value={newCardContent}
+                    onChange={(e) => setNewCardContent(e.target.value)}
+                    className="col-span-3"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="cardEmoji" className="text-right">
+                    Emoji
+                  </label>
+                  <Input
+                    id="cardEmoji"
+                    value={newCardEmoji}
+                    onChange={(e) => setNewCardEmoji(e.target.value)}
+                    className="col-span-3"
+                    placeholder="e.g. 👋"
+                  />
+                </div>
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="cardContent" className="text-right">Content</Label>
-                <Textarea id="cardContent" value={newCardContent} onChange={(e) => setNewCardContent(e.target.value)} className="col-span-3" />
+              <div className="flex justify-end">
+                <Button onClick={handleAddCard}>Add Card</Button>
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="cardEmoji" className="text-right">Emoji</Label>
-                <Input id="cardEmoji" value={newCardEmoji} onChange={(e) => setNewCardEmoji(e.target.value)} className="col-span-3" placeholder="e.g., 👋" />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button type="submit" onClick={handleAddCustomCard}>Save Card</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        <Button variant="outline" onClick={() => setIsLayoutSettingsOpen(true)}>
-          <SettingsIcon className="mr-2 h-4 w-4" /> Layout Settings
-        </Button>
+            </DialogContent>
+          </Dialog>
+          <Button variant="outline" onClick={() => setIsLayoutSettingsOpen(true)}>
+            <LayoutDashboard className="mr-2 h-4 w-4" /> Layout Settings
+          </Button>
+        </div>
       </div>
 
-      <ResponsiveGridLayout
-        className="layout"
-        layouts={layout}
-        breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
-        cols={{ lg: 12, md: 8, sm: 6, xs: 4, xxs: 2 }}
-        rowHeight={100}
-        onLayoutChange={handleLayoutChange}
-        isDraggable={true}
-        isResizable={true}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCorners}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
       >
-        {allCards.map(card => (
-          <div key={card.id} data-grid={{ i: card.id, x: 0, y: Infinity, w: 3, h: 2 }}>
-            {card.component}
-          </div>
-        ))}
-      </ResponsiveGridLayout>
+        <SortableContext items={customCards?.map(card => card.id) || []} strategy={verticalListSortingStrategy}>
+          <ResponsiveGridLayout
+            layouts={{ lg: layout }}
+            onLayoutChange={(currentLayout, allLayouts) => handleLayoutChange(currentLayout)}
+            className="min-h-[500px]"
+          >
+            {customCards?.map((card) => (
+              <div key={card.id} data-grid={{ x: card.x, y: card.y, w: card.w, h: card.h }}>
+                <SortableCustomCard
+                  id={card.id}
+                  card={card}
+                  onUpdateCard={handleUpdateCard}
+                  onDeleteCard={handleDeleteCard}
+                >
+                  {renderCardContent(card)}
+                </SortableCustomCard>
+              </div>
+            ))}
+          </ResponsiveGridLayout>
+        </SortableContext>
+        <DragOverlay>
+          {dragOverlayContent}
+        </DragOverlay>
+      </DndContext>
 
       <DashboardLayoutSettings
         isOpen={isLayoutSettingsOpen}
@@ -245,37 +386,6 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
         settings={settings}
         updateSettings={updateSettings}
       />
-
-      <Card className="mt-8">
-        <CardHeader>
-          <CardTitle>Today's Tasks</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <TaskList
-            tasks={tasks || []}
-            categories={allCategories || []}
-            sections={allSections || []}
-            onAddTask={addTask}
-            onUpdateTask={updateTask}
-            onDeleteTask={deleteTask}
-            onCreateCategory={createCategory}
-            onUpdateCategory={updateCategory}
-            onDeleteCategory={deleteCategory}
-            createSection={createSection}
-            updateSection={updateSection}
-            deleteSection={deleteSection}
-            reorderTasks={reorderTasks}
-            reorderSections={reorderSections}
-            onToggleFocusMode={onToggleFocusMode}
-            onLogDoTodayOff={onLogDoTodayOff}
-            updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-            currentDate={today}
-            showCompleted={false}
-            showFilters={false}
-            showSections={true}
-          />
-        </CardContent>
-      </Card>
     </div>
   );
 };

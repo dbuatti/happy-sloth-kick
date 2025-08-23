@@ -1,35 +1,41 @@
 import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import { Appointment, Task } from '@/types'; // Corrected imports
+import { CSS } from '@dnd-kit/utilities';
+import { Appointment, Task, DraggableAppointmentCardProps } from '@/types';
 import AppointmentCard from './AppointmentCard';
 
-interface DraggableAppointmentCardProps {
-  appointment: Appointment;
-  onEdit: (appointment: Appointment) => void;
-  onDelete: (id: string) => void;
-  linkedTask?: Task;
-}
-
-const DraggableAppointmentCard: React.FC<DraggableAppointmentCardProps> = ({ appointment, onEdit, onDelete, linkedTask }) => {
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
-    id: appointment.id,
+const DraggableAppointmentCard: React.FC<DraggableAppointmentCardProps> = ({
+  appointment,
+  task,
+  onEdit,
+  onUnschedule,
+  trackIndex,
+  totalTracks,
+  style: propStyle,
+}) => {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: `appointment-${appointment.id}`,
     data: {
-      type: 'Appointment',
+      type: 'appointment',
       appointment,
+      trackIndex,
     },
   });
 
-  const style = transform ? {
-    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-  } : undefined;
+  const style = {
+    ...propStyle,
+    transform: CSS.Transform.toString(transform),
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : 1,
+  };
 
   return (
-    <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
       <AppointmentCard
         appointment={appointment}
+        task={task}
         onEdit={onEdit}
-        onDelete={onDelete}
-        linkedTask={linkedTask}
+        onUnschedule={onUnschedule}
       />
     </div>
   );

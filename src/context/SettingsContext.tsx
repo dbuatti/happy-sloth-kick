@@ -4,21 +4,24 @@ import { UserSettings } from '@/types';
 
 interface SettingsContextType {
   settings: UserSettings | undefined;
+  updateSettings: (updates: Partial<UserSettings>) => Promise<void>;
   loading: boolean;
   error: Error | null;
-  updateSettings: (updates: Partial<UserSettings>) => Promise<UserSettings>;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
-export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const { settings, isLoading, error, updateSettings } = useUserSettings();
+export const SettingsProvider: React.FC<{ children: ReactNode; isDemo?: boolean; demoUserId?: string }> = ({ children, isDemo, demoUserId }) => {
+  const { userSettings, isLoading, error, updateSettings } = useUserSettings(isDemo ? demoUserId : undefined);
 
-  return (
-    <SettingsContext.Provider value={{ settings, loading: isLoading, error, updateSettings }}>
-      {children}
-    </SettingsContext.Provider>
-  );
+  const value = {
+    settings: userSettings,
+    updateSettings,
+    loading: isLoading,
+    error,
+  };
+
+  return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
 };
 
 export const useSettings = () => {

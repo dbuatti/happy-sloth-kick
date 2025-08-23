@@ -2,115 +2,86 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { QuickLink, NewQuickLinkData, UpdateQuickLinkData } from '@/types'; // Imported from centralized types
 import { UploadCloud, X } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import { toast } from 'react-hot-toast';
+import { QuickLink, NewQuickLinkData, UpdateQuickLinkData } from '@/types';
 
 interface QuickLinkFormProps {
-  initialData?: QuickLink | null;
-  onSubmit: (data: NewQuickLinkData | UpdateQuickLinkData) => Promise<void>;
+  initialData?: Partial<QuickLink>;
+  onSave: (data: NewQuickLinkData | UpdateQuickLinkData) => Promise<QuickLink>;
   onCancel: () => void;
 }
 
-const QuickLinkForm: React.FC<QuickLinkFormProps> = ({ initialData, onSubmit, onCancel }) => {
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<NewQuickLinkData | UpdateQuickLinkData>({
-    defaultValues: initialData || {
-      title: '',
-      url: '',
-      image_url: '',
-      emoji: '',
-      background_color: '',
-      avatar_text: '',
-    },
-  });
-
-  const [imageUrl, setImageUrl] = useState(initialData?.image_url || '');
+const QuickLinkForm: React.FC<QuickLinkFormProps> = ({ initialData, onSave, onCancel }) => {
+  const [title, setTitle] = useState(initialData?.title || '');
+  const [url, setUrl] = useState(initialData?.url || '');
+  const [emoji, setEmoji] = useState(initialData?.emoji || '');
+  const [backgroundColor, setBackgroundColor] = useState(initialData?.background_color || '#ffffff');
+  const [avatarText, setAvatarText] = useState(initialData?.avatar_text || '');
 
   useEffect(() => {
     if (initialData) {
-      reset(initialData);
-      setImageUrl(initialData.image_url || '');
+      setTitle(initialData.title || '');
+      setUrl(initialData.url || '');
+      setEmoji(initialData.emoji || '');
+      setBackgroundColor(initialData.background_color || '#ffffff');
+      setAvatarText(initialData.avatar_text || '');
+    }
+  }, [initialData]);
+
+  const handleSubmit = async () => {
+    const data: NewQuickLinkData | UpdateQuickLinkData = {
+      title,
+      url,
+      emoji,
+      background_color: backgroundColor,
+      avatar_text: avatarText,
+    };
+
+    if (initialData?.id) {
+      await onSave({ ...data, id: initialData.id } as UpdateQuickLinkData);
     } else {
-      reset({
-        title: '',
-        url: '',
-        image_url: '',
-        emoji: '',
-        background_color: '',
-        avatar_text: '',
-      });
-      setImageUrl('');
+      await onSave(data as NewQuickLinkData);
     }
-  }, [initialData, reset]);
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImageUrl(reader.result as string);
-        // In a real app, you'd upload this to Supabase Storage and get a public URL
-        // For now, we'll just use the base64 string or a placeholder
-        toast.success('Image selected (upload functionality not implemented)');
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleFormSubmit = async (data: NewQuickLinkData | UpdateQuickLinkData) => {
-    await onSubmit({ ...data, image_url: imageUrl });
+    onCancel(); // Close form after saving
   };
 
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4 p-4">
-      <div>
-        <Label htmlFor="title">Title</Label>
-        <Input id="title" {...register('title', { required: 'Title is required' })} />
-        {errors.title && <p className="text-red-500 text-sm">{errors.title.message}</p>}
+    <div className="grid gap-4 py-4">
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="title" className="text-right">
+          Title
+        </Label>
+        <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} className="col-span-3" />
       </div>
-      <div>
-        <Label htmlFor="url">URL</Label>
-        <Input id="url" {...register('url', { required: 'URL is required', pattern: { value: /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/i, message: 'Invalid URL' } })} />
-        {errors.url && <p className="text-red-500 text-sm">{errors.url.message}</p>}
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="url" className="text-right">
+          URL
+        </Label>
+        <Input id="url" value={url} onChange={(e) => setUrl(e.target.value)} className="col-span-3" />
       </div>
-      <div>
-        <Label htmlFor="emoji">Emoji</Label>
-        <Input id="emoji" {...register('emoji')} placeholder="e.g., 👋" />
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="emoji" className="text-right">
+          Emoji
+        </Label>
+        <Input id="emoji" value={emoji} onChange={(e) => setEmoji(e.target.value)} className="col-span-3" placeholder="e.g. 🚀" />
       </div>
-      <div>
-        <Label htmlFor="backgroundColor">Background Color</Label>
-        <Input id="backgroundColor" {...register('background_color')} placeholder="e.g., #FF0000 or blue" />
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="avatarText" className="text-right">
+          Avatar Text
+        </Label>
+        <Input id="avatarText" value={avatarText} onChange={(e) => setAvatarText(e.target.value)} className="col-span-3" placeholder="e.g. G" />
       </div>
-      <div>
-        <Label htmlFor="avatarText">Avatar Text (if no image/emoji)</Label>
-        <Input id="avatarText" {...register('avatar_text')} placeholder="e.g., AB" />
-      </div>
-      <div>
-        <Label htmlFor="image">Image</Label>
-        <div className="flex items-center space-x-2">
-          <Input id="image" type="file" accept="image/*" onChange={handleImageUpload} className="flex-1" />
-          {imageUrl && (
-            <div className="relative w-16 h-16 border rounded-md flex items-center justify-center overflow-hidden">
-              <img src={imageUrl} alt="Preview" className="object-cover w-full h-full" />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute top-0 right-0 h-6 w-6 text-red-500 hover:bg-red-100"
-                onClick={() => setImageUrl('')}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
-        </div>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="backgroundColor" className="text-right">
+          Background Color
+        </Label>
+        <Input id="backgroundColor" type="color" value={backgroundColor} onChange={(e) => setBackgroundColor(e.target.value)} className="col-span-3" />
       </div>
       <div className="flex justify-end space-x-2">
-        <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
-        <Button type="submit">Save Link</Button>
+        <Button variant="ghost" onClick={onCancel}>Cancel</Button>
+        <Button onClick={handleSubmit}>Save</Button>
       </div>
-    </form>
+    </div>
   );
 };
 

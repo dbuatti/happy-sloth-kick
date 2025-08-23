@@ -1,384 +1,359 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { format, parseISO, isSameDay } from 'date-fns';
-import { Plus, Edit, Trash2, Clock, CheckCircle2 } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { format, startOfDay, addMinutes, isBefore, isAfter, isEqual, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Calendar as CalendarIcon, Plus, Settings } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
-import { Appointment, WorkHour, Task, TaskCategory, TaskSection, UserSettings } from '@/types';
-import TaskItem from './TaskItem';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-
-
-interface DailyScheduleViewProps {
-  selectedDate: Date;
-  setSelectedDate: (date: Date) => void;
-  workHours: WorkHour[];
-  saveWorkHours: (dayOfWeek: string, startTime: string, endTime: string, enabled: boolean) => Promise<void>;
-  appointments: Appointment[];
-  addAppointment: (newAppointment: Omit<Appointment, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<Appointment>;
-  updateAppointment: (id: string, updates: Partial<Omit<Appointment, 'id' | 'user_id' | 'created_at' | 'updated_at'>>) => Promise<Appointment>;
-  deleteAppointment: (id: string) => Promise<void>;
-  clearAppointmentsForDay: (date: Date) => Promise<void>;
-  tasks: Task[];
-  allCategories: TaskCategory[];
-  sections: TaskSection[];
-  settings: UserSettings | null;
-  updateTask: (id: string, updates: Partial<Task>) => Promise<Task>;
-  deleteTask: (id: string) => Promise<void>;
-  addTask: (description: string, sectionId: string | null, parentTaskId: string | null, dueDate: Date | null, categoryId: string | null, priority: string) => Promise<Task>;
-  onToggleFocusMode: (taskId: string, isFocused: boolean) => Promise<void>;
-  onLogDoTodayOff: (taskId: string) => Promise<void>;
-}
+import { Appointment, WorkHour, Task, TaskCategory, TaskSection, UserSettings, DailyScheduleViewProps, NewAppointmentData, UpdateAppointmentData, NewTaskData, UpdateTaskData } from '@/types';
+import TaskItem from './tasks/TaskItem';
+import AppointmentForm from './AppointmentForm';
+import DraggableAppointmentCard from './DraggableAppointmentCard';
+import DraggableScheduleTaskItem from './DraggableScheduleTaskItem';
+import { DndContext, closestCorners, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverlay } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { toast } from 'react-hot-toast';
+import TimeBlockActionMenu from './TimeBlockActionMenu';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 
 const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
-  selectedDate,
-  setSelectedDate,
-  workHours,
-  saveWorkHours,
+  currentDate,
   appointments,
-  addAppointment,
-  updateAppointment,
-  deleteAppointment,
-  clearAppointmentsForDay,
   tasks,
+  workHours,
   allCategories,
-  sections,
+  allSections,
   settings,
-  updateTask,
-  deleteTask,
-  addTask,
+  onAddAppointment,
+  onUpdateAppointment,
+  onDeleteAppointment,
+  onAddTask,
+  onUpdateTask,
+  onDeleteTask,
+  onAddSubtask,
   onToggleFocusMode,
-  onLogDoTodayOff,
+  onUpdateSectionIncludeInFocusMode,
 }) => {
-  const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
-  const [currentAppointment, setCurrentAppointment] = useState<Appointment | null>(null);
-  const [appointmentTitle, setAppointmentTitle] = useState('');
-  const [appointmentDescription, setAppointmentDescription] = useState<string | null>(null);
-  const [appointmentStartTime, setAppointmentStartTime] = useState('09:00');
-  const [appointmentEndTime, setAppointmentEndTime] = useState('10:00');
-  const [appointmentColor, setAppointmentColor] = useState('#3b82f6'); // Default blue
-  const [appointmentTaskId, setAppointmentTaskId] = useState<string | null>(null);
+  const [isAppointmentFormOpen, setIsAppointmentFormOpen] = useState(false);
+  const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState<{ start: Date; end: Date } | null>(null);
+  const [prefilledAppointmentData, setPrefilledAppointmentData] = useState<Partial<NewAppointmentData>>({});
+  const [activeDragItem, setActiveDragItem] = useState<any>(null);
 
-  const [isWorkHoursModalOpen, setIsWorkHoursModalOpen] = useState(false);
-  const [workStartTime, setWorkStartTime] = useState('09:00');
-  const [workEndTime, setWorkEndTime] = useState('17:00');
-  const [workEnabled, setWorkEnabled] = useState(true);
+  const minutesInterval = 30; // Appointments can snap to 30-minute intervals
+  const hours = Array.from({ length: 24 }, (_, i) => i);
 
-  const dayOfWeek = format(selectedDate, 'EEEE').toLowerCase(); // e.g., "monday"
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: ({ currentCoordinates }) => currentCoordinates!,
+    })
+  );
 
-  useEffect(() => {
-    const dayHours = workHours.find(wh => wh.day_of_week === dayOfWeek);
-    if (dayHours) {
-      setWorkStartTime(dayHours.start_time.substring(0, 5));
-      setWorkEndTime(dayHours.end_time.substring(0, 5));
-      setWorkEnabled(dayHours.enabled ?? true);
-    } else {
-      setWorkStartTime('09:00');
-      setWorkEndTime('17:00');
-      setWorkEnabled(true);
+  const currentDayWorkHours = useMemo(() => {
+    const dayOfWeek = format(currentDate, 'EEEE').toLowerCase();
+    return workHours.find(wh => wh.day_of_week === dayOfWeek && wh.enabled);
+  }, [currentDate, workHours]);
+
+  const showFocusTasksOnly = settings?.schedule_show_focus_tasks_only ?? true;
+
+  const availableTasks = useMemo(() => {
+    let filtered = tasks.filter(task => task.status === 'to-do' && !task.parent_task_id);
+    if (showFocusTasksOnly) {
+      filtered = filtered.filter(task =>
+        allSections.some(section => section.id === task.section_id && section.include_in_focus_mode)
+      );
     }
-  }, [selectedDate, workHours, dayOfWeek]);
+    return filtered.sort((a, b) => (a.order || 0) - (b.order || 0));
+  }, [tasks, showFocusTasksOnly, allSections]);
 
-  const handleOpenNewAppointmentModal = (startTime?: string, endTime?: string) => {
-    setCurrentAppointment(null);
-    setAppointmentTitle('');
-    setAppointmentDescription(null);
-    setAppointmentStartTime(startTime || '09:00');
-    setAppointmentEndTime(endTime || '10:00');
-    setAppointmentColor('#3b82f6');
-    setAppointmentTaskId(null);
-    setIsAppointmentModalOpen(true);
+  const unscheduledDoTodayTasks = useMemo(() => {
+    const scheduledTaskIds = new Set(appointments.map(app => app.task_id).filter(Boolean));
+    return availableTasks.filter(task => !scheduledTaskIds.has(task.id));
+  }, [availableTasks, appointments]);
+
+  const getGridRow = (time: Date) => {
+    const hour = time.getHours();
+    const minutes = time.getMinutes();
+    return (hour * (60 / minutesInterval)) + (minutes / minutesInterval) + 1;
   };
 
-  const handleOpenEditAppointmentModal = (appointment: Appointment) => {
-    setCurrentAppointment(appointment);
-    setAppointmentTitle(appointment.title);
-    setAppointmentDescription(appointment.description);
-    setAppointmentStartTime(appointment.start_time.substring(0, 5));
-    setAppointmentEndTime(appointment.end_time.substring(0, 5));
-    setAppointmentColor(appointment.color);
-    setAppointmentTaskId(appointment.task_id);
-    setIsAppointmentModalOpen(true);
-  };
-
-  const handleSaveAppointment = async () => {
-    if (!appointmentTitle.trim() || !appointmentStartTime || !appointmentEndTime) return;
-
-    const newAppointmentData = {
-      title: appointmentTitle,
-      description: appointmentDescription,
-      date: format(selectedDate, 'yyyy-MM-dd'),
-      start_time: appointmentStartTime + ':00',
-      end_time: appointmentEndTime + ':00',
-      color: appointmentColor,
-      task_id: appointmentTaskId,
-    };
-
-    if (currentAppointment) {
-      await updateAppointment(currentAppointment.id, newAppointmentData);
-    } else {
-      await addAppointment(newAppointmentData);
-    }
-    setIsAppointmentModalOpen(false);
-  };
-
-  const handleDeleteAppointment = async (id: string) => {
-    await deleteAppointment(id);
-    setIsAppointmentModalOpen(false);
-  };
-
-  const handleSaveWorkHours = async () => {
-    await saveWorkHours(dayOfWeek, workStartTime + ':00', workEndTime + ':00', workEnabled);
-    setIsWorkHoursModalOpen(false);
-  };
-
-  const handleClearAppointments = async () => {
-    if (window.confirm('Are you sure you want to clear all appointments for this day?')) {
-      await clearAppointmentsForDay(selectedDate);
-    }
-  };
-
-  const filteredTasksForSchedule = useMemo(() => {
-    const focusModeSectionIds = new Set((sections as TaskSection[]).filter(s => s.include_in_focus_mode).map(s => s.id));
-
-    return tasks.filter(task => {
-      const isFocusModeTask = task.section_id && focusModeSectionIds.has(task.section_id);
-      const isDueToday = task.due_date && isSameDay(parseISO(task.due_date as string), selectedDate);
-      const isRecurringDaily = task.recurring_type === 'daily';
-
-      // If settings.schedule_show_focus_tasks_only is true, only show focus mode tasks
-      if (settings?.schedule_show_focus_tasks_only) {
-        return task.status !== 'completed' && task.parent_task_id === null && isFocusModeTask;
-      }
-
-      // Otherwise, show all relevant tasks
-      return task.status !== 'completed' && task.parent_task_id === null && (isFocusModeTask || isDueToday || isRecurringDaily);
-    }).sort((a, b) => {
-      // Sort by priority (urgent > high > medium > low > none), then due date (earliest first), then created_at
-      const priorityOrder: { [key: string]: number } = { 'urgent': 0, 'high': 1, 'medium': 2, 'low': 3, 'none': 4 };
-      const aPriority = priorityOrder[a.priority || 'none'];
-      const bPriority = priorityOrder[b.priority || 'none'];
-
-      if (aPriority !== bPriority) {
-        return aPriority - bPriority;
-      }
-
-      if (a.due_date && b.due_date) {
-        return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
-      }
-      if (a.due_date) return -1;
-      if (b.due_date) return 1;
-
-      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+  const handleTimeSlotClick = useCallback((hour: number, minute: number) => {
+    const start = addMinutes(startOfDay(currentDate), hour * 60 + minute);
+    const end = addMinutes(start, minutesInterval);
+    setSelectedTimeSlot({ start, end });
+    setEditingAppointment(null);
+    setPrefilledAppointmentData({
+      date: format(currentDate, 'yyyy-MM-dd'),
+      start_time: format(start, 'HH:mm'),
+      end_time: format(end, 'HH:mm'),
     });
-  }, [tasks, selectedDate, sections, settings?.schedule_show_focus_tasks_only]);
+    setIsAppointmentFormOpen(true);
+  }, [currentDate]);
 
-  const renderSubtasks = (parentTaskId: string) => {
-    const subtasks = tasks.filter(sub => sub.parent_task_id === parentTaskId);
-    return (
-      <div className="ml-4 border-l pl-4 space-y-2">
-        {subtasks.map(subtask => (
-          <TaskItem
-            key={subtask.id}
-            task={subtask}
-            categories={allCategories}
-            onUpdateTask={updateTask}
-            onDeleteTask={deleteTask}
-            onAddSubtask={async (description) => { return await addTask(description, null, parentTaskId, null, null, 'medium'); }}
-            onToggleFocusMode={onToggleFocusMode}
-            onLogDoTodayOff={onLogDoTodayOff}
-            isFocusedTask={settings?.focused_task_id === subtask.id}
-            subtasks={[]}
-            renderSubtasks={() => null}
-          />
-        ))}
-      </div>
-    );
+  const handleAppointmentClick = useCallback((appointment: Appointment) => {
+    setEditingAppointment(appointment);
+    setSelectedTimeSlot(null);
+    setPrefilledAppointmentData({});
+    setIsAppointmentFormOpen(true);
+  }, []);
+
+  const handleDragStart = (event: any) => {
+    setActiveDragItem(event.active.data.current);
   };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!active || !over) {
+      setActiveDragItem(null);
+      return;
+    }
+
+    const activeType = active.data.current?.type;
+    const overId = String(over.id);
+
+    // Dropping onto a time slot
+    if (overId.startsWith('time-slot-')) {
+      const [, hourStr, minuteStr] = overId.split('-');
+      const targetHour = parseInt(hourStr);
+      const targetMinute = parseInt(minuteStr);
+      const newStartTime = addMinutes(startOfDay(currentDate), targetHour * 60 + targetMinute);
+      const newEndTime = addMinutes(newStartTime, minutesInterval); // Default to 30 min duration
+
+      if (activeType === 'appointment') {
+        const draggedAppointment = active.data.current.appointment as Appointment;
+        const updates: UpdateAppointmentData = {
+          date: format(currentDate, 'yyyy-MM-dd'),
+          start_time: format(newStartTime, 'HH:mm'),
+          end_time: format(newEndTime, 'HH:mm'),
+        };
+        await onUpdateAppointment(draggedAppointment.id, updates);
+        toast.success('Appointment rescheduled!');
+      } else if (activeType === 'task') {
+        const draggedTask = active.data.current.task as Task;
+        const newAppointmentData: NewAppointmentData = {
+          title: draggedTask.description,
+          description: draggedTask.notes,
+          date: format(currentDate, 'yyyy-MM-dd'),
+          start_time: format(newStartTime, 'HH:mm'),
+          end_time: format(newEndTime, 'HH:mm'),
+          color: allCategories.find(cat => cat.id === draggedTask.category?.id)?.color || '#3b82f6',
+          task_id: draggedTask.id,
+        };
+        await onAddAppointment(newAppointmentData);
+        toast.success('Task scheduled as appointment!');
+      }
+    }
+    setActiveDragItem(null);
+  };
+
+  const getAppointmentTracks = (apps: Appointment[]) => {
+    const tracks: Appointment[][] = [];
+    apps.forEach(app => {
+      const appStart = parseISO(`2000-01-01T${app.start_time}`);
+      const appEnd = parseISO(`2000-01-01T${app.end_time}`);
+      let placed = false;
+      for (let i = 0; i < tracks.length; i++) {
+        const conflict = tracks[i].some(existingApp => {
+          const existingStart = parseISO(`2000-01-01T${existingApp.start_time}`);
+          const existingEnd = parseISO(`2000-01-01T${existingApp.end_time}`);
+          return (isBefore(appStart, existingEnd) && isAfter(appEnd, existingStart)) ||
+                 (isEqual(appStart, existingStart) && isEqual(appEnd, existingEnd));
+        });
+        if (!conflict) {
+          tracks[i].push(app);
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) {
+        tracks.push([app]);
+      }
+    });
+    return tracks;
+  };
+
+  const appointmentTracks = useMemo(() => getAppointmentTracks(appointments), [appointments]);
+  const maxTracks = appointmentTracks.length > 0 ? Math.max(...appointmentTracks.map(track => track.length)) : 1;
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 h-full">
-      {/* Left Panel: Calendar and Tasks */}
-      <div className="w-full lg:w-1/2 flex flex-col space-y-6">
-        <Card className="flex-shrink-0">
-          <CardHeader>
-            <CardTitle>Select Date</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={(date) => date && setSelectedDate(date)}
-              className="rounded-md border shadow mx-auto"
-            />
-          </CardContent>
-        </Card>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCorners}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="grid grid-cols-[60px_1fr_200px] gap-4 h-full">
+        {/* Time Axis */}
+        <div className="flex flex-col border-r pr-2">
+          {hours.map(hour => (
+            <div key={hour} className="relative h-[60px] text-right text-xs text-gray-500">
+              {hour}:00
+            </div>
+          ))}
+        </div>
 
-        <Card className="flex-grow flex flex-col">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Tasks for {format(selectedDate, 'PPP')}</CardTitle>
-            <Button variant="outline" size="sm" onClick={() => handleOpenNewAppointmentModal()}>
-              <Plus className="h-4 w-4 mr-2" /> Add Appointment
-            </Button>
-          </CardHeader>
-          <CardContent className="flex-grow overflow-y-auto">
-            {filteredTasksForSchedule.length === 0 && appointments.length === 0 ? (
-              <p className="text-center text-gray-500 py-8">No tasks or appointments for this day.</p>
-            ) : (
-              <div className="space-y-4">
-                {filteredTasksForSchedule.filter(task => task.parent_task_id === null).map(task => (
-                  <TaskItem
-                    key={task.id}
-                    task={task}
-                    categories={allCategories}
-                    onUpdateTask={updateTask}
-                    onDeleteTask={deleteTask}
-                    onAddSubtask={async (description) => { return await addTask(description, null, task.id, null, null, 'medium'); }}
-                    onToggleFocusMode={onToggleFocusMode}
-                    onLogDoTodayOff={onLogDoTodayOff}
-                    isFocusedTask={settings?.focused_task_id === task.id}
-                    subtasks={tasks.filter(sub => sub.parent_task_id === task.id)}
-                    renderSubtasks={renderSubtasks}
-                  />
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+        {/* Schedule Grid */}
+        <div
+          className="relative grid gap-px bg-gray-200 border rounded-md overflow-hidden"
+          style={{
+            gridTemplateRows: `repeat(${24 * (60 / minutesInterval)}, ${minutesInterval / 60 * 60}px)`,
+            gridTemplateColumns: `repeat(${maxTracks}, 1fr)`,
+          }}
+        >
+          {/* Grid Background (Clickable Time Slots) */}
+          {hours.map(hour =>
+            Array.from({ length: 60 / minutesInterval }, (_, minuteIndex) => {
+              const minute = minuteIndex * minutesInterval;
+              const timeSlotId = `time-slot-${hour}-${minute}`;
+              const slotStart = addMinutes(startOfDay(currentDate), hour * 60 + minute);
+              const slotEnd = addMinutes(slotStart, minutesInterval);
 
-      {/* Right Panel: Daily Schedule */}
-      <Card className="w-full lg:w-1/2 flex flex-col">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Daily Schedule for {format(selectedDate, 'PPP')}</CardTitle>
-          <div className="flex space-x-2">
-            <Button variant="outline" size="sm" onClick={() => setIsWorkHoursModalOpen(true)}>
-              <Edit className="h-4 w-4 mr-2" /> Work Hours
-            </Button>
-            <Button variant="destructive" size="sm" onClick={handleClearAppointments}>
-              <Trash2 className="h-4 w-4 mr-2" /> Clear Day
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="flex-grow overflow-y-auto">
-          <div className="space-y-4">
-            {appointments.length === 0 ? (
-              <p className="text-center text-gray-500 py-8">No appointments scheduled.</p>
-            ) : (
-              appointments.map(app => (
+              const isWorkHour = currentDayWorkHours &&
+                isAfter(slotStart, parseISO(`2000-01-01T${currentDayWorkHours.start_time}`)) &&
+                isBefore(slotEnd, parseISO(`2000-01-01T${currentDayWorkHours.end_time}`));
+
+              return (
                 <div
-                  key={app.id}
-                  className="flex items-center gap-3 p-3 rounded-lg shadow-sm cursor-pointer hover:bg-gray-50 transition-colors"
-                  style={{ borderLeft: `4px solid ${app.color}` }}
-                  onClick={() => handleOpenEditAppointmentModal(app)}
+                  key={timeSlotId}
+                  id={timeSlotId}
+                  className={`absolute w-full h-[${minutesInterval}px] border-b border-gray-200 cursor-pointer hover:bg-blue-50 ${isWorkHour ? 'bg-blue-50' : 'bg-white'}`}
+                  style={{
+                    gridRow: getGridRow(slotStart),
+                    top: `${(hour * 60 + minute)}px`,
+                    height: `${minutesInterval}px`,
+                  }}
+                  onClick={() => handleTimeSlotClick(hour, minute)}
                 >
-                  <Clock className="h-5 w-5 text-gray-500" />
-                  <div>
-                    <p className="font-medium">{app.title}</p>
-                    <p className="text-sm text-gray-600">{app.start_time.substring(0, 5)} - {app.end_time.substring(0, 5)}</p>
-                    {app.description && <p className="text-xs text-gray-500">{app.description}</p>}
-                    {app.task_id && (
-                      <p className="text-xs text-gray-500 flex items-center">
-                        <CheckCircle2 className="h-3 w-3 mr-1" /> Task: {tasks.find(t => t.id === app.task_id)?.description}
-                      </p>
-                    )}
+                  <div className="absolute top-1 right-1">
+                    <TimeBlockActionMenu
+                      onAddTask={onAddTask}
+                      onAddAppointment={async (title, startTime, endTime, color, taskId) => {
+                        const newApp: NewAppointmentData = {
+                          title,
+                          start_time: startTime,
+                          end_time: endTime,
+                          date: format(currentDate, 'yyyy-MM-dd'),
+                          color,
+                          task_id: taskId,
+                          user_id: '', // Will be filled by hook
+                        };
+                        return await onAddAppointment(newApp);
+                      }}
+                      onEditAppointment={() => handleTimeSlotClick(hour, minute)}
+                      onDeleteAppointment={() => {}}
+                      availableTasks={availableTasks}
+                      availableSections={allSections}
+                      availableCategories={allCategories}
+                      selectedDate={currentDate}
+                      selectedTimeSlot={{ start: slotStart, end: slotEnd }}
+                    />
                   </div>
                 </div>
-              ))
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              );
+            })
+          )}
 
-      {/* Appointment Modal */}
-      <Dialog open={isAppointmentModalOpen} onOpenChange={setIsAppointmentModalOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>{currentAppointment ? 'Edit Appointment' : 'Add New Appointment'}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="title" className="text-right">Title</Label>
-              <Input id="title" value={appointmentTitle} onChange={(e) => setAppointmentTitle(e.target.value)} className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="description" className="text-right">Description</Label>
-              <Textarea id="description" value={appointmentDescription || ''} onChange={(e) => setAppointmentDescription(e.target.value)} className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="startTime" className="text-right">Start Time</Label>
-              <Input id="startTime" type="time" value={appointmentStartTime} onChange={(e) => setAppointmentStartTime(e.target.value)} className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="endTime" className="text-right">End Time</Label>
-              <Input id="endTime" type="time" value={appointmentEndTime} onChange={(e) => setAppointmentEndTime(e.target.value)} className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="color" className="text-right">Color</Label>
-              <Input id="color" type="color" value={appointmentColor} onChange={(e) => setAppointmentColor(e.target.value)} className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="task" className="text-right">Link Task</Label>
-              <Select value={appointmentTaskId || ''} onValueChange={setAppointmentTaskId}>
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select a task (optional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">None</SelectItem>
-                  {tasks.filter(t => t.status !== 'completed').map(task => (
-                    <SelectItem key={task.id} value={task.id}>{task.description}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            {currentAppointment && (
-              <Button variant="destructive" onClick={() => handleDeleteAppointment(currentAppointment.id)}>Delete</Button>
-            )}
-            <Button type="submit" onClick={handleSaveAppointment}>Save Appointment</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          {/* Appointments */}
+          {appointmentTracks.map((track, trackIndex) =>
+            track.map((app) => {
+              const appStart = parseISO(`2000-01-01T${app.start_time}`);
+              const appEnd = parseISO(`2000-01-01T${app.end_time}`);
+              const durationMinutes = (appEnd.getTime() - appStart.getTime()) / (1000 * 60);
 
-      {/* Work Hours Modal */}
-      <Dialog open={isWorkHoursModalOpen} onOpenChange={setIsWorkHoursModalOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Set Work Hours for {format(selectedDate, 'EEEE')}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="workEnabled"
-                checked={workEnabled}
-                onChange={(e) => setWorkEnabled(e.target.checked)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <Label htmlFor="workEnabled">Enable Work Hours for this day</Label>
+              const linkedTask = tasks.find(t => t.id === app.task_id);
+
+              return (
+                <DraggableAppointmentCard
+                  key={app.id}
+                  appointment={app}
+                  task={linkedTask}
+                  onEdit={handleAppointmentClick}
+                  onUnschedule={onDeleteAppointment}
+                  trackIndex={trackIndex}
+                  totalTracks={appointmentTracks.length}
+                  style={{
+                    gridColumn: trackIndex + 1,
+                    gridRow: `${getGridRow(appStart)} / span ${durationMinutes / minutesInterval}`,
+                    top: `${appStart.getHours() * 60 + appStart.getMinutes()}px`,
+                    height: `${durationMinutes}px`,
+                    width: `calc(100% / ${appointmentTracks.length})`,
+                    left: `${(100 / appointmentTracks.length) * trackIndex}%`,
+                    position: 'absolute',
+                  }}
+                />
+              );
+            })
+          )}
+        </div>
+
+        {/* Unscheduled Tasks */}
+        <div className="flex flex-col p-2 border-l">
+          <h3 className="text-lg font-semibold mb-2">Unscheduled Tasks</h3>
+          <SortableContext items={unscheduledDoTodayTasks.map(task => `task-${task.id}`)} strategy={verticalListSortingStrategy}>
+            <div className="space-y-2">
+              {unscheduledDoTodayTasks.map(task => (
+                <DraggableScheduleTaskItem
+                  key={task.id}
+                  task={task}
+                  categories={allCategories}
+                  sections={allSections}
+                  onUpdateTask={onUpdateTask}
+                  onDeleteTask={onDeleteTask}
+                  onAddSubtask={onAddSubtask}
+                  onToggleFocusMode={onToggleFocusMode}
+                />
+              ))}
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="workStartTime" className="text-right">Start Time</Label>
-              <Input id="workStartTime" type="time" value={workStartTime} onChange={(e) => setWorkStartTime(e.target.value)} className="col-span-3" disabled={!(workEnabled ?? true)} />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="workEndTime" className="text-right">End Time</Label>
-              <Input id="workEndTime" type="time" value={workEndTime} onChange={(e) => setWorkEndTime(e.target.value)} className="col-span-3" disabled={!(workEnabled ?? true)} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="submit" onClick={handleSaveWorkHours}>Save Work Hours</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+          </SortableContext>
+        </div>
+      </div>
+
+      <AppointmentForm
+        isOpen={isAppointmentFormOpen}
+        onClose={() => {
+          setIsAppointmentFormOpen(false);
+          setEditingAppointment(null);
+          setSelectedTimeSlot(null);
+          setPrefilledAppointmentData({});
+        }}
+        onSave={onAddAppointment} // This handles both add and update
+        onDelete={onDeleteAppointment}
+        initialData={editingAppointment || undefined}
+        selectedDate={selectedDate}
+        selectedTimeSlot={selectedTimeSlot}
+        prefilledData={prefilledAppointmentData}
+        tasks={tasks}
+      />
+
+      <DragOverlay>
+        {activeDragItem?.type === 'task' && (
+            <DraggableScheduleTaskItem
+              task={activeDragItem.task}
+              categories={allCategories}
+              sections={allSections}
+              onUpdateTask={onUpdateTask}
+              onDeleteTask={onDeleteTask}
+              onAddSubtask={onAddSubtask}
+              onToggleFocusMode={onToggleFocusMode}
+            />
+          )}
+        {activeDragItem?.type === 'appointment' && (
+          <DraggableAppointmentCard
+            appointment={activeDragItem.appointment}
+            task={tasks.find(t => t.id === activeDragItem.appointment.task_id)}
+            onEdit={handleAppointmentClick}
+            onUnschedule={onDeleteAppointment}
+            trackIndex={activeDragItem.trackIndex}
+            totalTracks={appointmentTracks.length}
+            style={{}} // Style will be handled by DragOverlay
+          />
+        )}
+      </DragOverlay>
+    </DndContext>
   );
 };
 

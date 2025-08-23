@@ -1,15 +1,15 @@
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { QuickLink, NewQuickLinkData, UpdateQuickLinkData } from '@/types';
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'react-hot-toast';
 
-export const useQuickLinks = (userId?: string) => {
+export const useQuickLinks = () => {
   const { user, loading: authLoading } = useAuth();
-  const currentUserId = userId || user?.id;
+  const currentUserId = user?.id;
   const queryClient = useQueryClient();
 
-  const { data: quickLinks, isLoading, error } = useQuery<QuickLink[], Error>({
+  const { data: quickLinks, isLoading, error, refetch } = useQuery<QuickLink[], Error>({
     queryKey: ['quickLinks', currentUserId],
     queryFn: async () => {
       if (!currentUserId) return [];
@@ -30,7 +30,7 @@ export const useQuickLinks = (userId?: string) => {
       const { data, error } = await supabase
         .from('quick_links')
         .insert({ ...newLinkData, user_id: currentUserId })
-        .select()
+        .select('*')
         .single();
       if (error) throw error;
       return data;
@@ -48,7 +48,7 @@ export const useQuickLinks = (userId?: string) => {
         .from('quick_links')
         .update(updates)
         .eq('id', id)
-        .select()
+        .select('*')
         .single();
       if (error) throw error;
       return data;
@@ -78,6 +78,7 @@ export const useQuickLinks = (userId?: string) => {
     quickLinks,
     isLoading,
     error,
+    refetchQuickLinks: refetch,
     addQuickLink: addQuickLinkMutation.mutateAsync,
     updateQuickLink: updateQuickLinkMutation.mutateAsync,
     deleteQuickLink: deleteQuickLinkMutation.mutateAsync,

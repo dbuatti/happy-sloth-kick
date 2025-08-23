@@ -1,18 +1,9 @@
 import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import { Task, TaskSection, TaskCategory } from '@/types'; // Corrected imports
+import { CSS } from '@dnd-kit/utilities';
+import { Task, TaskSection, TaskCategory, DraggableScheduleTaskItemProps } from '@/types';
 import { cn } from '@/lib/utils';
-import TaskItem from './TaskItem';
-
-interface DraggableScheduleTaskItemProps {
-  task: Task;
-  categories: TaskCategory[];
-  sections: TaskSection[];
-  onUpdateTask: (id: string, updates: Partial<Task>) => Promise<void>;
-  onDeleteTask: (id: string) => Promise<void>;
-  onAddSubtask: (description: string, parentTaskId: string | null) => Promise<void>;
-  onToggleFocusMode: (taskId: string) => void;
-}
+import TaskItem from './tasks/TaskItem';
 
 const DraggableScheduleTaskItem: React.FC<DraggableScheduleTaskItemProps> = ({
   task,
@@ -23,20 +14,31 @@ const DraggableScheduleTaskItem: React.FC<DraggableScheduleTaskItemProps> = ({
   onAddSubtask,
   onToggleFocusMode,
 }) => {
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
-    id: task.id,
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: `task-${task.id}`,
     data: {
-      type: 'Task',
+      type: 'task',
       task,
     },
   });
 
-  const style = transform ? {
-    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-  } : undefined;
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : 1,
+  };
 
   return (
-    <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "p-2 rounded-md bg-white shadow-sm border border-gray-200 text-sm cursor-grab",
+        isDragging && "ring-2 ring-blue-500"
+      )}
+      {...attributes}
+      {...listeners}
+    >
       <TaskItem
         task={task}
         categories={categories}
@@ -45,6 +47,7 @@ const DraggableScheduleTaskItem: React.FC<DraggableScheduleTaskItemProps> = ({
         onDeleteTask={onDeleteTask}
         onAddSubtask={onAddSubtask}
         onToggleFocusMode={onToggleFocusMode}
+        onLogDoTodayOff={async () => {}} // Not applicable for schedule view
       />
     </div>
   );

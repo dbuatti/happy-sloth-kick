@@ -1,11 +1,11 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import React, { useState, useMemo } from 'react';
+import { useAuth } from '@/context/AuthContext';
 import { useTasks } from '@/hooks/useTasks';
-import { Task, TaskCategory, TaskSection, NewTaskData, UpdateTaskData } from '@/types';
+import { Task, TaskCategory, TaskSection, NewTaskData, UpdateTaskData, ArchiveProps } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Archive as ArchiveIcon, RotateCcw } from 'lucide-react';
+import { Archive as ArchiveIcon, RotateCcw } from 'lucide-react';
 import TaskList from '@/components/TaskList';
 import { toast } from 'react-hot-toast';
 
@@ -19,120 +19,94 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
     sections,
     isLoading,
     error,
-    updateTask: updateTaskMutation,
-    deleteTask: deleteTaskMutation,
-    addTask: addTaskMutation,
-    setFilterStatus,
-    setFilterCategory,
-    setFilterPriority,
-    setSearchQuery,
-    setFilterDueDate,
-    setShowCompleted,
-  } = useTasks({ userId: currentUserId! });
+    updateTask,
+    deleteTask,
+    onAddSubtask,
+    createCategory,
+    updateCategory,
+    deleteCategory,
+    createSection,
+    updateSection,
+    deleteSection,
+    updateSectionIncludeInFocusMode,
+  } = useTasks({ userId: currentUserId, isDemo, demoUserId });
 
-  useEffect(() => {
-    setFilterStatus('archived');
-    setFilterCategory('all');
-    setFilterPriority('all');
-    setSearchQuery('');
-    setFilterDueDate(undefined);
-    setShowCompleted(true); // Show completed tasks in archive
-  }, [setFilterStatus, setFilterCategory, setFilterPriority, setSearchQuery, setFilterDueDate, setShowCompleted]);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const archivedTasks = useMemo(() => {
     return tasks.filter(task => task.status === 'archived');
   }, [tasks]);
 
+  const filteredArchivedTasks = useMemo(() => {
+    return archivedTasks.filter(task =>
+      task.description.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [archivedTasks, searchTerm]);
+
   const handleRestoreTask = async (taskId: string) => {
     try {
-      await updateTaskMutation({ id: taskId, updates: { status: 'to-do' } });
+      await updateTask(taskId, { status: 'to-do' });
       toast.success('Task restored successfully!');
     } catch (err) {
       toast.error('Failed to restore task.');
-      console.error('Error restoring task:', err);
+      console.error(err);
     }
   };
 
-  const onUpdateTask = async (id: string, updates: Partial<Task>) => {
-    try {
-      await updateTaskMutation({ id, updates });
-    } catch (error) {
-      console.error('Error updating task:', error);
-      throw error;
+  const handleDeleteTask = async (taskId: string) => {
+    if (window.confirm('Are you sure you want to permanently delete this task?')) {
+      try {
+        await deleteTask(taskId);
+        toast.success('Task permanently deleted!');
+      } catch (err) {
+        toast.error('Failed to delete task.');
+        console.error(err);
+      }
     }
   };
 
-  const onDeleteTask = async (id: string) => {
-    try {
-      await deleteTaskMutation(id);
-    } catch (error) {
-      console.error('Error deleting task:', error);
-      throw error;
-    }
-  };
-
-  const onAddSubtask = async (description: string, parentTaskId: string | null) => {
-    try {
-      const newTaskData: NewTaskData = {
-        description,
-        section_id: null,
-        parent_task_id: parentTaskId,
-        due_date: null,
-        category: null,
-        priority: 'medium',
-        status: 'to-do',
-        recurring_type: 'none',
-        original_task_id: null,
-        link: null,
-        image_url: null,
-        notes: null,
-        remind_at: null,
-      };
-      return await addTaskMutation(newTaskData);
-    } catch (error) {
-      console.error('Error adding subtask:', error);
-      throw error;
-    }
-  };
-
-  if (isLoading || authLoading) {
-    return <div className="flex justify-center items-center h-full">Loading archive...</div>;
-  }
-
-  if (error) {
-    return <div className="flex justify-center items-center h-full text-red-500">Error: {error.message}</div>;
-  }
+  if (isLoading || authLoading) return <p>Loading archive...</p>;
+  if (error) return <p>Error: {error.message}</p>;
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6 flex items-center">
-        <ArchiveIcon className="mr-3 h-8 w-8" /> Archived Tasks
-      </h1>
+    <div className="p-4">
+      <h1 className="text-3xl font-bold mb-6">Archive</h1>
 
-      {archivedTasks.length === 0 ? (
-        <p className="text-center text-gray-500">No archived tasks found.</p>
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle>Archived Tasks</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <TaskList
-              tasks={archivedTasks}
-              categories={categories as TaskCategory[]}
-              sections={sections as TaskSection[]}
-              onUpdateTask={onUpdateTask}
-              onDeleteTask={onDeleteTask}
-              onAddSubtask={onAddSubtask}
-              onToggleFocusMode={async () => {}} // No focus mode in archive
-              onLogDoTodayOff={async () => {}} // No do today off in archive
-              showCompleted={true}
-              showFilters={false}
-              showSections={true}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="text-lg font-medium">Archived Tasks</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center space-x-2 mb-4">
+            <Input
+              placeholder="Search archived tasks..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="max-w-sm"
             />
-          </CardContent>
-        </Card>
-      )}
+          </div>
+
+          {filteredArchivedTasks.length === 0 ? (
+            <p className="text-muted-foreground">No archived tasks found.</p>
+          ) : (
+            <div className="space-y-3">
+              {filteredArchivedTasks.map(task => (
+                <div key={task.id} className="flex items-center justify-between p-3 border rounded-md bg-gray-50">
+                  <span className="text-sm">{task.description}</span>
+                  <div className="flex space-x-2">
+                    <Button variant="ghost" size="sm" onClick={() => handleRestoreTask(task.id)}>
+                      <RotateCcw className="mr-2 h-4 w-4" /> Restore
+                    </Button>
+                    <Button variant="destructive" size="sm" onClick={() => handleDeleteTask(task.id)}>
+                      <Trash2 className="mr-2 h-4 w-4" /> Delete
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

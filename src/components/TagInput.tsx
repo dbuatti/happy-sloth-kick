@@ -1,18 +1,18 @@
-import React, { useState, useCallback } from 'react';
-import { Badge } from '@/components/ui/badge';
+import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { X, Tag, Plus } from 'lucide-react';
-import { DevIdeaTag, NewDevIdeaTagData } from '@/types'; // Corrected import
+import { X, Plus } from 'lucide-react';
+import { DevIdeaTag, NewDevIdeaTagData } from '@/types';
 import { getRandomTagColor } from '@/lib/tagColors';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'react-hot-toast';
 
 interface TagInputProps {
   selectedTags: DevIdeaTag[];
   allTags: DevIdeaTag[];
-  onAddTag: (tagName: string, color: string) => Promise<DevIdeaTag | undefined>;
+  onAddTag: (tagName: string, tagColor: string) => Promise<DevIdeaTag>;
   onRemoveTag: (tagId: string) => void;
-  onSelectExistingTag: (tag: DevIdeaTag) => void;
+  onSelectExistingTag: (tagId: string) => void;
 }
 
 const TagInput: React.FC<TagInputProps> = ({
@@ -23,38 +23,24 @@ const TagInput: React.FC<TagInputProps> = ({
   onSelectExistingTag,
 }) => {
   const [inputValue, setInputValue] = useState('');
-  const [showSuggestions, setShowSuggestions] = useState(false);
-
-  const availableTags = allTags.filter(
-    (tag) => !selectedTags.some((selected) => selected.id === tag.id)
-  );
+  const [showNewTagInput, setShowNewTagInput] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
-    setShowSuggestions(true);
   };
 
-  const handleAddTag = useCallback(async () => {
-    if (inputValue.trim() === '') return;
-
-    const existingTag = allTags.find(
-      (tag) => tag.name.toLowerCase() === inputValue.trim().toLowerCase()
-    );
-
-    if (existingTag) {
-      onSelectExistingTag(existingTag);
-    } else {
-      const newColor = getRandomTagColor();
+  const handleAddTag = async () => {
+    if (inputValue.trim() && !selectedTags.some(tag => tag.name === inputValue.trim())) {
       try {
-        await onAddTag(inputValue.trim(), newColor);
-        toast.success(`Tag "${inputValue.trim()}" added!`);
+        await onAddTag(inputValue.trim(), getRandomTagColor());
+        setInputValue('');
+        setShowNewTagInput(false);
       } catch (error) {
-        toast.error(`Failed to add tag: ${(error as Error).message}`);
+        toast.error('Failed to add tag.');
+        console.error(error);
       }
     }
-    setInputValue('');
-    setShowSuggestions(false);
-  }, [inputValue, allTags, onAddTag, onSelectExistingTag]);
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -63,49 +49,51 @@ const TagInput: React.FC<TagInputProps> = ({
     }
   };
 
+  const availableTags = allTags.filter(tag => !selectedTags.some(selected => selected.id === tag.id));
+
   return (
-    <div className="relative">
-      <div className="flex flex-wrap gap-2 mb-2">
-        {selectedTags.map((tag) => (
-          <Badge key={tag.id} style={{ backgroundColor: tag.color }} className="text-white flex items-center">
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-2">
+        {selectedTags.map(tag => (
+          <Badge key={tag.id} style={{ backgroundColor: tag.color, color: 'white' }} className="flex items-center">
             {tag.name}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="ml-1 h-4 w-4 p-0 text-white hover:bg-white/20"
-              onClick={() => onRemoveTag(tag.id)}
-            >
-              <X className="h-3 w-3" />
-            </Button>
+            <X className="ml-1 h-3 w-3 cursor-pointer" onClick={() => onRemoveTag(tag.id)} />
           </Badge>
         ))}
       </div>
-      <div className="flex space-x-2">
-        <Input
-          placeholder="Add new tag or select existing..."
-          value={inputValue}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-          onFocus={() => setShowSuggestions(true)}
-          onBlur={() => setTimeout(() => setShowSuggestions(false), 100)} // Delay to allow click on suggestions
-        />
-        <Button onClick={handleAddTag}>
-          <Plus className="h-4 w-4" />
-        </Button>
+      <div className="flex items-center space-x-2">
+        {showNewTagInput ? (
+          <>
+            <Input
+              value={inputValue}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              placeholder="New tag name"
+              className="flex-grow"
+              autoFocus
+            />
+            <Button onClick={handleAddTag} size="sm">Add</Button>
+            <Button variant="ghost" size="sm" onClick={() => { setShowNewTagInput(false); setInputValue(''); }}>
+              <X className="h-4 w-4" />
+            </Button>
+          </>
+        ) : (
+          <Button variant="outline" size="sm" onClick={() => setShowNewTagInput(true)}>
+            <Plus className="mr-2 h-4 w-4" /> Create New Tag
+          </Button>
+        )}
       </div>
-
-      {showSuggestions && availableTags.length > 0 && (
-        <div className="absolute z-10 w-full bg-white border rounded-md shadow-lg mt-1 dark:bg-gray-800 dark:border-gray-700">
-          {availableTags.map((tag) => (
-            <div
+      {availableTags.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {availableTags.map(tag => (
+            <Badge
               key={tag.id}
-              className="px-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
-              onMouseDown={() => onSelectExistingTag(tag)} // Use onMouseDown to prevent blur from closing before click
+              style={{ backgroundColor: tag.color, color: 'white' }}
+              className="cursor-pointer hover:opacity-80"
+              onClick={() => onSelectExistingTag(tag.id)}
             >
-              <Badge style={{ backgroundColor: tag.color }} className="text-white mr-2">
-                {tag.name}
-              </Badge>
-            </div>
+              {tag.name}
+            </Badge>
           ))}
         </div>
       )}

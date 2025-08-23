@@ -1,24 +1,24 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useAuth } from '@/context/AuthContext';
 import { useTasks } from '@/hooks/useTasks';
 import { useSettings } from '@/context/SettingsContext';
-import TaskItem from '@/components/TaskItem';
+import TaskItem from '@/components/tasks/TaskItem';
 import { Task, TaskSection, TaskCategory, NewTaskData, UpdateTaskData, FocusModeProps } from '@/types';
 import { Progress } from '@/components/ui/progress';
 import { format, addMinutes, isPast, isSameDay, startOfDay } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'react-hot-toast';
-import { Play, Pause, SkipForward, CheckCircle2, XCircle, Timer, Settings as SettingsIcon } from 'lucide-react';
+import { Play, Pause, SkipForward, CheckCircle2, XCircle, Timer } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
+const FocusMode: React.FC<FocusModeProps> = ({ isDemo = false, demoUserId }) => {
   const { user, loading: authLoading } = useAuth();
-  const currentUserId = demoUserId || user?.id;
-  const { settings, updateSettings } = useSettings();
+  const currentUserId = isDemo ? demoUserId : user?.id;
+  const { settings, updateSettings, loading: settingsLoading } = useSettings();
 
   const {
     tasks,
@@ -29,127 +29,111 @@ const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
     addTask,
     updateTask,
     deleteTask,
+    onAddSubtask,
     onToggleFocusMode,
-    onLogDoTodayOff,
-  } = useTasks({ userId: currentUserId! });
+  } = useTasks({ userId: currentUserId, isDemo, demoUserId });
 
-  const [focusTimeRemaining, setFocusTimeRemaining] = useState(0); // in seconds
-  const [isFocusTimerActive, setIsFocusTimerActive] = useState(false);
-  const [focusDuration, setFocusDuration] = useState(25 * 60); // Default 25 minutes
-  const [breakTimeRemaining, setBreakTimeRemaining] = useState(0); // in seconds
-  const [isBreakTimerActive, setIsBreakTimerActive] = useState(false);
-  const [breakDuration, setBreakDuration] = useState(5 * 60); // Default 5 minutes
+  const [timerMinutes, setTimerMinutes] = useState(25);
+  const [timerSeconds, setTimerSeconds] = useState(0);
+  const [isActive, setIsActive] = useState(false);
+  const [sessionType, setSessionType] = useState<'focus' | 'break'>('focus');
+  const [isSessionCompleteDialogOpen, setIsSessionCompleteDialogOpen] = useState(false);
+  const [sessionNotes, setSessionNotes] = useState('');
 
   const focusedTask = useMemo(() => {
     return tasks?.find(task => task.id === settings?.focused_task_id);
   }, [tasks, settings?.focused_task_id]);
 
   const focusModeTasks = useMemo(() => {
-    if (!tasks || !allSections) return [];
-    return tasks.filter(task =>
+    return tasks?.filter(task =>
       task.status !== 'completed' &&
       task.status !== 'archived' &&
       allSections.some(section => section.id === task.section_id && section.include_in_focus_mode)
-    ).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    ).sort((a, b) => (a.order || 0) - (b.order || 0)) || [];
   }, [tasks, allSections]);
 
   useEffect(() => {
-    let timer: NodeJS.Timeout;
-
-    if (isFocusTimerActive && focusTimeRemaining > 0) {
-      timer = setInterval(() => {
-        setFocusTimeRemaining((prev) => prev - 1);
+    let interval: NodeJS.Timeout | null = null;
+    if (isActive) {
+      interval = setInterval(() => {
+        if (timerSeconds > 0) {
+          setTimerSeconds(prev => prev - 1);
+        } else if (timerMinutes > 0) {
+          setTimerMinutes(prev => prev - 1);
+          setTimerSeconds(59);
+        } else {
+          // Timer finished
+          setIsActive(false);
+          setIsSessionCompleteDialogOpen(true);
+          // TODO: Log focus session
+        }
       }, 1000);
-    } else if (isFocusTimerActive && focusTimeRemaining === 0) {
-      setIsFocusTimerActive(false);
-      toast.success('Focus session complete! Time for a break.');
-      startBreakTimer();
+    } else if (!isActive && timerMinutes === 0 && timerSeconds === 0) {
+      // Timer was reset or completed
     }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isActive, timerMinutes, timerSeconds]);
 
-    if (isBreakTimerActive && breakTimeRemaining > 0) {
-      timer = setInterval(() => {
-        setBreakTimeRemaining((prev) => prev - 1);
-      }, 1000);
-    } else if (isBreakTimerActive && breakTimeRemaining === 0) {
-      setIsBreakTimerActive(false);
-      toast('Break over! Ready for another focus session?');
-    }
-
-    return () => clearInterval(timer);
-  }, [isFocusTimerActive, focusTimeRemaining, isBreakTimerActive, breakTimeRemaining]);
-
-  const startFocusTimer = () => {
-    setIsBreakTimerActive(false);
-    setBreakTimeRemaining(0);
-    setFocusTimeRemaining(focusDuration);
-    setIsFocusTimerActive(true);
-    toast.success('Focus session started!');
+  const handleStartPause = () => {
+    setIsActive(prev => !prev);
   };
 
-  const pauseFocusTimer = () => {
-    setIsFocusTimerActive(false);
-    toast('Focus session paused.');
-  };
-
-  const stopFocusTimer = () => {
-    setIsFocusTimerActive(false);
-    setFocusTimeRemaining(0);
-    toast('Focus session stopped.');
-  };
-
-  const startBreakTimer = () => {
-    setIsFocusTimerActive(false);
-    setFocusTimeRemaining(0);
-    setBreakTimeRemaining(breakDuration);
-    setIsBreakTimerActive(true);
-    toast(`Starting a ${breakDuration / 60}-minute break!`);
-  };
-
-  const stopBreakTimer = () => {
-    setIsBreakTimerActive(false);
-    setBreakTimeRemaining(0);
-    toast('Break timer stopped.');
-  };
-
-  const handleCompleteTask = async (taskId: string) => {
-    await updateTask({ id: taskId, updates: { status: 'completed' } });
-    if (settings?.focused_task_id === taskId) {
-      await updateSettings({ focused_task_id: null });
-      toast.success('Focused task completed!');
-    } else {
-      toast.success('Task completed!');
-    }
+  const handleReset = () => {
+    setIsActive(false);
+    setTimerMinutes(25);
+    setTimerSeconds(0);
+    setSessionType('focus');
   };
 
   const handleSkipTask = async (taskId: string) => {
     await updateSettings({ focused_task_id: null });
-    toast('Focused task skipped.');
+    toast.success('Task skipped!');
   };
 
-  const handleSetFocusTask = async (taskId: string) => {
-    await updateSettings({ focused_task_id: taskId });
-    toast.success('Task set as current focus!');
+  const handleCompleteTask = async (taskId: string) => {
+    try {
+      await updateTask(taskId, { status: 'completed' });
+      await updateSettings({ focused_task_id: null });
+      toast.success('Task completed!');
+    } catch (error) {
+      toast.error('Failed to complete task.');
+      console.error(error);
+    }
   };
 
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  const handleSessionCompleteClose = () => {
+    setIsSessionCompleteDialogOpen(false);
+    setSessionNotes('');
+    handleReset();
   };
 
-  if (tasksLoading || authLoading) {
-    return <div className="flex justify-center items-center h-full">Loading focus mode...</div>;
+  const handleSaveSessionNotes = () => {
+    // TODO: Save session notes to a journal or log
+    toast.success('Session notes saved!');
+    handleSessionCompleteClose();
+  };
+
+  const progressPercentage = useMemo(() => {
+    const totalDuration = 25 * 60; // Assuming 25 min focus sessions
+    const elapsedSeconds = (25 - timerMinutes) * 60 + (60 - timerSeconds);
+    return (elapsedSeconds / totalDuration) * 100;
+  }, [timerMinutes, timerSeconds]);
+
+  if (isLoading || settingsLoading) {
+    return <p>Loading focus mode...</p>;
   }
 
   if (tasksError) {
-    return <div className="flex justify-center items-center h-full text-red-500">Error: {tasksError.message}</div>;
+    return <p>Error loading tasks: {tasksError.message}</p>;
   }
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="p-4">
       <h1 className="text-3xl font-bold mb-6">Focus Mode</h1>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Focus Timer Section */}
         <Card className="flex flex-col items-center justify-center p-6">
           <CardHeader>
@@ -157,55 +141,21 @@ const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
           </CardHeader>
           <CardContent className="flex flex-col items-center space-y-6">
             <div className="text-7xl font-bold tabular-nums">
-              {formatTime(isFocusTimerActive ? focusTimeRemaining : breakTimeRemaining)}
+              {String(timerMinutes).padStart(2, '0')}:{String(timerSeconds).padStart(2, '0')}
             </div>
-            <Progress value={(isFocusTimerActive ? (focusDuration - focusTimeRemaining) : (breakDuration - breakTimeRemaining)) / (isFocusTimerActive ? focusDuration : breakDuration) * 100} className="w-full max-w-md" />
+            <Progress value={progressPercentage} className="w-full max-w-sm" />
             <div className="flex space-x-4">
-              {!isFocusTimerActive && !isBreakTimerActive && (
-                <Button onClick={startFocusTimer} size="lg">
-                  <Play className="mr-2 h-5 w-5" /> Start Focus
-                </Button>
-              )}
-              {isFocusTimerActive && (
-                <Button onClick={pauseFocusTimer} size="lg" variant="outline">
-                  <Pause className="mr-2 h-5 w-5" /> Pause
-                </Button>
-              )}
-              {isFocusTimerActive && (
-                <Button onClick={stopFocusTimer} size="lg" variant="destructive">
-                  <XCircle className="mr-2 h-5 w-5" /> Stop
-                </Button>
-              )}
-              {!isBreakTimerActive && (isFocusTimerActive || focusTimeRemaining === 0) && (
-                <Button onClick={startBreakTimer} size="lg" variant="secondary">
-                  <Timer className="mr-2 h-5 w-5" /> Start Break
-                </Button>
-              )}
-              {isBreakTimerActive && (
-                <Button onClick={stopBreakTimer} size="lg" variant="destructive">
-                  <XCircle className="mr-2 h-5 w-5" /> Stop Break
-                </Button>
-              )}
+              <Button onClick={handleStartPause} size="lg">
+                {isActive ? <Pause className="mr-2 h-5 w-5" /> : <Play className="mr-2 h-5 w-5" />}
+                {isActive ? 'Pause' : 'Start'}
+              </Button>
+              <Button onClick={handleReset} variant="outline" size="lg">
+                <XCircle className="mr-2 h-5 w-5" /> Reset
+              </Button>
             </div>
-            <div className="flex items-center space-x-2">
-              <Label htmlFor="focusDuration">Focus Duration (min):</Label>
-              <Input
-                id="focusDuration"
-                type="number"
-                value={focusDuration / 60}
-                onChange={(e) => setFocusDuration(parseInt(e.target.value) * 60)}
-                className="w-20"
-                min="1"
-              />
-              <Label htmlFor="breakDuration">Break Duration (min):</Label>
-              <Input
-                id="breakDuration"
-                type="number"
-                value={breakDuration / 60}
-                onChange={(e) => setBreakDuration(parseInt(e.target.value) * 60)}
-                className="w-20"
-                min="1"
-              />
+            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+              <Timer className="h-4 w-4" />
+              <span>{sessionType === 'focus' ? 'Focus Session' : 'Break'}</span>
             </div>
           </CardContent>
         </Card>
@@ -220,7 +170,8 @@ const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
               <div className="space-y-4">
                 <TaskItem
                   task={focusedTask}
-                  categories={allCategories}
+                  categories={allCategories || []}
+                  sections={allSections || []}
                   onUpdateTask={updateTask}
                   onDeleteTask={deleteTask}
                   onAddSubtask={onAddSubtask}
@@ -228,7 +179,7 @@ const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
                   onLogDoTodayOff={onLogDoTodayOff}
                 />
                 <div className="flex space-x-2">
-                  <Button onClick={() => handleCompleteTask(focusedTask.id)} variant="success">
+                  <Button onClick={() => handleCompleteTask(focusedTask.id)} variant="default">
                     <CheckCircle2 className="mr-2 h-4 w-4" /> Mark as Complete
                   </Button>
                   <Button onClick={() => handleSkipTask(focusedTask.id)} variant="outline">
@@ -237,7 +188,7 @@ const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
                 </div>
               </div>
             ) : (
-              <p className="text-gray-500">No task currently focused. Select one from the list below.</p>
+              <p className="text-muted-foreground">No task currently focused. Select one from the list below.</p>
             )}
           </CardContent>
         </Card>
@@ -250,34 +201,51 @@ const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
         </CardHeader>
         <CardContent>
           {focusModeTasks.length === 0 ? (
-            <p className="text-center text-gray-500">No tasks configured for focus mode. Enable focus mode for sections in settings.</p>
+            <p className="text-muted-foreground">No tasks configured for focus mode. Enable "Include in Focus Mode" for sections in Manage Sections.</p>
           ) : (
             <div className="space-y-3">
               {focusModeTasks.map(task => (
-                <div key={task.id} className="flex items-center justify-between">
-                  <TaskItem
-                    task={task}
-                    categories={allCategories}
-                    onUpdateTask={updateTask}
-                    onDeleteTask={deleteTask}
-                    onAddSubtask={onAddSubtask}
-                    onToggleFocusMode={onToggleFocusMode}
-                    onLogDoTodayOff={onLogDoTodayOff}
-                  />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleSetFocusTask(task.id)}
-                    disabled={settings?.focused_task_id === task.id}
-                  >
-                    Set Focus
-                  </Button>
-                </div>
+                <TaskItem
+                  key={task.id}
+                  task={task}
+                  categories={allCategories || []}
+                  sections={allSections || []}
+                  onUpdateTask={updateTask}
+                  onDeleteTask={deleteTask}
+                  onAddSubtask={onAddSubtask}
+                  onToggleFocusMode={onToggleFocusMode}
+                  onLogDoTodayOff={onLogDoTodayOff}
+                />
               ))}
             </div>
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={isSessionCompleteDialogOpen} onOpenChange={setIsSessionCompleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Session Complete!</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <p>Great job! Your {sessionType} session has ended.</p>
+            <Label htmlFor="session-notes">Notes for this session (optional)</Label>
+            <Textarea
+              id="session-notes"
+              value={sessionNotes}
+              onChange={(e) => setSessionNotes(e.target.value)}
+              placeholder="What did you accomplish? Any distractions?"
+              rows={4}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={handleSessionCompleteClose}>
+              Close
+            </Button>
+            <Button onClick={handleSaveSessionNotes}>Save Notes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -1,23 +1,17 @@
 import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import {
-  CustomCard,
-  WeeklyFocus,
-  NewCustomCardData,
-  UpdateCustomCardData,
-  UpdateWeeklyFocusData,
-} from '@/types';
 import { useAuth } from '@/context/AuthContext';
+import { CustomCard, WeeklyFocus, NewCustomCardData, UpdateCustomCardData, UpdateWeeklyFocusData, Json } from '@/types';
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { startOfWeek, format } from 'date-fns';
 import { toast } from 'react-hot-toast';
 
-export const useDashboardData = (userId?: string) => {
+export const useDashboardData = (isDemo = false, demoUserId?: string) => {
   const { user, loading: authLoading } = useAuth();
-  const currentUserId = userId || user?.id;
+  const currentUserId = isDemo ? demoUserId : user?.id;
   const queryClient = useQueryClient();
 
-  const { data: customCards, isLoading: cardsLoading, error: cardsError } = useQuery<CustomCard[], Error>({
+  const { data: customCards, isLoading: customCardsLoading, error: customCardsError } = useQuery<CustomCard[], Error>({
     queryKey: ['customCards', currentUserId],
     queryFn: async () => {
       if (!currentUserId) return [];
@@ -32,19 +26,32 @@ export const useDashboardData = (userId?: string) => {
     enabled: !!currentUserId && !authLoading,
   });
 
-  const { data: weeklyFocus, isLoading: weeklyFocusLoading, error: weeklyFocusError } = useQuery<WeeklyFocus | null, Error>({
-    queryKey: ['weeklyFocus', currentUserId, format(startOfWeek(new Date()), 'yyyy-MM-dd')],
+  const { data: weeklyFocus, isLoading: weeklyFocusLoading, error: weeklyFocusError } = useQuery<WeeklyFocus, Error>({
+    queryKey: ['weeklyFocus', currentUserId],
     queryFn: async () => {
-      if (!currentUserId) return null;
-      const startOfCurrentWeek = format(startOfWeek(new Date()), 'yyyy-MM-dd');
+      if (!currentUserId) return { id: '', user_id: '', week_start_date: '', primary_focus: null, secondary_focus: null, tertiary_focus: null, created_at: null, updated_at: null }; // Default empty focus
+      const startOfCurrentWeek = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
       const { data, error } = await supabase
         .from('weekly_focus')
         .select('*')
         .eq('user_id', currentUserId)
         .eq('week_start_date', startOfCurrentWeek)
         .single();
-      if (error && error.code !== 'PGRST116') throw error;
-      return data || null;
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found, which is fine for initial load
+        throw error;
+      }
+
+      if (!data) {
+        const { data: newFocus, error: insertError } = await supabase
+          .from('weekly_focus')
+          .insert({ user_id: currentUserId, week_start_date: startOfCurrentWeek })
+          .select('*')
+          .single();
+        if (insertError) throw insertError;
+        return newFocus;
+      }
+      return data;
     },
     enabled: !!currentUserId && !authLoading,
   });
@@ -55,14 +62,14 @@ export const useDashboardData = (userId?: string) => {
       const { data, error } = await supabase
         .from('custom_dashboard_cards')
         .insert({ ...newCardData, user_id: currentUserId })
-        .select()
+        .select('*')
         .single();
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customCards', currentUserId] });
-      toast.success('Card added!');
+      toast.success('Custom card added!');
     },
   });
 
@@ -73,14 +80,14 @@ export const useDashboardData = (userId?: string) => {
         .from('custom_dashboard_cards')
         .update(updates)
         .eq('id', id)
-        .select()
+        .select('*')
         .single();
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customCards', currentUserId] });
-      toast.success('Card updated!');
+      toast.success('Custom card updated!');
     },
   });
 
@@ -95,18 +102,20 @@ export const useDashboardData = (userId?: string) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customCards', currentUserId] });
-      toast.success('Card deleted!');
+      toast.success('Custom card deleted!');
     },
   });
 
   const updateWeeklyFocusMutation = useMutation<WeeklyFocus, Error, UpdateWeeklyFocusData, unknown>({
     mutationFn: async (updates) => {
       if (!currentUserId) throw new Error('User not authenticated');
-      const startOfCurrentWeek = format(startOfWeek(new Date()), 'yyyy-MM-dd');
+      const startOfCurrentWeek = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
       const { data, error } = await supabase
         .from('weekly_focus')
-        .upsert({ ...updates, user_id: currentUserId, week_start_date: startOfCurrentWeek }, { onConflict: 'user_id, week_start_date' })
-        .select()
+        .update(updates)
+        .eq('user_id', currentUserId)
+        .eq('week_start_date', startOfCurrentWeek)
+        .select('*')
         .single();
       if (error) throw error;
       return data;
@@ -117,46 +126,24 @@ export const useDashboardData = (userId?: string) => {
     },
   });
 
-  const updateCardOrderMutation = useMutation<void, Error, { updates: { id: string; card_order: number }[] }, unknown>({
-    mutationFn: async ({ updates }) => {
-      if (!currentUserId) throw new Error('User not authenticated');
-      const { error } = await supabase.from('custom_dashboard_cards').upsert(updates);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['customCards', currentUserId] });
-    },
-  });
-
-  const addCustomCard = useCallback(async (newCardData: NewCustomCardData) => {
-    return addCustomCardMutation.mutateAsync(newCardData);
-  }, [addCustomCardMutation]);
-
-  const updateCustomCard = useCallback(async (id: string, updates: UpdateCustomCardData) => {
-    return updateCustomCardMutation.mutateAsync({ id, updates });
-  }, [updateCustomCardMutation]);
-
-  const deleteCustomCard = useCallback(async (id: string) => {
-    return deleteCustomCardMutation.mutateAsync(id);
-  }, [deleteCustomCardMutation]);
-
-  const updateWeeklyFocus = useCallback(async (updates: UpdateWeeklyFocusData) => {
-    return updateWeeklyFocusMutation.mutateAsync(updates);
-  }, [updateWeeklyFocusMutation]);
-
-  const updateCardOrder = useCallback(async (updates: { id: string; card_order: number }[]) => {
-    return updateCardOrderMutation.mutateAsync({ updates });
-  }, [updateCardOrderMutation]);
+  const updateDashboardLayout = useCallback(async (newLayout: Json) => {
+    if (!currentUserId) return;
+    await supabase
+      .from('user_settings')
+      .update({ dashboard_layout: newLayout })
+      .eq('user_id', currentUserId);
+    queryClient.invalidateQueries({ queryKey: ['userSettings', currentUserId] });
+  }, [currentUserId, queryClient]);
 
   return {
     customCards,
     weeklyFocus,
-    isLoading: cardsLoading || weeklyFocusLoading || authLoading,
-    error: cardsError || weeklyFocusError,
-    addCustomCard,
-    updateCustomCard,
-    deleteCustomCard,
-    updateWeeklyFocus,
-    updateCardOrder,
+    isLoading: customCardsLoading || weeklyFocusLoading,
+    error: customCardsError || weeklyFocusError,
+    addCustomCard: addCustomCardMutation.mutateAsync,
+    updateCustomCard: updateCustomCardMutation.mutateAsync,
+    deleteCustomCard: deleteCustomCardMutation.mutateAsync,
+    updateWeeklyFocus: updateWeeklyFocusMutation.mutateAsync,
+    updateDashboardLayout,
   };
 };

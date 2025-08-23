@@ -1,108 +1,64 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle2, CircleDashed } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Task } from '@/types'; // Imported from centralized types
+import { Task } from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format, isToday, isPast } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { CheckCircle2, ChevronRight } from 'lucide-react';
+import { NextTaskCardProps } from '@/types';
 
-interface NextTaskCardProps {
-  tasks: Task[];
-  isLoading?: boolean;
-}
-
-const NextTaskCard: React.FC<NextTaskCardProps> = ({ tasks, isLoading }) => {
-  const nextTask = useMemo(() => {
-    if (!tasks || tasks.length === 0) return null;
-
-    const now = new Date();
-
-    // Filter out completed and archived tasks, and subtasks
-    const relevantTasks = tasks.filter(
-      (task) => task.status !== 'completed' && task.status !== 'archived' && !task.parent_task_id
-    );
-
-    // Sort by due date (earliest first), then by priority (urgent > high > medium > low)
-    const sortedTasks = relevantTasks.sort((a, b) => {
-      const aDueDate = a.due_date ? new Date(a.due_date) : null;
-      const bDueDate = b.due_date ? new Date(b.due_date) : null;
-
-      // Prioritize tasks with due dates
-      if (aDueDate && bDueDate) {
-        if (aDueDate.getTime() !== bDueDate.getTime()) {
-          return aDueDate.getTime() - bDueDate.getTime();
-        }
-      } else if (aDueDate) {
-        return -1; // a has a due date, b doesn't
-      } else if (bDueDate) {
-        return 1; // b has a due date, a doesn't
-      }
-
-      // If due dates are same or non-existent, sort by priority
-      const priorityOrder: { [key: string]: number } = {
-        urgent: 4,
-        high: 3,
-        medium: 2,
-        low: 1,
-      };
-      return (priorityOrder[b.priority || 'medium'] || 0) - (priorityOrder[a.priority || 'medium'] || 0);
+const NextTaskCard: React.FC<NextTaskCardProps> = ({ tasks, onToggleFocusMode }) => {
+  const sortedTasks = tasks
+    .filter(task => task.status === 'to-do' && !task.parent_task_id)
+    .sort((a, b) => {
+      if (!a.due_date && !b.due_date) return 0;
+      if (!a.due_date) return 1;
+      if (!b.due_date) return -1;
+      return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
     });
 
-    return sortedTasks.length > 0 ? sortedTasks[0] : null;
-  }, [tasks]);
+  const nextTask = sortedTasks[0];
 
-  if (isLoading) {
+  if (!nextTask) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm font-medium">Next Task</CardTitle>
+          <CardTitle>Next Task</CardTitle>
         </CardHeader>
         <CardContent>
-          <Skeleton className="h-6 w-3/4 mb-2" />
-          <Skeleton className="h-4 w-1/2" />
+          <p className="text-sm text-muted-foreground">No upcoming tasks.</p>
         </CardContent>
       </Card>
     );
   }
 
+  const isOverdue = nextTask.due_date && isPast(new Date(nextTask.due_date)) && !isToday(new Date(nextTask.due_date));
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">Next Task</CardTitle>
-        {nextTask?.status === 'completed' ? (
-          <CheckCircle2 className="h-4 w-4 text-green-500" />
-        ) : (
-          <CircleDashed className="h-4 w-4 text-gray-500" />
-        )}
+        <CardTitle className="text-lg font-medium">Next Task</CardTitle>
+        <Button variant="ghost" size="sm" onClick={() => onToggleFocusMode(nextTask.id, true)}>
+          <ChevronRight className="h-4 w-4" />
+        </Button>
       </CardHeader>
       <CardContent>
-        {nextTask ? (
-          <div>
-            <p className="text-2xl font-bold">{nextTask.description}</p>
-            {nextTask.due_date && (
-              <p
-                className={cn(
-                  'text-xs',
-                  isPast(new Date(nextTask.due_date)) && !isToday(new Date(nextTask.due_date))
-                    ? 'text-red-500'
-                    : 'text-gray-500'
-                )}
-              >
-                Due: {format(new Date(nextTask.due_date), 'MMM dd, yyyy')}
-              </p>
-            )}
-            {nextTask.category && (
-              <span
-                className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                style={{ backgroundColor: nextTask.category.color || '#ccc' }}
-              >
-                {nextTask.category.name}
-              </span>
-            )}
-          </div>
-        ) : (
-          <p className="text-sm text-gray-500">No upcoming tasks.</p>
-        )}
+        <div className="space-y-2">
+          <p className={cn("text-lg font-semibold", isOverdue && "text-red-500")}>
+            {nextTask.description}
+          </p>
+          {nextTask.due_date && (
+            <p className={cn("text-sm text-muted-foreground", isOverdue && "text-red-400")}>
+              Due: {format(new Date(nextTask.due_date), 'PPP')}
+            </p>
+          )}
+          {nextTask.category && (
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${nextTask.category.color}`}>
+              {nextTask.category.name}
+            </span>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

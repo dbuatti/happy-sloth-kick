@@ -1,47 +1,48 @@
 import React from 'react';
-import { Button } from '@/components/ui/button';
 import { CheckCircle2, Archive, Trash2, ChevronDown, X } from 'lucide-react';
-import { Task } from '@/types'; // Corrected import
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
 
 interface BulkActionBarProps {
-  selectedTasks: string[];
+  selectedTaskIds: string[];
   onClearSelection: () => void;
-  onMarkCompleted: (taskIds: string[]) => void;
+  onMarkComplete: (taskIds: string[]) => void;
   onArchive: (taskIds: string[]) => void;
   onDelete: (taskIds: string[]) => void;
 }
 
 const BulkActionBar: React.FC<BulkActionBarProps> = ({
-  selectedTasks,
+  selectedTaskIds,
   onClearSelection,
-  onMarkCompleted,
+  onMarkComplete,
   onArchive,
   onDelete,
 }) => {
-  if (selectedTasks.length === 0) return null;
+  if (selectedTaskIds.length === 0) {
+    return null;
+  }
 
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground p-3 rounded-lg shadow-lg flex items-center space-x-4 z-50">
-      <span className="text-sm font-medium">{selectedTasks.length} tasks selected</span>
-      <Button variant="ghost" size="sm" onClick={onClearSelection}>
-        <X className="h-4 w-4 mr-2" /> Clear
+    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white p-3 rounded-lg shadow-lg flex items-center space-x-4 z-50">
+      <span>{selectedTaskIds.length} tasks selected</span>
+      <Button variant="ghost" size="icon" onClick={onClearSelection}>
+        <X className="h-5 w-5" />
       </Button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" className="text-white hover:bg-blue-700">
             Actions <ChevronDown className="ml-2 h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent>
-          <DropdownMenuItem onClick={() => onMarkCompleted(selectedTasks)}>
-            <CheckCircle2 className="mr-2 h-4 w-4" /> Mark Completed
+          <DropdownMenuItem onClick={() => onMarkComplete(selectedTaskIds)}>
+            <CheckCircle2 className="mr-2 h-4 w-4" /> Mark Complete
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onArchive(selectedTasks)}>
+          <DropdownMenuItem onClick={() => onArchive(selectedTaskIds)}>
             <Archive className="mr-2 h-4 w-4" /> Archive
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onDelete(selectedTasks)} className="text-red-600">
-            <Trash2 className="mr-2 h-4 w-4" /> Delete
+          <DropdownMenuItem onClick={() => onDelete(selectedTaskIds)}>
+            <Trash2 className="mr-2 h-4 w-4 text-red-500" /> Delete
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

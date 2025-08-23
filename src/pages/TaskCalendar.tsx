@@ -1,34 +1,28 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar';
+import React, { useState, useMemo } from 'react';
+import { Calendar as BigCalendar, momentLocalizer, Event as CalendarEvent } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/context/AuthContext';
 import { useTasks } from '@/hooks/useTasks';
 import { useAppointments } from '@/hooks/useAppointments';
 import { Task, Appointment, TaskCategory, NewTaskData, UpdateTaskData, TaskCalendarProps } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import TaskItem from '@/components/TaskItem';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { format, startOfDay } from 'date-fns';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import TaskForm from '@/components/TaskForm';
+import AppointmentForm from '@/components/AppointmentForm';
+import { format, startOfDay, addMinutes, parseISO } from 'date-fns';
 import { toast } from 'react-hot-toast';
 
 const localizer = momentLocalizer(moment);
 
-interface CalendarEvent {
-  title: string;
-  start: Date;
-  end: Date;
-  allDay?: boolean;
-  resource?: {
-    type: 'task' | 'appointment';
-    task?: Task;
-    appointment?: Appointment;
-  };
+interface CalendarEventResource {
+  type: 'task' | 'appointment';
+  task?: Task;
+  appointment?: Appointment;
+}
+
+interface CustomCalendarEvent extends CalendarEvent {
+  resource: CalendarEventResource;
 }
 
 const TaskCalendar: React.FC<TaskCalendarProps> = ({ isDemo = false, demoUserId }) => {
@@ -38,14 +32,18 @@ const TaskCalendar: React.FC<TaskCalendarProps> = ({ isDemo = false, demoUserId 
   const {
     tasks,
     categories,
+    sections,
     isLoading: tasksLoading,
     error: tasksError,
     addTask,
     updateTask,
     deleteTask,
+    createSection,
+    updateSection,
+    deleteSection,
+    onAddSubtask,
     onToggleFocusMode,
-    onLogDoTodayOff,
-  } = useTasks({ userId: currentUserId! });
+  } = useTasks({ userId: currentUserId, isDemo, demoUserId });
 
   const {
     appointments,
@@ -57,86 +55,112 @@ const TaskCalendar: React.FC<TaskCalendarProps> = ({ isDemo = false, demoUserId 
   } = useAppointments(startOfDay(new Date())); // Fetch all appointments for the current month/view
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<CustomCalendarEvent | null>(null);
+  const [isAppointmentFormOpen, setIsAppointmentFormOpen] = useState(false);
+  const [selectedDateForNewAppointment, setSelectedDateForNewAppointment] = useState<Date>(new Date());
+  const [selectedTimeSlotForNewAppointment, setSelectedTimeSlotForNewAppointment] = useState<{ start: Date; end: Date } | null>(null);
 
-  const events = useMemo(() => {
-    const allEvents: CalendarEvent[] = [];
+  const calendarEvents = useMemo(() => {
+    const events: CustomCalendarEvent[] = [];
 
     tasks?.forEach(task => {
       if (task.due_date) {
-        const dueDate = new Date(task.due_date);
-        allEvents.push({
+        const dueDate = parseISO(task.due_date);
+        events.push({
+          id: task.id,
           title: task.description,
           start: dueDate,
           end: addMinutes(dueDate, 60), // Default 1 hour for tasks
           allDay: true,
           resource: { type: 'task', task },
+          color: categories?.find(cat => cat.id === task.category?.id)?.color || '#cccccc',
         });
       }
     });
 
     appointments?.forEach(appointment => {
-      const startDate = moment(`${appointment.date}T${appointment.start_time}`).toDate();
-      const endDate = moment(`${appointment.date}T${appointment.end_time}`).toDate();
-      allEvents.push({
+      const appDate = parseISO(appointment.date);
+      const startTime = parseISO(`${appointment.date}T${appointment.start_time}`);
+      const endTime = parseISO(`${appointment.date}T${appointment.end_time}`);
+      events.push({
+        id: appointment.id,
         title: appointment.title,
-        start: startDate,
-        end: endDate,
+        start: startTime,
+        end: endTime,
         allDay: false,
         resource: { type: 'appointment', appointment },
+        color: appointment.color,
       });
     });
 
-    return allEvents;
-  }, [tasks, appointments]);
+    return events;
+  }, [tasks, appointments, categories]);
 
-  const handleSelectEvent = (event: CalendarEvent) => {
+  const handleSelectEvent = (event: CustomCalendarEvent) => {
     setSelectedEvent(event);
     setIsModalOpen(true);
   };
 
-  const handleEventDrop = async ({ event, start, end, allDay }: any) => {
+  const handleEventDrop = async ({ event, start, end, allDay }: { event: CustomCalendarEvent, start: Date, end: Date, allDay: boolean }) => {
     if (event.resource.type === 'task' && event.resource.task) {
-      try {
-        await updateTask({ id: event.resource.task.id, updates: { due_date: start.toISOString() } });
-        toast.success('Task due date updated!');
-      } catch (err) {
-        toast.error(`Failed to update task: ${(err as Error).message}`);
-        console.error('Error updating task:', err);
-      }
+      const taskId = event.resource.task.id;
+      const updates: UpdateTaskData = {
+        due_date: format(start, 'yyyy-MM-dd'),
+      };
+      await updateTask(taskId, updates);
+      toast.success('Task rescheduled!');
     } else if (event.resource.type === 'appointment' && event.resource.appointment) {
-      try {
-        await updateAppointment({
-          id: event.resource.appointment.id,
-          updates: {
-            date: format(start, 'yyyy-MM-dd'),
-            start_time: format(start, 'HH:mm:ss'),
-            end_time: format(end, 'HH:mm:ss'),
-          },
-        });
-        toast.success('Appointment time updated!');
-      } catch (err) {
-        toast.error(`Failed to update appointment: ${(err as Error).message}`);
-        console.error('Error updating appointment:', err);
-      }
+      const appointmentId = event.resource.appointment.id;
+      const updates: UpdateAppointmentData = {
+        date: format(start, 'yyyy-MM-dd'),
+        start_time: format(start, 'HH:mm'),
+        end_time: format(end, 'HH:mm'),
+      };
+      await updateAppointment(appointmentId, updates);
+      toast.success('Appointment rescheduled!');
     }
   };
 
-  if (tasksLoading || appointmentsLoading || authLoading) {
-    return <div className="flex justify-center items-center h-full">Loading calendar...</div>;
-  }
+  const handleEventResize = async ({ event, start, end }: { event: CustomCalendarEvent, start: Date, end: Date }) => {
+    if (event.resource.type === 'appointment' && event.resource.appointment) {
+      const appointmentId = event.resource.appointment.id;
+      const updates: UpdateAppointmentData = {
+        start_time: format(start, 'HH:mm'),
+        end_time: format(end, 'HH:mm'),
+      };
+      await updateAppointment(appointmentId, updates);
+      toast.success('Appointment duration updated!');
+    }
+  };
 
-  if (tasksError || appointmentsError) {
-    return <div className="flex justify-center items-center h-full text-red-500">Error: {tasksError?.message || appointmentsError?.message}</div>;
-  }
+  const handleSelectSlot = ({ start, end }: { start: Date, end: Date }) => {
+    setSelectedDateForNewAppointment(start);
+    setSelectedTimeSlotForNewAppointment({ start, end });
+    setIsAppointmentFormOpen(true);
+  };
+
+  const handleSaveAppointment = async (data: NewAppointmentData | UpdateAppointmentData) => {
+    if ('id' in data && data.id) {
+      return await updateAppointment(data.id, data);
+    } else {
+      return await addAppointment(data as NewAppointmentData);
+    }
+  };
+
+  const handleDeleteAppointment = async (id: string) => {
+    await deleteAppointment(id);
+  };
+
+  if (isLoading || authLoading) return <p>Loading calendar...</p>;
+  if (tasksError || appointmentsError) return <p>Error: {tasksError?.message || appointmentsError?.message}</p>;
 
   return (
-    <div className="container mx-auto p-4 h-[calc(100vh-64px)] flex flex-col">
+    <div className="p-4">
       <h1 className="text-3xl font-bold mb-6">Task Calendar</h1>
-      <div className="flex-grow">
+      <div className="h-[700px]">
         <BigCalendar
           localizer={localizer}
-          events={events}
+          events={calendarEvents}
           startAccessor="start"
           endAccessor="end"
           style={{ height: '100%' }}
@@ -144,103 +168,63 @@ const TaskCalendar: React.FC<TaskCalendarProps> = ({ isDemo = false, demoUserId 
           onSelectEvent={handleSelectEvent}
           onEventDrop={handleEventDrop}
           resizable
-          onEventResize={handleEventDrop}
-          defaultView="month"
+          onEventResize={handleEventResize}
+          onSelectSlot={handleSelectSlot}
+          eventPropGetter={(event) => ({
+            style: {
+              backgroundColor: event.color,
+            },
+          })}
         />
       </div>
 
-      {selectedEvent && (
-        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader>
-              <DialogTitle>{selectedEvent.title}</DialogTitle>
-            </DialogHeader>
-            <div className="py-4">
-              {selectedEvent.resource?.type === 'task' && selectedEvent.resource.task && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Task Details</h3>
-                  <TaskItem
-                    task={selectedEvent.resource.task}
-                    categories={categories as TaskCategory[]}
-                    onUpdateTask={async (taskId: string, updates: Partial<Task>) => { await updateTask({ id: taskId, updates }); setIsModalOpen(false); return selectedEvent.resource!.task!; }}
-                    onDeleteTask={async (taskId: string) => { await deleteTask(taskId); setIsModalOpen(false); }}
-                    onAddSubtask={async (description: string, parentTaskId: string | null) => {
-                      const newTaskData: NewTaskData = {
-                        description,
-                        section_id: null,
-                        parent_task_id: parentTaskId,
-                        due_date: null,
-                        category: null,
-                        priority: 'medium',
-                        status: 'to-do',
-                        recurring_type: 'none',
-                        original_task_id: null,
-                        link: null,
-                        image_url: null,
-                        notes: null,
-                        remind_at: null,
-                      };
-                      return await addTask(newTaskData);
-                    }}
-                    onToggleFocusMode={onToggleFocusMode}
-                    onLogDoTodayOff={onLogDoTodayOff}
-                  />
-                  {selectedEvent.resource.task.parent_task_id && (
-                    <div className="mt-4">
-                      <h4 className="font-semibold">Subtasks:</h4>
-                      {tasks?.filter(t => t.parent_task_id === selectedEvent.resource?.task?.id).map(subtask => (
-                        <TaskItem
-                          key={subtask.id}
-                          task={subtask}
-                          categories={categories as TaskCategory[]}
-                          onUpdateTask={async (taskId: string, updates: Partial<Task>) => { await updateTask({ id: taskId, updates }); return subtask; }}
-                          onDeleteTask={async (taskId: string) => { await deleteTask(taskId); }}
-                          onAddSubtask={async (description: string, parentTaskId: string | null) => {
-                            const newTaskData: NewTaskData = {
-                              description,
-                              section_id: null,
-                              parent_task_id: parentTaskId,
-                              due_date: null,
-                              category: null,
-                              priority: 'medium',
-                              status: 'to-do',
-                              recurring_type: 'none',
-                              original_task_id: null,
-                              link: null,
-                              image_url: null,
-                              notes: null,
-                              remind_at: null,
-                            };
-                            return await addTask(newTaskData);
-                          }}
-                          onToggleFocusMode={onToggleFocusMode}
-                          onLogDoTodayOff={onLogDoTodayOff}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-              {selectedEvent.resource?.type === 'appointment' && selectedEvent.resource.appointment && (
-                <div className="space-y-2">
-                  <h3 className="text-lg font-semibold">Appointment Details</h3>
-                  <p><strong>Description:</strong> {selectedEvent.resource.appointment.description || 'N/A'}</p>
-                  <p><strong>Date:</strong> {format(selectedEvent.start, 'PPP')}</p>
-                  <p><strong>Time:</strong> {format(selectedEvent.start, 'p')} - {format(selectedEvent.end, 'p')}</p>
-                  <p><strong>Color:</strong> <span style={{ color: selectedEvent.resource.appointment.color }}>{selectedEvent.resource.appointment.color}</span></p>
-                  {selectedEvent.resource.appointment.task_id && (
-                    <p><strong>Linked Task:</strong> {tasks?.find(t => t.id === selectedEvent.resource?.appointment?.task_id)?.description || 'N/A'}</p>
-                  )}
-                  <div className="flex space-x-2 mt-4">
-                    <Button onClick={() => toast("Edit appointment functionality to be implemented.")}>Edit</Button>
-                    <Button variant="destructive" onClick={() => toast("Delete appointment functionality to be implemented.")}>Delete</Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>{selectedEvent?.resource.type === 'task' ? 'Task Details' : 'Appointment Details'}</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            {selectedEvent?.resource.type === 'task' && selectedEvent.resource.task && (
+              <TaskForm
+                initialData={selectedEvent.resource.task}
+                onSave={async (updates) => {
+                  const updated = await updateTask(selectedEvent.resource!.task!.id, updates as UpdateTaskData);
+                  setIsModalOpen(false);
+                  return updated;
+                }}
+                onCancel={() => setIsModalOpen(false)}
+                categories={categories || []}
+                sections={sections || []}
+                createSection={createSection}
+                updateSection={updateSection}
+                deleteSection={deleteSection}
+              />
+            )}
+            {selectedEvent?.resource.type === 'appointment' && selectedEvent.resource.appointment && (
+              <AppointmentForm
+                isOpen={true} // Always open when selected
+                onClose={() => setIsModalOpen(false)}
+                onSave={handleSaveAppointment}
+                onDelete={handleDeleteAppointment}
+                initialData={selectedEvent.resource.appointment}
+                selectedDate={parseISO(selectedEvent.resource.appointment.date)}
+                selectedTimeSlot={{ start: selectedEvent.start as Date, end: selectedEvent.end as Date }}
+                tasks={tasks || []}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <AppointmentForm
+        isOpen={isAppointmentFormOpen}
+        onClose={() => setIsAppointmentFormOpen(false)}
+        onSave={handleSaveAppointment}
+        onDelete={handleDeleteAppointment}
+        selectedDate={selectedDateForNewAppointment}
+        selectedTimeSlot={selectedTimeSlotForNewAppointment}
+        tasks={tasks || []}
+      />
     </div>
   );
 };

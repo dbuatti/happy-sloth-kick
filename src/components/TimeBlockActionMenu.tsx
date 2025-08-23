@@ -1,60 +1,88 @@
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Calendar, ListTodo } from 'lucide-react';
+import React from 'react';
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { MoreVertical, Plus, Edit, Trash2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Task, TaskSection } from '@/hooks/useTasks';
+import { Task, TaskSection, TaskCategory, NewTaskData, UpdateTaskData } from '@/types'; // Corrected imports
 
 interface TimeBlockActionMenuProps {
-  block: { start: Date; end: Date };
-  onAddAppointment: (block: { start: Date; end: Date }) => void;
-  onScheduleTask: (taskId: string, blockStart: Date) => void;
-  unscheduledTasks: Task[];
-  sections: TaskSection[];
+  onAddTask: (description: string, sectionId: string | null, parentTaskId: string | null, dueDate: Date | null, categoryId: string | null, priority: Task['priority']) => Promise<Task>;
+  onAddAppointment: (title: string, startTime: string, endTime: string, color: string, taskId: string | null) => Promise<any>;
+  onEditAppointment: () => void;
+  onDeleteAppointment: () => void;
+  availableTasks: Task[];
+  availableSections: TaskSection[];
+  availableCategories: TaskCategory[];
+  selectedDate: Date;
+  selectedTimeSlot: { start: Date; end: Date };
 }
 
-const TimeBlockActionMenu: React.FC<TimeBlockActionMenuProps> = ({ block, onAddAppointment, onScheduleTask, unscheduledTasks, sections }) => {
-  const [view, setView] = useState<'initial' | 'select-task'>('initial');
+const TimeBlockActionMenu: React.FC<TimeBlockActionMenuProps> = ({
+  onAddTask,
+  onAddAppointment,
+  onEditAppointment,
+  onDeleteAppointment,
+  availableTasks,
+  availableSections,
+  availableCategories,
+  selectedDate,
+  selectedTimeSlot,
+}) => {
+  const [taskToLink, setTaskToLink] = React.useState<string | null>(null);
 
-  if (view === 'select-task') {
-    return (
-      <Select onValueChange={(taskId) => onScheduleTask(taskId, block.start)}>
-        <SelectTrigger className="w-[200px]">
-          <SelectValue placeholder="Select a task..." />
-        </SelectTrigger>
-        <SelectContent>
-          {unscheduledTasks.length > 0 ? (
-            unscheduledTasks.map(task => {
-              const section = sections.find(s => s.id === task.section_id);
-              return (
-                <SelectItem key={task.id} value={task.id}>
-                  <div className="flex flex-col items-start">
-                    <span>{task.description}</span>
-                    {section && (
-                      <span className="text-xs text-muted-foreground">{section.name}</span>
-                    )}
-                  </div>
-                </SelectItem>
-              );
-            })
-          ) : (
-            <div className="p-2 text-sm text-muted-foreground">No tasks to schedule.</div>
-          )}
-        </SelectContent>
-      </Select>
-    );
-  }
+  const handleAddTask = async () => {
+    // Example: Add a generic task for the time slot
+    const description = `New Task for ${selectedTimeSlot.start.toLocaleTimeString()} - ${selectedTimeSlot.end.toLocaleTimeString()}`;
+    await onAddTask(description, null, null, selectedDate, null, 'medium');
+  };
+
+  const handleAddAppointment = async () => {
+    const title = `New Appointment for ${selectedTimeSlot.start.toLocaleTimeString()}`;
+    const startTime = format(selectedTimeSlot.start, 'HH:mm');
+    const endTime = format(selectedTimeSlot.end, 'HH:mm');
+    await onAddAppointment(title, startTime, endTime, '#3b82f6', taskToLink);
+  };
 
   return (
-    <div className="flex flex-col space-y-1">
-      <Button variant="ghost" className="justify-start" onClick={() => onAddAppointment(block)}>
-        <Calendar className="mr-2 h-4 w-4" />
-        Add Appointment
-      </Button>
-      <Button variant="ghost" className="justify-start" onClick={() => setView('select-task')}>
-        <ListTodo className="mr-2 h-4 w-4" />
-        Schedule Task
-      </Button>
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon">
+          <MoreVertical className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <DropdownMenuItem onClick={handleAddAppointment}>
+          <Plus className="mr-2 h-4 w-4" /> Add Appointment
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleAddTask}>
+          <Plus className="mr-2 h-4 w-4" /> Add Task
+        </DropdownMenuItem>
+        {/*
+        <DropdownMenuItem onClick={onEditAppointment}>
+          <Edit className="mr-2 h-4 w-4" /> Edit Block
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={onDeleteAppointment}>
+          <Trash2 className="mr-2 h-4 w-4" /> Delete Block
+        </DropdownMenuItem>
+        */}
+        <div className="p-2">
+          <Label htmlFor="link-task" className="text-xs font-medium">Link Task</Label>
+          <Select onValueChange={setTaskToLink} value={taskToLink || ''}>
+            <SelectTrigger className="w-full mt-1">
+              <SelectValue placeholder="Link to task (optional)" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">No Task</SelectItem>
+              {availableTasks.filter(t => t.status !== 'completed' && t.status !== 'archived').map(task => (
+                <SelectItem key={task.id} value={task.id}>
+                  {task.description}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 };
 

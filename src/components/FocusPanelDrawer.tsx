@@ -1,56 +1,52 @@
 import React from 'react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import FocusToolsPanel from './FocusToolsPanel';
-import { Task, TaskSection, Category } from '@/hooks/useTasks';
-// Removed useAuth as it's not directly used in this component's logic
+import { Task, TaskSection, TaskCategory, UpdateTaskData, FocusModeProps } from '@/types';
 
 interface FocusPanelDrawerProps {
   isOpen: boolean;
-  onClose: () => void;
-  nextAvailableTask: Task | null;
-  tasks: Task[];
-  filteredTasks: Task[];
-  updateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
-  onOpenDetail: (task: Task) => void;
-  onDeleteTask: (taskId: string) => void;
-  sections: TaskSection[];
-  allCategories: Category[];
-  handleAddTask: (taskData: any) => Promise<any>; // Added handleAddTask
-  currentDate: Date; // Added currentDate
+  onOpenChange: (open: boolean) => void;
+  focusedTask: Task | undefined;
+  focusModeTasks: Task[];
+  allCategories: TaskCategory[];
+  allSections: TaskSection[];
+  onUpdateTask: (id: string, updates: UpdateTaskData) => Promise<Task>;
+  onDeleteTask: (id: string) => Promise<void>;
+  onAddSubtask: (description: string, parentTaskId: string | null) => Promise<Task>;
+  onToggleFocusMode: (taskId: string, isFocused: boolean) => Promise<void>;
+  onLogDoTodayOff: (taskId: string) => Promise<void>;
 }
 
 const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
   isOpen,
-  onClose,
-  nextAvailableTask,
-  tasks,
-  filteredTasks,
-  updateTask,
-  onOpenDetail,
-  onDeleteTask,
-  sections,
+  onOpenChange,
+  focusedTask,
+  focusModeTasks,
   allCategories,
-  handleAddTask, // Destructure handleAddTask
-  currentDate, // Destructure currentDate
+  allSections,
+  onUpdateTask,
+  onDeleteTask,
+  onAddSubtask,
+  onToggleFocusMode,
+  onLogDoTodayOff,
 }) => {
   return (
-    <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent side="right" className="w-full sm:max-w-md flex flex-col">
+    <Sheet open={isOpen} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="w-full sm:max-w-md">
         <SheetHeader>
           <SheetTitle>Focus Tools</SheetTitle>
         </SheetHeader>
-        <div className="flex-1 overflow-y-auto py-4">
+        <div className="py-4">
           <FocusToolsPanel
-            nextAvailableTask={nextAvailableTask}
-            tasks={tasks}
-            filteredTasks={filteredTasks}
-            updateTask={updateTask}
-            onDeleteTask={onDeleteTask}
-            sections={sections}
+            focusedTask={focusedTask}
+            focusModeTasks={focusModeTasks}
             allCategories={allCategories}
-            onOpenDetail={onOpenDetail}
-            handleAddTask={handleAddTask} // Pass handleAddTask
-            currentDate={currentDate} // Pass currentDate
+            allSections={allSections}
+            onUpdateTask={onUpdateTask}
+            onDeleteTask={onDeleteTask}
+            onAddSubtask={onAddSubtask}
+            onToggleFocusMode={onToggleFocusMode}
+            onLogDoTodayOff={onLogDoTodayOff}
           />
         </div>
       </SheetContent>

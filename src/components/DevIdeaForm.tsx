@@ -1,100 +1,94 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DevIdea, DevIdeaTag, NewDevIdeaData, UpdateDevIdeaData } from '@/types'; // Corrected imports
+import { DevIdea, DevIdeaTag, NewDevIdeaData, UpdateDevIdeaData, MultiSelectOption } from '@/types';
 import { useAuth } from '@/context/AuthContext';
-import TagInput from './TagInput';
+import { MultiSelect } from '@/components/ui/multi-select';
 import { toast } from 'react-hot-toast';
 
 interface DevIdeaFormProps {
-  initialData?: DevIdea | null;
-  onSubmit: (data: NewDevIdeaData | UpdateDevIdeaData) => void;
+  initialData?: Partial<DevIdea>;
+  onSave: (data: NewDevIdeaData | (UpdateDevIdeaData & { tagIds?: string[] })) => Promise<any>;
   onCancel: () => void;
-  allTags: DevIdeaTag[];
-  onCreateTag: (name: string, color: string) => Promise<DevIdeaTag | undefined>;
-  onDeleteTag: (id: string) => void;
+  tags: DevIdeaTag[];
+  onCreateTag: (data: { name: string; color: string }) => Promise<DevIdeaTag>;
+  onDeleteTag: (id: string) => Promise<void>;
 }
 
 const DevIdeaForm: React.FC<DevIdeaFormProps> = ({
   initialData,
-  onSubmit,
+  onSave,
   onCancel,
-  allTags,
+  tags,
   onCreateTag,
   onDeleteTag,
 }) => {
   const { user } = useAuth();
-  const userId = user?.id;
-
-  const { register, handleSubmit, control, reset, setValue, watch, formState: { errors } } = useForm<NewDevIdeaData | UpdateDevIdeaData>({
+  const { register, handleSubmit, control, reset, setValue, watch, formState: { errors } } = useForm<NewDevIdeaData | (UpdateDevIdeaData & { tagIds?: string[] })>({
     defaultValues: {
-      title: '',
-      description: '',
-      status: 'idea',
-      priority: 'medium',
-      image_url: '',
-      local_file_path: '',
-      tagIds: [],
-    }
+      title: initialData?.title || '',
+      description: initialData?.description || '',
+      status: initialData?.status || 'idea',
+      priority: initialData?.priority || 'medium',
+      image_url: initialData?.image_url || '',
+      local_file_path: initialData?.local_file_path || '',
+      tagIds: initialData?.tags?.map(tag => tag.id) || [],
+    },
   });
 
   const selectedTagIds = watch('tagIds');
 
   useEffect(() => {
-    if (initialData) {
-      reset({
-        title: initialData.title,
-        description: initialData.description || '',
-        status: initialData.status,
-        priority: initialData.priority,
-        image_url: initialData.image_url || '',
-        local_file_path: initialData.local_file_path || '',
-        tagIds: initialData.tags.map(tag => tag.id),
-      });
-    } else {
-      reset();
-    }
+    reset({
+      title: initialData?.title || '',
+      description: initialData?.description || '',
+      status: initialData?.status || 'idea',
+      priority: initialData?.priority || 'medium',
+      image_url: initialData?.image_url || '',
+      local_file_path: initialData?.local_file_path || '',
+      tagIds: initialData?.tags?.map(tag => tag.id) || [],
+    });
   }, [initialData, reset]);
 
-  const handleTagAdd = async (tagName: string, color: string) => {
+  const onSubmit = async (data: NewDevIdeaData | (UpdateDevIdeaData & { tagIds?: string[] })) => {
     try {
-      const newTag = await onCreateTag(tagName, color);
-      if (newTag) {
-        setValue('tagIds', [...(selectedTagIds || []), newTag.id]);
-        return newTag;
-      }
+      await onSave(data);
+      toast.success('Idea saved successfully!');
     } catch (error) {
-      console.error('Error creating tag:', error);
-      toast.error('Failed to create tag.');
-    }
-    return undefined;
-  };
-
-  const handleTagRemove = (tagId: string) => {
-    setValue('tagIds', (selectedTagIds || []).filter(id => id !== tagId));
-  };
-
-  const handleSelectExistingTag = (tag: DevIdeaTag) => {
-    if (!(selectedTagIds || []).includes(tag.id)) {
-      setValue('tagIds', [...(selectedTagIds || []), tag.id]);
+      console.error('Failed to save idea:', error);
+      toast.error('Failed to save idea.');
     }
   };
+
+  const handleTagChange = (selected: string[]) => {
+    setValue('tagIds', selected);
+  };
+
+  const tagOptions: MultiSelectOption[] = tags.map(tag => ({
+    label: tag.name,
+    value: tag.id,
+  }));
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div>
         <Label htmlFor="title">Title</Label>
-        <Input id="title" {...register('title', { required: 'Title is required' })} />
+        <Input
+          id="title"
+          {...register('title', { required: 'Title is required' })}
+        />
         {errors.title && <p className="text-red-500 text-sm">{errors.title.message}</p>}
       </div>
+
       <div>
         <Label htmlFor="description">Description</Label>
-        <Textarea id="description" {...register('description')} />
+        <Textarea id="description" {...register('description')} rows={3} />
       </div>
+
       <div>
         <Label htmlFor="status">Status</Label>
         <Controller
@@ -115,6 +109,7 @@ const DevIdeaForm: React.FC<DevIdeaFormProps> = ({
           )}
         />
       </div>
+
       <div>
         <Label htmlFor="priority">Priority</Label>
         <Controller
@@ -129,35 +124,43 @@ const DevIdeaForm: React.FC<DevIdeaFormProps> = ({
                 <SelectItem value="low">Low</SelectItem>
                 <SelectItem value="medium">Medium</SelectItem>
                 <SelectItem value="high">High</SelectItem>
-                <SelectItem value="urgent">Urgent</SelectItem>
               </SelectContent>
             </Select>
           )}
         />
       </div>
-      <div>
-        <Label htmlFor="tags">Tags</Label>
-        <TagInput
-          selectedTags={allTags.filter(tag => (selectedTagIds || []).includes(tag.id))}
-          allTags={allTags}
-          onAddTag={handleTagAdd}
-          onRemoveTag={handleTagRemove}
-          onSelectExistingTag={handleSelectExistingTag}
-        />
-      </div>
+
       <div>
         <Label htmlFor="image_url">Image URL</Label>
-        <Input id="image_url" {...register('image_url')} />
+        <Input id="image_url" {...register('image_url')} placeholder="e.g. https://example.com/image.jpg" />
       </div>
+
       <div>
         <Label htmlFor="local_file_path">Local File Path</Label>
-        <Input id="local_file_path" {...register('local_file_path')} />
+        <Input id="local_file_path" {...register('local_file_path')} placeholder="e.g. /Users/username/Documents/my-idea.md" />
       </div>
+
+      <div>
+        <Label htmlFor="tags">Tags</Label>
+        <Controller
+          name="tagIds"
+          control={control}
+          render={({ field }) => (
+            <MultiSelect
+              options={tagOptions}
+              value={field.value || []}
+              onChange={handleTagChange}
+              placeholder="Select tags"
+            />
+          )}
+        />
+      </div>
+
       <div className="flex justify-end space-x-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
+        <Button type="button" variant="ghost" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit">{initialData ? 'Save Changes' : 'Create Idea'}</Button>
+        <Button type="submit">Save Idea</Button>
       </div>
     </form>
   );

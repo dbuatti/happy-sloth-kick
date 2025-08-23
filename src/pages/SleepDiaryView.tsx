@@ -3,26 +3,29 @@ import { useAuth } from '@/context/AuthContext';
 import { useSleepDiary } from '@/hooks/useSleepDiary';
 import { SleepDiaryViewProps, SleepRecord } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import SleepBar from '@/components/SleepBar';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
 
 const SleepDiaryView: React.FC<SleepDiaryViewProps> = ({ isDemo = false, demoUserId }) => {
   const { user, loading: authLoading } = useAuth();
   const currentUserId = isDemo ? demoUserId : user?.id;
 
   const {
-    allSleepRecords,
+    sleepRecords,
     isLoading,
     error,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useSleepDiary(); // No userId prop needed here, it's handled internally
+  } = useSleepDiary(currentUserId);
 
   const observerTarget = useRef(null);
 
   useEffect(() => {
+    if (!observerTarget.current) return;
+
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
@@ -32,60 +35,47 @@ const SleepDiaryView: React.FC<SleepDiaryViewProps> = ({ isDemo = false, demoUse
       { threshold: 1 }
     );
 
-    if (observerTarget.current) {
-      observer.observe(observerTarget.current);
-    }
+    observer.observe(observerTarget.current);
 
     return () => {
       if (observerTarget.current) {
         observer.unobserve(observerTarget.current);
       }
     };
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+  }, [observerTarget, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  if (isLoading && allSleepRecords.length === 0) {
-    return <div className="flex justify-center items-center h-full">Loading sleep diary...</div>;
-  }
-
-  if (error) {
-    return <div className="flex justify-center items-center h-full text-red-500">Error: {error.message}</div>;
-  }
+  if (isLoading || authLoading) return <p>Loading sleep diary...</p>;
+  if (error) return <p>Error: {error.message}</p>;
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">Sleep Diary</h1>
-
-      {allSleepRecords.length === 0 ? (
-        <p className="text-center text-gray-500">No sleep records found. Start tracking your sleep!</p>
-      ) : (
-        <div className="space-y-4">
-          {allSleepRecords.map((record: SleepRecord) => (
+    <div className="p-4">
+      <h2 className="text-2xl font-bold mb-4">Sleep Diary</h2>
+      <div className="space-y-4">
+        {sleepRecords.length === 0 ? (
+          <p className="text-muted-foreground">No sleep records found. Start tracking your sleep!</p>
+        ) : (
+          sleepRecords.map((record) => (
             <Card key={record.id}>
               <CardHeader>
-                <CardTitle>{format(parseISO(record.date), 'PPP')}</CardTitle>
+                <CardTitle className="text-lg">{format(new Date(record.date), 'PPP')}</CardTitle>
               </CardHeader>
               <CardContent>
-                <SleepBar record={record} />
-                <div className="grid grid-cols-2 gap-2 mt-4 text-sm">
-                  <p><strong>Bed Time:</strong> {record.bed_time}</p>
-                  <p><strong>Lights Off:</strong> {record.lights_off_time}</p>
-                  <p><strong>Wake Up:</strong> {record.wake_up_time}</p>
-                  <p><strong>Out of Bed:</strong> {record.get_out_of_bed_time}</p>
-                  <p><strong>Time to Fall Asleep:</strong> {record.time_to_fall_asleep_minutes || 0} min</p>
-                  <p><strong>Interruptions:</strong> {record.sleep_interruptions_count || 0} ({record.sleep_interruptions_duration_minutes || 0} min)</p>
+                <div className="grid grid-cols-2 gap-2 text-sm mb-4">
+                  <p><strong>Bed Time:</strong> {record.bed_time || 'N/A'}</p>
+                  <p><strong>Lights Off:</strong> {record.lights_off_time || 'N/A'}</p>
+                  <p><strong>Wake Up:</strong> {record.wake_up_time || 'N/A'}</p>
+                  <p><strong>Out of Bed:</strong> {record.get_out_of_bed_time || 'N/A'}</p>
                 </div>
+                <SleepBar record={record} />
               </CardContent>
             </Card>
-          ))}
-          {hasNextPage && (
-            <div className="flex justify-center mt-4">
-              <Button onClick={() => fetchNextPage()} disabled={isFetchingNextPage}>
-                {isFetchingNextPage ? 'Loading more...' : 'Load More'}
-              </Button>
-            </div>
-          )}
+          ))
+        )}
+        <div ref={observerTarget} className="flex justify-center p-4">
+          {isFetchingNextPage && <Loader2 className="h-6 w-6 animate-spin" />}
+          {!hasNextPage && sleepRecords.length > 0 && <p className="text-muted-foreground">No more records to load.</p>}
         </div>
-      )}
+      </div>
     </div>
   );
 };

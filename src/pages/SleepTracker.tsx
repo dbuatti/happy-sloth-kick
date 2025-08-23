@@ -1,207 +1,215 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useSleepRecords } from '@/hooks/useSleepRecords';
-import { Calendar as CalendarIcon, Moon, Sun, Bed, Clock, RefreshCcw, Trash2, Save } from 'lucide-react'; // Added Trash2 and Save icons
-import { format, isSameDay, subDays, addDays } from 'date-fns'; // Removed parseISO as it's not used directly here
+import { Calendar as CalendarIcon, Trash2, Save, ChevronLeft, ChevronRight } from 'lucide-react';
+import { format, subDays, addDays, isSameDay, parseISO, isValid } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'; // Added CardFooter
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { NewSleepRecordData, SleepRecord, SleepTrackerProps } from '@/types'; // Added SleepTrackerProps
+import { NewSleepRecordData, SleepRecord, UpdateSleepRecordData, SleepTrackerProps } from '@/types';
 import { toast } from 'react-hot-toast';
 
 const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate, isDemo = false, demoUserId }) => {
   const { user, loading: authLoading } = useAuth();
-  const userId = user?.id;
+  const currentUserId = isDemo ? demoUserId : user?.id;
 
   const {
-    sleepRecord,
+    sleepRecords,
     isLoading,
     error,
     addSleepRecord,
     updateSleepRecord,
     deleteSleepRecord,
-  } = useSleepRecords(currentDate);
+  } = useSleepRecords(currentUserId);
 
-  const [bedTime, setBedTime] = useState<string>('');
-  const [lightsOffTime, setLightsOffTime] = useState<string>('');
-  const [wakeUpTime, setWakeUpTime] = useState<string>('');
-  const [getOutOfBedTime, setGetOutOfBedTime] = useState<string>('');
+  const [bedTime, setBedTime] = useState('');
+  const [lightsOffTime, setLightsOffTime] = useState('');
+  const [wakeUpTime, setWakeUpTime] = useState('');
+  const [getOutOfBedTime, setGetOutOfBedTime] = useState('');
+  const [plannedWakeUpTime, setPlannedWakeUpTime] = useState('');
   const [timeToFallAsleepMinutes, setTimeToFallAsleepMinutes] = useState<number | ''>('');
   const [sleepInterruptionsCount, setSleepInterruptionsCount] = useState<number | ''>('');
   const [sleepInterruptionsDurationMinutes, setSleepInterruptionsDurationMinutes] = useState<number | ''>('');
   const [timesLeftBedCount, setTimesLeftBedCount] = useState<number | ''>('');
-  const [plannedWakeUpTime, setPlannedWakeUpTime] = useState<string>('');
 
-  const [isFormDirty, setIsFormDirty] = useState(false);
+  const currentRecord = sleepRecords?.find(record => isSameDay(new Date(record.date), currentDate));
 
   useEffect(() => {
-    if (sleepRecord) {
-      setBedTime(sleepRecord.bed_time?.substring(0, 5) || '');
-      setLightsOffTime(sleepRecord.lights_off_time?.substring(0, 5) || '');
-      setWakeUpTime(sleepRecord.wake_up_time?.substring(0, 5) || '');
-      setGetOutOfBedTime(sleepRecord.get_out_of_bed_time?.substring(0, 5) || '');
-      setTimeToFallAsleepMinutes(sleepRecord.time_to_fall_asleep_minutes || '');
-      setSleepInterruptionsCount(sleepRecord.sleep_interruptions_count || '');
-      setSleepInterruptionsDurationMinutes(sleepRecord.sleep_interruptions_duration_minutes || '');
-      setTimesLeftBedCount(sleepRecord.times_left_bed_count || '');
-      setPlannedWakeUpTime(sleepRecord.planned_wake_up_time?.substring(0, 5) || '');
+    if (currentRecord) {
+      setBedTime(currentRecord.bed_time || '');
+      setLightsOffTime(currentRecord.lights_off_time || '');
+      setWakeUpTime(currentRecord.wake_up_time || '');
+      setGetOutOfBedTime(currentRecord.get_out_of_bed_time || '');
+      setPlannedWakeUpTime(currentRecord.planned_wake_up_time || '');
+      setTimeToFallAsleepMinutes(currentRecord.time_to_fall_asleep_minutes || '');
+      setSleepInterruptionsCount(currentRecord.sleep_interruptions_count || '');
+      setSleepInterruptionsDurationMinutes(currentRecord.sleep_interruptions_duration_minutes || '');
+      setTimesLeftBedCount(currentRecord.times_left_bed_count || '');
     } else {
-      // Reset form if no record for the selected date
       setBedTime('');
       setLightsOffTime('');
       setWakeUpTime('');
       setGetOutOfBedTime('');
+      setPlannedWakeUpTime('');
       setTimeToFallAsleepMinutes('');
       setSleepInterruptionsCount('');
       setSleepInterruptionsDurationMinutes('');
       setTimesLeftBedCount('');
-      setPlannedWakeUpTime('');
     }
-    setIsFormDirty(false);
-  }, [sleepRecord, currentDate]);
+  }, [currentRecord, currentDate]);
+
+  const handleInputChange = (setter: React.Dispatch<React.SetStateAction<string | number>>) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setter(e.target.value);
+  };
 
   const handleSave = async () => {
-    if (!userId) {
+    if (!currentUserId) {
       toast.error('User not authenticated.');
       return;
     }
 
-    const recordData: NewSleepRecordData = {
+    const recordData: NewSleepRecordData | UpdateSleepRecordData = {
       date: format(currentDate, 'yyyy-MM-dd'),
-      bed_time: bedTime ? bedTime + ':00' : null,
-      lights_off_time: lightsOffTime ? lightsOffTime + ':00' : null,
-      wake_up_time: wakeUpTime ? wakeUpTime + ':00' : null,
-      get_out_of_bed_time: getOutOfBedTime ? getOutOfBedTime + ':00' : null,
-      time_to_fall_asleep_minutes: timeToFallAsleepMinutes === '' ? null : timeToFallAsleepMinutes,
-      sleep_interruptions_count: sleepInterruptionsCount === '' ? null : sleepInterruptionsCount,
-      sleep_interruptions_duration_minutes: sleepInterruptionsDurationMinutes === '' ? null : sleepInterruptionsDurationMinutes,
-      times_left_bed_count: timesLeftBedCount === '' ? null : timesLeftBedCount,
-      planned_wake_up_time: plannedWakeUpTime ? plannedWakeUpTime + ':00' : null,
+      bed_time: bedTime || null,
+      lights_off_time: lightsOffTime || null,
+      wake_up_time: wakeUpTime || null,
+      get_out_of_bed_time: getOutOfBedTime || null,
+      planned_wake_up_time: plannedWakeUpTime || null,
+      time_to_fall_asleep_minutes: timeToFallAsleepMinutes === '' ? null : Number(timeToFallAsleepMinutes),
+      sleep_interruptions_count: sleepInterruptionsCount === '' ? null : Number(sleepInterruptionsCount),
+      sleep_interruptions_duration_minutes: sleepInterruptionsDurationMinutes === '' ? null : Number(sleepInterruptionsDurationMinutes),
+      times_left_bed_count: timesLeftBedCount === '' ? null : Number(timesLeftBedCount),
     };
 
     try {
-      if (sleepRecord) {
-        await updateSleepRecord({ id: sleepRecord.id, updates: recordData });
-        toast.success('Sleep record updated successfully!');
+      if (currentRecord) {
+        await updateSleepRecord({ id: currentRecord.id, updates: recordData });
       } else {
         await addSleepRecord(recordData);
-        toast.success('Sleep record added successfully!');
       }
-      setIsFormDirty(false);
+      toast.success('Sleep record saved!');
     } catch (err) {
-      toast.error(`Failed to save sleep record: ${(err as Error).message}`);
-      console.error('Error saving sleep record:', err);
+      toast.error('Failed to save sleep record.');
+      console.error(err);
     }
   };
 
   const handleDelete = async () => {
-    if (!sleepRecord) return;
-    if (window.confirm('Are you sure you want to delete this sleep record?')) {
+    if (currentRecord && window.confirm('Are you sure you want to delete this sleep record?')) {
       try {
-        await deleteSleepRecord(sleepRecord.id);
-        toast.success('Sleep record deleted successfully!');
+        await deleteSleepRecord(currentRecord.id);
+        toast.success('Sleep record deleted!');
       } catch (err) {
-        toast.error(`Failed to delete sleep record: ${(err as Error).message}`);
-        console.error('Error deleting sleep record:', err);
+        toast.error('Failed to delete sleep record.');
+        console.error(err);
       }
     }
   };
 
-  const handleInputChange = (setter: React.Dispatch<React.SetStateAction<string | number | ''>>) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setter(e.target.value);
-    setIsFormDirty(true);
-  };
-
-  const handleNumberInputChange = (setter: React.Dispatch<React.SetStateAction<number | ''>>) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setter(value === '' ? '' : Number(value));
-    setIsFormDirty(true);
-  };
-
-  if (isLoading || authLoading) {
-    return <div className="flex justify-center items-center h-full">Loading sleep data...</div>;
-  }
-
-  if (error) {
-    return <div className="flex justify-center items-center h-full text-red-500">Error: {error.message}</div>;
-  }
+  if (isLoading) return <p>Loading sleep records...</p>;
+  if (error) return <p>Error: {error.message}</p>;
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6">
-      <Card className="w-full lg:w-1/3">
-        <CardHeader>
-          <CardTitle>Select Date</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Calendar
-            mode="single"
-            selected={currentDate}
-            onSelect={(date) => date && setCurrentDate(date)}
-            initialFocus
-          />
-          <div className="flex justify-between mt-4">
-            <Button variant="outline" onClick={() => setCurrentDate(subDays(currentDate, 1))}>Previous Day</Button>
-            <Button variant="outline" onClick={() => setCurrentDate(addDays(currentDate, 1))}>Next Day</Button>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="p-4">
+      <h1 className="text-3xl font-bold mb-6">Sleep Tracker</h1>
 
-      <Card className="w-full lg:w-2/3">
-        <CardHeader>
-          <CardTitle>Sleep Record for {format(currentDate, 'PPP')}</CardTitle>
+      <div className="flex justify-between items-center mb-4">
+        <Button variant="outline" size="sm" onClick={() => setCurrentDate(subDays(currentDate, 1))}>
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <div className="flex items-center space-x-2">
+          <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>
+            Today
+          </Button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant={"outline"}
+                className={cn(
+                  "w-[240px] justify-start text-left font-normal",
+                  !currentDate && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {currentDate ? format(currentDate, "PPP") : <span>Pick a date</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={currentDate}
+                onSelect={(date) => date && setCurrentDate(date)}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => setCurrentDate(addDays(currentDate, 1))}>
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+
+      <Card className="mb-6">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-lg font-medium">Sleep Details for {format(currentDate, 'PPP')}</CardTitle>
+          <div className="flex space-x-2">
+            {currentRecord && (
+              <Button variant="destructive" size="sm" onClick={handleDelete}>
+                <Trash2 className="mr-2 h-4 w-4" /> Delete
+              </Button>
+            )}
+            <Button size="sm" onClick={handleSave}>
+              <Save className="mr-2 h-4 w-4" /> Save
+            </Button>
+          </div>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <div className="grid grid-cols-3 items-center gap-4">
               <Label htmlFor="bedTime">Bed Time</Label>
-              <Input id="bedTime" type="time" value={bedTime} onChange={handleInputChange(setBedTime)} />
+              <Input id="bedTime" type="time" value={bedTime} onChange={handleInputChange(setBedTime)} className="col-span-2" />
             </div>
-            <div className="space-y-2">
+            <div className="grid grid-cols-3 items-center gap-4">
               <Label htmlFor="lightsOffTime">Lights Off Time</Label>
-              <Input id="lightsOffTime" type="time" value={lightsOffTime} onChange={handleInputChange(setLightsOffTime)} />
+              <Input id="lightsOffTime" type="time" value={lightsOffTime} onChange={handleInputChange(setLightsOffTime)} className="col-span-2" />
             </div>
-            <div className="space-y-2">
+            <div className="grid grid-cols-3 items-center gap-4">
               <Label htmlFor="wakeUpTime">Wake Up Time</Label>
-              <Input id="wakeUpTime" type="time" value={wakeUpTime} onChange={handleInputChange(setWakeUpTime)} />
+              <Input id="wakeUpTime" type="time" value={wakeUpTime} onChange={handleInputChange(setWakeUpTime)} className="col-span-2" />
             </div>
-            <div className="space-y-2">
+            <div className="grid grid-cols-3 items-center gap-4">
               <Label htmlFor="getOutOfBedTime">Get Out of Bed Time</Label>
-              <Input id="getOutOfBedTime" type="time" value={getOutOfBedTime} onChange={handleInputChange(setGetOutOfBedTime)} />
+              <Input id="getOutOfBedTime" type="time" value={getOutOfBedTime} onChange={handleInputChange(setGetOutOfBedTime)} className="col-span-2" />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="timeToFallAsleepMinutes">Time to Fall Asleep (min)</Label>
-              <Input id="timeToFallAsleepMinutes" type="number" value={timeToFallAsleepMinutes} onChange={handleNumberInputChange(setTimeToFallAsleepMinutes)} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="sleepInterruptionsCount">Sleep Interruptions (count)</Label>
-              <Input id="sleepInterruptionsCount" type="number" value={sleepInterruptionsCount} onChange={handleNumberInputChange(setSleepInterruptionsCount)} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="sleepInterruptionsDurationMinutes">Interruptions Duration (min)</Label>
-              <Input id="sleepInterruptionsDurationMinutes" type="number" value={sleepInterruptionsDurationMinutes} onChange={handleNumberInputChange(setSleepInterruptionsDurationMinutes)} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="timesLeftBedCount">Times Left Bed (count)</Label>
-              <Input id="timesLeftBedCount" type="number" value={timesLeftBedCount} onChange={handleNumberInputChange(setTimesLeftBedCount)} />
-            </div>
-            <div className="space-y-2">
+            <div className="grid grid-cols-3 items-center gap-4">
               <Label htmlFor="plannedWakeUpTime">Planned Wake Up Time</Label>
-              <Input id="plannedWakeUpTime" type="time" value={plannedWakeUpTime} onChange={handleInputChange(setPlannedWakeUpTime)} />
+              <Input id="plannedWakeUpTime" type="time" value={plannedWakeUpTime} onChange={handleInputChange(setPlannedWakeUpTime)} className="col-span-2" />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="grid grid-cols-3 items-center gap-4">
+              <Label htmlFor="timeToFallAsleepMinutes">Time to Fall Asleep (min)</Label>
+              <Input id="timeToFallAsleepMinutes" type="number" value={timeToFallAsleepMinutes} onChange={handleInputChange(setTimeToFallAsleepMinutes)} className="col-span-2" />
+            </div>
+            <div className="grid grid-cols-3 items-center gap-4">
+              <Label htmlFor="sleepInterruptionsCount">Interruptions Count</Label>
+              <Input id="sleepInterruptionsCount" type="number" value={sleepInterruptionsCount} onChange={handleInputChange(setSleepInterruptionsCount)} className="col-span-2" />
+            </div>
+            <div className="grid grid-cols-3 items-center gap-4">
+              <Label htmlFor="sleepInterruptionsDurationMinutes">Interruptions Duration (min)</Label>
+              <Input id="sleepInterruptionsDurationMinutes" type="number" value={sleepInterruptionsDurationMinutes} onChange={handleInputChange(setSleepInterruptionsDurationMinutes)} className="col-span-2" />
+            </div>
+            <div className="grid grid-cols-3 items-center gap-4">
+              <Label htmlFor="timesLeftBedCount">Times Left Bed Count</Label>
+              <Input id="timesLeftBedCount" type="number" value={timesLeftBedCount} onChange={handleInputChange(setTimesLeftBedCount)} className="col-span-2" />
             </div>
           </div>
         </CardContent>
-        <CardFooter className="mt-6 flex justify-between">
-          <Button variant="destructive" onClick={handleDelete} disabled={!sleepRecord || isLoading}>
-            <Trash2 className="mr-2 h-4 w-4" /> Delete Record
-          </Button>
-          <Button onClick={handleSave} disabled={!isFormDirty || isLoading}>
-            <Save className="mr-2 h-4 w-4" /> Save Record
-          </Button>
-        </CardFooter>
       </Card>
     </div>
   );

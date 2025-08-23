@@ -1,21 +1,11 @@
 import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import { Task, TaskCategory, TaskSection } from '@/types';
+import { CSS } from '@dnd-kit/utilities';
+import { Task, TaskCategory, TaskSection, DraggableScheduleTaskItemProps } from '@/types';
 import { cn } from '@/lib/utils';
-import TaskItem from './TaskItem';
+import TaskItem from './tasks/TaskItem';
 
-interface DraggableTaskListItemProps {
-  task: Task;
-  categories: TaskCategory[];
-  sections: TaskSection[];
-  onUpdateTask: (id: string, updates: Partial<Task>) => Promise<void>;
-  onDeleteTask: (id: string) => Promise<void>;
-  onAddSubtask: (description: string, parentTaskId: string | null) => Promise<void>;
-  onToggleFocusMode: (taskId: string) => void;
-  onLogDoTodayOff: (taskId: string) => void;
-}
-
-const DraggableTaskListItem: React.FC<DraggableTaskListItemProps> = ({
+const DraggableTaskListItem: React.FC<DraggableScheduleTaskItemProps> = ({
   task,
   categories,
   sections,
@@ -23,22 +13,32 @@ const DraggableTaskListItem: React.FC<DraggableTaskListItemProps> = ({
   onDeleteTask,
   onAddSubtask,
   onToggleFocusMode,
-  onLogDoTodayOff,
 }) => {
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
-    id: task.id,
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: `task-${task.id}`,
     data: {
-      type: 'Task',
+      type: 'task',
       task,
     },
   });
 
-  const style = transform ? {
-    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-  } : undefined;
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : 1,
+  };
 
   return (
-    <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "p-2 rounded-md bg-white shadow-sm border border-gray-200 text-sm cursor-grab",
+        isDragging && "ring-2 ring-blue-500"
+      )}
+      {...attributes}
+      {...listeners}
+    >
       <TaskItem
         task={task}
         categories={categories}
@@ -47,7 +47,7 @@ const DraggableTaskListItem: React.FC<DraggableTaskListItemProps> = ({
         onDeleteTask={onDeleteTask}
         onAddSubtask={onAddSubtask}
         onToggleFocusMode={onToggleFocusMode}
-        onLogDoTodayOff={onLogDoTodayOff}
+        onLogDoTodayOff={async () => {}} // Not applicable for this context
       />
     </div>
   );
