@@ -7,15 +7,16 @@ import { SortableTaskItemProps } from '@/types';
 const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   id,
   task,
-  categories,
-  sections,
   onUpdateTask,
   onDeleteTask,
   onAddSubtask,
   onToggleFocusMode,
   onLogDoTodayOff,
+  categories,
+  sections,
   isDragging: propIsDragging,
-  tasks, // Pass tasks for subtask rendering
+  tasks,
+  doTodayOffLog,
 }) => {
   const {
     attributes,
@@ -30,22 +31,23 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 10 : 0,
+    zIndex: isDragging ? 1000 : 1,
   };
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
       <TaskItem
         task={task}
-        categories={categories}
-        sections={sections}
         onUpdateTask={onUpdateTask}
         onDeleteTask={onDeleteTask}
         onAddSubtask={onAddSubtask}
         onToggleFocusMode={onToggleFocusMode}
         onLogDoTodayOff={onLogDoTodayOff}
+        categories={categories}
+        sections={sections}
         isDragging={propIsDragging || isDragging}
-        tasks={tasks} // Pass tasks to TaskItem for subtasks
+        tasks={tasks}
+        doTodayOffLog={doTodayOffLog}
       />
     </div>
   );

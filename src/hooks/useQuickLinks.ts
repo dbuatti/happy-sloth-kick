@@ -5,71 +5,77 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'react-hot-toast';
 
 export const useQuickLinks = () => {
-  const { user, loading: authLoading } = useAuth();
-  const currentUserId = user?.id;
+  const { user } = useAuth();
+  const userId = user?.id;
   const queryClient = useQueryClient();
 
-  const { data: quickLinks, isLoading, error, refetch } = useQuery<QuickLink[], Error>({
-    queryKey: ['quickLinks', currentUserId],
+  const { data: quickLinks, isLoading, error } = useQuery<QuickLink[], Error>({
+    queryKey: ['quickLinks', userId],
     queryFn: async () => {
-      if (!currentUserId) return [];
+      if (!userId) return [];
       const { data, error } = await supabase
         .from('quick_links')
         .select('*')
-        .eq('user_id', currentUserId)
+        .eq('user_id', userId)
         .order('link_order', { ascending: true });
+
       if (error) throw error;
-      return data;
+      return data as QuickLink[];
     },
-    enabled: !!currentUserId && !authLoading,
+    enabled: !!userId,
   });
 
   const addQuickLinkMutation = useMutation<QuickLink, Error, NewQuickLinkData, unknown>({
     mutationFn: async (newLinkData) => {
-      if (!currentUserId) throw new Error('User not authenticated');
+      if (!userId) throw new Error('User not authenticated');
       const { data, error } = await supabase
         .from('quick_links')
-        .insert({ ...newLinkData, user_id: currentUserId })
-        .select('*')
+        .insert({ ...newLinkData, user_id: userId })
+        .select()
         .single();
+
       if (error) throw error;
-      return data;
+      return data as QuickLink;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['quickLinks', currentUserId] });
+      queryClient.invalidateQueries({ queryKey: ['quickLinks', userId] });
       toast.success('Quick link added!');
     },
   });
 
   const updateQuickLinkMutation = useMutation<QuickLink, Error, { id: string; updates: UpdateQuickLinkData }, unknown>({
     mutationFn: async ({ id, updates }) => {
-      if (!currentUserId) throw new Error('User not authenticated');
+      if (!userId) throw new Error('User not authenticated');
       const { data, error } = await supabase
         .from('quick_links')
         .update(updates)
         .eq('id', id)
-        .select('*')
+        .eq('user_id', userId)
+        .select()
         .single();
+
       if (error) throw error;
-      return data;
+      return data as QuickLink;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['quickLinks', currentUserId] });
+      queryClient.invalidateQueries({ queryKey: ['quickLinks', userId] });
       toast.success('Quick link updated!');
     },
   });
 
   const deleteQuickLinkMutation = useMutation<void, Error, string, unknown>({
     mutationFn: async (id) => {
-      if (!currentUserId) throw new Error('User not authenticated');
+      if (!userId) throw new Error('User not authenticated');
       const { error } = await supabase
         .from('quick_links')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', userId);
+
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['quickLinks', currentUserId] });
+      queryClient.invalidateQueries({ queryKey: ['quickLinks', userId] });
       toast.success('Quick link deleted!');
     },
   });
@@ -78,7 +84,6 @@ export const useQuickLinks = () => {
     quickLinks,
     isLoading,
     error,
-    refetchQuickLinks: refetch,
     addQuickLink: addQuickLinkMutation.mutateAsync,
     updateQuickLink: updateQuickLinkMutation.mutateAsync,
     deleteQuickLink: deleteQuickLinkMutation.mutateAsync,

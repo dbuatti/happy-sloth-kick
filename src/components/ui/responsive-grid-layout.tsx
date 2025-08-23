@@ -1,27 +1,23 @@
-"use client";
-
 import React from 'react';
-import { Responsive, WidthProvider } from 'react-grid-layout';
+import { Responsive, WidthProvider, Layout, Layouts } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
-import 'react-resizable/css/styles.css';
-
-const ResponsiveGridLayout = WidthProvider(Responsive);
+import 'react-resizable/css/styles.css'; // Required for resizing
 
 interface ResponsiveGridLayoutProps {
-  layouts: ReactGridLayout.Layouts;
-  onLayoutChange: (layout: ReactGridLayout.Layout[], layouts: ReactGridLayout.Layouts) => void;
+  layouts: Layouts;
+  onLayoutChange: (layout: Layout[], layouts: Layouts) => void;
   children: React.ReactNode;
   className?: string;
   rowHeight?: number;
-  breakpoints?: { lg: number; md: number; sm: number; xs: number; xxs: number };
-  cols?: { lg: number; md: number; sm: number; xs: number; xxs: number };
+  breakpoints?: { [key: string]: number };
+  cols?: { [key: string]: number };
   isDraggable?: boolean;
   isResizable?: boolean;
   compactType?: 'vertical' | 'horizontal' | null;
   preventCollision?: boolean;
 }
 
-const ResponsiveGrid: React.FC<ResponsiveGridLayoutProps> = ({
+const ResponsiveGridLayout: React.FC<ResponsiveGridLayoutProps> = ({
   layouts,
   onLayoutChange,
   children,
@@ -31,11 +27,13 @@ const ResponsiveGrid: React.FC<ResponsiveGridLayoutProps> = ({
   cols = { lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 },
   isDraggable = true,
   isResizable = true,
-  compactType = "vertical",
+  compactType = 'vertical',
   preventCollision = false,
 }) => {
+  const ResponsiveReactGridLayout = WidthProvider(Responsive);
+
   return (
-    <ResponsiveGridLayout
+    <ResponsiveReactGridLayout
       className={className}
       layouts={layouts}
       breakpoints={breakpoints}
@@ -48,8 +46,8 @@ const ResponsiveGrid: React.FC<ResponsiveGridLayoutProps> = ({
       preventCollision={preventCollision}
     >
       {children}
-    </ResponsiveGridLayout>
+    </ResponsiveReactGridLayout>
   );
 };
 
-export { ResponsiveGrid as ResponsiveGridLayout };
+export { ResponsiveGridLayout };

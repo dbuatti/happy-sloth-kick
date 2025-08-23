@@ -4,24 +4,29 @@ import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'react-hot-toast';
 
-export const usePeopleMemory = () => {
-  const { user, loading: authLoading } = useAuth();
-  const currentUserId = user?.id;
+interface UsePeopleMemoryProps {
+  userId?: string;
+}
+
+export const usePeopleMemory = ({ userId: propUserId }: UsePeopleMemoryProps = {}) => {
+  const { user } = useAuth();
+  const currentUserId = propUserId || user?.id;
   const queryClient = useQueryClient();
 
-  const { data: people, isLoading, error, refetch } = useQuery<Person[], Error>({
-    queryKey: ['peopleMemory', currentUserId],
+  const { data: people, isLoading, error } = useQuery<Person[], Error>({
+    queryKey: ['people', currentUserId],
     queryFn: async () => {
       if (!currentUserId) return [];
       const { data, error } = await supabase
         .from('people_memory')
         .select('*')
         .eq('user_id', currentUserId)
-        .order('name', { ascending: true });
+        .order('created_at', { ascending: false });
+
       if (error) throw error;
-      return data;
+      return data as Person[];
     },
-    enabled: !!currentUserId && !authLoading,
+    enabled: !!currentUserId,
   });
 
   const addPersonMutation = useMutation<Person, Error, NewPersonData, unknown>({
@@ -30,13 +35,14 @@ export const usePeopleMemory = () => {
       const { data, error } = await supabase
         .from('people_memory')
         .insert({ ...newPersonData, user_id: currentUserId })
-        .select('*')
+        .select()
         .single();
+
       if (error) throw error;
-      return data;
+      return data as Person;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['peopleMemory', currentUserId] });
+      queryClient.invalidateQueries({ queryKey: ['people', currentUserId] });
       toast.success('Person added to memory!');
     },
   });
@@ -48,13 +54,15 @@ export const usePeopleMemory = () => {
         .from('people_memory')
         .update(updates)
         .eq('id', id)
-        .select('*')
+        .eq('user_id', currentUserId)
+        .select()
         .single();
+
       if (error) throw error;
-      return data;
+      return data as Person;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['peopleMemory', currentUserId] });
+      queryClient.invalidateQueries({ queryKey: ['people', currentUserId] });
       toast.success('Person updated!');
     },
   });
@@ -65,12 +73,14 @@ export const usePeopleMemory = () => {
       const { error } = await supabase
         .from('people_memory')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', currentUserId);
+
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['peopleMemory', currentUserId] });
-      toast.success('Person deleted from memory.');
+      queryClient.invalidateQueries({ queryKey: ['people', currentUserId] });
+      toast.success('Person deleted from memory!');
     },
   });
 
@@ -78,7 +88,6 @@ export const usePeopleMemory = () => {
     people,
     isLoading,
     error,
-    refetchPeople: refetch,
     addPerson: addPersonMutation.mutateAsync,
     updatePerson: updatePersonMutation.mutateAsync,
     deletePerson: deletePersonMutation.mutateAsync,

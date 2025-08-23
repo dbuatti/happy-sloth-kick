@@ -1,90 +1,106 @@
-import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Label } from "@/components/ui/label";
-import { useDashboardData, CustomCard } from '@/hooks/useDashboardData';
-import { UserSettings } from '@/hooks/useUserSettings'; // Import UserSettings type
+import { Switch } from '@/components/ui/switch';
+import { useDashboardData } from '@/hooks/useDashboardData';
+import { UserSettings, CustomCard, Json } from '@/types';
+import { useSettings } from '@/context/SettingsContext';
+import { toast } from 'react-hot-toast';
 
 interface DashboardLayoutSettingsProps {
-  isOpen: boolean;
-  onClose: () => void;
-  settings: UserSettings | null; // Updated to UserSettings | null
-  customCards: CustomCard[];
-  updateSettings: (updates: Partial<Omit<UserSettings, 'user_id'>>) => Promise<boolean>; // Updated to match useUserSettings's updateSettings
-  updateCustomCard: ReturnType<typeof useDashboardData>['updateCustomCard'];
+  settings: UserSettings | undefined;
+  updateSettings: (updates: Partial<Omit<UserSettings, 'user_id'>>) => Promise<boolean>;
 }
 
-const DashboardLayoutSettings: React.FC<DashboardLayoutSettingsProps> = ({
-  isOpen,
-  onClose,
-  settings,
-  customCards,
-  updateSettings,
-  updateCustomCard,
-}) => {
-  const handleToggleBuiltIn = (cardKey: string, checked: boolean) => {
-    if (!settings) return; // Ensure settings is not null
-    const newLayout = {
-      ...(settings.dashboard_layout || {}), // Ensure it's an object
-      [cardKey]: checked
-    };
-    // Ensure updates match the Partial<Omit<UserSettings, 'user_id'>> expected by useSettings
-    updateSettings({ dashboard_layout: newLayout });
+const DashboardLayoutSettings: React.FC<DashboardLayoutSettingsProps> = ({ settings, updateSettings }) => {
+  const { customCards, updateCustomCard } = useDashboardData({});
+  const [localVisiblePages, setLocalVisiblePages] = useState<Record<string, boolean>>(settings?.visible_pages as Record<string, boolean> || {});
+
+  useEffect(() => {
+    setLocalVisiblePages(settings?.visible_pages as Record<string, boolean> || {});
+  }, [settings]);
+
+  const handleToggleVisibility = async (cardId: string, isVisible: boolean) => {
+    try {
+      await updateCustomCard({ id: cardId, updates: { is_visible: isVisible } });
+      toast.success('Card visibility updated!');
+    } catch (error) {
+      toast.error('Failed to update card visibility.');
+      console.error('Error updating card visibility:', error);
+    }
   };
 
-  const handleToggleCustom = (cardId: string, checked: boolean) => {
-    updateCustomCard({ id: cardId, updates: { is_visible: checked } });
+  const handlePageVisibilityChange = async (pageKey: string, isVisible: boolean) => {
+    const newVisiblePages = { ...localVisiblePages, [pageKey]: isVisible };
+    setLocalVisiblePages(newVisiblePages);
+    try {
+      await updateSettings({ visible_pages: newVisiblePages as Json });
+      toast.success('Page visibility updated!');
+    } catch (error) {
+      toast.error('Failed to update page visibility.');
+      console.error('Error updating page visibility:', error);
+    }
   };
 
-  const builtInCards = [
-    { key: 'dailyBriefingVisible', label: 'Daily Briefing' },
-    { key: 'dailyScheduleVisible', label: 'Daily Schedule Preview' },
-    { key: 'weeklyFocusVisible', label: "This Week's Focus" },
-    { key: 'peopleMemoryVisible', label: 'People Memory' },
-    { key: 'meditationNotesVisible', label: 'Meditation Notes' },
+  const availablePages = [
+    { key: 'dashboard', label: 'Dashboard' },
+    { key: 'tasks', label: 'Tasks' },
+    { key: 'schedule', label: 'Schedule' },
+    { key: 'focusMode', label: 'Focus Mode' },
+    { key: 'devSpace', label: 'Dev Space' },
+    { key: 'sleepTracker', label: 'Sleep Tracker' },
+    { key: 'myHub', label: 'My Hub' },
+    { key: 'archive', label: 'Archive' },
+    { key: 'analytics', label: 'Analytics' },
+    { key: 'projectTracker', label: 'Project Tracker' },
+    { key: 'gratitudeJournal', label: 'Gratitude Journal' },
+    { key: 'worryJournal', label: 'Worry Journal' },
   ];
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Customize Dashboard</DialogTitle>
-        </DialogHeader>
-        <div className="py-4 space-y-4 max-h-[60vh] overflow-y-auto">
-          <h4 className="font-semibold">Built-in Cards</h4>
-          {builtInCards.map(({ key, label }) => (
-            <div key={key} className="flex items-center justify-between">
-              <Label htmlFor={`toggle-${key}`}>{label}</Label>
-              <Switch
-                id={`toggle-${key}`}
-                checked={settings?.dashboard_layout?.[key] !== false} // Safely access layout property
-                onCheckedChange={(checked) => handleToggleBuiltIn(key, checked)}
-              />
-            </div>
-          ))}
-          {customCards.length > 0 && (
-            <>
-              <hr className="my-4" />
-              <h4 className="font-semibold">Your Custom Cards</h4>
-              {customCards.map(card => (
-                <div key={card.id} className="flex items-center justify-between">
-                  <Label htmlFor={`toggle-${card.id}`}>{card.title}</Label>
+    <Card>
+      <CardHeader>
+        <CardTitle>Dashboard Layout & Visibility</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div>
+          <h3 className="text-lg font-semibold mb-2">Custom Card Visibility</h3>
+          {customCards.length === 0 ? (
+            <p className="text-muted-foreground">No custom cards to manage.</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {customCards.map((card) => (
+                <div key={card.id} className="flex items-center justify-between p-3 border rounded-md">
+                  <Label htmlFor={`card-visibility-${card.id}`}>{card.title}</Label>
                   <Switch
-                    id={`toggle-${card.id}`}
-                    checked={card.is_visible}
-                    onCheckedChange={(checked) => handleToggleCustom(card.id, checked)}
+                    id={`card-visibility-${card.id}`}
+                    checked={card.is_visible ?? true}
+                    onCheckedChange={(checked) => handleToggleVisibility(card.id, checked)}
                   />
                 </div>
               ))}
-            </>
+            </div>
           )}
         </div>
-        <DialogFooter>
-          <Button onClick={onClose}>Done</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+
+        <div>
+          <h3 className="text-lg font-semibold mb-2">Page Visibility</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {availablePages.map((page) => (
+              <div key={page.key} className="flex items-center justify-between p-3 border rounded-md">
+                <Label htmlFor={`page-visibility-${page.key}`}>{page.label}</Label>
+                <Switch
+                  id={`page-visibility-${page.key}`}
+                  checked={localVisiblePages[page.key] ?? true}
+                  onCheckedChange={(checked) => handlePageVisibilityChange(page.key, checked)}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

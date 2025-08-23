@@ -1,18 +1,14 @@
-import { useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { DoTodayOffLogEntry, NewDoTodayOffLogEntryData } from '@/types'; // Corrected import
+import { DoTodayOffLogEntry, NewDoTodayOffLogEntryData } from '@/types';
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
-import { format, startOfDay } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
 
-export const useDoTodayOffLog = () => {
-  const { user, loading: authLoading } = useAuth();
-  const userId = user?.id;
+interface UseDoTodayOffLogProps {
+  userId?: string;
+}
+
+export const useDoTodayOffLog = ({ userId }: UseDoTodayOffLogProps) => {
   const queryClient = useQueryClient();
-
-  const invalidateDoTodayOffLogQueries = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['doTodayOffLog', userId] });
-  }, [queryClient, userId]);
 
   const { data: offLogEntries, isLoading, error } = useQuery<DoTodayOffLogEntry[], Error>({
     queryKey: ['doTodayOffLog', userId],
@@ -21,12 +17,12 @@ export const useDoTodayOffLog = () => {
       const { data, error } = await supabase
         .from('do_today_off_log')
         .select('*')
-        .eq('user_id', userId)
-        .gte('off_date', format(startOfDay(new Date()), 'yyyy-MM-dd')); // Only fetch entries from today onwards
+        .eq('user_id', userId);
+
       if (error) throw error;
-      return data;
+      return data as DoTodayOffLogEntry[];
     },
-    enabled: !!userId && !authLoading,
+    enabled: !!userId,
   });
 
   const addDoTodayOffLogEntryMutation = useMutation<DoTodayOffLogEntry, Error, NewDoTodayOffLogEntryData, unknown>({
@@ -35,13 +31,14 @@ export const useDoTodayOffLog = () => {
       const { data, error } = await supabase
         .from('do_today_off_log')
         .insert({ ...newEntryData, user_id: userId })
-        .select('*')
+        .select()
         .single();
+
       if (error) throw error;
-      return data;
+      return data as DoTodayOffLogEntry;
     },
     onSuccess: () => {
-      invalidateDoTodayOffLogQueries();
+      queryClient.invalidateQueries({ queryKey: ['doTodayOffLog', userId] });
     },
   });
 
@@ -52,11 +49,12 @@ export const useDoTodayOffLog = () => {
         .from('do_today_off_log')
         .delete()
         .eq('id', id)
-        .eq('user_id', userId);
+        .eq('user_id', userId); // Ensure RLS
+
       if (error) throw error;
     },
     onSuccess: () => {
-      invalidateDoTodayOffLogQueries();
+      queryClient.invalidateQueries({ queryKey: ['doTodayOffLog', userId] });
     },
   });
 

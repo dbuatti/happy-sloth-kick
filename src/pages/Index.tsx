@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 import { useTasks } from '@/hooks/useTasks';
 import { useSettings } from '@/context/SettingsContext';
-import { Task, TaskCategory, TaskSection } from '@/types';
 import TaskList from '@/components/TaskList';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,62 +17,43 @@ import { Calendar as DatePicker } from '@/components/ui/calendar';
 import { format, startOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 import AddTaskForm from '@/components/AddTaskForm';
+import { Task, TaskCategory, TaskSection, NewTaskData, UpdateTaskData, NewTaskSectionData, UpdateTaskSectionData, IndexProps } from '@/types';
 import { toast } from 'react-hot-toast';
-import { useNavigate } from 'react-router-dom';
 
-const Index = () => {
-  const { userId: currentUserId } = useAuth();
+const Index: React.FC<IndexProps> = ({ isDemo = false, demoUserId }) => {
+  const { user } = useAuth();
+  const currentUserId = isDemo ? demoUserId : user?.id;
   const { settings, updateSettings } = useSettings();
   const navigate = useNavigate();
 
   const {
-    tasks: fetchedTasks,
-    sections: fetchedSections,
+    tasks,
     categories: fetchedCategories,
-    loading,
+    sections: fetchedSections,
+    isLoading,
     error,
     addTask,
     updateTask,
     deleteTask,
-    reorderTasks,
+    onToggleFocusMode,
+    onLogDoTodayOff,
     createCategory,
     updateCategory,
     deleteCategory,
-    createSection,
+    addSection: createSection,
     updateSection,
     deleteSection,
-    reorderSections,
     updateSectionIncludeInFocusMode,
-  } = useTasks({ userId: currentUserId! });
-
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [sections, setSections] = useState<TaskSection[]>([]);
-  const [categories, setCategories] = useState<TaskCategory[]>([]);
+    doTodayOffLog,
+  } = useTasks({ userId: currentUserId, isDemo, demoUserId });
 
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
   const [newTaskDescription, setNewTaskDescription] = useState('');
-  const [newTaskSectionId, setNewTaskSectionId] = useState<string | null>(null);
+  const [newTaskNotes, setNewTaskNotes] = useState('');
   const [newTaskDueDate, setNewTaskDueDate] = useState<Date | null>(null);
   const [newTaskCategoryId, setNewTaskCategoryId] = useState<string | null>(null);
-  const [newTaskPriority, setNewTaskPriority] = useState('medium');
-
-  useEffect(() => {
-    if (fetchedTasks) {
-      setTasks(fetchedTasks);
-    }
-  }, [fetchedTasks]);
-
-  useEffect(() => {
-    if (fetchedSections) {
-      setSections(fetchedSections);
-    }
-  }, [fetchedSections]);
-
-  useEffect(() => {
-    if (fetchedCategories) {
-      setCategories(fetchedCategories);
-    }
-  }, [fetchedCategories]);
+  const [newTaskSectionId, setNewTaskSectionId] = useState<string | null>(null);
+  const [newTaskPriority, setNewTaskPriority] = useState<Task['priority']>('medium');
 
   const handleAddTask = async () => {
     if (!newTaskDescription.trim()) {
@@ -80,35 +61,43 @@ const Index = () => {
       return;
     }
     try {
-      const data = await addTask(newTaskDescription, newTaskSectionId, null, newTaskDueDate, newTaskCategoryId, newTaskPriority);
+      const data = await addTask({
+        description: newTaskDescription,
+        section_id: newTaskSectionId,
+        parent_task_id: null,
+        due_date: newTaskDueDate ? newTaskDueDate.toISOString() : null,
+        category: newTaskCategoryId,
+        priority: newTaskPriority,
+        status: 'to-do',
+      });
       if (data) {
-        setTasks((prevTasks) => [...prevTasks, data]);
-        setNewTaskDescription("");
-        setNewTaskSectionId(null);
+        toast.success('Task added successfully!');
+        setNewTaskDescription('');
+        setNewTaskNotes('');
         setNewTaskDueDate(null);
         setNewTaskCategoryId(null);
+        setNewTaskSectionId(null);
         setNewTaskPriority('medium');
         setIsAddTaskDialogOpen(false);
-        toast.success('Task added successfully!');
       }
-    } catch (err: any) {
-      toast.error(`Failed to add task: ${err.message}`);
+    } catch (error: any) {
+      toast.error('Failed to add task: ' + error.message);
+      console.error('Error adding task:', error);
     }
   };
 
-  const handleUpdateTask = async (id: string, updates: Partial<Task>) => {
+  const handleUpdateTask = async (id: string, updates: UpdateTaskData) => {
     try {
-      const data = await updateTask(id, updates);
+      const data = await updateTask({ id, updates });
       if (data) {
-        setTasks((prevTasks) =>
-          prevTasks.map((task) => (task.id === data.id ? data : task))
-        );
         toast.success('Task updated successfully!');
+        return data;
       }
       return data;
-    } catch (err: any) {
-      toast.error(`Failed to update task: ${err.message}`);
-      throw err;
+    } catch (error: any) {
+      toast.error('Failed to update task: ' + error.message);
+      console.error('Error updating task:', error);
+      throw error;
     }
   };
 
@@ -116,106 +105,115 @@ const Index = () => {
     if (window.confirm('Are you sure you want to delete this task?')) {
       try {
         await deleteTask(id);
-        setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
         toast.success('Task deleted successfully!');
-      } catch (err: any) {
-        toast.error(`Failed to delete task: ${err.message}`);
+      } catch (error: any) {
+        toast.error('Failed to delete task: ' + error.message);
+        console.error('Error deleting task:', error);
       }
     }
   };
 
   const handleAddSubtask = async (description: string, parentTaskId: string | null) => {
-    if (!description.trim() || !parentTaskId) {
-      toast.error('Subtask description and parent task are required.');
-      return;
-    }
     try {
-      const data = await addTask(description, null, parentTaskId, null, null, 'medium');
+      const data = await addTask({
+        description,
+        parent_task_id: parentTaskId,
+        status: 'to-do',
+        priority: 'medium',
+      });
       if (data) {
-        setTasks((prevTasks) => [...prevTasks, data]);
         toast.success('Subtask added successfully!');
+        return data;
       }
       return data;
-    } catch (err: any) {
-      toast.error(`Failed to add subtask: ${err.message}`);
-      throw err;
+    } catch (error: any) {
+      toast.error('Failed to add subtask: ' + error.message);
+      console.error('Error adding subtask:', error);
+      throw error;
     }
   };
 
   const handleToggleFocusMode = async (taskId: string, isFocused: boolean) => {
-    try {
-      await updateSettings({ focused_task_id: isFocused ? taskId : null });
-      toast.success(isFocused ? 'Task set as focus!' : 'Focus removed.');
-    } catch (err: any) {
-      toast.error(`Failed to update focus mode: ${err.message}`);
-    }
+    await onToggleFocusMode(taskId, isFocused);
   };
 
   const handleLogDoTodayOff = async (taskId: string) => {
-    // This functionality is typically handled by a separate hook or context
-    // For now, we'll just log it.
-    toast.info(`Task ${taskId} logged as "Do Today Off" (functionality to be implemented).`);
+    await onLogDoTodayOff(taskId);
   };
 
   const handleNewTaskFormSubmit = async (description: string, sectionId: string | null, parentTaskId: string | null, dueDate: Date | null, categoryId: string | null, priority: string) => {
-    await addTask(description, sectionId, parentTaskId, dueDate, categoryId, priority);
+    await addTask({
+      description,
+      section_id: sectionId,
+      parent_task_id: parentTaskId,
+      due_date: dueDate ? dueDate.toISOString() : null,
+      category: categoryId,
+      priority: priority as Task['priority'],
+      status: 'to-do',
+    });
     setIsAddTaskDialogOpen(false);
   };
 
-  if (loading) return <div className="text-center py-8">Loading...</div>;
-  if (error) return <div className="text-center py-8 text-red-500">Error: {error.message}</div>;
+  if (isLoading || settings.isLoading) {
+    return <div className="p-4 text-center">Loading tasks...</div>;
+  }
+
+  if (error || settings.error) {
+    return <div className="p-4 text-red-500">Error loading data: {error?.message || settings.error?.message}</div>;
+  }
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">My Tasks</h1>
-
-      <div className="flex justify-between items-center mb-6">
-        <Button onClick={() => setIsAddTaskDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" /> Add New Task
-        </Button>
-        <Button variant="outline" onClick={() => navigate('/settings')}>
-          <SettingsIcon className="mr-2 h-4 w-4" /> Settings
-        </Button>
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      <div className="flex items-center justify-between space-y-2">
+        <h2 className="text-3xl font-bold tracking-tight">My Tasks</h2>
+        <div className="flex items-center space-x-2">
+          <Dialog open={isAddTaskDialogOpen} onOpenChange={setIsAddTaskDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" /> Add Task
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Add New Task</DialogTitle>
+              </DialogHeader>
+              <AddTaskForm
+                onAddTask={handleNewTaskFormSubmit}
+                categories={fetchedCategories || []}
+                sections={fetchedSections || []}
+                currentDate={startOfDay(new Date())}
+                createSection={createSection}
+                updateSection={updateSection}
+                deleteSection={deleteSection}
+                updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+                showCompleted={false}
+                onClose={() => setIsAddTaskDialogOpen(false)}
+              />
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <TaskList
-        tasks={tasks}
-        categories={categories}
+        tasks={tasks || []}
+        categories={fetchedCategories || []}
+        sections={fetchedSections || []}
         onUpdateTask={handleUpdateTask}
         onDeleteTask={handleDeleteTask}
         onAddTask={handleNewTaskFormSubmit}
         onAddSubtask={handleAddSubtask}
         onToggleFocusMode={handleToggleFocusMode}
         onLogDoTodayOff={handleLogDoTodayOff}
-        sections={sections}
-        allCategories={categories}
-        currentDate={startOfDay(new Date())}
-        createSection={createSection.mutateAsync}
-        updateSection={updateSection.mutateAsync}
-        deleteSection={deleteSection.mutateAsync}
+        createCategory={createCategory}
+        updateCategory={updateCategory}
+        deleteCategory={deleteCategory}
+        createSection={createSection}
+        updateSection={updateSection}
+        deleteSection={deleteSection}
         updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-        showCompleted={false}
-        showFilters={true}
+        showCompleted={settings?.visible_pages?.show_completed_tasks ?? false}
+        doTodayOffLog={doTodayOffLog}
       />
-
-      <Dialog open={isAddTaskDialogOpen} onOpenChange={setIsAddTaskDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Add New Task</DialogTitle>
-          </DialogHeader>
-          <AddTaskForm
-            onAddTask={handleNewTaskFormSubmit}
-            onTaskAdded={() => setIsAddTaskDialogOpen(false)}
-            sections={sections}
-            allCategories={categories}
-            currentDate={startOfDay(new Date())}
-            createSection={createSection.mutateAsync}
-            updateSection={updateSection.mutateAsync}
-            deleteSection={deleteSection.mutateAsync}
-            updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-          />
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

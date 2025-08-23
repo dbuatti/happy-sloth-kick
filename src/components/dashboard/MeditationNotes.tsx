@@ -2,65 +2,77 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Save, Edit } from 'lucide-react';
-import { useSettings } from '@/context/SettingsContext';
+import { Save } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MeditationNotesCardProps } from '@/types';
+import { useSettings } from '@/context/SettingsContext';
+import { toast } from 'react-hot-toast';
 
-const MeditationNotes: React.FC<MeditationNotesCardProps> = () => {
-  const { settings, updateSettings, loading } = useSettings();
+const MeditationNotes: React.FC<MeditationNotesCardProps> = ({ isDemo = false, demoUserId }) => {
+  const { settings, isLoading, error, updateSettings } = useSettings();
   const [notes, setNotes] = useState(settings?.meditation_notes || '');
-  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    setNotes(settings?.meditation_notes || '');
-  }, [settings?.meditation_notes]);
+    if (settings) {
+      setNotes(settings.meditation_notes || '');
+    }
+  }, [settings]);
 
   const handleSaveNotes = async () => {
-    await updateSettings({ meditation_notes: notes });
-    setIsEditing(false);
+    setIsSaving(true);
+    try {
+      await updateSettings({ meditation_notes: notes });
+      toast.success('Meditation notes saved!');
+    } catch (err) {
+      toast.error('Failed to save notes.');
+      console.error('Error saving meditation notes:', err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
-      <Card>
+      <Card className="col-span-1 lg:col-span-2">
         <CardHeader>
           <CardTitle>Meditation Notes</CardTitle>
         </CardHeader>
         <CardContent>
-          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-32 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="col-span-1 lg:col-span-2">
+        <CardHeader>
+          <CardTitle>Meditation Notes</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-red-500">Error loading notes: {error.message}</p>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-lg font-medium">Meditation Notes</CardTitle>
-        {isEditing ? (
-          <Button variant="ghost" size="sm" onClick={handleSaveNotes}>
-            <Save className="h-4 w-4" />
-          </Button>
-        ) : (
-          <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
-            <Edit className="h-4 w-4" />
-          </Button>
-        )}
+    <Card className="col-span-1 lg:col-span-2">
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-lg font-semibold">Meditation Notes</CardTitle>
+        <Button variant="ghost" size="sm" onClick={handleSaveNotes} disabled={isSaving}>
+          <Save className="mr-2 h-4 w-4" /> {isSaving ? 'Saving...' : 'Save'}
+        </Button>
       </CardHeader>
       <CardContent>
-        {isEditing ? (
-          <Textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Write your meditation notes here..."
-            className="min-h-[100px]"
-          />
-        ) : (
-          <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-            {notes || 'No notes yet. Click the edit icon to add some.'}
-          </p>
-        )}
+        <Textarea
+          placeholder="Jot down your thoughts after meditation..."
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          className="min-h-[100px]"
+        />
       </CardContent>
     </Card>
   );

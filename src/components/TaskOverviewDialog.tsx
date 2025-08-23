@@ -7,39 +7,39 @@ import { Task, TaskSection, TaskCategory, UpdateTaskData, TaskOverviewDialogProp
 import { useSound } from '@/context/SoundContext';
 import { format, parseISO, isPast, isToday } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { toast } from 'react-hot-toast';
 import { getCategoryColorProps, CategoryColorKey } from '@/lib/categoryColors';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar as DatePicker } from '@/components/ui/calendar';
+import { toast } from 'react-hot-toast';
 
 const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
+  task,
   isOpen,
   onOpenChange,
-  task,
-  categories,
-  sections,
   onUpdateTask,
   onDeleteTask,
   onAddSubtask,
   onToggleFocusMode,
   onLogDoTodayOff,
+  categories,
+  sections,
 }) => {
   const { playSound } = useSound();
   const [isEditing, setIsEditing] = useState(false);
+  const [editedDescription, setEditedDescription] = useState(task.description);
+  const [editedNotes, setEditedNotes] = useState(task.notes || '');
+  const [editedDueDate, setEditedDueDate] = useState<Date | null>(task.due_date ? parseISO(task.due_date) : null);
+  const [editedCategory, setEditedCategory] = useState(task.category || null);
+  const [editedSection, setEditedSection] = useState(task.section_id || null);
+  const [editedPriority, setEditedPriority] = useState(task.priority || 'medium');
+  const [editedLink, setEditedLink] = useState(task.link || '');
+  const [editedImageUrl, setEditedImageUrl] = useState(task.image_url || '');
 
-  const category = useMemo(() => categories.find(cat => cat.id === task.category?.id), [categories, task.category]);
-  const section = useMemo(() => sections.find(sec => sec.id === task.section_id), [sections, task.section_id]);
-
-  const isOverdue = useMemo(() => {
-    if (task.due_date && task.status !== 'completed' && task.status !== 'archived') {
-      const dueDate = parseISO(task.due_date);
-      return isPast(dueDate) && !isToday(dueDate);
-    }
-    return false;
-  }, [task.due_date, task.status]);
-
-  const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success('Copied to clipboard!');
-  };
+  const category = useMemo(() => categories.find((cat: TaskCategory) => cat.id === editedCategory), [categories, editedCategory]);
+  const section = useMemo(() => sections.find((sec: TaskSection) => sec.id === editedSection), [sections, editedSection]);
 
   const handleToggleComplete = async () => {
     playSound('complete');
@@ -47,111 +47,193 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
     onOpenChange(false);
   };
 
-  const handleArchive = async () => {
-    if (window.confirm('Are you sure you want to archive this task?')) {
-      await onUpdateTask(task.id, { status: 'archived' });
-      onOpenChange(false);
-      toast.success('Task archived!');
+  const handleSave = async () => {
+    const updates: UpdateTaskData = {
+      description: editedDescription,
+      notes: editedNotes,
+      due_date: editedDueDate ? editedDueDate.toISOString() : null,
+      category: editedCategory,
+      section_id: editedSection,
+      priority: editedPriority,
+      link: editedLink,
+      image_url: editedImageUrl,
+    };
+    try {
+      await onUpdateTask(task.id, updates);
+      setIsEditing(false);
+      toast.success('Task details updated!');
+    } catch (error) {
+      toast.error('Failed to update task details.');
+      console.error('Error updating task details:', error);
     }
   };
 
-  const handleDelete = async () => {
-    if (window.confirm('Are you sure you want to permanently delete this task?')) {
-      await onDeleteTask(task.id);
-      onOpenChange(false);
-      toast.success('Task deleted!');
-    }
-  };
+  const categoryProps = category ? getCategoryColorProps(category.color as CategoryColorKey) : { backgroundClass: 'bg-gray-100', textColor: 'text-gray-800' };
+
+  const isOverdue = task.due_date && isPast(parseISO(task.due_date)) && !isToday(parseISO(task.due_date));
+  const isDueToday = task.due_date && isToday(parseISO(task.due_date));
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>{task.description}</DialogTitle>
-        </DialogHeader>
-        <div className="py-4 space-y-4">
-          <div className="flex flex-wrap gap-2 items-center">
-            <Badge variant="outline" className={cn(
-              task.status === 'completed' && 'bg-green-100 text-green-800',
-              task.status === 'archived' && 'bg-gray-100 text-gray-800',
-              task.status === 'to-do' && 'bg-blue-100 text-blue-800'
-            )}>
-              <ListTodo className="mr-1 h-3 w-3" /> {task.status}
-            </Badge>
-            {task.priority && (
-              <Badge variant="outline" className={cn(
-                task.priority === 'urgent' && 'bg-red-100 text-red-800',
-                task.priority === 'high' && 'bg-orange-100 text-orange-800',
-                task.priority === 'medium' && 'bg-yellow-100 text-yellow-800',
-                task.priority === 'low' && 'bg-green-100 text-green-800'
-              )}>
-                {task.priority}
-              </Badge>
+          <DialogTitle className="flex items-center justify-between">
+            {isEditing ? (
+              <Input value={editedDescription} onChange={(e) => setEditedDescription(e.target.value)} className="text-xl font-bold" />
+            ) : (
+              <span className="text-xl font-bold">{task.description}</span>
             )}
+            <div className="flex items-center space-x-2">
+              {isEditing ? (
+                <Button variant="ghost" size="sm" onClick={handleSave}>
+                  <Save className="mr-2 h-4 w-4" /> Save
+                </Button>
+              ) : (
+                <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
+                  <Edit className="mr-2 h-4 w-4" /> Edit
+                </Button>
+              )}
+              <Button variant="ghost" size="sm" onClick={() => onDeleteTask(task.id)}>
+                <Trash2 className="mr-2 h-4 w-4" /> Delete
+              </Button>
+            </div>
+          </DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+            <ListTodo className="h-4 w-4" />
+            <span>Status: <Badge variant="secondary">{task.status}</Badge></span>
             {category && (
-              <Badge variant="outline" style={{ backgroundColor: getCategoryColorProps(category.color as CategoryColorKey).backgroundClass, color: getCategoryColorProps(category.color as CategoryColorKey).textColor }}>
+              <Badge variant="outline" style={{ backgroundColor: categoryProps.backgroundClass, color: categoryProps.textColor }}>
                 {category.name}
               </Badge>
             )}
             {section && (
-              <Badge variant="outline">
-                <FolderOpen className="mr-1 h-3 w-3" /> {section.name}
-              </Badge>
-            )}
-            {task.due_date && (
-              <Badge variant="outline" className={cn(isOverdue && 'bg-red-100 text-red-800')}>
-                <Calendar className="mr-1 h-3 w-3" /> Due: {format(parseISO(task.due_date), 'PPP')}
-              </Badge>
-            )}
-            {task.recurring_type !== 'none' && (
-              <Badge variant="outline">
-                <Repeat className="mr-1 h-3 w-3" /> {task.recurring_type}
-              </Badge>
+              <Badge variant="outline">{section.name}</Badge>
             )}
           </div>
 
-          {task.notes && (
-            <div>
-              <h3 className="font-semibold text-sm mb-1">Notes:</h3>
-              <p className="text-sm text-muted-foreground whitespace-pre-wrap">{task.notes}</p>
-            </div>
+          {isEditing ? (
+            <>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="priority" className="text-right">Priority</Label>
+                <Select value={editedPriority || ''} onValueChange={(value) => setEditedPriority(value as Task['priority'])}>
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="dueDate" className="text-right">Due Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "col-span-3 justify-start text-left font-normal",
+                        !editedDueDate && "text-muted-foreground"
+                      )}
+                    >
+                      <Calendar className="mr-2 h-4 w-4" />
+                      {editedDueDate ? format(editedDueDate, "PPP") : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <DatePicker
+                      mode="single"
+                      selected={editedDueDate || undefined}
+                      onSelect={setEditedDueDate}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="category" className="text-right">Category</Label>
+                <Select value={editedCategory || ''} onValueChange={(value) => setEditedCategory(value)}>
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No Category</SelectItem>
+                    {categories.map((cat: TaskCategory) => (
+                      <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="section" className="text-right">Section</Label>
+                <Select value={editedSection || ''} onValueChange={(value) => setEditedSection(value)}>
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select section" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No Section</SelectItem>
+                    {sections.map((sec: TaskSection) => (
+                      <SelectItem key={sec.id} value={sec.id}>{sec.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="link" className="text-right">Link</Label>
+                <Input id="link" value={editedLink} onChange={(e) => setEditedLink(e.target.value)} className="col-span-3" />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="imageUrl" className="text-right">Image URL</Label>
+                <Input id="imageUrl" value={editedImageUrl} onChange={(e) => setEditedImageUrl(e.target.value)} className="col-span-3" />
+              </div>
+              <div className="grid grid-cols-4 items-start gap-4">
+                <Label htmlFor="notes" className="text-right">Notes</Label>
+                <Textarea id="notes" value={editedNotes} onChange={(e) => setEditedNotes(e.target.value)} className="col-span-3 min-h-[100px]" />
+              </div>
+            </>
+          ) : (
+            <>
+              {task.due_date && (
+                <div className="flex items-center space-x-2 text-sm">
+                  <Calendar className="h-4 w-4" />
+                  <span className={cn(isOverdue ? 'text-red-500' : isDueToday ? 'text-orange-500' : 'text-muted-foreground')}>
+                    {isOverdue ? 'Overdue' : isDueToday ? 'Due Today' : 'Due'} {format(parseISO(task.due_date), 'MMM d, yyyy')}
+                  </span>
+                </div>
+              )}
+              {task.notes && (
+                <div className="flex items-start space-x-2 text-sm text-muted-foreground">
+                  <StickyNote className="h-4 w-4 mt-1" />
+                  <p className="flex-1">{task.notes}</p>
+                </div>
+              )}
+              {task.link && (
+                <div className="flex items-center space-x-2 text-sm text-blue-500 hover:underline">
+                  <LinkIcon className="h-4 w-4" />
+                  <a href={task.link} target="_blank" rel="noopener noreferrer">{task.link}</a>
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => navigator.clipboard.writeText(task.link || '')}>
+                    <ClipboardCopy className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
+              {task.image_url && (
+                <div className="flex items-center space-x-2 text-sm">
+                  <img src={task.image_url} alt="Task image" className="max-h-32 rounded-md" />
+                </div>
+              )}
+            </>
           )}
-
-          {task.link && (
-            <div className="flex items-center text-sm text-blue-600 hover:underline">
-              <LinkIcon className="mr-1 h-3 w-3" />
-              <a href={task.link} target="_blank" rel="noopener noreferrer">{task.link}</a>
-              <Button variant="ghost" size="icon" className="h-6 w-6 ml-1" onClick={() => handleCopy(task.link!)}>
-                <ClipboardCopy className="h-3 w-3" />
-              </Button>
-            </div>
-          )}
-
-          {task.image_url && (
-            <div>
-              <h3 className="font-semibold text-sm mb-1">Image:</h3>
-              <img src={task.image_url} alt="Task image" className="max-w-full h-auto rounded-md" />
-              <Button variant="ghost" size="icon" className="h-6 w-6 ml-1" onClick={() => handleCopy(task.image_url!)}>
-                <ClipboardCopy className="h-3 w-3" />
-              </Button>
-            </div>
-          )}
-
-          {task.remind_at && (
-            <div className="flex items-center text-sm text-muted-foreground">
-              <BellRing className="mr-1 h-3 w-3" /> Remind at: {format(parseISO(task.remind_at), 'PPP p')}
-            </div>
-          )}
-
-          {/* Subtasks could be rendered here if needed */}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
-          <Button variant="ghost" onClick={() => onUpdateTask(task.id, { status: task.status === 'completed' ? 'to-do' : 'completed' })}>
-            {task.status === 'completed' ? 'Mark To-Do' : 'Mark Complete'}
-          </Button>
-          <Button variant="ghost" onClick={handleArchive}>Archive</Button>
-          <Button variant="destructive" onClick={handleDelete}>Delete</Button>
+          {!isEditing && (
+            <Button onClick={handleToggleComplete}>
+              {task.status === 'completed' ? 'Mark as To-Do' : 'Mark Completed'}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

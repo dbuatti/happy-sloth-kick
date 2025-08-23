@@ -1,21 +1,20 @@
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { DialogFooter } from '@/components/ui/dialog';
+import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarIcon, Plus } from 'lucide-react';
 import { format, startOfDay } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
+import { Label } from '@/components/ui/label';
 import TaskForm from './TaskForm';
 import { Task, TaskSection, TaskCategory, NewTaskData, UpdateTaskData, NewTaskSectionData, UpdateTaskSectionData, AddTaskFormProps } from '@/types';
 import { toast } from 'react-hot-toast';
 
 const AddTaskForm: React.FC<AddTaskFormProps> = ({
   onAddTask,
-  onTaskAdded,
   categories,
   sections,
   currentDate,
@@ -24,65 +23,67 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({
   deleteSection,
   updateSectionIncludeInFocusMode,
   showCompleted,
+  parentTaskId = null,
+  onClose,
 }) => {
   const [description, setDescription] = useState('');
-  const [sectionId, setSectionId] = useState<string | null>(null);
-  const [categoryId, setCategoryId] = useState<string | null>(null);
-  const [priority, setPriority] = useState<Task['priority']>('medium');
+  const [notes, setNotes] = useState('');
   const [dueDate, setDueDate] = useState<Date | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedSection, setSelectedSection] = useState<string | null>(null);
+  const [priority, setPriority] = useState<Task['priority']>('medium');
 
-  const handleAddTask = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!description.trim()) {
       toast.error('Task description cannot be empty.');
       return;
     }
-
-    const newTaskData: NewTaskData = {
-      description: description.trim(),
-      section_id: sectionId,
-      category: categoryId,
-      priority: priority,
-      due_date: dueDate ? format(dueDate, 'yyyy-MM-dd') : null,
-      status: 'to-do',
-      user_id: '', // Will be filled by the hook
-    };
-
     try {
-      await onAddTask(newTaskData);
+      await onAddTask(description, selectedSection, parentTaskId, dueDate, selectedCategory, priority);
       setDescription('');
-      setSectionId(null);
-      setCategoryId(null);
-      setPriority('medium');
+      setNotes('');
       setDueDate(null);
-      onTaskAdded();
+      setSelectedCategory(null);
+      setSelectedSection(null);
+      setPriority('medium');
+      if (onClose) onClose();
     } catch (error) {
-      console.error('Failed to add task:', error);
+      console.error('Error adding task:', error);
       toast.error('Failed to add task.');
     }
   };
 
   return (
-    <div className="space-y-4 p-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <Label htmlFor="description">Description</Label>
         <Input
           id="description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="e.g. Buy groceries"
-          autoFocus
+          placeholder="e.g., Finish project report"
+          required
         />
       </div>
-
+      <div>
+        <Label htmlFor="notes">Notes</Label>
+        <Textarea
+          id="notes"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Add any additional notes"
+        />
+      </div>
       <div>
         <Label htmlFor="section">Section</Label>
-        <Select onValueChange={setSectionId} value={sectionId || ''}>
+        <Select onValueChange={setSelectedSection} value={selectedSection || ''}>
           <SelectTrigger>
             <SelectValue placeholder="Select section" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="">No Section</SelectItem>
-            {sections.map((section) => (
+            {sections.map((section: TaskSection) => (
               <SelectItem key={section.id} value={section.id}>
                 {section.name}
               </SelectItem>
@@ -90,16 +91,15 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({
           </SelectContent>
         </Select>
       </div>
-
       <div>
         <Label htmlFor="category">Category</Label>
-        <Select onValueChange={setCategoryId} value={categoryId || ''}>
+        <Select onValueChange={setSelectedCategory} value={selectedCategory || ''}>
           <SelectTrigger>
             <SelectValue placeholder="Select category" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="">No Category</SelectItem>
-            {categories.map((category) => (
+            {categories.map((category: TaskCategory) => (
               <SelectItem key={category.id} value={category.id}>
                 {category.name}
               </SelectItem>
@@ -107,22 +107,20 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({
           </SelectContent>
         </Select>
       </div>
-
       <div>
         <Label htmlFor="priority">Priority</Label>
-        <Select onValueChange={(value: Task['priority']) => setPriority(value)} value={priority || 'medium'}>
+        <Select onValueChange={(value) => setPriority(value as Task['priority'])} value={priority}>
           <SelectTrigger>
             <SelectValue placeholder="Select priority" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="urgent">Urgent</SelectItem>
-            <SelectItem value="high">High</SelectItem>
-            <SelectItem value="medium">Medium</SelectItem>
             <SelectItem value="low">Low</SelectItem>
+            <SelectItem value="medium">Medium</SelectItem>
+            <SelectItem value="high">High</SelectItem>
+            <SelectItem value="urgent">Urgent</SelectItem>
           </SelectContent>
         </Select>
       </div>
-
       <div>
         <Label htmlFor="dueDate">Due Date</Label>
         <Popover>
@@ -148,16 +146,11 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({
           </PopoverContent>
         </Popover>
       </div>
-
-      <DialogFooter>
-        <Button type="button" variant="ghost" onClick={onTaskAdded}>
-          Cancel
-        </Button>
-        <Button type="submit" onClick={handleAddTask}>
-          Add Task
-        </Button>
-      </DialogFooter>
-    </div>
+      <div className="flex justify-end space-x-2">
+        {onClose && <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>}
+        <Button type="submit">Add Task</Button>
+      </div>
+    </form>
   );
 };
 

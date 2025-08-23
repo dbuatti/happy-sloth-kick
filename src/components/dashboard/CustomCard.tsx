@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useDashboardData } from '@/hooks/useDashboardData';
 import EditableCard from './EditableCard';
 import { CustomCard as CustomCardType, UpdateCustomCardData, CustomCardComponentProps } from '@/types';
+import { toast } from 'react-hot-toast';
 
-const CustomCard: React.FC<CustomCardComponentProps> = ({ card, onUpdate, onDelete }) => {
+const CustomCard: React.FC<CustomCardComponentProps> = ({ card, onSave, onDelete }) => {
   const [title, setTitle] = useState(card.title);
   const [content, setContent] = useState(card.content || '');
   const [emoji, setEmoji] = useState(card.emoji || '');
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     setTitle(card.title);
@@ -15,11 +16,28 @@ const CustomCard: React.FC<CustomCardComponentProps> = ({ card, onUpdate, onDele
   }, [card]);
 
   const handleSave = async () => {
-    await onUpdate(card.id, { title, content, emoji });
+    setIsSaving(true);
+    try {
+      await onSave(card.id, { title, content, emoji });
+      toast.success('Card updated!');
+    } catch (error) {
+      toast.error('Failed to update card.');
+      console.error('Error updating card:', error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDelete = async () => {
-    await onDelete(card.id);
+    if (window.confirm('Are you sure you want to delete this card?')) {
+      try {
+        await onDelete(card.id);
+        toast.success('Card deleted!');
+      } catch (error) {
+        toast.error('Failed to delete card.');
+        console.error('Error deleting card:', error);
+      }
+    }
   };
 
   return (
@@ -32,6 +50,7 @@ const CustomCard: React.FC<CustomCardComponentProps> = ({ card, onUpdate, onDele
       onEmojiChange={setEmoji}
       onSave={handleSave}
       onDelete={handleDelete}
+      isSaving={isSaving}
     />
   );
 };
