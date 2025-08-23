@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { usePeopleMemory } from '@/hooks/usePeopleMemory';
 import { Person } from '@/types';
+import { toast } from 'react-hot-toast';
 
 interface PersonAvatarProps {
   person: Person;
@@ -56,24 +57,38 @@ const PeopleMemoryCard = () => {
   };
 
   const handleSavePerson = async () => {
-    if (!name.trim()) return;
-
-    if (currentPerson) {
-      const updates: Partial<Person> = { name, notes };
-      if (removeAvatar) {
-        updates.avatar_url = null;
-      }
-      await updatePerson({ id: currentPerson.id, updates, avatarFile });
-    } else {
-      await addPerson({ personData: { name, notes }, avatarFile });
+    if (!name.trim()) {
+      toast.error('Name cannot be empty.');
+      return;
     }
-    setIsModalOpen(false);
+
+    try {
+      if (currentPerson) {
+        const updates: Partial<Person> = { name, notes };
+        if (removeAvatar) {
+          updates.avatar_url = null;
+        }
+        await updatePerson({ id: currentPerson.id, updates, avatarFile });
+        toast.success('Person updated successfully!');
+      } else {
+        await addPerson({ personData: { name, notes }, avatarFile });
+        toast.success('Person added successfully!');
+      }
+      setIsModalOpen(false);
+    } catch (error: any) {
+      toast.error(`Failed to save person: ${error.message}`);
+    }
   };
 
   const handleDeletePerson = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this person from memory?')) {
-      await deletePerson(id);
-      setIsModalOpen(false);
+      try {
+        await deletePerson(id);
+        setIsModalOpen(false);
+        toast.success('Person deleted successfully!');
+      } catch (error: any) {
+        toast.error(`Failed to delete person: ${error.message}`);
+      }
     }
   };
 

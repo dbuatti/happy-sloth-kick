@@ -1,343 +1,223 @@
-"use client";
+import React, { useState, useEffect, useMemo } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { useTasks } from '@/hooks/useTasks';
+import { useSettings } from '@/context/SettingsContext';
+import { Task, TaskCategory, TaskSection } from '@/types';
+import TaskList from '@/components/TaskList';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Plus, Settings as SettingsIcon, LayoutDashboard, Calendar, ListTodo, Brain, Moon, Link, Users, Archive } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar as DatePicker } from '@/components/ui/calendar';
+import { format, startOfDay } from 'date-fns';
+import { cn } from '@/lib/utils';
+import AddTaskForm from '@/components/AddTaskForm';
+import { toast } from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 
-import React, { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { Task, TaskSection } from "@/hooks/useTasks"; // Removed Category import
-import TaskItem from "@/components/tasks/TaskItem";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { Plus } from "lucide-react";
+const Index = () => {
+  const { userId: currentUserId } = useAuth();
+  const { settings, updateSettings } = useSettings();
+  const navigate = useNavigate();
 
-export default function Index() {
+  const {
+    tasks: fetchedTasks,
+    sections: fetchedSections,
+    categories: fetchedCategories,
+    loading,
+    error,
+    addTask,
+    updateTask,
+    deleteTask,
+    reorderTasks,
+    createCategory,
+    updateCategory,
+    deleteCategory,
+    createSection,
+    updateSection,
+    deleteSection,
+    reorderSections,
+    updateSectionIncludeInFocusMode,
+  } = useTasks({ userId: currentUserId! });
+
   const [tasks, setTasks] = useState<Task[]>([]);
   const [sections, setSections] = useState<TaskSection[]>([]);
-  const [newTaskDescription, setNewTaskDescription] = useState("");
-  const [doTodayLog, setDoTodayLog] = useState<Set<string>>(new Set()); // Changed to Set<string>
+  const [categories, setCategories] = useState<TaskCategory[]>([]);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  const fetchTasks = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("tasks")
-      .select("*")
-      .order("order", { ascending: true });
-
-    if (error) {
-      toast.error("Failed to fetch tasks.");
-      console.error("Error fetching tasks:", error);
-    } else {
-      setTasks(data || []);
-    }
-  }, []);
-
-  const fetchCategories = useCallback(async () => {
-    // This function is still needed to fetch categories, even if the state isn't directly used in Index.tsx's JSX
-    // TaskItem still needs categories prop, which is passed from here.
-    const { error } = await supabase.from("task_categories").select("*");
-    if (error) {
-      toast.error("Failed to fetch categories.");
-      console.error("Error fetching categories:", error);
-    }
-  }, []);
-
-  const fetchSections = useCallback(async () => {
-    const { data, error } = await supabase.from("task_sections").select("*").order("order", { ascending: true });
-    if (error) {
-      toast.error("Failed to fetch sections.");
-      console.error("Error fetching sections:", error);
-    } else {
-      setSections(data || []);
-    }
-  }, []);
-
-  const fetchDoTodayLog = useCallback(async () => {
-    const { data, error } = await supabase.from("do_today_off_log").select("task_id");
-    if (error) {
-      toast.error("Failed to fetch 'Do Today' log.");
-      console.error("Error fetching 'Do Today' log:", error);
-    } else {
-      setDoTodayLog(new Set(data?.map(item => item.task_id) || [])); // Convert to Set
-    }
-  }, []);
+  const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
+  const [newTaskDescription, setNewTaskDescription] = useState('');
+  const [newTaskSectionId, setNewTaskSectionId] = useState<string | null>(null);
+  const [newTaskDueDate, setNewTaskDueDate] = useState<Date | null>(null);
+  const [newTaskCategoryId, setNewTaskCategoryId] = useState<string | null>(null);
+  const [newTaskPriority, setNewTaskPriority] = useState('medium');
 
   useEffect(() => {
-    fetchTasks();
-    fetchCategories(); // Keep fetching categories
-    fetchSections();
-    fetchDoTodayLog();
-  }, [fetchTasks, fetchCategories, fetchSections, fetchDoTodayLog]);
+    if (fetchedTasks) {
+      setTasks(fetchedTasks);
+    }
+  }, [fetchedTasks]);
 
-  const handleAddTask = async (parentId: string | null = null) => {
+  useEffect(() => {
+    if (fetchedSections) {
+      setSections(fetchedSections);
+    }
+  }, [fetchedSections]);
+
+  useEffect(() => {
+    if (fetchedCategories) {
+      setCategories(fetchedCategories);
+    }
+  }, [fetchedCategories]);
+
+  const handleAddTask = async () => {
     if (!newTaskDescription.trim()) {
-      toast.error("Task description cannot be empty.");
+      toast.error('Task description cannot be empty.');
       return;
     }
-
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) {
-      toast.error("You must be logged in to add tasks.");
-      return;
-    }
-
-    const newTask: Omit<Task, "id" | "created_at" | "updated_at" | "category_color"> = { // Exclude category_color
-      description: newTaskDescription,
-      status: "to-do",
-      user_id: user.user.id,
-      priority: "medium",
-      order: tasks.length,
-      parent_task_id: parentId,
-      recurring_type: "none",
-      due_date: null,
-      notes: null,
-      remind_at: null,
-      section_id: null,
-      original_task_id: null,
-      category: null, // Ensure this is explicitly null if no category is selected
-      link: null,
-      image_url: null,
-    };
-
-    const { data, error } = await supabase
-      .from("tasks")
-      .insert(newTask)
-      .select()
-      .single();
-
-    if (error) {
-      toast.error("Failed to add task.");
-      console.error("Error adding task:", error);
-    } else if (data) {
-      setTasks((prevTasks) => [...prevTasks, data]);
-      setNewTaskDescription("");
-      toast.success("Task added successfully!");
-    }
-  };
-
-  const handleUpdateTask = async (taskId: string, updates: Partial<Task>) => { // Updated signature
-    const { data, error } = await supabase
-      .from("tasks")
-      .update(updates)
-      .eq("id", taskId)
-      .select()
-      .single();
-
-    if (error) {
-      toast.error("Failed to update task.");
-      console.error("Error updating task:", error);
-      return null;
-    } else if (data) {
-      setTasks((prevTasks) =>
-        prevTasks.map((task) => (task.id === data.id ? data : task))
-      );
-      toast.success("Task updated successfully!");
-      return data.id;
-    }
-    return null;
-  };
-
-  const handleDeleteTask = (taskId: string) => {
-    setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
-    setDoTodayLog((prevLog) => {
-      const newLog = new Set(prevLog);
-      newLog.delete(taskId);
-      return newLog;
-    });
-  };
-
-  const handleToggleDoToday = async (taskToToggle: Task) => { // Changed signature to accept Task object
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) {
-      toast.error("You must be logged in to update tasks.");
-      return;
-    }
-
-    const taskId = taskToToggle.id;
-    const isCurrentlyDoToday = !doTodayLog.has(taskId); // True if it's currently 'Do Today'
-
-    if (isCurrentlyDoToday) {
-      // If it's currently 'Do Today', we want to mark it as NOT 'Do Today' (add to off_log)
-      const { error } = await supabase
-        .from("do_today_off_log")
-        .insert({ task_id: taskId, user_id: user.user.id, off_date: new Date().toISOString().split('T')[0] });
-      if (error) {
-        toast.error("Failed to unmark task from 'Do Today'.");
-        console.error("Error unmarking task from 'Do Today':", error);
-      } else {
-        setDoTodayLog((prevLog) => {
-          const newLog = new Set(prevLog);
-          newLog.add(taskId);
-          return newLog;
-        });
-        toast.success("Task unmarked from 'Do Today'.");
+    try {
+      const data = await addTask(newTaskDescription, newTaskSectionId, null, newTaskDueDate, newTaskCategoryId, newTaskPriority);
+      if (data) {
+        setTasks((prevTasks) => [...prevTasks, data]);
+        setNewTaskDescription("");
+        setNewTaskSectionId(null);
+        setNewTaskDueDate(null);
+        setNewTaskCategoryId(null);
+        setNewTaskPriority('medium');
+        setIsAddTaskDialogOpen(false);
+        toast.success('Task added successfully!');
       }
-    } else {
-      // If it's currently NOT 'Do Today', we want to mark it as 'Do Today' (remove from off_log)
-      const { error } = await supabase
-        .from("do_today_off_log")
-        .delete()
-        .eq("task_id", taskId)
-        .eq("user_id", user.user.id);
-      if (error) {
-        toast.error("Failed to mark task as 'Do Today'.");
-        console.error("Error marking task as 'Do Today':", error);
-      } else {
-        setDoTodayLog((prevLog) => {
-          const newLog = new Set(prevLog);
-          newLog.delete(taskId);
-          return newLog;
-        });
-        toast.success("Task marked as 'Do Today'!");
+    } catch (err: any) {
+      toast.error(`Failed to add task: ${err.message}`);
+    }
+  };
+
+  const handleUpdateTask = async (id: string, updates: Partial<Task>) => {
+    try {
+      const data = await updateTask(id, updates);
+      if (data) {
+        setTasks((prevTasks) =>
+          prevTasks.map((task) => (task.id === data.id ? data : task))
+        );
+        toast.success('Task updated successfully!');
+      }
+      return data;
+    } catch (err: any) {
+      toast.error(`Failed to update task: ${err.message}`);
+      throw err;
+    }
+  };
+
+  const handleDeleteTask = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this task?')) {
+      try {
+        await deleteTask(id);
+        setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
+        toast.success('Task deleted successfully!');
+      } catch (err: any) {
+        toast.error(`Failed to delete task: ${err.message}`);
       }
     }
   };
 
-  const onDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (active.id !== over?.id) {
-      const oldIndex = tasks.findIndex((task) => task.id === active.id);
-      const newIndex = tasks.findIndex((task) => task.id === over?.id);
-      const newOrder = arrayMove(tasks, oldIndex, newIndex);
-
-      setTasks(newOrder);
-
-      // Update order in database
-      const updates = newOrder.map((task, index) => ({
-        id: task.id,
-        order: index,
-        parent_task_id: task.parent_task_id, // Preserve parent_task_id
-        section_id: task.section_id, // Preserve section_id
-      }));
-
-      const { error } = await supabase.rpc("update_tasks_order", { updates });
-
-      if (error) {
-        toast.error("Failed to update task order.");
-        console.error("Error updating task order:", error);
-        // Optionally revert state if update fails
-        fetchTasks();
-      } else {
-        toast.success("Task order updated!");
+  const handleAddSubtask = async (description: string, parentTaskId: string | null) => {
+    if (!description.trim() || !parentTaskId) {
+      toast.error('Subtask description and parent task are required.');
+      return;
+    }
+    try {
+      const data = await addTask(description, null, parentTaskId, null, null, 'medium');
+      if (data) {
+        setTasks((prevTasks) => [...prevTasks, data]);
+        toast.success('Subtask added successfully!');
       }
+      return data;
+    } catch (err: any) {
+      toast.error(`Failed to add subtask: ${err.message}`);
+      throw err;
     }
   };
 
-  const getTasksForSection = (sectionId: string | null) => {
-    return tasks
-      .filter((task) => task.section_id === sectionId && !task.parent_task_id)
-      .sort((a, b) => (a.order || 0) - (b.order || 0)); // Added null checks for order
+  const handleToggleFocusMode = async (taskId: string, isFocused: boolean) => {
+    try {
+      await updateSettings({ focused_task_id: isFocused ? taskId : null });
+      toast.success(isFocused ? 'Task set as focus!' : 'Focus removed.');
+    } catch (err: any) {
+      toast.error(`Failed to update focus mode: ${err.message}`);
+    }
   };
+
+  const handleLogDoTodayOff = async (taskId: string) => {
+    // This functionality is typically handled by a separate hook or context
+    // For now, we'll just log it.
+    toast.info(`Task ${taskId} logged as "Do Today Off" (functionality to be implemented).`);
+  };
+
+  const handleNewTaskFormSubmit = async (description: string, sectionId: string | null, parentTaskId: string | null, dueDate: Date | null, categoryId: string | null, priority: string) => {
+    await addTask(description, sectionId, parentTaskId, dueDate, categoryId, priority);
+    setIsAddTaskDialogOpen(false);
+  };
+
+  if (loading) return <div className="text-center py-8">Loading...</div>;
+  if (error) return <div className="text-center py-8 text-red-500">Error: {error.message}</div>;
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6 text-center">My Tasks</h1>
+      <h1 className="text-3xl font-bold mb-6">My Tasks</h1>
 
-      <div className="flex mb-6 space-x-2">
-        <Input
-          placeholder="Add a new task..."
-          value={newTaskDescription}
-          onChange={(e) => setNewTaskDescription(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              handleAddTask();
-            }
-          }}
-          className="flex-grow"
-        />
-        <Button onClick={() => handleAddTask()}>
-          <Plus className="mr-2 h-4 w-4" /> Add Task
+      <div className="flex justify-between items-center mb-6">
+        <Button onClick={() => setIsAddTaskDialogOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" /> Add New Task
+        </Button>
+        <Button variant="outline" onClick={() => navigate('/settings')}>
+          <SettingsIcon className="mr-2 h-4 w-4" /> Settings
         </Button>
       </div>
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={onDragEnd}
-      >
-        {sections.map((section) => (
-          <div key={section.id} className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4 flex items-center">
-              {section.name}
-              {section.include_in_focus_mode && (
-                <span className="ml-2 text-sm text-muted-foreground">(Focus Mode)</span>
-              )}
-            </h2>
-            <SortableContext
-              items={getTasksForSection(section.id).map(task => task.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              {getTasksForSection(section.id).map((task) => (
-                <React.Fragment key={task.id}>
-                  <TaskItem
-                    task={task}
-                    allTasks={tasks} // Pass allTasks
-                    sections={sections}
-                    onUpdate={handleUpdateTask}
-                    onDelete={handleDeleteTask}
-                    onOpenOverview={() => {}} // Dummy function
-                    currentDate={new Date()} // Pass current date
-                    onMoveUp={async () => {}} // Dummy function
-                    onMoveDown={async () => {}} // Dummy function
-                    setFocusTask={async () => {}} // Dummy function
-                    isDoToday={!doTodayLog.has(task.id)} // Pass isDoToday
-                    toggleDoToday={handleToggleDoToday} // Pass toggleDoToday
-                    scheduledTasksMap={new Map()} // Dummy map
-                    onStatusChange={async (taskId, newStatus) => { // Dummy function
-                      await handleUpdateTask(taskId, { status: newStatus });
-                      return taskId;
-                    }}
-                    level={0} // Pass level prop
-                  />
-                </React.Fragment>
-              ))}
-            </SortableContext>
-          </div>
-        ))}
+      <TaskList
+        tasks={tasks}
+        categories={categories}
+        onUpdateTask={handleUpdateTask}
+        onDeleteTask={handleDeleteTask}
+        onAddTask={handleNewTaskFormSubmit}
+        onAddSubtask={handleAddSubtask}
+        onToggleFocusMode={handleToggleFocusMode}
+        onLogDoTodayOff={handleLogDoTodayOff}
+        sections={sections}
+        allCategories={categories}
+        currentDate={startOfDay(new Date())}
+        createSection={createSection.mutateAsync}
+        updateSection={updateSection.mutateAsync}
+        deleteSection={deleteSection.mutateAsync}
+        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+        showCompleted={false}
+        showFilters={true}
+      />
 
-        {/* Tasks without a section */}
-        {getTasksForSection(null).length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4">Uncategorized Tasks</h2>
-            <SortableContext
-              items={getTasksForSection(null).map(task => task.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              {getTasksForSection(null).map((task) => (
-                <React.Fragment key={task.id}>
-                  <TaskItem
-                    task={task}
-                    allTasks={tasks} // Pass allTasks
-                    sections={sections}
-                    onUpdate={handleUpdateTask}
-                    onDelete={handleDeleteTask}
-                    onOpenOverview={() => {}} // Dummy function
-                    currentDate={new Date()} // Pass current date
-                    onMoveUp={async () => {}} // Dummy function
-                    onMoveDown={async () => {}} // Dummy function
-                    setFocusTask={async () => {}} // Dummy function
-                    isDoToday={!doTodayLog.has(task.id)} // Pass isDoToday
-                    toggleDoToday={handleToggleDoToday} // Pass toggleDoToday
-                    scheduledTasksMap={new Map()} // Dummy map
-                    onStatusChange={async (taskId, newStatus) => { // Dummy function
-                      await handleUpdateTask(taskId, { status: newStatus });
-                      return taskId;
-                    }}
-                    level={0} // Pass level prop
-                  />
-                </React.Fragment>
-              ))}
-            </SortableContext>
-          </div>
-        )}
-      </DndContext>
+      <Dialog open={isAddTaskDialogOpen} onOpenChange={setIsAddTaskDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Add New Task</DialogTitle>
+          </DialogHeader>
+          <AddTaskForm
+            onAddTask={handleNewTaskFormSubmit}
+            onTaskAdded={() => setIsAddTaskDialogOpen(false)}
+            sections={sections}
+            allCategories={categories}
+            currentDate={startOfDay(new Date())}
+            createSection={createSection.mutateAsync}
+            updateSection={updateSection.mutateAsync}
+            deleteSection={deleteSection.mutateAsync}
+            updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
-}
+};
+
+export default Index;

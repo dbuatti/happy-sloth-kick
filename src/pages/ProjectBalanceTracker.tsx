@@ -1,19 +1,26 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProjects } from '@/hooks/useProjects';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Plus, Minus, Trophy, Sparkles } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import Confetti from 'react-confetti';
 import { Project } from '@/types';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'react-hot-toast';
 
-const ProjectBalanceTracker = () => {
-  const { userId: currentUserId } = useAuth();
+interface ProjectBalanceTrackerProps {
+  isDemo?: boolean;
+  demoUserId?: string;
+}
+
+const ProjectBalanceTracker: React.FC<ProjectBalanceTrackerProps> = ({ isDemo = false, demoUserId }) => {
+  const { user } = useAuth();
+  const currentUserId = isDemo ? demoUserId : user?.id;
   const [sortOption, setSortOption] = useState('created_at');
   const { projects, isLoading, error, addProject, updateProject, deleteProject, incrementProjectCount, decrementProjectCount } = useProjects(sortOption);
 
@@ -35,7 +42,7 @@ const ProjectBalanceTracker = () => {
     return (projects as Project[]).every(p => p.current_count === 10);
   }, [projects]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (allProjectsMaxed && (projects as Project[]).length > 0) {
       setShowCelebration(true);
       const timer = setTimeout(() => setShowCelebration(false), 10000); // Show confetti for 10 seconds
@@ -45,20 +52,37 @@ const ProjectBalanceTracker = () => {
 
   const handleAddProject = async () => {
     if (newProjectName.trim()) {
-      await addProject({ name: newProjectName, description: newProjectDescription, link: newProjectLink });
-      setNewProjectName('');
-      setNewProjectDescription(null);
-      setNewProjectLink(null);
-      setIsAddProjectDialogOpen(false);
+      try {
+        await addProject({ name: newProjectName, description: newProjectDescription, link: newProjectLink });
+        setNewProjectName('');
+        setNewProjectDescription(null);
+        setNewProjectLink(null);
+        setIsAddProjectDialogOpen(false);
+        toast.success('Project added successfully!');
+      } catch (err: any) {
+        toast.error(`Failed to add project: ${err.message}`);
+      }
     }
   };
 
   const handleUpdateProject = async (projectId: string, updates: Partial<Project>) => {
-    await updateProject({ projectId, updates });
+    try {
+      await updateProject({ projectId, updates });
+      toast.success('Project updated successfully!');
+    } catch (err: any) {
+      toast.error(`Failed to update project: ${err.message}`);
+    }
   };
 
   const handleDeleteProject = async (projectId: string) => {
-    await deleteProject(projectId);
+    if (window.confirm('Are you sure you want to delete this project?')) {
+      try {
+        await deleteProject(projectId);
+        toast.success('Project deleted successfully!');
+      } catch (err: any) {
+        toast.error(`Failed to delete project: ${err.message}`);
+      }
+    }
   };
 
   if (isLoading) return <div className="text-center py-8">Loading projects...</div>;

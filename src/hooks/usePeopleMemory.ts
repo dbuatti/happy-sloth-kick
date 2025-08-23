@@ -45,7 +45,8 @@ const deletePerson = async (id: string): Promise<void> => {
 };
 
 export const usePeopleMemory = () => {
-  const { userId, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
+  const userId = user?.id;
   const queryClient = useQueryClient();
 
   const { data: people, isLoading, error } = useQuery<Person[], Error>({

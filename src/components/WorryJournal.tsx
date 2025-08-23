@@ -7,9 +7,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { Trash2, Plus } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 const WorryJournal = () => {
-  const { userId } = useAuth();
+  const { user } = useAuth();
+  const userId = user?.id;
   const [entries, setEntries] = useState<WorryEntry[]>([]);
   const [newThought, setNewThought] = useState('');
   const [loading, setLoading] = useState(true);
@@ -55,9 +57,11 @@ const WorryJournal = () => {
       if (error) throw error;
       setEntries(prev => [data as WorryEntry, ...prev]);
       setNewThought('');
+      toast.success('Worry recorded!');
     } catch (error: any) {
       setError(error.message);
       console.error('Error adding worry entry:', error);
+      toast.error('Failed to record worry.');
     }
   };
 
@@ -70,9 +74,11 @@ const WorryJournal = () => {
         .eq('id', id);
       if (error) throw error;
       setEntries(prev => prev.filter(entry => entry.id !== id));
+      toast.success('Worry deleted!');
     } catch (error: any) {
       setError(error.message);
       console.error('Error deleting worry entry:', error);
+      toast.error('Failed to delete worry.');
     }
   };
 

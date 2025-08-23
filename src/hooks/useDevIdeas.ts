@@ -148,7 +148,8 @@ const deleteDevIdea = async (id: string): Promise<void> => {
 };
 
 export const useDevIdeas = () => {
-  const { userId, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
+  const userId = user?.id;
   const queryClient = useQueryClient();
 
   // --- Tags Query ---

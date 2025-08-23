@@ -1,211 +1,127 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { useAuth } from '@/context/AuthContext';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { showSuccess, showError } from '@/utils/toast';
-import { Heart, Plus, Trash2 } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
-import { Skeleton } from '@/components/ui/skeleton';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { useAuth } from '@/hooks/useAuth';
+import { GratitudeEntry, NewGratitudeEntryData } from '@/types';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { format } from 'date-fns';
+import { Trash2, Plus } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
-interface GratitudeEntry {
-  id: string;
-  user_id: string;
-  entry: string;
-  created_at: string;
-}
-
-const GratitudeJournal: React.FC = () => {
+const GratitudeJournal = () => {
   const { user } = useAuth();
   const userId = user?.id;
-  const [newEntry, setNewEntry] = useState('');
   const [entries, setEntries] = useState<GratitudeEntry[]>([]);
+  const [newEntry, setNewEntry] = useState('');
   const [loading, setLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
-  const [entryToDeleteId, setEntryToDeleteId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchEntries = useCallback(async () => {
-    if (!userId) {
-      setEntries([]);
-      setLoading(false);
-      return;
-    }
+  const fetchEntries = async () => {
+    if (!userId) return;
     setLoading(true);
+    setError(null);
     try {
       const { data, error } = await supabase
         .from('gratitude_journal_entries')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
-
       if (error) throw error;
-      setEntries(data || []);
+      setEntries(data as GratitudeEntry[] || []);
     } catch (error: any) {
-      console.error('Error fetching gratitude entries:', error.message);
-      showError('Failed to load gratitude journal entries.');
+      setError(error.message);
+      console.error('Error fetching gratitude entries:', error);
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  };
 
   useEffect(() => {
     fetchEntries();
-  }, [fetchEntries]);
+  }, [userId]);
 
-  const handleAddEntry = async () => {
-    if (!newEntry.trim()) {
-      showError('Entry cannot be empty.');
-      return;
-    }
-    if (!userId) {
-      showError('User not authenticated.');
-      return;
-    }
-
-    setIsSaving(true);
+  const addEntry = async () => {
+    if (!userId || !newEntry.trim()) return;
+    setError(null);
     try {
+      const newEntryData: NewGratitudeEntryData & { user_id: string } = {
+        user_id: userId,
+        entry: newEntry,
+      };
       const { data, error } = await supabase
         .from('gratitude_journal_entries')
-        .insert({ user_id: userId, entry: newEntry.trim() })
-        .select()
+        .insert(newEntryData)
+        .select('*')
         .single();
-
       if (error) throw error;
-      setEntries(prev => [data, ...prev]);
+      setEntries(prev => [data as GratitudeEntry, ...prev]);
       setNewEntry('');
-      showSuccess('Gratitude entry saved!');
+      toast.success('Gratitude recorded!');
     } catch (error: any) {
-      console.error('Error saving gratitude entry:', error.message);
-      showError('Failed to save gratitude entry.');
-    } finally {
-      setIsSaving(false);
+      setError(error.message);
+      console.error('Error adding gratitude entry:', error);
+      toast.error('Failed to record gratitude.');
     }
   };
 
-  const handleDeleteClick = (entryId: string) => {
-    setEntryToDeleteId(entryId);
-    setShowConfirmDeleteDialog(true);
-  };
-
-  const confirmDeleteEntry = async () => {
-    if (!entryToDeleteId || !userId) {
-      setShowConfirmDeleteDialog(false);
-      return;
-    }
-
-    setIsSaving(true);
+  const deleteEntry = async (id: string) => {
+    setError(null);
     try {
       const { error } = await supabase
         .from('gratitude_journal_entries')
         .delete()
-        .eq('id', entryToDeleteId)
-        .eq('user_id', userId);
-
+        .eq('id', id);
       if (error) throw error;
-      setEntries(prev => prev.filter(entry => entry.id !== entryToDeleteId));
-      showSuccess('Gratitude entry deleted!');
+      setEntries(prev => prev.filter(entry => entry.id !== id));
+      toast.success('Gratitude entry deleted!');
     } catch (error: any) {
-      console.error('Error deleting gratitude entry:', error.message);
-      showError('Failed to delete gratitude entry.');
-    } finally {
-      setIsSaving(false);
-      setShowConfirmDeleteDialog(false);
-      setEntryToDeleteId(null);
+      setError(error.message);
+      console.error('Error deleting gratitude entry:', error);
+      toast.error('Failed to delete gratitude entry.');
     }
   };
 
+  if (loading) return <div className="text-center py-8">Loading gratitude entries...</div>;
+  if (error) return <div className="text-center py-8 text-red-500">Error: {error}</div>;
+
   return (
-    <Card className="w-full max-w-md shadow-lg rounded-xl">
+    <Card className="h-full flex flex-col">
       <CardHeader>
-        <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
-          <Heart className="h-6 w-6 text-primary" /> Gratitude Journal
-        </CardTitle>
-        <p className="text-muted-foreground text-center">
-          Cultivate a positive mindset by noting what you're grateful for.
-        </p>
+        <CardTitle>Gratitude Journal</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
+      <CardContent className="flex-grow flex flex-col">
+        <div className="mb-4">
           <Textarea
             placeholder="What are you grateful for today?"
             value={newEntry}
             onChange={(e) => setNewEntry(e.target.value)}
             rows={3}
-            disabled={isSaving}
-            className="min-h-[80px] text-base"
+            className="mb-2"
           />
-          <Button onClick={handleAddEntry} className="w-full h-9 text-base" disabled={isSaving || !newEntry.trim()}>
-            <Plus className="mr-2 h-4 w-4" /> {isSaving ? 'Saving...' : 'Add Entry'}
+          <Button onClick={addEntry} className="w-full">
+            <Plus className="h-4 w-4 mr-2" /> Add Entry
           </Button>
         </div>
 
-        <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
-          <h3 className="text-lg font-semibold">Past Entries</h3>
-          {loading ? (
-            <div className="space-y-2">
-              <Skeleton className="h-16 w-full rounded-xl" />
-              <Skeleton className="h-16 w-full rounded-xl" />
-            </div>
-          ) : entries.length === 0 ? (
-            <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
-              <Heart className="h-12 w-12 text-muted-foreground" />
-              <p className="text-lg font-medium mb-2">No entries yet.</p>
-              <p className="text-sm">Start writing down what you're grateful for!</p>
-            </div>
+        <div className="flex-grow overflow-y-auto space-y-4 pr-2">
+          {entries.length === 0 ? (
+            <p className="text-center text-gray-500 py-8">No gratitude entries yet. Start by adding one!</p>
           ) : (
-            <ul className="space-y-2">
-              {entries.map(entry => (
-                <li key={entry.id} className="p-3 rounded-xl bg-background flex justify-between items-start gap-2 shadow-sm">
-                  <div className="flex-1">
-                    <p className="text-sm text-foreground">{entry.entry}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {format(parseISO(entry.created_at), 'MMM d, yyyy HH:mm')}
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-destructive flex-shrink-0"
-                    onClick={() => handleDeleteClick(entry.id)}
-                    disabled={isSaving}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </li>
-              ))}
-            </ul>
+            entries.map(entry => (
+              <div key={entry.id} className="bg-gray-50 p-3 rounded-lg shadow-sm flex justify-between items-start">
+                <div>
+                  <p className="text-sm text-gray-800 mb-1">{entry.entry}</p>
+                  <p className="text-xs text-gray-500">{format(new Date(entry.created_at!), 'PPP p')}</p>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => deleteEntry(entry.id)}>
+                  <Trash2 className="h-4 w-4 text-red-500" />
+                </Button>
+              </div>
+            ))
           )}
         </div>
       </CardContent>
-
-      <AlertDialog open={showConfirmDeleteDialog} onOpenChange={setShowConfirmDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete this gratitude entry.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSaving}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteEntry} disabled={isSaving}>
-              {isSaving ? 'Deleting...' : 'Continue'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </Card>
   );
 };

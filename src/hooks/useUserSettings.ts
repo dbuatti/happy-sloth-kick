@@ -58,7 +58,7 @@ const fetchUserSettings = async (userId: string): Promise<UserSettings | null> =
     ...defaultSettings,
     ...data,
     dashboard_layout: { ...defaultSettings.dashboard_layout, ...(data.dashboard_layout as Json || {}) },
-    dashboard_panel_sizes: (data.dashboard_layout as any)?.dashboard_panel_sizes || defaultSettings.dashboard_panel_sizes, // Ensure this is correctly typed
+    dashboard_panel_sizes: (data as any).dashboard_panel_sizes || defaultSettings.dashboard_panel_sizes, // Ensure this is correctly typed
   };
 };
 
@@ -85,7 +85,8 @@ const insertUserSettings = async (settings: UserSettings): Promise<UserSettings>
 };
 
 export const useUserSettings = () => {
-  const { userId, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
+  const userId = user?.id;
   const queryClient = useQueryClient();
 
   const { data: settings, isLoading, error } = useQuery<UserSettings | null, Error>({
@@ -102,7 +103,6 @@ export const useUserSettings = () => {
     },
     enabled: !!userId && !authLoading,
     staleTime: 1000 * 60 * 5, // 5 minutes
-    cacheTime: 1000 * 60 * 10, // 10 minutes
   });
 
   const updateSettingsMutation = useMutation<UserSettings, Error, Partial<Omit<UserSettings, 'user_id'>>>({

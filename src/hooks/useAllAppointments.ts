@@ -1,57 +1,34 @@
-import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext';
-import { showError } from '@/utils/toast';
-import { Appointment } from './useAppointments';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from './useAuth';
+import { Appointment } from '@/types';
+import { useQuery } from '@tanstack/react-query';
+
+const fetchAllAppointments = async (userId: string): Promise<Appointment[]> => {
+  const { data, error } = await supabase
+    .from('schedule_appointments')
+    .select('*')
+    .eq('user_id', userId)
+    .order('date', { ascending: true })
+    .order('start_time', { ascending: true });
+  if (error) throw error;
+  return data as Appointment[];
+};
 
 export const useAllAppointments = () => {
-  const { user } = useAuth();
-  const userId = user?.id;
-  const queryClient = useQueryClient();
+  const { userId, isLoading: authLoading } = useAuth();
 
-  const { data: appointments = [], isLoading: loading, error } = useQuery<Appointment[], Error>({
+  const { data: allAppointments, isLoading, error } = useQuery<Appointment[], Error>({
     queryKey: ['allAppointments', userId],
     queryFn: async () => {
       if (!userId) return [];
-      const { data, error } = await supabase
-        .from('schedule_appointments')
-        .select('*')
-        .eq('user_id', userId);
-
-      if (error) throw error;
-      return data || [];
+      return fetchAllAppointments(userId);
     },
-    enabled: !!userId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    enabled: !!userId && !authLoading,
   });
 
-  useEffect(() => {
-    if (error) {
-      console.error('Error fetching all appointments:', error.message);
-      showError('Failed to load schedule data.');
-    }
-  }, [error]);
-
-  useEffect(() => {
-    if (!userId) return;
-
-    const channel = supabase
-      .channel('all-appointments-realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'schedule_appointments', filter: `user_id=eq.${userId}` },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['allAppointments', userId] });
-          queryClient.invalidateQueries({ queryKey: ['appointments', userId] }); // Also invalidate specific date range appointments
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [userId, queryClient]);
-
-  return { appointments, loading };
+  return {
+    allAppointments: allAppointments || [],
+    isLoading,
+    error,
+  };
 };

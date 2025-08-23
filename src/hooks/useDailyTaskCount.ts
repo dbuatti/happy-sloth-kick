@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useAuth } from './useAuth';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { TaskSection } from '@/types';
+import { Task, TaskSection } from '@/types';
 import { startOfDay, isSameDay } from 'date-fns';
 
 // Re-use the fetchSections function from useTasks
@@ -17,7 +17,8 @@ const fetchSections = async (userId: string): Promise<TaskSection[]> => {
 };
 
 export const useDailyTaskCount = (tasks: Task[] | undefined) => {
-  const { userId, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
+  const userId = user?.id;
 
   const { data: sectionsData, isLoading: isLoadingSections } = useQuery<TaskSection[], Error>({
     queryKey: ['task_sections', userId], // Use the same query key as useTasks

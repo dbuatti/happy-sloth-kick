@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
-import { format, parseISO, isSameDay, addMinutes, setHours, setMinutes } from 'date-fns';
-import { CalendarIcon, Plus, Edit, Trash2, Clock, CheckCircle2 } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { format, parseISO, isSameDay } from 'date-fns';
+import { Plus, Edit, Trash2, Clock, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,7 +11,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { Appointment, WorkHour, Task, TaskCategory, TaskSection, UserSettings } from '@/types';
-import { useTasks } from '@/hooks/useTasks';
 import TaskItem from './TaskItem';
 
 interface DailyScheduleViewProps {
@@ -30,7 +29,7 @@ interface DailyScheduleViewProps {
   settings: UserSettings | null;
   updateTask: (id: string, updates: Partial<Task>) => Promise<Task>;
   deleteTask: (id: string) => Promise<void>;
-  addTask: (description: string, sectionId: string | null, parentTaskId: string | null) => Promise<Task>;
+  addTask: (description: string, sectionId: string | null, parentTaskId: string | null, dueDate: Date | null, categoryId: string | null, priority: string) => Promise<Task>;
   onToggleFocusMode: (taskId: string, isFocused: boolean) => Promise<void>;
   onLogDoTodayOff: (taskId: string) => Promise<void>;
 }
@@ -146,7 +145,6 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
   };
 
   const filteredTasksForSchedule = useMemo(() => {
-    const today = format(selectedDate, 'yyyy-MM-dd');
     const focusModeSectionIds = new Set((sections as TaskSection[]).filter(s => s.include_in_focus_mode).map(s => s.id));
 
     return tasks.filter(task => {
@@ -192,7 +190,7 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
             categories={allCategories}
             onUpdateTask={updateTask}
             onDeleteTask={deleteTask}
-            onAddSubtask={async (description, parentTaskId) => { await addTask(description, null, parentTaskId); }}
+            onAddSubtask={async (description) => { await addTask(description, null, parentTaskId, null, null, 'medium'); }}
             onToggleFocusMode={onToggleFocusMode}
             onLogDoTodayOff={onLogDoTodayOff}
             isFocusedTask={settings?.focused_task_id === subtask.id}
@@ -241,7 +239,7 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                     categories={allCategories}
                     onUpdateTask={updateTask}
                     onDeleteTask={deleteTask}
-                    onAddSubtask={async (description, parentTaskId) => { await addTask(description, null, parentTaskId); }}
+                    onAddSubtask={async (description) => { await addTask(description, null, task.id, null, null, 'medium'); }}
                     onToggleFocusMode={onToggleFocusMode}
                     onLogDoTodayOff={onLogDoTodayOff}
                     isFocusedTask={settings?.focused_task_id === task.id}
@@ -368,11 +366,11 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="workStartTime" className="text-right">Start Time</Label>
-              <Input id="workStartTime" type="time" value={workStartTime} onChange={(e) => setWorkStartTime(e.target.value)} className="col-span-3" disabled={!workEnabled} />
+              <Input id="workStartTime" type="time" value={workStartTime} onChange={(e) => setWorkStartTime(e.target.value)} className="col-span-3" disabled={!(workEnabled ?? true)} />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="workEndTime" className="text-right">End Time</Label>
-              <Input id="workEndTime" type="time" value={workEndTime} onChange={(e) => setWorkEndTime(e.target.value)} className="col-span-3" disabled={!workEnabled} />
+              <Input id="workEndTime" type="time" value={workEndTime} onChange={(e) => setWorkEndTime(e.target.value)} className="col-span-3" disabled={!(workEnabled ?? true)} />
             </div>
           </div>
           <DialogFooter>

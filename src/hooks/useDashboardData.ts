@@ -20,7 +20,7 @@ const defaultDashboardLayout = {
     { i: 'weekly-focus', x: 0, y: 2, w: 12, h: 1 },
     { i: 'quick-links', x: 0, y: 3, w: 6, h: 2 },
     { i: 'people-memory', x: 6, y: 3, w: 6, h: 2 },
-  ],
+    ],
   sm: [
     { i: 'welcome', x: 0, y: 0, w: 4, h: 2 },
     { i: 'daily-schedule', x: 0, y: 2, w: 4, h: 2 },
@@ -96,7 +96,7 @@ const deleteCustomCard = async (id: string): Promise<void> => {
   if (error) throw error;
 };
 
-const updateCustomCardsOrder = async (updates: { id: string; card_order: number; user_id: string }[]): Promise<void> => {
+const updateCustomCardsOrder = async (updates: { id: string; card_order: number; user_id: string; title: string }[]): Promise<void> => {
   const { error } = await supabase
     .from('custom_dashboard_cards')
     .upsert(updates, { onConflict: 'id' });
@@ -104,7 +104,8 @@ const updateCustomCardsOrder = async (updates: { id: string; card_order: number;
 };
 
 export const useDashboardData = () => {
-  const { userId, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
+  const userId = user?.id;
   const queryClient = useQueryClient();
 
   const weekStartDate = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
@@ -173,13 +174,14 @@ export const useDashboardData = () => {
     onSuccess: invalidateCustomCardsQueries,
   });
 
-  const reorderCustomCardsMutation = useMutation<void, Error, string[]>({
-    mutationFn: async (cardIds) => {
+  const reorderCustomCardsMutation = useMutation<void, Error, CustomCard[]>({
+    mutationFn: async (cards) => {
       if (!userId) throw new Error('User not authenticated.');
-      const updates = cardIds.map((id, index) => ({
-        id,
+      const updates = cards.map((card, index) => ({
+        id: card.id,
         card_order: index,
         user_id: userId,
+        title: card.title, // Include title for upsert
       }));
       await updateCustomCardsOrder(updates);
     },

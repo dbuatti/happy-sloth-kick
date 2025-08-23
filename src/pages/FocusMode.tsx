@@ -1,10 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTasks } from '@/hooks/useTasks';
 import { useSettings } from '@/context/SettingsContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Play, Pause, Check, X, RotateCcw, Lightbulb, Timer } from 'lucide-react';
+import { Play, Check, X, Lightbulb, Timer } from 'lucide-react';
 import TaskItem from '@/components/TaskItem';
 import { Task, TaskSection } from '@/types';
 import { Progress } from '@/components/ui/progress';
@@ -17,7 +17,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'react-hot-toast';
 
 const FocusMode = () => {
-  const { userId: currentUserId } = useAuth();
+  const { user } = useAuth();
+  const currentUserId = user?.id;
   const { settings, updateSettings } = useSettings();
   const {
     tasks,
@@ -142,7 +143,7 @@ const FocusMode = () => {
             categories={allCategories}
             onUpdateTask={updateTask}
             onDeleteTask={deleteTask}
-            onAddSubtask={async (description, parentTaskId) => { await addTask(description, null, parentTaskId); }}
+            onAddSubtask={async (description) => { await addTask(description, null, parentTaskId, null, null, 'medium'); }}
             onToggleFocusMode={onToggleFocusMode}
             onLogDoTodayOff={onLogDoTodayOff}
             isFocusedTask={settings?.focused_task_id === subtask.id}
@@ -185,8 +186,8 @@ const FocusMode = () => {
                     task={focusedTask}
                     categories={allCategories}
                     onUpdateTask={updateTask}
-                    onDeleteTask={() => { /* Delete not typically in focus mode */ }}
-                    onAddSubtask={async (description, parentTaskId) => { await addTask(description, null, parentTaskId); }}
+                    onDeleteTask={deleteTask}
+                    onAddSubtask={async (description) => { await addTask(description, null, focusedTask.id, null, null, 'medium'); }}
                     onToggleFocusMode={onToggleFocusMode}
                     onLogDoTodayOff={onLogDoTodayOff}
                     isFocusedTask={true}
@@ -227,8 +228,8 @@ const FocusMode = () => {
                     task={task}
                     categories={allCategories}
                     onUpdateTask={updateTask}
-                    onDelete={() => { /* Delete not typically in focus mode */ }}
-                    onAddSubtask={async (description, parentTaskId) => { await addTask(description, null, parentTaskId); }}
+                    onDeleteTask={deleteTask}
+                    onAddSubtask={async (description) => { await addTask(description, null, task.id, null, null, 'medium'); }}
                     onToggleFocusMode={onToggleFocusMode}
                     onLogDoTodayOff={onLogDoTodayOff}
                     isFocusedTask={false}

@@ -4,12 +4,13 @@ import { useTasks } from '@/hooks/useTasks';
 import { Task, TaskCategory } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { DateRange } from 'react-day-picker';
 
 // Define AnalyticsTask type to include is_daily_recurring
 interface AnalyticsTask extends Task {
@@ -17,16 +18,17 @@ interface AnalyticsTask extends Task {
 }
 
 const Analytics = () => {
-  const { userId: currentUserId } = useAuth();
+  const { user } = useAuth();
+  const currentUserId = user?.id;
   const { tasks: allTasks, categories, loading, error } = useTasks({ userId: currentUserId! });
 
-  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: startOfMonth(new Date()),
     to: endOfMonth(new Date()),
   });
 
   const filteredTasks = useMemo(() => {
-    if (!allTasks || !dateRange.from || !dateRange.to) return [];
+    if (!allTasks || !dateRange?.from || !dateRange?.to) return [];
     return allTasks.filter(task => {
       const taskDate = new Date(task.created_at);
       return taskDate >= dateRange.from! && taskDate <= dateRange.to!;
@@ -35,7 +37,7 @@ const Analytics = () => {
 
   const tasksByDate = useMemo(() => {
     const dailyCounts: { [key: string]: number } = {};
-    if (dateRange.from && dateRange.to) {
+    if (dateRange?.from && dateRange?.to) {
       eachDayOfInterval({ start: dateRange.from, end: dateRange.to }).forEach(day => {
         dailyCounts[format(day, 'yyyy-MM-dd')] = 0;
       });
@@ -89,11 +91,11 @@ const Analytics = () => {
               variant={"outline"}
               className={cn(
                 "w-[300px] justify-start text-left font-normal",
-                !dateRange.from && "text-muted-foreground"
+                !dateRange?.from && "text-muted-foreground"
               )}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {dateRange.from ? (
+              {dateRange?.from ? (
                 dateRange.to ? (
                   <>
                     {format(dateRange.from, "LLL dd, y")} -{" "}
@@ -111,7 +113,7 @@ const Analytics = () => {
             <Calendar
               initialFocus
               mode="range"
-              defaultMonth={dateRange.from}
+              defaultMonth={dateRange?.from}
               selected={dateRange}
               onSelect={setDateRange}
               numberOfMonths={2}

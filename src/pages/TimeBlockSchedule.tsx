@@ -11,8 +11,14 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import DailyScheduleView from '@/components/DailyScheduleView';
 import { TaskSection } from '@/types';
 
-const TimeBlockSchedule = () => {
-  const { userId: currentUserId } = useAuth();
+interface TimeBlockScheduleProps {
+  isDemo?: boolean;
+  demoUserId?: string;
+}
+
+const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, demoUserId }) => {
+  const { user } = useAuth();
+  const currentUserId = isDemo ? demoUserId : user?.id;
   const { settings } = useSettings();
   const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [selectedDate, setSelectedDate] = useState(new Date());

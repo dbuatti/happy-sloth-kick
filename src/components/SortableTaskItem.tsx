@@ -1,38 +1,33 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Task } from '@/types';
-import TaskItem from './TaskItem'; // Assuming TaskItem is correctly typed
-import { TaskCategory } from '@/types';
+import TaskItem from './TaskItem';
+import { Task, TaskCategory } from '@/types';
 
 interface SortableTaskItemProps {
   task: Task;
-  allTasks: Task[];
   categories: TaskCategory[];
-  onStatusChange: (taskId: string, newStatus: Task['status']) => Promise<string>;
-  onDelete: (taskId: string) => void;
-  onUpdate: (taskId: string, updates: Partial<Task>) => Promise<string>;
-  onAddSubtask: (description: string, parentTaskId: string) => Promise<void>;
+  onUpdateTask: (id: string, updates: Partial<Task>) => Promise<Task>;
+  onDeleteTask: (id: string) => Promise<void>;
+  onAddSubtask: (description: string, parentTaskId: string | null) => Promise<Task>;
   onToggleFocusMode: (taskId: string, isFocused: boolean) => Promise<void>;
   onLogDoTodayOff: (taskId: string) => Promise<void>;
   isFocusedTask: boolean;
-  isDragging: boolean;
-  onDragStart: (e: React.DragEvent, task: Task) => void;
+  subtasks: Task[];
+  renderSubtasks: (parentTaskId: string) => React.ReactNode;
 }
 
-const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
+export const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   task,
-  allTasks,
   categories,
-  onStatusChange,
-  onDelete,
-  onUpdate,
+  onUpdateTask,
+  onDeleteTask,
   onAddSubtask,
   onToggleFocusMode,
   onLogDoTodayOff,
   isFocusedTask,
-  isDragging,
-  onDragStart,
+  subtasks,
+  renderSubtasks,
 }) => {
   const {
     attributes,
@@ -40,36 +35,14 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
     setNodeRef,
     transform,
     transition,
+    isDragging,
   } = useSortable({ id: task.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-  };
-
-  const directSubtasks = allTasks.filter(sub => sub.parent_task_id === task.id);
-
-  const renderSubtasks = (parentTaskId: string) => {
-    return allTasks
-      .filter(sub => sub.parent_task_id === parentTaskId)
-      .sort((a, b) => (a.order || 0) - (b.order || 0))
-      .map(subtask => (
-        <SortableTaskItem
-          key={subtask.id}
-          task={subtask}
-          allTasks={allTasks}
-          categories={categories}
-          onStatusChange={onStatusChange}
-          onDelete={onDelete}
-          onUpdate={onUpdate}
-          onAddSubtask={onAddSubtask}
-          onToggleFocusMode={onToggleFocusMode}
-          onLogDoTodayOff={onLogDoTodayOff}
-          isFocusedTask={isFocusedTask} // Subtasks inherit focus status from parent for now
-          isDragging={isDragging}
-          onDragStart={onDragStart}
-        />
-      ));
+    zIndex: isDragging ? 100 : 0,
+    opacity: isDragging ? 0.8 : 1,
   };
 
   return (
@@ -77,19 +50,15 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
       <TaskItem
         task={task}
         categories={categories}
-        onUpdateTask={onUpdate}
-        onDeleteTask={onDelete}
+        onUpdateTask={onUpdateTask}
+        onDeleteTask={onDeleteTask}
         onAddSubtask={onAddSubtask}
         onToggleFocusMode={onToggleFocusMode}
         onLogDoTodayOff={onLogDoTodayOff}
         isFocusedTask={isFocusedTask}
-        subtasks={directSubtasks}
+        subtasks={subtasks}
         renderSubtasks={renderSubtasks}
-        isDragging={isDragging}
-        onDragStart={onDragStart}
       />
     </div>
   );
 };
-
-export default SortableTaskItem;

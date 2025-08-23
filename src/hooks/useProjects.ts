@@ -55,7 +55,8 @@ const deleteProject = async (id: string): Promise<void> => {
 };
 
 export const useProjects = (sortOption: string = 'created_at') => {
-  const { userId, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
+  const userId = user?.id;
   const queryClient = useQueryClient();
 
   const { data: projects, isLoading, error } = useQuery<Project[], Error>({

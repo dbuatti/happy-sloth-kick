@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useDevIdeas } from '@/hooks/useDevIdeas';
 import { DevIdea, DevIdeaTag, NewDevIdeaData, UpdateDevIdeaData } from '@/types';
@@ -16,6 +16,8 @@ import { SortableDevIdeaCard } from '@/components/SortableDevIdeaCard';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { HexColorPicker } from 'react-colorful';
+import { cn } from '@/lib/utils';
+import { toast } from 'react-hot-toast';
 
 interface IdeaColumnProps {
   id: string;
@@ -58,8 +60,9 @@ const IdeaColumn: React.FC<IdeaColumnProps> = ({ id, title, ideas, className, lo
 };
 
 const DevSpace = () => {
-  const { userId: currentUserId } = useAuth();
-  const { ideas: fetchedIdeas, tags: fetchedTags, loading, error, addIdea, updateIdea, deleteIdea, createTag, updateTag, deleteTag } = useDevIdeas();
+  const { user } = useAuth();
+  const currentUserId = user?.id;
+  const { ideas: fetchedIdeas, tags: fetchedTags, isLoading, error, addIdea, updateIdea, deleteIdea, createTag, updateTag, deleteTag } = useDevIdeas();
 
   const [ideas, setIdeas] = useState<DevIdea[]>([]);
   const [tags, setTags] = useState<DevIdeaTag[]>([]);
@@ -154,14 +157,19 @@ const DevSpace = () => {
 
   const handleAddIdea = async () => {
     if (newIdeaTitle.trim()) {
-      await addIdea({
-        title: newIdeaTitle,
-        description: newIdeaDescription,
-        status: newIdeaStatus,
-        priority: newIdeaPriority,
-        tagIds: newIdeaTagIds,
-      });
-      setIsAddIdeaDialogOpen(false);
+      try {
+        await addIdea({
+          title: newIdeaTitle,
+          description: newIdeaDescription,
+          status: newIdeaStatus,
+          priority: newIdeaPriority,
+          tagIds: newIdeaTagIds,
+        });
+        setIsAddIdeaDialogOpen(false);
+        toast.success('Idea added successfully!');
+      } catch (err: any) {
+        toast.error(`Failed to add idea: ${err.message}`);
+      }
     }
   };
 
@@ -177,24 +185,34 @@ const DevSpace = () => {
 
   const handleUpdateIdea = async () => {
     if (activeIdea && newIdeaTitle.trim()) {
-      await updateIdea({
-        id: activeIdea.id,
-        updates: {
-          title: newIdeaTitle,
-          description: newIdeaDescription,
-          status: newIdeaStatus,
-          priority: newIdeaPriority,
-          tagIds: newIdeaTagIds,
-        },
-      });
-      setIsEditIdeaDialogOpen(false);
-      setActiveIdea(null);
+      try {
+        await updateIdea({
+          id: activeIdea.id,
+          updates: {
+            title: newIdeaTitle,
+            description: newIdeaDescription,
+            status: newIdeaStatus,
+            priority: newIdeaPriority,
+            tagIds: newIdeaTagIds,
+          },
+        });
+        setIsEditIdeaDialogOpen(false);
+        setActiveIdea(null);
+        toast.success('Idea updated successfully!');
+      } catch (err: any) {
+        toast.error(`Failed to update idea: ${err.message}`);
+      }
     }
   };
 
   const handleDeleteIdea = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this idea?')) {
-      await deleteIdea(id);
+      try {
+        await deleteIdea(id);
+        toast.success('Idea deleted successfully!');
+      } catch (err: any) {
+        toast.error(`Failed to delete idea: ${err.message}`);
+      }
     }
   };
 
@@ -213,23 +231,34 @@ const DevSpace = () => {
 
   const handleSaveTag = async () => {
     if (newTagName.trim()) {
-      if (editingTag) {
-        await updateTag({ id: editingTag.id, updates: { name: newTagName, color: newTagColor } });
-      } else {
-        await createTag({ name: newTagName, color: newTagColor });
+      try {
+        if (editingTag) {
+          await updateTag({ id: editingTag.id, updates: { name: newTagName, color: newTagColor } });
+          toast.success('Tag updated successfully!');
+        } else {
+          await createTag({ name: newTagName, color: newTagColor });
+          toast.success('Tag created successfully!');
+        }
+        setIsTagModalOpen(false);
+      } catch (err: any) {
+        toast.error(`Failed to save tag: ${err.message}`);
       }
-      setIsTagModalOpen(false);
     }
   };
 
   const handleDeleteTag = async (id: string) => {
     if (window.confirm('Deleting a tag will remove it from all ideas. Are you sure?')) {
-      await deleteTag(id);
-      setIsTagModalOpen(false);
+      try {
+        await deleteTag(id);
+        setIsTagModalOpen(false);
+        toast.success('Tag deleted successfully!');
+      } catch (err: any) {
+        toast.error(`Failed to delete tag: ${err.message}`);
+      }
     }
   };
 
-  if (loading) return <div className="text-center py-8">Loading Dev Space...</div>;
+  if (isLoading) return <div className="text-center py-8">Loading Dev Space...</div>;
   if (error) return <div className="text-center py-8 text-red-500">Error: {error.message}</div>;
 
   return (
@@ -256,7 +285,7 @@ const DevSpace = () => {
               title={columnId.charAt(0).toUpperCase() + columnId.slice(1).replace('-', ' ')}
               className={columnId === 'idea' ? 'bg-blue-50' : columnId === 'in-progress' ? 'bg-yellow-50' : 'bg-green-50'}
               ideas={columns[columnId as keyof typeof columns] as DevIdea[]}
-              loading={loading}
+              loading={isLoading}
               onEditIdea={handleOpenEditIdeaDialog}
               onDeleteIdea={handleDeleteIdea}
             />

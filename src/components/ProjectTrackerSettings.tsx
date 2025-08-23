@@ -1,88 +1,72 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useProjects } from '@/hooks/useProjects';
-import { LayoutGrid, Edit } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
-// Removed useAuth as it's not directly used in this component
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useSettings } from '@/context/SettingsContext';
+import { Edit, Check, X } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 const ProjectTrackerSettings: React.FC = () => {
-  const { sectionTitle, updateProjectTrackerTitle, loading: projectsLoading } = useProjects();
+  const { settings, updateSettings, loading: settingsLoading } = useSettings();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [tempSectionTitle, setTempSectionTitle] = useState(sectionTitle);
-  const [isSavingTitle, setIsSavingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState(settings?.project_tracker_title || 'Project Balance Tracker');
 
   useEffect(() => {
-    setTempSectionTitle(sectionTitle);
-  }, [sectionTitle]);
+    if (settings) {
+      setEditedTitle(settings.project_tracker_title);
+    }
+  }, [settings]);
 
   const handleSaveTitle = async () => {
-    if (tempSectionTitle.trim()) {
-      setIsSavingTitle(true);
-      await updateProjectTrackerTitle(tempSectionTitle.trim());
-      setIsSavingTitle(false);
-      setIsEditingTitle(false);
+    if (editedTitle.trim()) {
+      try {
+        await updateSettings({ project_tracker_title: editedTitle });
+        toast.success('Project tracker title updated!');
+        setIsEditingTitle(false);
+      } catch (error: any) {
+        toast.error(`Failed to update title: ${error.message}`);
+      }
+    } else {
+      toast.error('Title cannot be empty.');
     }
   };
 
-  if (projectsLoading) {
-    return (
-      <Card className="w-full shadow-lg rounded-xl">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-2xl font-bold flex items-center gap-2">
-            <LayoutGrid className="h-6 w-6 text-primary" /> Project Tracker Title
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full mt-4" />
-        </CardContent>
-      </Card>
-    );
-  }
+  if (settingsLoading) return <div className="text-center py-4">Loading settings...</div>;
 
   return (
-    <Card className="w-full shadow-lg rounded-xl">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-2xl font-bold flex items-center gap-2">
-          <LayoutGrid className="h-6 w-6 text-primary" /> Project Tracker Title
-        </CardTitle>
-        <p className="text-sm text-muted-foreground">Customize the title of your Project Balance Tracker.</p>
+    <Card>
+      <CardHeader>
+        <CardTitle>Project Tracker Settings</CardTitle>
       </CardHeader>
-      <CardContent className="pt-0">
-        {isEditingTitle ? (
-          <div className="flex flex-col gap-3">
-            <div>
-              <Label htmlFor="project-tracker-title" className="text-sm font-medium text-foreground">New Title</Label>
+      <CardContent>
+        <div className="flex items-center justify-between mb-4">
+          <Label htmlFor="projectTrackerTitle" className="text-base">Project Tracker Title</Label>
+          {isEditingTitle ? (
+            <div className="flex items-center space-x-2">
               <Input
-                id="project-tracker-title"
-                value={tempSectionTitle}
-                onChange={(e) => setTempSectionTitle(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSaveTitle()}
-                autoFocus
-                disabled={isSavingTitle}
-                className="h-10 text-base"
+                id="projectTrackerTitle"
+                value={editedTitle}
+                onChange={(e) => setEditedTitle(e.target.value)}
+                className="w-64"
               />
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={handleSaveTitle} disabled={isSavingTitle || !tempSectionTitle.trim()} className="h-10 text-base">
-                {isSavingTitle ? 'Saving...' : 'Save Title'}
+              <Button size="sm" onClick={handleSaveTitle}>
+                <Check className="h-4 w-4" />
               </Button>
-              <Button variant="outline" onClick={() => setIsEditingTitle(false)} disabled={isSavingTitle} className="h-10 text-base">
-                Cancel
+              <Button variant="outline" size="sm" onClick={() => { setIsEditingTitle(false); setEditedTitle(settings?.project_tracker_title || 'Project Balance Tracker'); }}>
+                <X className="h-4 w-4" />
               </Button>
             </div>
-          </div>
-        ) : (
-          <div className="flex items-center justify-between">
-            <p className="text-lg font-medium text-foreground">{sectionTitle}</p>
-            <Button variant="outline" size="sm" onClick={() => setIsEditingTitle(true)} className="h-9 text-base">
-              <Edit className="mr-2 h-4 w-4" /> Edit
-            </Button>
-          </div>
-        )}
+          ) : (
+            <div className="flex items-center space-x-2">
+              <span className="text-lg font-semibold">{settings?.project_tracker_title}</span>
+              <Button variant="ghost" size="sm" onClick={() => setIsEditingTitle(true)}>
+                <Edit className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+        </div>
+        <p className="text-sm text-gray-500">Customize the title displayed for your Project Balance Tracker.</p>
       </CardContent>
     </Card>
   );

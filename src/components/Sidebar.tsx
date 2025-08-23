@@ -1,159 +1,129 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, Volume2, VolumeX } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
+import { LayoutDashboard, ListTodo, Calendar, Brain, Moon, Link as LinkIcon, Users, Archive, Settings, LogOut, HelpCircle } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
-import { Badge } from '@/components/ui/badge';
-import { useSound } from '@/context/SoundContext';
-import ThemeSelector from './ThemeSelector';
-import { navItems } from '@/lib/navItems';
 import { useSettings } from '@/context/SettingsContext';
-import { useAuth } from '@/context/AuthContext';
-
-// Define PointerDownOutsideEvent type locally to resolve import issues
-type PointerDownOutsideEvent = CustomEvent<{ originalEvent: PointerEvent }>;
+import { useTasks } from '@/hooks/useTasks';
 
 interface SidebarProps {
-  children: React.ReactNode;
+  isCollapsed: boolean;
+  setIsCollapsed: (collapsed: boolean) => void;
   isDemo?: boolean;
   demoUserId?: string;
+  setIsCommandPaletteOpen: (open: boolean) => void;
 }
 
-const NavigationLinks = ({ onLinkClick, isDemo, demoUserId }: { onLinkClick?: () => void; isDemo?: boolean; demoUserId?: string; }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed, isDemo = false, demoUserId, setIsCommandPaletteOpen }) => {
+  const { user, signOut } = useAuth();
+  const currentUserId = isDemo ? demoUserId : user?.id;
   const location = useLocation();
-  const { dailyTaskCount, loading: countLoading } = useDailyTaskCount({ userId: demoUserId });
+  const { tasks } = useTasks({ userId: currentUserId! }); // Fetch tasks to pass to useDailyTaskCount
+  const { dailyTaskCount, isLoading: countLoading } = useDailyTaskCount(tasks);
   const { settings } = useSettings();
-  const { user } = useAuth();
 
-  const visibleNavItems = navItems.filter(item => {
-    // Hide Dev Space unless it's the specific user
-    if (item.path === '/dev-space') {
-      return user?.id === 'abc41fed-55ba-4249-90df-3b5a25b09e87';
-    }
-    if (!item.toggleable) return true;
-    return settings?.visible_pages?.[item.path] !== false;
-  });
+  const navItems = [
+    { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, path: isDemo ? '/demo/dashboard' : '/' },
+    { id: 'tasks', name: 'Tasks', icon: ListTodo, path: isDemo ? '/demo/daily-tasks' : '/tasks' },
+    { id: 'schedule', name: 'Schedule', icon: Calendar, path: isDemo ? '/demo/schedule' : '/schedule' },
+    { id: 'focus-mode', name: 'Focus Mode', icon: Brain, path: isDemo ? '/demo/focus' : '/focus-mode' },
+    { id: 'sleep-tracker', name: 'Sleep Tracker', icon: Moon, path: isDemo ? '/demo/sleep-tracker' : '/sleep-tracker' },
+    { id: 'quick-links', name: 'Quick Links', icon: LinkIcon, path: isDemo ? '/demo/quick-links' : '/quick-links' },
+    { id: 'people-memory', name: 'People Memory', icon: Users, path: isDemo ? '/demo/people-memory' : '/people-memory' },
+    { id: 'archive', name: 'Archive', icon: Archive, path: isDemo ? '/demo/archive' : '/archive' },
+    { id: 'my-hub', name: 'My Hub', icon: HelpCircle, path: isDemo ? '/demo/my-hub' : '/my-hub' },
+  ];
+
+  const visiblePages = useMemo(() => {
+    if (!settings?.visible_pages) return navItems.map(item => item.id);
+    return (settings.visible_pages as string[]);
+  }, [settings?.visible_pages, navItems]);
+
+  const filteredNavItems = navItems.filter(item => visiblePages.includes(item.id));
 
   return (
-    <nav className="flex-1 px-3 space-y-1">
-      {visibleNavItems.map((item) => {
-        const path = isDemo ? (item.path === '/dashboard' ? '/demo' : `/demo${item.path}`) : item.path;
-        const isActive = location.pathname === path;
-        const Icon = item.icon;
-        return (
+    <div
+      className={cn(
+        "group flex flex-col h-full bg-gray-100 text-gray-800 transition-all duration-300 ease-in-out border-r",
+        isCollapsed ? "w-[50px]" : "w-[200px]"
+      )}
+    >
+      <div className="flex items-center justify-center h-16 border-b">
+        <Link to={isDemo ? '/demo' : '/'} className="flex items-center justify-center h-full w-full">
+          <span className={cn("font-bold text-xl transition-opacity duration-300", isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto")}>
+            Happy Sloth
+          </span>
+          <span className={cn("font-bold text-xl absolute transition-opacity duration-300", isCollapsed ? "opacity-100 w-auto" : "opacity-0 w-0")}>
+            HS
+          </span>
+        </Link>
+      </div>
+      <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
+        {filteredNavItems.map((item) => (
           <Link
             key={item.path}
-            to={path}
+            to={item.path}
             className={cn(
-              "flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-              isActive
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'text-foreground/80 hover:bg-muted hover:text-foreground'
+              "flex items-center rounded-md px-3 py-2 text-sm font-medium hover:bg-gray-200",
+              location.pathname === item.path ? "bg-blue-500 text-white hover:bg-blue-600" : "text-gray-700",
+              isCollapsed ? "justify-center" : ""
             )}
-            onClick={onLinkClick}
           >
-            <Icon className="h-4 w-4" />
-            <span className="font-medium text-sm">{item.name}</span>
-            {item.showCount && !countLoading && dailyTaskCount > 0 && (
-              <Badge className="ml-auto px-2.5 py-1 text-xs rounded-full bg-primary-foreground text-primary flex-shrink-0">
+            <item.icon className={cn("h-5 w-5", isCollapsed ? "" : "mr-3")} />
+            <span className={cn("transition-opacity duration-300", isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto")}>
+              {item.name}
+            </span>
+            {item.id === 'tasks' && !countLoading && dailyTaskCount > 0 && (
+              <span className={cn(
+                "ml-auto px-2 py-0.5 text-xs font-bold rounded-full",
+                location.pathname === item.path ? "bg-white text-blue-500" : "bg-blue-500 text-white",
+                isCollapsed ? "absolute top-1 right-1" : ""
+              )}>
                 {dailyTaskCount}
-              </Badge>
+              </span>
             )}
           </Link>
-        );
-      })}
-    </nav>
-  );
-};
-
-export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false, demoUserId }) => {
-  const isMobile = useIsMobile();
-  const { isSoundEnabled, toggleSound } = useSound();
-
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
-
-  if (isMobile) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <header className="flex items-center justify-between p-4 bg-card/80 backdrop-blur shadow-sm sticky top-0 z-50">
-          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label="Open menu" className="h-9 w-9">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent
-              side="left"
-              className="w-64 bg-card flex flex-col"
-              onPointerDownOutside={(e: PointerDownOutsideEvent) => {
-                if (e.target instanceof HTMLElement && e.target.closest('[data-radix-popper-content-wrapper]')) {
-                  e.preventDefault();
-                }
-              }}
-            >
-              <div className="p-4 flex justify-between items-center">
-                <Link to={isDemo ? '/demo' : '/dashboard'} className="hover:opacity-80 transition-opacity">
-                  <h1 className="text-2xl font-bubbly">TaskMaster</h1>
-                </Link>
-              </div>
-              <NavigationLinks onLinkClick={() => setIsSheetOpen(false)} isDemo={isDemo} demoUserId={demoUserId} />
-              <div className="p-4 border-t border-border flex justify-between items-center">
-                <p className="text-xs text-muted-foreground">
-                  &copy; {new Date().getFullYear()} TaskMaster
-                </p>
-                <div className="flex items-center space-x-1">
-                  <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"} className="h-8 w-8">
-                    {isSoundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-                  </Button>
-                  <ThemeSelector />
-                </div>
-              </div>
-            </SheetContent>
-          </Sheet>
-          <Link to={isDemo ? '/demo' : '/dashboard'} className="hover:opacity-80 transition-opacity">
-            <h1 className="text-xl font-bubbly sm:text-2xl">TaskMaster</h1> {/* Reduced font size for mobile */}
-          </Link>
-          <div className="flex items-center space-x-1">
-            <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"} className="h-8 w-8">
-              {isSoundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-            </Button>
-            <ThemeSelector />
-          </div>
-        </header>
-        <div className="flex-1 overflow-auto">
-          {children}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="h-screen flex overflow-hidden bg-background">
-      <div className="w-64 bg-card/80 backdrop-blur shadow-md h-full flex flex-col flex-shrink-0">
-        <div className="p-4 flex justify-between items-center">
-          <Link to={isDemo ? '/demo' : '/dashboard'} className="hover:opacity-80 transition-opacity">
-            <h1 className="text-2xl font-bubbly">TaskMaster</h1>
-          </Link>
-        </div>
-        <NavigationLinks isDemo={isDemo} demoUserId={demoUserId} />
-        <div className="p-4 border-t border-border flex justify-between items-center">
-          <p className="text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} TaskMaster
-          </p>
-          <div className="flex items-center space-x-1">
-            <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"} className="h-8 w-8">
-              {isSoundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-            </Button>
-            <ThemeSelector />
-          </div>
-        </div>
-      </div>
-      <div className="flex-1 flex flex-col overflow-y-auto">
-        {children}
+        ))}
+      </nav>
+      <div className="border-t p-2">
+        <Button
+          variant="ghost"
+          className={cn("w-full justify-start", isCollapsed ? "justify-center" : "")}
+          onClick={() => setIsCommandPaletteOpen(true)}
+        >
+          <LayoutDashboard className={cn("h-5 w-5", isCollapsed ? "" : "mr-3")} />
+          <span className={cn("transition-opacity duration-300", isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto")}>
+            Command Palette
+          </span>
+        </Button>
+        <Link
+          to={isDemo ? '/demo/settings' : '/settings'}
+          className={cn(
+            "flex items-center rounded-md px-3 py-2 text-sm font-medium hover:bg-gray-200",
+            location.pathname === (isDemo ? '/demo/settings' : '/settings') ? "bg-blue-500 text-white hover:bg-blue-600" : "text-gray-700",
+            isCollapsed ? "justify-center" : ""
+          )}
+        >
+          <Settings className={cn("h-5 w-5", isCollapsed ? "" : "mr-3")} />
+          <span className={cn("transition-opacity duration-300", isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto")}>
+            Settings
+          </span>
+        </Link>
+        <Button
+          variant="ghost"
+          className={cn("w-full justify-start", isCollapsed ? "justify-center" : "")}
+          onClick={signOut}
+        >
+          <LogOut className={cn("h-5 w-5", isCollapsed ? "" : "mr-3")} />
+          <span className={cn("transition-opacity duration-300", isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto")}>
+            Log Out
+          </span>
+        </Button>
       </div>
     </div>
   );
 };
+
+export default Sidebar;

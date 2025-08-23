@@ -14,6 +14,7 @@ export type CustomCard = Tables<'custom_dashboard_cards'>;
 export type WeeklyFocus = Tables<'weekly_focus'>;
 export type SleepRecord = Tables<'sleep_records'>;
 export type DoTodayOffLogEntry = Tables<'do_today_off_log'>;
+export type GratitudeEntry = Tables<'gratitude_journal_entries'>; // Added missing GratitudeEntry type
 
 // Extended types for application logic
 export type Task = Tables<'tasks'> & {
@@ -75,6 +76,9 @@ export type UpdateSleepRecordData = Partial<Omit<SleepRecord, 'id' | 'user_id' |
 
 export type NewDoTodayOffLogEntryData = Omit<DoTodayOffLogEntry, 'id' | 'user_id' | 'created_at'>;
 export type UpdateDoTodayOffLogEntryData = Partial<Omit<DoTodayOffLogEntry, 'id' | 'user_id' | 'created_at'>>;
+
+export type NewGratitudeEntryData = Omit<GratitudeEntry, 'id' | 'user_id' | 'created_at'>; // Added missing GratitudeEntryData
+export type UpdateGratitudeEntryData = Partial<Omit<GratitudeEntry, 'id' | 'user_id' | 'created_at'>>; // Added missing UpdateGratitudeEntryData
 
 // Analytics specific types
 export type AnalyticsTask = Task & {

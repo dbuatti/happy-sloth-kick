@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTasks } from '@/hooks/useTasks';
 import { Task, TaskCategory } from '@/types';
@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Search, Filter } from 'lucide-react';
 
 const Archive = () => {
-  const { userId: currentUserId } = useAuth();
+  const { user } = useAuth();
+  const currentUserId = user?.id;
   const {
     tasks: allTasks,
     categories,
@@ -17,8 +18,6 @@ const Archive = () => {
     updateTask,
     deleteTask,
     addTask,
-    filterStatus,
-    setFilterStatus,
     filterCategory,
     setFilterCategory,
     filterPriority,
@@ -29,7 +28,7 @@ const Archive = () => {
   } = useTasks({ userId: currentUserId! });
 
   // Ensure showCompleted is true for archive
-  React.useEffect(() => {
+  useEffect(() => {
     setShowCompleted(true);
   }, [setShowCompleted]);
 
@@ -40,9 +39,9 @@ const Archive = () => {
   const filteredArchivedTasks = useMemo(() => {
     let filtered = archivedTasks;
 
-    if (filterStatus !== 'all') {
-      filtered = filtered.filter(task => task.status === filterStatus);
-    }
+    // In archive, we always show completed tasks, so filterStatus is not directly used for 'completed'
+    // but can be used for other statuses if needed (e.g., 'to-do' tasks that were archived by mistake)
+    // For now, we assume all tasks in `archivedTasks` are 'completed'.
 
     if (filterCategory !== 'all') {
       filtered = filtered.filter(task => task.category === filterCategory);
@@ -59,7 +58,7 @@ const Archive = () => {
       );
     }
     return filtered;
-  }, [archivedTasks, filterStatus, filterCategory, filterPriority, searchQuery]);
+  }, [archivedTasks, filterCategory, filterPriority, searchQuery]);
 
   const renderSubtasks = (parentTaskId: string) => {
     const subtasks = allTasks.filter(sub => sub.parent_task_id === parentTaskId);
@@ -72,7 +71,7 @@ const Archive = () => {
             categories={categories as TaskCategory[]}
             onUpdateTask={updateTask}
             onDeleteTask={deleteTask}
-            onAddSubtask={async (description, parentTaskId) => { await addTask(description, null, parentTaskId); }}
+            onAddSubtask={async (description) => { await addTask(description, null, parentTaskId, null, null, 'medium'); }}
             onToggleFocusMode={async () => {}}
             onLogDoTodayOff={async () => {}}
             isFocusedTask={false}
@@ -143,7 +142,7 @@ const Archive = () => {
               categories={categories as TaskCategory[]}
               onUpdateTask={updateTask}
               onDeleteTask={deleteTask}
-              onAddSubtask={async (description, parentTaskId) => { await addTask(description, null, parentTaskId); }}
+              onAddSubtask={async (description) => { await addTask(description, null, task.id, null, null, 'medium'); }}
               onToggleFocusMode={async () => {}}
               onLogDoTodayOff={async () => {}}
               isFocusedTask={false}

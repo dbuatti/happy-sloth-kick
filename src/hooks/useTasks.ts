@@ -107,7 +107,7 @@ const deleteSection = async (id: string): Promise<void> => {
   if (error) throw error;
 };
 
-const updateSectionsOrder = async (updates: { id: string; order: number; name: string; include_in_focus_mode: boolean | null; user_id: string }[]): Promise<void> => {
+const updateSectionsOrder = async (updates: { id: string; order: number | null; name: string; include_in_focus_mode: boolean | null; user_id: string }[]): Promise<void> => {
   const { error } = await supabase.rpc('update_tasks_order', { updates });
   if (error) throw error;
 };
@@ -176,10 +176,9 @@ const updateTasksOrder = async (updates: { id: string; order: number | null; par
 };
 
 export const useTasks = ({ userId, isDemo = false, demoUserId }: UseTasksProps) => {
-  const { isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
+  const currentUserId = isDemo ? demoUserId : user?.id;
   const queryClient = useQueryClient();
-
-  const currentUserId = isDemo ? demoUserId : userId;
 
   // --- Categories Query ---
   const { data: categories, isLoading: isLoadingCategories, error: errorCategories } = useQuery<TaskCategory[], Error>({
@@ -329,7 +328,7 @@ export const useTasks = ({ userId, isDemo = false, demoUserId }: UseTasksProps) 
     tasksBySection.forEach((taskList, sectionId) => {
       tasksBySection.set(sectionId, taskList.sort((a, b) => {
         if (a.order !== null && b.order !== null) {
-          return a.order - b.order;
+          return (a.order ?? 0) - (b.order ?? 0); // Handle null orders gracefully
         }
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       }));

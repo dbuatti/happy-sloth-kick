@@ -44,7 +44,7 @@ const deleteQuickLink = async (id: string): Promise<void> => {
   if (error) throw error;
 };
 
-const updateQuickLinksOrder = async (updates: { id: string; link_order: number; user_id: string }[]): Promise<void> => {
+const updateQuickLinksOrder = async (updates: { id: string; link_order: number; user_id: string; title: string; url: string }[]): Promise<void> => {
   const { error } = await supabase
     .from('quick_links')
     .upsert(updates, { onConflict: 'id' });
@@ -52,7 +52,8 @@ const updateQuickLinksOrder = async (updates: { id: string; link_order: number; 
 };
 
 export const useQuickLinks = () => {
-  const { userId, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
+  const userId = user?.id;
   const queryClient = useQueryClient();
 
   const { data: quickLinks, isLoading, error } = useQuery<QuickLink[], Error>({
@@ -150,13 +151,15 @@ export const useQuickLinks = () => {
     onSuccess: invalidateQuickLinksQueries,
   });
 
-  const reorderQuickLinksMutation = useMutation<void, Error, string[]>({
-    mutationFn: async (linkIds) => {
+  const reorderQuickLinksMutation = useMutation<void, Error, QuickLink[]>({
+    mutationFn: async (links) => {
       if (!userId) throw new Error('User not authenticated.');
-      const updates = linkIds.map((id, index) => ({
-        id,
+      const updates = links.map((link, index) => ({
+        id: link.id,
         link_order: index,
         user_id: userId,
+        title: link.title, // Include title for upsert
+        url: link.url, // Include url for upsert
       }));
       await updateQuickLinksOrder(updates);
     },

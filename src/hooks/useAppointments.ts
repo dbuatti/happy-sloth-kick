@@ -48,7 +48,8 @@ const deleteAppointment = async (id: string): Promise<void> => {
 };
 
 export const useAppointments = (date: Date) => {
-  const { userId, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
+  const userId = user?.id;
   const queryClient = useQueryClient();
 
   const startOfRange = format(date, 'yyyy-MM-dd');

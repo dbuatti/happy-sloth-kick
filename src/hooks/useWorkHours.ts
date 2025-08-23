@@ -54,7 +54,8 @@ const deleteWorkHour = async (id: string): Promise<void> => {
 };
 
 export const useWorkHours = () => {
-  const { userId, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
+  const userId = user?.id;
   const queryClient = useQueryClient();
 
   const { data: workHours, isLoading: isLoadingAll, error: errorAll } = useQuery<WorkHour[], Error>({

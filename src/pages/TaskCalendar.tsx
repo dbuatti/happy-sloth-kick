@@ -12,9 +12,10 @@ import TaskItem from '@/components/TaskItem';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Plus } from 'lucide-react';
+import { Calendar as CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { Calendar } from '@/components/ui/calendar';
 
 const localizer = momentLocalizer(moment);
 
@@ -31,8 +32,14 @@ interface CalendarEvent {
   };
 }
 
-const TaskCalendar = () => {
-  const { userId: currentUserId } = useAuth();
+interface TaskCalendarProps {
+  isDemo?: boolean;
+  demoUserId?: string;
+}
+
+const TaskCalendar: React.FC<TaskCalendarProps> = ({ isDemo = false, demoUserId }) => {
+  const { user } = useAuth();
+  const currentUserId = isDemo ? demoUserId : user?.id;
   const [selectedDate, setSelectedDate] = useState(new Date());
 
   const {
@@ -199,9 +206,9 @@ const TaskCalendar = () => {
                 <TaskItem
                   task={selectedEvent.resource.task}
                   categories={categories as TaskCategory[]}
-                  onUpdateTask={async (taskId: string, updates: Partial<Task>) => { await updateTask(taskId, updates); setIsModalOpen(false); }}
+                  onUpdateTask={async (taskId: string, updates: Partial<Task>) => { await updateTask(taskId, updates); setIsModalOpen(false); return selectedEvent.resource.task!; }}
                   onDeleteTask={async (taskId: string) => { await deleteTask(taskId); setIsModalOpen(false); }}
-                  onAddSubtask={async (description: string, parentTaskId: string) => { await addTask(description, null, parentTaskId); }}
+                  onAddSubtask={async (description: string) => { await addTask(description, null, selectedEvent.resource.task!.id, null, null, 'medium'); return selectedEvent.resource.task!; }}
                   onToggleFocusMode={onToggleFocusMode}
                   onLogDoTodayOff={onLogDoTodayOff}
                   isFocusedTask={false}
@@ -213,9 +220,9 @@ const TaskCalendar = () => {
                           key={subtask.id}
                           task={subtask}
                           categories={categories as TaskCategory[]}
-                          onUpdateTask={async (taskId: string, updates: Partial<Task>) => { await updateTask(taskId, updates); }}
+                          onUpdateTask={async (taskId: string, updates: Partial<Task>) => { await updateTask(taskId, updates); return subtask; }}
                           onDeleteTask={async (taskId: string) => { await deleteTask(taskId); }}
-                          onAddSubtask={async (description: string, parentTaskId: string) => { await addTask(description, null, parentTaskId); }}
+                          onAddSubtask={async (description: string) => { await addTask(description, null, subtask.id, null, null, 'medium'); return subtask; }}
                           onToggleFocusMode={onToggleFocusMode}
                           onLogDoTodayOff={onLogDoTodayOff}
                           isFocusedTask={false}
