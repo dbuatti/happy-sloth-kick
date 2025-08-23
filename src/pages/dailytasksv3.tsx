@@ -16,6 +16,7 @@ import TaskItem from '@/components/tasks/TaskItem';
 import TaskForm from '@/components/tasks/TaskForm';
 import SectionForm from '@/components/tasks/SectionForm';
 import CategoryForm from '@/components/tasks/CategoryForm';
+import QuickAddTask from '@/components/tasks/QuickAddTask';
 import { useTaskManagement } from '@/hooks/useTaskManagement';
 import { Task, TaskSection, TaskPriority } from '@/types/task-management';
 
@@ -48,7 +49,11 @@ const DailyTasksV3: React.FC = () => {
     addCategory,
     updateCategory,
     deleteCategory,
-  } = useTaskManagement();
+  } = useTaskManagement(currentDate); // Pass currentDate to the hook
+
+  const handleQuickAddTask = (description: string, sectionId: string | null) => {
+    addTask({ description, section_id: sectionId, due_date: format(currentDate, 'yyyy-MM-dd') });
+  };
 
   const filteredSections = useMemo(() => {
     if (!sections) return [];
@@ -61,21 +66,17 @@ const DailyTasksV3: React.FC = () => {
             const matchesPriority = filterPriority === 'all' || task.priority === filterPriority;
             const matchesCategory = filterCategory === 'all' || task.category === filterCategory;
 
-            // Filter by date: only show tasks due on or before the current date, or tasks without a due date
-            const taskDueDate = task.due_date ? parseISO(task.due_date) : null;
-            const isRelevantDate =
-              !taskDueDate ||
-              isSameDay(taskDueDate, currentDate) ||
-              (isPast(taskDueDate) && !isSameDay(taskDueDate, currentDate) && task.status !== 'completed');
-
-            return matchesSearch && matchesPriority && matchesCategory && isRelevantDate;
+            // The date filtering logic is now primarily handled within fetchTaskSections in the hook.
+            // This client-side filter will only apply to the tasks already returned by the hook for the current date.
+            // We keep it here for search/priority/category filtering on the already filtered set.
+            return matchesSearch && matchesPriority && matchesCategory;
           })
           .sort((a, b) => a.order - b.order); // Ensure tasks within sections are sorted
 
         return { ...section, tasks: filteredTasks };
       })
       .filter((section) => section.tasks.length > 0 || searchTerm || filterPriority !== 'all' || filterCategory !== 'all');
-  }, [sections, searchTerm, filterPriority, filterCategory, currentDate]);
+  }, [sections, searchTerm, filterPriority, filterCategory]); // Removed currentDate from dependencies as it's handled by the hook
 
   const onDragEnd = useCallback(
     async (result: DropResult) => {
@@ -194,6 +195,11 @@ const DailyTasksV3: React.FC = () => {
           <Button variant="ghost" size="icon" onClick={() => setCurrentDate(addDays(currentDate, 1))}>
             <ChevronRight className="h-5 w-5" />
           </Button>
+        </div>
+
+        {/* Quick Add Task */}
+        <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
+          <QuickAddTask onAddTask={handleQuickAddTask} sections={sections} defaultSectionId={filteredSections[0]?.id} />
         </div>
 
         {/* Filters and Actions */}
@@ -397,6 +403,7 @@ const DailyTasksV3: React.FC = () => {
                                   onUpdateTask={updateTask}
                                   onDeleteTask={deleteTask}
                                   onAddTask={addTask}
+                                  currentDate={currentDate}
                                 />
                               ))}
                               {providedTask.placeholder}
