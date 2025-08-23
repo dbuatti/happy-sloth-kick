@@ -16,6 +16,7 @@ const buildTaskTree = (parentTasks: Task[], allTasks: Task[]): Task[] => {
 
 // Data Fetching Functions
 const fetchTaskSections = async (): Promise<TaskSection[]> => {
+  // Fetch sections
   const { data: sections, error: sectionsError } = await supabase
     .from('task_sections')
     .select('*')
@@ -23,6 +24,7 @@ const fetchTaskSections = async (): Promise<TaskSection[]> => {
 
   if (sectionsError) throw new Error(sectionsError.message);
 
+  // Fetch all tasks for the user
   const { data: tasks, error: tasksError } = await supabase
     .from('tasks')
     .select('*')
@@ -30,13 +32,16 @@ const fetchTaskSections = async (): Promise<TaskSection[]> => {
 
   if (tasksError) throw new Error(tasksError.message);
 
+  // Create a map of sections for quick lookup
   const sectionMap = new Map<string, TaskSection>(
     sections.map((section) => ({ ...section, tasks: [] })).map((section) => [section.id, section])
   );
 
+  // Separate top-level tasks and subtasks
   const topLevelTasks = tasks.filter((task) => !task.parent_task_id);
   const tasksWithSubtasks = buildTaskTree(topLevelTasks, tasks);
 
+  // Assign tasks to their respective sections
   tasksWithSubtasks.forEach((task) => {
     if (task.section_id && sectionMap.has(task.section_id)) {
       sectionMap.get(task.section_id)?.tasks.push(task);
