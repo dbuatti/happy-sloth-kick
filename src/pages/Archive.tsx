@@ -71,7 +71,7 @@ const Archive = () => {
             categories={categories as TaskCategory[]}
             onUpdateTask={updateTask}
             onDeleteTask={deleteTask}
-            onAddSubtask={async (description) => { await addTask(description, null, parentTaskId, null, null, 'medium'); }}
+            onAddSubtask={async (description) => { return await addTask(description, null, parentTaskId, null, null, 'medium'); }}
             onToggleFocusMode={async () => {}}
             onLogDoTodayOff={async () => {}}
             isFocusedTask={false}
@@ -142,7 +142,7 @@ const Archive = () => {
               categories={categories as TaskCategory[]}
               onUpdateTask={updateTask}
               onDeleteTask={deleteTask}
-              onAddSubtask={async (description) => { await addTask(description, null, task.id, null, null, 'medium'); }}
+              onAddSubtask={async (description) => { return await addTask(description, null, task.id, null, null, 'medium'); }}
               onToggleFocusMode={async () => {}}
               onLogDoTodayOff={async () => {}}
               isFocusedTask={false}

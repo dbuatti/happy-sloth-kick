@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { Person, NewPersonData, UpdatePersonData } from '@/types';
@@ -45,7 +45,7 @@ const deletePerson = async (id: string): Promise<void> => {
 };
 
 export const usePeopleMemory = () => {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const userId = user?.id;
   const queryClient = useQueryClient();
 
@@ -69,8 +69,7 @@ export const usePeopleMemory = () => {
       let avatar_url: string | null = null;
       if (avatarFile) {
         const fileExt = avatarFile.name.split('.').pop();
-        const fileName = `${uuidv4()}.${fileExt}`;
-        const filePath = `${userId}/${fileName}`;
+        const fileName = `${userId}/${uuidv4()}.${fileExt}`;
         const { error: uploadError } = await supabase.storage
           .from('avatars')
           .upload(filePath, avatarFile);
@@ -93,7 +92,7 @@ export const usePeopleMemory = () => {
       if (avatarFile) {
         // If a new file is provided, upload it
         const fileExt = avatarFile.name.split('.').pop();
-        const fileName = `${uuidv4()}.${fileExt}`;
+        const fileName = `${userId}/${uuidv4()}.${fileExt}`;
         const filePath = `${userId}/${fileName}`;
         const { error: uploadError } = await supabase.storage
           .from('avatars')

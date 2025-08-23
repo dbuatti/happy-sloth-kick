@@ -3,7 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { SleepRecord } from '@/types';
 import { useQuery } from '@tanstack/react-query';
-import { format, parseISO, differenceInMinutes, addDays, subDays } from 'date-fns';
+import { format, parseISO, differenceInMinutes } from 'date-fns';
+import moment from 'moment'; // Import moment
 
 interface SleepAnalyticsData {
   date: string;
@@ -29,7 +30,8 @@ const fetchSleepRecordsForAnalytics = async (userId: string, startOfRange: strin
 };
 
 export const useSleepAnalytics = (startDate: Date, endDate: Date) => {
-  const { userId, isLoading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const userId = user?.id;
 
   const startOfRange = format(startDate, 'yyyy-MM-dd');
   const endOfRange = format(endDate, 'yyyy-MM-dd');
@@ -50,8 +52,6 @@ export const useSleepAnalytics = (startDate: Date, endDate: Date) => {
     });
 
     const processedData: SleepAnalyticsData[] = validRecords.map((record: SleepRecord) => {
-      const recordDate = parseISO(record.date);
-
       // Handle overnight sleep: if wake_up_time is earlier than bed_time, assume it's the next day
       let bedTime = moment(`${record.date}T${record.bed_time}`);
       let lightsOffTime = moment(`${record.date}T${record.lights_off_time}`);

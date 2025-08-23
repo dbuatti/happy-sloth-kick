@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { Appointment, NewAppointmentData, UpdateAppointmentData } from '@/types';
@@ -48,7 +48,7 @@ const deleteAppointment = async (id: string): Promise<void> => {
 };
 
 export const useAppointments = (date: Date) => {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const userId = user?.id;
   const queryClient = useQueryClient();
 

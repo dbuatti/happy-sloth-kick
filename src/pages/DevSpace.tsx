@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useDevIdeas } from '@/hooks/useDevIdeas';
-import { DevIdea, DevIdeaTag, NewDevIdeaData, UpdateDevIdeaData } from '@/types';
+import { DevIdea, DevIdeaTag } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Tag, Edit, Trash2, X } from 'lucide-react';
+import { Plus, Tag, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -338,9 +338,9 @@ const DevSpace = () => {
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="tags" className="text-right">Tags</Label>
               <Select
-                multiple
                 value={newIdeaTagIds}
                 onValueChange={(values: string[]) => setNewIdeaTagIds(values)}
+                multiple // Enable multiple selection
               >
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Select tags">

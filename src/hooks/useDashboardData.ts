@@ -1,10 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
-import { UserSettings, WeeklyFocus, CustomCard, Json, NewCustomCardData, UpdateCustomCardData, UpdateWeeklyFocusData } from '@/types';
+import { WeeklyFocus, CustomCard, NewCustomCardData, UpdateCustomCardData, UpdateWeeklyFocusData } from '@/types';
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { startOfWeek, format } from 'date-fns';
-import { v4 as uuidv4 } from 'uuid';
 
 const defaultDashboardLayout = {
   lg: [
@@ -104,7 +103,7 @@ const updateCustomCardsOrder = async (updates: { id: string; card_order: number;
 };
 
 export const useDashboardData = () => {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const userId = user?.id;
   const queryClient = useQueryClient();
 

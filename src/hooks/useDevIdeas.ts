@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { DevIdea, DevIdeaTag, NewDevIdeaData, UpdateDevIdeaData, NewDevIdeaTagData, UpdateDevIdeaTagData } from '@/types';
@@ -148,7 +148,7 @@ const deleteDevIdea = async (id: string): Promise<void> => {
 };
 
 export const useDevIdeas = () => {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const userId = user?.id;
   const queryClient = useQueryClient();
 

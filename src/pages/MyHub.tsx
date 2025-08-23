@@ -19,7 +19,7 @@ interface MyHubProps {
   demoUserId?: string;
 }
 
-const MyHub: React.FC<MyHubProps> = ({ isDemo = false, demoUserId }) => {
+const MyHub: React.FC<MyHubProps> = () => {
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: startOfMonth(new Date()),
     to: endOfMonth(new Date()),

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { WorkHour, NewWorkHourData, UpdateWorkHourData } from '@/types';
@@ -8,7 +8,8 @@ const fetchWorkHours = async (userId: string): Promise<WorkHour[]> => {
   const { data, error } = await supabase
     .from('user_work_hours')
     .select('*')
-    .eq('user_id', userId);
+    .eq('user_id', userId)
+    .order('day_of_week', { ascending: true }); // Order for consistent display
   if (error) throw error;
   return data as WorkHour[];
 };
@@ -54,7 +55,7 @@ const deleteWorkHour = async (id: string): Promise<void> => {
 };
 
 export const useWorkHours = () => {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const userId = user?.id;
   const queryClient = useQueryClient();
 

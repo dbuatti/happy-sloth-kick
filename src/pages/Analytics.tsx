@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTasks } from '@/hooks/useTasks';
-import { Task, TaskCategory } from '@/types';
+import { Task, TaskCategory, AnalyticsTask } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
@@ -11,11 +11,6 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { DateRange } from 'react-day-picker';
-
-// Define AnalyticsTask type to include is_daily_recurring
-interface AnalyticsTask extends Task {
-  is_daily_recurring: boolean;
-}
 
 const Analytics = () => {
   const { user } = useAuth();

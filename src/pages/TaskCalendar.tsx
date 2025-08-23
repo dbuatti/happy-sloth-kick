@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -9,8 +9,6 @@ import { Task, Appointment, TaskCategory } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import TaskItem from '@/components/TaskItem';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
@@ -58,8 +56,6 @@ const TaskCalendar: React.FC<TaskCalendarProps> = ({ isDemo = false, demoUserId 
     appointments,
     isLoading: appointmentsLoading,
     error: appointmentsError,
-    addAppointment,
-    updateAppointment,
     deleteAppointment,
   } = useAppointments(selectedDate); // Use selectedDate for appointments hook
 
@@ -208,7 +204,7 @@ const TaskCalendar: React.FC<TaskCalendarProps> = ({ isDemo = false, demoUserId 
                   categories={categories as TaskCategory[]}
                   onUpdateTask={async (taskId: string, updates: Partial<Task>) => { await updateTask(taskId, updates); setIsModalOpen(false); return selectedEvent.resource.task!; }}
                   onDeleteTask={async (taskId: string) => { await deleteTask(taskId); setIsModalOpen(false); }}
-                  onAddSubtask={async (description: string) => { await addTask(description, null, selectedEvent.resource.task!.id, null, null, 'medium'); return selectedEvent.resource.task!; }}
+                  onAddSubtask={async (description: string) => { return await addTask(description, null, selectedEvent.resource.task!.id, null, null, 'medium'); }}
                   onToggleFocusMode={onToggleFocusMode}
                   onLogDoTodayOff={onLogDoTodayOff}
                   isFocusedTask={false}
@@ -222,7 +218,7 @@ const TaskCalendar: React.FC<TaskCalendarProps> = ({ isDemo = false, demoUserId 
                           categories={categories as TaskCategory[]}
                           onUpdateTask={async (taskId: string, updates: Partial<Task>) => { await updateTask(taskId, updates); return subtask; }}
                           onDeleteTask={async (taskId: string) => { await deleteTask(taskId); }}
-                          onAddSubtask={async (description: string) => { await addTask(description, null, subtask.id, null, null, 'medium'); return subtask; }}
+                          onAddSubtask={async (description: string) => { return await addTask(description, null, subtask.id, null, null, 'medium'); }}
                           onToggleFocusMode={onToggleFocusMode}
                           onLogDoTodayOff={onLogDoTodayOff}
                           isFocusedTask={false}

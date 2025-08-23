@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { Project, NewProjectData, UpdateProjectData } from '@/types';
@@ -55,7 +55,7 @@ const deleteProject = async (id: string): Promise<void> => {
 };
 
 export const useProjects = (sortOption: string = 'created_at') => {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const userId = user?.id;
   const queryClient = useQueryClient();
 

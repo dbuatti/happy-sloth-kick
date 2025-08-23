@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { QuickLink, NewQuickLinkData, UpdateQuickLinkData } from '@/types';
@@ -52,7 +52,7 @@ const updateQuickLinksOrder = async (updates: { id: string; link_order: number; 
 };
 
 export const useQuickLinks = () => {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const userId = user?.id;
   const queryClient = useQueryClient();
 
@@ -76,7 +76,7 @@ export const useQuickLinks = () => {
       let image_url: string | null = null;
       if (linkData.imageFile) {
         const fileExt = linkData.imageFile.name.split('.').pop();
-        const fileName = `${uuidv4()}.${fileExt}`;
+        const fileName = `${userId}/${uuidv4()}.${fileExt}`;
         const filePath = `${userId}/${fileName}`;
         const { error: uploadError } = await supabase.storage
           .from('link_images')
@@ -109,7 +109,7 @@ export const useQuickLinks = () => {
 
       if (imageFile) {
         const fileExt = imageFile.name.split('.').pop();
-        const fileName = `${uuidv4()}.${fileExt}`;
+        const fileName = `${userId}/${uuidv4()}.${fileExt}`;
         const filePath = `${userId}/${fileName}`;
         const { error: uploadError } = await supabase.storage
           .from('link_images')

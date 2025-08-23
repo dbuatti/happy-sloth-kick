@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Edit, Clipboard, Image as ImageIcon, ClipboardCopy, ChevronDown, ChevronUp } from 'lucide-react';
+import { Edit, Image as ImageIcon, ClipboardCopy, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { DevIdea } from '@/types'; // Import from centralized types
 import { cn } from '@/lib/utils';
 import { toast } from 'react-hot-toast';

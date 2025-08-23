@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import {
@@ -14,8 +14,6 @@ import {
   UseTasksProps,
 } from '@/types';
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
-import { v4 as uuidv4 } from 'uuid';
-import { arrayMove } from '@dnd-kit/sortable';
 import { format, isSameDay, isPast, startOfDay } from 'date-fns';
 
 // Helper to clean task data for DB insertion/update
@@ -175,8 +173,8 @@ const updateTasksOrder = async (updates: { id: string; order: number | null; par
   if (error) throw error;
 };
 
-export const useTasks = ({ userId, isDemo = false, demoUserId }: UseTasksProps) => {
-  const { user, isLoading: authLoading } = useAuth();
+export const useTasks = ({ userId: propUserId, isDemo = false, demoUserId }: UseTasksProps) => {
+  const { user, loading: authLoading } = useAuth();
   const currentUserId = isDemo ? demoUserId : user?.id;
   const queryClient = useQueryClient();
 
@@ -259,7 +257,7 @@ export const useTasks = ({ userId, isDemo = false, demoUserId }: UseTasksProps) 
       user_id: currentUserId,
       include_in_focus_mode: s.include_in_focus_mode,
     }));
-    await updateSectionsOrder(updates);
+    await updateSectionsOrder(updates as { id: string; order: number | null; name: string; include_in_focus_mode: boolean | null; user_id: string }[]);
     invalidateSectionsQueries();
   }, [currentUserId, invalidateSectionsQueries]);
 
@@ -274,10 +272,21 @@ export const useTasks = ({ userId, isDemo = false, demoUserId }: UseTasksProps) 
     queryClient.invalidateQueries({ queryKey: ['tasks', currentUserId] });
   }, [queryClient, currentUserId]);
 
-  const createTaskMutation = useMutation<Task, Error, NewTaskData>({
-    mutationFn: async (newTask) => {
+  const createTaskMutation = useMutation<Task, Error, { description: string; sectionId: string | null; parentTaskId: string | null; dueDate: Date | null; categoryId: string | null; priority: string }>({
+    mutationFn: async ({ description, sectionId, parentTaskId, dueDate, categoryId, priority }) => {
       if (!currentUserId) throw new Error('User not authenticated.');
-      return addTask({ ...newTask, user_id: currentUserId });
+      const newTaskData: NewTaskData & { user_id: string } = {
+        user_id: currentUserId,
+        description,
+        section_id: sectionId,
+        parent_task_id: parentTaskId,
+        due_date: dueDate ? format(dueDate, 'yyyy-MM-dd') : null,
+        category: categoryId,
+        priority,
+        status: 'to-do', // Default status
+        recurring_type: 'none', // Default recurring type
+      };
+      return addTask(newTaskData);
     },
     onSuccess: invalidateTasksQueries,
   });
@@ -300,7 +309,7 @@ export const useTasks = ({ userId, isDemo = false, demoUserId }: UseTasksProps) 
       parent_task_id: task.parent_task_id,
       section_id: task.section_id,
     }));
-    await updateTasksOrder(updates);
+    await updateTasksOrder(updates as { id: string; order: number | null; parent_task_id: string | null; section_id: string | null }[]);
     invalidateTasksQueries();
   }, [currentUserId, invalidateTasksQueries]);
 

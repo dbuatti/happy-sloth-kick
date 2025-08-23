@@ -14,7 +14,7 @@ export type CustomCard = Tables<'custom_dashboard_cards'>;
 export type WeeklyFocus = Tables<'weekly_focus'>;
 export type SleepRecord = Tables<'sleep_records'>;
 export type DoTodayOffLogEntry = Tables<'do_today_off_log'>;
-export type GratitudeEntry = Tables<'gratitude_journal_entries'>; // Added missing GratitudeEntry type
+export type GratitudeEntry = Tables<'gratitude_journal_entries'>;
 
 // Extended types for application logic
 export type Task = Tables<'tasks'> & {
@@ -32,53 +32,53 @@ export type UserSettings = Tables<'user_settings'> & {
 };
 
 // New types for inserts/updates
-export type NewWorkHourData = Omit<WorkHour, 'id' | 'user_id'>;
-export type UpdateWorkHourData = Partial<Omit<WorkHour, 'id' | 'user_id'>>;
+export type NewWorkHourData = Omit<TablesInsert<'user_work_hours'>, 'id' | 'user_id'>;
+export type UpdateWorkHourData = Partial<Omit<TablesUpdate<'user_work_hours'>, 'id' | 'user_id'>>;
 
-export type NewTaskCategoryData = Omit<TaskCategory, 'id' | 'user_id' | 'created_at'>;
-export type UpdateTaskCategoryData = Partial<Omit<TaskCategory, 'id' | 'user_id' | 'created_at'>>;
+export type NewTaskCategoryData = Omit<TablesInsert<'task_categories'>, 'id' | 'user_id' | 'created_at'>;
+export type UpdateTaskCategoryData = Partial<Omit<TablesUpdate<'task_categories'>, 'id' | 'user_id' | 'created_at'>>;
 
-export type NewTaskSectionData = Omit<TaskSection, 'id' | 'user_id' | 'created_at'>;
-export type UpdateTaskSectionData = Partial<Omit<TaskSection, 'id' | 'user_id' | 'created_at'>>;
+export type NewTaskSectionData = Omit<TablesInsert<'task_sections'>, 'id' | 'user_id' | 'created_at'>;
+export type UpdateTaskSectionData = Partial<Omit<TablesUpdate<'task_sections'>, 'id' | 'user_id' | 'created_at'>>;
 
-export type NewTaskData = Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'category_color' | 'is_daily_recurring'>;
-export type UpdateTaskData = Partial<Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'category_color' | 'is_daily_recurring'>>;
+export type NewTaskData = Omit<TablesInsert<'tasks'>, 'id' | 'user_id' | 'created_at' | 'updated_at'>;
+export type UpdateTaskData = Partial<Omit<TablesUpdate<'tasks'>, 'id' | 'user_id' | 'created_at' | 'updated_at'>>;
 
-export type NewProjectData = Omit<Project, 'id' | 'user_id' | 'created_at' | 'current_count'>;
-export type UpdateProjectData = Partial<Omit<Project, 'id' | 'user_id' | 'created_at'>>;
+export type NewProjectData = Omit<TablesInsert<'projects'>, 'id' | 'user_id' | 'created_at' | 'current_count'>;
+export type UpdateProjectData = Partial<Omit<TablesUpdate<'projects'>, 'id' | 'user_id' | 'created_at'>>;
 
-export type NewAppointmentData = Omit<Appointment, 'id' | 'user_id' | 'created_at' | 'updated_at'>;
-export type UpdateAppointmentData = Partial<Omit<Appointment, 'id' | 'user_id' | 'created_at' | 'updated_at'>>;
+export type NewAppointmentData = Omit<TablesInsert<'schedule_appointments'>, 'id' | 'user_id' | 'created_at' | 'updated_at'>;
+export type UpdateAppointmentData = Partial<Omit<TablesUpdate<'schedule_appointments'>, 'id' | 'user_id' | 'created_at' | 'updated_at'>>;
 
-export type NewWorryEntryData = Omit<WorryEntry, 'id' | 'user_id' | 'created_at'>;
-export type UpdateWorryEntryData = Partial<Omit<WorryEntry, 'id' | 'user_id' | 'created_at'>>;
+export type NewWorryEntryData = Omit<TablesInsert<'worry_journal_entries'>, 'id' | 'user_id' | 'created_at'>;
+export type UpdateWorryEntryData = Partial<Omit<TablesUpdate<'worry_journal_entries'>, 'id' | 'user_id' | 'created_at'>>;
 
-export type NewDevIdeaData = Omit<DevIdea, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'tags'> & { tagIds: string[] };
-export type UpdateDevIdeaData = Partial<Omit<DevIdea, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'tags'>> & { tagIds?: string[] };
+export type NewDevIdeaData = Omit<TablesInsert<'dev_ideas'>, 'id' | 'user_id' | 'created_at' | 'updated_at'> & { tagIds: string[] };
+export type UpdateDevIdeaData = Partial<Omit<TablesUpdate<'dev_ideas'>, 'id' | 'user_id' | 'created_at' | 'updated_at'>> & { tagIds?: string[] };
 
-export type NewDevIdeaTagData = Omit<DevIdeaTag, 'id' | 'user_id' | 'created_at'>;
-export type UpdateDevIdeaTagData = Partial<Omit<DevIdeaTag, 'id' | 'user_id' | 'created_at'>>;
+export type NewDevIdeaTagData = Omit<TablesInsert<'dev_idea_tags'>, 'id' | 'user_id' | 'created_at'>;
+export type UpdateDevIdeaTagData = Partial<Omit<TablesUpdate<'dev_idea_tags'>, 'id' | 'user_id' | 'created_at'>>;
 
-export type NewPersonData = Omit<Person, 'id' | 'user_id' | 'created_at'>;
-export type UpdatePersonData = Partial<Omit<Person, 'id' | 'user_id' | 'created_at'>>;
+export type NewPersonData = Omit<TablesInsert<'people_memory'>, 'id' | 'user_id' | 'created_at'>;
+export type UpdatePersonData = Partial<Omit<TablesUpdate<'people_memory'>, 'id' | 'user_id' | 'created_at'>>;
 
-export type NewQuickLinkData = Omit<QuickLink, 'id' | 'user_id' | 'created_at' | 'link_order'>;
-export type UpdateQuickLinkData = Partial<Omit<QuickLink, 'id' | 'user_id' | 'created_at'>>;
+export type NewQuickLinkData = Omit<TablesInsert<'quick_links'>, 'id' | 'user_id' | 'created_at' | 'link_order'>;
+export type UpdateQuickLinkData = Partial<Omit<TablesUpdate<'quick_links'>, 'id' | 'user_id' | 'created_at'>>;
 
-export type NewCustomCardData = Omit<CustomCard, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'is_visible'>;
-export type UpdateCustomCardData = Partial<Omit<CustomCard, 'id' | 'user_id' | 'created_at' | 'updated_at'>>;
+export type NewCustomCardData = Omit<TablesInsert<'custom_dashboard_cards'>, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'is_visible'>;
+export type UpdateCustomCardData = Partial<Omit<TablesUpdate<'custom_dashboard_cards'>, 'id' | 'user_id' | 'created_at' | 'updated_at'>>;
 
-export type NewWeeklyFocusData = Omit<WeeklyFocus, 'id' | 'user_id' | 'created_at' | 'updated_at'>;
-export type UpdateWeeklyFocusData = Partial<Omit<WeeklyFocus, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'week_start_date'>>;
+export type NewWeeklyFocusData = Omit<TablesInsert<'weekly_focus'>, 'id' | 'user_id' | 'created_at' | 'updated_at'>;
+export type UpdateWeeklyFocusData = Partial<Omit<TablesUpdate<'weekly_focus'>, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'week_start_date'>>;
 
-export type NewSleepRecordData = Omit<SleepRecord, 'id' | 'user_id' | 'created_at' | 'updated_at'>;
-export type UpdateSleepRecordData = Partial<Omit<SleepRecord, 'id' | 'user_id' | 'created_at' | 'updated_at'>>;
+export type NewSleepRecordData = Omit<TablesInsert<'sleep_records'>, 'id' | 'user_id' | 'created_at' | 'updated_at'>;
+export type UpdateSleepRecordData = Partial<Omit<TablesUpdate<'sleep_records'>, 'id' | 'user_id' | 'created_at' | 'updated_at'>>;
 
-export type NewDoTodayOffLogEntryData = Omit<DoTodayOffLogEntry, 'id' | 'user_id' | 'created_at'>;
-export type UpdateDoTodayOffLogEntryData = Partial<Omit<DoTodayOffLogEntry, 'id' | 'user_id' | 'created_at'>>;
+export type NewDoTodayOffLogEntryData = Omit<TablesInsert<'do_today_off_log'>, 'id' | 'user_id' | 'created_at'>;
+export type UpdateDoTodayOffLogEntryData = Partial<Omit<TablesUpdate<'do_today_off_log'>, 'id' | 'user_id' | 'created_at'>>;
 
-export type NewGratitudeEntryData = Omit<GratitudeEntry, 'id' | 'user_id' | 'created_at'>; // Added missing GratitudeEntryData
-export type UpdateGratitudeEntryData = Partial<Omit<GratitudeEntry, 'id' | 'user_id' | 'created_at'>>; // Added missing UpdateGratitudeEntryData
+export type NewGratitudeEntryData = Omit<TablesInsert<'gratitude_journal_entries'>, 'id' | 'user_id' | 'created_at'>;
+export type UpdateGratitudeEntryData = Partial<Omit<TablesUpdate<'gratitude_journal_entries'>, 'id' | 'user_id' | 'created_at'>>;
 
 // Analytics specific types
 export type AnalyticsTask = Task & {

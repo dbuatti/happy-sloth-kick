@@ -7,18 +7,17 @@ import { Button } from '@/components/ui/button';
 import { Play, Check, X, Lightbulb, Timer } from 'lucide-react';
 import TaskItem from '@/components/TaskItem';
 import { Task, TaskSection } from '@/types';
-import { Progress } from '@/components/ui/progress';
-import { format, addMinutes, isPast, isSameDay, startOfDay } from 'date-fns';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'react-hot-toast';
 
-const FocusMode = () => {
+interface FocusModeProps {
+  isDemo?: boolean;
+  demoUserId?: string;
+}
+
+const FocusMode: React.FC<FocusModeProps> = ({ isDemo = false, demoUserId }) => {
   const { user } = useAuth();
-  const currentUserId = user?.id;
+  const currentUserId = isDemo ? demoUserId : user?.id;
   const { settings, updateSettings } = useSettings();
   const {
     tasks,
@@ -38,7 +37,7 @@ const FocusMode = () => {
 
   const [isBreakTimerActive, setIsBreakTimerActive] = useState(false);
   const [breakTimeRemaining, setBreakTimeRemaining] = useState(0); // in seconds
-  const [breakDuration, setBreakDuration] = useState(5 * 60); // Default 5 minutes
+  const [breakDuration] = useState(5 * 60); // Default 5 minutes
 
   const focusModeSections = useMemo(() => {
     return (sections as TaskSection[]).filter(section => section.include_in_focus_mode);
@@ -143,7 +142,7 @@ const FocusMode = () => {
             categories={allCategories}
             onUpdateTask={updateTask}
             onDeleteTask={deleteTask}
-            onAddSubtask={async (description) => { await addTask(description, null, parentTaskId, null, null, 'medium'); }}
+            onAddSubtask={async (description) => { return await addTask(description, null, parentTaskId, null, null, 'medium'); }}
             onToggleFocusMode={onToggleFocusMode}
             onLogDoTodayOff={onLogDoTodayOff}
             isFocusedTask={settings?.focused_task_id === subtask.id}
@@ -187,7 +186,7 @@ const FocusMode = () => {
                     categories={allCategories}
                     onUpdateTask={updateTask}
                     onDeleteTask={deleteTask}
-                    onAddSubtask={async (description) => { await addTask(description, null, focusedTask.id, null, null, 'medium'); }}
+                    onAddSubtask={async (description) => { return await addTask(description, null, focusedTask.id, null, null, 'medium'); }}
                     onToggleFocusMode={onToggleFocusMode}
                     onLogDoTodayOff={onLogDoTodayOff}
                     isFocusedTask={true}
@@ -229,7 +228,7 @@ const FocusMode = () => {
                     categories={allCategories}
                     onUpdateTask={updateTask}
                     onDeleteTask={deleteTask}
-                    onAddSubtask={async (description) => { await addTask(description, null, task.id, null, null, 'medium'); }}
+                    onAddSubtask={async (description) => { return await addTask(description, null, task.id, null, null, 'medium'); }}
                     onToggleFocusMode={onToggleFocusMode}
                     onLogDoTodayOff={onLogDoTodayOff}
                     isFocusedTask={false}

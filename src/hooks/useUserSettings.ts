@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { UserSettings, Json } from '@/types';
@@ -85,7 +85,7 @@ const insertUserSettings = async (settings: UserSettings): Promise<UserSettings>
 };
 
 export const useUserSettings = () => {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const userId = user?.id;
   const queryClient = useQueryClient();
 

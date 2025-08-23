@@ -17,7 +17,7 @@ const fetchSections = async (userId: string): Promise<TaskSection[]> => {
 };
 
 export const useDailyTaskCount = (tasks: Task[] | undefined) => {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const userId = user?.id;
 
   const { data: sectionsData, isLoading: isLoadingSections } = useQuery<TaskSection[], Error>({

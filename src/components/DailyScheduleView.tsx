@@ -12,6 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { cn } from '@/lib/utils';
 import { Appointment, WorkHour, Task, TaskCategory, TaskSection, UserSettings } from '@/types';
 import TaskItem from './TaskItem';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
 
 interface DailyScheduleViewProps {
   selectedDate: Date;
@@ -64,7 +66,6 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
   const [appointmentTaskId, setAppointmentTaskId] = useState<string | null>(null);
 
   const [isWorkHoursModalOpen, setIsWorkHoursModalOpen] = useState(false);
-  const [currentDayWorkHours, setCurrentDayWorkHours] = useState<WorkHour | null>(null);
   const [workStartTime, setWorkStartTime] = useState('09:00');
   const [workEndTime, setWorkEndTime] = useState('17:00');
   const [workEnabled, setWorkEnabled] = useState(true);
@@ -73,7 +74,6 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
 
   useEffect(() => {
     const dayHours = workHours.find(wh => wh.day_of_week === dayOfWeek);
-    setCurrentDayWorkHours(dayHours || null);
     if (dayHours) {
       setWorkStartTime(dayHours.start_time.substring(0, 5));
       setWorkEndTime(dayHours.end_time.substring(0, 5));
@@ -190,7 +190,7 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
             categories={allCategories}
             onUpdateTask={updateTask}
             onDeleteTask={deleteTask}
-            onAddSubtask={async (description) => { await addTask(description, null, parentTaskId, null, null, 'medium'); }}
+            onAddSubtask={async (description) => { return await addTask(description, null, parentTaskId, null, null, 'medium'); }}
             onToggleFocusMode={onToggleFocusMode}
             onLogDoTodayOff={onLogDoTodayOff}
             isFocusedTask={settings?.focused_task_id === subtask.id}
@@ -239,7 +239,7 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                     categories={allCategories}
                     onUpdateTask={updateTask}
                     onDeleteTask={deleteTask}
-                    onAddSubtask={async (description) => { await addTask(description, null, task.id, null, null, 'medium'); }}
+                    onAddSubtask={async (description) => { return await addTask(description, null, task.id, null, null, 'medium'); }}
                     onToggleFocusMode={onToggleFocusMode}
                     onLogDoTodayOff={onLogDoTodayOff}
                     isFocusedTask={settings?.focused_task_id === task.id}
