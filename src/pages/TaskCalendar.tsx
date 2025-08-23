@@ -1,288 +1,251 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useAuth } from '@/hooks/useAuth';
-import { useTasks } from '@/hooks/useTasks'; // Assuming useTasks exists and is correctly typed
-import { Task, ScheduleAppointment } from '@/types';
+import { useTasks } from '@/hooks/useTasks';
+import { useAppointments } from '@/hooks/useAppointments';
+import { Task, Appointment, TaskCategory } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import TaskItem from '@/components/TaskItem';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Clock, Plus } from 'lucide-react';
+import { CalendarIcon, Plus } from 'lucide-react';
 import { format } from 'date-fns';
-import { Calendar } from '@/components/ui/calendar';
-import TaskItem from '@/components/TaskItem'; // Assuming TaskItem is correctly typed
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'react-hot-toast';
 import { cn } from '@/lib/utils';
 
 const localizer = momentLocalizer(moment);
 
-interface TaskCalendarProps {
-  isDemo?: boolean;
-  demoUserId?: string;
+interface CalendarEvent {
+  title: string;
+  start: Date;
+  end: Date;
+  allDay?: boolean;
+  resource: {
+    type: 'task' | 'appointment';
+    task?: Task;
+    appointment?: Appointment;
+    style?: React.CSSProperties;
+  };
 }
 
-const TaskCalendar: React.FC<TaskCalendarProps> = ({ isDemo = false, demoUserId }) => {
-  const { user } = useAuth();
-  const currentUserId = isDemo ? demoUserId : user?.id;
+const TaskCalendar = () => {
+  const { userId: currentUserId } = useAuth();
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
   const {
     tasks: allTasks,
-    sections,
     categories,
-    loading,
-    error,
+    loading: tasksLoading,
+    error: tasksError,
     addTask,
     updateTask,
     deleteTask,
-  } = useTasks(currentUserId); // Assuming useTasks accepts userId, isDemo, demoUserId
+    onToggleFocusMode,
+    onLogDoTodayOff,
+  } = useTasks({ userId: currentUserId! });
 
-  const [events, setEvents] = useState<any[]>([]);
-  const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const {
+    appointments,
+    isLoading: appointmentsLoading,
+    error: appointmentsError,
+    addAppointment,
+    updateAppointment,
+    deleteAppointment,
+  } = useAppointments(selectedDate); // Use selectedDate for appointments hook
+
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
-  const [newAppointment, setNewAppointment] = useState<Partial<ScheduleAppointment>>({
-    title: '',
-    date: new Date().toISOString().split('T')[0],
-    start_time: '09:00:00',
-    end_time: '10:00:00',
-    color: '#3b82f6', // Default blue
-  });
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
 
-  useEffect(() => {
-    if (allTasks.length > 0) {
-      const taskEvents = allTasks
-        .filter(task => task.due_date)
-        .map(task => ({
-          id: task.id,
+  const events = useMemo(() => {
+    const calendarEvents: CalendarEvent[] = [];
+
+    // Add tasks with due dates
+    allTasks.forEach(task => {
+      if (task.due_date) {
+        const dueDate = new Date(task.due_date);
+        calendarEvents.push({
           title: task.description,
-          start: new Date(task.due_date!),
-          end: new Date(task.due_date!),
+          start: dueDate,
+          end: dueDate,
           allDay: true,
-          resource: { type: 'task', task },
-        }));
-      setEvents(prev => [...prev.filter(e => e.resource.type !== 'task'), ...taskEvents]);
-    }
-  }, [allTasks]);
-
-  useEffect(() => {
-    const fetchAppointments = async () => {
-      if (!currentUserId) return;
-      const { data, error } = await supabase
-        .from('schedule_appointments')
-        .select('*')
-        .eq('user_id', currentUserId);
-
-      if (error) {
-        console.error('Error fetching appointments:', error.message);
-        toast.error('Failed to load appointments.');
-        return;
+          resource: {
+            type: 'task',
+            task: task,
+            style: {
+              backgroundColor: task.category_color || '#3b82f6', // Default blue if no category color
+              color: 'white',
+              borderRadius: '4px',
+              border: 'none',
+            },
+          },
+        });
       }
+    });
 
-      const appointmentEvents = data.map(app => ({
-        id: app.id,
+    // Add appointments
+    appointments.forEach(app => {
+      const startDate = moment(`${app.date}T${app.start_time}`).toDate();
+      const endDate = moment(`${app.date}T${app.end_time}`).toDate();
+      calendarEvents.push({
         title: app.title,
-        start: new Date(`${app.date}T${app.start_time}`),
-        end: new Date(`${app.date}T${app.end_time}`),
+        start: startDate,
+        end: endDate,
         allDay: false,
-        resource: { type: 'appointment', appointment: app },
-        style: { backgroundColor: app.color },
-      }));
-      setEvents(prev => [...prev.filter(e => e.resource.type !== 'appointment'), ...appointmentEvents]);
-    };
+        resource: {
+          type: 'appointment',
+          appointment: app,
+          style: {
+            backgroundColor: app.color,
+            color: 'white',
+            borderRadius: '4px',
+            border: 'none',
+          },
+        },
+      });
+    });
 
-    fetchAppointments();
-  }, [currentUserId]);
+    return calendarEvents;
+  }, [allTasks, appointments]);
 
-  const handleSelectEvent = (event: any) => {
+  const handleSelectEvent = (event: CalendarEvent) => {
     setSelectedEvent(event);
     setIsModalOpen(true);
   };
 
-  const handleAddAppointment = async () => {
-    if (!currentUserId || !newAppointment.title || !newAppointment.date || !newAppointment.start_time || !newAppointment.end_time) {
-      toast.error('Please fill all required fields for the appointment.');
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from('schedule_appointments')
-      .insert({
-        ...newAppointment,
-        user_id: currentUserId,
-      } as ScheduleAppointment)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error adding appointment:', error.message);
-      toast.error('Failed to add appointment.');
-      return;
-    }
-
-    setEvents(prev => [
-      ...prev,
-      {
-        id: data.id,
-        title: data.title,
-        start: new Date(`${data.date}T${data.start_time}`),
-        end: new Date(`${data.date}T${data.end_time}`),
-        allDay: false,
-        resource: { type: 'appointment', appointment: data },
-        style: { backgroundColor: data.color },
-      },
-    ]);
-    toast.success('Appointment added!');
-    setIsAppointmentModalOpen(false);
-    setNewAppointment({
-      title: '',
-      date: new Date().toISOString().split('T')[0],
-      start_time: '09:00:00',
-      end_time: '10:00:00',
-      color: '#3b82f6',
-    });
+  const handleSelectSlot = ({ start, end }: { start: Date; end: Date }) => {
+    // Open a modal to add a new task or appointment for the selected slot
+    // For simplicity, let's just log for now or open a generic add modal
+    console.log('Selected slot:', start, end);
+    // You might want to open a dialog here to let the user choose to add a task or appointment
   };
 
-  if (loading) return <div className="p-4 text-center">Loading calendar...</div>;
-  if (error) return <div className="p-4 text-center text-red-500">Error: {error}</div>;
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedEvent(null);
+  };
+
+  const handleDeleteEvent = async () => {
+    if (!selectedEvent) return;
+    if (selectedEvent.resource.type === 'task' && selectedEvent.resource.task) {
+      await deleteTask(selectedEvent.resource.task.id);
+    } else if (selectedEvent.resource.type === 'appointment' && selectedEvent.resource.appointment) {
+      await deleteAppointment(selectedEvent.resource.appointment.id);
+    }
+    handleCloseModal();
+  };
+
+  if (tasksLoading || appointmentsLoading) return <div className="text-center py-8">Loading calendar...</div>;
+  if (tasksError || appointmentsError) return <div className="text-center py-8 text-red-500">Error loading data.</div>;
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-3xl font-bold">Calendar</h1>
-        <Dialog open={isAppointmentModalOpen} onOpenChange={setIsAppointmentModalOpen}>
-          <DialogTrigger asChild>
-            <Button><Plus className="mr-2 h-4 w-4" /> Add Appointment</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Appointment</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <Input
-                placeholder="Appointment Title"
-                value={newAppointment.title}
-                onChange={(e) => setNewAppointment({ ...newAppointment, title: e.target.value })}
-              />
-              <div className="flex items-center space-x-2">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-[240px] justify-start text-left font-normal",
-                        !newAppointment.date && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {newAppointment.date ? format(new Date(newAppointment.date), "PPP") : <span>Pick a date</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={newAppointment.date ? new Date(newAppointment.date) : undefined}
-                      onSelect={(date) => setNewAppointment({ ...newAppointment, date: date?.toISOString().split('T')[0] })}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-                <Input
-                  type="time"
-                  value={newAppointment.start_time}
-                  onChange={(e) => setNewAppointment({ ...newAppointment, start_time: e.target.value })}
-                  className="w-auto"
-                />
-                <Input
-                  type="time"
-                  value={newAppointment.end_time}
-                  onChange={(e) => setNewAppointment({ ...newAppointment, end_time: e.target.value })}
-                  className="w-auto"
-                />
-              </div>
-              <Input
-                type="color"
-                value={newAppointment.color}
-                onChange={(e) => setNewAppointment({ ...newAppointment, color: e.target.value })}
-                className="w-full h-10"
-              />
-            </div>
-            <Button onClick={handleAddAppointment}>Save Appointment</Button>
-          </DialogContent>
-        </Dialog>
+    <div className="container mx-auto p-4 h-full flex flex-col">
+      <h1 className="text-3xl font-bold mb-6">Task Calendar</h1>
+
+      <div className="mb-6 flex items-center space-x-4">
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant={"outline"}
+              className={cn(
+                "w-[240px] justify-start text-left font-normal",
+                !selectedDate && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={(date) => date && setSelectedDate(date)}
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
+        <Button onClick={() => setSelectedDate(new Date())}>Today</Button>
       </div>
 
-      <div className="h-[700px]">
+      <div className="flex-grow bg-white rounded-lg shadow-md p-4">
         <BigCalendar
           localizer={localizer}
           events={events}
           startAccessor="start"
           endAccessor="end"
+          style={{ height: '100%' }}
           onSelectEvent={handleSelectEvent}
+          onSelectSlot={handleSelectSlot}
+          selectable
           eventPropGetter={(event) => ({
-            style: event.resource.type === 'appointment' ? event.style : {},
+            style: event.resource.style,
           })}
         />
       </div>
 
+      {/* Event Details Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>{selectedEvent?.title}</DialogTitle>
           </DialogHeader>
-          {selectedEvent?.resource.type === 'task' && selectedEvent.resource.task && (
-            <div className="py-4">
-              <h3 className="text-lg font-semibold mb-2">Task Details</h3>
-              <TaskItem
-                task={selectedEvent.resource.task as Task}
-                categories={categories}
-                onUpdateTask={async (taskId: string, updates: Partial<Task>) => { await updateTask(taskId, updates); setIsModalOpen(false); }}
-                onDeleteTask={async (taskId: string) => { await deleteTask(taskId); setIsModalOpen(false); }}
-                onAddSubtask={async (description: string, parentTaskId: string) => { await addTask(description, null, parentTaskId); }}
-                onToggleFocusMode={() => {}} // Not directly applicable here
-                onLogDoTodayOff={() => {}} // Not directly applicable here
-                isFocusedTask={false}
-                subtasks={allTasks.filter(t => t.parent_task_id === selectedEvent.resource.task.id)}
-                renderSubtasks={(parentTaskId) => (
-                  allTasks
-                    .filter(t => t.parent_task_id === parentTaskId)
-                    .map(subtask => (
-                      <TaskItem
-                        key={subtask.id}
-                        task={subtask as Task}
-                        categories={categories}
-                        onUpdateTask={async (taskId: string, updates: Partial<Task>) => { await updateTask(taskId, updates); }}
-                        onDeleteTask={async (taskId: string) => { await deleteTask(taskId); }}
-                        onAddSubtask={async (description: string, parentTaskId: string) => { await addTask(description, null, parentTaskId); }}
-                        onToggleFocusMode={() => {}}
-                        onLogDoTodayOff={() => {}}
-                        isFocusedTask={false}
-                        subtasks={[]} // Recursion handled by renderSubtasks in TaskItem
-                        renderSubtasks={() => null}
-                        isDragging={false}
-                        onDragStart={() => {}}
-                      />
-                    ))
+          <div className="py-4">
+            {selectedEvent?.resource.type === 'task' && selectedEvent.resource.task && (
+              <div className="space-y-4">
+                <h3 className="text-xl font-semibold mb-2">Task Details</h3>
+                <TaskItem
+                  task={selectedEvent.resource.task}
+                  categories={categories as TaskCategory[]}
+                  onUpdateTask={async (taskId: string, updates: Partial<Task>) => { await updateTask(taskId, updates); setIsModalOpen(false); }}
+                  onDeleteTask={async (taskId: string) => { await deleteTask(taskId); setIsModalOpen(false); }}
+                  onAddSubtask={async (description: string, parentTaskId: string) => { await addTask(description, null, parentTaskId); }}
+                  onToggleFocusMode={onToggleFocusMode}
+                  onLogDoTodayOff={onLogDoTodayOff}
+                  isFocusedTask={false}
+                  subtasks={allTasks.filter(t => t.parent_task_id === selectedEvent.resource.task?.id) as Task[]}
+                  renderSubtasks={(parentTaskId) => (
+                    <div className="ml-4 border-l pl-4 space-y-2">
+                      {allTasks.filter(sub => sub.parent_task_id === parentTaskId).map(subtask => (
+                        <TaskItem
+                          key={subtask.id}
+                          task={subtask}
+                          categories={categories as TaskCategory[]}
+                          onUpdateTask={async (taskId: string, updates: Partial<Task>) => { await updateTask(taskId, updates); }}
+                          onDeleteTask={async (taskId: string) => { await deleteTask(taskId); }}
+                          onAddSubtask={async (description: string, parentTaskId: string) => { await addTask(description, null, parentTaskId); }}
+                          onToggleFocusMode={onToggleFocusMode}
+                          onLogDoTodayOff={onLogDoTodayOff}
+                          isFocusedTask={false}
+                          subtasks={[]}
+                          renderSubtasks={() => null}
+                        />
+                      ))}
+                    </div>
+                  )}
+                />
+              </div>
+            )}
+            {selectedEvent?.resource.type === 'appointment' && selectedEvent.resource.appointment && (
+              <div className="space-y-4">
+                <h3 className="text-xl font-semibold mb-2">Appointment Details</h3>
+                <p><strong>Title:</strong> {selectedEvent.resource.appointment.title}</p>
+                <p><strong>Description:</strong> {selectedEvent.resource.appointment.description || 'N/A'}</p>
+                <p><strong>Date:</strong> {format(new Date(selectedEvent.resource.appointment.date), 'PPP')}</p>
+                <p><strong>Time:</strong> {selectedEvent.resource.appointment.start_time.substring(0, 5)} - {selectedEvent.resource.appointment.end_time.substring(0, 5)}</p>
+                <p><strong>Color:</strong> <span className="inline-block w-4 h-4 rounded-full" style={{ backgroundColor: selectedEvent.resource.appointment.color }}></span> {selectedEvent.resource.appointment.color}</p>
+                {selectedEvent.resource.appointment.task_id && (
+                  <p><strong>Linked Task:</strong> {allTasks.find(t => t.id === selectedEvent.resource.appointment?.task_id)?.description || 'N/A'}</p>
                 )}
-                isDragging={false}
-                onDragStart={() => {}}
-              />
-            </div>
-          )}
-          {selectedEvent?.resource.type === 'appointment' && selectedEvent.resource.appointment && (
-            <div className="py-4">
-              <h3 className="text-lg font-semibold mb-2">Appointment Details</h3>
-              <p><strong>Title:</strong> {selectedEvent.resource.appointment.title}</p>
-              <p><strong>Date:</strong> {format(new Date(selectedEvent.resource.appointment.date), 'PPP')}</p>
-              <p><strong>Time:</strong> {selectedEvent.resource.appointment.start_time} - {selectedEvent.resource.appointment.end_time}</p>
-              {selectedEvent.resource.appointment.description && <p><strong>Description:</strong> {selectedEvent.resource.appointment.description}</p>}
-            </div>
-          )}
-          <Button onClick={() => setIsModalOpen(false)}>Close</Button>
+                <Button variant="destructive" onClick={handleDeleteEvent}>Delete Appointment</Button>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCloseModal}>Close</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

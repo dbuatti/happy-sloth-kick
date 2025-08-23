@@ -1,153 +1,175 @@
-import { useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext';
-import { showError, showSuccess } from '@/utils/toast';
+import { useAuth } from './useAuth';
+import { QuickLink, NewQuickLinkData, UpdateQuickLinkData } from '@/types';
+import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { v4 as uuidv4 } from 'uuid';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-export interface QuickLink {
-  id: string;
-  user_id: string;
-  title: string;
-  url: string;
-  image_url: string | null;
-  link_order: number | null;
-  created_at: string;
-  emoji: string | null;
-  background_color: string | null;
-  avatar_text: string | null;
-}
+const fetchQuickLinks = async (userId: string): Promise<QuickLink[]> => {
+  const { data, error } = await supabase
+    .from('quick_links')
+    .select('*')
+    .eq('user_id', userId)
+    .order('link_order', { ascending: true });
+  if (error) throw error;
+  return data as QuickLink[];
+};
 
-export const useQuickLinks = (props?: { userId?: string }) => {
-  const { user } = useAuth();
-  const userId = props?.userId || user?.id;
+const addQuickLink = async (newLink: NewQuickLinkData & { user_id: string; link_order: number }): Promise<QuickLink> => {
+  const { data, error } = await supabase
+    .from('quick_links')
+    .insert(newLink)
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as QuickLink;
+};
+
+const updateQuickLink = async (id: string, updates: UpdateQuickLinkData): Promise<QuickLink> => {
+  const { data, error } = await supabase
+    .from('quick_links')
+    .update(updates)
+    .eq('id', id)
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as QuickLink;
+};
+
+const deleteQuickLink = async (id: string): Promise<void> => {
+  const { error } = await supabase
+    .from('quick_links')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
+};
+
+const updateQuickLinksOrder = async (updates: { id: string; link_order: number; user_id: string }[]): Promise<void> => {
+  const { error } = await supabase
+    .from('quick_links')
+    .upsert(updates, { onConflict: 'id' });
+  if (error) throw error;
+};
+
+export const useQuickLinks = () => {
+  const { userId, isLoading: authLoading } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: quickLinks = [], isLoading: loading, error } = useQuery<QuickLink[], Error>({
+  const { data: quickLinks, isLoading, error } = useQuery<QuickLink[], Error>({
     queryKey: ['quickLinks', userId],
     queryFn: async () => {
       if (!userId) return [];
-      const { data, error } = await supabase
-        .from('quick_links')
-        .select('*')
-        .eq('user_id', userId)
-        .order('link_order');
-      if (error) throw error;
-      return data || [];
+      return fetchQuickLinks(userId);
     },
-    enabled: !!userId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    enabled: !!userId && !authLoading,
   });
 
-  useEffect(() => {
-    if (error) {
-      showError('Failed to load quick links.');
-      console.error(error);
-    }
-  }, [error]);
+  const invalidateQuickLinksQueries = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['quickLinks', userId] });
+  }, [queryClient, userId]);
 
   const addQuickLinkMutation = useMutation<QuickLink, Error, { title: string; url: string; imageFile?: File | null; emoji?: string | null; backgroundColor?: string | null; avatarText?: string | null; }>({
     mutationFn: async (linkData) => {
       if (!userId) throw new Error('User not authenticated.');
-      let imageUrl: string | null = null;
+
+      let image_url: string | null = null;
       if (linkData.imageFile) {
-        const filePath = `quick_links/${userId}/${uuidv4()}`;
+        const fileExt = linkData.imageFile.name.split('.').pop();
+        const fileName = `${uuidv4()}.${fileExt}`;
+        const filePath = `${userId}/${fileName}`;
         const { error: uploadError } = await supabase.storage
-          .from('devideaimages') // Reusing existing bucket for simplicity
+          .from('link_images')
           .upload(filePath, linkData.imageFile);
         if (uploadError) throw uploadError;
-        const { data: urlData } = supabase.storage.from('devideaimages').getPublicUrl(filePath);
-        imageUrl = urlData.publicUrl;
+        const { data: publicUrlData } = supabase.storage.from('link_images').getPublicUrl(filePath);
+        image_url = publicUrlData.publicUrl;
       }
 
-      const { data, error } = await supabase
-        .from('quick_links')
-        .insert({ 
-          title: linkData.title, 
-          url: linkData.url, 
-          image_url: imageUrl,
-          user_id: userId,
-          link_order: quickLinks.length,
-          emoji: linkData.emoji,
-          background_color: linkData.backgroundColor,
-          avatar_text: linkData.avatarText,
-        })
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
+      const newLink: NewQuickLinkData & { user_id: string; link_order: number } = {
+        user_id: userId,
+        title: linkData.title,
+        url: linkData.url,
+        image_url: image_url,
+        link_order: (quickLinks as QuickLink[]).length,
+        emoji: linkData.emoji,
+        background_color: linkData.backgroundColor,
+        avatar_text: linkData.avatarText,
+      };
+      return addQuickLink(newLink);
     },
-    onSuccess: () => {
-      showSuccess('Quick link added!');
-      queryClient.invalidateQueries({ queryKey: ['quickLinks', userId] });
-    },
-    onError: (err) => {
-      showError('Failed to add quick link.');
-      console.error(err);
-    },
+    onSuccess: invalidateQuickLinksQueries,
   });
 
-  const updateQuickLinkMutation = useMutation<QuickLink, Error, { id: string; updates: { title: string; url: string; image_url?: string | null; emoji?: string | null; background_color?: string | null; avatar_text?: string | null; }; imageFile?: File | null; }>({
+  const updateQuickLinkMutation = useMutation<QuickLink, Error, { id: string; updates: { title?: string; url?: string; image_url?: string | null; emoji?: string | null; background_color?: string | null; avatar_text?: string | null; }; imageFile?: File | null; }>({
     mutationFn: async ({ id, imageFile, updates }) => {
       if (!userId) throw new Error('User not authenticated.');
-      
-      const dbUpdates: Partial<Omit<QuickLink, 'id' | 'user_id' | 'created_at'>> = {
-        ...updates,
-      };
+
+      let image_url: string | null | undefined = updates.image_url;
 
       if (imageFile) {
-        const filePath = `quick_links/${userId}/${uuidv4()}`;
+        const fileExt = imageFile.name.split('.').pop();
+        const fileName = `${uuidv4()}.${fileExt}`;
+        const filePath = `${userId}/${fileName}`;
         const { error: uploadError } = await supabase.storage
-          .from('devideaimages')
+          .from('link_images')
           .upload(filePath, imageFile);
         if (uploadError) throw uploadError;
-        const { data: urlData } = supabase.storage.from('devideaimages').getPublicUrl(filePath);
-        dbUpdates.image_url = urlData.publicUrl;
-      } else {
-        dbUpdates.image_url = updates.image_url;
+        const { data: publicUrlData } = supabase.storage.from('link_images').getPublicUrl(filePath);
+        image_url = publicUrlData.publicUrl;
+
+        // Optionally, delete old image if it exists
+        const linkToUpdate = (quickLinks as QuickLink[]).find(link => link.id === id);
+        if (linkToUpdate?.image_url) {
+          const oldFilePath = linkToUpdate.image_url.split('/link_images/')[1];
+          await supabase.storage.from('link_images').remove([oldFilePath]);
+        }
+      } else if (updates.image_url === null) {
+        // If image_url is explicitly set to null, remove existing image
+        const linkToUpdate = (quickLinks as QuickLink[]).find(link => link.id === id);
+        if (linkToUpdate?.image_url) {
+          const oldFilePath = linkToUpdate.image_url.split('/link_images/')[1];
+          await supabase.storage.from('link_images').remove([oldFilePath]);
+        }
       }
 
-      const { data, error } = await supabase
-        .from('quick_links')
-        .update(dbUpdates)
-        .eq('id', id)
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
+      return updateQuickLink(id, { ...updates, image_url });
     },
-    onSuccess: () => {
-      showSuccess('Quick link updated!');
-      queryClient.invalidateQueries({ queryKey: ['quickLinks', userId] });
-    },
-    onError: (err) => {
-      console.error("Update Quick Link Error:", err);
-      showError('Failed to update quick link.');
-    },
+    onSuccess: invalidateQuickLinksQueries,
   });
 
-  const deleteQuickLinkMutation = useMutation<boolean, Error, string>({
+  const deleteQuickLinkMutation = useMutation<void, Error, string>({
     mutationFn: async (id) => {
       if (!userId) throw new Error('User not authenticated.');
-      const { error } = await supabase.from('quick_links').delete().eq('id', id);
-      if (error) throw error;
-      return true;
+      const linkToDelete = (quickLinks as QuickLink[]).find(link => link.id === id);
+      if (linkToDelete?.image_url) {
+        const filePath = linkToDelete.image_url.split('/link_images/')[1];
+        await supabase.storage.from('link_images').remove([filePath]);
+      }
+      return deleteQuickLink(id);
     },
-    onSuccess: () => {
-      showSuccess('Quick link removed.');
-      queryClient.invalidateQueries({ queryKey: ['quickLinks', userId] });
+    onSuccess: invalidateQuickLinksQueries,
+  });
+
+  const reorderQuickLinksMutation = useMutation<void, Error, string[]>({
+    mutationFn: async (linkIds) => {
+      if (!userId) throw new Error('User not authenticated.');
+      const updates = linkIds.map((id, index) => ({
+        id,
+        link_order: index,
+        user_id: userId,
+      }));
+      await updateQuickLinksOrder(updates);
     },
-    onError: (err) => {
-      showError('Failed to remove quick link.');
-      console.error(err);
-    },
+    onSuccess: invalidateQuickLinksQueries,
   });
 
   return {
-    quickLinks,
-    loading,
+    quickLinks: quickLinks || [],
+    isLoading,
+    error,
     addQuickLink: addQuickLinkMutation.mutateAsync,
     updateQuickLink: updateQuickLinkMutation.mutateAsync,
     deleteQuickLink: deleteQuickLinkMutation.mutateAsync,
+    reorderQuickLinks: reorderQuickLinksMutation.mutateAsync,
   };
 };

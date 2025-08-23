@@ -1,254 +1,231 @@
-import { useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { showError, showSuccess } from '@/utils/toast';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '@/context/AuthContext'; // Added missing import
+import { useAuth } from './useAuth';
+import { DevIdea, DevIdeaTag, NewDevIdeaData, UpdateDevIdeaData, NewDevIdeaTagData, UpdateDevIdeaTagData } from '@/types';
+import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
 
-export interface DevIdeaTag {
-  id: string;
-  name: string;
-  color: string;
-}
+// --- Dev Idea Tags ---
+const fetchDevIdeaTags = async (userId: string): Promise<DevIdeaTag[]> => {
+  const { data, error } = await supabase
+    .from('dev_idea_tags')
+    .select('*')
+    .eq('user_id', userId)
+    .order('name', { ascending: true });
+  if (error) throw error;
+  return data as DevIdeaTag[];
+};
 
-export interface DevIdea {
-  id: string;
-  user_id: string;
-  title: string;
-  description: string | null;
-  status: 'idea' | 'in-progress' | 'completed';
-  priority: 'low' | 'medium' | 'high';
-  created_at: string;
-  updated_at: string;
-  image_url?: string | null;
-  local_file_path?: string | null; // Added local_file_path
-  tags: DevIdeaTag[];
-}
+const addDevIdeaTag = async (newTag: NewDevIdeaTagData & { user_id: string }): Promise<DevIdeaTag> => {
+  const { data, error } = await supabase
+    .from('dev_idea_tags')
+    .insert(newTag)
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as DevIdeaTag;
+};
 
-export const useDevIdeas = (props?: { userId?: string }) => {
-  const { user } = useAuth();
-  const userId = props?.userId || user?.id;
+const updateDevIdeaTag = async (id: string, updates: UpdateDevIdeaTagData): Promise<DevIdeaTag> => {
+  const { data, error } = await supabase
+    .from('dev_idea_tags')
+    .update(updates)
+    .eq('id', id)
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as DevIdeaTag;
+};
+
+const deleteDevIdeaTag = async (id: string): Promise<void> => {
+  const { error } = await supabase
+    .from('dev_idea_tags')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
+};
+
+// --- Dev Ideas ---
+const fetchDevIdeas = async (userId: string, tags: DevIdeaTag[]): Promise<DevIdea[]> => {
+  const { data, error } = await supabase
+    .from('dev_ideas')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+
+  const ideas = data as DevIdea[];
+  const tagsMap = new Map(tags.map(tag => [tag.id, tag]));
+
+  // Fetch tag associations for all ideas
+  const { data: associations, error: assocError } = await supabase
+    .from('dev_idea_tag_associations')
+    .select('*')
+    .in('idea_id', ideas.map(idea => idea.id));
+
+  if (assocError) throw assocError;
+
+  const ideaTagsMap = new Map<string, string[]>();
+  associations.forEach(assoc => {
+    if (!ideaTagsMap.has(assoc.idea_id)) {
+      ideaTagsMap.set(assoc.idea_id, []);
+    }
+    ideaTagsMap.get(assoc.idea_id)?.push(assoc.tag_id);
+  });
+
+  return ideas.map(idea => {
+    const ideaTagIds = ideaTagsMap.get(idea.id) || [];
+    const ideaTags = ideaTagIds
+      .map(tagId => tagsMap.get(tagId))
+      .filter((tag): tag is DevIdeaTag => !!tag); // Type predicate for filtering undefined
+    return { ...idea, tags: ideaTags, status: idea.status as DevIdea['status'] }; // Ensure status is correctly typed
+  });
+};
+
+const addDevIdea = async (newIdea: NewDevIdeaData & { user_id: string }): Promise<DevIdea> => {
+  const { tagIds, ...ideaData } = newIdea;
+  const { data, error } = await supabase
+    .from('dev_ideas')
+    .insert(ideaData)
+    .select('*')
+    .single();
+
+  if (error) throw error;
+
+  const createdIdea = data as DevIdea;
+
+  // Insert tag associations
+  if (tagIds && tagIds.length > 0) {
+    const associations = tagIds.map(tagId => ({ idea_id: createdIdea.id, tag_id: tagId }));
+    const { error: assocError } = await supabase
+      .from('dev_idea_tag_associations')
+      .insert(associations);
+    if (assocError) throw assocError;
+  }
+
+  return { ...createdIdea, tags: [], status: createdIdea.status as DevIdea['status'] }; // Tags will be populated on refetch
+};
+
+const updateDevIdea = async (id: string, updates: UpdateDevIdeaData): Promise<DevIdea> => {
+  const { tagIds, ...ideaUpdates } = updates;
+
+  const { data, error } = await supabase
+    .from('dev_ideas')
+    .update(ideaUpdates)
+    .eq('id', id)
+    .select('*')
+    .single();
+
+  if (error) throw error;
+
+  const updatedIdea = data as DevIdea;
+
+  // Update tag associations
+  if (tagIds !== undefined) {
+    // Delete existing associations
+    await supabase.from('dev_idea_tag_associations').delete().eq('idea_id', id);
+    // Insert new associations
+    if (tagIds.length > 0) {
+      const associations = tagIds.map(tagId => ({ idea_id: id, tag_id: tagId }));
+      const { error: assocError } = await supabase
+        .from('dev_idea_tag_associations')
+        .insert(associations);
+      if (assocError) throw assocError;
+    }
+  }
+
+  return { ...updatedIdea, tags: [], status: updatedIdea.status as DevIdea['status'] }; // Tags will be populated on refetch
+};
+
+const deleteDevIdea = async (id: string): Promise<void> => {
+  // Delete associations first
+  await supabase.from('dev_idea_tag_associations').delete().eq('idea_id', id);
+  const { error } = await supabase
+    .from('dev_ideas')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
+};
+
+export const useDevIdeas = () => {
+  const { userId, isLoading: authLoading } = useAuth();
   const queryClient = useQueryClient();
 
-  const fetchAllDevData = useCallback(async () => {
-    if (!userId) return { ideas: [], tags: [] };
-
-    const [ideasRes, tagsRes, associationsRes] = await Promise.all([
-      supabase.from('dev_ideas').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
-      supabase.from('dev_idea_tags').select('*').eq('user_id', userId),
-      supabase.from('dev_idea_tag_associations').select('*'),
-    ]);
-
-    if (ideasRes.error) throw ideasRes.error;
-    if (tagsRes.error) throw tagsRes.error;
-    if (associationsRes.error) throw associationsRes.error;
-
-    const tagsData = tagsRes.data || [];
-    const ideasData = ideasRes.data || [];
-    const associationsData = associationsRes.data || [];
-
-    const tagsMap = new Map(tagsData.map(t => [t.id, t]));
-    const ideasWithTags = ideasData.map(idea => {
-      const ideaTags = associationsData
-        .filter(assoc => assoc.idea_id === idea.id)
-        .map(assoc => tagsMap.get(assoc.tag_id))
-        .filter((tag): tag is DevIdeaTag => !!tag);
-      return { ...idea, tags: ideaTags };
-    });
-
-    return { ideas: ideasWithTags, tags: tagsData };
-  }, [userId]);
-
-  const { data, isLoading: loading, error } = useQuery({
-    queryKey: ['devIdeasAndTags', userId],
-    queryFn: fetchAllDevData,
-    enabled: !!userId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+  // --- Tags Query ---
+  const { data: tags, isLoading: isLoadingTags, error: errorTags } = useQuery<DevIdeaTag[], Error>({
+    queryKey: ['devIdeaTags', userId],
+    queryFn: () => fetchDevIdeaTags(userId!),
+    enabled: !!userId && !authLoading,
   });
 
-  const ideas = data?.ideas || [];
-  const tags = data?.tags || [];
+  const invalidateTagsQueries = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['devIdeaTags', userId] });
+    queryClient.invalidateQueries({ queryKey: ['devIdeas', userId] }); // Invalidate ideas as well
+  }, [queryClient, userId]);
 
-  useEffect(() => {
-    if (error) {
-      console.error('Error fetching dev ideas and tags:', error.message);
-      showError('Failed to load ideas and tags.');
-    }
-  }, [error]);
+  const createTag = useMutation<DevIdeaTag, Error, NewDevIdeaTagData>({
+    mutationFn: async (newTag) => {
+      if (!userId) throw new Error('User not authenticated.');
+      return addDevIdeaTag({ ...newTag, user_id: userId });
+    },
+    onSuccess: invalidateTagsQueries,
+  });
 
-  const manageIdeaTags = async (ideaId: string, tagIds: string[]) => {
-    const { error: deleteError } = await supabase
-      .from('dev_idea_tag_associations')
-      .delete()
-      .eq('idea_id', ideaId);
+  const updateTag = useMutation<DevIdeaTag, Error, { id: string; updates: UpdateDevIdeaTagData }>({
+    mutationFn: ({ id, updates }) => updateDevIdeaTag(id, updates),
+    onSuccess: invalidateTagsQueries,
+  });
 
-    if (deleteError) throw deleteError;
+  const deleteTag = useMutation<void, Error, string>({
+    mutationFn: (id) => deleteDevIdeaTag(id),
+    onSuccess: invalidateTagsQueries,
+  });
 
-    if (tagIds.length > 0) {
-      const newAssociations = tagIds.map(tagId => ({
-        idea_id: ideaId,
-        tag_id: tagId,
-      }));
-      const { error: insertError } = await supabase
-        .from('dev_idea_tag_associations')
-        .insert(newAssociations);
-      if (insertError) throw insertError;
-    }
-  };
+  // --- Ideas Query ---
+  const { data: ideas, isLoading: isLoadingIdeas, error: errorIdeas } = useQuery<DevIdea[], Error>({
+    queryKey: ['devIdeas', userId],
+    queryFn: async () => {
+      if (!userId || !tags) return [];
+      return fetchDevIdeas(userId, tags);
+    },
+    enabled: !!userId && !authLoading && !!tags, // Only enable if tags are loaded
+  });
 
-  const addIdeaMutation = useMutation<DevIdea, Error, Omit<DevIdea, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'tags'> & { tagIds: string[] }>({
+  const invalidateIdeasQueries = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['devIdeas', userId] });
+  }, [queryClient, userId]);
+
+  const addIdeaMutation = useMutation<DevIdea, Error, NewDevIdeaData>({
     mutationFn: async (ideaData) => {
       if (!userId) throw new Error('User not authenticated.');
-      const { tagIds, ...ideaDetails } = ideaData;
-      const { data, error } = await supabase
-        .from('dev_ideas')
-        .insert({ ...ideaDetails, user_id: userId })
-        .select()
-        .single();
-      if (error) throw error;
-      await manageIdeaTags(data.id, tagIds);
-      return data;
+      return addDevIdea({ ...ideaData, user_id: userId });
     },
-    onSuccess: () => {
-      showSuccess('Idea added!');
-      queryClient.invalidateQueries({ queryKey: ['devIdeasAndTags', userId] });
-    },
-    onError: (err) => {
-      showError('Failed to add idea.');
-      console.error(err);
-    },
+    onSuccess: invalidateIdeasQueries,
   });
 
-  const updateIdeaMutation = useMutation<DevIdea, Error, { id: string; updates: Partial<Omit<DevIdea, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'tags'>> & { tagIds?: string[] } }>({
+  const updateIdeaMutation = useMutation<DevIdea, Error, { id: string; updates: UpdateDevIdeaData }>({
     mutationFn: async ({ id, updates }) => {
       if (!userId) throw new Error('User not authenticated.');
-      const { tagIds, ...ideaDetails } = updates;
-      const { data, error } = await supabase
-        .from('dev_ideas')
-        .update(ideaDetails)
-        .eq('id', id)
-        .eq('user_id', userId)
-        .select()
-        .single();
-      if (error) throw error;
-      if (tagIds) {
-        await manageIdeaTags(id, tagIds);
-      }
-      return data;
+      return updateDevIdea(id, updates);
     },
-    onSuccess: () => {
-      showSuccess('Idea updated!');
-      queryClient.invalidateQueries({ queryKey: ['devIdeasAndTags', userId] });
-    },
-    onError: (err) => {
-      showError('Failed to update idea.');
-      console.error(err);
-    },
+    onSuccess: invalidateIdeasQueries,
   });
 
-  const deleteIdeaMutation = useMutation<boolean, Error, string>({
-    mutationFn: async (id) => {
-      if (!userId) throw new Error('User not authenticated.');
-      const { data: existingIdea, error: fetchError } = await supabase
-        .from('dev_ideas')
-        .select('image_url')
-        .eq('id', id)
-        .single();
-      if (fetchError) {
-        console.error('Could not fetch idea to delete image.');
-      }
-
-      const { error } = await supabase
-        .from('dev_ideas')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', userId);
-      if (error) throw error;
-
-      if (existingIdea?.image_url) {
-        const imageKey = existingIdea.image_url.substring(existingIdea.image_url.lastIndexOf('/') + 1);
-        await supabase.storage.from('devideaimages').remove([imageKey]);
-      }
-      return true;
-    },
-    onSuccess: () => {
-      showSuccess('Idea deleted!');
-      queryClient.invalidateQueries({ queryKey: ['devIdeasAndTags', userId] });
-    },
-    onError: (err) => {
-      showError('Failed to delete idea.');
-      console.error(err);
-    },
-  });
-
-  const addTagMutation = useMutation<DevIdeaTag, Error, { name: string; color: string }>({
-    mutationFn: async ({ name, color }) => {
-      if (!userId) throw new Error('User not authenticated.');
-      const { data, error } = await supabase
-        .from('dev_idea_tags')
-        .insert({ name, color, user_id: userId })
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['devIdeasAndTags', userId] });
-    },
-    onError: (err) => {
-      showError('Failed to add tag.');
-      console.error(err);
-    },
-  });
-
-  const updateTagMutation = useMutation<DevIdeaTag, Error, { id: string; updates: Partial<Omit<DevIdeaTag, 'id'>> }>({
-    mutationFn: async ({ id, updates }) => {
-      if (!userId) throw new Error('User not authenticated.');
-      const { data, error } = await supabase
-        .from('dev_idea_tags')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      showSuccess('Tag updated!');
-      queryClient.invalidateQueries({ queryKey: ['devIdeasAndTags', userId] });
-    },
-    onError: (err) => {
-      showError('Failed to update tag.');
-      console.error(err);
-    },
-  });
-
-  const deleteTagMutation = useMutation<boolean, Error, string>({
-    mutationFn: async (id) => {
-      if (!userId) throw new Error('User not authenticated.');
-      const { error } = await supabase.from('dev_idea_tags').delete().eq('id', id);
-      if (error) throw error;
-      return true;
-    },
-    onSuccess: () => {
-      showSuccess('Tag deleted!');
-      queryClient.invalidateQueries({ queryKey: ['devIdeasAndTags', userId] });
-    },
-    onError: (err) => {
-      showError('Failed to delete tag.');
-      console.error(err);
-    },
+  const deleteIdeaMutation = useMutation<void, Error, string>({
+    mutationFn: (id) => deleteDevIdea(id),
+    onSuccess: invalidateIdeasQueries,
   });
 
   return {
-    ideas,
-    tags,
-    loading,
+    ideas: ideas || [],
+    tags: tags || [],
+    isLoading: isLoadingIdeas || isLoadingTags || authLoading,
+    error: errorIdeas || errorTags,
     addIdea: addIdeaMutation.mutateAsync,
     updateIdea: updateIdeaMutation.mutateAsync,
     deleteIdea: deleteIdeaMutation.mutateAsync,
-    setIdeas: (newIdeas: DevIdea[]) => queryClient.setQueryData(['devIdeasAndTags', userId], (oldData: { ideas: DevIdea[]; tags: DevIdeaTag[]; } | undefined) => ({ ...oldData!, ideas: newIdeas, tags: oldData?.tags || [] })),
-    addTag: addTagMutation.mutateAsync,
-    updateTag: updateTagMutation.mutateAsync,
-    deleteTag: deleteTagMutation.mutateAsync,
+    createTag: createTag.mutateAsync,
+    updateTag: updateTag.mutateAsync,
+    deleteTag: deleteTag.mutateAsync,
   };
 };

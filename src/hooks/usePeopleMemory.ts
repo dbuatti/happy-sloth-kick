@@ -1,160 +1,143 @@
-import { useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext';
-import { showError, showSuccess } from '@/utils/toast';
+import { useAuth } from './useAuth';
+import { Person, NewPersonData, UpdatePersonData } from '@/types';
+import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { v4 as uuidv4 } from 'uuid';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-export interface Person {
-  id: string;
-  user_id: string;
-  name: string;
-  avatar_url: string | null;
-  notes: string | null;
-  created_at: string;
-}
+const fetchPeople = async (userId: string): Promise<Person[]> => {
+  const { data, error } = await supabase
+    .from('people_memory')
+    .select('*')
+    .eq('user_id', userId)
+    .order('name', { ascending: true });
+  if (error) throw error;
+  return data as Person[];
+};
 
-export const usePeopleMemory = (props?: { userId?: string }) => {
-  const { user } = useAuth();
-  const userId = props?.userId || user?.id;
+const addPerson = async (newPerson: NewPersonData & { user_id: string }): Promise<Person> => {
+  const { data, error } = await supabase
+    .from('people_memory')
+    .insert(newPerson)
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as Person;
+};
+
+const updatePerson = async (id: string, updates: UpdatePersonData): Promise<Person> => {
+  const { data, error } = await supabase
+    .from('people_memory')
+    .update(updates)
+    .eq('id', id)
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as Person;
+};
+
+const deletePerson = async (id: string): Promise<void> => {
+  const { error } = await supabase
+    .from('people_memory')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
+};
+
+export const usePeopleMemory = () => {
+  const { userId, isLoading: authLoading } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: people = [], isLoading: loading, error } = useQuery<Person[], Error>({
+  const { data: people, isLoading, error } = useQuery<Person[], Error>({
     queryKey: ['peopleMemory', userId],
     queryFn: async () => {
       if (!userId) return [];
-      const { data, error } = await supabase
-        .from('people_memory')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: true });
-      if (error) throw error;
-      return data || [];
+      return fetchPeople(userId);
     },
-    enabled: !!userId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    enabled: !!userId && !authLoading,
   });
 
-  useEffect(() => {
-    if (error) {
-      showError('Failed to load people.');
-      console.error(error);
-    }
-  }, [error]);
+  const invalidatePeopleQueries = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['peopleMemory', userId] });
+  }, [queryClient, userId]);
 
   const addPersonMutation = useMutation<Person, Error, { personData: { name: string; notes: string | null }; avatarFile?: File | null }>({
     mutationFn: async ({ personData, avatarFile }) => {
       if (!userId) throw new Error('User not authenticated.');
-      const { data: newPerson, error: insertError } = await supabase
-        .from('people_memory')
-        .insert({ ...personData, user_id: userId })
-        .select()
-        .single();
-      if (insertError) throw insertError;
 
+      let avatar_url: string | null = null;
       if (avatarFile) {
-        const filePath = `people_avatars/${userId}/${newPerson.id}/${uuidv4()}`;
+        const fileExt = avatarFile.name.split('.').pop();
+        const fileName = `${uuidv4()}.${fileExt}`;
+        const filePath = `${userId}/${fileName}`;
         const { error: uploadError } = await supabase.storage
-          .from('devideaimages')
+          .from('avatars')
           .upload(filePath, avatarFile);
         if (uploadError) throw uploadError;
-
-        const { data: urlData } = supabase.storage.from('devideaimages').getPublicUrl(filePath);
-        
-        const { data: updatedPerson, error: updateError } = await supabase
-          .from('people_memory')
-          .update({ avatar_url: urlData.publicUrl })
-          .eq('id', newPerson.id)
-          .select()
-          .single();
-        if (updateError) throw updateError;
-        return updatedPerson;
-      } else {
-        return newPerson;
+        const { data: publicUrlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
+        avatar_url = publicUrlData.publicUrl;
       }
+
+      return addPerson({ ...personData, user_id: userId, avatar_url });
     },
-    onSuccess: () => {
-      showSuccess('Person added!');
-      queryClient.invalidateQueries({ queryKey: ['peopleMemory', userId] });
-    },
-    onError: (err) => {
-      showError('Failed to add person.');
-      console.error(err);
-    },
+    onSuccess: invalidatePeopleQueries,
   });
 
-  const updatePersonMutation = useMutation<Person, Error, { id: string; updates: Partial<Omit<Person, 'id' | 'user_id' | 'created_at'>>; avatarFile?: File | null }>({
+  const updatePersonMutation = useMutation<Person, Error, { id: string; updates: UpdatePersonData; avatarFile?: File | null }>({
     mutationFn: async ({ id, updates, avatarFile }) => {
       if (!userId) throw new Error('User not authenticated.');
-      const finalUpdates = { ...updates };
+
+      let avatar_url: string | null | undefined = updates.avatar_url; // Allow explicit null to remove avatar
 
       if (avatarFile) {
-        const personToUpdate = people.find(p => p.id === id);
-        if (personToUpdate?.avatar_url) {
-          const oldFilePath = personToUpdate.avatar_url.split('/devideaimages/')[1];
-          if (oldFilePath) {
-            await supabase.storage.from('devideaimages').remove([oldFilePath]);
-          }
-        }
-
-        const filePath = `people_avatars/${userId}/${id}/${uuidv4()}`;
+        // If a new file is provided, upload it
+        const fileExt = avatarFile.name.split('.').pop();
+        const fileName = `${uuidv4()}.${fileExt}`;
+        const filePath = `${userId}/${fileName}`;
         const { error: uploadError } = await supabase.storage
-          .from('devideaimages')
+          .from('avatars')
           .upload(filePath, avatarFile);
         if (uploadError) throw uploadError;
+        const { data: publicUrlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
+        avatar_url = publicUrlData.publicUrl;
 
-        const { data: urlData } = supabase.storage.from('devideaimages').getPublicUrl(filePath);
-        finalUpdates.avatar_url = urlData.publicUrl;
+        // Optionally, delete old avatar if it exists
+        const personToUpdate = (people as Person[]).find(p => p.id === id);
+        if (personToUpdate?.avatar_url) {
+          const oldFilePath = personToUpdate.avatar_url.split('/avatars/')[1];
+          await supabase.storage.from('avatars').remove([oldFilePath]);
+        }
       } else if (updates.avatar_url === null) {
         // If avatar_url is explicitly set to null, remove existing image
-        const personToUpdate = people.find(p => p.id === id);
+        const personToUpdate = (people as Person[]).find(p => p.id === id);
         if (personToUpdate?.avatar_url) {
-          const oldFilePath = personToUpdate.avatar_url.split('/devideaimages/')[1];
-          if (oldFilePath) {
-            await supabase.storage.from('devideaimages').remove([oldFilePath]);
-          }
+          const oldFilePath = personToUpdate.avatar_url.split('/avatars/')[1];
+          await supabase.storage.from('avatars').remove([oldFilePath]);
         }
       }
 
-      const { data, error } = await supabase
-        .from('people_memory')
-        .update(finalUpdates)
-        .eq('id', id)
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
+      return updatePerson(id, { ...updates, avatar_url });
     },
-    onSuccess: () => {
-      showSuccess('Person updated!');
-      queryClient.invalidateQueries({ queryKey: ['peopleMemory', userId] });
-    },
-    onError: (err) => {
-      showError('Failed to update person.');
-      console.error(err);
-    },
+    onSuccess: invalidatePeopleQueries,
   });
 
-  const deletePersonMutation = useMutation<boolean, Error, string>({
+  const deletePersonMutation = useMutation<void, Error, string>({
     mutationFn: async (id) => {
       if (!userId) throw new Error('User not authenticated.');
-      const { error } = await supabase.from('people_memory').delete().eq('id', id);
-      if (error) throw error;
-      return true;
+      const personToDelete = (people as Person[]).find(p => p.id === id);
+      if (personToDelete?.avatar_url) {
+        const filePath = personToDelete.avatar_url.split('/avatars/')[1];
+        await supabase.storage.from('avatars').remove([filePath]);
+      }
+      return deletePerson(id);
     },
-    onSuccess: () => {
-      showSuccess('Person removed.');
-      queryClient.invalidateQueries({ queryKey: ['peopleMemory', userId] });
-    },
-    onError: (err) => {
-      showError('Failed to remove person.');
-      console.error(err);
-    },
+    onSuccess: invalidatePeopleQueries,
   });
 
   return {
-    people,
-    loading,
+    people: people || [],
+    isLoading,
+    error,
     addPerson: addPersonMutation.mutateAsync,
     updatePerson: updatePersonMutation.mutateAsync,
     deletePerson: deletePersonMutation.mutateAsync,

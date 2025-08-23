@@ -1,390 +1,406 @@
-import React, { useState } from 'react';
-import { CheckCircle2, ListTodo, CalendarDays } from 'lucide-react';
-import WeeklyFocusCard from '@/components/dashboard/WeeklyFocus';
-import MeditationNotesCard from '@/components/dashboard/MeditationNotes';
-import DailySchedulePreview from '@/components/dashboard/DailySchedulePreview';
-import CustomCard from '@/components/dashboard/CustomCard';
+import React, { useState, useMemo } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { useTasks } from '@/hooks/useTasks';
+import { useAppointments } from '@/hooks/useAppointments';
 import { useDashboardData } from '@/hooks/useDashboardData';
+import { useSettings } from '@/context/SettingsContext';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Plus, LayoutDashboard, Sparkles, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import PeopleMemoryCard from '@/components/dashboard/PeopleMemoryCard';
-import DashboardLayoutSettings from '@/components/dashboard/DashboardLayoutSettings';
-import DashboardHeader from '@/components/dashboard/DashboardHeader';
-import StatCard from '@/components/dashboard/StatCard';
-import { useDashboardStats } from '@/hooks/useDashboardStats';
-import { useTasks, Task } from '@/hooks/useTasks';
-import NextTaskCard from '@/components/dashboard/NextTaskCard';
-import TaskOverviewDialog from '@/components/TaskOverviewDialog';
-import TaskDetailDialog from '@/components/TaskDetailDialog';
-import FullScreenFocusView from '@/components/FullScreenFocusView';
-import { AnimatePresence } from 'framer-motion';
-import { useSound } from '@/context/SoundContext';
+import { Textarea } from '@/components/ui/textarea';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { HexColorPicker } from 'react-colorful';
 import {
   DndContext,
-  DragEndEvent,
-  DragStartEvent,
-  DragOverlay,
+  closestCorners,
+  KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
-  closestCorners,
+  DragEndEvent,
+  DragStartEvent,
 } from '@dnd-kit/core';
 import {
-  SortableContext,
   arrayMove,
+  SortableContext,
   verticalListSortingStrategy,
-
+  useSortable,
 } from '@dnd-kit/sortable';
-import { createPortal } from 'react-dom';
-import SortableCustomCard from '@/components/dashboard/SortableCustomCard';
-import DailyBriefingCard from '@/components/dashboard/DailyBriefingCard';
-import { PanelGroup, Panel, PanelResizeHandle } from "react-resizable-panels";
-import { useIsMobile } from '@/hooks/use-mobile';
-import { useSettings } from '@/context/SettingsContext';
+import { CSS } from '@dnd-kit/utilities';
+import { CustomCard, WeeklyFocus, TaskSection } from '@/types';
+import DailySchedulePreview from '@/components/dashboard/DailySchedulePreview';
+import PeopleMemoryCard from '@/components/dashboard/PeopleMemoryCard';
+import QuickLinks from '@/components/dashboard/QuickLinks';
+import TaskList from '@/components/TaskList';
+import { format, startOfDay } from 'date-fns';
+import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
 
-
-interface DashboardProps {
-  isDemo?: boolean;
-  demoUserId?: string;
+interface SortableCustomCardProps {
+  card: CustomCard;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => {
-  const { 
-    customCards, 
-    addCustomCard, 
-    weeklyFocus, 
-    updateWeeklyFocus, 
-    loading: dashboardDataLoading,
-    updateCustomCard,
-    reorderCustomCards,
-  } = useDashboardData({ userId: demoUserId });
+const SortableCustomCard: React.FC<SortableCustomCardProps> = ({ card }) => {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: card.id });
 
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <CustomDashboardCard card={card} />
+    </div>
+  );
+};
+
+interface CustomDashboardCardProps {
+  card: CustomCard;
+}
+
+const CustomDashboardCard: React.FC<CustomDashboardCardProps> = ({ card }) => {
+  const { updateCustomCard, deleteCustomCard } = useDashboardData();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedTitle, setEditedTitle] = useState(card.title);
+  const [editedContent, setEditedContent] = useState(card.content || '');
+  const [editedEmoji, setEditedEmoji] = useState(card.emoji || '');
+
+  const handleSave = async () => {
+    await updateCustomCard({
+      id: card.id,
+      updates: { title: editedTitle, content: editedContent, emoji: editedEmoji },
+    });
+    setIsEditing(false);
+  };
+
+  const handleDelete = async () => {
+    if (window.confirm('Are you sure you want to delete this card?')) {
+      await deleteCustomCard(card.id);
+    }
+  };
+
+  const handleToggleVisibility = async () => {
+    await updateCustomCard({ id: card.id, updates: { is_visible: !card.is_visible } });
+  };
+
+  return (
+    <Card className="relative h-full flex flex-col">
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-lg font-semibold flex items-center gap-2">
+          {card.emoji} {card.title}
+        </CardTitle>
+        <div className="flex space-x-1">
+          <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
+            Edit
+          </Button>
+          <Button variant="ghost" size="sm" onClick={handleToggleVisibility}>
+            {card.is_visible ? 'Hide' : 'Show'}
+          </Button>
+          <Button variant="ghost" size="sm" onClick={handleDelete}>
+            <X className="h-4 w-4 text-red-500" />
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="flex-grow overflow-y-auto">
+        <p className="text-sm text-gray-600">{card.content}</p>
+      </CardContent>
+
+      <Dialog open={isEditing} onOpenChange={setIsEditing}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Custom Card</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="title" className="text-right">Title</Label>
+              <Input id="title" value={editedTitle} onChange={(e) => setEditedTitle(e.target.value)} className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="emoji" className="text-right">Emoji</Label>
+              <Input id="emoji" value={editedEmoji} onChange={(e) => setEditedEmoji(e.target.value)} className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="content" className="text-right">Content</Label>
+              <Textarea id="content" value={editedContent} onChange={(e) => setEditedContent(e.target.value)} className="col-span-3" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="submit" onClick={handleSave}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+};
+
+interface WeeklyFocusCardProps {
+  weeklyFocus: WeeklyFocus | null;
+  updateWeeklyFocus: (updates: Partial<Omit<WeeklyFocus, 'id' | 'user_id' | 'week_start_date'>>) => Promise<WeeklyFocus>;
+}
+
+const WeeklyFocusCard: React.FC<WeeklyFocusCardProps> = ({ weeklyFocus, updateWeeklyFocus }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [primaryFocus, setPrimaryFocus] = useState(weeklyFocus?.primary_focus || '');
+  const [secondaryFocus, setSecondaryFocus] = useState(weeklyFocus?.secondary_focus || '');
+  const [tertiaryFocus, setTertiaryFocus] = useState(weeklyFocus?.tertiary_focus || '');
+
+  useEffect(() => {
+    setPrimaryFocus(weeklyFocus?.primary_focus || '');
+    setSecondaryFocus(weeklyFocus?.secondary_focus || '');
+    setTertiaryFocus(weeklyFocus?.tertiary_focus || '');
+  }, [weeklyFocus]);
+
+  const handleSave = async () => {
+    await updateWeeklyFocus({
+      primary_focus: primaryFocus,
+      secondary_focus: secondaryFocus,
+      tertiary_focus: tertiaryFocus,
+    });
+    setIsEditing(false);
+  };
+
+  return (
+    <Card className="h-full flex flex-col">
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-lg font-semibold">Weekly Focus</CardTitle>
+        <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
+          Edit
+        </Button>
+      </CardHeader>
+      <CardContent className="flex-grow overflow-y-auto">
+        {isEditing ? (
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="primaryFocus">Primary Focus</Label>
+              <Input id="primaryFocus" value={primaryFocus} onChange={(e) => setPrimaryFocus(e.target.value)} />
+            </div>
+            <div>
+              <Label htmlFor="secondaryFocus">Secondary Focus</Label>
+              <Input id="secondaryFocus" value={secondaryFocus} onChange={(e) => setSecondaryFocus(e.target.value)} />
+            </div>
+            <div>
+              <Label htmlFor="tertiaryFocus">Tertiary Focus</Label>
+              <Input id="tertiaryFocus" value={tertiaryFocus} onChange={(e) => setTertiaryFocus(e.target.value)} />
+            </div>
+            <Button onClick={handleSave} className="w-full">Save Focus</Button>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-sm text-gray-700"><strong>Primary:</strong> {weeklyFocus?.primary_focus || 'Not set'}</p>
+            <p className="text-sm text-gray-700"><strong>Secondary:</strong> {weeklyFocus?.secondary_focus || 'Not set'}</p>
+            <p className="text-sm text-gray-700"><strong>Tertiary:</strong> {weeklyFocus?.tertiary_focus || 'Not set'}</p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+const Dashboard = () => {
+  const { userId: currentUserId } = useAuth();
   const { settings, updateSettings } = useSettings();
-
-  const { tasksDue, tasksCompleted, appointmentsToday, loading: statsLoading } = useDashboardStats({ userId: demoUserId });
-  
   const {
-    tasks: allTasks,
-    nextAvailableTask,
+    tasks,
+    categories: allCategories,
+    sections,
+    loading: tasksLoading,
+    error: tasksError,
     updateTask,
     deleteTask,
-    sections,
-    allCategories,
-    createSection,
-    updateSection,
-    deleteSection,
-    updateSectionIncludeInFocusMode,
-    loading: tasksLoading,
-  } = useTasks({ viewMode: 'daily', userId: demoUserId, currentDate: new Date() }); // Pass new Date()
+    addTask,
+    onToggleFocusMode,
+    onLogDoTodayOff,
+  } = useTasks({ userId: currentUserId! });
 
-  const { playSound } = useSound();
-  const [isAddCardOpen, setIsAddCardOpen] = useState(false);
+  const { dailyTaskCount } = useDailyTaskCount(tasks);
+
+  const today = startOfDay(new Date());
+  const {
+    appointments,
+    isLoading: appointmentsLoading,
+    error: appointmentsError,
+    addAppointment,
+    updateAppointment: updateSingleAppointment,
+    deleteAppointment: deleteSingleAppointment,
+    clearAppointmentsForDay,
+  } = useAppointments(today);
+
+  const {
+    weeklyFocus,
+    customCards,
+    isLoading: dashboardDataLoading,
+    error: dashboardDataError,
+    updateWeeklyFocus,
+    addCustomCard,
+    reorderCustomCards,
+  } = useDashboardData();
+
+  const [isAddCardDialogOpen, setIsAddCardDialogOpen] = useState(false);
   const [newCardTitle, setNewCardTitle] = useState('');
   const [newCardContent, setNewCardContent] = useState('');
   const [newCardEmoji, setNewCardEmoji] = useState('');
-  const [isLayoutSettingsOpen, setIsLayoutSettingsOpen] = useState(false);
+  const [activeDragItem, setActiveDragItem] = useState<CustomCard | null>(null);
 
-  const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
-  const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
-  const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
-  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
-  const [isFocusViewOpen, setIsFocusViewOpen] = useState(false);
-
-  const [activeDragItem, setActiveDragItem] = useState<any>(null);
-
-  const isMobile = useIsMobile();
+  const handleAddCustomCard = async () => {
+    if (newCardTitle.trim()) {
+      await addCustomCard({
+        title: newCardTitle,
+        content: newCardContent,
+        emoji: newCardEmoji,
+        card_order: (customCards as CustomCard[]).length,
+      });
+      setNewCardTitle('');
+      setNewCardContent('');
+      setNewCardEmoji('');
+      setIsAddCardDialogOpen(false);
+    }
+  };
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8, // User must move 8px before a drag starts
-      },
-    })
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor)
   );
 
-  const handleAddCard = async () => {
-    if (!newCardTitle.trim()) return;
-    await addCustomCard({
-      title: newCardTitle,
-      content: newCardContent,
-      emoji: newCardEmoji,
-      card_order: customCards.length,
-    });
-    setNewCardTitle('');
-    setNewCardContent('');
-    setNewCardEmoji('');
-    setIsAddCardOpen(false);
-  };
-
-  const handleOpenOverview = (task: Task) => {
-    setTaskToOverview(task);
-    setIsTaskOverviewOpen(true);
-  };
-
-  const handleEditTaskFromOverview = (task: Task) => {
-    setIsTaskOverviewOpen(false);
-    setTaskToEdit(task);
-    setIsTaskDetailOpen(true);
-  };
-
-  const handleOpenFocusView = () => {
-    if (nextAvailableTask) {
-      setIsFocusViewOpen(true);
-    }
-  };
-
-  const handleMarkDoneFromFocusView = async () => {
-    if (nextAvailableTask) {
-      await updateTask(nextAvailableTask.id, { status: 'completed' });
-      playSound('success');
-    }
-  };
-
   const handleDragStart = (event: DragStartEvent) => {
-    setActiveDragItem(customCards.find(card => card.id === event.active.id) || null);
+    setActiveDragItem((customCards as CustomCard[]).find(card => card.id === event.active.id) || null);
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
-    setActiveDragItem(null);
     const { active, over } = event;
+    if (!active || !over) return;
 
-    if (!over || active.id === over.id) {
-      return;
+    if (active.id !== over.id) {
+      const oldIndex = (customCards as CustomCard[]).findIndex(card => card.id === active.id);
+      const newIndex = (customCards as CustomCard[]).findIndex(card => card.id === over.id);
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const newOrderedCards = arrayMove(customCards as CustomCard[], oldIndex, newIndex);
+        await reorderCustomCards(newOrderedCards.map(card => card.id));
+      }
     }
-
-    const oldIndex = customCards.findIndex(card => card.id === active.id);
-    const newIndex = customCards.findIndex(card => card.id === over.id);
-
-    if (oldIndex !== -1 && newIndex !== -1) {
-      const newOrderedCards = arrayMove(customCards, oldIndex, newIndex);
-      await reorderCustomCards(newOrderedCards.map(card => card.id));
-    }
+    setActiveDragItem(null);
   };
 
-  const handlePanelLayoutChange = (sizes: number[]) => {
-    if (settings) {
-      updateSettings({ dashboard_panel_sizes: sizes });
-    }
-  };
+  const loading = tasksLoading || appointmentsLoading || dashboardDataLoading;
+  const error = tasksError || appointmentsError || dashboardDataError;
 
-  const statCards = [
-    { title: "Tasks Due Today", value: tasksDue, icon: ListTodo, description: "tasks remaining for today", className: "bg-blue-500/5 dark:bg-blue-500/10 border-blue-500/20" },
-    { title: "Tasks Completed", value: tasksCompleted, icon: CheckCircle2, description: "tasks completed today", className: "bg-green-500/5 dark:bg-green-500/10 border-green-500/20" },
-    { title: "Appointments", value: appointmentsToday, icon: CalendarDays, description: "events scheduled for today", className: "bg-purple-500/5 dark:bg-purple-500/10 border-purple-500/20" },
-  ];
-
-  const defaultPanelSizes = settings?.dashboard_panel_sizes || [66, 34];
+  if (loading) return <div className="text-center py-8">Loading dashboard...</div>;
+  if (error) return <div className="text-center py-8 text-red-500">Error: {error.message}</div>;
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="flex-1 flex flex-col">
-        <main className="flex-grow p-4 md:p-6">
-          <DashboardHeader
-            onAddCard={() => setIsAddCardOpen(true)}
-            onCustomizeLayout={() => setIsLayoutSettingsOpen(true)}
-            isDemo={isDemo}
-            demoUserId={demoUserId}
-          />
+    <div className="container mx-auto p-4 h-full flex flex-col">
+      <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            {statCards.map(stat => (
-              <StatCard
-                key={stat.title}
-                title={stat.title}
-                value={stat.value}
-                icon={stat.icon}
-                description={stat.description}
-                loading={statsLoading}
-                className={stat.className}
-              />
-            ))}
-          </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        {/* Welcome Card */}
+        <Card className="lg:col-span-2 bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold flex items-center gap-2">
+              👋 Welcome back, {currentUserId?.substring(0, 8)}!
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-lg mb-2">You have <span className="font-bold">{dailyTaskCount}</span> tasks to focus on today.</p>
+            <p className="text-sm text-blue-100">Let's make it a productive day!</p>
+          </CardContent>
+        </Card>
 
-          {isMobile ? (
-            <div className="grid grid-cols-1 gap-6 relative z-[1]">
-              <div className="space-y-6">
-                {settings?.dashboard_layout?.['dailyBriefingVisible'] !== false && (
-                  <DailyBriefingCard isDemo={isDemo} demoUserId={demoUserId} />
-                )}
-                {settings?.dashboard_layout?.['dailyScheduleVisible'] !== false && (
-                  <DailySchedulePreview />
-                )}
-                <SortableContext items={customCards.map(card => card.id)} strategy={verticalListSortingStrategy}>
-                  {customCards.filter(card => card.is_visible).map(card => (
-                    <SortableCustomCard key={card.id} card={card} />
-                  ))}
-                </SortableContext>
-              </div>
-              <div className="space-y-6">
-                <NextTaskCard 
-                  nextAvailableTask={nextAvailableTask}
-                  updateTask={updateTask}
-                  onOpenOverview={handleOpenOverview}
-                  loading={tasksLoading}
-                  onFocusViewOpen={handleOpenFocusView}
-                />
-                {settings?.dashboard_layout?.['weeklyFocusVisible'] !== false && (
-                  <WeeklyFocusCard 
-                    weeklyFocus={weeklyFocus} 
-                    updateWeeklyFocus={updateWeeklyFocus} 
-                    loading={dashboardDataLoading} 
-                  />
-                )}
-                {settings?.dashboard_layout?.['peopleMemoryVisible'] !== false && (
-                  <PeopleMemoryCard />
-                )}
-                {settings?.dashboard_layout?.['meditationNotesVisible'] !== false && (
-                  <MeditationNotesCard 
-                    settings={settings} 
-                    updateSettings={updateSettings} 
-                    loading={dashboardDataLoading} 
-                  />
-                )}
-              </div>
-            </div>
-          ) : (
-            <PanelGroup
-              direction="horizontal"
-              className="min-h-[600px] rounded-lg border relative z-[1]"
-              onLayout={handlePanelLayoutChange}
-            >
-              <Panel defaultSize={defaultPanelSizes[0]} minSize={30}>
-                <div className="flex h-full flex-col p-4 space-y-6">
-                  {settings?.dashboard_layout?.['dailyBriefingVisible'] !== false && (
-                    <DailyBriefingCard isDemo={isDemo} demoUserId={demoUserId} />
-                  )}
-                  {settings?.dashboard_layout?.['dailyScheduleVisible'] !== false && (
-                    <DailySchedulePreview />
-                  )}
-                  <SortableContext items={customCards.map(card => card.id)} strategy={verticalListSortingStrategy}>
-                    {customCards.filter(card => card.is_visible).map(card => (
-                      <SortableCustomCard key={card.id} card={card} />
-                    ))}
-                  </SortableContext>
-                </div>
-              </Panel>
-              <PanelResizeHandle />
-              <Panel defaultSize={defaultPanelSizes[1]} minSize={20}>
-                <div className="flex h-full flex-col p-4 space-y-6">
-                  <NextTaskCard 
-                    nextAvailableTask={nextAvailableTask}
-                    updateTask={updateTask}
-                    onOpenOverview={handleOpenOverview}
-                    loading={tasksLoading}
-                    onFocusViewOpen={handleOpenFocusView}
-                  />
-                  {settings?.dashboard_layout?.['weeklyFocusVisible'] !== false && (
-                    <WeeklyFocusCard 
-                      weeklyFocus={weeklyFocus} 
-                      updateWeeklyFocus={updateWeeklyFocus} 
-                      loading={dashboardDataLoading} 
-                    />
-                  )}
-                  {settings?.dashboard_layout?.['peopleMemoryVisible'] !== false && (
-                    <PeopleMemoryCard />
-                  )}
-                  {settings?.dashboard_layout?.['meditationNotesVisible'] !== false && (
-                    <MeditationNotesCard 
-                      settings={settings} 
-                      updateSettings={updateSettings} 
-                      loading={dashboardDataLoading} 
-                    />
-                  )}
-                </div>
-              </Panel>
-            </PanelGroup>
-          )}
-        </main>
-        <footer className="p-4 relative z-[0]">
-          <p>&copy; {new Date().getFullYear()} TaskMaster. All rights reserved.</p>
-        </footer>
-
-        <Dialog open={isAddCardOpen} onOpenChange={setIsAddCardOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add Custom Card</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div>
-                <Label>Title</Label>
-                <Input value={newCardTitle} onChange={(e) => setNewCardTitle(e.target.value)} placeholder="e.g., Things to Remember" />
-              </div>
-              <div>
-                <Label>Emoji (Optional)</Label>
-                <Input value={newCardEmoji} onChange={(e) => setNewCardEmoji(e.target.value)} placeholder="🍊" maxLength={2} />
-              </div>
-              <div>
-                <Label>Content</Label>
-                <Textarea value={newCardContent} onChange={(e) => setNewCardContent(e.target.value)} placeholder="e.g., You have an orange" />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddCardOpen(false)}>Cancel</Button>
-              <Button onClick={handleAddCard}>Add Card</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        <DashboardLayoutSettings
-          isOpen={isLayoutSettingsOpen}
-          onClose={() => setIsLayoutSettingsOpen(false)}
-          settings={settings}
-          customCards={customCards}
-          updateSettings={updateSettings}
-          updateCustomCard={updateCustomCard}
-        />
-
-        {taskToOverview && (
-          <TaskOverviewDialog
-            task={taskToOverview}
-            isOpen={isTaskOverviewOpen}
-            onClose={() => setIsTaskOverviewOpen(false)}
-            onEditClick={handleEditTaskFromOverview}
-            onUpdate={updateTask}
-            onDelete={deleteTask}
-            sections={sections}
-            allCategories={allCategories}
-            allTasks={allTasks as Task[]} // Cast to Task[]
-          />
-        )}
-        {taskToEdit && (
-          <TaskDetailDialog
-            task={taskToEdit}
-            isOpen={isTaskDetailOpen}
-            onClose={() => setIsTaskDetailOpen(false)}
-            onUpdate={updateTask}
-            onDelete={deleteTask}
-            sections={sections}
-            allCategories={allCategories}
-            createSection={createSection}
-            updateSection={updateSection}
-            deleteSection={deleteSection}
-            updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-            allTasks={allTasks as Task[]} // Cast to Task[]
-          />
-        )}
-        <AnimatePresence>
-          {isFocusViewOpen && nextAvailableTask && (
-            <FullScreenFocusView
-              taskDescription={nextAvailableTask.description || ''} // Ensure description is string
-              onClose={() => setIsFocusViewOpen(false)}
-              onMarkDone={handleMarkDoneFromFocusView}
-            />
-          )}
-        </AnimatePresence>
+        {/* Add Custom Card */}
+        <Card className="flex flex-col items-center justify-center p-6 text-center border-dashed border-2 border-gray-300 hover:border-blue-500 transition-colors cursor-pointer" onClick={() => setIsAddCardDialogOpen(true)}>
+          <Plus className="h-8 w-8 text-gray-500 mb-2" />
+          <p className="text-lg font-semibold text-gray-700">Add Custom Card</p>
+          <p className="text-sm text-gray-500">Personalize your dashboard</p>
+        </Card>
       </div>
-      {createPortal(
-        <DragOverlay>
-          {activeDragItem ? (
-            <CustomCard card={activeDragItem} isOverlay />
-          ) : null}
-        </DragOverlay>,
-        document.body
-      )}
-    </DndContext>
+
+      <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 flex-grow">
+          {/* Render Custom Cards */}
+          {(customCards as CustomCard[]).length > 0 && (
+            <SortableContext items={(customCards as CustomCard[]).map(card => card.id)} strategy={verticalListSortingStrategy}>
+              {(customCards as CustomCard[]).filter(card => card.is_visible).map(card => (
+                <SortableCustomCard key={card.id} card={card} />
+              ))}
+            </SortableContext>
+          )}
+
+          {/* Daily Schedule Preview */}
+          <DailySchedulePreview
+            appointments={appointments}
+            onAddAppointment={() => { /* Open add appointment modal */ }}
+          />
+
+          {/* Weekly Focus Card */}
+          <WeeklyFocusCard
+            weeklyFocus={weeklyFocus}
+            updateWeeklyFocus={updateWeeklyFocus}
+          />
+
+          {/* People Memory Card */}
+          <PeopleMemoryCard />
+
+          {/* Quick Links Card */}
+          <QuickLinks />
+
+          {/* Example Task List (can be replaced by a custom card) */}
+          <Card className="lg:col-span-2 flex flex-col">
+            <CardHeader>
+              <CardTitle>Today's Tasks</CardTitle>
+            </CardHeader>
+            <CardContent className="flex-grow overflow-y-auto">
+              <TaskList
+                tasks={tasks}
+                categories={allCategories}
+                onUpdateTask={updateTask}
+                onDeleteTask={deleteTask}
+                onAddTask={addTask}
+                onAddSubtask={async (description, parentTaskId) => { await addTask(description, null, parentTaskId); }}
+                onToggleFocusMode={onToggleFocusMode}
+                onLogDoTodayOff={onLogDoTodayOff}
+                sections={sections as TaskSection[]}
+                allCategories={allCategories}
+                currentDate={today}
+                createSection={() => {}}
+                updateSection={() => {}}
+                deleteSection={() => {}}
+                updateSectionIncludeInFocusMode={() => {}}
+                showCompleted={false}
+                showFilters={false}
+              />
+            </CardContent>
+          </Card>
+        </div>
+      </DndContext>
+
+      {/* Add Custom Card Dialog */}
+      <Dialog open={isAddCardDialogOpen} onOpenChange={setIsAddCardDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Add New Custom Card</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="newCardTitle" className="text-right">Title</Label>
+              <Input id="newCardTitle" value={newCardTitle} onChange={(e) => setNewCardTitle(e.target.value)} className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="newCardEmoji" className="text-right">Emoji</Label>
+              <Input id="newCardEmoji" value={newCardEmoji} onChange={(e) => setNewCardEmoji(e.target.value)} className="col-span-3" placeholder="e.g., ✨" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="newCardContent" className="text-right">Content</Label>
+              <Textarea id="newCardContent" value={newCardContent} onChange={(e) => setNewCardContent(e.target.value)} className="col-span-3" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="submit" onClick={handleAddCustomCard}>Add Card</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };
 

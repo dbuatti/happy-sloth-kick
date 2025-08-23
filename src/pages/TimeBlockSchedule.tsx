@@ -1,131 +1,141 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { CalendarDays } from 'lucide-react';
-import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import DailyScheduleView from '@/components/DailyScheduleView';
-import { Task, useTasks } from '@/hooks/useTasks';
-import TaskOverviewDialog from '@/components/TaskOverviewDialog';
-import TaskDetailDialog from '@/components/TaskDetailDialog';
+import React, { useState, useMemo } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { useTasks } from '@/hooks/useTasks';
+import { useAppointments } from '@/hooks/useAppointments';
+import { useWorkHours } from '@/hooks/useWorkHours';
 import { useSettings } from '@/context/SettingsContext';
+import { format, startOfWeek, endOfWeek, addDays, isSameDay } from 'date-fns';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import DailyScheduleView from '@/components/DailyScheduleView';
+import { TaskSection } from '@/types';
 
-interface TimeBlockScheduleProps {
-  isDemo?: boolean;
-  demoUserId?: string;
-}
+const TimeBlockSchedule = () => {
+  const { userId: currentUserId } = useAuth();
+  const { settings } = useSettings();
+  const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
-const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, demoUserId }) => {
-  useSettings(); 
-
-  const [currentDate, setCurrentDate] = useState(new Date());
-
-  // Fetch allTasks here to pass to TaskDetailDialog
   const {
-    tasks: allTasks,
+    tasks,
+    categories: allCategories,
     sections,
-    allCategories,
+    loading: tasksLoading,
+    error: tasksError,
     updateTask,
     deleteTask,
-    createSection,
-    updateSection,
-    deleteSection,
-    updateSectionIncludeInFocusMode,
-  } = useTasks({ currentDate: new Date(), userId: demoUserId }); // Pass a dummy date for this global fetch
+    addTask,
+    onToggleFocusMode,
+    onLogDoTodayOff,
+  } = useTasks({ userId: currentUserId! });
 
-  const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
-  const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
-  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
-  const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
+  const {
+    workHours,
+    isLoading: workHoursLoading,
+    error: workHoursError,
+    addWorkHour,
+    updateWorkHour,
+  } = useWorkHours();
 
-  const handleOpenTaskOverview = (task: Task) => {
-    setTaskToOverview(task);
-    setIsTaskOverviewOpen(true);
+  const {
+    appointments,
+    isLoading: appointmentsLoading,
+    error: appointmentsError,
+    addAppointment,
+    updateAppointment,
+    deleteAppointment,
+    clearAppointmentsForDay,
+  } = useAppointments(selectedDate);
+
+  const saveWorkHours = async (dayOfWeek: string, startTime: string, endTime: string, enabled: boolean) => {
+    const existingWorkHour = workHours.find(wh => wh.day_of_week === dayOfWeek);
+    if (existingWorkHour) {
+      await updateWorkHour({ id: existingWorkHour.id, updates: { start_time: startTime, end_time: endTime, enabled } });
+    } else {
+      await addWorkHour({ day_of_week: dayOfWeek, start_time: startTime, end_time: endTime, enabled });
+    }
   };
 
-  const handleOpenTaskDetail = (task: Task) => {
-    setTaskToEdit(task);
-    setIsTaskDetailOpen(true);
+  const goToPreviousWeek = () => {
+    setCurrentWeekStart(prev => addDays(prev, -7));
   };
 
-  const handlePreviousDay = useCallback(() => {
-    setCurrentDate(prevDate => {
-      const newDate = new Date(prevDate);
-      newDate.setDate(prevDate.getDate() - 1);
-      return newDate;
-    });
-  }, []);
+  const goToNextWeek = () => {
+    setCurrentWeekStart(prev => addDays(prev, 7));
+  };
 
-  const handleNextDay = useCallback(() => {
-    setCurrentDate(prevDate => {
-      const newDate = new Date(prevDate);
-      newDate.setDate(prevDate.getDate() + 1);
-      return newDate;
-    });
-  }, []);
+  const weekDays = useMemo(() => {
+    const days = [];
+    let currentDay = currentWeekStart;
+    for (let i = 0; i < 7; i++) {
+      days.push(currentDay);
+      currentDay = addDays(currentDay, 1);
+    }
+    return days;
+  }, [currentWeekStart]);
 
-  const handleGoToToday = useCallback(() => {
-    setCurrentDate(new Date());
-  }, []);
-
-  const shortcuts: ShortcutMap = useMemo(() => ({
-    'arrowleft': handlePreviousDay,
-    'arrowright': handleNextDay,
-    't': handleGoToToday,
-  }), [handlePreviousDay, handleNextDay, handleGoToToday]);
-  
-  useKeyboardShortcuts(shortcuts);
+  if (tasksLoading || workHoursLoading || appointmentsLoading) return <div className="text-center py-8">Loading schedule...</div>;
+  if (tasksError || workHoursError || appointmentsError) return <div className="text-center py-8 text-red-500">Error loading data.</div>;
 
   return (
-    <div className="flex-1 flex flex-col">
-      <main className="flex-grow p-4">
-        <Card className="w-full max-w-6xl mx-auto shadow-lg rounded-xl p-4">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
-              <CalendarDays className="h-7 w-7" /> Daily Schedule
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <DailyScheduleView
-              currentDate={currentDate}
-              setCurrentDate={setCurrentDate}
-              isDemo={isDemo}
-              demoUserId={demoUserId}
-              onOpenTaskOverview={handleOpenTaskOverview}
-            />
-          </CardContent>
-        </Card>
-      </main>
-      <footer className="p-4">
-        <p>&copy; {new Date().getFullYear()} TaskMaster. All rights reserved.</p>
-      </footer>
-      {taskToOverview && (
-        <TaskOverviewDialog
-          task={taskToOverview}
-          isOpen={isTaskOverviewOpen}
-          onClose={() => setIsTaskOverviewOpen(false)}
-          onEditClick={handleOpenTaskDetail}
-          onUpdate={updateTask}
-          onDelete={deleteTask}
-          sections={sections}
+    <div className="container mx-auto p-4 h-full flex flex-col">
+      <h1 className="text-3xl font-bold mb-6">Time Block Schedule</h1>
+
+      <Card className="mb-6 flex-shrink-0">
+        <CardHeader>
+          <CardTitle>Weekly Overview</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex justify-between items-center mb-4">
+            <Button variant="outline" onClick={goToPreviousWeek}>
+              <ChevronLeft className="h-4 w-4 mr-2" /> Previous Week
+            </Button>
+            <h3 className="text-xl font-semibold">
+              {format(currentWeekStart, 'MMM dd')} - {format(endOfWeek(currentWeekStart, { weekStartsOn: 1 }), 'MMM dd, yyyy')}
+            </h3>
+            <Button variant="outline" onClick={goToNextWeek}>
+              Next Week <ChevronRight className="h-4 w-4 ml-2" />
+            </Button>
+          </div>
+          <div className="grid grid-cols-7 gap-2 text-center">
+            {weekDays.map(day => (
+              <Button
+                key={format(day, 'yyyy-MM-dd')}
+                variant={isSameDay(day, selectedDate) ? 'default' : 'outline'}
+                onClick={() => setSelectedDate(day)}
+                className="flex flex-col h-auto py-2"
+              >
+                <span className="text-xs font-medium">{format(day, 'EEE')}</span>
+                <span className="text-lg font-bold">{format(day, 'dd')}</span>
+              </Button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex-grow">
+        <DailyScheduleView
+          selectedDate={selectedDate}
+          setSelectedDate={setSelectedDate}
+          workHours={workHours}
+          saveWorkHours={saveWorkHours}
+          appointments={appointments}
+          addAppointment={addAppointment}
+          updateAppointment={updateAppointment}
+          deleteAppointment={deleteAppointment}
+          clearAppointmentsForDay={clearAppointmentsForDay}
+          tasks={tasks}
           allCategories={allCategories}
-          allTasks={allTasks as Task[]}
+          sections={sections as TaskSection[]}
+          settings={settings}
+          updateTask={updateTask}
+          deleteTask={deleteTask}
+          addTask={addTask}
+          onToggleFocusMode={onToggleFocusMode}
+          onLogDoTodayOff={onLogDoTodayOff}
         />
-      )}
-      {taskToEdit && (
-        <TaskDetailDialog
-          task={taskToEdit}
-          isOpen={isTaskDetailOpen}
-          onClose={() => setIsTaskDetailOpen(false)}
-          onUpdate={updateTask}
-          onDelete={deleteTask}
-          sections={sections}
-          allCategories={allCategories}
-          createSection={createSection}
-          updateSection={updateSection}
-          deleteSection={deleteSection}
-          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-          allTasks={allTasks as Task[]}
-        />
-      )}
+      </div>
     </div>
   );
 };
