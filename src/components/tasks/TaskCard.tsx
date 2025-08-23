@@ -322,8 +322,10 @@ const TaskCard: React.FC<TaskCardProps> = ({
       ref={provided.innerRef}
       {...provided.draggableProps}
       {...provided.dragHandleProps}
+      onTouchStart={(e) => e.preventDefault()} // Prevent default touch start behavior
+      onTouchMove={(e) => e.preventDefault()} // Prevent default touch move behavior
       className={cn(
-        "flex flex-col p-3 rounded-lg shadow-sm mb-2 border",
+        "flex flex-col p-3 rounded-lg shadow-sm mb-2 border touch-action-none",
         isDragging ? "bg-blue-100 border-blue-400" : "bg-white border-gray-200",
         task.status === "completed" && "opacity-70 line-through text-gray-500",
         isSubtask && "ml-6 bg-gray-50"
@@ -336,7 +338,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
             onCheckedChange={handleToggleComplete}
             className="mr-3"
             id={`task-${task.id}`}
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()} // Prevent drag from starting on checkbox click
           />
           {isEditing ? (
             <Input
@@ -354,7 +356,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 }
               }}
               className="flex-grow min-w-0"
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()} // Prevent drag from starting on input click
             />
           ) : (
             <label
@@ -399,7 +401,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
             <Badge className="bg-blue-500 text-white px-2 py-0.5 text-xs">
               Today
             </Badge>
-          )}
+            )}
           {isDueTomorrow && (
             <Badge className="bg-indigo-500 text-white px-2 py-0.5 text-xs">
               Tomorrow
@@ -416,32 +418,13 @@ const TaskCard: React.FC<TaskCardProps> = ({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  setShowMoreOptions(true);
-                }}
-                onTouchStart={(e) => {
-                  e.stopPropagation();
-                }}
-                onTouchEnd={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  setShowMoreOptions(true);
-                }}
+                className="h-8 w-8 p-0 touch-action-manipulation"
+                // Removed onClick and onTouchStart handlers to rely on disableInteractiveElementBlocking
               >
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent 
-              align="end" 
-              className="w-56"
-              onClick={(e) => e.stopPropagation()}
-              onTouchStart={(e) => e.stopPropagation()}
-              onTouchEnd={(e) => e.stopPropagation()}
-              onCloseAutoFocus={(e) => e.preventDefault()}
-            >
+            <DropdownMenuContent align="end" className="w-56" onClick={(e) => e.stopPropagation()}>
               <DropdownMenuLabel>Task Actions</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => setIsEditing(true)}>
@@ -494,7 +477,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 <AlertDialogTrigger asChild>
                   <DropdownMenuItem
                     onSelect={(e) => {
-                      e.preventDefault();
+                      e.preventDefault(); // Prevent dropdown from closing immediately
                       setShowDeleteDialog(true);
                     }}
                     className="text-red-600 focus:bg-red-100"
@@ -564,6 +547,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 selected={editedDueDate}
                 onSelect={(date) => {
                   setEditedDueDate(date);
+                  // Optionally call handleUpdateTask here or on popover close
                 }}
                 initialFocus
               />
@@ -573,6 +557,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                     variant="ghost"
                     onClick={() => {
                       setEditedDueDate(undefined);
+                      // handleUpdateTask();
                     }}
                     className="w-full"
                   >
@@ -603,6 +588,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 selected={editedRemindAt}
                 onSelect={(date) => {
                   setEditedRemindAt(date);
+                  // Optionally add time picker here
                 }}
                 initialFocus
               />
@@ -612,6 +598,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                     variant="ghost"
                     onClick={() => {
                       setEditedRemindAt(undefined);
+                      // handleUpdateTask();
                     }}
                     className="w-full"
                   >
@@ -726,7 +713,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
             size="sm"
             onClick={() => onToggleSubtasks && onToggleSubtasks(task.id)}
             className="w-full justify-start text-sm text-gray-600 hover:text-gray-800"
-            onClickCapture={(e) => e.stopPropagation()}
+            onClickCapture={(e) => e.stopPropagation()} // Prevent drag
           >
             {showSubtasks ? (
               <ChevronUp className="mr-2 h-4 w-4" />
