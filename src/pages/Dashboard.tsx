@@ -1,223 +1,65 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useSettings } from '@/context/SettingsContext';
 import { useTasks } from '@/hooks/useTasks';
 import { useAppointments } from '@/hooks/useAppointments';
 import { useDashboardData } from '@/hooks/useDashboardData';
-import { useSettings } from '@/context/SettingsContext';
+import { Task, TaskCategory, TaskSection, Appointment, CustomCard, WeeklyFocus, NewTaskData, UpdateTaskData, NewCustomCardData, UpdateCustomCardData, DashboardProps } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, LayoutDashboard, Sparkles, X } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { HexColorPicker } from 'react-colorful';
-import {
-  DndContext,
-  closestCorners,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-  DragStartEvent,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  verticalListSortingStrategy,
-  useSortable,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import { CustomCard, WeeklyFocus, TaskSection } from '@/types';
+import { ResponsiveGridLayout } from '@/components/ui/responsive-grid-layout';
+import { DndContext, closestCorners, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverlay } from '@dnd-kit/core';
+import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import DailySchedulePreview from '@/components/dashboard/DailySchedulePreview';
-import PeopleMemoryCard from '@/components/dashboard/PeopleMemoryCard';
+import NextTaskCard from '@/components/dashboard/NextTaskCard';
 import QuickLinks from '@/components/dashboard/QuickLinks';
+import PeopleMemoryCard from '@/components/dashboard/PeopleMemoryCard';
+import MeditationNotes from '@/components/dashboard/MeditationNotes';
+import GratitudeJournal from '@/components/GratitudeJournal';
+import WorryJournal from '@/components/WorryJournal';
 import TaskList from '@/components/TaskList';
 import { format, startOfDay } from 'date-fns';
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
+import SortableCustomCard from '@/components/dashboard/SortableCustomCard';
+import { toast } from 'react-hot-toast';
 
-interface SortableCustomCardProps {
-  card: CustomCard;
-}
-
-const SortableCustomCard: React.FC<SortableCustomCardProps> = ({ card }) => {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: card.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
-  return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <CustomDashboardCard card={card} />
-    </div>
-  );
-};
-
-interface CustomDashboardCardProps {
-  card: CustomCard;
-}
-
-const CustomDashboardCard: React.FC<CustomDashboardCardProps> = ({ card }) => {
-  const { updateCustomCard, deleteCustomCard } = useDashboardData();
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedTitle, setEditedTitle] = useState(card.title);
-  const [editedContent, setEditedContent] = useState(card.content || '');
-  const [editedEmoji, setEditedEmoji] = useState(card.emoji || '');
-
-  const handleSave = async () => {
-    await updateCustomCard({
-      id: card.id,
-      updates: { title: editedTitle, content: editedContent, emoji: editedEmoji },
-    });
-    setIsEditing(false);
-  };
-
-  const handleDelete = async () => {
-    if (window.confirm('Are you sure you want to delete this card?')) {
-      await deleteCustomCard(card.id);
-    }
-  };
-
-  const handleToggleVisibility = async () => {
-    await updateCustomCard({ id: card.id, updates: { is_visible: !card.is_visible } });
-  };
-
-  return (
-    <Card className="relative h-full flex flex-col">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-lg font-semibold flex items-center gap-2">
-          {card.emoji} {card.title}
-        </CardTitle>
-        <div className="flex space-x-1">
-          <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
-            Edit
-          </Button>
-          <Button variant="ghost" size="sm" onClick={handleToggleVisibility}>
-            {card.is_visible ? 'Hide' : 'Show'}
-          </Button>
-          <Button variant="ghost" size="sm" onClick={handleDelete}>
-            <X className="h-4 w-4 text-red-500" />
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent className="flex-grow overflow-y-auto">
-        <p className="text-sm text-gray-600">{card.content}</p>
-      </CardContent>
-
-      <Dialog open={isEditing} onOpenChange={setIsEditing}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Edit Custom Card</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="title" className="text-right">Title</Label>
-              <Input id="title" value={editedTitle} onChange={(e) => setEditedTitle(e.target.value)} className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="emoji" className="text-right">Emoji</Label>
-              <Input id="emoji" value={editedEmoji} onChange={(e) => setEditedEmoji(e.target.value)} className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="content" className="text-right">Content</Label>
-              <Textarea id="content" value={editedContent} onChange={(e) => setEditedContent(e.target.value)} className="col-span-3" />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="submit" onClick={handleSave}>Save Changes</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </Card>
-  );
-};
-
-interface WeeklyFocusCardProps {
-  weeklyFocus: WeeklyFocus | null;
-  updateWeeklyFocus: (updates: Partial<Omit<WeeklyFocus, 'id' | 'user_id' | 'week_start_date'>>) => Promise<WeeklyFocus>;
-}
-
-const WeeklyFocusCard: React.FC<WeeklyFocusCardProps> = ({ weeklyFocus, updateWeeklyFocus }) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [primaryFocus, setPrimaryFocus] = useState(weeklyFocus?.primary_focus || '');
-  const [secondaryFocus, setSecondaryFocus] = useState(weeklyFocus?.secondary_focus || '');
-  const [tertiaryFocus, setTertiaryFocus] = useState(weeklyFocus?.tertiary_focus || '');
-
-  useEffect(() => {
-    setPrimaryFocus(weeklyFocus?.primary_focus || '');
-    setSecondaryFocus(weeklyFocus?.secondary_focus || '');
-    setTertiaryFocus(weeklyFocus?.tertiary_focus || '');
-  }, [weeklyFocus]);
-
-  const handleSave = async () => {
-    await updateWeeklyFocus({
-      primary_focus: primaryFocus,
-      secondary_focus: secondaryFocus,
-      tertiary_focus: tertiaryFocus,
-    });
-    setIsEditing(false);
-  };
-
-  return (
-    <Card className="h-full flex flex-col">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-lg font-semibold">Weekly Focus</CardTitle>
-        <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
-          Edit
-        </Button>
-      </CardHeader>
-      <CardContent className="flex-grow overflow-y-auto">
-        {isEditing ? (
-          <div className="space-y-3">
-            <div>
-              <Label htmlFor="primaryFocus">Primary Focus</Label>
-              <Input id="primaryFocus" value={primaryFocus} onChange={(e) => setPrimaryFocus(e.target.value)} />
-            </div>
-            <div>
-              <Label htmlFor="secondaryFocus">Secondary Focus</Label>
-              <Input id="secondaryFocus" value={secondaryFocus} onChange={(e) => setSecondaryFocus(e.target.value)} />
-            </div>
-            <div>
-              <Label htmlFor="tertiaryFocus">Tertiary Focus</Label>
-              <Input id="tertiaryFocus" value={tertiaryFocus} onChange={(e) => setTertiaryFocus(e.target.value)} />
-            </div>
-            <Button onClick={handleSave} className="w-full">Save Focus</Button>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            <p className="text-sm text-gray-700"><strong>Primary:</strong> {weeklyFocus?.primary_focus || 'Not set'}</p>
-            <p className="text-sm text-gray-700"><strong>Secondary:</strong> {weeklyFocus?.secondary_focus || 'Not set'}</p>
-            <p className="text-sm text-gray-700"><strong>Tertiary:</strong> {weeklyFocus?.tertiary_focus || 'Not set'}</p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-};
-
-const Dashboard = () => {
-  const { userId: currentUserId } = useAuth();
+const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => {
+  const { user, loading: authLoading } = useAuth();
+  const currentUserId = isDemo ? demoUserId : user?.id;
   const { settings, updateSettings } = useSettings();
+
+  const today = startOfDay(new Date());
+
   const {
     tasks,
     categories: allCategories,
-    sections,
-    loading: tasksLoading,
+    sections: allSections,
+    isLoading: tasksLoading,
     error: tasksError,
+    addTask,
     updateTask,
     deleteTask,
-    addTask,
+    createCategory,
+    updateCategory,
+    deleteCategory,
+    createSection,
+    updateSection,
+    deleteSection,
+    reorderTasks,
+    reorderSections,
+    updateSectionIncludeInFocusMode,
+    dailyProgress,
     onToggleFocusMode,
     onLogDoTodayOff,
   } = useTasks({ userId: currentUserId! });
 
-  const { dailyTaskCount } = useDailyTaskCount(tasks);
-
-  const today = startOfDay(new Date());
   const {
     appointments,
     isLoading: appointmentsLoading,
@@ -229,177 +71,409 @@ const Dashboard = () => {
   } = useAppointments(today);
 
   const {
-    weeklyFocus,
     customCards,
+    weeklyFocus,
     isLoading: dashboardDataLoading,
     error: dashboardDataError,
-    updateWeeklyFocus,
     addCustomCard,
-    reorderCustomCards,
+    updateCustomCard,
+    deleteCustomCard,
+    updateWeeklyFocus,
+    defaultDashboardLayout,
   } = useDashboardData();
 
+  const { dailyProgress: todayDailyProgress } = useDailyTaskCount(tasks);
+
+  const [layout, setLayout] = useState<any[]>(settings?.dashboard_layout || defaultDashboardLayout.lg);
   const [isAddCardDialogOpen, setIsAddCardDialogOpen] = useState(false);
   const [newCardTitle, setNewCardTitle] = useState('');
   const [newCardContent, setNewCardContent] = useState('');
   const [newCardEmoji, setNewCardEmoji] = useState('');
   const [activeDragItem, setActiveDragItem] = useState<CustomCard | null>(null);
 
-  const handleAddCustomCard = async () => {
-    if (newCardTitle.trim()) {
-      await addCustomCard({
-        title: newCardTitle,
-        content: newCardContent,
-        emoji: newCardEmoji,
-        card_order: (customCards as CustomCard[]).length,
-      });
+  const [primaryFocus, setPrimaryFocus] = useState(weeklyFocus?.primary_focus || '');
+  const [secondaryFocus, setSecondaryFocus] = useState(weeklyFocus?.secondary_focus || '');
+  const [tertiaryFocus, setTertiaryFocus] = useState(weeklyFocus?.tertiary_focus || '');
+
+  useEffect(() => {
+    if (weeklyFocus) {
+      setPrimaryFocus(weeklyFocus.primary_focus || '');
+      setSecondaryFocus(weeklyFocus.secondary_focus || '');
+      setTertiaryFocus(weeklyFocus.tertiary_focus || '');
+    }
+  }, [weeklyFocus]);
+
+  useEffect(() => {
+    if (settings?.dashboard_layout) {
+      setLayout(settings.dashboard_layout);
+    } else {
+      setLayout(defaultDashboardLayout.lg);
+    }
+  }, [settings?.dashboard_layout]);
+
+  const handleLayoutChange = async (newLayout: any[]) => {
+    setLayout(newLayout);
+    await updateSettings({ dashboard_layout: newLayout });
+  };
+
+  const handleAddCard = async () => {
+    if (!newCardTitle.trim()) {
+      toast.error('Card title cannot be empty.');
+      return;
+    }
+    try {
+      const newCardData: NewCustomCardData = {
+        title: newCardTitle.trim(),
+        content: newCardContent.trim() || null,
+        emoji: newCardEmoji.trim() || null,
+        card_order: customCards ? customCards.length : 0,
+        is_visible: true,
+      };
+      await addCustomCard(newCardData);
+      toast.success('Custom card added!');
       setNewCardTitle('');
       setNewCardContent('');
       setNewCardEmoji('');
       setIsAddCardDialogOpen(false);
+    } catch (err) {
+      toast.error(`Failed to add card: ${(err as Error).message}`);
+      console.error('Error adding custom card:', err);
+    }
+  };
+
+  const handleUpdateCard = async (id: string, updates: UpdateCustomCardData) => {
+    try {
+      await updateCustomCard({ id, updates });
+      toast.success('Custom card updated!');
+    } catch (err) {
+      toast.error(`Failed to update card: ${(err as Error).message}`);
+      console.error('Error updating custom card:', err);
+    }
+  };
+
+  const handleDeleteCard = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this custom card?')) {
+      try {
+        await deleteCustomCard(id);
+        toast.success('Custom card deleted!');
+      } catch (err) {
+        toast.error(`Failed to delete card: ${(err as Error).message}`);
+        console.error('Error deleting custom card:', err);
+      }
+    }
+  };
+
+  const handleUpdateWeeklyFocus = async () => {
+    try {
+      await updateWeeklyFocus({
+        primary_focus: primaryFocus.trim() || null,
+        secondary_focus: secondaryFocus.trim() || null,
+        tertiary_focus: tertiaryFocus.trim() || null,
+      });
+      toast.success('Weekly focus updated!');
+    } catch (err) {
+      toast.error(`Failed to update weekly focus: ${(err as Error).message}`);
+      console.error('Error updating weekly focus:', err);
+    }
+  };
+
+  const handleAddTaskFormSubmit = async (
+    description: string,
+    sectionId: string | null,
+    parentTaskId: string | null,
+    dueDate: Date | null,
+    categoryId: string | null,
+    priority: string
+  ) => {
+    const newTaskData: NewTaskData = {
+      description,
+      section_id: sectionId,
+      parent_task_id: parentTaskId,
+      due_date: dueDate ? format(dueDate, 'yyyy-MM-dd') : null,
+      category: categoryId,
+      priority: priority as Task['priority'],
+      status: 'to-do',
+      recurring_type: 'none',
+      original_task_id: null,
+      link: null,
+      image_url: null,
+      notes: null,
+      remind_at: null,
+    };
+    return await addTask(newTaskData);
+  };
+
+  const handleAddSubtask = async (description: string, parentTaskId: string | null) => {
+    const newTaskData: NewTaskData = {
+      description,
+      section_id: null,
+      parent_task_id: parentTaskId,
+      due_date: null,
+      category: null,
+      priority: 'medium',
+      status: 'to-do',
+      recurring_type: 'none',
+      original_task_id: null,
+      link: null,
+      image_url: null,
+      notes: null,
+      remind_at: null,
+    };
+    return await addTask(newTaskData);
+  };
+
+  const handleToggleFocusMode = (taskId: string) => {
+    // Logic for toggling focus mode for a task
+    toast(`Task ${taskId} focus mode toggled (functionality to be implemented).`);
+  };
+
+  const handleLogDoTodayOff = (taskId: string) => {
+    toast(`Task ${taskId} logged as "Do Today Off" (functionality to be implemented).`);
+  };
+
+  const isLoadingData = tasksLoading || appointmentsLoading || dashboardDataLoading || authLoading;
+  const hasError = tasksError || appointmentsError || dashboardDataError;
+
+  if (isLoadingData) {
+    return <div className="flex justify-center items-center h-full">Loading dashboard...</div>;
+  }
+
+  if (hasError) {
+    return <div className="flex justify-center items-center h-full text-red-500">Error: {hasError.message}</div>;
+  }
+
+  const renderCardContent = (card: CustomCard) => {
+    switch (card.title) {
+      case 'Daily Schedule Preview':
+        return <DailySchedulePreview appointments={appointments || []} onAddAppointment={() => toast('Add appointment from schedule preview')} />;
+      case 'Next Task':
+        return <NextTaskCard tasks={tasks || []} />;
+      case 'Quick Links':
+        return <QuickLinks isDemo={isDemo} demoUserId={demoUserId} />;
+      case 'People Memory':
+        return <PeopleMemoryCard />;
+      case 'Meditation Notes':
+        return <MeditationNotes />;
+      case 'Gratitude Journal':
+        return <GratitudeJournal />;
+      case 'Worry Journal':
+        return <WorryJournal />;
+      case 'Weekly Focus':
+        return (
+          <Card className="h-full flex flex-col">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-lg font-medium">Weekly Focus</CardTitle>
+              <Button variant="ghost" size="sm" onClick={handleUpdateWeeklyFocus}>
+                <Save className="h-4 w-4" />
+              </Button>
+            </CardHeader>
+            <CardContent className="flex-grow space-y-2">
+              <div>
+                <Label htmlFor="primaryFocus">Primary Focus</Label>
+                <Input id="primaryFocus" value={primaryFocus} onChange={(e) => setPrimaryFocus(e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="secondaryFocus">Secondary Focus</Label>
+                <Input id="secondaryFocus" value={secondaryFocus} onChange={(e) => setSecondaryFocus(e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="tertiaryFocus">Tertiary Focus</Label>
+                <Input id="tertiaryFocus" value={tertiaryFocus} onChange={(e) => setTertiaryFocus(e.target.value)} />
+              </div>
+            </CardContent>
+          </Card>
+        );
+      case 'Daily Tasks':
+        return (
+          <Card className="h-full flex flex-col">
+            <CardHeader>
+              <CardTitle>Daily Tasks</CardTitle>
+            </CardHeader>
+            <CardContent className="flex-grow overflow-y-auto">
+              <TaskList
+                tasks={tasks || []}
+                categories={allCategories || []}
+                sections={allSections || []}
+                onUpdateTask={updateTask}
+                onDeleteTask={deleteTask}
+                onAddTask={handleAddTaskFormSubmit}
+                onAddSubtask={handleAddSubtask}
+                onToggleFocusMode={onToggleFocusMode}
+                onLogDoTodayOff={onLogDoTodayOff}
+                currentDate={today}
+                createCategory={createCategory}
+                updateCategory={updateCategory}
+                deleteCategory={deleteCategory}
+                createSection={createSection}
+                updateSection={updateSection}
+                deleteSection={deleteSection}
+                reorderTasks={reorderTasks}
+                reorderSections={reorderSections}
+                updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+                showFilters={false}
+                showSections={true}
+                showCompleted={false}
+              />
+            </CardContent>
+          </Card>
+        );
+      default:
+        return (
+          <Card className="h-full flex flex-col">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-lg font-medium">{card.title}</CardTitle>
+              <div className="flex space-x-1">
+                <Button variant="ghost" size="sm" onClick={() => handleUpdateCard(card.id, { is_visible: false })}>
+                  <X className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => handleDeleteCard(card.id)}>
+                  <Trash2 className="h-4 w-4 text-red-500" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="flex-grow">
+              {card.emoji && <span className="text-4xl block mb-2">{card.emoji}</span>}
+              <p className="text-sm text-gray-500">{card.content}</p>
+            </CardContent>
+          </Card>
+        );
     }
   };
 
   const sensors = useSensors(
     useSensor(PointerSensor),
-    useSensor(KeyboardSensor)
+    useSensor(KeyboardSensor, {
+      coordinateGetter: ({ currentCoordinates }) => currentCoordinates,
+    })
   );
 
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveDragItem((customCards as CustomCard[]).find(card => card.id === event.active.id) || null);
-  };
-
-  const handleDragEnd = async (event: DragEndEvent) => {
+  const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    if (!active || !over) return;
 
-    if (active.id !== over.id) {
-      const oldIndex = (customCards as CustomCard[]).findIndex(card => card.id === active.id);
-      const newIndex = (customCards as CustomCard[]).findIndex(card => card.id === over.id);
+    if (!over) return;
 
-      if (oldIndex !== -1 && newIndex !== -1) {
-        const newOrderedCards = arrayMove(customCards as CustomCard[], oldIndex, newIndex);
-        await reorderCustomCards(newOrderedCards.map(card => card.id));
-      }
+    const activeId = String(active.id);
+    const overId = String(over.id);
+
+    if (activeId === overId) return;
+
+    const oldIndex = layout.findIndex(item => item.i === activeId);
+    const newIndex = layout.findIndex(item => item.i === overId);
+
+    if (oldIndex !== -1 && newIndex !== -1) {
+      const newLayout = arrayMove(layout, oldIndex, newIndex);
+      handleLayoutChange(newLayout);
     }
     setActiveDragItem(null);
   };
 
-  const loading = tasksLoading || appointmentsLoading || dashboardDataLoading;
-  const error = tasksError || appointmentsError || dashboardDataError;
+  const handleDragStart = ({ active }: any) => {
+    const activeCard = customCards?.find(card => card.id === active.id);
+    if (activeCard) {
+      setActiveDragItem(activeCard);
+    }
+  };
 
-  if (loading) return <div className="text-center py-8">Loading dashboard...</div>;
-  if (error) return <div className="text-center py-8 text-red-500">Error: {error.message}</div>;
+  const visibleCustomCards = useMemo(() => {
+    return customCards?.filter(card => card.is_visible) || [];
+  }, [customCards]);
+
+  const layoutItems = useMemo(() => {
+    const defaultCards = [
+      { id: 'daily-schedule-preview', title: 'Daily Schedule Preview', emoji: '🗓️', content: 'Your appointments for today.' },
+      { id: 'next-task', title: 'Next Task', emoji: '➡️', content: 'Your next upcoming task.' },
+      { id: 'quick-links', title: 'Quick Links', emoji: '🔗', content: 'Your frequently used links.' },
+      { id: 'people-memory', title: 'People Memory', emoji: '👥', content: 'Important people and notes.' },
+      { id: 'meditation-notes', title: 'Meditation Notes', emoji: '🧘', content: 'Your meditation reflections.' },
+      { id: 'gratitude-journal', title: 'Gratitude Journal', emoji: '🙏', content: 'What you are grateful for.' },
+      { id: 'worry-journal', title: 'Worry Journal', emoji: '😟', content: 'Your worries and thoughts.' },
+      { id: 'weekly-focus', title: 'Weekly Focus', emoji: '🎯', content: 'Your main goals for the week.' },
+      { id: 'daily-tasks', title: 'Daily Tasks', emoji: '✅', content: 'Your tasks for today.' },
+    ];
+
+    const allCards = [...defaultCards, ...visibleCustomCards];
+
+    // Merge with layout to ensure all items have layout properties
+    return allCards.map(card => {
+      const layoutItem = layout.find(item => item.i === card.id);
+      return {
+        ...card,
+        ...layoutItem,
+        i: card.id, // Ensure 'i' property is always the card's id
+      };
+    });
+  }, [visibleCustomCards, layout]);
 
   return (
-    <div className="container mx-auto p-4 h-full flex flex-col">
+    <div className="container mx-auto p-4">
       <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        {/* Welcome Card */}
-        <Card className="lg:col-span-2 bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold flex items-center gap-2">
-              👋 Welcome back, {currentUserId?.substring(0, 8)}!
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-lg mb-2">You have <span className="font-bold">{dailyTaskCount}</span> tasks to focus on today.</p>
-            <p className="text-sm text-blue-100">Let's make it a productive day!</p>
-          </CardContent>
-        </Card>
-
-        {/* Add Custom Card */}
-        <Card className="flex flex-col items-center justify-center p-6 text-center border-dashed border-2 border-gray-300 hover:border-blue-500 transition-colors cursor-pointer" onClick={() => setIsAddCardDialogOpen(true)}>
-          <Plus className="h-8 w-8 text-gray-500 mb-2" />
-          <p className="text-lg font-semibold text-gray-700">Add Custom Card</p>
-          <p className="text-sm text-gray-500">Personalize your dashboard</p>
-        </Card>
+      <div className="flex justify-end mb-6 space-x-2">
+        <Dialog open={isAddCardDialogOpen} onOpenChange={setIsAddCardDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" /> Add Custom Card
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Add New Custom Card</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="cardTitle" className="text-right">Title</Label>
+                <Input id="cardTitle" value={newCardTitle} onChange={(e) => setNewCardTitle(e.target.value)} className="col-span-3" />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="cardContent" className="text-right">Content</Label>
+                <Textarea id="cardContent" value={newCardContent} onChange={(e) => setNewCardContent(e.target.value)} className="col-span-3" />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="cardEmoji" className="text-right">Emoji</Label>
+                <Input id="cardEmoji" value={newCardEmoji} onChange={(e) => setNewCardEmoji(e.target.value)} className="col-span-3" />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="submit" onClick={handleAddCard}>Save Card</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 flex-grow">
-          {/* Render Custom Cards */}
-          {(customCards as CustomCard[]).length > 0 && (
-            <SortableContext items={(customCards as CustomCard[]).map(card => card.id)} strategy={verticalListSortingStrategy}>
-              {(customCards as CustomCard[]).filter(card => card.is_visible).map(card => (
-                <SortableCustomCard key={card.id} card={card} />
-              ))}
-            </SortableContext>
-          )}
-
-          {/* Daily Schedule Preview */}
-          <DailySchedulePreview
-            appointments={appointments}
-            onAddAppointment={() => { /* Open add appointment modal */ }}
-          />
-
-          {/* Weekly Focus Card */}
-          <WeeklyFocusCard
-            weeklyFocus={weeklyFocus}
-            updateWeeklyFocus={updateWeeklyFocus}
-          />
-
-          {/* People Memory Card */}
-          <PeopleMemoryCard />
-
-          {/* Quick Links Card */}
-          <QuickLinks />
-
-          {/* Example Task List (can be replaced by a custom card) */}
-          <Card className="lg:col-span-2 flex flex-col">
-            <CardHeader>
-              <CardTitle>Today's Tasks</CardTitle>
-            </CardHeader>
-            <CardContent className="flex-grow overflow-y-auto">
-              <TaskList
-                tasks={tasks}
-                categories={allCategories}
-                onUpdateTask={updateTask}
-                onDeleteTask={deleteTask}
-                onAddTask={addTask}
-                onAddSubtask={async (description, parentTaskId) => { await addTask(description, null, parentTaskId); }}
-                onToggleFocusMode={onToggleFocusMode}
-                onLogDoTodayOff={onLogDoTodayOff}
-                sections={sections as TaskSection[]}
-                allCategories={allCategories}
-                currentDate={today}
-                createSection={() => {}}
-                updateSection={() => {}}
-                deleteSection={() => {}}
-                updateSectionIncludeInFocusMode={() => {}}
-                showCompleted={false}
-                showFilters={false}
-              />
-            </CardContent>
-          </Card>
-        </div>
+      <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
+        <ResponsiveGridLayout
+          layouts={{ lg: layout, md: layout }} // Use the same layout for simplicity, or define md separately
+          breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
+          cols={{ lg: 12, md: 8, sm: 6, xs: 4, xxs: 2 }}
+          rowHeight={100}
+          onLayoutChange={handleLayoutChange}
+          isDraggable={true}
+          isResizable={true}
+          measureBeforeMount={true}
+          useCSSTransforms={true}
+          compactType="vertical"
+        >
+          {layoutItems.map((card) => (
+            <div key={card.id} data-grid={{ x: card.x, y: card.y, w: card.w, h: card.h }}>
+              <SortableCustomCard
+                card={card as CustomCard} // Cast to CustomCard
+                onUpdateCard={handleUpdateCard}
+                onDeleteCard={handleDeleteCard}
+              >
+                {renderCardContent(card as CustomCard)}
+              </SortableCustomCard>
+            </div>
+          ))}
+        </ResponsiveGridLayout>
+        <DragOverlay>
+          {activeDragItem ? (
+            <Card className="p-4 shadow-lg">
+              <CardTitle>{activeDragItem.title}</CardTitle>
+              <CardContent>{activeDragItem.content}</CardContent>
+            </Card>
+          ) : null}
+        </DragOverlay>
       </DndContext>
-
-      {/* Add Custom Card Dialog */}
-      <Dialog open={isAddCardDialogOpen} onOpenChange={setIsAddCardDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Add New Custom Card</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="newCardTitle" className="text-right">Title</Label>
-              <Input id="newCardTitle" value={newCardTitle} onChange={(e) => setNewCardTitle(e.target.value)} className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="newCardEmoji" className="text-right">Emoji</Label>
-              <Input id="newCardEmoji" value={newCardEmoji} onChange={(e) => setNewCardEmoji(e.target.value)} className="col-span-3" placeholder="e.g., ✨" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="newCardContent" className="text-right">Content</Label>
-              <Textarea id="newCardContent" value={newCardContent} onChange={(e) => setNewCardContent(e.target.value)} className="col-span-3" />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="submit" onClick={handleAddCustomCard}>Add Card</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

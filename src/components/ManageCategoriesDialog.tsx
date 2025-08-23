@@ -1,241 +1,180 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { X } from 'lucide-react'; // Removed Plus
-import { supabase } from "@/integrations/supabase/client";
-import { showSuccess, showError } from "@/utils/toast";
-import { cn } from '@/lib/utils';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Plus, Edit, Trash2, X } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { HexColorPicker } from 'react-colorful';
 import { categoryColorMap, CategoryColorKey, getCategoryColorProps } from '@/lib/categoryColors';
-import { Category } from '@/hooks/useTasks';
+import { TaskCategory, NewTaskCategoryData, UpdateTaskCategoryData } from '@/types'; // Corrected import
 import { useAuth } from '@/context/AuthContext';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { useTasks } from '@/hooks/useTasks';
+import { toast } from 'react-hot-toast';
 
 interface ManageCategoriesDialogProps {
   isOpen: boolean;
-  onClose: () => void;
-  categories: Category[];
-  onCategoryCreated: () => void; // Callback to refresh categories in parent
-  onCategoryDeleted: (deletedId: string) => void; // Callback to handle category deletion
+  onOpenChange: (open: boolean) => void;
+  categories: TaskCategory[];
+  onCreateCategory: (data: NewTaskCategoryData) => Promise<TaskCategory>;
+  onUpdateCategory: (id: string, updates: UpdateTaskCategoryData) => Promise<TaskCategory>;
+  onDeleteCategory: (id: string) => Promise<void>;
 }
 
 const ManageCategoriesDialog: React.FC<ManageCategoriesDialogProps> = ({
   isOpen,
-  onClose,
+  onOpenChange,
   categories,
-  onCategoryCreated,
-  onCategoryDeleted,
+  onCreateCategory,
+  onUpdateCategory,
+  onDeleteCategory,
 }) => {
-  const { user } = useAuth();
-  const userId = user?.id;
-
   const [newCategoryName, setNewCategoryName] = useState('');
-  const [selectedColorKey, setSelectedColorKey] = useState<CategoryColorKey>('gray');
-  const [isSaving, setIsSaving] = useState(false);
-  const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
-  const [categoryToDeleteId, setCategoryToDeleteId] = useState<string | null>(null);
-  const [categoryToDeleteName, setCategoryToDeleteName] = useState<string | null>(null);
+  const [newCategoryColor, setNewCategoryColor] = useState<CategoryColorKey>('blue');
+  const [editingCategory, setEditingCategory] = useState<TaskCategory | null>(null);
+  const [editCategoryName, setEditCategoryName] = useState('');
+  const [editCategoryColor, setEditCategoryColor] = useState<CategoryColorKey>('blue');
 
-  useEffect(() => {
-    // Reset form when dialog opens/closes
-    if (!isOpen) {
-      setNewCategoryName('');
-      setSelectedColorKey('gray');
-      setIsSaving(false);
-    }
-  }, [isOpen]);
-
-  const createCategory = async () => {
+  const handleCreate = async () => {
     if (!newCategoryName.trim()) {
-      showError('Category name is required');
+      toast.error('Category name cannot be empty.');
       return;
     }
-    if (!userId) {
-      showError("User not authenticated. Cannot create category.");
-      return;
-    }
-    if (categories.some(cat => cat.name.toLowerCase() === newCategoryName.trim().toLowerCase())) {
-      showError('Category with this name already exists.');
-      return;
-    }
-
-    setIsSaving(true);
     try {
-      const { error } = await supabase
-        .from('task_categories')
-        .insert([
-          { name: newCategoryName.trim(), color: selectedColorKey, user_id: userId }
-        ]);
-
-      if (error) throw error;
-      
-      showSuccess('Category created successfully!');
+      await onCreateCategory({ name: newCategoryName.trim(), color: newCategoryColor });
+      toast.success('Category created!');
       setNewCategoryName('');
-      setSelectedColorKey('gray');
-      onCategoryCreated(); // Trigger refresh in parent
-    } catch (error: any) {
-      showError('Failed to create category.');
-      console.error('Error creating category:', error);
-    } finally {
-      setIsSaving(false);
+      setNewCategoryColor('blue');
+    } catch (err) {
+      toast.error(`Failed to create category: ${(err as Error).message}`);
+      console.error('Error creating category:', err);
     }
   };
 
-  const handleDeleteClick = (categoryId: string, categoryName: string) => {
-    setCategoryToDeleteId(categoryId);
-    setCategoryToDeleteName(categoryName);
-    setShowConfirmDeleteDialog(true);
+  const handleEdit = (category: TaskCategory) => {
+    setEditingCategory(category);
+    setEditCategoryName(category.name);
+    setEditCategoryColor(category.color as CategoryColorKey);
   };
 
-  const confirmDeleteCategory = async () => {
-    if (!categoryToDeleteId || !userId) {
-      setShowConfirmDeleteDialog(false);
+  const handleUpdate = async () => {
+    if (!editingCategory || !editCategoryName.trim()) {
+      toast.error('Category name cannot be empty.');
       return;
     }
-
-    setIsSaving(true);
     try {
-      // First, update tasks that use this category to a default or null
-      const { error: updateTasksError } = await supabase
-        .from('tasks')
-        .update({ category: categories.find(cat => cat.name.toLowerCase() === 'general')?.id || null })
-        .eq('category', categoryToDeleteId)
-        .eq('user_id', userId);
+      await onUpdateCategory(editingCategory.id, { name: editCategoryName.trim(), color: editCategoryColor });
+      toast.success('Category updated!');
+      setEditingCategory(null);
+    } catch (err) {
+      toast.error(`Failed to update category: ${(err as Error).message}`);
+      console.error('Error updating category:', err);
+    }
+  };
 
-      if (updateTasksError) throw updateTasksError;
-
-      const { error } = await supabase
-        .from('task_categories')
-        .delete()
-        .eq('id', categoryToDeleteId)
-        .eq('user_id', userId);
-
-      if (error) throw error;
-      
-      showSuccess('Category deleted successfully!');
-      onCategoryDeleted(categoryToDeleteId); // Notify parent of deletion
-    } catch (error: any) {
-      showError('Failed to delete category.');
-      console.error('Error deleting category:', error);
-    } finally {
-      setIsSaving(false);
-      setShowConfirmDeleteDialog(false);
-      setCategoryToDeleteId(null);
-      setCategoryToDeleteName(null);
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this category? All tasks associated with it will become uncategorized.')) {
+      try {
+        await onDeleteCategory(id);
+        toast.success('Category deleted!');
+      } catch (err) {
+        toast.error(`Failed to delete category: ${(err as Error).message}`);
+        console.error('Error deleting category:', err);
+      }
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Manage Categories</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-4">
-          {/* Existing categories list */}
-          {categories.length > 0 && (
-            <div className="space-y-2">
-              <h4 className="text-md font-semibold">Existing Categories</h4>
-              <ul className="space-y-2">
-                {categories.map(category => {
-                  const colorProps = getCategoryColorProps(category.color);
+        <div className="grid gap-4 py-4">
+          <div className="flex items-center space-x-2">
+            <Input
+              placeholder="New category name"
+              value={newCategoryName}
+              onChange={(e) => setNewCategoryName(e.target.value)}
+              className="flex-grow"
+            />
+            <Select value={newCategoryColor} onValueChange={(value) => setNewCategoryColor(value as CategoryColorKey)}>
+              <SelectTrigger className="w-[100px]">
+                <div className="flex items-center">
+                  <div className={`h-4 w-4 rounded-full mr-2 ${getCategoryColorProps(newCategoryColor).bgColor}`} />
+                  <SelectValue placeholder="Color" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                {Object.keys(categoryColorMap).map((key) => {
+                  const colorKey = key as CategoryColorKey;
+                  const { bgColor, textColor } = getCategoryColorProps(colorKey);
                   return (
-                    <li key={category.id} className="flex items-center justify-between p-2 rounded-md shadow-sm bg-background">
-                      <div className="flex items-center gap-2">
-                        <div className="w-3.5 h-3.5 rounded-full flex items-center justify-center border" style={{ backgroundColor: colorProps.dotColor }}></div>
-                        <span>{category.name}</span>
+                    <SelectItem key={colorKey} value={colorKey}>
+                      <div className="flex items-center">
+                        <div className={`h-4 w-4 rounded-full mr-2 ${bgColor}`} />
+                        {colorKey}
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-destructive"
-                        onClick={() => handleDeleteClick(category.id, category.name)}
-                        aria-label={`Delete ${category.name}`}
-                        disabled={category.name.toLowerCase() === 'general' || isSaving}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </li>
+                    </SelectItem>
                   );
                 })}
-              </ul>
-            </div>
-          )}
-          
-          {/* New Category Form */}
-          <div className="border-t pt-4 mt-4">
-            <h4 className="text-md font-semibold mb-3">Create New Category</h4>
-            <div>
-              <Label htmlFor="new-category-name">Category Name</Label>
-              <Input
-                id="new-category-name"
-                value={newCategoryName}
-                onChange={(e) => setNewCategoryName(e.target.value)}
-                placeholder="e.g., Work, Personal, Shopping"
-                disabled={isSaving}
-                className="h-9 text-base"
-              />
-            </div>
-            <div className="mt-4">
-              <Label>Color</Label>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {Object.keys(categoryColorMap).map((colorKey) => {
-                  const colorProps = getCategoryColorProps(colorKey);
-                  return (
-                    <button
-                      key={colorKey}
-                      type="button"
-                      className={cn(
-                        "w-7 h-7 rounded-full border-2 flex items-center justify-center",
-                        colorProps.backgroundClass,
-                        colorProps.dotBorder,
-                        selectedColorKey === colorKey ? 'ring-2 ring-offset-2 ring-primary' : ''
-                      )}
-                      onClick={() => setSelectedColorKey(colorKey as CategoryColorKey)}
-                      aria-label={colorProps.name}
-                      disabled={isSaving}
-                    >
-                      <div className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: colorProps.dotColor }}></div>
-                    </button>
-                  );
-                })}
+              </SelectContent>
+            </Select>
+            <Button onClick={handleCreate}><Plus className="h-4 w-4" /></Button>
+          </div>
+
+          <div className="space-y-2">
+            {categories.map((category) => (
+              <div key={category.id} className="flex items-center space-x-2">
+                {editingCategory?.id === category.id ? (
+                  <>
+                    <Input
+                      value={editCategoryName}
+                      onChange={(e) => setEditCategoryName(e.target.value)}
+                      className="flex-grow"
+                    />
+                    <Select value={editCategoryColor} onValueChange={(value) => setEditCategoryColor(value as CategoryColorKey)}>
+                      <SelectTrigger className="w-[100px]">
+                        <div className="flex items-center">
+                          <div className={`h-4 w-4 rounded-full mr-2 ${getCategoryColorProps(editCategoryColor).bgColor}`} />
+                          <SelectValue placeholder="Color" />
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.keys(categoryColorMap).map((key) => {
+                          const colorKey = key as CategoryColorKey;
+                          const { bgColor, textColor } = getCategoryColorProps(colorKey);
+                          return (
+                            <SelectItem key={colorKey} value={colorKey}>
+                              <div className="flex items-center">
+                                <div className={`h-4 w-4 rounded-full mr-2 ${bgColor}`} />
+                                {colorKey}
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                    <Button onClick={handleUpdate} size="sm">Save</Button>
+                    <Button variant="ghost" size="sm" onClick={() => setEditingCategory(null)}><X className="h-4 w-4" /></Button>
+                  </>
+                ) : (
+                  <>
+                    <div className={`flex-grow p-2 rounded-md ${getCategoryColorProps(category.color as CategoryColorKey).bgColor} ${getCategoryColorProps(category.color as CategoryColorKey).textColor}`}>
+                      {category.name}
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => handleEdit(category)}><Edit className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleDelete(category.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                  </>
+                )}
               </div>
-            </div>
-            <DialogFooter className="mt-4">
-              <Button onClick={createCategory} className="w-full h-9 text-base" disabled={isSaving || !newCategoryName.trim()}>
-                {isSaving ? 'Creating...' : 'Create Category'}
-              </Button>
-            </DialogFooter>
+            ))}
           </div>
         </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
+        </DialogFooter>
       </DialogContent>
-
-      <AlertDialog open={showConfirmDeleteDialog} onOpenChange={setShowConfirmDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the category "{categoryToDeleteName}" and reassign all tasks in this category to "General" (or no category if "General" doesn't exist).
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSaving}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteCategory} disabled={isSaving}>
-              {isSaving ? 'Deleting...' : 'Continue'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </Dialog>
   );
 };

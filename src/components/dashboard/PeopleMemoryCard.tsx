@@ -1,156 +1,194 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, User, ImageOff } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { Plus, User, ImageOff, Edit, Trash2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { usePeopleMemory } from '@/hooks/usePeopleMemory';
-import { Person } from '@/types';
+import { Person, NewPersonData, UpdatePersonData } from '@/types';
 import { toast } from 'react-hot-toast';
+import { Textarea } from '@/components/ui/textarea';
 
-interface PersonAvatarProps {
-  person: Person;
-  onClick: (person: Person) => void;
-}
-
-const PersonAvatar: React.FC<PersonAvatarProps> = ({ person, onClick }) => (
-  <div className="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity" onClick={() => onClick(person)}>
-    <Avatar className="h-16 w-16 mb-1 border-2 border-blue-400">
-      <AvatarImage src={person.avatar_url || undefined} alt={person.name} />
-      <AvatarFallback className="bg-blue-100 text-blue-700 font-semibold text-lg">
-        {person.name.charAt(0).toUpperCase()}
-      </AvatarFallback>
-    </Avatar>
-    <span className="text-sm font-medium text-center">{person.name}</span>
-  </div>
-);
-
-const PeopleMemoryCard = () => {
+const PeopleMemoryCard: React.FC = () => {
   const { people, isLoading, error, addPerson, updatePerson, deletePerson } = usePeopleMemory();
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [currentPerson, setCurrentPerson] = useState<Person | null>(null);
-  const [name, setName] = useState('');
-  const [notes, setNotes] = useState<string | null>(null);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [removeAvatar, setRemoveAvatar] = useState(false);
+  const [isAddPersonDialogOpen, setIsAddPersonDialogOpen] = useState(false);
+  const [newPersonName, setNewPersonName] = useState('');
+  const [newPersonNotes, setNewPersonNotes] = useState('');
+  const [newPersonAvatarUrl, setNewPersonAvatarUrl] = useState('');
 
-  const handleOpenAddModal = () => {
-    setCurrentPerson(null);
-    setName('');
-    setNotes(null);
-    setAvatarFile(null);
-    setRemoveAvatar(false);
-    setIsModalOpen(true);
-  };
+  const [isEditPersonDialogOpen, setIsEditPersonDialogOpen] = useState(false);
+  const [editingPerson, setEditingPerson] = useState<Person | null>(null);
+  const [editPersonName, setEditPersonName] = useState('');
+  const [editPersonNotes, setEditPersonNotes] = useState('');
+  const [editPersonAvatarUrl, setEditPersonAvatarUrl] = useState('');
 
-  const handleOpenEditModal = (person: Person) => {
-    setCurrentPerson(person);
-    setName(person.name);
-    setNotes(person.notes);
-    setAvatarFile(null);
-    setRemoveAvatar(false);
-    setIsModalOpen(true);
-  };
-
-  const handleSavePerson = async () => {
-    if (!name.trim()) {
-      toast.error('Name cannot be empty.');
+  const handleAddPerson = async () => {
+    if (!newPersonName.trim()) {
+      toast.error('Person name cannot be empty.');
       return;
     }
-
     try {
-      if (currentPerson) {
-        const updates: Partial<Person> = { name, notes };
-        if (removeAvatar) {
-          updates.avatar_url = null;
-        }
-        await updatePerson({ id: currentPerson.id, updates, avatarFile });
-        toast.success('Person updated successfully!');
-      } else {
-        await addPerson({ personData: { name, notes }, avatarFile });
-        toast.success('Person added successfully!');
-      }
-      setIsModalOpen(false);
-    } catch (error: any) {
-      toast.error(`Failed to save person: ${error.message}`);
+      const newPersonData: NewPersonData = {
+        name: newPersonName.trim(),
+        notes: newPersonNotes.trim() || null,
+        avatar_url: newPersonAvatarUrl.trim() || null,
+      };
+      await addPerson(newPersonData);
+      toast.success('Person added successfully!');
+      setNewPersonName('');
+      setNewPersonNotes('');
+      setNewPersonAvatarUrl('');
+      setIsAddPersonDialogOpen(false);
+    } catch (err) {
+      toast.error(`Failed to add person: ${(err as Error).message}`);
+      console.error('Error adding person:', err);
     }
   };
 
-  const handleDeletePerson = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this person from memory?')) {
+  const handleEditPerson = (person: Person) => {
+    setEditingPerson(person);
+    setEditPersonName(person.name);
+    setEditPersonNotes(person.notes || '');
+    setEditPersonAvatarUrl(person.avatar_url || '');
+    setIsEditPersonDialogOpen(true);
+  };
+
+  const handleUpdatePerson = async () => {
+    if (!editingPerson || !editPersonName.trim()) {
+      toast.error('Person name cannot be empty.');
+      return;
+    }
+    try {
+      const updates: UpdatePersonData = {
+        name: editPersonName.trim(),
+        notes: editPersonNotes.trim() || null,
+        avatar_url: editPersonAvatarUrl.trim() || null,
+      };
+      await updatePerson({ id: editingPerson.id, updates });
+      toast.success('Person updated successfully!');
+      setIsEditPersonDialogOpen(false);
+      setEditingPerson(null);
+    } catch (err) {
+      toast.error(`Failed to update person: ${(err as Error).message}`);
+      console.error('Error updating person:', err);
+    }
+  };
+
+  const handleDeletePerson = async (personId: string) => {
+    if (window.confirm('Are you sure you want to delete this person from your memory?')) {
       try {
-        await deletePerson(id);
-        setIsModalOpen(false);
+        await deletePerson(personId);
         toast.success('Person deleted successfully!');
-      } catch (error: any) {
-        toast.error(`Failed to delete person: ${error.message}`);
+      } catch (err) {
+        toast.error(`Failed to delete person: ${(err as Error).message}`);
+        console.error('Error deleting person:', err);
       }
     }
   };
 
-  if (isLoading) return <div className="text-center py-4">Loading people...</div>;
-  if (error) return <div className="text-center py-4 text-red-500">Error: {error.message}</div>;
+  if (isLoading) {
+    return <Card><CardContent>Loading people...</CardContent></Card>;
+  }
+
+  if (error) {
+    return <Card><CardContent className="text-red-500">Error: {error.message}</CardContent></Card>;
+  }
 
   return (
     <Card className="h-full flex flex-col">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-lg font-semibold">People Memory</CardTitle>
-        <Button variant="ghost" size="sm" onClick={handleOpenAddModal}>
-          <Plus className="h-4 w-4" />
-        </Button>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-lg font-medium">People Memory</CardTitle>
+        <Dialog open={isAddPersonDialogOpen} onOpenChange={setIsAddPersonDialogOpen}>
+          <DialogTrigger asChild>
+            <Button variant="ghost" size="sm">
+              <Plus className="h-4 w-4" />
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Add New Person</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="name" className="text-right">Name</Label>
+                <Input id="name" value={newPersonName} onChange={(e) => setNewPersonName(e.target.value)} className="col-span-3" />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="notes" className="text-right">Notes</Label>
+                <Textarea id="notes" value={newPersonNotes} onChange={(e) => setNewPersonNotes(e.target.value)} className="col-span-3" />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="avatarUrl" className="text-right">Avatar URL</Label>
+                <Input id="avatarUrl" value={newPersonAvatarUrl} onChange={(e) => setNewPersonAvatarUrl(e.target.value)} className="col-span-3" />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="submit" onClick={handleAddPerson}>Save Person</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardHeader>
       <CardContent className="flex-grow overflow-y-auto">
-        {(people as Person[]).length === 0 ? (
-          <div className="text-center py-8 flex flex-col items-center justify-center h-full bg-muted/50 rounded-lg">
-            <User className="h-10 w-10 text-gray-400 mb-2" />
-            <p className="text-gray-500">No people in your memory yet.</p>
-            <Button variant="link" onClick={handleOpenAddModal}>Add someone now?</Button>
-          </div>
+        {people?.length === 0 ? (
+          <p className="text-sm text-gray-500 text-center">No people added yet. Add someone to remember!</p>
         ) : (
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            {(people as Person[]).map(person => (
-              <PersonAvatar key={person.id} person={person} onClick={handleOpenEditModal} />
+          <div className="space-y-3">
+            {people?.map((person) => (
+              <div key={person.id} className="flex items-center justify-between p-2 border rounded-md">
+                <div className="flex items-center space-x-3">
+                  <Avatar>
+                    {person.avatar_url ? (
+                      <AvatarImage src={person.avatar_url} alt={person.name} />
+                    ) : (
+                      <AvatarFallback className="text-sm">
+                        {person.name.split(' ').map((n: string) => n[0]).join('')}
+                      </AvatarFallback>
+                    )}
+                  </Avatar>
+                  <div>
+                    <p className="font-medium text-sm">{person.name}</p>
+                    {person.notes && <p className="text-xs text-gray-500 line-clamp-1">{person.notes}</p>}
+                  </div>
+                </div>
+                <div className="flex space-x-1">
+                  <Button variant="ghost" size="sm" onClick={() => handleEditPerson(person)}>
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => handleDeletePerson(person.id)}>
+                    <Trash2 className="h-4 w-4 text-red-500" />
+                  </Button>
+                </div>
+              </div>
             ))}
           </div>
         )}
       </CardContent>
 
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+      {/* Edit Person Dialog */}
+      <Dialog open={isEditPersonDialogOpen} onOpenChange={setIsEditPersonDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>{currentPerson ? 'Edit Person' : 'Add New Person'}</DialogTitle>
+            <DialogTitle>Edit Person</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">Name</Label>
-              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="col-span-3" />
+              <Label htmlFor="edit-name" className="text-right">Name</Label>
+              <Input id="edit-name" value={editPersonName} onChange={(e) => setEditPersonName(e.target.value)} className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="notes" className="text-right">Notes</Label>
-              <Textarea id="notes" value={notes || ''} onChange={(e) => setNotes(e.target.value)} className="col-span-3" />
+              <Label htmlFor="edit-notes" className="text-right">Notes</Label>
+              <Textarea id="edit-notes" value={editPersonNotes} onChange={(e) => setEditPersonNotes(e.target.value)} className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="avatar" className="text-right">Avatar</Label>
-              <div className="col-span-3 flex items-center gap-2">
-                <Input id="avatar" type="file" accept="image/*" onChange={(e) => setAvatarFile(e.target.files ? e.target.files[0] : null)} />
-                {currentPerson?.avatar_url && !removeAvatar && (
-                  <Button variant="outline" size="icon" onClick={() => setRemoveAvatar(true)} title="Remove current avatar">
-                    <ImageOff className="h-4 w-4" />
-                  </Button>
-                )}
-                {removeAvatar && <span className="text-sm text-red-500">Avatar will be removed</span>}
-              </div>
+              <Label htmlFor="edit-avatarUrl" className="text-right">Avatar URL</Label>
+              <Input id="edit-avatarUrl" value={editPersonAvatarUrl} onChange={(e) => setEditPersonAvatarUrl(e.target.value)} className="col-span-3" />
             </div>
           </div>
           <DialogFooter>
-            {currentPerson && (
-              <Button variant="destructive" onClick={() => handleDeletePerson(currentPerson.id)}>Delete</Button>
-            )}
-            <Button type="submit" onClick={handleSavePerson}>Save</Button>
+            <Button type="submit" onClick={handleUpdatePerson}>Save Changes</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -1,85 +1,87 @@
-import { useState, useEffect } from 'react';
+import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from './useAuth';
+import { useAuth } from '@/context/AuthContext';
 import { TaskSection, NewTaskSectionData, UpdateTaskSectionData } from '@/types';
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
 
-const fetchSections = async (userId: string): Promise<TaskSection[]> => {
-  const { data, error } = await supabase
-    .from('task_sections')
-    .select('*')
-    .eq('user_id', userId)
-    .order('order', { ascending: true });
-  if (error) throw error;
-  return data as TaskSection[];
-};
-
-const addSection = async (newSection: NewTaskSectionData & { user_id: string }): Promise<TaskSection> => {
-  const { data, error } = await supabase
-    .from('task_sections')
-    .insert(newSection)
-    .select('*')
-    .single();
-  if (error) throw error;
-  return data as TaskSection;
-};
-
-const updateSection = async (id: string, updates: UpdateTaskSectionData): Promise<TaskSection> => {
-  const { data, error } = await supabase
-    .from('task_sections')
-    .update(updates)
-    .eq('id', id)
-    .select('*')
-    .single();
-  if (error) throw error;
-  return data as TaskSection;
-};
-
-const deleteSection = async (id: string): Promise<void> => {
-  const { error } = await supabase
-    .from('task_sections')
-    .delete()
-    .eq('id', id);
-  if (error) throw error;
-};
-
 export const useTaskSections = () => {
-  const { userId, isLoading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const userId = user?.id;
   const queryClient = useQueryClient();
+
+  const invalidateSectionsQueries = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['task_sections', userId] });
+  }, [queryClient, userId]);
 
   const { data: sections, isLoading, error } = useQuery<TaskSection[], Error>({
     queryKey: ['task_sections', userId],
-    queryFn: () => fetchSections(userId!),
+    queryFn: async () => {
+      if (!userId) return [];
+      const { data, error } = await supabase
+        .from('task_sections')
+        .select('*')
+        .eq('user_id', userId)
+        .order('order', { ascending: true });
+      if (error) throw error;
+      return data;
+    },
     enabled: !!userId && !authLoading,
   });
 
-  const invalidateQueries = () => {
-    queryClient.invalidateQueries({ queryKey: ['task_sections', userId] });
-  };
-
-  const addSectionMutation = useMutation<TaskSection, Error, NewTaskSectionData>({
-    mutationFn: async (newSection) => {
-      if (!userId) throw new Error('User not authenticated.');
-      return addSection({ ...newSection, user_id: userId });
+  const createSectionMutation = useMutation<TaskSection, Error, NewTaskSectionData, unknown>({
+    mutationFn: async (newSectionData) => {
+      if (!userId) throw new Error('User not authenticated');
+      const { data, error } = await supabase
+        .from('task_sections')
+        .insert({ ...newSectionData, user_id: userId })
+        .select('*')
+        .single();
+      if (error) throw error;
+      return data;
     },
-    onSuccess: invalidateQueries,
+    onSuccess: () => {
+      invalidateSectionsQueries();
+    },
   });
 
-  const updateSectionMutation = useMutation<TaskSection, Error, { id: string; updates: UpdateTaskSectionData }>({
-    mutationFn: ({ id, updates }) => updateSection(id, updates),
-    onSuccess: invalidateQueries,
+  const updateSectionMutation = useMutation<TaskSection, Error, { id: string; updates: UpdateTaskSectionData }, unknown>({
+    mutationFn: async ({ id, updates }) => {
+      if (!userId) throw new Error('User not authenticated');
+      const { data, error } = await supabase
+        .from('task_sections')
+        .update(updates)
+        .eq('id', id)
+        .eq('user_id', userId)
+        .select('*')
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      invalidateSectionsQueries();
+    },
   });
 
-  const deleteSectionMutation = useMutation<void, Error, string>({
-    mutationFn: (id) => deleteSection(id),
-    onSuccess: invalidateQueries,
+  const deleteSectionMutation = useMutation<void, Error, string, unknown>({
+    mutationFn: async (id) => {
+      if (!userId) throw new Error('User not authenticated');
+      const { error } = await supabase
+        .from('task_sections')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', userId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      invalidateSectionsQueries();
+    },
   });
 
   return {
-    sections: sections || [],
+    sections,
     isLoading,
     error,
-    addSection: addSectionMutation.mutateAsync,
+    createSection: createSectionMutation.mutateAsync,
     updateSection: updateSectionMutation.mutateAsync,
     deleteSection: deleteSectionMutation.mutateAsync,
   };

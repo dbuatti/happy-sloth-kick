@@ -1,79 +1,82 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar as CalendarIcon, Plus } from 'lucide-react';
+import { format, startOfDay } from 'date-fns';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
 import TaskForm from './TaskForm';
-import { Task, TaskSection, Category } from '@/hooks/useTasks';
-// Removed useAuth as it's not directly used in this component's logic
+import { Task, TaskSection, TaskCategory, NewTaskData, UpdateTaskData } from '@/types'; // Corrected imports
+import { toast } from 'react-hot-toast';
 
 interface AddTaskFormProps {
-  onAddTask: (taskData: {
-    description: string;
-    category: string;
-    priority: string;
-    due_date: string | null;
-    notes: string | null;
-    remind_at: string | null;
-    section_id: string | null;
-    recurring_type: 'none' | 'daily' | 'weekly' | 'monthly';
-    parent_task_id: string | null;
-    link: string | null;
-    image_url: string | null;
-  }) => Promise<any>;
-  onTaskAdded?: () => void; // Callback for when task is successfully added
+  onAddTask: (
+    description: string,
+    sectionId: string | null,
+    parentTaskId: string | null,
+    dueDate: Date | null,
+    categoryId: string | null,
+    priority: string
+  ) => Promise<Task>;
+  onTaskAdded: () => void;
+  categories: TaskCategory[];
   sections: TaskSection[];
-  allCategories: Category[];
-  autoFocus?: boolean;
-  preselectedSectionId?: string | null;
-  parentTaskId?: string | null; // For sub-tasks
-  currentDate: Date; // Added currentDate prop
-  // New props for section management
-  createSection: (name: string) => Promise<void>;
-  updateSection: (sectionId: string, newName: string) => Promise<void>;
-  deleteSection: (sectionId: string) => Promise<void>;
+  currentDate: Date;
+  createSection: (data: NewTaskSectionData) => Promise<TaskSection>;
+  updateSection: (data: { id: string; updates: UpdateTaskSectionData }) => Promise<TaskSection>;
+  deleteSection: (id: string) => Promise<void>;
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
-  initialData?: Partial<Task> | null;
+  showCompleted: boolean;
 }
 
 const AddTaskForm: React.FC<AddTaskFormProps> = ({
   onAddTask,
   onTaskAdded,
+  categories,
   sections,
-  allCategories,
-  autoFocus,
-  preselectedSectionId,
-  parentTaskId,
   currentDate,
-  createSection, // Destructure new props
+  createSection,
   updateSection,
   deleteSection,
   updateSectionIncludeInFocusMode,
-  initialData,
+  showCompleted,
 }) => {
-  // Removed userId as it's not directly used in this component's logic
-  // const { user } = useAuth(); 
-  // const userId = user?.id || null; 
+  const [description, setDescription] = useState('');
+  const [sectionId, setSectionId] = useState<string | null>(null);
+  const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [priority, setPriority] = useState('medium');
+  const [dueDate, setDueDate] = useState<Date | null>(null);
 
-  const handleSave = async (taskData: Parameters<typeof onAddTask>[0]) => {
-    const success = await onAddTask(taskData);
-    if (success) {
-      onTaskAdded?.();
+  const handleSubmit = async (taskData: NewTaskData | UpdateTaskData) => {
+    try {
+      // Assuming taskData is of type NewTaskData for adding
+      const newTaskData = taskData as NewTaskData;
+      await onAddTask(
+        newTaskData.description,
+        newTaskData.section_id || null,
+        newTaskData.parent_task_id || null,
+        newTaskData.due_date ? new Date(newTaskData.due_date) : null,
+        newTaskData.category || null,
+        newTaskData.priority || 'medium'
+      );
+      onTaskAdded();
+      toast.success('Task added successfully!');
+    } catch (error) {
+      toast.error(`Failed to add task: ${(error as Error).message}`);
+      console.error('Error adding task:', error);
     }
-    return success;
   };
 
   return (
     <TaskForm
-      initialData={initialData as Task | null}
-      onSave={handleSave}
-      onCancel={onTaskAdded || (() => {})} // If onTaskAdded is not provided, use a no-op
+      onSubmit={handleSubmit}
+      onCancel={onTaskAdded}
+      categories={categories}
       sections={sections}
-      allCategories={allCategories}
-      autoFocus={autoFocus}
-      preselectedSectionId={preselectedSectionId}
-      parentTaskId={parentTaskId}
-      currentDate={currentDate}
-      createSection={createSection} // Pass new props
-      updateSection={updateSection}
-      deleteSection={deleteSection}
-      updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
     />
   );
 };
