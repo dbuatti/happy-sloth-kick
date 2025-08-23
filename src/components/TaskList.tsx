@@ -1,331 +1,442 @@
-import React, { useState, useMemo } from 'react';
-import { DndContext, closestCorners, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverlay } from '@dnd-kit/core';
-import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { isSameDay, isPast } from 'date-fns';
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
-import { Task, TaskCategory, TaskSection, NewTaskData, UpdateTaskData, NewTaskCategoryData, UpdateTaskCategoryData, NewTaskSectionData, UpdateTaskSectionData, TaskListProps, DoTodayOffLogEntry } from '@/types';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { Button } from "@/components/ui/button";
+import { ChevronsDownUp } from 'lucide-react';
+import { Task, TaskSection, Category } from '@/hooks/useTasks';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Skeleton } from '@/components/ui/skeleton';
+
+import {
+  DndContext,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
+  UniqueIdentifier,
+  PointerSensor,
+  closestCorners,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable';
+import { createPortal } from 'react-dom';
 import SortableTaskItem from './SortableTaskItem';
 import SortableSectionHeader from './SortableSectionHeader';
-import AddTaskForm from './AddTaskForm';
-import ManageCategoriesDialog from './ManageCategoriesDialog';
-import ManageSectionsDialog from './ManageSectionsDialog';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { toast } from 'react-hot-toast';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import TaskForm from './TaskForm';
+import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
+import TaskItem from './TaskItem';
+import QuickAddTask from './QuickAddTask';
+import { Appointment } from '@/hooks/useAppointments';
 
-const TaskList: React.FC<TaskListProps> = ({
-  tasks,
-  categories,
-  sections,
-  onUpdateTask,
-  onDeleteTask,
-  onAddTask,
-  onAddSubtask,
-  onToggleFocusMode,
-  onLogDoTodayOff,
-  createCategory,
-  updateCategory,
-  deleteCategory,
-  createSection,
-  updateSection,
-  deleteSection,
-  updateSectionIncludeInFocusMode,
-  showCompleted,
-  filterCategory: initialFilterCategory = 'all',
-  doTodayOffLog,
-}) => {
+interface TaskListProps {
+  tasks: Task[];
+  processedTasks: Task[];
+  filteredTasks: Task[];
+  loading: boolean;
+  handleAddTask: (taskData: any) => Promise<any>;
+  updateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
+  deleteTask: (taskId: string) => void;
+  bulkUpdateTasks: (updates: Partial<Task>, ids: string[]) => Promise<void>;
+  markAllTasksInSectionCompleted: (sectionId: string | null) => Promise<void>;
+  sections: TaskSection[];
+  createSection: (name: string) => Promise<void>;
+  updateSection: (sectionId: string, newName: string) => Promise<void>;
+  deleteSection: (sectionId: string) => Promise<void>;
+  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
+  updateTaskParentAndOrder: (activeId: string, newParentId: string | null, newSectionId: string | null, overId: string | null, isDraggingDown: boolean) => Promise<void>;
+  reorderSections: (activeId: string, overId: string) => Promise<void>;
+  allCategories: Category[];
+  setIsAddTaskOpen: (open: boolean) => void;
+  onOpenOverview: (task: Task) => void;
+  currentDate: Date;
+  setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
+  expandedSections: Record<string, boolean>;
+  expandedTasks: Record<string, boolean>;
+  toggleTask: (taskId: string) => void;
+  toggleSection: (sectionId: string) => void;
+  toggleAllSections: () => void;
+  setFocusTask: (taskId: string | null) => Promise<void>;
+  doTodayOffIds: Set<string>;
+  toggleDoToday: (task: Task) => void;
+  scheduledTasksMap: Map<string, Appointment>;
+  isDemo?: boolean;
+}
+
+const TaskList: React.FC<TaskListProps> = (props) => {
+  const {
+    tasks,
+    processedTasks,
+    filteredTasks,
+    loading,
+    handleAddTask,
+    updateTask,
+    deleteTask,
+    markAllTasksInSectionCompleted,
+    sections,
+    createSection,
+    updateSection,
+    deleteSection,
+    updateSectionIncludeInFocusMode,
+    updateTaskParentAndOrder,
+    reorderSections,
+    allCategories,
+    onOpenOverview,
+    currentDate,
+    expandedSections,
+    expandedTasks,
+    toggleTask,
+    toggleSection,
+    toggleAllSections,
+    setFocusTask,
+    doTodayOffIds,
+    toggleDoToday,
+    scheduledTasksMap,
+    isDemo = false,
+  } = props;
+
   const { user } = useAuth();
-  const currentUserId = user?.id;
+  const userId = user?.id || '';
 
-  const [isAddTaskSheetOpen, setIsAddTaskSheetOpen] = useState(false);
-  const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
-  const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
-  const [filterCategory, setFilterCategory] = useState(initialFilterCategory);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [isAddTaskOpenLocal, setIsAddTaskOpenLocal] = useState(false);
+  const [preselectedSectionId, setPreselectedSectionId] = useState<string | null>(null);
+
+  const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
+  const [activeItemData, setActiveItemData] = useState<Task | TaskSection | null>(null);
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // User must move 8px before a drag starts
+      },
+    }),
     useSensor(KeyboardSensor, {
-      coordinateGetter: ({ currentCoordinates }) => currentCoordinates!,
+      coordinateGetter: sortableKeyboardCoordinates,
+      enabled: !isDemo,
     })
   );
 
-  const filteredTasks = useMemo(() => {
-    let filtered = tasks.filter(task => showCompleted || task.status !== 'completed');
+  const tasksMap = useMemo(() => new Map(processedTasks.map(task => [task.id, task])), [processedTasks]);
+  const getTaskById = useCallback((id: UniqueIdentifier | null) => {
+      if (!id) return undefined;
+      return tasksMap.get(String(id));
+  }, [tasksMap]);
 
-    if (filterCategory !== 'all') {
-      filtered = filtered.filter(task => task.category?.id === filterCategory);
-    }
+  const defaultCategory = useMemo(() => {
+    return allCategories.find(c => c.name.toLowerCase() === 'general') || allCategories[0];
+  }, [allCategories]);
 
-    if (searchQuery) {
-      filtered = filtered.filter(task =>
-        task.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        task.notes?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
+  const allSortableSections = useMemo(() => {
+    const noSection: TaskSection = {
+      id: 'no-section-header',
+      name: 'No Section',
+      user_id: userId,
+      order: sections.length,
+      include_in_focus_mode: true,
+    };
+    return [...sections, noSection];
+  }, [sections, userId]);
 
-    return filtered;
-  }, [tasks, showCompleted, filterCategory, searchQuery]);
-
-  const tasksBySection = useMemo(() => {
-    const map = new Map<string, Task[]>();
-    sections.forEach(section => map.set(section.id, []));
-    map.set('no-section', []); // For tasks without a section
-
-    filteredTasks.forEach(task => {
-      if (!task.parent_task_id) { // Only top-level tasks go into sections directly
-        const sectionId = task.section_id || 'no-section';
-        map.get(sectionId)?.push(task);
-      }
-    });
-
-    // Sort tasks within each section
-    map.forEach((taskList, sectionId) => {
-      map.set(sectionId, [...taskList].sort((a, b) => {
-        if (a.order !== null && b.order !== null) {
-          return a.order - b.order;
+  const allVisibleItemIds = useMemo(() => {
+    const ids: UniqueIdentifier[] = [];
+    allSortableSections.forEach(section => {
+        ids.push(section.id);
+        const isSectionExpanded = expandedSections[section.id] !== false;
+        if (isSectionExpanded) {
+            const topLevelTasksInSection = filteredTasks
+                .filter(t => t.parent_task_id === null && (t.section_id === section.id || (t.section_id === null && section.id === 'no-section-header')))
+                .sort((a, b) => (a.order || 0) - (b.order || 0));
+            
+            const addSubtasksRecursively = (tasksToAdd: Task[]) => {
+                tasksToAdd.forEach(task => {
+                    ids.push(task.id);
+                    const isTaskExpanded = expandedTasks[task.id] !== false;
+                    if (isTaskExpanded) {
+                        const subtasks = filteredTasks
+                            .filter(sub => sub.parent_task_id === task.id)
+                            .sort((a, b) => (a.order || 0) - (b.order || 0));
+                        if (subtasks.length > 0) {
+                            addSubtasksRecursively(subtasks);
+                        }
+                    }
+                });
+            };
+            addSubtasksRecursively(topLevelTasksInSection);
         }
-        return 0;
-      }));
     });
+    return ids;
+  }, [allSortableSections, expandedSections, filteredTasks, expandedTasks]);
 
-    return map;
-  }, [filteredTasks, sections]);
+  const isSectionHeaderId = (id: UniqueIdentifier | null) => {
+    if (!id) return false;
+    return id === 'no-section-header' || sections.some(s => s.id === id);
+  };
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id);
+    if (isSectionHeaderId(event.active.id)) {
+      setActiveItemData(allSortableSections.find(s => s.id === event.active.id) || null);
+    } else {
+      setActiveItemData(processedTasks.find(t => t.id === event.active.id) || null);
+    }
+  };
 
   const handleDragEnd = async (event: DragEndEvent) => {
+    setActiveId(null);
+    setActiveItemData(null);
     const { active, over } = event;
 
-    if (!active || !over || active.id === over.id) return;
+    if (!over || active.id === over.id) {
+      return;
+    }
 
-    const activeId = String(active.id);
-    const overId = String(over.id);
-
-    // Handle section reordering
-    if (activeId.startsWith('section-') && overId.startsWith('section-')) {
-      const oldIndex = sections.findIndex(s => `section-${s.id}` === activeId);
-      const newIndex = sections.findIndex(s => `section-${s.id}` === overId);
-
-      if (oldIndex !== -1 && newIndex !== -1) {
-        const newOrder = arrayMove(sections, oldIndex, newIndex);
-        const updates = newOrder.map((s, index) => ({
-          id: s.id,
-          order: index,
-          name: s.name,
-          include_in_focus_mode: s.include_in_focus_mode,
-        }));
-        try {
-          // Optimistic update
-          queryClient.setQueryData(['task_sections', currentUserId], newOrder);
-          await updateSectionIncludeInFocusMode(updates[0].id, updates[0].include_in_focus_mode ?? true); // This is a placeholder, actual reorder logic needs to be implemented
-          toast.success('Sections reordered!');
-        } catch (error) {
-          toast.error('Failed to reorder sections.');
-          console.error('Error reordering sections:', error);
-          queryClient.invalidateQueries({ queryKey: ['task_sections', currentUserId] }); // Rollback
-        }
+    if (isSectionHeaderId(active.id) && isSectionHeaderId(over.id)) {
+      const a = String(active.id);
+      const b = String(over.id);
+      if (a !== 'no-section-header' && b !== 'no-section-header') {
+        await reorderSections(a, b);
       }
       return;
     }
 
-    // Handle task reordering
-    const draggedTask = tasks.find(t => t.id === activeId);
-    if (!draggedTask) return;
+    const draggedTask = getTaskById(active.id);
+    if (!draggedTask && !active.id.toString().startsWith('virtual-')) {
+      return;
+    }
 
-    let newParentTaskId: string | null = null;
-    let newSectionId: string | null = draggedTask.section_id || null;
-    let newOrder: number = draggedTask.order || 0;
+    let newParentId: string | null = null;
+    let newSectionId: string | null = null;
+    let overId: string | null = null;
 
-    const targetSectionId = overId.startsWith('section-') ? overId.replace('section-', '') : null;
-    const targetTask = tasks.find(t => t.id === overId);
-
-    if (targetSectionId) { // Dropped on a section header
-      newSectionId = targetSectionId;
-      newParentTaskId = null;
-      const tasksInSection = tasksBySection.get(targetSectionId) || [];
-      newOrder = tasksInSection.length > 0 ? Math.max(...tasksInSection.map(t => t.order || 0)) + 1 : 0;
-    } else if (targetTask) { // Dropped on another task
-      const rect = (event.activatorEvent?.target as HTMLElement)?.getBoundingClientRect();
-      const isDroppedOnBottomHalf = rect && event.activatorEvent && 'clientY' in event.activatorEvent ? event.activatorEvent.clientY > rect.bottom - rect.height / 2 : false;
-
-      if (isDroppedOnBottomHalf && !targetTask.parent_task_id) { // Drop as subtask
-        newParentTaskId = targetTask.id;
-        newSectionId = targetTask.section_id || null; // Subtasks inherit section from parent
-        const subtasksOfTarget = tasks.filter(t => t.parent_task_id === targetTask.id);
-        newOrder = subtasksOfTarget.length > 0 ? Math.max(...subtasksOfTarget.map(t => t.order || 0)) + 1 : 0;
-      } else { // Drop as a sibling
-        newParentTaskId = targetTask.parent_task_id || null;
-        newSectionId = targetTask.section_id || null;
-        const siblings = tasks.filter(t => t.parent_task_id === newParentTaskId && t.section_id === newSectionId);
-        const targetOrder = targetTask.order || 0;
-        newOrder = targetOrder + (isDroppedOnBottomHalf ? 1 : -1); // Adjust order based on drop position
-        // Re-order siblings to make space
-        siblings.filter(t => t.id !== draggedTask.id && (isDroppedOnBottomHalf ? (t.order || 0) >= newOrder : (t.order || 0) <= newOrder))
-          .forEach(t => {
-            onUpdateTask(t.id, { order: (t.order || 0) + (isDroppedOnBottomHalf ? 1 : -1) });
-          });
+    if (isSectionHeaderId(over.id)) {
+      newSectionId = over.id === 'no-section-header' ? null : String(over.id);
+    } else {
+      const overTask = getTaskById(over.id) || processedTasks.find(t => t.id === over.id);
+      if (overTask) {
+        newParentId = overTask.parent_task_id;
+        newSectionId = overTask.section_id;
+        overId = overTask.id;
       }
-    } else { // Dropped in "no-section" area
-      newSectionId = null;
-      newParentTaskId = null;
-      const tasksInNoSection = tasksBySection.get('no-section') || [];
-      newOrder = tasksInNoSection.length > 0 ? Math.max(...tasksInNoSection.map(t => t.order || 0)) + 1 : 0;
     }
+    
+    const activeIndex = allVisibleItemIds.indexOf(active.id);
+    const overIndex = allVisibleItemIds.indexOf(over.id);
+    const isDraggingDown = activeIndex < overIndex;
 
-    try {
-      await onUpdateTask(draggedTask.id, {
-        section_id: newSectionId,
-        parent_task_id: newParentTaskId,
-        order: newOrder,
-      });
-      toast.success('Task reordered!');
-    } catch (error) {
-      toast.error('Failed to reorder task.');
-      console.error('Error reordering task:', error);
-    }
+    await updateTaskParentAndOrder(
+      String(active.id), 
+      newParentId, 
+      newSectionId, 
+      overId,
+      isDraggingDown
+    );
   };
 
+  const openAddTaskForSection = (sectionId: string | null) => {
+    setPreselectedSectionId(sectionId);
+    setIsAddTaskOpenLocal(true);
+  };
+
+  // Effect to automatically collapse sections when all tasks are completed
+  useEffect(() => {
+    allSortableSections.forEach(section => {
+      const topLevelTasksInSection = filteredTasks
+        .filter(t => t.parent_task_id === null && (t.section_id === section.id || (t.section_id === null && section.id === 'no-section-header')))
+        .filter(t => t.status === 'to-do'); // Only count 'to-do' tasks
+      const remainingTasksCount = topLevelTasksInSection.length;
+
+      if (remainingTasksCount === 0 && (expandedSections[section.id] ?? true)) { // Check if it's currently expanded
+        toggleSection(section.id);
+      }
+    });
+  }, [filteredTasks, sections, allSortableSections, expandedSections, toggleSection]);
+
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center space-x-2">
-          <Button onClick={() => setIsAddTaskSheetOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" /> Add Task
-          </Button>
-          <Button variant="outline" onClick={() => setIsManageCategoriesOpen(true)}>Manage Categories</Button>
-          <Button variant="outline" onClick={() => setIsManageSectionsOpen(true)}>Manage Sections</Button>
-        </div>
-        <div className="flex items-center space-x-2 w-full sm:w-auto">
-          <Input
-            placeholder="Search tasks..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="flex-grow"
-          />
-          <Select value={filterCategory} onValueChange={setFilterCategory}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              {categories.map((category) => (
-                <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
-        <DragOverlay>
-          {/* Render active drag item here if needed */}
-        </DragOverlay>
-
-        <SortableContext items={sections.map(s => `section-${s.id}`)} strategy={verticalListSortingStrategy}>
-          {sections.map(section => (
-            <div key={section.id} className="mb-6">
-              <SortableSectionHeader
-                id={`section-${section.id}`}
-                section={section}
-                onUpdateSectionName={async (id, newName) => {
-                  const updated = await updateSection({ id, updates: { name: newName } });
-                  return updated;
-                }}
-                onDeleteSection={deleteSection}
-                onToggleIncludeInFocusMode={updateSectionIncludeInFocusMode}
-              />
-              <SortableContext items={tasksBySection.get(section.id)?.map(task => task.id) || []} strategy={verticalListSortingStrategy}>
-                <div className="space-y-2 mt-2">
-                  {tasksBySection.get(section.id)?.map(task => (
-                    <SortableTaskItem
-                      key={task.id}
-                      id={task.id}
-                      task={task}
-                      onUpdateTask={onUpdateTask}
-                      onDeleteTask={onDeleteTask}
-                      onAddSubtask={onAddSubtask}
-                      onToggleFocusMode={onToggleFocusMode}
-                      onLogDoTodayOff={onLogDoTodayOff}
-                      categories={categories}
-                      sections={sections}
-                      tasks={tasks}
-                      doTodayOffLog={doTodayOffLog}
-                    />
-                  ))}
-                </div>
-              </SortableContext>
-            </div>
+    <>
+      {loading ? (
+        <div className="space-y-3">
+          {[...Array(5)].map((_, i) => (
+            <Skeleton key={i} className="h-20 w-full rounded-xl" />
           ))}
-        </SortableContext>
-
-        {tasksBySection.get('no-section')?.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-2">No Section</h3>
-              <SortableContext items={tasksBySection.get('no-section')?.map(task => task.id) || []} strategy={verticalListSortingStrategy}>
-                <div className="space-y-2">
-                  {tasksBySection.get('no-section')?.map(task => (
-                    <SortableTaskItem
-                      key={task.id}
-                      id={task.id}
-                      task={task}
-                      onUpdateTask={onUpdateTask}
-                      onDeleteTask={onDeleteTask}
-                      onAddSubtask={onAddSubtask}
-                      onToggleFocusMode={onToggleFocusMode}
-                      onLogDoTodayOff={onLogDoTodayOff}
-                      categories={categories}
-                      sections={sections}
-                      tasks={tasks}
-                      doTodayOffLog={doTodayOffLog}
-                    />
-                  ))}
-                </div>
-              </SortableContext>
+        </div>
+      ) : (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCorners}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext items={allVisibleItemIds} strategy={verticalListSortingStrategy}>
+            <div className="flex justify-end mb-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleAllSections}
+                aria-label="Toggle all sections"
+                className="h-9 px-3"
+              >
+                <ChevronsDownUp className="h-5 w-5 mr-2" /> Toggle All Sections
+              </Button>
             </div>
-          )}
-      </DndContext>
 
-      <Sheet open={isAddTaskSheetOpen} onOpenChange={setIsAddTaskSheetOpen}>
-        <SheetContent>
-          <SheetHeader>
-            <SheetTitle>Add New Task</SheetTitle>
-          </SheetHeader>
-          <AddTaskForm
-            onAddTask={onAddTask}
-            categories={categories}
+            {allSortableSections.map((currentSection: TaskSection, index) => {
+              const isExpanded = expandedSections[currentSection.id] !== false;
+              const topLevelTasksInSection = filteredTasks
+                .filter(t => t.parent_task_id === null && (t.section_id === currentSection.id || (t.section_id === null && currentSection.id === 'no-section-header')))
+                .sort((a, b) => (a.order || 0) - (b.order || 0));
+              const remainingTasksCount = topLevelTasksInSection.filter(t => t.status === 'to-do').length;
+
+              if (currentSection.id === 'no-section-header' && topLevelTasksInSection.length === 0) {
+                return null;
+              }
+
+              return (
+                <div
+                  key={currentSection.id}
+                  className={cn("mb-4", index < allSortableSections.length - 1 && "border-b border-border pb-4")}
+                >
+                  <SortableSectionHeader
+                    section={currentSection}
+                    sectionTasksCount={remainingTasksCount}
+                    isExpanded={isExpanded}
+                    toggleSection={toggleSection}
+                    handleAddTaskToSpecificSection={(sectionId) => openAddTaskForSection(sectionId)}
+                    markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
+                    handleDeleteSectionClick={deleteSection}
+                    updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+                    onUpdateSectionName={updateSection}
+                    isOverlay={false}
+                  />
+
+                  <div className={cn(
+                    "mt-3 overflow-hidden transition-all duration-300 ease-in-out",
+                    isExpanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+                  )}>
+                    {topLevelTasksInSection.length > 0 && (
+                      <ul className="list-none space-y-1.5">
+                        {topLevelTasksInSection.map(task => (
+                          <SortableTaskItem
+                            key={task.id}
+                            task={task}
+                            onStatusChange={async (taskId, newStatus) => updateTask(taskId, { status: newStatus })}
+                            onDelete={deleteTask}
+                            onUpdate={updateTask}
+                            sections={sections}
+                            onOpenOverview={onOpenOverview}
+                            currentDate={currentDate}
+                            onMoveUp={async () => {}}
+                            onMoveDown={async () => {}}
+                            level={0}
+                            allTasks={tasks}
+                            isOverlay={false}
+                            expandedTasks={expandedTasks}
+                            toggleTask={toggleTask}
+                            setFocusTask={setFocusTask}
+                            isDoToday={!doTodayOffIds.has(task.original_task_id || task.id)}
+                            toggleDoToday={toggleDoToday}
+                            doTodayOffIds={doTodayOffIds}
+                            scheduledTasksMap={scheduledTasksMap}
+                            isDemo={isDemo}
+                          />
+                        ))}
+                      </ul>
+                    )}
+                    {/* QuickAddTask is always rendered, its visibility is controlled by parent's max-height/opacity */}
+                    <div className={cn("mt-2", topLevelTasksInSection.length === 0 ? "pt-2" : "")} data-no-dnd="true">
+                      <QuickAddTask
+                        sectionId={currentSection.id === 'no-section-header' ? null : currentSection.id}
+                        onAddTask={async (data) => { await handleAddTask(data); }}
+                        defaultCategoryId={defaultCategory?.id || ''}
+                        isDemo={isDemo}
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </SortableContext>
+
+          {createPortal(
+            <DragOverlay dropAnimation={null}>
+              {activeId && activeItemData && (
+                isSectionHeaderId(activeId) ? (
+                  <SortableSectionHeader
+                    section={activeItemData as TaskSection}
+                    sectionTasksCount={
+                      filteredTasks.filter(t => t.parent_task_id === null && (t.section_id === activeItemData.id || (t.section_id === null && activeItemData.id === 'no-section-header'))).filter(t => t.status === 'to-do').length
+                    }
+                    isExpanded={true}
+                    toggleSection={() => {}}
+                    handleAddTaskToSpecificSection={() => {}}
+                    markAllTasksInSectionCompleted={async () => {}}
+                    handleDeleteSectionClick={() => {}}
+                    updateSectionIncludeInFocusMode={async () => {}}
+                    onUpdateSectionName={async () => {}}
+                    isOverlay={true}
+                  />
+                ) : (
+                  <div className="rotate-2">
+                    <TaskItem
+                      task={activeItemData as Task}
+                      allTasks={tasks}
+                      onStatusChange={async (taskId, newStatus) => { await updateTask(taskId, { status: newStatus }); return taskId; }}
+                      onDelete={() => {}}
+                      onUpdate={async (taskId, updates) => { await updateTask(taskId, updates); return taskId; }}
+                      sections={sections}
+                      onOpenOverview={() => {}}
+                      currentDate={currentDate}
+                      onMoveUp={async () => {}}
+                      onMoveDown={async () => {}}
+                      isOverlay={true}
+                      setFocusTask={setFocusTask}
+                      isDoToday={!doTodayOffIds.has((activeItemData as Task).original_task_id || (activeItemData as Task).id)}
+                      toggleDoToday={toggleDoToday}
+                      scheduledTasksMap={scheduledTasksMap}
+                      level={0} // Pass level prop
+                    />
+                  </div>
+                )
+              )}
+            </DragOverlay>,
+            document.body
+          )}
+        </DndContext>
+      )}
+
+      <Dialog open={isAddTaskOpenLocal} onOpenChange={setIsAddTaskOpenLocal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Task</DialogTitle>
+            <DialogDescription className="sr-only">
+              Fill in the details to add a new task.
+            </DialogDescription>
+          </DialogHeader>
+          <TaskForm
+            onSave={async (taskData) => {
+              const success = await handleAddTask({
+                ...taskData,
+                section_id: preselectedSectionId ?? null,
+              });
+              if (success) setIsAddTaskOpenLocal(false);
+              return success;
+            }}
+            onCancel={() => setIsAddTaskOpenLocal(false)}
             sections={sections}
-            currentDate={new Date()}
+            allCategories={allCategories}
+            preselectedSectionId={preselectedSectionId ?? undefined}
+            currentDate={currentDate}
+            autoFocus
             createSection={createSection}
             updateSection={updateSection}
             deleteSection={deleteSection}
             updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-            showCompleted={showCompleted}
-            onClose={() => setIsAddTaskSheetOpen(false)}
           />
-        </SheetContent>
-      </Sheet>
-
-      <ManageCategoriesDialog
-        isOpen={isManageCategoriesOpen}
-        onClose={() => setIsManageCategoriesOpen(false)}
-        categories={categories}
-        createCategory={createCategory}
-        updateCategory={updateCategory}
-        deleteCategory={deleteCategory}
-      />
-
-      <ManageSectionsDialog
-        isOpen={isManageSectionsOpen}
-        onClose={() => setIsManageSectionsOpen(false)}
-        sections={sections}
-        createSection={createSection}
-        updateSection={updateSection}
-        deleteSection={deleteSection}
-        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-      />
-    </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 

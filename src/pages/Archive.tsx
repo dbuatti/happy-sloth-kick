@@ -1,107 +1,159 @@
-import React, { useState, useMemo } from 'react';
-import { useAuth } from '@/context/AuthContext';
-import { useTasks } from '@/hooks/useTasks';
-import { Task, ArchiveProps } from '@/types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { RotateCcw, Trash2 } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import React, { useEffect, useState, useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Archive as ArchiveIcon } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useTasks, Task } from '@/hooks/useTasks';
+import TaskItem from '@/components/TaskItem';
+import TaskDetailDialog from '@/components/TaskDetailDialog';
+import TaskOverviewDialog from '@/components/TaskOverviewDialog';
+import { useAllAppointments } from '@/hooks/useAllAppointments';
+import { Appointment } from '@/hooks/useAppointments';
+
+interface ArchiveProps {
+  isDemo?: boolean;
+  demoUserId?: string;
+}
 
 const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
-  const { user, loading: authLoading } = useAuth();
-  const currentUserId = isDemo ? demoUserId : user?.id;
-
   const {
-    tasks,
-    isLoading,
-    error,
+    tasks: allTasks, // Need all tasks for subtask filtering in overview
+    filteredTasks: archivedTasks, 
+    loading: archiveLoading,
     updateTask,
     deleteTask,
-  } = useTasks({ userId: currentUserId, isDemo, demoUserId });
+    sections,
+    allCategories,
+    setStatusFilter, // To ensure only archived tasks are fetched
+    createSection, // Destructure new props
+    updateSection,
+    deleteSection,
+    updateSectionIncludeInFocusMode,
+    setFocusTask,
+    toggleDoToday,
+    doTodayOffIds,
+  } = useTasks({ viewMode: 'archive', userId: demoUserId, currentDate: new Date() }); // Pass new Date()
 
-  const [searchQuery, setSearchQuery] = useState('');
+  const { appointments: allAppointments } = useAllAppointments();
 
-  const archivedTasks = useMemo(() => {
-    return tasks.filter((task: Task) => task.status === 'archived');
-  }, [tasks]);
-
-  const filteredArchivedTasks = useMemo(() => {
-    if (!searchQuery) return archivedTasks;
-    return archivedTasks.filter(task =>
-      task.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      task.notes?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [archivedTasks, searchQuery]);
-
-  const handleRestoreTask = async (taskId: string) => {
-    try {
-      await updateTask({ id: taskId, updates: { status: 'to-do' } });
-      toast.success('Task restored successfully!');
-    } catch (error: any) {
-      toast.error('Failed to restore task: ' + error.message);
-      console.error('Error restoring task:', error);
+  const scheduledTasksMap = useMemo(() => {
+    const map = new Map<string, Appointment>();
+    if (allAppointments) {
+        allAppointments.forEach(app => {
+            if (app.task_id) {
+                map.set(app.task_id, app);
+            }
+        });
     }
+    return map;
+  }, [allAppointments]);
+
+  const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
+  const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
+  const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+
+  useEffect(() => {
+    setStatusFilter('archived');
+  }, [setStatusFilter]);
+
+  const handleTaskStatusChange = async (taskId: string, newStatus: Task['status']) => {
+    return await updateTask(taskId, { status: newStatus });
   };
 
-  const handleDeleteTask = async (taskId: string) => {
-    if (window.confirm('Are you sure you want to permanently delete this task? This action cannot be undone.')) {
-      try {
-        await deleteTask(taskId);
-        toast.success('Task permanently deleted!');
-      } catch (error: any) {
-        toast.error('Failed to delete task: ' + error.message);
-        console.error('Error deleting task:', error);
-      }
-    }
+  const handleOpenOverview = (task: Task) => {
+    setTaskToOverview(task);
+    setIsTaskOverviewOpen(true);
   };
 
-  if (authLoading || isLoading) {
-    return <div className="p-4 text-center">Loading archive...</div>;
-  }
-
-  if (error) {
-    return <div className="p-4 text-red-500">Error loading data: {error.message}</div>;
-  }
+  const handleEditTaskFromOverview = (task: Task) => {
+    setIsTaskOverviewOpen(false); // Close overview
+    setTaskToEdit(task);
+    setIsTaskDetailOpen(true); // Open edit dialog
+  };
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Archive</h2>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Archived Tasks</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Input
-            placeholder="Search archived tasks..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="mb-4"
-          />
-          {filteredArchivedTasks.length === 0 ? (
-            <p className="text-muted-foreground">No archived tasks found.</p>
-          ) : (
-            <div className="space-y-2">
-              {filteredArchivedTasks.map((task) => (
-                <div key={task.id} className="flex items-center justify-between p-3 border rounded-md">
-                  <span className="text-sm line-through text-muted-foreground">{task.description}</span>
-                  <div className="flex space-x-2">
-                    <Button variant="outline" size="sm" onClick={() => handleRestoreTask(task.id)}>
-                      <RotateCcw className="mr-2 h-4 w-4" /> Restore
-                    </Button>
-                    <Button variant="destructive" size="sm" onClick={() => handleDeleteTask(task.id)}>
-                      <Trash2 className="mr-2 h-4 w-4" /> Delete
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+    <div className="flex-1 flex flex-col">
+      <main className="flex-grow p-4 flex justify-center">
+        <Card className="w-full max-w-4xl mx-auto shadow-lg rounded-xl p-4">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
+              <ArchiveIcon className="h-7 w-7 text-primary" /> Archived Tasks
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            {archiveLoading ? (
+              <div className="space-y-3">
+                {[...Array(5)].map((_, i) => (
+                  <Skeleton key={i} className="h-20 w-full rounded-xl" />
+                ))}
+              </div>
+            ) : archivedTasks.length === 0 ? (
+              <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
+                <ArchiveIcon className="h-12 w-12 text-muted-foreground" />
+                <p className="text-lg font-medium mb-2">No archived tasks found.</p>
+                <p className="text-sm">Completed tasks will appear here once you archive them from your daily view.</p>
+              </div>
+            ) : (
+              <ul className="space-y-2">
+                {archivedTasks.map((task) => (
+                  <li key={task.id} className="relative rounded-xl p-2 transition-all duration-200 ease-in-out group hover:shadow-md">
+                    <TaskItem
+                      task={task}
+                      allTasks={allTasks as Task[]} // Cast to Task[]
+                      onStatusChange={handleTaskStatusChange}
+                      onDelete={deleteTask}
+                      onUpdate={updateTask}
+                      sections={sections}
+                      onOpenOverview={handleOpenOverview}
+                      currentDate={new Date()}
+                      onMoveUp={async () => {}}
+                      onMoveDown={async () => {}}
+                      setFocusTask={setFocusTask}
+                      isDoToday={!doTodayOffIds.has(task.original_task_id || task.id)}
+                      toggleDoToday={() => toggleDoToday(task)}
+                      scheduledTasksMap={scheduledTasksMap}
+                      isDemo={isDemo}
+                      level={0} // Pass level prop
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      </main>
+      {taskToOverview && (
+        <TaskOverviewDialog
+          task={taskToOverview}
+          isOpen={isTaskOverviewOpen}
+          onClose={() => {
+            setIsTaskOverviewOpen(false);
+            setTaskToOverview(null);
+          }}
+          onEditClick={handleEditTaskFromOverview}
+          onUpdate={updateTask}
+          onDelete={deleteTask}
+          sections={sections}
+          allCategories={allCategories}
+          allTasks={allTasks as Task[]} // Cast to Task[]
+        />
+      )}
+      {taskToEdit && (
+        <TaskDetailDialog
+          task={taskToEdit}
+          isOpen={isTaskDetailOpen}
+          onClose={() => setIsTaskDetailOpen(false)}
+          onUpdate={updateTask}
+          onDelete={deleteTask}
+          sections={sections}
+          allCategories={allCategories}
+          createSection={createSection}
+          updateSection={updateSection}
+          deleteSection={deleteSection}
+          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+          allTasks={allTasks as Task[]} // Cast to Task[]
+        />
+      )}
     </div>
   );
 };

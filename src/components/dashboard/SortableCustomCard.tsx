@@ -1,10 +1,15 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { SortableCustomCardProps } from '@/types';
+import { CustomCard as CustomCardType } from '@/hooks/useDashboardData';
 import CustomCard from './CustomCard';
+import { cn } from '@/lib/utils';
 
-const SortableCustomCard: React.FC<SortableCustomCardProps> = ({ id, card, onSave, onDelete }) => {
+interface SortableCustomCardProps {
+  card: CustomCardType;
+}
+
+const SortableCustomCard: React.FC<SortableCustomCardProps> = ({ card }) => {
   const {
     attributes,
     listeners,
@@ -12,18 +17,23 @@ const SortableCustomCard: React.FC<SortableCustomCardProps> = ({ id, card, onSav
     transform,
     transition,
     isDragging,
-  } = useSortable({ id });
+  } = useSortable({ id: card.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 1000 : 1,
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <CustomCard card={card} onSave={onSave} onDelete={onDelete} />
+    <div 
+        ref={setNodeRef} 
+        style={style} 
+        {...attributes} 
+        {...listeners}
+        className={cn("select-none", isDragging && "z-10")}
+    >
+        <CustomCard card={card} />
     </div>
   );
 };

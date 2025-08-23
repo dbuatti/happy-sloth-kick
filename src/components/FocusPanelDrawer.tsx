@@ -1,66 +1,56 @@
-import React, { useState } from 'react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Button } from '@/components/ui/button';
-import { PanelLeftOpen } from 'lucide-react';
+import React from 'react';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import FocusToolsPanel from './FocusToolsPanel';
-import { Task, TaskSection, TaskCategory, UpdateTaskData, DoTodayOffLogEntry } from '@/types';
+import { Task, TaskSection, Category } from '@/hooks/useTasks';
+// Removed useAuth as it's not directly used in this component's logic
 
 interface FocusPanelDrawerProps {
-  focusedTask: Task | null;
-  focusModeTasks: Task[];
-  allCategories: TaskCategory[];
-  allSections: TaskSection[];
-  onUpdateTask: (id: string, updates: UpdateTaskData) => Promise<Task>;
-  onDeleteTask: (id: string) => Promise<void>;
-  onAddSubtask: (description: string, parentTaskId: string | null) => Promise<Task>;
-  onToggleFocusMode: (taskId: string, isFocused: boolean) => Promise<void>;
-  onLogDoTodayOff: (taskId: string) => Promise<void>;
-  onCompleteTask: (taskId: string) => Promise<void>;
-  onSkipTask: (taskId: string) => Promise<void>;
-  doTodayOffLog: DoTodayOffLogEntry[] | undefined;
+  isOpen: boolean;
+  onClose: () => void;
+  nextAvailableTask: Task | null;
+  tasks: Task[];
+  filteredTasks: Task[];
+  updateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
+  onOpenDetail: (task: Task) => void;
+  onDeleteTask: (taskId: string) => void;
+  sections: TaskSection[];
+  allCategories: Category[];
+  handleAddTask: (taskData: any) => Promise<any>; // Added handleAddTask
+  currentDate: Date; // Added currentDate
 }
 
 const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
-  focusedTask,
-  focusModeTasks,
-  allCategories,
-  allSections,
-  onUpdateTask,
+  isOpen,
+  onClose,
+  nextAvailableTask,
+  tasks,
+  filteredTasks,
+  updateTask,
+  onOpenDetail,
   onDeleteTask,
-  onAddSubtask,
-  onToggleFocusMode,
-  onLogDoTodayOff,
-  onCompleteTask,
-  onSkipTask,
-  doTodayOffLog,
+  sections,
+  allCategories,
+  handleAddTask, // Destructure handleAddTask
+  currentDate, // Destructure currentDate
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
-
   return (
-    <Sheet open={isOpen} onOpenChange={setIsOpen}>
-      <SheetTrigger asChild>
-        <Button variant="outline" size="icon" className="fixed bottom-4 right-4 z-50">
-          <PanelLeftOpen className="h-5 w-5" />
-        </Button>
-      </SheetTrigger>
+    <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent side="right" className="w-full sm:max-w-md flex flex-col">
         <SheetHeader>
-          <SheetTitle>Focus Panel</SheetTitle>
+          <SheetTitle>Focus Tools</SheetTitle>
         </SheetHeader>
         <div className="flex-1 overflow-y-auto py-4">
           <FocusToolsPanel
-            focusedTask={focusedTask}
-            focusModeTasks={focusModeTasks}
-            allCategories={allCategories}
-            allSections={allSections}
-            onUpdateTask={onUpdateTask}
+            nextAvailableTask={nextAvailableTask}
+            tasks={tasks}
+            filteredTasks={filteredTasks}
+            updateTask={updateTask}
             onDeleteTask={onDeleteTask}
-            onAddSubtask={onAddSubtask}
-            onToggleFocusMode={onToggleFocusMode}
-            onLogDoTodayOff={onLogDoTodayOff}
-            onCompleteTask={onCompleteTask}
-            onSkipTask={onSkipTask}
-            doTodayOffLog={doTodayOffLog}
+            sections={sections}
+            allCategories={allCategories}
+            onOpenDetail={onOpenDetail}
+            handleAddTask={handleAddTask} // Pass handleAddTask
+            currentDate={currentDate} // Pass currentDate
           />
         </div>
       </SheetContent>

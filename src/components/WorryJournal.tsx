@@ -1,158 +1,211 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from '@/context/AuthContext';
-import { WorryEntry, NewWorryEntryData } from '@/types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'react-hot-toast';
-import { format } from 'date-fns';
-import { Plus, Trash2 } from 'lucide-react';
+import { showSuccess, showError } from '@/utils/toast';
+import { Brain, Plus, Trash2 } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
-interface WorryJournalProps {
-  isDemo?: boolean;
-  demoUserId?: string;
+interface WorryEntry {
+  id: string;
+  user_id: string;
+  thought: string;
+  created_at: string;
 }
 
-const WorryJournal: React.FC<WorryJournalProps> = ({ isDemo = false, demoUserId }) => {
+const WorryJournal: React.FC = () => {
   const { user } = useAuth();
-  const currentUserId = isDemo ? demoUserId : user?.id;
-  const queryClient = useQueryClient();
-
+  const userId = user?.id;
   const [newThought, setNewThought] = useState('');
+  const [entries, setEntries] = useState<WorryEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
+  const [entryToDeleteId, setEntryToDeleteId] = useState<string | null>(null);
 
-  const { data: entries, isLoading, error } = useQuery<WorryEntry[], Error>({
-    queryKey: ['worryEntries', currentUserId],
-    queryFn: async () => {
-      if (!currentUserId) return [];
+  const fetchEntries = useCallback(async () => {
+    if (!userId) {
+      setEntries([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    try {
       const { data, error } = await supabase
         .from('worry_journal_entries')
         .select('*')
-        .eq('user_id', currentUserId)
+        .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as WorryEntry[];
-    },
-    enabled: !!currentUserId,
-  });
+      setEntries(data || []);
+    } catch (error: any) {
+      console.error('Error fetching worry entries:', error.message);
+      showError('Failed to load worry journal entries.');
+    } finally {
+      setLoading(false);
+    }
+  }, [userId]);
 
-  const addEntryMutation = useMutation<WorryEntry, Error, NewWorryEntryData, unknown>({
-    mutationFn: async (entryData) => {
-      if (!currentUserId) throw new Error('User not authenticated');
+  useEffect(() => {
+    fetchEntries();
+  }, [fetchEntries]);
+
+  const handleAddThought = async () => {
+    if (!newThought.trim()) {
+      showError('Thought cannot be empty.');
+      return;
+    }
+    if (!userId) {
+      showError('User not authenticated.');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
       const { data, error } = await supabase
         .from('worry_journal_entries')
-        .insert({ ...entryData, user_id: currentUserId })
+        .insert({ user_id: userId, thought: newThought.trim() })
         .select()
         .single();
 
       if (error) throw error;
-      return data as WorryEntry;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['worryEntries', currentUserId] });
-      toast.success('Worry entry added!');
+      setEntries(prev => [data, ...prev]);
       setNewThought('');
-    },
-  });
+      showSuccess('Thought saved!');
+    } catch (error: any) {
+      console.error('Error saving thought:', error.message);
+      showError('Failed to save thought.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
-  const deleteEntryMutation = useMutation<void, Error, string, unknown>({
-    mutationFn: async (id) => {
-      if (!currentUserId) throw new Error('User not authenticated');
+  const handleDeleteClick = (entryId: string) => {
+    setEntryToDeleteId(entryId);
+    setShowConfirmDeleteDialog(true);
+  };
+
+  const confirmDeleteEntry = async () => {
+    if (!entryToDeleteId || !userId) {
+      setShowConfirmDeleteDialog(false);
+      return;
+    }
+
+    setIsSaving(true);
+    try {
       const { error } = await supabase
         .from('worry_journal_entries')
         .delete()
-        .eq('id', id)
-        .eq('user_id', currentUserId);
+        .eq('id', entryToDeleteId)
+        .eq('user_id', userId);
 
       if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['worryEntries', currentUserId] });
-      toast.success('Worry entry deleted!');
-    },
-  });
-
-  const handleAddEntry = async () => {
-    if (!newThought.trim()) {
-      toast.error('Thought cannot be empty.');
-      return;
-    }
-    await addEntryMutation.mutateAsync({ thought: newThought });
-  };
-
-  const handleDeleteEntry = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this entry?')) {
-      await deleteEntryMutation.mutateAsync(id);
+      setEntries(prev => prev.filter(entry => entry.id !== entryToDeleteId));
+      showSuccess('Thought deleted!');
+    } catch (error: any) {
+      console.error('Error deleting thought:', error.message);
+      showError('Failed to delete thought.');
+    } finally {
+      setIsSaving(false);
+      setShowConfirmDeleteDialog(false);
+      setEntryToDeleteId(null);
     }
   };
-
-  if (isLoading) {
-    return (
-      <Card className="col-span-1 lg:col-span-2">
-        <CardHeader>
-          <CardTitle>Worry Journal</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p>Loading entries...</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card className="col-span-1 lg:col-span-2">
-        <CardHeader>
-          <CardTitle>Worry Journal</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-red-500">Error loading entries: {error.message}</p>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
-    <Card className="col-span-1 lg:col-span-2">
+    <Card className="w-full max-w-md shadow-lg rounded-xl">
       <CardHeader>
-        <CardTitle>Worry Journal</CardTitle>
+        <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
+          <Brain className="h-6 w-6 text-primary" /> Worry Journal
+        </CardTitle>
+        <p className="text-muted-foreground text-center">
+          Jot down intrusive thoughts to gain perspective.
+        </p>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div>
-            <Textarea
-              placeholder="What's on your mind? Write down your worries to process them."
-              value={newThought}
-              onChange={(e) => setNewThought(e.target.value)}
-              className="min-h-[80px]"
-            />
-            <Button onClick={handleAddEntry} className="mt-2 w-full">
-              <Plus className="mr-2 h-4 w-4" /> Add Thought
-            </Button>
-          </div>
-          <div className="space-y-2">
-            {entries.length === 0 ? (
-              <p className="text-muted-foreground">No entries yet. Write down a worry to get started.</p>
-            ) : (
-              entries.map((entry) => (
-                <div key={entry.id} className="flex justify-between items-start p-3 border rounded-md">
-                  <div>
-                    <p className="text-sm">{entry.thought}</p>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Textarea
+            placeholder="What's on your mind?"
+            value={newThought}
+            onChange={(e) => setNewThought(e.target.value)}
+            rows={3}
+            disabled={isSaving}
+            className="min-h-[80px] text-base"
+          />
+          <Button onClick={handleAddThought} className="w-full h-9 text-base" disabled={isSaving || !newThought.trim()}>
+            <Plus className="mr-2 h-4 w-4" /> {isSaving ? 'Saving...' : 'Add Thought'}
+          </Button>
+        </div>
+
+        <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
+          <h3 className="text-lg font-semibold">Past Entries</h3>
+          {loading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-16 w-full rounded-xl" />
+              <Skeleton className="h-16 w-full rounded-xl" />
+            </div>
+          ) : entries.length === 0 ? (
+            <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
+              <Brain className="h-12 w-12 text-muted-foreground" />
+              <p className="text-lg font-medium mb-2">No entries yet.</p>
+              <p className="text-sm">Start writing down your thoughts to gain perspective!</p>
+            </div>
+          ) : (
+            <ul className="space-y-2">
+              {entries.map(entry => (
+                <li key={entry.id} className="p-3 rounded-xl bg-background flex justify-between items-start gap-2 shadow-sm">
+                  <div className="flex-1">
+                    <p className="text-sm text-foreground">{entry.thought}</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {format(new Date(entry.created_at), 'MMM d, yyyy HH:mm')}
+                      {format(parseISO(entry.created_at), 'MMM d, yyyy HH:mm')}
                     </p>
                   </div>
-                  <Button variant="ghost" size="icon" className="text-red-500 h-6 w-6" onClick={() => handleDeleteEntry(entry.id)}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-destructive flex-shrink-0"
+                    onClick={() => handleDeleteClick(entry.id)}
+                    disabled={isSaving}
+                  >
                     <Trash2 className="h-4 w-4" />
                   </Button>
-                </div>
-              ))
-            )}
-          </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </CardContent>
+
+      <AlertDialog open={showConfirmDeleteDialog} onOpenChange={setShowConfirmDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete this journal entry.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSaving}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteEntry} disabled={isSaving}>
+              {isSaving ? 'Deleting...' : 'Continue'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };

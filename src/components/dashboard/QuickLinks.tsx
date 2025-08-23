@@ -1,139 +1,124 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useQuickLinks, QuickLink } from '@/hooks/useQuickLinks';
 import { Button } from '@/components/ui/button';
-import { Plus, Edit, Trash2 } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Plus, Link as LinkIcon, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import QuickLinkForm from './QuickLinkForm';
-import { useQuickLinks } from '@/hooks/useQuickLinks';
-import { QuickLink, NewQuickLinkData, UpdateQuickLinkData, QuickLinksProps } from '@/types';
-import { toast } from 'react-hot-toast';
-import { useAuth } from '@/context/AuthContext';
-import { DialogTrigger } from '@radix-ui/react-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+
+interface QuickLinksProps {
+  isDemo?: boolean;
+  demoUserId?: string;
+}
 
 const QuickLinks: React.FC<QuickLinksProps> = ({ isDemo = false, demoUserId }) => {
-  const { user } = useAuth();
-  const currentUserId = isDemo ? demoUserId : user?.id;
-  const { quickLinks, isLoading, error, addQuickLink, updateQuickLink, deleteQuickLink } = useQuickLinks({ userId: currentUserId });
-
-  const [isAddLinkDialogOpen, setIsAddLinkDialogOpen] = useState(false);
-  const [isEditLinkDialogOpen, setIsEditLinkDialogOpen] = useState(false);
+  const { quickLinks, loading, addQuickLink, updateQuickLink, deleteQuickLink } = useQuickLinks({ userId: demoUserId });
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingLink, setEditingLink] = useState<QuickLink | null>(null);
+  const [linkToDelete, setLinkToDelete] = useState<string | null>(null);
 
-  const handleAddLink = async (data: NewQuickLinkData) => {
-    if (!currentUserId) return;
-    await addQuickLink(data);
-    setIsAddLinkDialogOpen(false);
+  const handleOpenForm = (link: QuickLink | null) => {
+    setEditingLink(link);
+    setIsFormOpen(true);
   };
 
-  const handleUpdateLink = async (data: UpdateQuickLinkData) => {
-    if (!currentUserId || !data.id) return;
-    await updateQuickLink({ id: data.id, updates: data });
-    setIsEditLinkDialogOpen(false);
-    setEditingLink(null);
-  };
-
-  const handleDeleteLink = async (id: string) => {
-    if (!currentUserId) return;
-    if (window.confirm('Are you sure you want to delete this quick link?')) {
-      await deleteQuickLink(id);
+  const handleSave = async (data: { title: string; url: string; imageFile?: File | null; emoji?: string | null; backgroundColor?: string | null; avatarText?: string | null; }) => {
+    if (editingLink) {
+      await updateQuickLink({ id: editingLink.id, updates: data, imageFile: data.imageFile });
+    } else {
+      await addQuickLink(data);
     }
   };
 
-  const openEditDialog = (link: QuickLink) => {
-    setEditingLink(link);
-    setIsEditLinkDialogOpen(true);
-  };
-
-  if (isLoading) {
-    return (
-      <Card className="col-span-1 lg:col-span-2">
-        <CardHeader>
-          <CardTitle>Quick Links</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p>Loading quick links...</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card className="col-span-1 lg:col-span-2">
-        <CardHeader>
-          <CardTitle>Quick Links</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-red-500">Error loading quick links: {error.message}</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
-    <Card className="col-span-1 lg:col-span-2">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-lg font-semibold">Quick Links</CardTitle>
-        <Dialog open={isAddLinkDialogOpen} onOpenChange={setIsAddLinkDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="ghost" size="sm">
-              <Plus className="mr-2 h-4 w-4" /> Add Link
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Add New Quick Link</DialogTitle>
-            </DialogHeader>
-            <QuickLinkForm onSave={handleAddLink} onCancel={() => setIsAddLinkDialogOpen(false)} isEditing={false} />
-          </DialogContent>
-        </Dialog>
-      </CardHeader>
-      <CardContent>
-        {quickLinks && quickLinks.length === 0 ? (
-          <p className="text-muted-foreground">No quick links added yet.</p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {quickLinks && quickLinks.map((link) => (
-              <div
-                key={link.id}
-                className="relative flex flex-col items-center justify-center p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow"
-                style={{ backgroundColor: link.background_color || '#f0f0f0' }}
-              >
-                <a href={link.url} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center text-center">
-                  {link.emoji && <span className="text-3xl mb-2">{link.emoji}</span>}
-                  {!link.emoji && link.avatar_text && (
-                    <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-lg font-semibold text-gray-700 mb-2">
-                      {link.avatar_text}
+    <>
+      <fieldset className="rounded-xl border-2 border-border p-3">
+        <legend className="px-2 text-sm text-muted-foreground -ml-1 font-medium">Links</legend>
+        <div className="flex items-center gap-3 min-h-[40px]">
+          {loading ? (
+            [...Array(3)].map((_, i) => (
+              <Skeleton key={i} className="h-10 w-10 rounded-full" />
+            ))
+          ) : (
+            <>
+              {quickLinks.map(link => (
+                <div key={link.id} className="relative group flex flex-col items-center gap-1 text-center">
+                  <a href={link.url} target="_blank" rel="noopener noreferrer">
+                    <Avatar className="h-10 w-10 border-2 border-muted hover:border-primary transition-colors" style={{ backgroundColor: link.image_url ? 'transparent' : link.background_color || undefined }}>
+                      <AvatarImage src={link.image_url || undefined} alt={link.title} />
+                      <AvatarFallback className="text-xl text-white">
+                        {link.emoji ? (
+                          <span>{link.emoji}</span>
+                        ) : link.avatar_text ? (
+                          <span className="font-bold">{link.avatar_text}</span>
+                        ) : (
+                          <LinkIcon className="h-5 w-5 text-foreground" />
+                        )}
+                      </AvatarFallback>
+                    </Avatar>
+                  </a>
+                  {!isDemo && (
+                    <div className="absolute top-[-4px] right-[-4px] opacity-0 group-hover:opacity-100 transition-opacity">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full bg-background/80">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuItem onSelect={() => handleOpenForm(link)}>
+                            <Edit className="mr-2 h-4 w-4" /> Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => setLinkToDelete(link.id)} className="text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   )}
-                  {!link.emoji && !link.avatar_text && link.image_url && (
-                    <img src={link.image_url} alt={link.title} className="w-10 h-10 object-cover rounded-full mb-2" />
-                  )}
-                  <p className="text-sm font-medium text-foreground">{link.title}</p>
-                </a>
-                <div className="absolute top-1 right-1 flex space-x-1">
-                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => openEditDialog(link)}>
-                    <Edit className="h-3 w-3" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-6 w-6 text-red-500" onClick={() => handleDeleteLink(link.id)}>
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+              {!isDemo && (
+                <Button variant="outline" className="h-10 w-10 rounded-full flex-shrink-0" onClick={() => handleOpenForm(null)}>
+                  <Plus className="h-5 w-5" />
+                </Button>
+              )}
+            </>
+          )}
+        </div>
+      </fieldset>
 
-        <Dialog open={isEditLinkDialogOpen} onOpenChange={setIsEditLinkDialogOpen}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Edit Quick Link</DialogTitle>
-            </DialogHeader>
-            <QuickLinkForm initialData={editingLink} onSave={handleUpdateLink} onCancel={() => setIsEditLinkDialogOpen(false)} isEditing={true} />
-          </DialogContent>
-        </Dialog>
-      </CardContent>
-    </Card>
+      <QuickLinkForm
+        isOpen={isFormOpen}
+        onClose={() => setIsFormOpen(false)}
+        onSave={handleSave}
+        initialData={editingLink}
+      />
+
+      <AlertDialog open={!!linkToDelete} onOpenChange={() => setLinkToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove this quick link.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={async () => {
+              if (linkToDelete) {
+                await deleteQuickLink(linkToDelete);
+                setLinkToDelete(null);
+              }
+            }}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 

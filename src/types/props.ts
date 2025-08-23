@@ -1,2 +1,7 @@
-// This file can be used for general component props types if needed.
-// Currently, all necessary types are imported directly from '@/types'.
+import { Task } from './supabase';
+
+export interface TaskActionProps {
+  onUpdate: (id: string, updates: Partial<Task>) => void;
+  onDelete: (id: string) => void;
+  onToggleComplete: (id: string, checked: boolean) => void;
+}

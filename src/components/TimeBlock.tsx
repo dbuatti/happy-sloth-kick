@@ -1,78 +1,60 @@
 import React from 'react';
+import { useDroppable } from '@dnd-kit/core';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import TimeBlockActionMenu from '@/components/TimeBlockActionMenu';
-import { Appointment } from '@/types';
-import { Task, TaskSection, TaskCategory, DoTodayOffLogEntry } from '@/types';
+import { Appointment } from '@/hooks/useAppointments';
+import { Task, TaskSection } from '@/hooks/useTasks';
 import { format, parse } from 'date-fns';
 
 interface TimeBlockProps {
   block: { start: Date; end: Date };
-  appointments: Appointment[];
-  tasks: Task[];
-  allCategories: TaskCategory[];
-  allSections: TaskSection[];
-  onAddAppointment: (title: string, startTime: string, endTime: string, color: string, taskId?: string | null) => Promise<Appointment>;
-  onEditAppointment: (appointment: Appointment) => void;
-  onDeleteAppointment: (id: string) => Promise<void>;
-  onScheduleTask: (task: Task, startTime: string, endTime: string) => Promise<Appointment>;
-  onUpdateTask: (id: string, updates: Partial<Task>) => Promise<Task>;
-  onDeleteTask: (id: string) => Promise<void>;
-  onAddSubtask: (description: string, parentTaskId: string | null) => Promise<Task>;
-  onToggleFocusMode: (taskId: string, isFocused: boolean) => Promise<void>;
-  onLogDoTodayOff: (taskId: string) => Promise<void>;
-  doTodayOffLog: DoTodayOffLogEntry[] | undefined;
+  index: number;
+  appointmentsWithPositions: (Appointment & { gridRowStart: number; gridRowEnd: number; overlapOffset: number; })[];
+  isDemo: boolean;
+  onAddAppointment: (block: { start: Date; end: Date }) => void;
+  onScheduleTask: (taskId: string, blockStart: Date) => void;
+  unscheduledTasks: Task[];
+  sections: TaskSection[];
+  currentDate: Date;
 }
 
-const TimeBlock: React.FC<TimeBlockProps> = ({
-  block,
-  appointments,
-  tasks,
-  allCategories,
-  allSections,
-  onAddAppointment,
-  onEditAppointment,
-  onDeleteAppointment,
-  onScheduleTask,
-  onUpdateTask,
-  onDeleteTask,
-  onAddSubtask,
-  onToggleFocusMode,
-  onLogDoTodayOff,
-  doTodayOffLog,
-}) => {
-  const blockAppointments = appointments.filter(app => {
-    const appStart = parse(app.start_time, 'HH:mm', block.start);
-    const appEnd = parse(app.end_time, 'HH:mm', block.start);
-    return (appStart < block.end && appEnd > block.start);
+const TimeBlock: React.FC<TimeBlockProps> = ({ block, index, appointmentsWithPositions, isDemo, onAddAppointment, onScheduleTask, unscheduledTasks, sections, currentDate }) => {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `block-${format(block.start, 'HH:mm')}-${format(currentDate, 'yyyy-MM-dd')}`, // Unique ID per day
+    data: { type: 'time-block', time: block.start, date: currentDate }, // Pass date in data
+  });
+
+  const isBlockOccupied = appointmentsWithPositions.some(app => {
+    if (!app.start_time || !app.end_time) return false;
+    const appStart = parse(app.start_time, 'HH:mm:ss', currentDate);
+    const appEnd = parse(app.end_time, 'HH:mm:ss', currentDate);
+    return block.start.getTime() >= appStart.getTime() && block.start.getTime() < appEnd.getTime();
   });
 
   return (
-    <div className="relative h-full border-b border-l border-dashed flex items-center justify-center">
-      {blockAppointments.map((app, index) => {
-        const linkedTask = tasks.find(t => t.id === app.task_id);
-        return (
-          <div key={app.id} className="absolute inset-0 p-1">
-            {/* Render appointment card here */}
-            <div className="bg-blue-200 text-blue-800 rounded-md p-1 text-xs h-full overflow-hidden">
-              {app.title}
-              {linkedTask && <span className="block text-gray-600">({linkedTask.description})</span>}
-            </div>
-          </div>
-        );
-      })}
-      <div className="absolute top-1 right-1">
-        <TimeBlockActionMenu
-          block={block}
-          onAddAppointment={onAddAppointment}
-          onEditAppointment={onEditAppointment}
-          onDeleteAppointment={onDeleteAppointment}
-          onScheduleTask={onScheduleTask}
-          availableTasks={tasks}
-          availableSections={allSections}
-          availableCategories={allCategories}
-          selectedDate={block.start}
-          selectedTimeSlot={{ start: block.start, end: block.end }}
-        />
-      </div>
+    <div
+      ref={setNodeRef}
+      className="relative h-full w-full border-t border-gray-200/80 dark:border-gray-700/80"
+      style={{ gridRow: `${index + 1}`, zIndex: 1 }}
+    >
+      <div className="absolute top-1/2 w-full border-b border-dashed border-gray-200/50 dark:border-gray-700/50" />
+      {isOver && <div className="absolute inset-0 bg-primary/20 rounded-lg" />}
+      {!isBlockOccupied && !isDemo && (
+        <Popover>
+          <PopoverTrigger asChild>
+            <div className="absolute inset-0 cursor-pointer rounded-lg hover:bg-muted/50 transition-colors" />
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-1">
+            <TimeBlockActionMenu
+              block={block}
+              onAddAppointment={() => onAddAppointment(block)}
+              onScheduleTask={onScheduleTask}
+              unscheduledTasks={unscheduledTasks}
+              sections={sections}
+            />
+          </PopoverContent>
+        </Popover>
+      )}
     </div>
   );
 };

@@ -1,22 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Plus, Edit, Trash2, Eye, EyeOff, Save, X } from 'lucide-react';
-import { TaskSection, NewTaskSectionData, UpdateTaskSectionData } from '@/types';
-import { useTasks } from '@/hooks/useTasks';
-import { toast } from 'react-hot-toast';
-import { useAuth } from '@/context/AuthContext';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Edit, Trash2, Eye, EyeOff, Plus } from 'lucide-react';
+import { TaskSection } from '@/hooks/useTasks';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { showError } from '@/utils/toast'; // Removed showSuccess, it is not used here
 
 interface ManageSectionsDialogProps {
   isOpen: boolean;
   onClose: () => void;
   sections: TaskSection[];
-  createSection: (data: NewTaskSectionData) => Promise<TaskSection>;
-  updateSection: (data: { id: string; updates: UpdateTaskSectionData }) => Promise<TaskSection>;
-  deleteSection: (id: string) => Promise<void>;
-  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<TaskSection>;
+  createSection: (name: string) => Promise<void>;
+  updateSection: (sectionId: string, newName: string) => Promise<void>;
+  deleteSection: (sectionId: string) => Promise<void>;
+  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
 }
 
 const ManageSectionsDialog: React.FC<ManageSectionsDialogProps> = ({
@@ -28,142 +29,181 @@ const ManageSectionsDialog: React.FC<ManageSectionsDialogProps> = ({
   deleteSection,
   updateSectionIncludeInFocusMode,
 }) => {
-  const { user } = useAuth();
-  const currentUserId = user?.id;
-
   const [newSectionName, setNewSectionName] = useState('');
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
-  const [editedSectionName, setEditedSectionName] = useState('');
+  const [editingSectionName, setEditingSectionName] = useState('');
+  const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
+  const [sectionToDeleteId, setSectionToDeleteId] = useState<string | null>(null);
+  const [sectionToDeleteName, setSectionToDeleteName] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
+    // Reset new section form when dialog opens/closes
     if (!isOpen) {
       setNewSectionName('');
       setEditingSectionId(null);
-      setEditedSectionName('');
+      setEditingSectionName('');
+      setIsSaving(false);
     }
   }, [isOpen]);
 
-  const handleAddSection = async () => {
+  const handleCreateSection = async () => {
     if (!newSectionName.trim()) {
-      toast.error('Section name cannot be empty.');
+      showError('Section name is required.');
       return;
     }
-    try {
-      await createSection({ name: newSectionName, order: sections.length });
-      toast.success('Section added!');
-      setNewSectionName('');
-    } catch (error) {
-      toast.error('Failed to add section.');
-      console.error('Error adding section:', error);
-    }
-  };
-
-  const handleUpdateSection = async () => {
-    if (!editingSectionId || !editedSectionName.trim()) {
-      toast.error('Section name cannot be empty.');
+    if (sections.some(sec => sec.name.toLowerCase() === newSectionName.trim().toLowerCase())) {
+      showError('Section with this name already exists.');
       return;
     }
-    try {
-      await updateSection({ id: editingSectionId, updates: { name: editedSectionName } });
-      toast.success('Section updated!');
-      setEditingSectionId(null);
-      setEditedSectionName('');
-    } catch (error) {
-      toast.error('Failed to update section.');
-      console.error('Error updating section:', error);
-    }
+
+    setIsSaving(true);
+    await createSection(newSectionName.trim());
+    setNewSectionName('');
+    setIsSaving(false);
   };
 
-  const handleDeleteSection = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this section? All tasks in this section will become unassigned.')) {
-      try {
-        await deleteSection(id);
-        toast.success('Section deleted!');
-      } catch (error) {
-        toast.error('Failed to delete section.');
-        console.error('Error deleting section:', error);
-      }
-    }
-  };
-
-  const handleToggleFocusMode = async (sectionId: string, include: boolean) => {
-    try {
-      await updateSectionIncludeInFocusMode(sectionId, include);
-      toast.success(`Section ${include ? 'added to' : 'removed from'} focus mode!`);
-    } catch (error) {
-      toast.error('Failed to update focus mode setting.');
-      console.error('Error toggling focus mode setting:', error);
-    }
-  };
-
-  const startEditing = (section: TaskSection) => {
+  const handleEditClick = (section: TaskSection) => {
     setEditingSectionId(section.id);
-    setEditedSectionName(section.name);
+    setEditingSectionName(section.name);
   };
 
-  const cancelEditing = () => {
-    setEditingSectionId(null);
-    setEditedSectionName('');
+  const handleSaveEdit = async () => {
+    if (editingSectionId && editingSectionName.trim()) {
+      if (sections.some(sec => sec.id !== editingSectionId && sec.name.toLowerCase() === editingSectionName.trim().toLowerCase())) {
+        showError('Section with this name already exists.');
+        return;
+      }
+      setIsSaving(true);
+      await updateSection(editingSectionId, editingSectionName.trim());
+      setEditingSectionId(null);
+      setEditingSectionName('');
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteClick = (sectionId: string, sectionName: string) => {
+    setSectionToDeleteId(sectionId);
+    setSectionToDeleteName(sectionName);
+    setShowConfirmDeleteDialog(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!sectionToDeleteId) {
+      setShowConfirmDeleteDialog(false);
+      return;
+    }
+    setIsSaving(true);
+    await deleteSection(sectionToDeleteId);
+    setSectionToDeleteId(null);
+    setSectionToDeleteName(null);
+    setShowConfirmDeleteDialog(false);
+    setIsSaving(false);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Manage Sections</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="flex items-center space-x-2">
-            <Input
-              placeholder="New section name"
-              value={newSectionName}
-              onChange={(e) => setNewSectionName(e.target.value)}
-              className="flex-grow"
-            />
-            <Button onClick={handleAddSection} size="sm">
-              <Plus className="h-4 w-4" />
-            </Button>
+        <div className="py-4 space-y-3">
+          {/* New Section Form */}
+          <div className="border-b pb-4 mb-4">
+            <h4 className="text-md font-semibold mb-3">Create New Section</h4>
+            <div className="flex gap-2">
+              <Input
+                placeholder="New section name"
+                value={newSectionName}
+                onChange={(e) => setNewSectionName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleCreateSection()}
+                disabled={isSaving}
+                className="flex-1 h-9 text-base"
+              />
+              <Button onClick={handleCreateSection} disabled={isSaving || !newSectionName.trim()} className="h-9 text-base">
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            {sections.map((section) => (
-              <div key={section.id} className="flex items-center space-x-2 p-2 border rounded-md">
-                {editingSectionId === section.id ? (
-                  <>
-                    <Input
-                      value={editedSectionName}
-                      onChange={(e) => setEditedSectionName(e.target.value)}
-                      className="flex-grow"
+          {/* Existing sections list */}
+          {sections.length === 0 ? (
+            <p className="text-muted-foreground text-center">No sections created yet.</p>
+          ) : (
+            <ul className="space-y-2">
+              {sections.map(section => (
+                <li key={section.id} className="flex items-center justify-between p-2 rounded-md shadow-sm bg-background">
+                  {editingSectionId === section.id ? (
+                    <div className="flex-1 flex items-center gap-2">
+                      <Input
+                        value={editingSectionName}
+                        onChange={(e) => setEditingSectionName(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSaveEdit()}
+                        autoFocus
+                        disabled={isSaving}
+                        className="h-9 text-base"
+                      />
+                      <Button size="sm" onClick={handleSaveEdit} disabled={isSaving || !editingSectionName.trim()} className="h-9 text-base">Save</Button>
+                      <Button variant="ghost" size="sm" onClick={() => setEditingSectionId(null)} disabled={isSaving} className="h-9 text-base">Cancel</Button>
+                    </div>
+                  ) : (
+                    <span className="flex-1 font-medium text-base">{section.name}</span>
+                  )}
+                  <div className="flex items-center space-x-2 ml-4">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Label htmlFor={`focus-mode-toggle-${section.id}`} className="text-xs text-muted-foreground cursor-pointer">
+                          {section.include_in_focus_mode ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                        </Label>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {section.include_in_focus_mode ? 'Included in Focus Mode' : 'Excluded from Focus Mode'}
+                      </TooltipContent>
+                    </Tooltip>
+                    <Switch
+                      id={`focus-mode-toggle-${section.id}`}
+                      checked={section.include_in_focus_mode}
+                      onCheckedChange={(checked) => updateSectionIncludeInFocusMode(section.id, checked)}
+                      aria-label={`Include ${section.name} in Focus Mode`}
+                      disabled={isSaving}
                     />
-                    <Button onClick={handleUpdateSection} size="sm">
-                      <Save className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" onClick={cancelEditing} size="sm">
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <span className="flex-grow">{section.name}</span>
-                    <Button variant="ghost" size="icon" onClick={() => handleToggleFocusMode(section.id, !(section.include_in_focus_mode ?? true))}>
-                      {section.include_in_focus_mode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
-                    <Button variant="ghost" onClick={() => startEditing(section)} size="sm">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" onClick={() => handleDeleteSection(section.id)} size="sm" className="text-red-500">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </>
-                )}
-              </div>
-            ))}
-          </div>
+                    {!editingSectionId && (
+                      <>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditClick(section)} disabled={isSaving}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDeleteClick(section.id, section.name)} disabled={isSaving}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Close</Button>
+          <Button variant="outline" onClick={onClose} className="h-9 text-base">Close</Button>
         </DialogFooter>
       </DialogContent>
+
+      <AlertDialog open={showConfirmDeleteDialog} onOpenChange={setShowConfirmDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the section "{sectionToDeleteName}" and move all its tasks to "No Section".
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSaving}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} disabled={isSaving}>
+              {isSaving ? 'Deleting...' : 'Continue'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };

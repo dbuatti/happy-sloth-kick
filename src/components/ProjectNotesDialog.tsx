@@ -1,57 +1,55 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Project, UpdateProjectData } from '@/types';
-import { useProjects } from '@/hooks/useProjects';
-import { toast } from 'react-hot-toast';
+import { Project } from '@/hooks/useProjects';
 
 interface ProjectNotesDialogProps {
+  project: Project | null;
   isOpen: boolean;
   onClose: () => void;
-  project: Project;
+  onSave: (projectId: string, notes: string) => Promise<void>;
 }
 
-const ProjectNotesDialog: React.FC<ProjectNotesDialogProps> = ({ isOpen, onClose, project }) => {
-  const { updateProject } = useProjects({});
-  const [notes, setNotes] = useState(project.notes || '');
+const ProjectNotesDialog: React.FC<ProjectNotesDialogProps> = ({ project, isOpen, onClose, onSave }) => {
+  const [notes, setNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    setNotes(project.notes || '');
+    if (project) {
+      setNotes(project.notes || '');
+    }
   }, [project]);
 
-  const handleSaveNotes = async () => {
+  const handleSave = async () => {
+    if (!project) return;
     setIsSaving(true);
-    try {
-      await updateProject({ id: project.id, updates: { notes } });
-      toast.success('Project notes saved!');
-      onClose();
-    } catch (error) {
-      toast.error('Failed to save notes.');
-      console.error('Error saving project notes:', error);
-    } finally {
-      setIsSaving(false);
-    }
+    await onSave(project.id, notes);
+    setIsSaving(false);
+    onClose();
   };
+
+  if (!project) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Notes for {project.name}</DialogTitle>
+          <DialogTitle>Notes for: {project.name}</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
+        <div className="py-4">
           <Textarea
-            placeholder="Add notes for this project..."
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            className="min-h-[200px]"
+            placeholder="Your notes for this project..."
+            rows={10}
+            className="text-base"
+            autoFocus
           />
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSaveNotes} disabled={isSaving}>
+          <Button onClick={handleSave} disabled={isSaving}>
             {isSaving ? 'Saving...' : 'Save Notes'}
           </Button>
         </DialogFooter>

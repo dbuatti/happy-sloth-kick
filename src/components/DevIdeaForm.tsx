@@ -1,145 +1,257 @@
-import React, { useEffect } from 'react';
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DevIdea, DevIdeaTag, NewDevIdeaData, UpdateDevIdeaData, MultiSelectOption } from '@/types';
-import { useForm, Controller } from 'react-hook-form';
-import { MultiSelect } from '@/components/ui/multi-select';
+import { DevIdea, DevIdeaTag } from '@/hooks/useDevIdeas';
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { v4 as uuidv4 } from 'uuid';
+import { showError } from '@/utils/toast';
+import { UploadCloud, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import TagInput from './TagInput'; // Import the new TagInput component
 
 interface DevIdeaFormProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (data: Omit<DevIdea, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'tags'> & { tagIds: string[] }) => Promise<any>;
   initialData?: DevIdea | null;
-  onSave: (data: NewDevIdeaData | UpdateDevIdeaData) => Promise<void>;
-  onCancel: () => void;
-  tags: DevIdeaTag[];
+  allTags: DevIdeaTag[];
+  onAddTag: (name: string, color: string) => Promise<DevIdeaTag | null>;
 }
 
-const DevIdeaForm: React.FC<DevIdeaFormProps> = ({
-  initialData,
-  onSave,
-  onCancel,
-  tags,
-}) => {
-  const { register, handleSubmit, control, reset, formState: { errors } } = useForm<NewDevIdeaData | (UpdateDevIdeaData & { tagIds?: string[] })>({
-    defaultValues: {
-      title: initialData?.title || '',
-      description: initialData?.description || '',
-      status: initialData?.status || 'idea',
-      priority: initialData?.priority || 'medium',
-      image_url: initialData?.image_url || '',
-      local_file_path: initialData?.local_file_path || '',
-      tagIds: initialData?.tags?.map((tag: DevIdeaTag) => tag.id) || [],
-    }
-  });
+const DevIdeaForm: React.FC<DevIdeaFormProps> = ({ isOpen, onClose, onSave, initialData, allTags, onAddTag }) => {
+  const { user } = useAuth();
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [status, setStatus] = useState<'idea' | 'in-progress' | 'completed'>('idea');
+  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
+  const [localFilePath, setLocalFilePath] = useState(''); // New state for file path
+  const [selectedTags, setSelectedTags] = useState<DevIdeaTag[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
-    reset({
-      title: initialData?.title || '',
-      description: initialData?.description || '',
-      status: initialData?.status || 'idea',
-      priority: initialData?.priority || 'medium',
-      image_url: initialData?.image_url || '',
-      local_file_path: initialData?.local_file_path || '',
-      tagIds: initialData?.tags?.map((tag: DevIdeaTag) => tag.id) || [],
-    });
-  }, [initialData, reset]);
+    if (isOpen) {
+      if (initialData) {
+        setTitle(initialData.title);
+        setDescription(initialData.description || '');
+        setStatus(initialData.status);
+        setPriority(initialData.priority);
+        setLocalFilePath(initialData.local_file_path || ''); // Set initial file path
+        setImagePreview(initialData.image_url || null);
+        setSelectedTags(initialData.tags || []);
+      } else {
+        setTitle('');
+        setDescription('');
+        setStatus('idea');
+        setPriority('medium');
+        setLocalFilePath(''); // Reset file path
+        setImagePreview(null);
+        setSelectedTags([]);
+      }
+      setImageFile(null);
+    }
+  }, [isOpen, initialData]);
 
-  const onSubmit = async (data: NewDevIdeaData | (UpdateDevIdeaData & { tagIds?: string[] })) => {
-    await onSave(data);
+  const handleFile = (file: File | null) => {
+    if (file && file.type.startsWith('image/')) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    } else {
+      showError('Please upload a valid image file.');
+    }
   };
 
-  const tagOptions: MultiSelectOption[] = tags.map(tag => ({
-    value: tag.id,
-    label: tag.name,
-  }));
+  const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
+    const items = event.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const file = items[i].getAsFile();
+        handleFile(file);
+        break;
+      }
+    }
+  };
+
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragging(false);
+    if (event.dataTransfer.files && event.dataTransfer.files[0]) {
+      handleFile(event.dataTransfer.files[0]);
+    }
+  };
+
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
+  const handleDragEnter = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleRemoveImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+  };
+
+  const handleSubmit = async (event?: React.FormEvent) => {
+    if (event) event.preventDefault();
+    if (!title.trim() || !user) return;
+
+    setIsSaving(true);
+    let imageUrlToSave = initialData?.image_url || null;
+
+    if (imageFile) {
+      const filePath = `${user.id}/${uuidv4()}`;
+      const { error: uploadError } = await supabase.storage
+        .from('devideaimages')
+        .upload(filePath, imageFile);
+
+      if (uploadError) {
+        showError(`Image upload failed: ${uploadError.message}`);
+        setIsSaving(false);
+        return;
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('devideaimages')
+        .getPublicUrl(filePath);
+      
+      imageUrlToSave = urlData.publicUrl;
+    } else if (imagePreview === null && initialData?.image_url) {
+      imageUrlToSave = null;
+    }
+
+    const success = await onSave({
+      title: title.trim(),
+      description: description.trim() || null,
+      status,
+      priority,
+      image_url: imageUrlToSave,
+      local_file_path: localFilePath.trim() || null, // Save the file path
+      tagIds: selectedTags.map(t => t.id),
+    });
+    setIsSaving(false);
+    if (success) {
+      onClose();
+    }
+  };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div>
-        <Label htmlFor="title">Title</Label>
-        <Input id="title" {...register('title', { required: 'Title is required' })} />
-        {errors.title && <p className="text-red-500 text-sm">{errors.title.message}</p>}
-      </div>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent 
+        className="sm:max-w-[425px]"
+        onPaste={handlePaste}
+      >
+        <DialogHeader>
+          <DialogTitle>{initialData ? 'Edit Idea' : 'Add New Idea'}</DialogTitle>
+          <DialogDescription className="sr-only">
+            {initialData ? 'Edit the details of your development idea.' : 'Fill in the details to add a new idea.'}
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit}>
+          <div className="grid gap-4 py-4">
+            <div 
+              className={cn(
+                "relative border-2 border-dashed rounded-lg p-4 text-center transition-colors",
+                isDragging ? "border-primary bg-primary/10" : "border-border"
+              )}
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onDragEnter={handleDragEnter}
+              onDragLeave={handleDragLeave}
+            >
+              {imagePreview ? (
+                <>
+                  <img src={imagePreview} alt="Preview" className="rounded-md max-h-40 mx-auto" />
+                  <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-6 w-6 bg-background/50 hover:bg-background/80" onClick={handleRemoveImage}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center space-y-2 text-muted-foreground">
+                  <UploadCloud className="h-8 w-8" />
+                  <p>Drag & drop an image here, or paste from clipboard.</p>
+                </div>
+              )}
+            </div>
 
-      <div>
-        <Label htmlFor="description">Description</Label>
-        <Textarea id="description" {...register('description')} />
-      </div>
-
-      <div>
-        <Label htmlFor="status">Status</Label>
-        <Controller
-          name="status"
-          control={control}
-          render={({ field }) => (
-            <Select onValueChange={field.onChange} value={field.value}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="idea">Idea</SelectItem>
-                <SelectItem value="in-progress">In Progress</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="archived">Archived</SelectItem>
-              </SelectContent>
-            </Select>
-          )}
-        />
-      </div>
-
-      <div>
-        <Label htmlFor="priority">Priority</Label>
-        <Controller
-          name="priority"
-          control={control}
-          render={({ field }) => (
-            <Select onValueChange={field.onChange} value={field.value}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select priority" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="urgent">Urgent</SelectItem>
-              </SelectContent>
-            </Select>
-          )}
-        />
-      </div>
-
-      <div>
-        <Label htmlFor="imageUrl">Image URL</Label>
-        <Input id="imageUrl" {...register('image_url')} />
-      </div>
-
-      <div>
-        <Label htmlFor="localFilePath">Local File Path</Label>
-        <Input id="localFilePath" {...register('local_file_path')} />
-      </div>
-
-      <div>
-        <Label htmlFor="tags">Tags</Label>
-        <Controller
-          name="tagIds"
-          control={control}
-          render={({ field }) => (
-            <MultiSelect
-              options={tagOptions}
-              value={field.value || []}
-              onChange={field.onChange}
-              placeholder="Select tags"
-            />
-          )}
-        />
-      </div>
-
-      <div className="flex justify-end space-x-2">
-        <Button type="button" variant="ghost" onClick={onCancel}>Cancel</Button>
-        <Button type="submit">{initialData ? 'Save Changes' : 'Add Idea'}</Button>
-      </div>
-    </form>
+            <div className="space-y-2">
+              <Label htmlFor="title">Title</Label>
+              <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} disabled={isSaving} autoFocus />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Description (Optional)</Label>
+              <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} disabled={isSaving} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="local-file-path">Local File Path (Optional)</Label>
+              <Input id="local-file-path" value={localFilePath} onChange={(e) => setLocalFilePath(e.target.value)} placeholder="/Users/yourname/path/to/file" disabled={isSaving} />
+            </div>
+            <div className="space-y-2">
+              <Label>Tags</Label>
+              <TagInput
+                allTags={allTags}
+                selectedTags={selectedTags}
+                setSelectedTags={setSelectedTags}
+                onAddTag={onAddTag}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select value={status} onValueChange={(value) => setStatus(value as any)} disabled={isSaving}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="idea">Idea</SelectItem>
+                    <SelectItem value="in-progress">In Progress</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Priority</Label>
+                <Select value={priority} onValueChange={(value) => setPriority(value as any)} disabled={isSaving}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>Cancel</Button>
+            <Button type="submit" disabled={isSaving || !title.trim()}>
+              {isSaving ? 'Saving...' : 'Save Idea'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 };
 

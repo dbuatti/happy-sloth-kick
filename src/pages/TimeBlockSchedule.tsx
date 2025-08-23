@@ -1,182 +1,131 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { useAuth } from '@/context/AuthContext';
-import { useTasks } from '@/hooks/useTasks';
-import { useAppointments } from '@/hooks/useAppointments';
-import { useWorkHours } from '@/hooks/useWorkHours';
+import React, { useState, useMemo, useCallback } from 'react';
+import { CalendarDays } from 'lucide-react';
+import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import DailyScheduleView from '@/components/DailyScheduleView';
+import { Task, useTasks } from '@/hooks/useTasks';
+import TaskOverviewDialog from '@/components/TaskOverviewDialog';
+import TaskDetailDialog from '@/components/TaskDetailDialog';
 import { useSettings } from '@/context/SettingsContext';
-import { Task, TaskCategory, TaskSection, Appointment, WorkHour, NewTaskData, UpdateTaskData, NewAppointmentData, UpdateAppointmentData, ProjectBalanceTrackerProps, TimeBlockScheduleProps, UserSettings } from '@/types';
-import { format, startOfDay, addDays, subDays, parseISO } from 'date-fns';
-import { Calendar as CalendarIcon, Clock, Plus, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Switch } from '@/components/ui/switch';
-import ScheduleGridContent from '@/components/ScheduleGridContent';
-import WorkHoursSettings from '@/components/WorkHoursSettings';
-import { toast } from 'react-hot-toast';
+
+interface TimeBlockScheduleProps {
+  isDemo?: boolean;
+  demoUserId?: string;
+}
 
 const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, demoUserId }) => {
-  const { user, loading: authLoading } = useAuth();
-  const currentUserId = isDemo ? demoUserId : user?.id;
+  useSettings(); 
 
-  const [selectedDate, setSelectedDate] = useState(startOfDay(new Date()));
-  const [isWorkHoursModalOpen, setIsWorkHoursModalOpen] = useState(false);
-  const [showFocusTasksOnly, setShowFocusTasksOnly] = useState(true);
+  const [currentDate, setCurrentDate] = useState(new Date());
 
+  // Fetch allTasks here to pass to TaskDetailDialog
   const {
-    tasks,
-    categories: allCategories,
-    sections: allSections,
-    isLoading: tasksLoading,
-    error: tasksError,
-    addTask,
+    tasks: allTasks,
+    sections,
+    allCategories,
     updateTask,
     deleteTask,
-    onToggleFocusMode,
-    onLogDoTodayOff,
+    createSection,
+    updateSection,
+    deleteSection,
     updateSectionIncludeInFocusMode,
-    doTodayOffLog,
-  } = useTasks({ userId: currentUserId, isDemo, demoUserId });
+  } = useTasks({ currentDate: new Date(), userId: demoUserId }); // Pass a dummy date for this global fetch
 
-  const {
-    appointments,
-    isLoading: appointmentsLoading,
-    error: appointmentsError,
-    addAppointment,
-    updateAppointment,
-    deleteAppointment,
-  } = useAppointments({ userId: currentUserId, date: selectedDate });
+  const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
+  const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+  const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
 
-  const {
-    workHours,
-    isLoading: workHoursLoading,
-    error: workHoursError,
-    addWorkHour,
-    updateWorkHour,
-    deleteWorkHour,
-  } = useWorkHours({ userId: currentUserId });
-
-  const { settings, isLoading: settingsLoading, error: settingsError, updateSettings } = useSettings();
-
-  useEffect(() => {
-    setShowFocusTasksOnly(settings?.schedule_show_focus_tasks_only ?? true);
-  }, [settings?.schedule_show_focus_tasks_only]);
-
-  const handleSaveWorkHours = async (updatedWorkHours: WorkHour[]) => {
-    if (!currentUserId) return;
-
-    for (const updatedHour of updatedWorkHours) {
-      const existingHour = workHours.find(wh => wh.id === updatedHour.id);
-      if (existingHour) {
-        await updateWorkHour({ id: existingHour.id, updates: updatedHour });
-      } else if (updatedHour.enabled) {
-        await addWorkHour(updatedHour);
-      }
-    }
-    // Also handle deletion if a work hour was disabled and doesn't exist in the new list
-    for (const existingHour of workHours) {
-      if (!updatedWorkHours.some(uh => uh.id === existingHour.id) && !existingHour.enabled) {
-        await deleteWorkHour(existingHour.id);
-      }
-    }
+  const handleOpenTaskOverview = (task: Task) => {
+    setTaskToOverview(task);
+    setIsTaskOverviewOpen(true);
   };
 
-  const handleToggleShowFocusTasksOnly = async (checked: boolean) => {
-    setShowFocusTasksOnly(checked);
-    try {
-      await updateSettings({ schedule_show_focus_tasks_only: checked });
-      toast.success('Setting updated!');
-    } catch (error) {
-      toast.error('Failed to update setting.');
-      console.error('Error updating setting:', error);
-    }
+  const handleOpenTaskDetail = (task: Task) => {
+    setTaskToEdit(task);
+    setIsTaskDetailOpen(true);
   };
 
-  if (authLoading || tasksLoading || appointmentsLoading || workHoursLoading || settingsLoading) {
-    return <div className="p-4 text-center">Loading schedule...</div>;
-  }
+  const handlePreviousDay = useCallback(() => {
+    setCurrentDate(prevDate => {
+      const newDate = new Date(prevDate);
+      newDate.setDate(prevDate.getDate() - 1);
+      return newDate;
+    });
+  }, []);
 
-  if (tasksError || appointmentsError || workHoursError || settingsError) {
-    return <div className="p-4 text-red-500">Error loading data: {tasksError?.message || appointmentsError?.message || workHoursError?.message || settingsError?.message}</div>;
-  }
+  const handleNextDay = useCallback(() => {
+    setCurrentDate(prevDate => {
+      const newDate = new Date(prevDate);
+      newDate.setDate(prevDate.getDate() + 1);
+      return newDate;
+    });
+  }, []);
+
+  const handleGoToToday = useCallback(() => {
+    setCurrentDate(new Date());
+  }, []);
+
+  const shortcuts: ShortcutMap = useMemo(() => ({
+    'arrowleft': handlePreviousDay,
+    'arrowright': handleNextDay,
+    't': handleGoToToday,
+  }), [handlePreviousDay, handleNextDay, handleGoToToday]);
+  
+  useKeyboardShortcuts(shortcuts);
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Time Block Schedule</h2>
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" onClick={() => setSelectedDate(subDays(selectedDate, 1))}>
-            <ChevronLeft className="h-4 w-4" /> Previous Day
-          </Button>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant={"outline"}
-                className={cn(
-                  "w-[180px] justify-start text-left font-normal",
-                  !selectedDate && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => date && setSelectedDate(date)}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-          <Button variant="outline" size="sm" onClick={() => setSelectedDate(addDays(selectedDate, 1))}>
-            Next Day <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setIsWorkHoursModalOpen(true)}>
-            <Clock className="mr-2 h-4 w-4" /> Work Hours
-          </Button>
-          <div className="flex items-center space-x-2">
-            <Label htmlFor="show-focus-tasks-only">Focus Tasks Only</Label>
-            <Switch
-              id="show-focus-tasks-only"
-              checked={showFocusTasksOnly}
-              onCheckedChange={handleToggleShowFocusTasksOnly}
+    <div className="flex-1 flex flex-col">
+      <main className="flex-grow p-4">
+        <Card className="w-full max-w-6xl mx-auto shadow-lg rounded-xl p-4">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
+              <CalendarDays className="h-7 w-7" /> Daily Schedule
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <DailyScheduleView
+              currentDate={currentDate}
+              setCurrentDate={setCurrentDate}
+              isDemo={isDemo}
+              demoUserId={demoUserId}
+              onOpenTaskOverview={handleOpenTaskOverview}
             />
-          </div>
-        </div>
-      </div>
-
-      <ScheduleGridContent
-        currentDate={selectedDate}
-        workHours={workHours}
-        tasks={tasks}
-        appointments={appointments}
-        allCategories={allCategories}
-        allSections={allSections}
-        onAddAppointment={addAppointment}
-        onUpdateAppointment={updateAppointment}
-        onDeleteAppointment={deleteAppointment}
-        onAddTask={addTask}
-        onUpdateTask={updateTask}
-        onDeleteTask={deleteTask}
-        onAddSubtask={addTask}
-        onToggleFocusMode={onToggleFocusMode}
-        onLogDoTodayOff={onLogDoTodayOff}
-        onUpdateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-        showFocusTasksOnly={showFocusTasksOnly}
-        doTodayOffLog={doTodayOffLog}
-      />
-
-      <WorkHoursSettings
-        isOpen={isWorkHoursModalOpen}
-        onClose={() => setIsWorkHoursModalOpen(false)}
-        workHours={workHours}
-        onSaveWorkHours={handleSaveWorkHours}
-      />
+          </CardContent>
+        </Card>
+      </main>
+      <footer className="p-4">
+        <p>&copy; {new Date().getFullYear()} TaskMaster. All rights reserved.</p>
+      </footer>
+      {taskToOverview && (
+        <TaskOverviewDialog
+          task={taskToOverview}
+          isOpen={isTaskOverviewOpen}
+          onClose={() => setIsTaskOverviewOpen(false)}
+          onEditClick={handleOpenTaskDetail}
+          onUpdate={updateTask}
+          onDelete={deleteTask}
+          sections={sections}
+          allCategories={allCategories}
+          allTasks={allTasks as Task[]}
+        />
+      )}
+      {taskToEdit && (
+        <TaskDetailDialog
+          task={taskToEdit}
+          isOpen={isTaskDetailOpen}
+          onClose={() => setIsTaskDetailOpen(false)}
+          onUpdate={updateTask}
+          onDelete={deleteTask}
+          sections={sections}
+          allCategories={allCategories}
+          createSection={createSection}
+          updateSection={updateSection}
+          deleteSection={deleteSection}
+          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+          allTasks={allTasks as Task[]}
+        />
+      )}
     </div>
   );
 };

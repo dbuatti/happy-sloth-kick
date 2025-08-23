@@ -1,67 +1,41 @@
-import { DoTodayOffLogEntry, NewDoTodayOffLogEntryData } from '@/types';
-import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
+// src/hooks/useDoTodayOffLog.ts
+import { useState, useEffect, useCallback } from 'react';
+import { DoTodayOffLogEntry } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
+import { useUser } from '@supabase/auth-helpers-react';
 
-interface UseDoTodayOffLogProps {
-  userId?: string;
-}
+export const useDoTodayOffLog = () => {
+  const user = useUser();
+  const userId = user?.id;
+  const [data, setData] = useState<DoTodayOffLogEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-export const useDoTodayOffLog = ({ userId }: UseDoTodayOffLogProps) => {
-  const queryClient = useQueryClient();
+  const refetch = useCallback(async () => {
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
 
-  const { data: offLogEntries, isLoading, error } = useQuery<DoTodayOffLogEntry[], Error>({
-    queryKey: ['doTodayOffLog', userId],
-    queryFn: async () => {
-      if (!userId) return [];
-      const { data, error } = await supabase
-        .from('do_today_off_log')
-        .select('*')
-        .eq('user_id', userId);
+    setLoading(true);
+    const { data: offLogData, error: offLogError } = await supabase
+      .from('do_today_off_log')
+      .select('*')
+      .eq('user_id', userId)
+      .order('off_date', { ascending: false });
 
-      if (error) throw error;
-      return data as DoTodayOffLogEntry[];
-    },
-    enabled: !!userId,
-  });
+    if (offLogError) {
+      setError(offLogError.message);
+      setData([]);
+    } else {
+      setData(offLogData || []);
+    }
+    setLoading(false);
+  }, [userId]);
 
-  const addDoTodayOffLogEntryMutation = useMutation<DoTodayOffLogEntry, Error, NewDoTodayOffLogEntryData, unknown>({
-    mutationFn: async (newEntryData) => {
-      if (!userId) throw new Error('User not authenticated');
-      const { data, error } = await supabase
-        .from('do_today_off_log')
-        .insert({ ...newEntryData, user_id: userId })
-        .select()
-        .single();
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
 
-      if (error) throw error;
-      return data as DoTodayOffLogEntry;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['doTodayOffLog', userId] });
-    },
-  });
-
-  const deleteDoTodayOffLogEntryMutation = useMutation<void, Error, string, unknown>({
-    mutationFn: async (id) => {
-      if (!userId) throw new Error('User not authenticated');
-      const { error } = await supabase
-        .from('do_today_off_log')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', userId);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['doTodayOffLog', userId] });
-    },
-  });
-
-  return {
-    offLogEntries,
-    isLoading,
-    error,
-    addDoTodayOffLogEntry: addDoTodayOffLogEntryMutation.mutateAsync,
-    deleteDoTodayOffLogEntry: deleteDoTodayOffLogEntryMutation.mutateAsync,
-  };
+  return { data, loading, error, refetch };
 };

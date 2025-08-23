@@ -1,88 +1,52 @@
 import React from 'react';
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import { Task, TaskSection, TaskCategory, DraggableScheduleTaskItemProps } from '@/types';
+import { useDraggable } from '@dnd-kit/core';
+import { Task, TaskSection } from '@/hooks/useTasks';
 import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
-import { getCategoryColorProps, CategoryColorKey } from '@/lib/categoryColors';
-import { format, parseISO, isPast, isToday } from 'date-fns';
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { GripVertical, FolderOpen } from 'lucide-react';
 
-const DraggableScheduleTaskItem: React.FC<DraggableScheduleTaskItemProps> = ({
-  id,
-  task,
-  categories,
-  sections,
-  onUpdateTask,
-  onDeleteTask,
-  onAddSubtask,
-  onToggleFocusMode,
-  onLogDoTodayOff,
-  isDragging: propIsDragging,
-  doTodayOffLog,
-}) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id });
+interface DraggableScheduleTaskItemProps {
+  task: Task;
+  sections: TaskSection[];
+}
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 1000 : 1,
+const DraggableScheduleTaskItem: React.FC<DraggableScheduleTaskItemProps> = ({ task, sections }) => {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `task-${task.id}`,
+    data: { type: 'task', task, duration: 30 },
+  });
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'urgent': return 'border-l-priority-urgent';
+      case 'high': return 'border-l-priority-high';
+      case 'medium': return 'border-l-priority-medium';
+      case 'low': return 'border-l-priority-low';
+      default: return 'border-l-gray-500';
+    }
   };
 
-  const categoryProps = task.category
-    ? getCategoryColorProps(categories.find(cat => cat.id === task.category)?.color as CategoryColorKey)
-    : { backgroundClass: 'bg-gray-100', textColor: 'text-gray-800' };
-
-  const isOverdue = task.due_date && isPast(parseISO(task.due_date)) && !isToday(parseISO(task.due_date));
-  const isDueToday = task.due_date && isToday(parseISO(task.due_date));
+  const section = sections.find(s => s.id === task.section_id);
 
   return (
     <div
       ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
       className={cn(
-        "flex items-center p-2 rounded-md border bg-card text-card-foreground shadow-sm cursor-grab",
-        (propIsDragging || isDragging) && "ring-2 ring-primary"
+        "p-2 rounded-md bg-card shadow-sm flex items-center gap-2 border-l-4 select-none",
+        getPriorityColor(task.priority),
+        isDragging && "opacity-50"
       )}
     >
-      <div className="flex-1 grid gap-1">
-        <p className="text-sm font-medium leading-none">{task.description}</p>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          {task.category && (
-            <span className={cn("px-2 py-0.5 rounded-full", categoryProps.backgroundClass, categoryProps.textColor)}>
-              {categories.find(cat => cat.id === task.category)?.name || 'Uncategorized'}
-            </span>
-          )}
-          {task.priority && task.priority !== 'medium' && (
-            <span className={cn(
-              "px-2 py-0.5 rounded-full",
-              task.priority === 'urgent' && "bg-red-100 text-red-800",
-              task.priority === 'high' && "bg-orange-100 text-orange-800",
-              task.priority === 'low' && "bg-blue-100 text-blue-800"
-            )}>
-              {task.priority}
-            </span>
-          )}
-          {task.due_date && (
-            <span className={cn(
-              "flex items-center gap-1",
-              isOverdue ? "text-red-500" : isDueToday ? "text-orange-500" : "text-muted-foreground"
-            )}>
-              <CalendarIcon className="h-3 w-3" />
-              {format(parseISO(task.due_date), 'MMM d, yyyy')}
-            </span>
-          )}
-        </div>
+      <button {...listeners} {...attributes} className="cursor-grab touch-none p-1 -ml-1">
+        <GripVertical className="h-4 w-4 text-muted-foreground" />
+      </button>
+      <div className="flex-1 min-w-0">
+        <p className="font-semibold text-sm truncate">{task.description}</p>
+        {section && (
+          <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+            <FolderOpen className="h-3 w-3" />
+            <span>{section.name}</span>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import EditableCard from './EditableCard';
+import { Leaf } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { Save } from 'lucide-react';
+import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MeditationNotesCardProps } from '@/types';
-import { useSettings } from '@/context/SettingsContext';
-import { toast } from 'react-hot-toast';
+import { UserSettings } from '@/hooks/useUserSettings'; // Import UserSettings type
 
-const MeditationNotes: React.FC<MeditationNotesCardProps> = () => {
-  const { settings, isLoading, error, updateSettings } = useSettings();
-  const [notes, setNotes] = useState(settings?.meditation_notes || '');
+interface MeditationNotesCardProps {
+  settings: UserSettings | null; // Updated to UserSettings | null
+  updateSettings: (updates: Partial<Omit<UserSettings, 'user_id'>>) => Promise<boolean>; // Updated to match useUserSettings's updateSettings
+  loading: boolean;
+}
+
+const MeditationNotesCard: React.FC<MeditationNotesCardProps> = ({ settings, updateSettings, loading }) => {
+  const [notes, setNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -19,63 +22,31 @@ const MeditationNotes: React.FC<MeditationNotesCardProps> = () => {
     }
   }, [settings]);
 
-  const handleSaveNotes = async () => {
+  const handleSave = async () => {
     setIsSaving(true);
-    try {
-      await updateSettings({ meditation_notes: notes });
-      toast.success('Meditation notes saved!');
-    } catch (err) {
-      toast.error('Failed to save notes.');
-      console.error('Error saving meditation notes:', err);
-    } finally {
-      setIsSaving(false);
-    }
+    // Ensure updates match the Partial<Omit<UserSettings, 'user_id'>> expected by useSettings
+    await updateSettings({ meditation_notes: notes });
+    setIsSaving(false);
   };
 
-  if (isLoading) {
-    return (
-      <Card className="col-span-1 lg:col-span-2">
-        <CardHeader>
-          <CardTitle>Meditation Notes</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-32 w-full" />
-        </CardContent>
-      </Card>
-    );
+  if (loading) {
+    return <Skeleton className="h-32 w-full" />;
   }
 
-  if (error) {
-    return (
-      <Card className="col-span-1 lg:col-span-2">
-        <CardHeader>
-          <CardTitle>Meditation Notes</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-red-500">Error loading notes: {error.message}</p>
-        </CardContent>
-      </Card>
-    );
-  }
+  const renderEditForm = () => (
+    <div>
+      <Label>Meditation Notes</Label>
+      <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g., Up to recording #5..." />
+    </div>
+  );
 
   return (
-    <Card className="col-span-1 lg:col-span-2">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-lg font-semibold">Meditation Notes</CardTitle>
-        <Button variant="ghost" size="sm" onClick={handleSaveNotes} disabled={isSaving}>
-          <Save className="mr-2 h-4 w-4" /> {isSaving ? 'Saving...' : 'Save'}
-        </Button>
-      </CardHeader>
-      <CardContent>
-        <Textarea
-          placeholder="Jot down your thoughts after meditation..."
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          className="min-h-[100px]"
-        />
-      </CardContent>
-    </Card>
+    <EditableCard title="Meditation Notes" icon={Leaf} onSave={handleSave} renderEditForm={renderEditForm} isSaving={isSaving}>
+      <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+        {settings?.meditation_notes || 'No notes yet. Click edit to add some.'}
+      </p>
+    </EditableCard>
   );
 };
 
-export default MeditationNotes;
+export default MeditationNotesCard;

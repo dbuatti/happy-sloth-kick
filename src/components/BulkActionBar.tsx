@@ -1,51 +1,60 @@
 import React from 'react';
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CheckCircle2, Archive, Trash2, ChevronDown, X } from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
+import { Task } from '@/hooks/useTasks';
 
 interface BulkActionBarProps {
-  selectedTaskIds: string[];
+  selectedCount: number;
   onClearSelection: () => void;
-  onMarkComplete: (taskIds: string[]) => void;
-  onArchive: (taskIds: string[]) => void;
-  onDelete: (taskIds: string[]) => void;
+  onComplete: () => void;
+  onArchive: () => void;
+  onDelete: () => void;
+  onChangePriority: (priority: Task['priority']) => void;
 }
 
 const BulkActionBar: React.FC<BulkActionBarProps> = ({
-  selectedTaskIds,
+  selectedCount,
   onClearSelection,
-  onMarkComplete,
+  onComplete,
   onArchive,
   onDelete,
+  onChangePriority,
 }) => {
-  if (selectedTaskIds.length === 0) {
-    return null;
-  }
-
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white p-3 rounded-lg shadow-lg flex items-center space-x-4 z-50">
-      <span>{selectedTaskIds.length} tasks selected</span>
-      <Button variant="ghost" size="icon" onClick={onClearSelection}>
-        <X className="h-5 w-5" />
-      </Button>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="text-white hover:bg-blue-700">
-            Actions <ChevronDown className="ml-2 h-4 w-4" />
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-md px-4">
+      <div className="bg-card text-card-foreground rounded-xl shadow-lg p-2 flex items-center justify-between border">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClearSelection}>
+            <X className="h-5 w-5" />
           </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent>
-          <DropdownMenuItem onClick={() => onMarkComplete(selectedTaskIds)}>
-            <CheckCircle2 className="mr-2 h-4 w-4" /> Mark Complete
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onArchive(selectedTaskIds)}>
-            <Archive className="mr-2 h-4 w-4" /> Archive
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onDelete(selectedTaskIds)}>
-            <Trash2 className="mr-2 h-4 w-4 text-red-500" /> Delete
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          <span className="font-semibold">{selectedCount} selected</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onComplete} title="Mark as Complete">
+            <CheckCircle2 className="h-5 w-5" />
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 px-2">
+                Priority <ChevronDown className="ml-1 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onSelect={() => onChangePriority('low')}>Low</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => onChangePriority('medium')}>Medium</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => onChangePriority('high')}>High</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => onChangePriority('urgent')}>Urgent</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onArchive} title="Archive">
+            <Archive className="h-5 w-5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={onDelete} title="Delete">
+            <Trash2 className="h-5 w-5" />
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };

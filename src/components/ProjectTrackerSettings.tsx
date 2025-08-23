@@ -1,76 +1,88 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Edit, Save } from 'lucide-react';
-import { useSettings } from '@/context/SettingsContext';
-import { toast } from 'react-hot-toast';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useProjects } from '@/hooks/useProjects';
+import { LayoutGrid, Edit } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+// Removed useAuth as it's not directly used in this component
 
 const ProjectTrackerSettings: React.FC = () => {
-  const { settings, updateSettings, isLoading: settingsLoading } = useSettings();
+  const { sectionTitle, updateProjectTrackerTitle, loading: projectsLoading } = useProjects();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [projectTrackerTitle, setProjectTrackerTitle] = useState(settings?.project_tracker_title || 'Project Balance Tracker');
-  const [isSaving, setIsSaving] = useState(false);
+  const [tempSectionTitle, setTempSectionTitle] = useState(sectionTitle);
+  const [isSavingTitle, setIsSavingTitle] = useState(false);
 
   useEffect(() => {
-    if (settings) {
-      setProjectTrackerTitle(settings.project_tracker_title || 'Project Balance Tracker');
-    }
-  }, [settings]);
+    setTempSectionTitle(sectionTitle);
+  }, [sectionTitle]);
 
   const handleSaveTitle = async () => {
-    setIsSaving(true);
-    try {
-      await updateSettings({ project_tracker_title: projectTrackerTitle });
-      toast.success('Project tracker title updated!');
+    if (tempSectionTitle.trim()) {
+      setIsSavingTitle(true);
+      await updateProjectTrackerTitle(tempSectionTitle.trim());
+      setIsSavingTitle(false);
       setIsEditingTitle(false);
-    } catch (error) {
-      toast.error('Failed to update title.');
-      console.error('Error updating project tracker title:', error);
-    } finally {
-      setIsSaving(false);
     }
   };
 
-  if (settingsLoading) {
+  if (projectsLoading) {
     return (
-      <Card>
-        <CardHeader><CardTitle>Project Tracker Settings</CardTitle></CardHeader>
-        <CardContent><p>Loading settings...</p></CardContent>
+      <Card className="w-full shadow-lg rounded-xl">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-2xl font-bold flex items-center gap-2">
+            <LayoutGrid className="h-6 w-6 text-primary" /> Project Tracker Title
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full mt-4" />
+        </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Project Tracker Settings</CardTitle>
+    <Card className="w-full shadow-lg rounded-xl">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-2xl font-bold flex items-center gap-2">
+          <LayoutGrid className="h-6 w-6 text-primary" /> Project Tracker Title
+        </CardTitle>
+        <p className="text-sm text-muted-foreground">Customize the title of your Project Balance Tracker.</p>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="project-tracker-title">Tracker Title</Label>
-          {isEditingTitle ? (
-            <div className="flex items-center space-x-2">
+      <CardContent className="pt-0">
+        {isEditingTitle ? (
+          <div className="flex flex-col gap-3">
+            <div>
+              <Label htmlFor="project-tracker-title" className="text-sm font-medium text-foreground">New Title</Label>
               <Input
                 id="project-tracker-title"
-                value={projectTrackerTitle}
-                onChange={(e) => setProjectTrackerTitle(e.target.value)}
-                className="w-48"
+                value={tempSectionTitle}
+                onChange={(e) => setTempSectionTitle(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSaveTitle()}
+                autoFocus
+                disabled={isSavingTitle}
+                className="h-10 text-base"
               />
-              <Button size="sm" onClick={handleSaveTitle} disabled={isSaving}>
-                <Save className="h-4 w-4" />
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={handleSaveTitle} disabled={isSavingTitle || !tempSectionTitle.trim()} className="h-10 text-base">
+                {isSavingTitle ? 'Saving...' : 'Save Title'}
+              </Button>
+              <Button variant="outline" onClick={() => setIsEditingTitle(false)} disabled={isSavingTitle} className="h-10 text-base">
+                Cancel
               </Button>
             </div>
-          ) : (
-            <div className="flex items-center space-x-2">
-              <span>{projectTrackerTitle}</span>
-              <Button variant="ghost" size="icon" onClick={() => setIsEditingTitle(true)}>
-                <Edit className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between">
+            <p className="text-lg font-medium text-foreground">{sectionTitle}</p>
+            <Button variant="outline" size="sm" onClick={() => setIsEditingTitle(true)} className="h-9 text-base">
+              <Edit className="mr-2 h-4 w-4" /> Edit
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

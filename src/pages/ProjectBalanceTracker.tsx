@@ -1,260 +1,536 @@
 import React, { useState, useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Plus, Edit, Trash2, Sparkles, RefreshCcw, Lightbulb, RotateCcw, LayoutGrid, CheckCircle2, Minus, Link as LinkIcon, StickyNote } from 'lucide-react';
+import { useProjects, Project } from '@/hooks/useProjects';
+import { cn } from '@/lib/utils';
+import { Progress } from '@/components/Progress';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Skeleton } from '@/components/ui/skeleton';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from '@/context/AuthContext';
-import { useProjects } from '@/hooks/useProjects';
-import { Project, NewProjectData, UpdateProjectData, ProjectBalanceTrackerProps } from '@/types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Plus, Edit, Trash2, ExternalLink, BookOpen } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import ProjectNotesDialog from '@/components/ProjectNotesDialog';
-import { toast } from 'react-hot-toast';
-import { useSettings } from '@/context/SettingsContext';
+
+interface ProjectBalanceTrackerProps {
+  isDemo?: boolean;
+  demoUserId?: string;
+}
 
 const ProjectBalanceTracker: React.FC<ProjectBalanceTrackerProps> = ({ isDemo = false, demoUserId }) => {
-  const { user, loading: authLoading } = useAuth();
-  const currentUserId = isDemo ? demoUserId : user?.id;
-  const { projects, isLoading, error, addProject, updateProject, deleteProject } = useProjects({ userId: currentUserId });
-  const { settings } = useSettings();
+  useAuth(); 
 
-  const [isAddProjectDialogOpen, setIsAddProjectDialogOpen] = useState(false);
+  const {
+    projects,
+    loading,
+    sectionTitle,
+    addProject,
+    updateProject,
+    deleteProject,
+    incrementProjectCount,
+    decrementProjectCount,
+    resetAllProjectCounts,
+    sortOption,
+    setSortOption,
+  } = useProjects({ userId: demoUserId });
+
+  const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectDescription, setNewProjectDescription] = useState('');
   const [newProjectLink, setNewProjectLink] = useState('');
+  const [isSavingProject, setIsSavingProject] = useState(false);
 
-  const [isEditProjectDialogOpen, setIsEditProjectDialogOpen] = useState(false);
-  const [editingProject, setEditingProject] = useState<Project | null>(null);
-  const [editProjectName, setEditProjectName] = useState('');
-  const [editProjectDescription, setEditProjectDescription] = useState('');
-  const [editProjectLink, setEditProjectLink] = useState('');
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [editingProjectName, setEditingProjectName] = useState('');
+  const [editingProjectDescription, setEditingProjectDescription] = useState('');
+  const [editingProjectLink, setEditingProjectLink] = useState('');
 
-  const [isNotesDialogOpen, setIsNotesDialogOpen] = useState(false);
-  const [projectWithNotes, setProjectWithNotes] = useState<Project | null>(null);
+  const [showCelebration, setShowCelebration] = useState(false);
 
-  const [sortOption, setSortOption] = useState('created_at');
+  const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
+  const [projectToDeleteId, setProjectToDeleteId] = useState<string | null>(null);
+  const [showConfirmResetIndividualDialog, setShowConfirmResetIndividualDialog] = useState(false);
+  const [projectToResetId, setProjectToResetId] = useState<string | null>(null);
+  const [showConfirmResetAllDialog, setShowConfirmResetAllDialog] = useState(false);
+  const [isResettingAll, setIsResettingAll] = useState(false);
 
-  const sortedProjects = useMemo(() => {
-    if (!projects) return [];
-    let sorted = [...projects];
-    if (sortOption === 'name') {
-      sorted.sort((a, b) => a.name.localeCompare(b.name));
-    } else if (sortOption === 'current_count') {
-      sorted.sort((a, b) => b.current_count - a.current_count);
-    } else { // created_at
-      sorted.sort((a, b) => new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime());
+  const [isNotesOpen, setIsNotesOpen] = useState(false);
+  const [selectedProjectForNotes, setSelectedProjectForNotes] = useState<Project | null>(null);
+
+  const leastWorkedOnProject = useMemo(() => {
+    if (projects.length === 0) return null;
+    return projects.reduce((prev, current) =>
+      prev.current_count <= current.current_count ? prev : current
+    );
+  }, [projects]);
+
+  const allProjectsMaxed = useMemo(() => {
+    if (projects.length === 0) return false;
+    return projects.every(p => p.current_count === 10);
+  }, [projects]);
+
+  React.useEffect(() => {
+    if (allProjectsMaxed && projects.length > 0) {
+      setShowCelebration(true);
+    } else {
+      setShowCelebration(false);
     }
-    return sorted;
-  }, [projects, sortOption]);
+  }, [allProjectsMaxed, projects.length]);
 
   const handleAddProject = async () => {
-    if (!newProjectName.trim()) {
-      toast.error('Project name cannot be empty.');
-      return;
-    }
-    try {
-      await addProject({ name: newProjectName, description: newProjectDescription, link: newProjectLink, current_count: 0 });
-      setNewProjectName('');
-      setNewProjectDescription('');
-      setNewProjectLink('');
-      setIsAddProjectDialogOpen(false);
-    } catch (err) {
-      toast.error('Failed to add project.');
-      console.error('Error adding project:', err);
-    }
-  };
-
-  const handleUpdateProject = async () => {
-    if (!editingProject || !editProjectName.trim()) {
-      toast.error('Project name cannot be empty.');
-      return;
-    }
-    try {
-      await updateProject({ id: editingProject.id, updates: { name: editProjectName, description: editProjectDescription, link: editProjectLink } });
-      setIsEditProjectDialogOpen(false);
-      setEditingProject(null);
-    } catch (err) {
-      toast.error('Failed to update project.');
-      console.error('Error updating project:', err);
-    }
-  };
-
-  const handleDeleteProject = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this project?')) {
-      try {
-        await deleteProject(id);
-      } catch (err) {
-        toast.error('Failed to delete project.');
-        console.error('Error deleting project:', err);
+    if (newProjectName.trim()) {
+      setIsSavingProject(true);
+      const success = await addProject({ name: newProjectName.trim(), description: newProjectDescription.trim() || null, link: newProjectLink.trim() || null });
+      if (success) {
+        setNewProjectName('');
+        setNewProjectDescription('');
+        setNewProjectLink('');
+        setIsAddProjectOpen(false);
       }
+      setIsSavingProject(false);
     }
   };
 
-  const handleIncrementCount = async (project: Project) => {
-    try {
-      await updateProject({ id: project.id, updates: { current_count: project.current_count + 1 } });
-    } catch (err) {
-      toast.error('Failed to update count.');
-      console.error('Error updating count:', err);
+  const handleEditProject = (project: Project) => {
+    setEditingProjectId(project.id);
+    setEditingProjectName(project.name);
+    setEditingProjectDescription(project.description || '');
+    setEditingProjectLink(project.link || '');
+  };
+
+  const handleSaveProjectEdit = async () => {
+    if (editingProjectId && editingProjectName.trim()) {
+      setIsSavingProject(true);
+      const success = await updateProject({ projectId: editingProjectId, updates: {
+        name: editingProjectName.trim(),
+        description: editingProjectDescription.trim() || null,
+        link: editingProjectLink.trim() || null,
+      }});
+      if (success) {
+        setEditingProjectId(null);
+        setEditingProjectName('');
+        setEditingProjectDescription('');
+        setEditingProjectLink('');
+      }
+      setIsSavingProject(false);
     }
   };
 
-  const handleDecrementCount = async (project: Project) => {
-    try {
-      await updateProject({ id: project.id, updates: { current_count: Math.max(0, project.current_count - 1) } });
-    } catch (err) {
-      toast.error('Failed to update count.');
-      console.error('Error updating count:', err);
+  const handleDeleteProjectClick = (projectId: string) => {
+    setProjectToDeleteId(projectId);
+    setShowConfirmDeleteDialog(true);
+  };
+
+  const confirmDeleteProject = async () => {
+    if (projectToDeleteId) {
+      setIsSavingProject(true);
+      await deleteProject(projectToDeleteId);
+      setProjectToDeleteId(null);
+      setShowConfirmDeleteDialog(false);
+      setIsSavingProject(false);
     }
   };
 
-  const openEditDialog = (project: Project) => {
-    setEditingProject(project);
-    setEditProjectName(project.name);
-    setEditProjectDescription(project.description || '');
-    setEditProjectLink(project.link || '');
-    setIsEditProjectDialogOpen(true);
+  const handleIncrement = async (projectId: string) => {
+    await incrementProjectCount(projectId);
   };
 
-  const openNotesDialog = (project: Project) => {
-    setProjectWithNotes(project);
-    setIsNotesDialogOpen(true);
+  const handleDecrement = async (projectId: string) => {
+    await decrementProjectCount(projectId);
   };
 
-  if (authLoading || isLoading) {
-    return <div className="p-4 text-center">Loading projects...</div>;
-  }
+  const handleResetIndividualProjectClick = (projectId: string) => {
+    setProjectToResetId(projectId);
+    setShowConfirmResetIndividualDialog(true);
+  };
 
-  if (error) {
-    return <div className="p-4 text-red-500">Error loading projects: {error.message}</div>;
-  }
+  const confirmResetIndividualProject = async () => {
+    if (projectToResetId) {
+      setIsSavingProject(true);
+      await updateProject({ projectId: projectToResetId, updates: { current_count: 0 } });
+      setProjectToResetId(null);
+      setShowConfirmResetIndividualDialog(false);
+      setIsSavingProject(false);
+    }
+  };
+
+  const handleResetAllClick = () => {
+    setShowConfirmResetAllDialog(true);
+  };
+
+  const confirmResetAll = async () => {
+    setIsResettingAll(true);
+    const success = await resetAllProjectCounts();
+    if (success) {
+      setShowCelebration(false);
+    }
+    setIsResettingAll(false);
+    setShowConfirmResetAllDialog(false);
+  };
+
+  const getProgressColor = (count: number) => {
+    if (count >= 8) return 'bg-primary';
+    if (count >= 4) return 'bg-accent';
+    return 'bg-destructive';
+  };
+
+  const handleOpenNotes = (project: Project) => {
+    setSelectedProjectForNotes(project);
+    setIsNotesOpen(true);
+  };
+
+  const handleSaveNotes = async (projectId: string, notes: string) => {
+    await updateProject({ projectId, updates: { notes } });
+  };
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">{settings?.project_tracker_title || 'Project Balance Tracker'}</h2>
-        <div className="flex items-center space-x-2">
-          <Select value={sortOption} onValueChange={setSortOption}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="created_at">Newest</SelectItem>
-              <SelectItem value="name">Name</SelectItem>
-              <SelectItem value="current_count">Count</SelectItem>
-            </SelectContent>
-          </Select>
-          <Dialog open={isAddProjectDialogOpen} onOpenChange={setIsAddProjectDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" /> Add Project
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Add New Project</DialogTitle>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="name" className="text-right">Name</Label>
-                  <Input id="name" value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} className="col-span-3" />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="description" className="text-right">Description</Label>
-                  <Textarea id="description" value={newProjectDescription} onChange={(e) => setNewProjectDescription(e.target.value)} className="col-span-3" />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="link" className="text-right">Link</Label>
-                  <Input id="link" type="url" value={newProjectLink} onChange={(e) => setNewProjectLink(e.target.value)} className="col-span-3" />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button onClick={handleAddProject}>Add Project</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {sortedProjects.length === 0 ? (
-          <p className="text-muted-foreground col-span-full">No projects added yet. Start by adding one!</p>
-        ) : (
-          sortedProjects.map((project) => (
-            <Card key={project.id}>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-lg font-semibold">{project.name}</CardTitle>
-                <div className="flex space-x-1">
-                  <Button variant="ghost" size="icon" onClick={() => openNotesDialog(project)}>
-                    <BookOpen className="h-4 w-4" />
+    <div className="flex-1 flex flex-col">
+      <main className="flex-grow p-4">
+        <Card className="w-full max-w-4xl mx-auto shadow-lg rounded-xl p-4">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-3xl font-bold flex items-center justify-center gap-2">
+              <LayoutGrid className="h-7 w-7" /> {sectionTitle}
+            </CardTitle>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-4">
+              <Dialog open={isAddProjectOpen} onOpenChange={setIsAddProjectOpen}>
+                <DialogTrigger asChild>
+                  <Button disabled={isSavingProject || isDemo} className="w-full sm:w-auto h-9">
+                    <Plus className="mr-2 h-4 w-4" /> Add Project
                   </Button>
-                  {project.link && (
-                    <Button variant="ghost" size="icon" asChild>
-                      <a href={project.link} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-4 w-4" />
-                      </a>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add New Project</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-3 py-3">
+                    <div>
+                      <Label htmlFor="project-name">Project Name</Label>
+                      <Input
+                        id="project-name"
+                        value={newProjectName}
+                        onChange={(e) => setNewProjectName(e.target.value)}
+                        placeholder="e.g., Learn Rust, Garden Design"
+                        autoFocus
+                        disabled={isSavingProject}
+                        className="h-9"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="project-description">Description (Optional)</Label>
+                      <Textarea
+                        id="project-description"
+                        value={newProjectDescription}
+                        onChange={(e) => setNewProjectDescription(e.target.value)}
+                        placeholder="Notes about this project..."
+                        rows={2}
+                        disabled={isSavingProject}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="project-link">Link (Optional)</Label>
+                      <Input
+                        id="project-link"
+                        type="url"
+                        value={newProjectLink}
+                        onChange={(e) => setNewProjectLink(e.target.value)}
+                        placeholder="e.g., https://github.com/my-project"
+                        disabled={isSavingProject}
+                        className="h-9"
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsAddProjectOpen(false)} disabled={isSavingProject} className="h-9">Cancel</Button>
+                    <Button onClick={handleAddProject} disabled={isSavingProject || !newProjectName.trim()} className="h-9">
+                      {isSavingProject ? 'Adding...' : 'Add Project'}
                     </Button>
-                  )}
-                  <Button variant="ghost" size="icon" onClick={() => openEditDialog(project)}>
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="text-red-500" onClick={() => handleDeleteProject(project.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {project.description && <p className="text-sm text-muted-foreground mb-2">{project.description}</p>}
-                <div className="flex items-center justify-between mt-4">
-                  <Button variant="outline" size="sm" onClick={() => handleDecrementCount(project)}>
-                    -
-                  </Button>
-                  <span className="text-2xl font-bold">{project.current_count}</span>
-                  <Button variant="outline" size="sm" onClick={() => handleIncrementCount(project)}>
-                    +
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <Label htmlFor="sort-by">Sort by:</Label>
+                <Select value={sortOption} onValueChange={(value: 'name_asc' | 'count_asc' | 'count_desc' | 'created_at_asc' | 'created_at_desc') => setSortOption(value)}>
+                  <SelectTrigger className="w-full sm:w-[180px] h-9">
+                    <SelectValue placeholder="Sort projects" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="name_asc">Alphabetical (A-Z)</SelectItem>
+                    <SelectItem value="count_asc">Tally (Low to High)</SelectItem>
+                    <SelectItem value="count_desc">Tally (High to Low)</SelectItem>
+                    <SelectItem value="created_at_asc">Oldest First</SelectItem>
+                    <SelectItem value="created_at_desc">Newest First</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            {showCelebration && (
+              <div className="bg-primary/5 dark:bg-primary/10 text-primary p-4 rounded-xl mb-4 text-center flex flex-col items-center gap-2">
+                <Sparkles className="h-8 w-8 text-primary animate-bounce" />
+                <p className="text-xl font-semibold">Congratulations! All projects are balanced!</p>
+                <p>Ready to start a new cycle?</p>
+                <Button onClick={handleResetAllClick} className="mt-2 h-9" disabled={isResettingAll || isDemo}>
+                  {isResettingAll ? 'Resetting...' : <><RefreshCcw className="mr-2 h-4 w-4" /> Reset All Counters</>}
+                </Button>
+              </div>
+            )}
 
-      <Dialog open={isEditProjectDialogOpen} onOpenChange={setIsEditProjectDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Edit Project</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-name" className="text-right">Name</Label>
-              <Input id="edit-name" value={editProjectName} onChange={(e) => setEditProjectName(e.target.value)} className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-description" className="text-right">Description</Label>
-              <Textarea id="edit-description" value={editProjectDescription} onChange={(e) => setEditProjectDescription(e.target.value)} className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-link" className="text-right">Link</Label>
-              <Input id="edit-link" type="url" value={editProjectLink} onChange={(e) => setEditProjectLink(e.target.value)} className="col-span-3" />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setIsEditProjectDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleUpdateProject}>Save Changes</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            {loading ? (
+              <div className="space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="rounded-xl p-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-card dark:bg-gray-800 shadow-sm">
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <Skeleton className="h-6 w-3/4" />
+                      <Skeleton className="h-4 w-1/2" />
+                    </div>
+                    <div className="flex items-center gap-3 flex-shrink-0 mt-3 sm:mt-0">
+                      <Skeleton className="h-7 w-7 rounded-full" />
+                      <Skeleton className="h-7 w-7 rounded-full" />
+                      <Skeleton className="h-7 w-7 rounded-full" />
+                      <Skeleton className="h-7 w-7 rounded-full" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : projects.length === 0 ? (
+              <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
+                <LayoutGrid className="h-12 w-12 text-muted-foreground" />
+                <p className="text-lg font-medium mb-2">No projects added yet!</p>
+                <p className="text-sm">Click "Add Project" to start tracking your balance and ensure you're giving attention to all your important areas.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {leastWorkedOnProject && (
+                  <div className="bg-primary/5 dark:bg-primary/10 text-primary p-4 rounded-xl mb-4 text-center flex flex-col items-center gap-2">
+                    <Lightbulb className="h-5 w-5 text-primary flex-shrink-0" />
+                    <p className="text-sm text-foreground">
+                      Consider focusing on: <span className="font-semibold">{leastWorkedOnProject.name}</span> (Current count: {leastWorkedOnProject.current_count})
+                    </p>
+                  </div>
+                )}
 
-      {projectWithNotes && (
-        <ProjectNotesDialog
-          isOpen={isNotesDialogOpen}
-          onClose={() => setIsNotesDialogOpen(false)}
-          project={projectWithNotes}
-        />
-      )}
+                <ul className="space-y-2">
+                  {projects.map(project => (
+                    <li
+                      key={project.id}
+                      className={cn(
+                        "rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4",
+                        "transition-all duration-200 ease-in-out group",
+                        "hover:shadow-md",
+                        editingProjectId === project.id ? "bg-accent/5 dark:bg-accent/10 border-accent/30 dark:border-accent/70" : "bg-card dark:bg-gray-800 shadow-sm",
+                        leastWorkedOnProject?.id === project.id && "border-2 border-primary dark:border-primary"
+                      )}
+                    >
+                      <div className="flex-1 min-w-0">
+                        {editingProjectId === project.id ? (
+                          <div className="space-y-2">
+                            <Input
+                              value={editingProjectName}
+                              onChange={(e) => setEditingProjectName(e.target.value)}
+                              onKeyDown={(e) => e.key === 'Enter' && handleSaveProjectEdit()}
+                              className="text-lg font-semibold h-9"
+                              autoFocus
+                              disabled={isSavingProject}
+                            />
+                            <Textarea
+                              value={editingProjectDescription}
+                              onChange={(e) => setEditingProjectDescription(e.target.value)}
+                              placeholder="Description..."
+                              rows={2}
+                              disabled={isSavingProject}
+                            />
+                            <Input
+                              type="url"
+                              value={editingProjectLink}
+                              onChange={(e) => setEditingProjectLink(e.target.value)}
+                              placeholder="e.g., https://github.com/my-project"
+                              disabled={isSavingProject}
+                              className="h-9"
+                            />
+                          </div>
+                        ) : (
+                          <>
+                            <h3 className="text-xl font-bold truncate flex items-center gap-2">
+                              {project.name}
+                              {project.current_count === 10 && (
+                                <CheckCircle2 className="h-5 w-5" />
+                              )}
+                              {project.link && (
+                                <a 
+                                  href={project.link} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  className="text-primary hover:text-primary/90 dark:text-primary/90 dark:hover:text-primary"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <LinkIcon className="h-4 w-4" />
+                                </a>
+                              )}
+                            </h3>
+                            {project.description && (
+                              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{project.description}</p>
+                            )}
+                          </>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row items-center gap-3 flex-shrink-0 w-full sm:w-64 md:w-80 lg:w-96">
+                        {editingProjectId === project.id ? (
+                          <div className="flex gap-2 w-full">
+                            <Button size="sm" onClick={(e) => { e.stopPropagation(); handleSaveProjectEdit(); }} disabled={isSavingProject || !editingProjectName.trim()} className="flex-1 h-9">
+                              {isSavingProject ? 'Saving...' : 'Save'}
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setEditingProjectId(null); }} disabled={isSavingProject} className="flex-1 h-9">Cancel</Button>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex items-center gap-2 w-full">
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-9 w-9"
+                                onClick={(e) => { e.stopPropagation(); handleDecrement(project.id); }}
+                                disabled={project.current_count <= 0 || isDemo}
+                              >
+                                <Minus className="h-5 w-5" />
+                              </Button>
+                              <div className="flex-1">
+                                <Progress value={project.current_count * 10} className="h-3" indicatorClassName={getProgressColor(project.current_count)} />
+                                <p className="text-sm text-muted-foreground text-center mt-1">{project.current_count}/10</p>
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-9 w-9"
+                                onClick={(e) => { e.stopPropagation(); handleIncrement(project.id); }}
+                                disabled={project.current_count >= 10 || isDemo}
+                              >
+                                <Plus className="h-5 w-5" />
+                              </Button>
+                            </div>
+                            <div className="flex gap-2 w-full sm:w-auto sm:ml-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                onClick={(e) => { e.stopPropagation(); handleOpenNotes(project); }}
+                                aria-label={`Notes for ${project.name}`}
+                                disabled={isSavingProject || isDemo}
+                              >
+                                <StickyNote className="h-5 w-5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                onClick={(e) => { e.stopPropagation(); handleEditProject(project); }}
+                                aria-label={`Edit ${project.name}`}
+                                disabled={isSavingProject || isDemo}
+                              >
+                                <Edit className="h-5 w-5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                onClick={(e) => { e.stopPropagation(); handleResetIndividualProjectClick(project.id); }}
+                                aria-label={`Reset ${project.name}`}
+                                disabled={isSavingProject || isDemo}
+                              >
+                                <RotateCcw className="h-5 w-5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-destructive"
+                                onClick={(e) => { e.stopPropagation(); handleDeleteProjectClick(project.id); }}
+                                aria-label={`Delete ${project.name}`}
+                                disabled={isSavingProject || isDemo}
+                              >
+                                <Trash2 className="h-5 w-5" />
+                              </Button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </main>
+      <AlertDialog open={showConfirmDeleteDialog} onOpenChange={setShowConfirmDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete your project.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSavingProject}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteProject} disabled={isSavingProject}>
+              {isSavingProject ? 'Deleting...' : 'Continue'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showConfirmResetIndividualDialog} onOpenChange={setShowConfirmResetIndividualDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset Project Counter?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will reset the tally for this project to 0. Are you sure?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSavingProject}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmResetIndividualProject} disabled={isSavingProject}>
+              {isSavingProject ? 'Resetting...' : 'Reset'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showConfirmResetAllDialog} onOpenChange={setShowConfirmResetAllDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset All Project Counters?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will reset the tally for ALL your projects to 0. Are you sure you want to start a new cycle?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isResettingAll}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmResetAll} disabled={isResettingAll}>
+              {isResettingAll ? 'Resetting...' : 'Reset All'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <ProjectNotesDialog
+        project={selectedProjectForNotes}
+        isOpen={isNotesOpen}
+        onClose={() => setIsNotesOpen(false)}
+        onSave={handleSaveNotes}
+      />
     </div>
   );
 };

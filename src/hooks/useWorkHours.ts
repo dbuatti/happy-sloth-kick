@@ -1,95 +1,148 @@
-import { useAuth } from '@/context/AuthContext';
-import { WorkHour, NewWorkHourData, UpdateWorkHourData } from '@/types';
-import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'react-hot-toast';
+import { useAuth } from '@/context/AuthContext';
+import { showError, showSuccess } from '@/utils/toast'; // Added showSuccess and showError
+
+export interface WorkHour {
+  id?: string; // Optional for existing records
+  day_of_week: string;
+  start_time: string;
+  end_time: string;
+  enabled: boolean;
+  user_id?: string; // Optional, will be set by hook
+}
+
+const dayMap: { [key: number]: string } = {
+  0: 'sunday',
+  1: 'monday',
+  2: 'tuesday',
+  3: 'wednesday',
+  4: 'thursday',
+  5: 'friday',
+  6: 'saturday',
+};
+
+const defaultTime = {
+  start: '09:00',
+  end: '17:00',
+};
+
+export const allDaysOfWeek = [
+  { id: 'monday', name: 'Monday' },
+  { id: 'tuesday', name: 'Tuesday' },
+  { id: 'wednesday', name: 'Wednesday' },
+  { id: 'thursday', name: 'Thursday' },
+  { id: 'friday', name: 'Friday' },
+  { id: 'saturday', name: 'Saturday' },
+  { id: 'sunday', name: 'Sunday' },
+];
 
 interface UseWorkHoursProps {
+  date?: Date; // Make date optional
   userId?: string;
 }
 
-export const useWorkHours = ({ userId: propUserId }: UseWorkHoursProps = {}) => {
+export const useWorkHours = ({ date, userId: propUserId }: UseWorkHoursProps = {}) => { // Default to empty object
   const { user } = useAuth();
-  const currentUserId = propUserId || user?.id;
-  const queryClient = useQueryClient();
+  const userId = propUserId || user?.id;
+  const [workHours, setWorkHours] = useState<WorkHour | WorkHour[] | null>(null); // Can be single or array
+  const [loading, setLoading] = useState(true);
 
-  const { data: workHours, isLoading, error } = useQuery<WorkHour[], Error>({
-    queryKey: ['workHours', currentUserId],
-    queryFn: async () => {
-      if (!currentUserId) return [];
-      const { data, error } = await supabase
-        .from('user_work_hours')
-        .select('*')
-        .eq('user_id', currentUserId)
-        .order('day_of_week', { ascending: true }); // Order by day of week for consistent display
+  const fetchWorkHours = useCallback(async () => {
+    if (!userId) {
+      setWorkHours(date ? null : []); // Set to null for single day, empty array for all days
+      setLoading(false);
+      console.log('useWorkHours: No user ID, skipping fetch.');
+      return;
+    }
 
-      if (error) throw error;
-      return data as WorkHour[];
-    },
-    enabled: !!currentUserId,
-  });
+    setLoading(true);
+    try {
+      if (date) {
+        // Fetch for a specific day
+        const dayOfWeekString = dayMap[date.getDay()];
+        console.log(`useWorkHours: Fetching for user ${userId}, day ${dayOfWeekString}`);
+        const { data, error } = await supabase
+          .from('user_work_hours')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('day_of_week', dayOfWeekString)
+          .eq('enabled', true)
+          .single();
 
-  const addWorkHourMutation = useMutation<WorkHour, Error, NewWorkHourData, unknown>({
-    mutationFn: async (newWorkHourData) => {
-      if (!currentUserId) throw new Error('User not authenticated');
-      const { data, error } = await supabase
-        .from('user_work_hours')
-        .insert({ ...newWorkHourData, user_id: currentUserId })
-        .select()
-        .single();
+        if (error && error.code !== 'PGRST116') {
+          throw error;
+        }
+        setWorkHours(data || null);
+        console.log('useWorkHours: Fetched single day data:', data);
+      } else {
+        // Fetch all work hours for the user
+        console.log(`useWorkHours: Fetching all work hours for user ${userId}`);
+        const { data, error } = await supabase
+          .from('user_work_hours')
+          .select('*')
+          .eq('user_id', userId);
 
-      if (error) throw error;
-      return data as WorkHour;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workHours', currentUserId] });
-      toast.success('Work hour added!');
-    },
-  });
+        if (error) throw error;
 
-  const updateWorkHourMutation = useMutation<WorkHour, Error, { id: string; updates: UpdateWorkHourData }, unknown>({
-    mutationFn: async ({ id, updates }) => {
-      if (!currentUserId) throw new Error('User not authenticated');
-      const { data, error } = await supabase
-        .from('user_work_hours')
-        .update(updates)
-        .eq('id', id)
-        .eq('user_id', currentUserId)
-        .select()
-        .single();
+        const fetchedHoursMap = new Map((data || []).map(wh => [wh.day_of_week, wh]));
+        const allHours = allDaysOfWeek.map(day => ({
+          day_of_week: day.id,
+          start_time: fetchedHoursMap.get(day.id)?.start_time || defaultTime.start,
+          end_time: fetchedHoursMap.get(day.id)?.end_time || defaultTime.end,
+          enabled: fetchedHoursMap.has(day.id) ? fetchedHoursMap.get(day.id)?.enabled || false : false,
+          id: fetchedHoursMap.get(day.id)?.id,
+        }));
+        setWorkHours(allHours);
+        console.log('useWorkHours: Fetched all days data:', allHours);
+      }
+    } catch (error: any) {
+      console.error('Error fetching work hours:', error.message);
+      showError('Failed to load work hours.');
+      setWorkHours(date ? null : []);
+    } finally {
+      setLoading(false);
+    }
+  }, [userId, date]);
 
-      if (error) throw error;
-      return data as WorkHour;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workHours', currentUserId] });
-      toast.success('Work hour updated!');
-    },
-  });
+  useEffect(() => {
+    fetchWorkHours();
+  }, [fetchWorkHours]);
 
-  const deleteWorkHourMutation = useMutation<void, Error, string, unknown>({
-    mutationFn: async (id) => {
-      if (!currentUserId) throw new Error('User not authenticated');
+  // Function to save/update work hours (can be used for single or multiple)
+  const saveWorkHours = useCallback(async (hoursToSave: WorkHour | WorkHour[]) => {
+    if (!userId) {
+      showError('User not authenticated.');
+      return false;
+    }
+    try {
+      const updatesArray = Array.isArray(hoursToSave) ? hoursToSave : [hoursToSave];
+      
+      const payload = updatesArray.map(wh => ({
+        user_id: userId,
+        day_of_week: wh.day_of_week,
+        start_time: wh.start_time,
+        end_time: wh.end_time,
+        enabled: wh.enabled,
+        ...(wh.id && { id: wh.id }), // Include ID only if it exists
+      }));
+
+      console.log('Saving work hours updates:', payload);
+
       const { error } = await supabase
         .from('user_work_hours')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', currentUserId);
+        .upsert(payload, { onConflict: 'user_id, day_of_week' });
 
       if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workHours', currentUserId] });
-      toast.success('Work hour deleted!');
-    },
-  });
+      showSuccess('Work hours saved successfully!');
+      await fetchWorkHours(); // Re-fetch to ensure state is consistent and IDs are updated
+      return true;
+    } catch (error: any) {
+      showError('Failed to save work hours.');
+      console.error('Error saving work hours:', error.message);
+      return false;
+    }
+  }, [userId, fetchWorkHours]);
 
-  return {
-    workHours: workHours || [],
-    isLoading,
-    error,
-    addWorkHour: addWorkHourMutation.mutateAsync,
-    updateWorkHour: updateWorkHourMutation.mutateAsync,
-    deleteWorkHour: deleteWorkHourMutation.mutateAsync,
-  };
+  return { workHours, loading, saveWorkHours, allDaysOfWeek, defaultTime };
 };

@@ -1,40 +1,51 @@
 import React from 'react';
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import { Appointment, Task, DraggableAppointmentCardProps } from '@/types';
+import { useDraggable } from '@dnd-kit/core';
+import { Appointment } from '@/hooks/useAppointments';
+import { Task } from '@/hooks/useTasks';
 import AppointmentCard from './AppointmentCard';
+import { differenceInMinutes, parseISO, isValid } from 'date-fns';
 
-const DraggableAppointmentCard: React.FC<DraggableAppointmentCardProps> = ({
-  id,
-  appointment,
-  task,
-  onEdit,
-  onDelete,
-  trackIndex,
-  totalTracks,
-  style: propStyle,
-  isDragging: propIsDragging,
-}) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id });
+interface DraggableAppointmentCardProps {
+  appointment: Appointment;
+  task?: Task;
+  onEdit: (appointment: Appointment) => void;
+  onUnschedule: (appointmentId: string) => void;
+  trackIndex: number; // New prop
+  totalTracks: number; // New prop
+  style?: React.CSSProperties; // Make style prop optional
+}
 
-  const style = {
-    ...propStyle,
-    transform: CSS.Transform.toString(transform),
-    transition,
+const DraggableAppointmentCard: React.FC<DraggableAppointmentCardProps> = (props) => {
+  const { appointment, trackIndex, totalTracks } = props; // Destructure new props
+
+  const startTime = appointment.start_time ? parseISO(`2000-01-01T${appointment.start_time}`) : null;
+  const endTime = appointment.end_time ? parseISO(`2000-01-01T${appointment.end_time}`) : null;
+  const duration = startTime && endTime && isValid(startTime) && isValid(endTime) ? differenceInMinutes(endTime, startTime) : 0;
+
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `appointment-${appointment.id}`,
+    data: {
+      type: 'appointment',
+      appointment,
+      duration,
+    },
+  });
+
+  const draggableStyle: React.CSSProperties = {
     opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 1000 : 1,
+    ...props.style, // Merge passed style with draggable style
+    position: 'relative', // Make this container relative for absolute children
+    height: '100%', // Ensure it fills its grid row height
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="group">
-      <AppointmentCard appointment={appointment} task={task} onEdit={onEdit} onDelete={onDelete} />
+    <div ref={setNodeRef} style={draggableStyle} {...attributes} {...listeners} className="cursor-grab touch-none select-none">
+      <AppointmentCard
+        {...props}
+        // Pass positioning props to AppointmentCard for absolute positioning within this div
+        trackIndex={trackIndex} // Pass trackIndex
+        totalTracks={totalTracks} // Pass totalTracks
+      />
     </div>
   );
 };

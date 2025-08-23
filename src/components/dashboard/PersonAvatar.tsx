@@ -1,107 +1,97 @@
 import React, { useState } from 'react';
-import { Person, PersonAvatarProps } from '@/types';
+import { Person } from '@/hooks/usePeopleMemory';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { Image as ImageIcon } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'react-hot-toast';
+import { MoreHorizontal, Edit, Trash2, UploadCloud } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
-const PersonAvatar: React.FC<PersonAvatarProps> = ({ person, onEdit, onUpdateAvatar }) => {
-  const [isEditingAvatar, setIsEditingAvatar] = useState(false);
-  const [newAvatarUrl, setNewAvatarUrl] = useState(person.avatar_url || '');
-  const [isUploading, setIsUploading] = useState(false);
+interface PersonAvatarProps {
+  person: Person;
+  onEdit: (person: Person) => void;
+  onDelete: (id: string) => void;
+  onUpdateAvatar: (id: string, file: File) => void;
+}
 
-  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!event.target.files || event.target.files.length === 0) {
-      toast.error('You must select an image to upload.');
-      return;
+const PersonAvatar: React.FC<PersonAvatarProps> = ({ person, onEdit, onDelete, onUpdateAvatar }) => {
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      onUpdateAvatar(person.id, e.dataTransfer.files[0]);
     }
+  };
 
-    const file = event.target.files[0];
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random()}.${fileExt}`;
-    const filePath = `${person.id}/${fileName}`;
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
 
-    setIsUploading(true);
-    const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(filePath, file);
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
 
-    if (uploadError) {
-      toast.error('Error uploading avatar: ' + uploadError.message);
-      setIsUploading(false);
-      return;
-    }
-
-    const { data: publicUrlData } = supabase.storage
-      .from('avatars')
-      .getPublicUrl(filePath);
-
-    if (publicUrlData.publicUrl) {
-      await onUpdateAvatar(person.id, publicUrlData.publicUrl);
-      setNewAvatarUrl(publicUrlData.publicUrl);
-      toast.success('Avatar uploaded successfully!');
-    } else {
-      toast.error('Failed to get public URL for avatar.');
-    }
-    setIsUploading(false);
-    setIsEditingAvatar(false);
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
   };
 
   return (
-    <>
-      <div className="relative group">
-        <Avatar className="h-16 w-16 cursor-pointer" onClick={() => onEdit(person)}>
-          {person.avatar_url ? (
-            <AvatarImage src={person.avatar_url} alt={person.name} />
-          ) : (
-            <AvatarFallback className="text-3xl">
-              {person.name.split(' ').map((n: string) => n[0]).join('')}
-            </AvatarFallback>
-          )}
-        </Avatar>
-        <div className="absolute bottom-0 right-0 bg-background rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setIsEditingAvatar(true)}>
-            <ImageIcon className="h-3 w-3" />
-          </Button>
-        </div>
-      </div>
-
-      <Dialog open={isEditingAvatar} onOpenChange={setIsEditingAvatar}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Edit Avatar for {person.name}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="flex flex-col items-center space-y-4">
-              <Avatar className="h-24 w-24">
-                {newAvatarUrl ? (
-                  <AvatarImage src={newAvatarUrl} alt={person.name} />
-                ) : (
-                  <AvatarFallback className="text-5xl">
-                    {person.name.split(' ').map((n: string) => n[0]).join('')}
-                  </AvatarFallback>
-                )}
-              </Avatar>
-              <div className="grid w-full max-w-sm items-center gap-1.5">
-                <Label htmlFor="avatar">Upload new avatar</Label>
-                <Input id="avatar" type="file" accept="image/*" onChange={handleAvatarUpload} disabled={isUploading} />
-                {isUploading && <p className="text-sm text-muted-foreground">Uploading...</p>}
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditingAvatar(false)}>Close</Button>
-            {newAvatarUrl && (
-              <Button variant="destructive" onClick={() => onUpdateAvatar(person.id, null)}>Remove Avatar</Button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className="relative group flex flex-col items-center gap-2">
+          <div
+            className={cn(
+              "relative rounded-full transition-all duration-200",
+              isDragging && "ring-2 ring-primary ring-offset-2"
             )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragEnter={handleDragEnter}
+            onDragLeave={handleDragLeave}
+          >
+            <Avatar className="h-20 w-20 border-4 border-border">
+              <AvatarImage src={person.avatar_url || undefined} alt={person.name} />
+              <AvatarFallback className="text-3xl">
+                {person.name.split(' ').map(n => n[0]).join('')}
+              </AvatarFallback>
+            </Avatar>
+            {isDragging && (
+              <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
+                <UploadCloud className="h-8 w-8 text-white" />
+              </div>
+            )}
+          </div>
+          <div className="absolute top-[-4px] right-[-4px] opacity-0 group-hover:opacity-100 transition-opacity">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full bg-background/80">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onSelect={() => onEdit(person)}>
+                  <Edit className="mr-2 h-4 w-4" /> Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => onDelete(person.id)} className="text-destructive">
+                  <Trash2 className="mr-2 h-4 w-4" /> Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>{person.name}</p>
+      </TooltipContent>
+    </Tooltip>
   );
 };
 

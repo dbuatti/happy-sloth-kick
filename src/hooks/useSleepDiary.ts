@@ -1,15 +1,15 @@
-import { useAuth } from '@/context/AuthContext';
-import { SleepRecord } from '@/types';
-import { useInfiniteQuery, InfiniteData } from '@tanstack/react-query';
+import { useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
+import { showError } from '@/utils/toast';
+import { SleepRecord } from './useSleepRecords';
+import { useInfiniteQuery, InfiniteData } from '@tanstack/react-query'; // Import InfiniteData
 
-interface UseSleepDiaryProps {
-  userId?: string;
-}
+const PAGE_SIZE = 14; // Fetch 14 days at a time
 
-export const useSleepDiary = ({ userId }: UseSleepDiaryProps) => {
+export const useSleepDiary = (props?: { userId?: string }) => {
   const { user } = useAuth();
-  const currentUserId = userId || user?.id;
+  const userId = props?.userId || user?.id;
 
   const {
     data,
@@ -18,43 +18,50 @@ export const useSleepDiary = ({ userId }: UseSleepDiaryProps) => {
     isFetchingNextPage,
     isLoading,
     error,
-  } = useInfiniteQuery<SleepRecord[], Error, InfiniteData<SleepRecord[], unknown>, ['sleepDiary', string | undefined], string | null>({
-    queryKey: ['sleepDiary', currentUserId],
-    queryFn: async ({ pageParam }) => {
-      if (!currentUserId) return [];
+  } = useInfiniteQuery<SleepRecord[], Error, InfiniteData<SleepRecord[]>, string[], number>({
+    queryKey: ['sleepDiary', userId!], // Added non-null assertion
+    queryFn: async ({ pageParam = 0 }) => {
+      if (!userId) throw new Error('User not authenticated.');
+      const from = pageParam * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
 
-      let query = supabase
+      const { data, error } = await supabase
         .from('sleep_records')
         .select('*')
-        .eq('user_id', currentUserId)
+        .eq('user_id', userId)
         .order('date', { ascending: false })
-        .limit(7); // Fetch 7 days at a time
-
-      if (pageParam) {
-        query = query.lt('date', pageParam); // Fetch records older than pageParam (last fetched date)
-      }
-
-      const { data, error } = await query;
+        .range(from, to);
 
       if (error) throw error;
-      return data as SleepRecord[];
+      return data || [];
     },
-    initialPageParam: null,
-    getNextPageParam: (lastPage) => {
-      if (lastPage.length === 0) return undefined;
-      return lastPage[lastPage.length - 1]?.date || undefined;
+    getNextPageParam: (lastPage, allPages) => {
+      if (lastPage.length < PAGE_SIZE) {
+        return undefined; // No more pages
+      }
+      return allPages.length; // Next page number
     },
-    enabled: !!currentUserId,
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    initialPageParam: 0,
   });
 
-  const allSleepRecords = data?.pages.flat() || [];
+  const records = useMemo(() => (data as InfiniteData<SleepRecord[]>)?.pages.flatMap((page: SleepRecord[]) => page) || [], [data]);
+  const loading = isLoading || isFetchingNextPage;
+  const hasMore = hasNextPage;
 
-  return {
-    allSleepRecords,
-    isLoading,
-    error,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  };
+  useEffect(() => {
+    if (error) {
+      showError('Failed to load sleep diary.');
+      console.error(error);
+    }
+  }, [error]);
+
+  const loadMore = useCallback(() => {
+    if (!loading && hasMore) {
+      fetchNextPage();
+    }
+  }, [loading, hasMore, fetchNextPage]);
+
+  return { records, loading, hasMore, loadMore };
 };

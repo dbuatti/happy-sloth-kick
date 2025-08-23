@@ -1,96 +1,126 @@
 import React, { useState } from 'react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { X, Plus } from 'lucide-react';
-import { DevIdeaTag, NewDevIdeaTagData } from '@/types';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
+import { X, Tag, Plus } from 'lucide-react';
+import { DevIdeaTag } from '@/hooks/useDevIdeas';
 import { getRandomTagColor } from '@/lib/tagColors';
-import { toast } from 'react-hot-toast';
 
 interface TagInputProps {
-  selectedTags: DevIdeaTag[];
   allTags: DevIdeaTag[];
-  onAddTag: (name: string, color: string) => Promise<DevIdeaTag>;
-  onRemoveTag: (tagId: string) => void;
-  onSelectExistingTag: (tagId: string) => void;
+  selectedTags: DevIdeaTag[];
+  setSelectedTags: React.Dispatch<React.SetStateAction<DevIdeaTag[]>>;
+  onAddTag: (name: string, color: string) => Promise<DevIdeaTag | null>;
 }
 
-const TagInput: React.FC<TagInputProps> = ({ selectedTags, allTags, onAddTag, onRemoveTag, onSelectExistingTag }) => {
+const TagInput: React.FC<TagInputProps> = ({ allTags, selectedTags, setSelectedTags, onAddTag }) => {
+  const [open, setOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
-  const [inputColor, setInputColor] = useState(getRandomTagColor());
 
-  const handleAddTag = async () => {
-    if (inputValue.trim() === '') {
-      toast.error('Tag name cannot be empty.');
-      return;
+  const handleSelectTag = (tag: DevIdeaTag) => {
+    if (!selectedTags.some(t => t.id === tag.id)) {
+      setSelectedTags(prev => [...prev, tag]);
     }
-    if (allTags.some(tag => tag.name.toLowerCase() === inputValue.toLowerCase())) {
-      toast.error('Tag with this name already exists.');
-      return;
-    }
-    try {
-      await onAddTag(inputValue, inputColor);
-      setInputValue('');
-      setInputColor(getRandomTagColor());
-    } catch (error) {
-      toast.error('Failed to add tag.');
-      console.error('Error adding tag:', error);
+    setInputValue('');
+    setOpen(false);
+  };
+
+  const handleCreateTag = async () => {
+    const newTagName = inputValue.trim();
+    if (newTagName && !allTags.some(t => t.name.toLowerCase() === newTagName.toLowerCase())) {
+      const newTag = await onAddTag(newTagName, getRandomTagColor());
+      if (newTag) {
+        handleSelectTag(newTag);
+      }
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleRemoveTag = (tagId: string) => {
+    setSelectedTags(prev => prev.filter(t => t.id !== tagId));
+  };
+
+  const handleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      handleAddTag();
+      const exactMatch = filteredTags.find(t => t.name.toLowerCase() === inputValue.trim().toLowerCase());
+      if (exactMatch) {
+        handleSelectTag(exactMatch);
+      } else if (canCreate) {
+        await handleCreateTag();
+      }
     }
   };
 
-  const availableTags = allTags.filter(tag => !selectedTags.some(selected => selected.id === tag.id));
+  const filteredTags = allTags.filter(tag => 
+    !selectedTags.some(selected => selected.id === tag.id) &&
+    tag.name.toLowerCase().includes(inputValue.toLowerCase())
+  );
+
+  const canCreate = inputValue.trim().length > 0 && !allTags.some(t => t.name.toLowerCase() === inputValue.trim().toLowerCase());
 
   return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap gap-2">
-        {selectedTags.map(tag => (
-          <Badge key={tag.id} style={{ backgroundColor: tag.color, color: 'white' }} className="flex items-center">
-            {tag.name}
-            <X className="ml-1 h-3 w-3 cursor-pointer" onClick={() => onRemoveTag(tag.id)} />
-          </Badge>
-        ))}
-      </div>
-      <div className="flex space-x-2">
-        <Input
-          placeholder="Add new tag or select existing"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyDown={handleKeyDown}
-          className="flex-grow"
-        />
-        <Input
-          type="color"
-          value={inputColor}
-          onChange={(e) => setInputColor(e.target.value)}
-          className="w-12 h-9 p-0"
-        />
-        <Button onClick={handleAddTag} size="sm">
-          <Plus className="h-4 w-4" />
-        </Button>
-      </div>
-      {availableTags.length > 0 && (
-        <div className="flex flex-wrap gap-2 border p-2 rounded-md">
-          {availableTags.map(tag => (
-            <Badge
-              key={tag.id}
-              variant="outline"
-              style={{ backgroundColor: tag.color, color: 'white' }}
-              className="cursor-pointer hover:opacity-80"
-              onClick={() => onSelectExistingTag(tag.id)}
-            >
+    <Popover open={open} onOpenChange={setOpen}>
+      <div className="border rounded-md p-2 min-h-[40px]">
+        <div className="flex flex-wrap gap-1 mb-1">
+          {selectedTags.map(tag => (
+            <Badge key={tag.id} style={{ backgroundColor: tag.color }} className="text-white">
               {tag.name}
+              <button
+                type="button"
+                className="ml-1 rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                onClick={() => handleRemoveTag(tag.id)}
+              >
+                <X className="h-3 w-3" />
+              </button>
             </Badge>
           ))}
         </div>
-      )}
-    </div>
+        <PopoverTrigger asChild>
+          <input
+            placeholder="Add a tag..."
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="w-full bg-transparent outline-none placeholder:text-muted-foreground"
+          />
+        </PopoverTrigger>
+      </div>
+      <PopoverContent className="w-[200px] p-0">
+        <Command>
+          <CommandInput placeholder="Search or create tag..." className="h-9" />
+          <CommandList>
+            <CommandGroup>
+              {filteredTags.map((tag) => (
+                <CommandItem
+                  key={tag.id}
+                  value={tag.name}
+                  onSelect={() => handleSelectTag(tag)}
+                >
+                  <Tag className="mr-2 h-4 w-4" style={{ color: tag.color }} />
+                  {tag.name}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+            <CommandEmpty>
+              {canCreate ? (
+                <div
+                  className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    handleCreateTag();
+                  }}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create "{inputValue.trim()}"
+                </div>
+              ) : (
+                <div className="py-6 text-center text-sm">No tags found.</div>
+              )}
+            </CommandEmpty>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 };
 
