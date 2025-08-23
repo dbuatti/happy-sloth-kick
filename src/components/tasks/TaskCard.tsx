@@ -420,16 +420,15 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 onClick={(e) => {
                   e.stopPropagation();
                   e.preventDefault();
-                  setShowMoreOptions(!showMoreOptions);
+                  setShowMoreOptions(true);
                 }}
                 onTouchStart={(e) => {
                   e.stopPropagation();
-                  e.preventDefault();
                 }}
                 onTouchEnd={(e) => {
                   e.stopPropagation();
                   e.preventDefault();
-                  setShowMoreOptions(!showMoreOptions);
+                  setShowMoreOptions(true);
                 }}
               >
                 <MoreVertical className="h-4 w-4" />
@@ -441,6 +440,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
               onClick={(e) => e.stopPropagation()}
               onTouchStart={(e) => e.stopPropagation()}
               onTouchEnd={(e) => e.stopPropagation()}
+              onCloseAutoFocus={(e) => e.preventDefault()}
             >
               <DropdownMenuLabel>Task Actions</DropdownMenuLabel>
               <DropdownMenuSeparator />
