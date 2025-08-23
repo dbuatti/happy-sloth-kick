@@ -1,418 +1,369 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { format, isToday, isPast, parseISO, startOfWeek, addDays, isSameDay } from 'date-fns';
-import {
-  Plus, GripVertical, Edit, Trash2, ChevronLeft, ChevronRight, List, CalendarDays, Info, Star, AlertCircle, Loader2, Search, Filter, Settings, ListTodo, Tag
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import { cn } from '@/lib/utils';
+import React, { useState, useCallback, useMemo } from 'react';
+import TaskList from '@/components/TaskList';
+import TaskDetailDialog from '@/components/TaskDetailDialog';
+import TaskOverviewDialog from '@/components/TaskOverviewDialog';
+import { useTasks, Task } from '@/hooks/useTasks';
+import { useAuth } from '@/context/AuthContext';
+import { addDays, startOfDay } from 'date-fns';
+import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
+import CommandPalette from '@/components/CommandPalette';
+import { Card, CardContent } from "@/components/ui/card";
+import FocusPanelDrawer from '@/components/FocusPanelDrawer';
+import DailyTasksHeader from '@/components/DailyTasksHeader';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import AddTaskForm from '@/components/AddTaskForm';
+import { useAllAppointments } from '@/hooks/useAllAppointments';
+import { Appointment } from '@/hooks/useAppointments';
+import FullScreenFocusView from '@/components/FullScreenFocusView';
+import { AnimatePresence } from 'framer-motion';
+import { useSound } from '@/context/SoundContext';
 
-// Import refactored components and hook
-import TaskItem from '@/components/tasks/TaskItem';
-import TaskForm from '@/components/tasks/TaskForm';
-import SectionForm from '@/components/tasks/SectionForm';
-import CategoryForm from '@/components/tasks/CategoryForm';
-import { useTaskManagement } from '@/hooks/useTaskManagement';
-import { Task, TaskSection, TaskPriority } from '@/types/task-management';
 
-const DailyTasksV3: React.FC = () => {
+interface DailyTasksV3Props {
+  isDemo?: boolean;
+  demoUserId?: string;
+}
+
+const DailyTasksV3: React.FC<DailyTasksV3Props> = ({ isDemo = false, demoUserId }) => {
+  const { user } = useAuth();
+  const { playSound } = useSound();
+
+  // Manage currentDate state locally in DailyTasksV3
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
-  const [isAddSectionDialogOpen, setIsAddSectionDialogOpen] = useState(false);
-  const [isManageCategoriesDialogOpen, setIsManageCategoriesDialogOpen] = useState(false);
-  const [editingSection, setEditingSection] = useState<TaskSection | null>(null);
-  const [editingCategory, setEditingCategory] = useState<TaskCategory | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterPriority, setFilterPriority] = useState<TaskPriority | 'all'>('all');
-  const [filterCategory, setFilterCategory] = useState<string | 'all'>('all');
 
   const {
-    sections,
-    isLoadingSections,
-    sectionsError,
-    categories,
-    isLoadingCategories,
-    categoriesError,
-    addTask,
+    tasks,
+    processedTasks,
+    filteredTasks,
+    nextAvailableTask,
     updateTask,
     deleteTask,
-    updateTaskOrders,
-    addSection,
+    loading: tasksLoading,
+    sections,
+    allCategories,
+    handleAddTask,
+    bulkUpdateTasks,
+    archiveAllCompletedTasks,
+    markAllTasksInSectionCompleted,
+    createSection,
     updateSection,
     deleteSection,
-    updateSectionOrders,
-    addCategory,
-    updateCategory,
-    deleteCategory,
-  } = useTaskManagement();
+    updateSectionIncludeInFocusMode,
+    reorderSections,
+    updateTaskParentAndOrder,
+    searchFilter,
+    setSearchFilter,
+    statusFilter,
+    setStatusFilter,
+    categoryFilter,
+    setCategoryFilter,
+    priorityFilter,
+    setPriorityFilter,
+    sectionFilter,
+    setSectionFilter,
+    // currentDate is now managed here, so remove from useTasks destructuring
+    // setCurrentDate is also managed here
+    setFocusTask,
+    doTodayOffIds,
+    toggleDoToday,
+    toggleAllDoToday,
+    dailyProgress,
+  } = useTasks({ viewMode: 'daily', userId: demoUserId, currentDate: currentDate }); // Pass the stable currentDate
 
-  const filteredSections = useMemo(() => {
-    if (!sections) return [];
+  const { appointments: allAppointments } = useAllAppointments();
 
-    return sections
-      .map((section) => {
-        const filteredTasks = section.tasks
-          .filter((task) => {
-            const matchesSearch = task.description.toLowerCase().includes(searchTerm.toLowerCase());
-            const matchesPriority = filterPriority === 'all' || task.priority === filterPriority;
-            const matchesCategory = filterCategory === 'all' || task.category === filterCategory;
-
-            // Filter by date: only show tasks due on or before the current date, or tasks without a due date
-            const taskDueDate = task.due_date ? parseISO(task.due_date) : null;
-            const isRelevantDate =
-              !taskDueDate ||
-              isSameDay(taskDueDate, currentDate) ||
-              (isPast(taskDueDate) && !isSameDay(taskDueDate, currentDate) && task.status !== 'completed');
-
-            return matchesSearch && matchesPriority && matchesCategory && isRelevantDate;
-          })
-          .sort((a, b) => a.order - b.order); // Ensure tasks within sections are sorted
-
-        return { ...section, tasks: filteredTasks };
-      })
-      .filter((section) => section.tasks.length > 0 || searchTerm || filterPriority !== 'all' || filterCategory !== 'all');
-  }, [sections, searchTerm, filterPriority, filterCategory, currentDate]);
-
-  const onDragEnd = useCallback(
-    async (result: DropResult) => {
-      const { destination, source, type } = result;
-
-      if (!destination) {
-        return;
-      }
-
-      if (destination.droppableId === source.droppableId && destination.index === source.index) {
-        return;
-      }
-
-      if (type === 'section') {
-        const newSections = Array.from(sections);
-        const [movedSection] = newSections.splice(source.index, 1);
-        newSections.splice(destination.index, 0, movedSection);
-
-        const updates = newSections.map((section, index) => ({
-          id: section.id,
-          order: index,
-          name: section.name,
-          include_in_focus_mode: section.include_in_focus_mode,
-        }));
-        await updateSectionOrders(updates);
-      } else if (type === 'task') {
-        const sourceSectionId = source.droppableId;
-        const destinationSectionId = destination.droppableId;
-
-        const newSections = JSON.parse(JSON.stringify(sections)); // Deep copy to avoid direct state mutation
-        const sourceSection = newSections.find((sec: TaskSection) => sec.id === sourceSectionId);
-        const destinationSection = newSections.find((sec: TaskSection) => sec.id === destinationSectionId);
-
-        if (!sourceSection || !destinationSection) return;
-
-        let movedTask: Task;
-
-        // Remove from source
-        const [removed] = sourceSection.tasks.splice(source.index, 1);
-        movedTask = removed;
-
-        // Add to destination
-        destinationSection.tasks.splice(destination.index, 0, movedTask);
-
-        // Update orders and section_ids
-        const taskUpdates: { id: string; order: number; section_id: string | null; parent_task_id: string | null }[] = [];
-
-        sourceSection.tasks.forEach((task: Task, index: number) => {
-          if (task.order !== index || task.section_id !== sourceSection.id) {
-            taskUpdates.push({ id: task.id, order: index, section_id: sourceSection.id, parent_task_id: task.parent_task_id });
-          }
+  const scheduledTasksMap = useMemo(() => {
+    const map = new Map<string, Appointment>();
+    if (allAppointments) {
+        allAppointments.forEach(app => {
+            if (app.task_id) {
+                map.set(app.task_id, app);
+            }
         });
+    }
+    return map;
+  }, [allAppointments]);
 
-        destinationSection.tasks.forEach((task: Task, index: number) => {
-          if (task.order !== index || task.section_id !== destinationSection.id) {
-            taskUpdates.push({ id: task.id, order: index, section_id: destinationSection.id, parent_task_id: task.parent_task_id });
-          }
-        });
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
+  const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
+  const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+  const [isFocusPanelOpen, setIsFocusPanelOpen] = useState(false);
+  const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
+  const [prefilledTaskData, setPrefilledTaskData] = useState<Partial<Task> | null>(null);
+  const [isFocusViewOpen, setIsFocusViewOpen] = useState(false);
 
-        if (taskUpdates.length > 0) {
-          await updateTaskOrders(taskUpdates);
-        }
-      }
-    },
-    [sections, updateSectionOrders, updateTaskOrders]
-  );
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem('taskList_expandedSections');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
 
-  if (isLoadingSections || isLoadingCategories) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-        <p className="ml-2 text-gray-600">Loading tasks...</p>
-      </div>
-    );
-  }
+  const [expandedTasks, setExpandedTasks] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem('taskList_expandedTasks');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
 
-  if (sectionsError || categoriesError) {
-    return (
-      <div className="text-center p-4 text-red-600">
-        <AlertCircle className="h-8 w-8 mx-auto mb-2" />
-        <p>Error loading data: {sectionsError?.message || categoriesError?.message}</p>
-      </div>
-    );
-  }
+  const toggleSection = useCallback((sectionId: string) => {
+    setExpandedSections(prev => {
+      const newState = { ...prev, [sectionId]: !(prev[sectionId] ?? true) };
+      localStorage.setItem('taskList_expandedSections', JSON.stringify(newState));
+      return newState;
+    });
+  }, []);
 
-  const daysOfWeek = useMemo(() => {
-    const start = startOfWeek(currentDate, { weekStartsOn: 1 }); // Monday
-    return Array.from({ length: 7 }).map((_, i) => addDays(start, i));
-  }, [currentDate]);
+  const toggleTask = useCallback((taskId: string) => {
+    setExpandedTasks(prev => {
+      const newState = { ...prev, [taskId]: !(prev[taskId] ?? true) };
+      localStorage.setItem('taskList_expandedTasks', JSON.stringify(newState));
+      return newState;
+    });
+  }, []);
+
+  const toggleAllSections = useCallback(() => {
+    const allExpanded = Object.values(expandedSections).every(val => val === true);
+    const newExpandedState: Record<string, boolean> = {};
+    sections.forEach(section => {
+      newExpandedState[section.id] = !allExpanded;
+    });
+    newExpandedState['no-section-header'] = !allExpanded;
+
+    setExpandedSections(newExpandedState);
+    localStorage.setItem('taskList_expandedSections', JSON.stringify(newExpandedState));
+  }, [expandedSections, sections]);
+
+
+  const handleOpenOverview = (task: Task) => {
+    setTaskToOverview(task);
+    setIsTaskOverviewOpen(true);
+  };
+
+  const handleOpenDetail = (task: Task) => {
+    setTaskToEdit(task);
+    setIsTaskDetailOpen(true);
+  };
+
+  const handleEditTaskFromOverview = (task: Task) => {
+    setIsTaskOverviewOpen(false);
+    handleOpenDetail(task);
+  };
+
+  const handleOpenFocusView = () => {
+    if (nextAvailableTask) {
+      setIsFocusViewOpen(true);
+    }
+  };
+
+  const handleMarkDoneFromFocusView = async () => {
+    if (nextAvailableTask) {
+      await updateTask(nextAvailableTask.id, { status: 'completed' });
+      playSound('success');
+    }
+  };
+
+  const shortcuts: ShortcutMap = {
+    'arrowleft': () => setCurrentDate(prevDate => startOfDay(addDays(prevDate, -1))),
+    'arrowright': () => setCurrentDate(prevDate => startOfDay(addDays(prevDate, 1))),
+    't': () => setCurrentDate(startOfDay(new Date())),
+    '/': (e) => { e.preventDefault(); },
+    'cmd+k': (e) => { e.preventDefault(); setIsCommandPaletteOpen(prev => !prev); },
+  };
+  useKeyboardShortcuts(shortcuts);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6 flex items-center">
-          <ListTodo className="mr-3 h-8 w-8 text-blue-600" /> Daily Tasks
-        </h1>
+    <div className="flex-1 flex flex-col">
+      <main className="flex-grow">
+        <div className="w-full max-w-4xl mx-auto flex flex-col">
+          <DailyTasksHeader
+            currentDate={currentDate}
+            setCurrentDate={setCurrentDate}
+            tasks={tasks as Task[]} // Cast to Task[]
+            filteredTasks={filteredTasks}
+            sections={sections}
+            allCategories={allCategories}
+            handleAddTask={handleAddTask}
+            userId={user?.id || null}
+            setIsFocusPanelOpen={setIsFocusPanelOpen}
+            searchFilter={searchFilter}
+            setSearchFilter={setSearchFilter}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+            categoryFilter={categoryFilter}
+            setCategoryFilter={setCategoryFilter}
+            priorityFilter={priorityFilter}
+            setPriorityFilter={setPriorityFilter}
+            sectionFilter={sectionFilter}
+            setSectionFilter={setSectionFilter}
+            nextAvailableTask={nextAvailableTask}
+            updateTask={updateTask}
+            onOpenOverview={handleOpenOverview}
+            createSection={createSection}
+            updateSection={updateSection}
+            deleteSection={deleteSection}
+            updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+            doTodayOffIds={doTodayOffIds}
+            archiveAllCompletedTasks={archiveAllCompletedTasks}
+            toggleAllDoToday={toggleAllDoToday}
+            setIsAddTaskDialogOpen={setIsAddTaskDialogOpen}
+            setPrefilledTaskData={setPrefilledTaskData}
+            dailyProgress={dailyProgress}
+            isDemo={isDemo}
+            toggleDoToday={toggleDoToday}
+            onOpenFocusView={handleOpenFocusView}
+          />
 
-        {/* Date Navigation */}
-        <div className="flex items-center justify-between bg-white p-4 rounded-lg shadow-sm mb-6">
-          <Button variant="ghost" size="icon" onClick={() => setCurrentDate(addDays(currentDate, -1))}>
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-          <div className="flex space-x-2">
-            {daysOfWeek.map((day) => (
-              <Button
-                key={day.toISOString()}
-                variant={isSameDay(day, currentDate) ? 'default' : 'outline'}
-                onClick={() => setCurrentDate(day)}
-                className="flex flex-col h-auto w-16 py-2"
-              >
-                <span className="text-xs font-medium">{format(day, 'EEE')}</span>
-                <span className="text-lg font-bold">{format(day, 'd')}</span>
-              </Button>
-            ))}
-          </div>
-          <Button variant="ghost" size="icon" onClick={() => setCurrentDate(addDays(currentDate, 1))}>
-            <ChevronRight className="h-5 w-5" />
-          </Button>
-        </div>
-
-        {/* Filters and Actions */}
-        <div className="flex flex-wrap items-center gap-4 bg-white p-4 rounded-lg shadow-sm mb-6">
-          <div className="relative flex-grow max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search tasks..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-
-          <Select value={filterPriority} onValueChange={(value: TaskPriority | 'all') => setFilterPriority(value)}>
-            <SelectTrigger className="w-[180px]">
-              <Filter className="mr-2 h-4 w-4 text-gray-500" />
-              <SelectValue placeholder="Filter by Priority" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Priorities</SelectItem>
-              <SelectItem value="urgent">Urgent</SelectItem>
-              <SelectItem value="high">High</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
-              <SelectItem value="low">Low</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={filterCategory} onValueChange={(value: string | 'all') => setFilterCategory(value)}>
-            <SelectTrigger className="w-[180px]">
-              <Tag className="mr-2 h-4 w-4 text-gray-500" />
-              <SelectValue placeholder="Filter by Category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              {categories.map((cat) => (
-                <SelectItem key={cat.id} value={cat.id}>
-                  {cat.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Dialog open={isAddTaskDialogOpen} onOpenChange={setIsAddTaskDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="flex-shrink-0">
-                <Plus className="mr-2 h-4 w-4" /> Add Task
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Add New Task</DialogTitle>
-              </DialogHeader>
-              <TaskForm onSave={addTask} onClose={() => setIsAddTaskDialogOpen(false)} categories={categories} sections={sections} />
-            </DialogContent>
-          </Dialog>
-
-          <Dialog open={isAddSectionDialogOpen} onOpenChange={setIsAddSectionDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="flex-shrink-0">
-                <List className="mr-2 h-4 w-4" /> Add Section
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Add New Section</DialogTitle>
-              </DialogHeader>
-              <SectionForm onSave={addSection} onClose={() => setIsAddSectionDialogOpen(false)} />
-            </DialogContent>
-          </Dialog>
-
-          <Dialog open={isManageCategoriesDialogOpen} onOpenChange={setIsManageCategoriesDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="flex-shrink-0">
-                <Settings className="mr-2 h-4 w-4" /> Manage Categories
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Manage Categories</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 p-4">
-                {categories.map((category) => (
-                  <div key={category.id} className="flex items-center justify-between p-2 border rounded-md">
-                    <span className="font-medium" style={{ color: category.color }}>
-                      {category.name}
-                    </span>
-                    <div className="flex items-center space-x-2">
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingCategory(category)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-[425px]">
-                          <DialogHeader>
-                            <DialogTitle>Edit Category</DialogTitle>
-                          </DialogHeader>
-                          <CategoryForm
-                            initialCategory={editingCategory}
-                            onSave={updateCategory}
-                            onClose={() => setEditingCategory(null)}
-                          />
-                        </DialogContent>
-                      </Dialog>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 hover:text-red-600" onClick={() => deleteCategory(category.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" className="w-full">
-                      <Plus className="mr-2 h-4 w-4" /> Add New Category
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-[425px]">
-                    <DialogHeader>
-                      <DialogTitle>Add New Category</DialogTitle>
-                    </DialogHeader>
-                    <CategoryForm onSave={addCategory} onClose={() => {}} />
-                  </DialogContent>
-                </Dialog>
+          <Card className="flex-1 flex flex-col rounded-none shadow-none border-0 relative z-[1]">
+            <CardContent className="p-4 flex-1 flex flex-col">
+              <div className="flex-1 overflow-y-auto">
+                <TaskList
+                  tasks={tasks as Task[]} // Cast to Task[]
+                  processedTasks={processedTasks}
+                  filteredTasks={filteredTasks}
+                  loading={tasksLoading}
+                  handleAddTask={handleAddTask}
+                  updateTask={updateTask}
+                  deleteTask={deleteTask}
+                  bulkUpdateTasks={bulkUpdateTasks}
+                  markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
+                  sections={sections}
+                  createSection={createSection}
+                  updateSection={updateSection}
+                  deleteSection={deleteSection}
+                  updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+                  updateTaskParentAndOrder={updateTaskParentAndOrder}
+                  reorderSections={reorderSections}
+                  allCategories={allCategories}
+                  setIsAddTaskOpen={() => {}}
+                  onOpenOverview={handleOpenOverview}
+                  currentDate={currentDate}
+                  setCurrentDate={setCurrentDate} // Pass setCurrentDate to TaskList
+                  expandedSections={expandedSections}
+                  toggleSection={toggleSection}
+                  toggleAllSections={toggleAllSections}
+                  expandedTasks={expandedTasks}
+                  toggleTask={toggleTask}
+                  setFocusTask={setFocusTask}
+                  doTodayOffIds={doTodayOffIds}
+                  toggleDoToday={toggleDoToday}
+                  scheduledTasksMap={scheduledTasksMap}
+                  isDemo={isDemo}
+                />
               </div>
-            </DialogContent>
-          </Dialog>
+            </CardContent>
+          </Card>
         </div>
+      </main>
 
-        <DragDropContext onDragEnd={onDragEnd}>
-          <Droppable droppableId="sections" type="section">
-            {(provided) => (
-              <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-6">
-                {filteredSections.length === 0 && (
-                  <div className="text-center text-gray-500 p-8 bg-white rounded-lg shadow-sm">
-                    <ListTodo className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                    <p className="text-lg font-medium">No tasks found for this day or filters.</p>
-                    <p className="text-sm">Try adjusting your date or filters, or add a new task!</p>
-                  </div>
-                )}
-                {filteredSections.map((section, sectionIndex) => (
-                  <Draggable key={section.id} draggableId={section.id} index={sectionIndex}>
-                    {(providedSection) => (
-                      <div
-                        ref={providedSection.innerRef}
-                        {...providedSection.draggableProps}
-                        className="bg-white rounded-lg shadow-md p-4"
-                      >
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center">
-                            <span {...providedSection.dragHandleProps} className="mr-3 text-gray-400 cursor-grab">
-                              <GripVertical className="h-5 w-5" />
-                            </span>
-                            <h2 className="text-xl font-semibold text-gray-800">{section.name}</h2>
-                            {section.include_in_focus_mode && (
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Star className="ml-2 h-4 w-4 text-yellow-500" />
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Included in Focus Mode</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            )}
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Dialog open={editingSection?.id === section.id} onOpenChange={(open) => !open && setEditingSection(null)}>
-                              <DialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingSection(section)}>
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent className="sm:max-w-[425px]">
-                                <DialogHeader>
-                                  <DialogTitle>Edit Section</DialogTitle>
-                                </DialogHeader>
-                                <SectionForm
-                                  initialSection={editingSection}
-                                  onSave={updateSection}
-                                  onClose={() => setEditingSection(null)}
-                                />
-                              </DialogContent>
-                            </Dialog>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600" onClick={() => deleteSection(section.id)}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                        <Droppable droppableId={section.id} type="task">
-                          {(providedTask) => (
-                            <div {...providedTask.droppableProps} ref={providedTask.innerRef} className="min-h-[50px]">
-                              {section.tasks.map((task, taskIndex) => (
-                                <TaskItem
-                                  key={task.id}
-                                  task={task}
-                                  index={taskIndex}
-                                  categories={categories}
-                                  sections={sections}
-                                  onUpdateTask={updateTask}
-                                  onDeleteTask={deleteTask}
-                                  onAddTask={addTask}
-                                />
-                              ))}
-                              {providedTask.placeholder}
-                            </div>
-                          )}
-                        </Droppable>
-                      </div>
-                    )}
-                  </Draggable>
-                ))}
-                {provided.placeholder}
-              </div>
-            )}
-          </Droppable>
-        </DragDropContext>
-      </div>
+      <footer className="p-4 relative z-[0]">
+        <p>&copy; {new Date().getFullYear()} TaskMaster. All rights reserved.</p>
+      </footer>
+
+      <CommandPalette
+        isCommandPaletteOpen={isCommandPaletteOpen}
+        setIsCommandPaletteOpen={setIsCommandPaletteOpen}
+        currentDate={currentDate}
+        setCurrentDate={setCurrentDate}
+      />
+
+      {taskToOverview && (
+        <TaskOverviewDialog
+          task={taskToOverview}
+          isOpen={isTaskOverviewOpen}
+          onClose={() => {
+            setIsTaskOverviewOpen(false);
+            setTaskToOverview(null);
+          }}
+          onEditClick={handleEditTaskFromOverview}
+          onUpdate={updateTask}
+          onDelete={deleteTask}
+          sections={sections}
+          allCategories={allCategories}
+          allTasks={tasks as Task[]} // Cast to Task[]
+        />
+      )}
+
+      {taskToEdit && (
+        <TaskDetailDialog
+          task={taskToEdit}
+          isOpen={isTaskDetailOpen}
+          onClose={() => setIsTaskDetailOpen(false)}
+          onUpdate={updateTask}
+          onDelete={deleteTask}
+          sections={sections}
+          allCategories={allCategories}
+          createSection={createSection}
+          updateSection={updateSection}
+          deleteSection={deleteSection}
+          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+          allTasks={tasks as Task[]} // Cast to Task[]
+        />
+      )}
+
+      <FocusPanelDrawer
+        isOpen={isFocusPanelOpen}
+        onClose={() => setIsFocusPanelOpen(false)}
+        nextAvailableTask={nextAvailableTask}
+        tasks={tasks as Task[]}
+        filteredTasks={filteredTasks}
+        updateTask={updateTask}
+        onDeleteTask={deleteTask}
+        sections={sections}
+        allCategories={allCategories}
+        onOpenDetail={handleOpenDetail}
+        handleAddTask={handleAddTask}
+        currentDate={currentDate}
+      />
+
+      <Dialog open={isAddTaskDialogOpen} onOpenChange={setIsAddTaskDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add New Task</DialogTitle>
+            <DialogDescription className="sr-only">
+              Fill in the details to add a new task.
+            </DialogDescription>
+          </DialogHeader>
+          <AddTaskForm
+            onAddTask={async (taskData) => {
+              const success = await handleAddTask(taskData);
+              if (success) {
+                setIsAddTaskDialogOpen(false);
+                setPrefilledTaskData(null);
+              }
+              return success;
+            }}
+            onTaskAdded={() => {
+              setIsAddTaskDialogOpen(false);
+              setPrefilledTaskData(null);
+            }}
+            sections={sections}
+            allCategories={allCategories}
+            currentDate={currentDate}
+            createSection={createSection}
+            updateSection={updateSection}
+            deleteSection={deleteSection}
+            updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+            initialData={prefilledTaskData as Task | null}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <AnimatePresence>
+        {isFocusViewOpen && nextAvailableTask && (
+          <FullScreenFocusView
+            taskDescription={nextAvailableTask.description || ''} // Ensure description is string
+            onClose={() => setIsFocusViewOpen(false)}
+            onMarkDone={handleMarkDoneFromFocusView}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
