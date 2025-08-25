@@ -7,17 +7,18 @@ import SleepDashboard from "./pages/SleepDashboard";
 
 function App() {
   return (
-    <> {/* Main React Fragment for the entire app */}
-      <Toaster /> {/* Moved Toaster here, outside SessionContextProvider */}
-      <SessionContextProvider>
-        <BrowserRouter>
+    <>
+      <Toaster />
+      <BrowserRouter>
+        {/* SessionContextProvider is now a direct child of BrowserRouter */}
+        <SessionContextProvider>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/sleep-dashboard" element={<SleepDashboard />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </BrowserRouter>
-      </SessionContextProvider>
+        </SessionContextProvider>
+      </BrowserRouter>
     </>
   );
 }
