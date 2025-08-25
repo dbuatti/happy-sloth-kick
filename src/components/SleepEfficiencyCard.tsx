@@ -3,14 +3,14 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/integrations/supabase/auth";
+import { useAuth } from "@/integrations/supabase/session-context"; // Updated import path
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Info, CheckCircle, XCircle } from "lucide-react";
 
 const SleepEfficiencyCard: React.FC = () => {
-  const { session } = useAuth();
+  const { session, isLoading: isAuthLoading } = useAuth(); // Destructure isLoading from useAuth
   const userId = session?.user?.id;
 
   const { data, isLoading, error } = useQuery({
@@ -21,10 +21,10 @@ const SleepEfficiencyCard: React.FC = () => {
       if (error) throw error;
       return data;
     },
-    enabled: !!userId,
+    enabled: !!userId && !isAuthLoading, // Only enable query if user ID is available and auth is not loading
   });
 
-  if (isLoading) {
+  if (isAuthLoading || isLoading) { // Check for both auth and data loading
     return (
       <Card className="w-full max-w-md">
         <CardHeader>
