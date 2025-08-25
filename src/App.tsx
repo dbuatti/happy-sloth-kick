@@ -1,25 +1,20 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import { SessionContextProvider } from "./integrations/supabase/session-context";
-import { Toaster } from "@/components/ui/sonner";
+// Temporarily remove SessionContextProvider and Toaster to isolate the error
+// import { SessionContextProvider } from "./integrations/supabase/session-context";
+// import { Toaster } from "@/components/ui/sonner";
 import SleepDashboard from "./pages/SleepDashboard";
 
 function App() {
   return (
-    <>
-      <Toaster />
-      <BrowserRouter>
-        {/* SessionContextProvider is now a direct child of BrowserRouter */}
-        <SessionContextProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/sleep-dashboard" element={<SleepDashboard />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </SessionContextProvider>
-      </BrowserRouter>
-    </>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/sleep-dashboard" element={<SleepDashboard />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
