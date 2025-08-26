@@ -1,9 +1,9 @@
 "use client";
 
 import React from 'react';
-import { format, setHours, setMinutes, isValid } from 'date-fns';
+import { format, setHours, setMinutes, isValid, isSameDay } from 'date-fns'; // Added isSameDay
 import ScheduleEventBlock from './ScheduleEventBlock';
-import CurrentTimeIndicator from './CurrentTimeIndicator'; // Import the new component
+import CurrentTimeIndicator from './CurrentTimeIndicator';
 
 interface Appointment {
   id: string;
@@ -51,7 +51,7 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({ appointments = []
         {timeSlots.map((hour) => (
           <div
             key={hour}
-            className="h-16 flex items-start justify-end pr-2 pt-1 text-xs text-muted-foreground" // Refined styling
+            className="h-16 flex items-start justify-end pr-2 pt-1 text-xs text-muted-foreground"
           >
             {isValid(selectedDate) ? format(setMinutes(setHours(selectedDate, hour), 0), 'h a') : ''}
           </div>
@@ -59,7 +59,7 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({ appointments = []
       </div>
 
       {/* Schedule Grid Column - this is the positioning context for events */}
-      <div className="relative"> {/* Removed temporary background */}
+      <div className="relative">
         {/* Hour lines */}
         {timeSlots.map((hour) => (
           <div
