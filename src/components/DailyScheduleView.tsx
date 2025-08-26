@@ -15,13 +15,13 @@ interface Appointment {
 }
 
 interface DailyScheduleViewProps {
-  appointments: Appointment[];
+  appointments?: Appointment[]; // Make it optional to allow default value
   selectedDate: Date;
 }
 
 const HOUR_HEIGHT_PX = 64; // Each hour block is 64px tall (h-16)
 
-const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({ appointments, selectedDate }) => {
+const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({ appointments = [], selectedDate }) => {
   const timeSlots = Array.from({ length: 24 }, (_, i) => i); // 0 to 23 for hours
 
   const getMinutesFromMidnight = (timeString: string): number => {
