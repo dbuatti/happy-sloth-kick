@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns'; // Import isValid
 
 interface ScheduleEventBlockProps {
   event: {
@@ -17,8 +17,12 @@ interface ScheduleEventBlockProps {
 }
 
 const ScheduleEventBlock: React.FC<ScheduleEventBlockProps> = ({ event, top, height }) => {
-  const startTime = format(new Date(`2000-01-01T${event.start_time}`), 'h:mm a');
-  const endTime = format(new Date(`2000-01-01T${event.end_time}`), 'h:mm a');
+  const dummyDate = '2000-01-01T';
+  const startDate = new Date(`${dummyDate}${event.start_time}`);
+  const endDate = new Date(`${dummyDate}${event.end_time}`);
+
+  const startTime = isValid(startDate) ? format(startDate, 'h:mm a') : 'Invalid Time';
+  const endTime = isValid(endDate) ? format(endDate, 'h:mm a') : 'Invalid Time';
 
   return (
     <div

@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { format, parseISO, setHours, setMinutes, addMinutes } from 'date-fns';
+import { format, parseISO, setHours, setMinutes, addMinutes, isValid } from 'date-fns'; // Import isValid
 import ScheduleEventBlock from './ScheduleEventBlock';
 
 interface Appointment {
@@ -52,7 +52,7 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({ appointments = []
             key={hour}
             className="h-16 flex items-start justify-end pr-2 pt-1 text-xs text-gray-500 dark:text-gray-400"
           >
-            {format(setMinutes(setHours(selectedDate, hour), 0), 'h a')}
+            {isValid(selectedDate) ? format(setMinutes(setHours(selectedDate, hour), 0), 'h a') : ''}
           </div>
         ))}
       </div>
