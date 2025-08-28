@@ -19,15 +19,15 @@ const ADHDTimeDateBanner: React.FC = () => {
   return (
     <div className={cn(
       "w-full p-4 mb-6 rounded-xl shadow-lg",
-      "bg-gradient-to-r from-[hsl(var(--gradient-start-light))] to-[hsl(var(--gradient-end-light))] dark:from-[hsl(var(--gradient-start-dark))] dark:to-[hsl(var(--gradient-end-dark))]", // Changed gradient to use theme's general gradient variables
+      "bg-gradient-to-r from-[hsl(var(--gradient-start-light))] to-[hsl(var(--gradient-end-light))] dark:from-[hsl(var(--gradient-start-dark))] dark:to-[hsl(var(--gradient-end-dark))]",
       "text-primary-foreground dark:text-foreground",
-      "flex flex-col items-center justify-center text-center"
+      "flex items-center justify-between" // Changed to flex items-center justify-between
     )}>
-      <p className="text-4xl md:text-5xl font-extrabold tracking-tight mb-2 font-bubbly">
-        {formattedTime}
-      </p>
       <p className="text-lg md:text-xl font-semibold text-muted-foreground">
         {formattedDate}
+      </p>
+      <p className="text-4xl md:text-5xl font-extrabold tracking-tight font-bubbly">
+        {formattedTime}
       </p>
     </div>
   );
