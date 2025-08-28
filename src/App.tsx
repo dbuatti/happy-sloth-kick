@@ -61,7 +61,7 @@ const AppContent = () => {
     return (
       <SettingsProvider userId={demoUserId}>
         <div className="relative h-screen w-screen">
-          <Sidebar isDemo={true} demoUserId={demoUserId}>
+          <Sidebar isDemo={true}>
             <Routes>
               <Route path="/demo" element={<Dashboard isDemo={true} demoUserId={demoUserId} />} />
               <Route path="/demo/dashboard" element={<Dashboard isDemo={true} demoUserId={demoUserId} />} />

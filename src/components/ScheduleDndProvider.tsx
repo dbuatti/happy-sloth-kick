@@ -3,13 +3,12 @@ import { createPortal } from 'react-dom';
 import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, useSensor, useSensors, closestCorners } from '@dnd-kit/core';
 import { format, parseISO, isValid } from 'date-fns';
 import DraggableScheduleTaskItem from '@/components/DraggableScheduleTaskItem';
-import { TaskSection } from '@/hooks/useTasks'; // Removed Task import as it's not directly used here
+import { TaskSection } from '@/hooks/useTasks';
 
 interface ScheduleDndProviderProps {
   children: React.ReactNode;
   onDragStart: (event: DragStartEvent) => void;
   onDragEnd: (event: DragEndEvent) => void;
-  // allTasks: Task[]; // Removed
   sections: TaskSection[];
 }
 
@@ -17,7 +16,6 @@ const ScheduleDndProvider: React.FC<ScheduleDndProviderProps> = ({
   children,
   onDragStart,
   onDragEnd,
-  // allTasks, // Removed
   sections,
 }) => {
   const [activeDragItem, setActiveDragItem] = useState<any>(null);

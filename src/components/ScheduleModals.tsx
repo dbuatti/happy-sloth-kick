@@ -18,7 +18,6 @@ interface ScheduleModalsProps {
   selectedTimeSlotForNew: { start: Date; end: Date } | null;
   setSelectedTimeSlotForNew: (slot: { start: Date; end: Date } | null) => void;
   selectedDateForNew: Date;
-  // setSelectedDateForNew: (date: Date) => void; // Removed
   handleSaveAppointment: (data: NewAppointmentData) => Promise<Appointment | null | boolean>;
   handleDeleteAppointment: (id: string) => Promise<boolean>;
   parsedDataForForm: Partial<NewAppointmentData> | null;
@@ -37,7 +36,6 @@ interface ScheduleModalsProps {
   isClearDayDialogOpen: boolean;
   setIsClearDayDialogOpen: (isOpen: boolean) => void;
   dayToClear: Date | null;
-  // setDayToClear: (date: Date | null) => void; // Removed
   handleClearDay: () => Promise<void>;
 
   // Extend Hours Dialog
@@ -50,12 +48,12 @@ interface ScheduleModalsProps {
 
 const ScheduleModals: React.FC<ScheduleModalsProps> = ({
   isAppointmentFormOpen, setIsAppointmentFormOpen, editingAppointment, setEditingAppointment,
-  selectedTimeSlotForNew, setSelectedTimeSlotForNew, selectedDateForNew, // Removed setSelectedDateForNew
+  selectedTimeSlotForNew, setSelectedTimeSlotForNew, selectedDateForNew,
   handleSaveAppointment, handleDeleteAppointment, parsedDataForForm, setParsedDataForForm, setPendingAppointmentData,
 
   isParsingDialogOpen, setIsParsingDialogOpen, textToParse, setTextToParse, isParsing, handleParseText,
 
-  isClearDayDialogOpen, setIsClearDayDialogOpen, dayToClear, // Removed setDayToClear
+  isClearDayDialogOpen, setIsClearDayDialogOpen, dayToClear,
   handleClearDay,
 
   isExtendHoursDialogOpen, setIsExtendHoursDialogOpen, newHoursToExtend, setNewHoursToExtend, confirmExtendHours,

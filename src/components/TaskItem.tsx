@@ -20,7 +20,6 @@ import { Task } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { CheckCircle2 } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
 import { Input } from '@/components/ui/input';
 import DoTodaySwitch from '@/components/DoTodaySwitch';
 import { showSuccess, showError } from '@/utils/toast';
@@ -69,7 +68,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
   scheduledTasksMap,
   isDemo = false,
 }) => {
-  useAuth(); 
   const { playSound } = useSound();
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
   const [isEditing, setIsEditing] = useState(false);

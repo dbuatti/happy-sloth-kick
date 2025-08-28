@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { format, addMinutes, parse, getMinutes, getHours, parseISO, isSameDay, differenceInMinutes, setHours, setMinutes } from 'date-fns';
+import { format, addMinutes, parse, getMinutes, getHours, parseISO, setHours, setMinutes } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Sparkles, X } from 'lucide-react';
 import { toast } from 'sonner';
@@ -299,7 +299,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
     }
   };
 
-  const handleDragStart = (event: any) => {
+  const handleDragStart = (_event: any) => {
     // DndProvider handles setting activeDragItem
   };
 
@@ -336,7 +336,6 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
     <ScheduleDndProvider
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      allTasks={allTasks}
       sections={sections}
     >
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-4">
@@ -399,7 +398,6 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
         selectedTimeSlotForNew={selectedTimeSlotForNew}
         setSelectedTimeSlotForNew={setSelectedTimeSlotForNew}
         selectedDateForNew={selectedDateForNew}
-        setSelectedDateForNew={setSelectedDateForNew}
         handleSaveAppointment={handleSaveAppointment}
         handleDeleteAppointment={handleDeleteAppointment}
         parsedDataForForm={parsedDataForForm}
@@ -416,7 +414,6 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
         isClearDayDialogOpen={isClearDayDialogOpen}
         setIsClearDayDialogOpen={setIsClearDayDialogOpen}
         dayToClear={dayToClear}
-        setDayToClear={setDayToClear}
         handleClearDay={handleClearDay}
 
         isExtendHoursDialogOpen={isExtendHoursDialogOpen}

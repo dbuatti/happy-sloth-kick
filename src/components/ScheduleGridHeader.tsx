@@ -4,10 +4,9 @@ import { cn } from '@/lib/utils';
 
 interface ScheduleGridHeaderProps {
   daysInGrid: Date[];
-  // headerHeight: number; // Removed
 }
 
-const ScheduleGridHeader: React.FC<ScheduleGridHeaderProps> = ({ daysInGrid }) => { // Removed headerHeight from destructuring
+const ScheduleGridHeader: React.FC<ScheduleGridHeaderProps> = ({ daysInGrid }) => {
   return (
     <>
       {/* Top-left empty cell */}
