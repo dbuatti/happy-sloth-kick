@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { format, addMinutes, parse, getMinutes, getHours, parseISO, isSameDay, differenceInMinutes } from 'date-fns';
+import { format, addMinutes, parse, getMinutes, getHours, parseISO, isSameDay, differenceInMinutes, setHours, setMinutes } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Sparkles, X } from 'lucide-react';
 import { toast } from 'sonner';
@@ -107,9 +107,8 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
 
   const { visibleTimeBlocks } = useVisibleTimeBlocks({
     daysInGrid,
-    allWorkHours,
+    getWorkHoursForDay, // Pass the memoized function
     currentViewDate,
-    getWorkHoursForDay,
   });
 
   const { appointmentsWithPositions } = usePositionedAppointments({
@@ -362,7 +361,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
               gridTemplateColumns: `minmax(100px, auto) repeat(${daysInGrid.length}, minmax(120px, 1fr))`,
               gridTemplateRows: `${headerHeight}px repeat(${visibleTimeBlocks.length}, ${rowHeight}px)`,
             }}>
-              <ScheduleGridHeader daysInGrid={daysInGrid} headerHeight={headerHeight} />
+              <ScheduleGridHeader daysInGrid={daysInGrid} />
               <ScheduleTimeColumn visibleTimeBlocks={visibleTimeBlocks} rowHeight={rowHeight} />
               <ScheduleDayGridCells
                 daysInGrid={daysInGrid}

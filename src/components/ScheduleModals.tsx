@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { format, parseISO, isValid, setHours } from 'date-fns';
+import { format, setHours } from 'date-fns';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
@@ -18,7 +18,7 @@ interface ScheduleModalsProps {
   selectedTimeSlotForNew: { start: Date; end: Date } | null;
   setSelectedTimeSlotForNew: (slot: { start: Date; end: Date } | null) => void;
   selectedDateForNew: Date;
-  setSelectedDateForNew: (date: Date) => void;
+  // setSelectedDateForNew: (date: Date) => void; // Removed
   handleSaveAppointment: (data: NewAppointmentData) => Promise<Appointment | null | boolean>;
   handleDeleteAppointment: (id: string) => Promise<boolean>;
   parsedDataForForm: Partial<NewAppointmentData> | null;
@@ -37,7 +37,7 @@ interface ScheduleModalsProps {
   isClearDayDialogOpen: boolean;
   setIsClearDayDialogOpen: (isOpen: boolean) => void;
   dayToClear: Date | null;
-  setDayToClear: (date: Date | null) => void;
+  // setDayToClear: (date: Date | null) => void; // Removed
   handleClearDay: () => Promise<void>;
 
   // Extend Hours Dialog
@@ -50,12 +50,13 @@ interface ScheduleModalsProps {
 
 const ScheduleModals: React.FC<ScheduleModalsProps> = ({
   isAppointmentFormOpen, setIsAppointmentFormOpen, editingAppointment, setEditingAppointment,
-  selectedTimeSlotForNew, setSelectedTimeSlotForNew, selectedDateForNew, setSelectedDateForNew,
+  selectedTimeSlotForNew, setSelectedTimeSlotForNew, selectedDateForNew, // Removed setSelectedDateForNew
   handleSaveAppointment, handleDeleteAppointment, parsedDataForForm, setParsedDataForForm, setPendingAppointmentData,
 
   isParsingDialogOpen, setIsParsingDialogOpen, textToParse, setTextToParse, isParsing, handleParseText,
 
-  isClearDayDialogOpen, setIsClearDayDialogOpen, dayToClear, setDayToClear, handleClearDay,
+  isClearDayDialogOpen, setIsClearDayDialogOpen, dayToClear, // Removed setDayToClear
+  handleClearDay,
 
   isExtendHoursDialogOpen, setIsExtendHoursDialogOpen, newHoursToExtend, setNewHoursToExtend, confirmExtendHours,
 }) => {

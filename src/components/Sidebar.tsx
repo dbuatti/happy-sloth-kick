@@ -31,10 +31,10 @@ import { useSettings } from "@/context/SettingsContext";
 interface SidebarProps {
   children: React.ReactNode;
   isDemo?: boolean;
-  demoUserId?: string;
+  // demoUserId?: string; // Removed
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false, demoUserId }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false }) => { // Removed demoUserId from destructuring
   const location = useLocation();
   const { theme, setTheme } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
