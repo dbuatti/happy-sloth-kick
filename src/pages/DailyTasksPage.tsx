@@ -16,12 +16,21 @@ const DailyTasksPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [showMoveSection, setShowMoveSection] = useState(false);
+  const [isMultiSelectMode, setIsMultiSelectMode] = useState(false); // New state for multi-select mode
   const supabase = createClientComponentClient();
   const { toast } = useToast();
 
   useEffect(() => {
     fetchSectionsAndTasks();
   }, []);
+
+  // Clear selection and exit multi-select mode when component unmounts or mode changes
+  useEffect(() => {
+    if (!isMultiSelectMode) {
+      setSelectedTaskIds([]);
+      setShowMoveSection(false);
+    }
+  }, [isMultiSelectMode]);
 
   const fetchSectionsAndTasks = async () => {
     try {
@@ -93,11 +102,6 @@ const DailyTasksPage: React.FC = () => {
     );
   };
 
-  const selectAllTasks = () => {
-    const allTaskIds = tasks.map(task => task.id);
-    setSelectedTaskIds(allTaskIds);
-  };
-
   const clearSelection = () => {
     setSelectedTaskIds([]);
   };
@@ -158,9 +162,10 @@ const DailyTasksPage: React.FC = () => {
         description: `${selectedTaskIds.length} task(s) moved successfully`,
       });
 
-      // Clear selection
+      // Clear selection and exit multi-select mode
       setSelectedTaskIds([]);
       setShowMoveSection(false);
+      setIsMultiSelectMode(false);
     } catch (error) {
       console.error('Error moving tasks:', error);
       toast({
@@ -183,23 +188,43 @@ const DailyTasksPage: React.FC = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Daily Tasks</h1>
         
-        {hasSelectedTasks && (
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
-              {selectedTasksCount} selected
-            </span>
+        <div className="flex items-center gap-2">
+          {isMultiSelectMode ? (
+            <>
+              {hasSelectedTasks && (
+                <span className="text-sm text-muted-foreground">
+                  {selectedTasksCount} selected
+                </span>
+              )}
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={clearSelection}
+                disabled={!hasSelectedTasks}
+              >
+                Clear
+              </Button>
+              <Button 
+                variant="default" 
+                size="sm"
+                onClick={() => setIsMultiSelectMode(false)}
+              >
+                Done
+              </Button>
+            </>
+          ) : (
             <Button 
               variant="outline" 
               size="sm"
-              onClick={clearSelection}
+              onClick={() => setIsMultiSelectMode(true)}
             >
-              Clear
+              Select Tasks
             </Button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
-      {hasSelectedTasks && (
+      {isMultiSelectMode && hasSelectedTasks && (
         <div className="mb-4 p-3 bg-muted rounded-lg flex items-center gap-2">
           <Button 
             variant="outline" 
@@ -238,6 +263,7 @@ const DailyTasksPage: React.FC = () => {
             selectedTaskIds={selectedTaskIds}
             onTaskSelect={toggleTaskSelection}
             onTaskToggle={toggleTaskCompletion}
+            isMultiSelectMode={isMultiSelectMode}
           />
         ))}
         
@@ -254,22 +280,24 @@ const DailyTasksPage: React.FC = () => {
                 <div 
                   key={task.id} 
                   className={`flex items-center gap-2 p-2 rounded transition-colors ${
-                    isSelected ? 'bg-primary/10 border border-primary/20' : 'hover:bg-muted'
+                    isSelected && isMultiSelectMode ? 'bg-primary/10 border border-primary/20' : 'hover:bg-muted'
                   }`}
                 >
-                  {/* Selection indicator */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="p-0 h-auto"
-                    onClick={() => toggleTaskSelection(task.id)}
-                  >
-                    {isSelected ? (
-                      <SquareCheck className="h-5 w-5 text-primary" />
-                    ) : (
-                      <Square className="h-5 w-5 text-muted-foreground" />
-                    )}
-                  </Button>
+                  {/* Selection indicator, only visible in multi-select mode */}
+                  {isMultiSelectMode && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="p-0 h-auto"
+                      onClick={() => toggleTaskSelection(task.id)}
+                    >
+                      {isSelected ? (
+                        <SquareCheck className="h-5 w-5 text-primary" />
+                      ) : (
+                        <Square className="h-5 w-5 text-muted-foreground" />
+                      )}
+                    </Button>
+                  )}
                   
                   {/* Task completion toggle */}
                   <Button

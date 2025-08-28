@@ -11,6 +11,7 @@ interface TaskSectionProps {
   selectedTaskIds?: string[];
   onTaskSelect?: (taskId: string) => void;
   onTaskToggle?: (taskId: string) => void;
+  isMultiSelectMode?: boolean; // New prop
 }
 
 const TaskSection: React.FC<TaskSectionProps> = ({
@@ -18,7 +19,8 @@ const TaskSection: React.FC<TaskSectionProps> = ({
   tasks = [],
   selectedTaskIds = [],
   onTaskSelect = () => {},
-  onTaskToggle = () => {}
+  onTaskToggle = () => {},
+  isMultiSelectMode = false, // Default to false
 }) => {
   return (
     <div className="border rounded-lg p-4">
@@ -33,22 +35,24 @@ const TaskSection: React.FC<TaskSectionProps> = ({
             <div 
               key={task.id} 
               className={`flex items-center gap-2 p-2 rounded transition-colors ${
-                isSelected ? 'bg-primary/10 border border-primary/20' : 'hover:bg-muted'
+                isSelected && isMultiSelectMode ? 'bg-primary/10 border border-primary/20' : 'hover:bg-muted'
               }`}
             >
-              {/* Selection indicator - using a button with square icons */}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="p-0 h-auto"
-                onClick={() => onTaskSelect(task.id)}
-              >
-                {isSelected ? (
-                  <SquareCheck className="h-5 w-5 text-primary" />
-                ) : (
-                  <Square className="h-5 w-5 text-muted-foreground" />
-                )}
-              </Button>
+              {/* Selection indicator, only visible in multi-select mode */}
+              {isMultiSelectMode && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="p-0 h-auto"
+                  onClick={() => onTaskSelect(task.id)}
+                >
+                  {isSelected ? (
+                    <SquareCheck className="h-5 w-5 text-primary" />
+                  ) : (
+                    <Square className="h-5 w-5 text-muted-foreground" />
+                  )}
+                </Button>
+              )}
               
               {/* Task completion toggle */}
               <Button
