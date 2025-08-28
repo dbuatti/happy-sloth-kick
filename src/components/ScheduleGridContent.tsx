@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { format, addMinutes, parse, getMinutes, getHours, parseISO, isSameDay, differenceInMinutes } from 'date-fns';
+import { format, addMinutes, parse, getMinutes, getHours, parseISO, isSameDay, differenceInMinutes, setHours, setMinutes } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Sparkles, X } from 'lucide-react';
 import { toast } from 'sonner';

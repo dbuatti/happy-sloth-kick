@@ -4,14 +4,13 @@ import { WorkHour } from '@/hooks/useWorkHours';
 
 interface UseVisibleTimeBlocksProps {
   daysInGrid: Date[];
-  allWorkHours: WorkHour[];
+  // Removed allWorkHours: WorkHour[];
   currentViewDate: Date;
   getWorkHoursForDay: (date: Date) => WorkHour | null;
 }
 
 export const useVisibleTimeBlocks = ({
   daysInGrid,
-  allWorkHours,
   currentViewDate,
   getWorkHoursForDay,
 }: UseVisibleTimeBlocksProps) => {

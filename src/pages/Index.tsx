@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Task, TaskSection } from "@/hooks/useTasks"; // Removed Category import
+import { Task, TaskSection, Category } from "@/hooks/useTasks"; // Import Category
 import TaskItem from "@/components/tasks/TaskItem";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -10,12 +10,15 @@ import { toast } from "sonner";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Plus } from "lucide-react";
+import { useTaskCategories } from "@/hooks/useTaskCategories"; // Import useTaskCategories
+import { useTaskSections } from "@/hooks/useTaskSections"; // Import useTaskSections
 
 export default function Index() {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [sections, setSections] = useState<TaskSection[]>([]);
+  const { data: sections, refetch: refetchSections } = useTaskSections(); // Use useTaskSections
+  const { data: categories, refetch: refetchCategories } = useTaskCategories(); // Use useTaskCategories
   const [newTaskDescription, setNewTaskDescription] = useState("");
-  const [doTodayLog, setDoTodayLog] = useState<Set<string>>(new Set()); // Changed to Set<string>
+  const [doTodayLog, setDoTodayLog] = useState<Set<string>>(new Set());
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -38,42 +41,22 @@ export default function Index() {
     }
   }, []);
 
-  const fetchCategories = useCallback(async () => {
-    // This function is still needed to fetch categories, even if the state isn't directly used in Index.tsx's JSX
-    // TaskItem still needs categories prop, which is passed from here.
-    const { error } = await supabase.from("task_categories").select("*");
-    if (error) {
-      toast.error("Failed to fetch categories.");
-      console.error("Error fetching categories:", error);
-    }
-  }, []);
-
-  const fetchSections = useCallback(async () => {
-    const { data, error } = await supabase.from("task_sections").select("*").order("order", { ascending: true });
-    if (error) {
-      toast.error("Failed to fetch sections.");
-      console.error("Error fetching sections:", error);
-    } else {
-      setSections(data || []);
-    }
-  }, []);
-
   const fetchDoTodayLog = useCallback(async () => {
     const { data, error } = await supabase.from("do_today_off_log").select("task_id");
     if (error) {
       toast.error("Failed to fetch 'Do Today' log.");
       console.error("Error fetching 'Do Today' log:", error);
     } else {
-      setDoTodayLog(new Set(data?.map(item => item.task_id) || [])); // Convert to Set
+      setDoTodayLog(new Set(data?.map(item => item.task_id) || []));
     }
   }, []);
 
   useEffect(() => {
     fetchTasks();
-    fetchCategories(); // Keep fetching categories
-    fetchSections();
+    refetchCategories(); // Call refetch from hook
+    refetchSections(); // Call refetch from hook
     fetchDoTodayLog();
-  }, [fetchTasks, fetchCategories, fetchSections, fetchDoTodayLog]);
+  }, [fetchTasks, refetchCategories, refetchSections, fetchDoTodayLog]);
 
   const handleAddTask = async (parentId: string | null = null) => {
     if (!newTaskDescription.trim()) {
@@ -87,7 +70,7 @@ export default function Index() {
       return;
     }
 
-    const newTask: Omit<Task, "id" | "created_at" | "updated_at" | "category_color"> = { // Exclude category_color
+    const newTask: Omit<Task, "id" | "created_at" | "updated_at" | "category_color"> = {
       description: newTaskDescription,
       status: "to-do",
       user_id: user.user.id,
@@ -100,7 +83,7 @@ export default function Index() {
       remind_at: null,
       section_id: null,
       original_task_id: null,
-      category: null, // Ensure this is explicitly null if no category is selected
+      category: null,
       link: null,
       image_url: null,
     };
@@ -121,7 +104,7 @@ export default function Index() {
     }
   };
 
-  const handleUpdateTask = async (taskId: string, updates: Partial<Task>) => { // Updated signature
+  const handleUpdateTask = async (taskId: string, updates: Partial<Task>) => {
     const { data, error } = await supabase
       .from("tasks")
       .update(updates)
@@ -152,7 +135,7 @@ export default function Index() {
     });
   };
 
-  const handleToggleDoToday = async (taskToToggle: Task) => { // Changed signature to accept Task object
+  const handleToggleDoToday = async (taskToToggle: Task) => {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) {
       toast.error("You must be logged in to update tasks.");
@@ -160,10 +143,9 @@ export default function Index() {
     }
 
     const taskId = taskToToggle.id;
-    const isCurrentlyDoToday = !doTodayLog.has(taskId); // True if it's currently 'Do Today'
+    const isCurrentlyDoToday = !doTodayLog.has(taskId);
 
     if (isCurrentlyDoToday) {
-      // If it's currently 'Do Today', we want to mark it as NOT 'Do Today' (add to off_log)
       const { error } = await supabase
         .from("do_today_off_log")
         .insert({ task_id: taskId, user_id: user.user.id, off_date: new Date().toISOString().split('T')[0] });
@@ -179,7 +161,6 @@ export default function Index() {
         toast.success("Task unmarked from 'Do Today'.");
       }
     } else {
-      // If it's currently NOT 'Do Today', we want to mark it as 'Do Today' (remove from off_log)
       const { error } = await supabase
         .from("do_today_off_log")
         .delete()
@@ -213,8 +194,8 @@ export default function Index() {
       const updates = newOrder.map((task, index) => ({
         id: task.id,
         order: index,
-        parent_task_id: task.parent_task_id, // Preserve parent_task_id
-        section_id: task.section_id, // Preserve section_id
+        parent_task_id: task.parent_task_id,
+        section_id: task.section_id,
       }));
 
       const { error } = await supabase.rpc("update_tasks_order", { updates });
@@ -222,7 +203,6 @@ export default function Index() {
       if (error) {
         toast.error("Failed to update task order.");
         console.error("Error updating task order:", error);
-        // Optionally revert state if update fails
         fetchTasks();
       } else {
         toast.success("Task order updated!");
@@ -233,7 +213,7 @@ export default function Index() {
   const getTasksForSection = (sectionId: string | null) => {
     return tasks
       .filter((task) => task.section_id === sectionId && !task.parent_task_id)
-      .sort((a, b) => (a.order || 0) - (b.order || 0)); // Added null checks for order
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
   };
 
   return (
@@ -274,27 +254,16 @@ export default function Index() {
               items={getTasksForSection(section.id).map(task => task.id)}
               strategy={verticalListSortingStrategy}
             >
-              {getTasksForSection(section.id).map((task) => (
+              {getTasksForSection(section.id).map((task, index) => (
                 <React.Fragment key={task.id}>
                   <TaskItem
                     task={task}
-                    allTasks={tasks} // Pass allTasks
+                    index={index}
+                    categories={categories}
                     sections={sections}
-                    onUpdate={handleUpdateTask}
-                    onDelete={handleDeleteTask}
-                    onOpenOverview={() => {}} // Dummy function
-                    currentDate={new Date()} // Pass current date
-                    onMoveUp={async () => {}} // Dummy function
-                    onMoveDown={async () => {}} // Dummy function
-                    setFocusTask={async () => {}} // Dummy function
-                    isDoToday={!doTodayLog.has(task.id)} // Pass isDoToday
-                    toggleDoToday={handleToggleDoToday} // Pass toggleDoToday
-                    scheduledTasksMap={new Map()} // Dummy map
-                    onStatusChange={async (taskId, newStatus) => { // Dummy function
-                      await handleUpdateTask(taskId, { status: newStatus });
-                      return taskId;
-                    }}
-                    level={0} // Pass level prop
+                    onUpdateTask={(updates) => handleUpdateTask(task.id, updates)}
+                    onDeleteTask={handleDeleteTask}
+                    onAddTask={handleAddTask}
                   />
                 </React.Fragment>
               ))}
@@ -310,27 +279,16 @@ export default function Index() {
               items={getTasksForSection(null).map(task => task.id)}
               strategy={verticalListSortingStrategy}
             >
-              {getTasksForSection(null).map((task) => (
+              {getTasksForSection(null).map((task, index) => (
                 <React.Fragment key={task.id}>
                   <TaskItem
                     task={task}
-                    allTasks={tasks} // Pass allTasks
+                    index={index}
+                    categories={categories}
                     sections={sections}
-                    onUpdate={handleUpdateTask}
-                    onDelete={handleDeleteTask}
-                    onOpenOverview={() => {}} // Dummy function
-                    currentDate={new Date()} // Pass current date
-                    onMoveUp={async () => {}} // Dummy function
-                    onMoveDown={async () => {}} // Dummy function
-                    setFocusTask={async () => {}} // Dummy function
-                    isDoToday={!doTodayLog.has(task.id)} // Pass isDoToday
-                    toggleDoToday={handleToggleDoToday} // Pass toggleDoToday
-                    scheduledTasksMap={new Map()} // Dummy map
-                    onStatusChange={async (taskId, newStatus) => { // Dummy function
-                      await handleUpdateTask(taskId, { status: newStatus });
-                      return taskId;
-                    }}
-                    level={0} // Pass level prop
+                    onUpdateTask={(updates) => handleUpdateTask(task.id, updates)}
+                    onDeleteTask={handleDeleteTask}
+                    onAddTask={handleAddTask}
                   />
                 </React.Fragment>
               ))}

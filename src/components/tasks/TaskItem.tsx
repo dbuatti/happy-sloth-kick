@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { format, parseISO, isToday, isPast } from 'date-fns';
-import { GripVertical, Check, X, Edit, Trash2, Plus, CalendarDays, Repeat, Star } from 'lucide-react';
+import { GripVertical, CalendarDays, Repeat } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -64,13 +64,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
           )}
         >
           <div className="flex items-center justify-between">
-            <div className="flex items-center flex-grow">
+            <div className="flex items-center flex-grow min-w-0">
               <span {...provided.dragHandleProps} className="mr-2 text-gray-400 cursor-grab">
                 <GripVertical className="h-4 w-4" />
               </span>
               <Checkbox checked={task.status === 'completed'} onCheckedChange={handleToggleComplete} className="mr-3" />
-              <div className="flex-grow">
-                <p className="text-sm font-medium text-gray-800">{task.description}</p>
+              <div className="flex-grow min-w-0">
+                <p className="text-sm font-medium text-gray-800 truncate">{task.description}</p>
                 <div className="flex items-center space-x-2 mt-1 text-xs text-gray-500">
                   {task.due_date && (
                     <span className="flex items-center">
@@ -87,7 +87,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
                 </div>
               </div>
             </div>
-            <div className="flex items-center space-x-1">
+            <div className="flex items-center space-x-1 flex-shrink-0">
               <Dialog open={isEditing} onOpenChange={setIsEditing}>
                 <DialogTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsEditing(true)}>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { format, parseISO } from 'date-fns';
-import { Calendar as CalendarIcon, Info } from 'lucide-react';
+import { Calendar as CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';

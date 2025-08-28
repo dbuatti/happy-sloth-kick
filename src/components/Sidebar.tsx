@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -13,7 +13,6 @@ import {
   Moon,
   Code,
   Menu,
-  X,
   Palette,
   Sun,
 } from "lucide-react";
