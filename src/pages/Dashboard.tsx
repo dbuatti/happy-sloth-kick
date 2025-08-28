@@ -44,7 +44,7 @@ import DailyBriefingCard from '@/components/dashboard/DailyBriefingCard';
 import { PanelGroup, Panel, PanelResizeHandle } from "react-resizable-panels";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSettings } from '@/context/SettingsContext';
-
+import ADHDTimeDateBanner from '@/components/ADHDTimeDateBanner'; // Import the new banner
 
 interface DashboardProps {
   isDemo?: boolean;
@@ -182,6 +182,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
     <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="flex-1 flex flex-col">
         <main className="flex-grow p-4 md:p-6 flex flex-col">
+          <ADHDTimeDateBanner /> {/* Placed at the top of the main content area */}
           <DashboardHeader
             onAddCard={() => setIsAddCardOpen(true)}
             onCustomizeLayout={() => setIsLayoutSettingsOpen(true)}
