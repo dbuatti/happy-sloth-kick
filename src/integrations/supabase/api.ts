@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient'; // Ensure correct import path
-import { format } from 'date-fns'; // Import format for date handling
+import { format, startOfDay, endOfDay } from 'date-fns'; // Import format, startOfDay, endOfDay for date handling
 
 // Define interfaces for AI suggestions
 interface AISuggestionCategory {
@@ -269,6 +269,42 @@ export async function suggestTaskDetails(
     return parsedData;
   } catch (error) {
     console.error("Error in suggestTaskDetails:", error);
+    return null;
+  }
+}
+
+export async function getDailyBriefing(userId: string, currentDate: Date): Promise<string | null> {
+  const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+  if (!SUPABASE_PROJECT_ID) {
+    console.error("VITE_SUPABASE_PROJECT_ID not set.");
+    return null;
+  }
+
+  const localDayStartISO = startOfDay(currentDate).toISOString();
+  const localDayEndISO = endOfDay(currentDate).toISOString();
+
+  const EDGE_FUNCTION_URL = `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/daily-briefing`;
+
+  try {
+    const response = await fetch(EDGE_FUNCTION_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabase.auth.session()?.access_token || ''}`, // Include auth token if available
+      },
+      body: JSON.stringify({ userId, localDayStartISO, localDayEndISO }),
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      console.error("Daily Briefing Edge Function failed:", response.status, errorBody);
+      throw new Error(`Daily Briefing Edge Function failed with status ${response.status}: ${errorBody}`);
+    }
+
+    const data = await response.json();
+    return data.briefing || null;
+  } catch (error) {
+    console.error("Error fetching daily briefing:", error);
     return null;
   }
 }
