@@ -195,7 +195,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
             tracks[i].push(app);
             positionedApps.push({
               ...app,
-              gridColumn: dayIndex + 1,
+              gridColumn: dayIndex + 2, // Adjusted to dayIndex + 2
               gridRowStart,
               gridRowEnd,
               trackIndex: i,
@@ -211,7 +211,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
           tracks.push([app]);
           positionedApps.push({
             ...app,
-            gridColumn: dayIndex + 1,
+            gridColumn: dayIndex + 2, // Adjusted to dayIndex + 2
             gridRowStart,
             gridRowEnd,
             trackIndex: tracks.length - 1,
