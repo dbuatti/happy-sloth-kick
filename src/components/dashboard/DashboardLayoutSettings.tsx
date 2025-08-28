@@ -1,25 +1,18 @@
 import React from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { CustomCard } from '@/hooks/useDashboardData';
-import { UserSettings } from '@/hooks/useUserSettings';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { useDashboardData, CustomCard } from '@/hooks/useDashboardData';
+import { UserSettings } from '@/hooks/useUserSettings'; // Import UserSettings type
 
 interface DashboardLayoutSettingsProps {
   isOpen: boolean;
   onClose: () => void;
-  settings: UserSettings | null;
+  settings: UserSettings | null; // Updated to UserSettings | null
   customCards: CustomCard[];
-  updateSettings: (updates: Partial<UserSettings>) => Promise<boolean>;
-  updateCustomCard: (args: { id: string; updates: Partial<Omit<CustomCard, 'id' | 'user_id'>> }) => Promise<CustomCard>;
+  updateSettings: (updates: Partial<Omit<UserSettings, 'user_id'>>) => Promise<boolean>; // Updated to match useUserSettings's updateSettings
+  updateCustomCard: ReturnType<typeof useDashboardData>['updateCustomCard'];
 }
 
 const DashboardLayoutSettings: React.FC<DashboardLayoutSettingsProps> = ({
@@ -30,95 +23,65 @@ const DashboardLayoutSettings: React.FC<DashboardLayoutSettingsProps> = ({
   updateSettings,
   updateCustomCard,
 }) => {
-  const handleToggleCardVisibility = async (cardId: string, isVisible: boolean) => {
-    await updateCustomCard({ id: cardId, updates: { is_visible: isVisible } });
+  const handleToggleBuiltIn = (cardKey: string, checked: boolean) => {
+    if (!settings) return; // Ensure settings is not null
+    const newLayout = {
+      ...(settings.dashboard_layout || {}), // Ensure it's an object
+      [cardKey]: checked
+    };
+    // Ensure updates match the Partial<Omit<UserSettings, 'user_id'>> expected by useSettings
+    updateSettings({ dashboard_layout: newLayout });
   };
 
-  const handleToggleBuiltInCardVisibility = async (key: keyof UserSettings['dashboard_layout'], isVisible: boolean) => {
-    if (settings) {
-      await updateSettings({
-        dashboard_layout: {
-          ...settings.dashboard_layout,
-          [key]: isVisible,
-        },
-      });
-    }
+  const handleToggleCustom = (cardId: string, checked: boolean) => {
+    updateCustomCard({ id: cardId, updates: { is_visible: checked } });
   };
+
+  const builtInCards = [
+    { key: 'dailyBriefingVisible', label: 'Daily Briefing' },
+    { key: 'dailyScheduleVisible', label: 'Daily Schedule Preview' },
+    { key: 'weeklyFocusVisible', label: "This Week's Focus" },
+    { key: 'peopleMemoryVisible', label: 'People Memory' },
+    { key: 'meditationNotesVisible', label: 'Meditation Notes' },
+  ];
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle>Customize Dashboard Layout</DialogTitle>
-          <DialogDescription>
-            Choose which cards are visible on your dashboard.
-          </DialogDescription>
+          <DialogTitle>Customize Dashboard</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <h3 className="text-lg font-semibold">Built-in Cards</h3>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="daily-briefing-visibility">Daily Briefing</Label>
+        <div className="py-4 space-y-4 max-h-[60vh] overflow-y-auto">
+          <h4 className="font-semibold">Built-in Cards</h4>
+          {builtInCards.map(({ key, label }) => (
+            <div key={key} className="flex items-center justify-between">
+              <Label htmlFor={`toggle-${key}`}>{label}</Label>
               <Switch
-                id="daily-briefing-visibility"
-                checked={settings?.dashboard_layout?.dailyBriefingVisible ?? true}
-                onCheckedChange={(checked) => handleToggleBuiltInCardVisibility('dailyBriefingVisible', checked)}
+                id={`toggle-${key}`}
+                checked={settings?.dashboard_layout?.[key] !== false} // Safely access layout property
+                onCheckedChange={(checked) => handleToggleBuiltIn(key, checked)}
               />
             </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="daily-schedule-visibility">Daily Schedule Preview</Label>
-              <Switch
-                id="daily-schedule-visibility"
-                checked={settings?.dashboard_layout?.dailyScheduleVisible ?? true}
-                onCheckedChange={(checked) => handleToggleBuiltInCardVisibility('dailyScheduleVisible', checked)}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="weekly-focus-visibility">Weekly Focus</Label>
-              <Switch
-                id="weekly-focus-visibility"
-                checked={settings?.dashboard_layout?.weeklyFocusVisible ?? true}
-                onCheckedChange={(checked) => handleToggleBuiltInCardVisibility('weeklyFocusVisible', checked)}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="people-memory-visibility">People Memory</Label>
-              <Switch
-                id="people-memory-visibility"
-                checked={settings?.dashboard_layout?.peopleMemoryVisible ?? true}
-                onCheckedChange={(checked) => handleToggleBuiltInCardVisibility('peopleMemoryVisible', checked)}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="meditation-notes-visibility">Meditation Notes</Label>
-              <Switch
-                id="meditation-notes-visibility"
-                checked={settings?.dashboard_layout?.meditationNotesVisible ?? true}
-                onCheckedChange={(checked) => handleToggleBuiltInCardVisibility('meditationNotesVisible', checked)}
-              />
-            </div>
-          </div>
-
-          <h3 className="text-lg font-semibold mt-4">Custom Cards</h3>
-          <div className="space-y-2">
-            {customCards.length === 0 ? (
-              <p className="text-muted-foreground text-sm">No custom cards added yet.</p>
-            ) : (
-              customCards.map((card) => (
+          ))}
+          {customCards.length > 0 && (
+            <>
+              <hr className="my-4" />
+              <h4 className="font-semibold">Your Custom Cards</h4>
+              {customCards.map(card => (
                 <div key={card.id} className="flex items-center justify-between">
-                  <Label htmlFor={`custom-card-${card.id}`}>{card.emoji} {card.title}</Label>
+                  <Label htmlFor={`toggle-${card.id}`}>{card.title}</Label>
                   <Switch
-                    id={`custom-card-${card.id}`}
+                    id={`toggle-${card.id}`}
                     checked={card.is_visible}
-                    onCheckedChange={(checked) => handleToggleCardVisibility(card.id, checked)}
+                    onCheckedChange={(checked) => handleToggleCustom(card.id, checked)}
                   />
                 </div>
-              ))
-            )}
-          </div>
+              ))}
+            </>
+          )}
         </div>
         <DialogFooter>
-          <Button onClick={onClose}>Close</Button>
+          <Button onClick={onClose}>Done</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

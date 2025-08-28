@@ -10,7 +10,7 @@ import ProjectTrackerSettings from '@/components/ProjectTrackerSettings';
 import { useTheme } from 'next-themes';
 import TaskSettings from '@/components/TaskSettings';
 import PageToggleSettings from '@/components/PageToggleSettings';
-import ScheduleSettings from '@/components/ScheduleSettings'; // Import new ScheduleSettings
+import ScheduleSettings from '@/components/ScheduleSettings';
 
 interface SettingsProps {
   isDemo?: boolean;
@@ -192,7 +192,7 @@ const Settings: React.FC<SettingsProps> = ({ isDemo = false, demoUserId }) => {
 
             <PageToggleSettings />
             <TaskSettings />
-            <ScheduleSettings /> {/* New ScheduleSettings component */}
+            <ScheduleSettings />
             <WorkHoursSettings />
             <ProjectTrackerSettings />
 
