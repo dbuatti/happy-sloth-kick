@@ -181,7 +181,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="flex-1 flex flex-col">
-        <main className="flex-grow p-4 md:p-6">
+        <main className="flex-grow p-4 md:p-6 flex flex-col">
           <DashboardHeader
             onAddCard={() => setIsAddCardOpen(true)}
             onCustomizeLayout={() => setIsLayoutSettingsOpen(true)}
@@ -248,7 +248,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
           ) : (
             <PanelGroup
               direction="horizontal"
-              className="min-h-[600px] rounded-lg border relative z-[1]"
+              className="flex-grow rounded-lg border relative z-[1]"
               onLayout={handlePanelLayoutChange}
             >
               <Panel defaultSize={defaultPanelSizes[0]} minSize={30}>
@@ -298,7 +298,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
             </PanelGroup>
           )}
         </main>
-        <footer className="p-4 relative z-[0]">
+        <footer className="p-4">
           <p>&copy; {new Date().getFullYear()} TaskMaster. All rights reserved.</p>
         </footer>
 
