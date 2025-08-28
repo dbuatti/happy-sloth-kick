@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"; // Import Card components
+import { Button } from "@/components/ui/button";
+import { Edit, Save, X, StickyNote, Trash2, Link as LinkIcon } from 'lucide-react'; // Added LinkIcon
+import { useState, useEffect } from 'react'; // Import useState
 import { useDashboardData, CustomCard as CustomCardType } from '@/hooks/useDashboardData';
 import EditableCard from './EditableCard';
-import { StickyNote, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Button } from '../ui/button';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"; // Added Tooltip imports
 
 interface CustomCardProps {
   card: CustomCardType;
@@ -64,17 +66,38 @@ const CustomCard: React.FC<CustomCardProps> = ({ card, isOverlay = false }) => {
 
     return parts.map((part, index) => {
       if (part && part.match(urlRegex)) {
+        let displayUrl = part;
+        try {
+            const urlObj = new URL(part);
+            displayUrl = urlObj.hostname;
+            if (displayUrl.startsWith('www.')) {
+                displayUrl = displayUrl.substring(4);
+            }
+            if (displayUrl.length > 30) {
+                displayUrl = displayUrl.substring(0, 27) + '...';
+            }
+        } catch (e) {
+            // Keep original part if URL parsing fails
+        }
+
         return (
-          <a
-            key={index}
-            href={part}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary hover:underline break-all"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {part}
-          </a>
+          <Tooltip key={index}>
+            <TooltipTrigger asChild>
+              <a
+                href={part}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-primary hover:underline"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <LinkIcon className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate max-w-[200px]">{displayUrl}</span>
+              </a>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="break-all">{part}</p>
+            </TooltipContent>
+          </Tooltip>
         );
       }
       return part;
