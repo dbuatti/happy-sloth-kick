@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,8 +10,7 @@ import MyHub from "./pages/MyHub";
 import Help from "./pages/Help";
 import ProjectBalanceTracker from "./pages/ProjectBalanceTracker";
 import TimeBlockSchedule from "./pages/TimeBlockSchedule";
-import Meditation from "./pages/Meditation";
-import MindfulnessTools from "./pages/MindfulnessTools";
+// Removed Meditation and MindfulnessTools imports
 import FocusMode from "./pages/FocusMode";
 import LandingPage from "./pages/LandingPage";
 import DailyTasksV3 from "./pages/DailyTasksV3";
@@ -25,14 +26,7 @@ import TaskCalendar from "./pages/TaskCalendar";
 import { SettingsProvider } from "./context/SettingsContext";
 import Dashboard from "./pages/Dashboard";
 
-// Import new dedicated mindfulness tool pages
-import BodyScanMeditationPage from "./pages/mindfulness/BodyScanMeditationPage";
-import MindfulEatingGuidePage from "./pages/mindfulness/MindfulEatingGuidePage";
-import ProgressiveMuscleRelaxationPage from "./pages/mindfulness/ProgressiveMuscleRelaxationPage";
-import GuidedImageryPage from "./pages/mindfulness/GuidedImageryPage";
-import ThoughtDiffusionToolPage from "./pages/mindfulness/ThoughtDiffusionToolPage";
-import SensoryToolPage from "./pages/mindfulness/SensoryToolPage";
-import BreathingBubblePage from "./pages/mindfulness/BreathingBubblePage";
+// Removed imports for dedicated mindfulness tool pages
 
 // Import new dedicated pages for MyHub sections
 import Settings from "./pages/Settings";
@@ -82,20 +76,12 @@ const AppContent = () => {
               <Route path="/demo/help" element={<Help />} />
               <Route path="/demo/projects" element={<ProjectBalanceTracker isDemo={true} demoUserId={demoUserId} />} />
               <Route path="/demo/schedule" element={<TimeBlockSchedule isDemo={true} demoUserId={demoUserId} />} />
-              <Route path="/demo/meditation" element={<Meditation />} />
+              {/* Removed /demo/meditation route */}
               <Route path="/demo/sleep" element={<SleepPage isDemo={true} demoUserId={demoUserId} />} />
-              <Route path="/demo/mindfulness" element={<MindfulnessTools isDemo={true} />} />
+              {/* Removed /demo/mindfulness route and all sub-routes */}
               <Route path="/demo/focus" element={<FocusMode demoUserId={demoUserId} />} />
               <Route path="/demo/dev-space" element={<DevSpace isDemo={true} demoUserId={demoUserId} />} />
               
-              <Route path="/demo/mindfulness/body-scan" element={<BodyScanMeditationPage />} />
-              <Route path="/demo/mindfulness/mindful-eating" element={<MindfulEatingGuidePage />} />
-              <Route path="/demo/mindfulness/pmr" element={<ProgressiveMuscleRelaxationPage />} />
-              <Route path="/demo/mindfulness/guided-imagery" element={<GuidedImageryPage />} />
-              <Route path="/demo/mindfulness/thought-diffusion" element={<ThoughtDiffusionToolPage />} />
-              <Route path="/demo/mindfulness/sensory-tool" element={<SensoryToolPage />} />
-              <Route path="/demo/mindfulness/breathing-bubble" element={<BreathingBubblePage />} />
-
               <Route path="/demo/settings" element={<Settings isDemo={true} demoUserId={demoUserId} />} />
               <Route path="/demo/analytics" element={<Analytics isDemo={true} demoUserId={demoUserId} />} />
               <Route path="/demo/archive" element={<Archive isDemo={true} demoUserId={demoUserId} />} />
@@ -127,20 +113,12 @@ const AppContent = () => {
                 <Route path="/help" element={<Help />} />
                 <Route path="/projects" element={<ProjectBalanceTracker />} />
                 <Route path="/schedule" element={<TimeBlockSchedule />} />
-                <Route path="/meditation" element={<Meditation />} />
+                {/* Removed /meditation route */}
                 <Route path="/sleep" element={<SleepPage />} />
-                <Route path="/mindfulness" element={<MindfulnessTools />} />
+                {/* Removed /mindfulness route and all sub-routes */}
                 <Route path="/focus" element={<FocusMode />} />
                 <Route path="/dev-space" element={<DevSpace />} />
                 
-                <Route path="/mindfulness/body-scan" element={<BodyScanMeditationPage />} />
-                <Route path="/mindfulness/mindful-eating" element={<MindfulEatingGuidePage />} />
-                <Route path="/mindfulness/pmr" element={<ProgressiveMuscleRelaxationPage />} />
-                <Route path="/mindfulness/guided-imagery" element={<GuidedImageryPage />} />
-                <Route path="/mindfulness/thought-diffusion" element={<ThoughtDiffusionToolPage />} />
-                <Route path="/mindfulness/sensory-tool" element={<SensoryToolPage />} />
-                <Route path="/mindfulness/breathing-bubble" element={<BreathingBubblePage />} />
-
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/analytics" element={<Analytics />} />
                 <Route path="/archive" element={<Archive />} />
