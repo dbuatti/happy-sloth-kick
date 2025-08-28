@@ -1,86 +1,32 @@
-import { supabase } from './client';
-import { startOfDay, endOfDay } from 'date-fns'; // Corrected import statement
+import { supabase } from './supabaseClient'; // Ensure correct import path
 
-interface CategoryForAI {
-  id: string;
-  name: string;
+// Placeholder for parseAppointmentText function
+// This function would typically interact with an AI service or a more complex parsing logic.
+export async function parseAppointmentText(text: string, contextDate: Date): Promise<any | null> {
+  // In a real scenario, this would involve more sophisticated parsing.
+  // For now, we'll return a basic structure if the text is not empty.
+  if (!text.trim()) {
+    return null;
+  }
+
+  // Example basic parsing (can be expanded)
+  const titleMatch = text.match(/title:\s*(.*)/i);
+  const descriptionMatch = text.match(/description:\s*(.*)/i);
+  const dateMatch = text.match(/date:\s*(.*)/i);
+  const startTimeMatch = text.match(/start:\s*(.*)/i);
+  const endTimeMatch = text.match(/end:\s*(.*)/i);
+
+  const parsedDate = dateMatch ? new Date(dateMatch[1]) : contextDate;
+  const startTime = startTimeMatch ? startTimeMatch[1] : '09:00';
+  const endTime = endTimeMatch ? endTimeMatch[1] : '09:30';
+
+  return {
+    title: titleMatch ? titleMatch[1].trim() : text.split('\n')[0].trim() || 'New Appointment',
+    description: descriptionMatch ? descriptionMatch[1].trim() : null,
+    date: parsedDate.toISOString().split('T')[0], // YYYY-MM-DD
+    startTime: startTime, // HH:mm
+    endTime: endTime,     // HH:mm
+  };
 }
 
-interface SuggestTaskDetailsResponse {
-  category: string;
-  priority: string;
-  dueDate: string | null;
-  remindAt: string | null;
-  section: string | null;
-  cleanedDescription: string;
-  link: string | null;
-  notes: string | null;
-}
-
-export const suggestTaskDetails = async (
-  description: string,
-  categories: CategoryForAI[],
-  currentDate: Date
-): Promise<SuggestTaskDetailsResponse | null> => {
-  try {
-    const { data, error } = await supabase.functions.invoke('suggest-task-details', {
-      body: { description, categories, currentDate: currentDate.toISOString().split('T')[0] },
-    });
-
-    if (error) {
-      console.error('Error invoking Edge Function:', error);
-      throw new Error(error.message);
-    }
-
-    return data as SuggestTaskDetailsResponse;
-  } catch (error: any) {
-    console.error('Failed to get AI suggestions:', error.message);
-    return null;
-  }
-};
-
-export const parseAppointmentText = async (
-  text: string,
-  currentDate: Date
-): Promise<{ title: string; description: string | null; date: string; startTime: string; endTime: string } | null> => {
-  try {
-    const { data, error } = await supabase.functions.invoke('parse-appointment-text', {
-      body: { text, currentDate: currentDate.toISOString().split('T')[0] },
-    });
-
-    if (error) {
-      console.error('Error invoking Edge Function:', error);
-      throw new Error(error.message);
-    }
-
-    return data;
-  } catch (error: any) {
-    console.error('Failed to parse appointment text:', error.message);
-    return null;
-  }
-};
-
-export const getDailyBriefing = async (
-  userId: string,
-  currentDate: Date
-): Promise<string | null> => {
-  try {
-    const { data, error } = await supabase.functions.invoke('daily-briefing', {
-      body: {
-        userId,
-        localDayStartISO: startOfDay(currentDate).toISOString(), // Send local day start in UTC
-        localDayEndISO: endOfDay(currentDate).toISOString(),     // Send local day end in UTC
-      },
-    });
-
-    if (error) {
-      console.error('Error invoking daily-briefing Edge Function:', error);
-      throw new Error(error.message);
-    }
-
-    return data.briefing;
-  } catch (error: any) {
-    console.error('Failed to get daily briefing:', error.message);
-    return null;
-  }
-};
+// Add other Supabase API related functions here as needed
