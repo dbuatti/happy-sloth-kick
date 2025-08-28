@@ -1,7 +1,10 @@
+"use client";
+
+import React from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { SessionContextProvider } from "@/integrations/supabase/auth";
 import { Toaster } from "@/components/ui/sonner";
-import { MainLayout } from "@/components/MainLayout";
+import MainLayout from "@/components/MainLayout"; // Changed to default import
 import { NotFound } from "@/pages/NotFound";
 import Index from "@/pages/Index";
 
