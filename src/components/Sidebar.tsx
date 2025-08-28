@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Link, useLocation, Navigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   ListTodo,
