@@ -23,7 +23,8 @@ interface SortableSectionHeaderProps {
   isOverlay?: boolean;
 }
 
-const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
+// Changed from React.FC<SortableSectionHeaderProps> to inline type annotation
+const SortableSectionHeader = ({
   section,
   sectionTasksCount,
   isExpanded,
@@ -34,7 +35,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
   updateSectionIncludeInFocusMode,
   onUpdateSectionName,
   isOverlay = false,
-}) => {
+}: SortableSectionHeaderProps) => { // Added type annotation here
   const sortable = !isOverlay ? useSortable({ id: section.id, data: { type: 'section', section } }) : null;
 
   const attributes = sortable?.attributes;
@@ -104,11 +105,11 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
       {...(attributes || {})}
       {...(listeners || {})}
     >
-      <div 
+      <div
         className="relative flex items-center p-2 cursor-pointer bg-muted/30 rounded-lg"
         onClick={!isOverlay && !isEditingLocal ? () => toggleSection(section.id) : undefined}
       >
-        <div 
+        <div
           className="flex items-center flex-1 min-w-0"
         >
           {isEditingLocal ? (
@@ -119,7 +120,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
                 onBlur={handleSaveEdit}
                 onKeyDown={handleInputKeyDown}
                 onMouseDown={(e) => e.stopPropagation()}
-                onPointerDown={(e) => e.stopPropagation()} {/* Add this line */}
+                onPointerDown={(e) => e.stopPropagation()}
                 className={cn(
                   "!text-xl !font-bold",
                   "border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0",
@@ -135,7 +136,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
             </div>
           ) : (
             <>
-              <h3 
+              <h3
                 className="text-xl font-bold truncate cursor-text"
                 onClick={handleStartEdit}
                 data-no-dnd="true"
@@ -156,9 +157,9 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
             <>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     className="h-8 w-8 p-0"
                     tabIndex={isOverlay ? -1 : 0}
                     onClick={(e) => e.stopPropagation()}
@@ -187,9 +188,9 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={(e) => { e.stopPropagation(); toggleSection(section.id); }}
                 className="h-8 w-8 p-0"
                 tabIndex={isOverlay ? -1 : 0}
