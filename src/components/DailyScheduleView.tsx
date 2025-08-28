@@ -72,13 +72,13 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
   const [activeDragItem, setActiveDragItem] = useState<ScheduleEvent | Task | null>(null);
   const [isDraggingUnscheduledTask, setIsDraggingUnscheduledTask] = useState(false);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    })
-  );
+  // Declare useSensor outside the map function
+  const pointerSensor = useSensor(PointerSensor, {
+    activationConstraint: {
+      distance: 8,
+    },
+  });
+  const sensors = useSensors(pointerSensor);
 
   const scheduledEvents: ScheduleEvent[] = useMemo(() => {
     const events: ScheduleEvent[] = [...appointments];
@@ -204,6 +204,10 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
   };
 
   const handleEditAppointment = useCallback((event: ScheduleEvent) => {
+    if (isDemo) {
+      toast.info("Demo mode: Cannot edit appointments.");
+      return;
+    }
     if ('task_id' in event && event.task_id) {
       // It's a scheduled task, open task overview
       const task = allTasks.find(t => t.id === event.task_id);
@@ -217,7 +221,7 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
       toast.info('Editing pure appointments is not yet implemented.');
       console.log('Edit pure appointment:', event);
     }
-  }, [allTasks, onOpenTaskOverview]);
+  }, [allTasks, onOpenTaskOverview, isDemo]);
 
   const handleDeleteAppointment = useCallback(async (id: string) => {
     if (isDemo) {
@@ -266,7 +270,7 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                     )}
                     data-dnd-type="unscheduled-task"
                     data-dnd-item={JSON.stringify(task)}
-                    {...useSensor(PointerSensor).listeners} // Attach listeners for dragging
+                    {...pointerSensor.listeners} {/* Correctly apply listeners here */}
                   >
                     <GripVertical className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                     <span className="flex-grow truncate">{task.description}</span>
