@@ -58,12 +58,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false }) =>
       visible: settings?.visible_pages?.schedule !== false,
     },
     {
-      name: "Task Calendar",
-      href: isDemo ? "/demo/calendar" : "/calendar",
-      icon: CalendarDays,
-      visible: settings?.visible_pages?.taskCalendar !== false,
-    },
-    {
       name: "Projects",
       href: isDemo ? "/demo/projects" : "/projects",
       icon: BarChart3,

@@ -21,7 +21,6 @@ import AuthPage from "./pages/AuthPage";
 import FloatingTimer from "./components/FloatingTimer";
 import DevSpace from "./pages/DevSpace";
 import { TimerProvider } from "./context/TimerContext";
-import TaskCalendar from "./pages/TaskCalendar";
 import { SettingsProvider } from "./context/SettingsContext";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
@@ -35,7 +34,6 @@ const queryClient = new QueryClient();
 const AppContent = () => {
   const { user, loading: authLoading } = useAuth();
   const location = useLocation();
-  const [currentDate, setCurrentDate] = useState(new Date());
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
   if (authLoading) {
@@ -66,7 +64,6 @@ const AppContent = () => {
               <Route path="/demo" element={<Dashboard isDemo={true} demoUserId={demoUserId} />} />
               <Route path="/demo/dashboard" element={<Dashboard isDemo={true} demoUserId={demoUserId} />} />
               <Route path="/demo/daily-tasks" element={<DailyTasksV3 isDemo={true} demoUserId={demoUserId} />} />
-              <Route path="/demo/calendar" element={<TaskCalendar isDemo={true} demoUserId={demoUserId} />} />
               <Route path="/demo/my-hub" element={<MyHub isDemo={true} demoUserId={demoUserId} />} />
               <Route path="/demo/help" element={<Help />} />
               <Route path="/demo/projects" element={<ProjectBalanceTracker isDemo={true} demoUserId={demoUserId} />} />
@@ -101,7 +98,6 @@ const AppContent = () => {
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/daily-tasks" element={<DailyTasksV3 />} />
-                <Route path="/calendar" element={<TaskCalendar />} />
                 <Route path="/my-hub" element={<MyHub />} />
                 <Route path="/help" element={<Help />} />
                 <Route path="/projects" element={<ProjectBalanceTracker />} />
@@ -121,8 +117,6 @@ const AppContent = () => {
             <CommandPalette
               isCommandPaletteOpen={isCommandPaletteOpen}
               setIsCommandPaletteOpen={setIsCommandPaletteOpen}
-              currentDate={currentDate}
-              setCurrentDate={setCurrentDate}
             />
           </div>
         ) : (

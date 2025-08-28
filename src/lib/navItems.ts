@@ -3,7 +3,6 @@ import { Home, Target, LayoutGrid, CalendarClock, Leaf, Moon, Brain, LayoutDashb
 export const navItems = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, toggleable: false },
   { name: 'Daily Tasks', path: '/daily-tasks', icon: ListTodo, toggleable: true, showCount: true },
-  { name: 'Calendar', path: '/calendar', icon: Home, toggleable: true },
   { name: 'Focus Mode', path: '/focus', icon: Target, toggleable: true },
   { name: 'Mindfulness', path: '/mindfulness', icon: Brain, toggleable: true },
   { name: 'Meditation', path: '/meditation', icon: Leaf, toggleable: true },

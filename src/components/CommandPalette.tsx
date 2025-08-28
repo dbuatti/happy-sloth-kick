@@ -15,14 +15,12 @@ import { useSound } from '@/context/SoundContext';
 interface CommandPaletteProps {
   isCommandPaletteOpen: boolean;
   setIsCommandPaletteOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  currentDate: Date;
-  setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
 }
 
-const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, setIsCommandPaletteOpen, currentDate, setCurrentDate }) => {
+const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, setIsCommandPaletteOpen }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { handleAddTask, sections, allCategories, createSection, updateSection, deleteSection, updateSectionIncludeInFocusMode } = useTasks({ currentDate }); // Removed setCurrentDate from props
+  const { handleAddTask, sections, allCategories, createSection, updateSection, deleteSection, updateSectionIncludeInFocusMode } = useTasks({ currentDate: new Date() }); // Removed setCurrentDate from props
   const isMobile = useIsMobile();
   const { playSound } = useSound();
 
@@ -87,7 +85,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
                     <Home className="mr-2 h-3.5 w-3.5" />
                     <span>Go to Daily Tasks</span>
                   </CommandItem>
-                  <CommandItem onSelect={() => handleSelect(() => setCurrentDate(new Date()))}>
+                  <CommandItem onSelect={() => handleSelect(() => new Date())}> {/* Removed setCurrentDate */}
                     <CalendarDays className="mr-2 h-3.5 w-3.5" />
                     <span>Go to Today</span>
                   </CommandItem>
@@ -115,11 +113,11 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
                     <Settings className="mr-2 h-3.5 w-3.5" />
                     <span>Go to Settings</span>
                   </CommandItem>
-                  <CommandItem onSelect={() => handleSelect(() => setCurrentDate(prev => new Date(prev.setDate(prev.getDate() - 1))))}>
+                  <CommandItem onSelect={() => handleSelect(() => new Date().setDate(new Date().getDate() - 1))}> {/* Removed setCurrentDate */}
                     <ChevronLeft className="mr-2 h-3.5 w-3.5" />
                     <span>Previous Day</span>
                   </CommandItem>
-                  <CommandItem onSelect={() => handleSelect(() => setCurrentDate(prev => new Date(prev.setDate(prev.getDate() + 1))))}>
+                  <CommandItem onSelect={() => handleSelect(() => new Date().setDate(new Date().getDate() + 1))}> {/* Removed setCurrentDate */}
                     <ChevronRight className="mr-2 h-3.5 w-3.5" />
                     <span>Next Day</span>
                   </CommandItem>
@@ -165,7 +163,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
                 <Home className="mr-2 h-3.5 w-3.5" />
                 <span>Go to Daily Tasks</span>
               </CommandItem>
-              <CommandItem onSelect={() => handleSelect(() => setCurrentDate(new Date()))}>
+              <CommandItem onSelect={() => handleSelect(() => new Date())}> {/* Removed setCurrentDate */}
                 <CalendarDays className="mr-2 h-3.5 w-3.5" />
                 <span>Go to Today</span>
               </CommandItem>
@@ -193,11 +191,11 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
                 <Settings className="mr-2 h-3.5 w-3.5" />
                 <span>Go to Settings</span>
               </CommandItem>
-              <CommandItem onSelect={() => handleSelect(() => setCurrentDate(prev => new Date(prev.setDate(prev.getDate() - 1))))}>
+              <CommandItem onSelect={() => handleSelect(() => new Date().setDate(new Date().getDate() - 1))}> {/* Removed setCurrentDate */}
                 <ChevronLeft className="mr-2 h-3.5 w-3.5" />
                 <span>Previous Day</span>
               </CommandItem>
-              <CommandItem onSelect={() => handleSelect(() => setCurrentDate(prev => new Date(prev.setDate(prev.getDate() + 1))))}>
+              <CommandItem onSelect={() => handleSelect(() => new Date().setDate(new Date().getDate() + 1))}> {/* Removed setCurrentDate */}
                 <ChevronRight className="mr-2 h-3.5 w-3.5" />
                 <span>Next Day</span>
               </CommandItem>
@@ -237,7 +235,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
                 Fill in the details to add a new task from the command palette.
               </DialogDescription>
             </SheetHeader>
-            <AddTaskForm onAddTask={handleNewTaskSubmit} onTaskAdded={() => setIsAddTaskDialogOpen(false)} sections={sections} allCategories={allCategories} currentDate={currentDate} createSection={createSection} updateSection={updateSection} deleteSection={deleteSection} updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode} />
+            <AddTaskForm onAddTask={handleNewTaskSubmit} onTaskAdded={() => setIsAddTaskDialogOpen(false)} sections={sections} allCategories={allCategories} currentDate={new Date()} createSection={createSection} updateSection={updateSection} deleteSection={deleteSection} updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode} />
           </SheetContent>
         </Sheet>
       ) : (
@@ -249,7 +247,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
                 Fill in the details to add a new task from the command palette.
               </DialogDescription>
             </DialogHeader>
-            <AddTaskForm onAddTask={handleNewTaskSubmit} onTaskAdded={() => setIsAddTaskDialogOpen(false)} sections={sections} allCategories={allCategories} currentDate={currentDate} createSection={createSection} updateSection={updateSection} deleteSection={deleteSection} updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode} />
+            <AddTaskForm onAddTask={handleNewTaskSubmit} onTaskAdded={() => setIsAddTaskDialogOpen(false)} sections={sections} allCategories={allCategories} currentDate={new Date()} createSection={createSection} updateSection={updateSection} deleteSection={deleteSection} updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode} />
           </DialogContent>
         </Dialog>
       )}
