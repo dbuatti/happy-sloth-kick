@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { useUser } from "@/integrations/supabase/auth";
+import { useUser } from "@/hooks/useUser"; // Updated import path
 
 const WelcomeCard = () => {
   const { user } = useUser();
