@@ -81,7 +81,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
                     <Plus className="mr-2 h-3.5 w-3.5" />
                     <span>Add New Task</span>
                   </CommandItem>
-                  <CommandItem onSelect={() => handleSelect(() => navigate('/'))}>
+                  <CommandItem onSelect={() => handleSelect(() => navigate('/daily-tasks'))}>
                     <Home className="mr-2 h-3.5 w-3.5" />
                     <span>Go to Daily Tasks</span>
                   </CommandItem>
@@ -136,7 +136,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
                   <CommandGroup heading="Sections">
                     {sections.map(section => (
                       <CommandItem key={section.id} onSelect={() => handleSelect(() => {
-                        navigate('/');
+                        navigate('/daily-tasks');
                       })}>
                         <FolderOpen className="mr-2 h-3.5 w-3.5" />
                         <span>Go to {section.name}</span>
@@ -159,7 +159,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
                 <Plus className="mr-2 h-3.5 w-3.5" />
                 <span>Add New Task</span>
               </CommandItem>
-              <CommandItem onSelect={() => handleSelect(() => navigate('/'))}>
+              <CommandItem onSelect={() => handleSelect(() => navigate('/daily-tasks'))}>
                 <Home className="mr-2 h-3.5 w-3.5" />
                 <span>Go to Daily Tasks</span>
               </CommandItem>
@@ -214,7 +214,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
                   <CommandGroup heading="Sections">
                     {sections.map(section => (
                       <CommandItem key={section.id} onSelect={() => handleSelect(() => {
-                        navigate('/');
+                        navigate('/daily-tasks');
                       })}>
                         <FolderOpen className="mr-2 h-3.5 w-3.5" />
                         <span>Go to {section.name}</span>

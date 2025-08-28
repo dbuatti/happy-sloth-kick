@@ -19,16 +19,16 @@ import { AnimatePresence } from 'framer-motion';
 import { useSound } from '@/context/SoundContext';
 
 
-interface DailyTasksV3Props {
+interface DailyTasksPageProps {
   isDemo?: boolean;
   demoUserId?: string;
 }
 
-const DailyTasksV3: React.FC<DailyTasksV3Props> = ({ isDemo = false, demoUserId }) => {
+const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUserId }) => {
   const { user } = useAuth();
   const { playSound } = useSound();
 
-  // Manage currentDate state locally in DailyTasksV3
+  // Manage currentDate state locally in DailyTasksPage
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const {
@@ -366,4 +366,4 @@ const DailyTasksV3: React.FC<DailyTasksV3Props> = ({ isDemo = false, demoUserId 
   );
 };
 
-export default DailyTasksV3;
+export default DailyTasksPage;

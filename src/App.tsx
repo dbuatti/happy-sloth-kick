@@ -12,7 +12,7 @@ import ProjectBalanceTracker from "./pages/ProjectBalanceTracker";
 import TimeBlockSchedule from "./pages/TimeBlockSchedule";
 import FocusMode from "./pages/FocusMode";
 import LandingPage from "./pages/LandingPage";
-import DailyTasksV3 from "./pages/DailyTasksV3";
+import DailyTasksPage from "./pages/DailyTasksPage"; // Updated import
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { ReminderProvider } from "@/context/ReminderContext.tsx";
 import { SoundProvider } from "@/context/SoundContext";
@@ -63,7 +63,7 @@ const AppContent = () => {
             <Routes>
               <Route path="/demo" element={<Dashboard isDemo={true} demoUserId={demoUserId} />} />
               <Route path="/demo/dashboard" element={<Dashboard isDemo={true} demoUserId={demoUserId} />} />
-              <Route path="/demo/daily-tasks" element={<DailyTasksV3 isDemo={true} demoUserId={demoUserId} />} />
+              <Route path="/demo/daily-tasks" element={<DailyTasksPage isDemo={true} demoUserId={demoUserId} />} /> {/* Updated component */}
               <Route path="/demo/my-hub" element={<MyHub isDemo={true} demoUserId={demoUserId} />} />
               <Route path="/demo/help" element={<Help />} />
               <Route path="/demo/projects" element={<ProjectBalanceTracker isDemo={true} demoUserId={demoUserId} />} />
@@ -97,7 +97,7 @@ const AppContent = () => {
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/daily-tasks" element={<DailyTasksV3 />} />
+                <Route path="/daily-tasks" element={<DailyTasksPage />} /> {/* Updated component */}
                 <Route path="/my-hub" element={<MyHub />} />
                 <Route path="/help" element={<Help />} />
                 <Route path="/projects" element={<ProjectBalanceTracker />} />
