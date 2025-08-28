@@ -15,18 +15,25 @@ import {
   Menu,
   Palette,
   Sun,
+  Monitor, // Import Monitor icon for system theme
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { useTheme } from "next-themes"; // Import useTheme
+import { useTheme } from "next-themes";
 import {
   Sheet,
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useSettings } from "@/context/SettingsContext";
-import { themes as customThemes } from "@/lib/themes"; // Import custom themes
+import { themes as customThemes } from "@/lib/themes";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"; // Import DropdownMenu components
 
 interface SidebarProps {
   children: React.ReactNode;
@@ -35,7 +42,7 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false }) => {
   const location = useLocation();
-  const { theme, setTheme } = useTheme(); // Get theme and setTheme from useTheme
+  const { theme, setTheme } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { settings } = useSettings();
 
@@ -111,11 +118,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false }) =>
     },
   ].filter(item => item.visible);
 
-  // Combine system themes with custom themes for cycling
-  const allThemeNames = ["system", "light", "dark", ...Object.keys(customThemes)];
-
-  const currentThemeDisplayName = allThemeNames.find(name => name === theme) || "System";
-
   const renderNavItems = (items: typeof navItems) => (
     <nav className="grid items-start gap-2">
       {items.map((item) => {
@@ -155,34 +157,39 @@ export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false }) =>
         </div>
       </div>
       <div className="mt-auto p-4 border-t flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">Theme: {theme === 'system' ? 'System' : theme === 'light' ? 'Light' : theme === 'dark' ? 'Dark' : customThemes[theme as keyof typeof customThemes]?.name || 'Unknown'}</span>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            aria-label="Toggle dark mode"
-          >
-            {theme === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-          </Button>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">Color Palette</span>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => {
-              const currentIndex = allThemeNames.indexOf(theme || "system");
-              const nextIndex = (currentIndex + 1) % allThemeNames.length;
-              setTheme(allThemeNames[nextIndex]);
-            }}
-            aria-label="Change color palette"
-          >
-            <Palette className="h-4 w-4" />
-          </Button>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="w-full justify-start h-9">
+              <Palette className="mr-2 h-4 w-4" />
+              <span>Theme: {theme === 'system' ? 'System' : theme === 'light' ? 'Light' : theme === 'dark' ? 'Dark' : customThemes[theme as keyof typeof customThemes]?.name || 'Unknown'}</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setTheme('system')} className={theme === 'system' ? 'font-bold' : ''}>
+              <Monitor className="h-3.5 w-3.5 mr-2" />
+              System
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setTheme('light')} className={theme === 'light' ? 'font-bold' : ''}>
+              <Sun className="h-3.5 w-3.5 mr-2" />
+              Light
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setTheme('dark')} className={theme === 'dark' ? 'font-bold' : ''}>
+              <Moon className="h-3.5 w-3.5 mr-2" />
+              Dark
+            </DropdownMenuItem>
+            <Separator className="my-1" />
+            {Object.entries(customThemes).map(([themeName, themeData]) => (
+              <DropdownMenuItem
+                key={themeName}
+                onClick={() => setTheme(themeName)}
+                className={theme === themeName ? 'font-bold' : ''}
+              >
+                <Palette className="h-3.5 w-3.5 mr-2" />
+                {themeData.name}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );
