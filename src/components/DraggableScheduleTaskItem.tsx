@@ -31,7 +31,7 @@ const DraggableScheduleTaskItem: React.FC<DraggableScheduleTaskItemProps> = ({ t
     <div
       ref={setNodeRef}
       className={cn(
-        "p-2 rounded-md bg-card shadow-sm flex items-center gap-2 border-l-4 select-none",
+        "p-3 rounded-md bg-background shadow-sm flex items-center gap-2 border border-border border-l-4 select-none", // Added border and adjusted padding
         getPriorityColor(task.priority),
         isDragging && "opacity-50"
       )}

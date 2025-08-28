@@ -54,13 +54,13 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
     <div
       style={style}
       className={cn(
-        "absolute rounded-lg p-2 shadow-md group text-white",
+        "absolute rounded-lg p-2.5 shadow-md group text-white border border-white/20", // Added border and adjusted padding
         "flex flex-col justify-start items-start transition-all duration-200 ease-in-out",
         isCompleted && "opacity-70"
       )}
     >
       <div className="flex-grow w-full">
-        <h4 className="font-semibold text-sm truncate flex items-center gap-1.5">
+        <h4 className="font-semibold text-base truncate flex items-center gap-1.5"> {/* Adjusted font size */}
           {task ? (
             isCompleted ? (
               <div className="h-3.5 w-3.5 flex-shrink-0 bg-white rounded-full flex items-center justify-center">
@@ -72,7 +72,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
           ) : null}
           {appointment.title}
         </h4>
-        <p className="text-xs opacity-90">
+        <p className="text-sm opacity-90"> {/* Adjusted font size */}
           {startTime && endTime && isValid(startTime) && isValid(endTime) ? `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}` : 'Invalid time'}
         </p>
       </div>

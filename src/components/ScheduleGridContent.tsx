@@ -578,7 +578,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
                 "lg:w-[300px] lg:flex-shrink-0",
                 isTaskPanelCollapsed && "hidden"
               )}>
-                <div className="lg:sticky lg:top-4 space-y-4 bg-muted rounded-lg p-4">
+                <div className="lg:sticky lg:top-4 space-y-4 bg-card rounded-lg p-4 shadow-lg">
                   <h3 className="text-lg font-semibold">Unscheduled Tasks</h3>
                   <div className="space-y-2 max-h-[calc(100vh-20rem)] overflow-y-auto p-1">
                     {unscheduledDoTodayTasks.length > 0 ? (
