@@ -115,8 +115,10 @@ export default {
   },
   plugins: [require("tailwindcss-animate")],
   safelist: [
-    {
-      pattern: /theme-(ocean-breeze|sunset-glow|forest-deep|midnight-serenity|desert-bloom)/,
-    },
+    'theme-ocean-breeze',
+    'theme-sunset-glow',
+    'theme-forest-deep',
+    'theme-midnight-serenity',
+    'theme-desert-bloom',
   ],
 } satisfies Config;

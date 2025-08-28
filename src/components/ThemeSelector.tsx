@@ -13,6 +13,13 @@ const ThemeSelector = () => {
     setMounted(true);
   }, []);
 
+  // Add console log here to see what theme is being set
+  useEffect(() => {
+    if (mounted) {
+      console.log("Current theme from next-themes:", theme);
+    }
+  }, [theme, mounted]);
+
   if (!mounted) {
     return (
       <Button variant="ghost" size="icon" aria-label="Theme selector" className="h-7 w-7">
