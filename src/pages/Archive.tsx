@@ -8,6 +8,7 @@ import TaskDetailDialog from '@/components/TaskDetailDialog';
 import TaskOverviewDialog from '@/components/TaskOverviewDialog';
 import { useAllAppointments } from '@/hooks/useAllAppointments';
 import { Appointment } from '@/hooks/useAppointments';
+import { format, parseISO, isSameDay } from 'date-fns';
 
 interface ArchiveProps {
   isDemo?: boolean;
@@ -71,6 +72,25 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
     setIsTaskDetailOpen(true); // Open edit dialog
   };
 
+  // Group tasks by updated_at date
+  const groupedArchivedTasks = useMemo(() => {
+    const groups: { [date: string]: Task[] } = {};
+    archivedTasks.forEach(task => {
+      if (task.updated_at) {
+        const dateKey = format(parseISO(task.updated_at), 'yyyy-MM-dd');
+        if (!groups[dateKey]) {
+          groups[dateKey] = [];
+        }
+        groups[dateKey].push(task);
+      }
+    });
+
+    // Sort groups by date descending
+    return Object.entries(groups).sort(([dateA], [dateB]) => {
+      return parseISO(dateB).getTime() - parseISO(dateA).getTime();
+    });
+  }, [archivedTasks]);
+
   return (
     <div className="flex-1 flex flex-col">
       <main className="flex-grow p-4 flex justify-center">
@@ -94,30 +114,39 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
                 <p className="text-sm">Completed tasks will appear here once you archive them from your daily view.</p>
               </div>
             ) : (
-              <ul className="space-y-2">
-                {archivedTasks.map((task) => (
-                  <li key={task.id} className="relative rounded-xl p-2 transition-all duration-200 ease-in-out group hover:shadow-md">
-                    <TaskItem
-                      task={task}
-                      allTasks={allTasks as Task[]} // Cast to Task[]
-                      onStatusChange={handleTaskStatusChange}
-                      onDelete={deleteTask}
-                      onUpdate={updateTask}
-                      sections={sections}
-                      onOpenOverview={handleOpenOverview}
-                      currentDate={new Date()}
-                      onMoveUp={async () => {}}
-                      onMoveDown={async () => {}}
-                      setFocusTask={setFocusTask}
-                      isDoToday={!doTodayOffIds.has(task.original_task_id || task.id)}
-                      toggleDoToday={() => toggleDoToday(task)}
-                      scheduledTasksMap={scheduledTasksMap}
-                      isDemo={isDemo}
-                      level={0} // Pass level prop
-                    />
-                  </li>
+              <div className="space-y-6">
+                {groupedArchivedTasks.map(([dateKey, tasksInGroup]) => (
+                  <div key={dateKey}>
+                    <h3 className="text-xl font-bold mb-3 text-foreground">
+                      {isSameDay(parseISO(dateKey), new Date()) ? 'Today' : format(parseISO(dateKey), 'EEEE, MMM d')}
+                    </h3>
+                    <ul className="space-y-2">
+                      {tasksInGroup.map((task) => (
+                        <li key={task.id} className="relative rounded-xl p-2 transition-all duration-200 ease-in-out group hover:shadow-md">
+                          <TaskItem
+                            task={task}
+                            allTasks={allTasks as Task[]} // Cast to Task[]
+                            onStatusChange={handleTaskStatusChange}
+                            onDelete={deleteTask}
+                            onUpdate={updateTask}
+                            sections={sections}
+                            onOpenOverview={handleOpenOverview}
+                            currentDate={new Date()}
+                            onMoveUp={async () => {}}
+                            onMoveDown={async () => {}}
+                            setFocusTask={setFocusTask}
+                            isDoToday={!doTodayOffIds.has(task.original_task_id || task.id)}
+                            toggleDoToday={() => toggleDoToday(task)}
+                            scheduledTasksMap={scheduledTasksMap}
+                            isDemo={isDemo}
+                            level={0} // Pass level prop
+                          />
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 ))}
-              </ul>
+              </div>
             )}
           </CardContent>
         </Card>
