@@ -8,6 +8,8 @@ import TaskSectionComponent from '@/components/TaskSection';
 import AddSectionButton from '@/components/AddSectionButton';
 import SectionSelector from '@/components/SectionSelector';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Circle, CheckCircle, MoreHorizontal } from 'lucide-react';
 
 const DailyTasksPage: React.FC = () => {
   const [sections, setSections] = useState<TaskSection[]>([]);
@@ -256,12 +258,11 @@ const DailyTasksPage: React.FC = () => {
                     isSelected ? 'bg-primary/10 border border-primary/20' : 'hover:bg-muted'
                   }`}
                 >
-                  {/* Selection indicator */}
-                  <div 
-                    className={`w-2 h-2 rounded-full mr-2 cursor-pointer ${
-                      isSelected ? 'bg-primary' : 'bg-transparent border border-muted-foreground'
-                    }`}
-                    onClick={() => toggleTaskSelection(task.id)}
+                  {/* Selection checkbox */}
+                  <Checkbox
+                    checked={isSelected}
+                    onCheckedChange={() => toggleTaskSelection(task.id)}
+                    className="mr-2"
                   />
                   
                   {/* Task completion toggle */}

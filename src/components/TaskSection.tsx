@@ -37,12 +37,11 @@ const TaskSection: React.FC<TaskSectionProps> = ({
                 isSelected ? 'bg-primary/10 border border-primary/20' : 'hover:bg-muted'
               }`}
             >
-              {/* Selection indicator */}
-              <div 
-                className={`w-2 h-2 rounded-full mr-2 cursor-pointer ${
-                  isSelected ? 'bg-primary' : 'bg-transparent border border-muted-foreground'
-                }`}
-                onClick={() => onTaskSelect(task.id)}
+              {/* Selection checkbox */}
+              <Checkbox
+                checked={isSelected}
+                onCheckedChange={() => onTaskSelect(task.id)}
+                className="mr-2"
               />
               
               {/* Task completion toggle */}
