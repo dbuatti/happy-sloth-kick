@@ -4,7 +4,8 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Index from './pages/Index';
 import DailyTasksPage from './pages/DailyTasksPage';
-import DailyTasksV3 from './pages/DailyTasksV3'; // Import DailyTasksV3
+import DailyTasksV3 from './pages/DailyTasksV3';
+import { Toaster } from '@/components/ui/toaster'; // Import Toaster
 
 function App() {
   return (
@@ -12,8 +13,9 @@ function App() {
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/daily-tasks" element={<DailyTasksPage />} />
-        <Route path="/daily-tasks-v3" element={<DailyTasksV3 />} /> {/* New route for DailyTasksV3 */}
+        <Route path="/daily-tasks-v3" element={<DailyTasksV3 />} />
       </Routes>
+      <Toaster /> {/* Add Toaster component here */}
     </Router>
   );
 }
