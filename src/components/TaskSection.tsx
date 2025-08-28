@@ -2,9 +2,8 @@
 
 import React from 'react';
 import { TaskSection, Task } from '@/types/task';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
-import { Circle, CheckCircle, MoreHorizontal } from 'lucide-react';
+import { Circle, CheckCircle, MoreHorizontal, Square, SquareCheck } from 'lucide-react';
 
 interface TaskSectionProps {
   section: TaskSection;
@@ -37,12 +36,19 @@ const TaskSection: React.FC<TaskSectionProps> = ({
                 isSelected ? 'bg-primary/10 border border-primary/20' : 'hover:bg-muted'
               }`}
             >
-              {/* Selection checkbox */}
-              <Checkbox
-                checked={isSelected}
-                onCheckedChange={() => onTaskSelect(task.id)}
-                className="mr-2"
-              />
+              {/* Selection indicator - using a button with square icons */}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="p-0 h-auto"
+                onClick={() => onTaskSelect(task.id)}
+              >
+                {isSelected ? (
+                  <SquareCheck className="h-5 w-5 text-primary" />
+                ) : (
+                  <Square className="h-5 w-5 text-muted-foreground" />
+                )}
+              </Button>
               
               {/* Task completion toggle */}
               <Button
