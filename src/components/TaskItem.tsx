@@ -181,21 +181,21 @@ const TaskItem: React.FC<TaskItemProps> = ({
   return (
     <div
       className={cn(
-        "relative flex items-center w-full rounded-lg transition-colors duration-200 py-2 pl-4",
+        "relative flex items-center w-full rounded-lg transition-colors duration-200 py-3 pl-5 shadow-sm", // Increased padding, added shadow-sm
         task.status === 'completed' ? "text-muted-foreground bg-task-completed-bg" : "bg-card text-foreground",
         !isDoToday && "opacity-40", // Apply opacity if NOT 'Do Today'
         "group hover:bg-muted/50"
       )}
     >
       {/* Priority Pill */}
-      <div className={cn("absolute left-0 top-0 h-full w-1.5 rounded-l-lg", getPriorityDotColor(task.priority))} />
+      <div className={cn("absolute left-0 top-0 h-full w-2 rounded-l-lg", getPriorityDotColor(task.priority))} /> {/* Increased width */}
 
       <div className="flex-shrink-0 pr-1 flex items-center" onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}>
         {hasSubtasks && (
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6"
+            className="h-7 w-7" // Slightly larger for easier interaction
             onClick={(e: React.MouseEvent) => {
               e.stopPropagation();
               toggleTask?.(task.id);

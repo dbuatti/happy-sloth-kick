@@ -282,7 +282,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         onClick={onOpenFocusView}
       >
         <div className="w-full flex justify-center items-center mb-3 relative">
-          <h3 className="text-xl font-bold text-primary flex items-center gap-2">
+          <h3 className="text-xl font-bold text-primary flex items-center gap-2 font-bubbly"> {/* Added font-bubbly */}
             <Target className="h-6 w-6" /> Your Next Task
           </h3>
           {nextAvailableTask && nextAvailableTask.recurring_type === 'none' && (
@@ -301,7 +301,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
           <div className="w-full space-y-4">
             <div className="flex items-center justify-center gap-3">
               <div className={cn("w-5 h-5 rounded-full flex-shrink-0", getPriorityDotColor(nextAvailableTask.priority))} />
-              <p className="text-3xl sm:text-4xl font-extrabold text-foreground leading-tight line-clamp-2">
+              <p className="text-4xl sm:text-5xl font-extrabold text-foreground leading-tight line-clamp-2 font-bubbly"> {/* Increased font size, added font-bubbly */}
                 {nextAvailableTask.description}
               </p>
             </div>
@@ -324,7 +324,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
       <div
         ref={quickAddBarRef}
         className={cn(
-          "quick-add-bar px-4 py-3",
+          "quick-add-bar px-4 py-3 border border-input rounded-xl mx-4 mb-4", // Added border and rounded-xl
           stuck ? "stuck" : ""
         )}
       >
