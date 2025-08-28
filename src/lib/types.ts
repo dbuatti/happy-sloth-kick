@@ -135,6 +135,44 @@ export interface Database {
           },
         ];
       };
+      user_settings: {
+        Row: {
+          user_id: string;
+          project_tracker_title: string;
+          focused_task_id: string | null;
+          dashboard_layout: Json | null;
+          visible_pages: Json | null;
+          schedule_show_focus_tasks_only: boolean;
+          future_tasks_days_visible: number;
+        };
+        Insert: {
+          user_id: string;
+          project_tracker_title?: string;
+          focused_task_id?: string | null;
+          dashboard_layout?: Json | null;
+          visible_pages?: Json | null;
+          schedule_show_focus_tasks_only?: boolean;
+          future_tasks_days_visible?: number;
+        };
+        Update: {
+          user_id?: string;
+          project_tracker_title?: string;
+          focused_task_id?: string | null;
+          dashboard_layout?: Json | null;
+          visible_pages?: Json | null;
+          schedule_show_focus_tasks_only?: boolean;
+          future_tasks_days_visible?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "user_settings_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: true;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
