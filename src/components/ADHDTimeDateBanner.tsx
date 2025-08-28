@@ -19,7 +19,7 @@ const ADHDTimeDateBanner: React.FC = () => {
   return (
     <div className={cn(
       "w-full p-4 mb-6 rounded-xl shadow-lg",
-      "bg-gradient-to-r from-primary/10 to-accent/10",
+      "bg-gradient-to-r from-[hsl(var(--gradient-start-light))] to-[hsl(var(--gradient-end-light))] dark:from-[hsl(var(--gradient-start-dark))] dark:to-[hsl(var(--gradient-end-dark))]", // Changed gradient to use theme's general gradient variables
       "text-primary-foreground dark:text-foreground",
       "flex flex-col items-center justify-center text-center"
     )}>

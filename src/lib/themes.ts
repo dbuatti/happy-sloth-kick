@@ -23,6 +23,8 @@ export const themes = {
       '--input': '25 10% 90%',
       '--ring': '0 0% 20%',
       '--radius': '0.5rem',
+      '--gradient-start-light': '25 10% 96%', // Start with background
+      '--gradient-end-light': '25 5% 98%',   // Slightly lighter, less saturated
     },
     dark: {
       '--background': '25 20% 15%',
@@ -44,6 +46,8 @@ export const themes = {
       '--border': '25 20% 30%',
       '--input': '25 20% 30%',
       '--ring': '0 0% 80%',
+      '--gradient-start-dark': '25 20% 15%', // Start with background
+      '--gradient-end-dark': '25 25% 12%',   // Slightly darker, more saturated
     }
   },
   'calm-mist': {
@@ -70,6 +74,8 @@ export const themes = {
       '--input': '140 10% 90%',
       '--ring': '0 0% 20%',
       '--radius': '0.5rem',
+      '--gradient-start-light': '140 10% 96%',
+      '--gradient-end-light': '140 5% 98%',
     },
     dark: {
       '--background': '140 20% 15%',
@@ -91,6 +97,8 @@ export const themes = {
       '--border': '140 20% 30%',
       '--input': '140 20% 30%',
       '--ring': '0 0% 80%',
+      '--gradient-start-dark': '140 20% 15%',
+      '--gradient-end-dark': '140 25% 12%',
     }
   },
   'warm-dawn': {
@@ -117,6 +125,8 @@ export const themes = {
       '--input': '30 10% 92%',
       '--ring': '0 0% 30%',
       '--radius': '0.5rem',
+      '--gradient-start-light': '30 10% 97%',
+      '--gradient-end-light': '30 5% 99%',
     },
     dark: {
       '--background': '30 20% 18%',
@@ -138,6 +148,8 @@ export const themes = {
       '--border': '30 20% 35%',
       '--input': '30 20% 35%',
       '--ring': '0 0% 85%',
+      '--gradient-start-dark': '30 20% 18%',
+      '--gradient-end-dark': '30 25% 15%',
     }
   },
   'gentle-night': {
@@ -164,6 +176,8 @@ export const themes = {
       '--input': '220 10% 88%',
       '--ring': '220 15% 35%',
       '--radius': '0.5rem',
+      '--gradient-start-light': '220 10% 95%',
+      '--gradient-end-light': '220 5% 97%',
     },
     dark: {
       '--background': '220 20% 18%',
@@ -185,6 +199,8 @@ export const themes = {
       '--border': '220 20% 35%',
       '--input': '220 20% 35%',
       '--ring': '220 20% 85%',
+      '--gradient-start-dark': '220 20% 18%',
+      '--gradient-end-dark': '220 25% 15%',
     }
   },
   'focus-flow': {
@@ -211,6 +227,8 @@ export const themes = {
       '--input': '200 15% 90%',
       '--ring': '200 20% 20%',
       '--radius': '0.5rem',
+      '--gradient-start-light': '200 15% 98%',
+      '--gradient-end-light': '200 10% 99%',
     },
     dark: {
       '--background': '200 25% 12%',
@@ -232,6 +250,8 @@ export const themes = {
       '--border': '200 30% 25%',
       '--input': '200 30% 25%',
       '--ring': '200 25% 85%',
+      '--gradient-start-dark': '200 25% 12%',
+      '--gradient-end-dark': '200 30% 10%',
     }
   },
   'retro-wave': {
@@ -258,6 +278,8 @@ export const themes = {
       '--input': '240 10% 85%',
       '--ring': '240 10% 20%',
       '--radius': '0.5rem',
+      '--gradient-start-light': '240 20% 98%',
+      '--gradient-end-light': '240 15% 99%',
     },
     dark: {
       '--background': '260 40% 8%', /* Deep Purple-Blue */
@@ -279,6 +301,8 @@ export const themes = {
       '--border': '260 30% 25%',
       '--input': '260 30% 25%',
       '--ring': '240 10% 85%',
+      '--gradient-start-dark': '260 40% 8%',
+      '--gradient-end-dark': '260 45% 5%',
     }
   },
   'sepia-dusk': {
@@ -305,6 +329,8 @@ export const themes = {
       '--input': '29 59% 86%',     // gray0d
       '--ring': '270 28% 36%',     // purpleLight
       '--radius': '0.5rem',
+      '--gradient-start-light': '29 70% 89%',
+      '--gradient-end-light': '29 65% 91%',
     },
     dark: {
       '--background': '29 29% 13%', // gray02
@@ -326,6 +352,8 @@ export const themes = {
       '--border': '29 29% 26%',    // gray05
       '--input': '29 29% 21%',     // gray04
       '--ring': '270 28% 54%',     // purple
+      '--gradient-start-dark': '29 29% 13%',
+      '--gradient-end-dark': '29 34% 10%',
     }
   },
   'vibrant-flow': {
@@ -352,6 +380,8 @@ export const themes = {
       '--input': '210 10% 85%',
       '--ring': '210 10% 20%',
       '--radius': '0.5rem',
+      '--gradient-start-light': '210 20% 98%',
+      '--gradient-end-light': '210 15% 99%',
     },
     dark: {
       '--background': '240 40% 8%', /* Deep Blue-Purple */
@@ -373,6 +403,8 @@ export const themes = {
       '--border': '240 30% 25%',
       '--input': '240 30% 25%',
       '--ring': '210 10% 85%',
+      '--gradient-start-dark': '240 40% 8%',
+      '--gradient-end-dark': '240 45% 5%',
     }
   },
   'honeycomb': {
