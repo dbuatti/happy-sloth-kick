@@ -119,6 +119,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
                 onBlur={handleSaveEdit}
                 onKeyDown={handleInputKeyDown}
                 onMouseDown={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()} {/* Add this line */}
                 className={cn(
                   "!text-xl !font-bold",
                   "border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0",
