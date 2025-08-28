@@ -19,13 +19,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { useTheme } from "next-themes";
+import { useTheme } from "next-themes"; // Import useTheme
 import {
   Sheet,
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useSettings } from "@/context/SettingsContext";
+import { themes as customThemes } from "@/lib/themes"; // Import custom themes
 
 interface SidebarProps {
   children: React.ReactNode;
@@ -34,7 +35,7 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false }) => {
   const location = useLocation();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme } = useTheme(); // Get theme and setTheme from useTheme
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { settings } = useSettings();
 
@@ -110,23 +111,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false }) =>
     },
   ].filter(item => item.visible);
 
-  const themeOptions = [
-    { name: "Default", value: "theme-default" },
-    { name: "ADHD Friendly", value: "adhd-friendly" },
-    { name: "Calm Mist", value: "calm-mist" },
-    { name: "Warm Dawn", value: "warm-dawn" },
-    { name: "Gentle Night", value: "gentle-night" },
-    { name: "Focus Flow", value: "focus-flow" },
-    { name: "Retro Wave", value: "retro-wave" },
-    { name: "Sepia Dusk", value: "sepia-dusk" },
-    { name: "Vibrant Flow", value: "vibrant-flow" },
-    { name: "Honeycomb", value: "honeycomb" },
-    { name: "Forest Calm", value: "forest-calm" },
-    { name: "Rainbow Whimsy", value: "rainbow-whimsy" },
-  ];
+  // Combine system themes with custom themes for cycling
+  const allThemeNames = ["system", "light", "dark", ...Object.keys(customThemes)];
 
-  const currentThemeClass = document.documentElement.className.split(' ').find(cls => cls.startsWith('theme-') || themeOptions.some(opt => opt.value === cls));
-  const currentThemeName = themeOptions.find(opt => opt.value === currentThemeClass)?.name || "Default";
+  const currentThemeDisplayName = allThemeNames.find(name => name === theme) || "System";
 
   const renderNavItems = (items: typeof navItems) => (
     <nav className="grid items-start gap-2">
@@ -168,7 +156,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false }) =>
       </div>
       <div className="mt-auto p-4 border-t flex flex-col gap-2">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">Theme: {currentThemeName}</span>
+          <span className="text-sm font-medium">Theme: {theme === 'system' ? 'System' : theme === 'light' ? 'Light' : theme === 'dark' ? 'Dark' : customThemes[theme as keyof typeof customThemes]?.name || 'Unknown'}</span>
           <Button
             variant="ghost"
             size="icon"
@@ -186,10 +174,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false }) =>
             size="icon"
             className="h-8 w-8"
             onClick={() => {
-              const currentThemeIndex = themeOptions.findIndex(opt => opt.value === currentThemeClass);
-              const nextThemeIndex = (currentThemeIndex + 1) % themeOptions.length;
-              document.documentElement.className = document.documentElement.className.replace(currentThemeClass || '', '');
-              document.documentElement.classList.add(themeOptions[nextThemeIndex].value);
+              const currentIndex = allThemeNames.indexOf(theme || "system");
+              const nextIndex = (currentIndex + 1) % allThemeNames.length;
+              setTheme(allThemeNames[nextIndex]);
             }}
             aria-label="Change color palette"
           >
