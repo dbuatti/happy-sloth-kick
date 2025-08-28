@@ -1,375 +1,369 @@
-"use client";
+import React, { useState, useCallback, useMemo } from 'react';
+import TaskList from '@/components/TaskList';
+import TaskDetailDialog from '@/components/TaskDetailDialog';
+import TaskOverviewDialog from '@/components/TaskOverviewDialog';
+import { useTasks, Task } from '@/hooks/useTasks';
+import { useAuth } from '@/context/AuthContext';
+import { addDays, startOfDay } from 'date-fns';
+import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
+import CommandPalette from '@/components/CommandPalette';
+import { Card, CardContent } from "@/components/ui/card";
+import FocusPanelDrawer from '@/components/FocusPanelDrawer';
+import DailyTasksHeader from '@/components/DailyTasksHeader';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import AddTaskForm from '@/components/AddTaskForm';
+import { useAllAppointments } from '@/hooks/useAllAppointments';
+import { Appointment } from '@/hooks/useAppointments';
+import FullScreenFocusView from '@/components/FullScreenFocusView';
+import { AnimatePresence } from 'framer-motion';
+import { useSound } from '@/context/SoundContext';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { supabase } from '@/integrations/supabase/client'; // Correct import for Supabase client
-import { useToast } from '@/components/ui/use-toast';
-import { TaskSection, Task } from '@/types/task';
-import TaskSectionComponent from '@/components/TaskSection';
-import AddSectionButton from '@/components/AddSectionButton';
-import SectionSelector from '@/components/SectionSelector';
-import { Button } from '@/components/ui/button';
-import { Circle, CheckCircle, MoreHorizontal, Square, SquareCheck } from 'lucide-react';
 
-const DailyTasksV3: React.FC = () => {
-  const [sections, setSections] = useState<TaskSection[]>([]);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
-  const [showMoveSection, setShowMoveSection] = useState(false);
-  const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
-  // const supabase = createClientComponentClient(); // No longer needed
-  const { toast } = useToast();
+interface DailyTasksV3Props {
+  isDemo?: boolean;
+  demoUserId?: string;
+}
 
-  // Ref to store the ID of the last clicked task for Shift-selection
-  const lastClickedTaskId = useRef<string | null>(null);
+const DailyTasksV3: React.FC<DailyTasksV3Props> = ({ isDemo = false, demoUserId }) => {
+  const { user } = useAuth();
+  const { playSound } = useSound();
 
-  useEffect(() => {
-    fetchSectionsAndTasks();
+  // Manage currentDate state locally in DailyTasksV3
+  const [currentDate, setCurrentDate] = useState(new Date());
+
+  const {
+    tasks,
+    processedTasks,
+    filteredTasks,
+    nextAvailableTask,
+    updateTask,
+    deleteTask,
+    loading: tasksLoading,
+    sections,
+    allCategories,
+    handleAddTask,
+    bulkUpdateTasks,
+    archiveAllCompletedTasks,
+    markAllTasksInSectionCompleted,
+    createSection,
+    updateSection,
+    deleteSection,
+    updateSectionIncludeInFocusMode,
+    reorderSections,
+    updateTaskParentAndOrder,
+    searchFilter,
+    setSearchFilter,
+    statusFilter,
+    setStatusFilter,
+    categoryFilter,
+    setCategoryFilter,
+    priorityFilter,
+    setPriorityFilter,
+    sectionFilter,
+    setSectionFilter,
+    // currentDate is now managed here, so remove from useTasks destructuring
+    // setCurrentDate is also managed here
+    setFocusTask,
+    doTodayOffIds,
+    toggleDoToday,
+    toggleAllDoToday,
+    dailyProgress,
+  } = useTasks({ viewMode: 'daily', userId: demoUserId, currentDate: currentDate }); // Pass the stable currentDate
+
+  const { appointments: allAppointments } = useAllAppointments();
+
+  const scheduledTasksMap = useMemo(() => {
+    const map = new Map<string, Appointment>();
+    if (allAppointments) {
+        allAppointments.forEach(app => {
+            if (app.task_id) {
+                map.set(app.task_id, app);
+            }
+        });
+    }
+    return map;
+  }, [allAppointments]);
+
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
+  const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
+  const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+  const [isFocusPanelOpen, setIsFocusPanelOpen] = useState(false);
+  const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
+  const [prefilledTaskData, setPrefilledTaskData] = useState<Partial<Task> | null>(null);
+  const [isFocusViewOpen, setIsFocusViewOpen] = useState(false);
+
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem('taskList_expandedSections');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const [expandedTasks, setExpandedTasks] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem('taskList_expandedTasks');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const toggleSection = useCallback((sectionId: string) => {
+    setExpandedSections(prev => {
+      const newState = { ...prev, [sectionId]: !(prev[sectionId] ?? true) };
+      localStorage.setItem('taskList_expandedSections', JSON.stringify(newState));
+      return newState;
+    });
   }, []);
 
-  useEffect(() => {
-    if (!isMultiSelectMode) {
-      setSelectedTaskIds([]);
-      setShowMoveSection(false);
-      lastClickedTaskId.current = null; // Clear last clicked when exiting mode
-    }
-  }, [isMultiSelectMode]);
+  const toggleTask = useCallback((taskId: string) => {
+    setExpandedTasks(prev => {
+      const newState = { ...prev, [taskId]: !(prev[taskId] ?? true) };
+      localStorage.setItem('taskList_expandedTasks', JSON.stringify(newState));
+      return newState;
+    });
+  }, []);
 
-  const fetchSectionsAndTasks = async () => {
-    try {
-      setLoading(true);
-      
-      // Fetch sections
-      const { data: sectionsData, error: sectionsError } = await supabase
-        .from('task_sections')
-        .select('*')
-        .order('order', { ascending: true });
+  const toggleAllSections = useCallback(() => {
+    const allExpanded = Object.values(expandedSections).every(val => val === true);
+    const newExpandedState: Record<string, boolean> = {};
+    sections.forEach(section => {
+      newExpandedState[section.id] = !allExpanded;
+    });
+    newExpandedState['no-section-header'] = !allExpanded;
 
-      if (sectionsError) throw sectionsError;
+    setExpandedSections(newExpandedState);
+    localStorage.setItem('taskList_expandedSections', JSON.stringify(newExpandedState));
+  }, [expandedSections, sections]);
 
-      // Fetch tasks
-      const { data: tasksData, error: tasksError } = await supabase
-        .from('tasks')
-        .select('*')
-        .order('created_at', { ascending: true }); // Order by creation for consistent shift-selection
 
-      if (tasksError) throw tasksError;
-
-      setSections(sectionsData || []);
-      setTasks(tasksData || []);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load data',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
+  const handleOpenOverview = (task: Task) => {
+    setTaskToOverview(task);
+    setIsTaskOverviewOpen(true);
   };
 
-  const handleAddSection = async (name: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('task_sections')
-        .insert({
-          name,
-          order: sections.length,
-        })
-        .select()
-        .single();
+  const handleOpenDetail = (task: Task) => {
+    setTaskToEdit(task);
+    setIsTaskDetailOpen(true);
+  };
 
-      if (error) throw error;
+  const handleEditTaskFromOverview = (task: Task) => {
+    setIsTaskOverviewOpen(false);
+    handleOpenDetail(task);
+  };
 
-      setSections([...sections, data]);
-      toast({
-        title: 'Section Added',
-        description: `Section "${name}" has been added`,
-      });
-    } catch (error) {
-      console.error('Error adding section:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to add section',
-        variant: 'destructive',
-      });
+  const handleOpenFocusView = () => {
+    if (nextAvailableTask) {
+      setIsFocusViewOpen(true);
     }
   };
 
-  const toggleTaskSelection = (taskId: string, event?: React.MouseEvent) => {
-    const allVisibleTaskIds = tasks.map(t => t.id);
-
-    if (event && (event.shiftKey && lastClickedTaskId.current)) {
-      const startIndex = allVisibleTaskIds.indexOf(lastClickedTaskId.current);
-      const endIndex = allVisibleTaskIds.indexOf(taskId);
-
-      const [start, end] = [Math.min(startIndex, endIndex), Math.max(startIndex, endIndex)];
-      const tasksToSelect = allVisibleTaskIds.slice(start, end + 1);
-
-      setSelectedTaskIds(prev => {
-        const newSelection = new Set(prev);
-        tasksToSelect.forEach(id => newSelection.add(id));
-        return Array.from(newSelection);
-      });
-    } else if (event && (event.metaKey || event.ctrlKey)) {
-      setSelectedTaskIds(prev => 
-        prev.includes(taskId) 
-          ? prev.filter(id => id !== taskId) 
-          : [...prev, taskId]
-      );
-      lastClickedTaskId.current = taskId;
-    } else {
-      // Normal click: select only this task, or toggle if already selected
-      setSelectedTaskIds(prev => 
-        prev.includes(taskId) && prev.length === 1
-          ? [] // Deselect if only this one is selected
-          : [taskId]
-      );
-      lastClickedTaskId.current = taskId;
+  const handleMarkDoneFromFocusView = async () => {
+    if (nextAvailableTask) {
+      await updateTask(nextAvailableTask.id, { status: 'completed' });
+      playSound('success');
     }
   };
 
-  const selectAllTasks = () => {
-    setSelectedTaskIds(tasks.map(task => task.id));
+  const shortcuts: ShortcutMap = {
+    'arrowleft': () => setCurrentDate(prevDate => startOfDay(addDays(prevDate, -1))),
+    'arrowright': () => setCurrentDate(prevDate => startOfDay(addDays(prevDate, 1))),
+    't': () => setCurrentDate(startOfDay(new Date())),
+    '/': (e) => { e.preventDefault(); },
+    'cmd+k': (e) => { e.preventDefault(); setIsCommandPaletteOpen(prev => !prev); },
   };
-
-  const clearSelection = () => {
-    setSelectedTaskIds([]);
-    lastClickedTaskId.current = null;
-  };
-
-  const toggleTaskCompletion = async (taskId: string) => {
-    try {
-      const task = tasks.find(t => t.id === taskId);
-      if (!task) return;
-
-      const newStatus = task.status === 'completed' ? 'to-do' : 'completed';
-      
-      const { error } = await supabase
-        .from('tasks')
-        .update({ status: newStatus })
-        .eq('id', taskId);
-
-      if (error) throw error;
-
-      setTasks(tasks.map(t => 
-        t.id === taskId ? { ...t, status: newStatus } : t
-      ));
-
-      toast({
-        title: 'Task Updated',
-        description: `Task marked as ${newStatus}`,
-      });
-    } catch (error) {
-      console.error('Error updating task:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update task',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const moveSelectedTasks = async (sectionId: string | null) => {
-    if (selectedTaskIds.length === 0) return;
-
-    try {
-      const { error } = await supabase
-        .from('tasks')
-        .update({ section_id: sectionId })
-        .in('id', selectedTaskIds);
-
-      if (error) throw error;
-
-      setTasks(tasks.map(task => 
-        selectedTaskIds.includes(task.id) 
-          ? { ...task, section_id: sectionId } 
-          : task
-      ));
-
-      toast({
-        title: 'Tasks Moved',
-        description: `${selectedTasks.length} task(s) moved successfully`,
-      });
-
-      setSelectedTaskIds([]);
-      setShowMoveSection(false);
-      setIsMultiSelectMode(false);
-      lastClickedTaskId.current = null;
-    } catch (error) {
-      console.error('Error moving tasks:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to move tasks',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  if (loading) {
-    return <div className="p-4">Loading...</div>;
-  }
-
-  const selectedTasksCount = selectedTaskIds.length;
-  const hasSelectedTasks = selectedTasksCount > 0;
+  useKeyboardShortcuts(shortcuts);
 
   return (
-    <div className="p-4">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Daily Tasks V3</h1>
-        
-        <div className="flex items-center gap-2">
-          {isMultiSelectMode ? (
-            <>
-              {hasSelectedTasks && (
-                <span className="text-sm text-muted-foreground">
-                  {selectedTasksCount} selected
-                </span>
-              )}
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={selectAllTasks}
-                disabled={selectedTasksCount === tasks.length}
-              >
-                Select All
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={clearSelection}
-                disabled={!hasSelectedTasks}
-              >
-                Clear
-              </Button>
-              <Button 
-                variant="default" 
-                size="sm"
-                onClick={() => setIsMultiSelectMode(false)}
-              >
-                Done
-              </Button>
-            </>
-          ) : (
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => setIsMultiSelectMode(true)}
-            >
-              Select Tasks
-            </Button>
-          )}
-        </div>
-      </div>
+    <div className="flex-1 flex flex-col">
+      <main className="flex-grow">
+        <div className="w-full max-w-4xl mx-auto flex flex-col">
+          <DailyTasksHeader
+            currentDate={currentDate}
+            setCurrentDate={setCurrentDate}
+            tasks={tasks as Task[]} // Cast to Task[]
+            filteredTasks={filteredTasks}
+            sections={sections}
+            allCategories={allCategories}
+            handleAddTask={handleAddTask}
+            userId={user?.id || null}
+            setIsFocusPanelOpen={setIsFocusPanelOpen}
+            searchFilter={searchFilter}
+            setSearchFilter={setSearchFilter}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+            categoryFilter={categoryFilter}
+            setCategoryFilter={setCategoryFilter}
+            priorityFilter={priorityFilter}
+            setPriorityFilter={setPriorityFilter}
+            sectionFilter={sectionFilter}
+            setSectionFilter={setSectionFilter}
+            nextAvailableTask={nextAvailableTask}
+            updateTask={updateTask}
+            onOpenOverview={handleOpenOverview}
+            createSection={createSection}
+            updateSection={updateSection}
+            deleteSection={deleteSection}
+            updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+            doTodayOffIds={doTodayOffIds}
+            archiveAllCompletedTasks={archiveAllCompletedTasks}
+            toggleAllDoToday={toggleAllDoToday}
+            setIsAddTaskDialogOpen={setIsAddTaskDialogOpen}
+            setPrefilledTaskData={setPrefilledTaskData}
+            dailyProgress={dailyProgress}
+            isDemo={isDemo}
+            toggleDoToday={toggleDoToday}
+            onOpenFocusView={handleOpenFocusView}
+          />
 
-      {isMultiSelectMode && hasSelectedTasks && (
-        <div className="mb-4 p-3 bg-muted rounded-lg flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => setShowMoveSection(!showMoveSection)}
-          >
-            Move to Section
-          </Button>
-          
-          {showMoveSection && (
-            <div className="flex items-center gap-2 flex-1">
-              <SectionSelector
-                sections={sections}
-                selectedSectionId={null}
-                onSectionChange={moveSelectedTasks}
-                placeholder="Select section..."
-              />
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => setShowMoveSection(false)}
-              >
-                Cancel
-              </Button>
-            </div>
-          )}
+          <Card className="flex-1 flex flex-col rounded-none shadow-none border-0 relative z-[1]">
+            <CardContent className="p-4 flex-1 flex flex-col">
+              <div className="flex-1 overflow-y-auto">
+                <TaskList
+                  tasks={tasks as Task[]} // Cast to Task[]
+                  processedTasks={processedTasks}
+                  filteredTasks={filteredTasks}
+                  loading={tasksLoading}
+                  handleAddTask={handleAddTask}
+                  updateTask={updateTask}
+                  deleteTask={deleteTask}
+                  bulkUpdateTasks={bulkUpdateTasks}
+                  markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
+                  sections={sections}
+                  createSection={createSection}
+                  updateSection={updateSection}
+                  deleteSection={deleteSection}
+                  updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+                  updateTaskParentAndOrder={updateTaskParentAndOrder}
+                  reorderSections={reorderSections}
+                  allCategories={allCategories}
+                  setIsAddTaskOpen={() => {}}
+                  onOpenOverview={handleOpenOverview}
+                  currentDate={currentDate}
+                  setCurrentDate={setCurrentDate} // Pass setCurrentDate to TaskList
+                  expandedSections={expandedSections}
+                  toggleSection={toggleSection}
+                  toggleAllSections={toggleAllSections}
+                  expandedTasks={expandedTasks}
+                  toggleTask={toggleTask}
+                  setFocusTask={setFocusTask}
+                  doTodayOffIds={doTodayOffIds}
+                  toggleDoToday={toggleDoToday}
+                  scheduledTasksMap={scheduledTasksMap}
+                  isDemo={isDemo}
+                />
+              </div>
+            </CardContent>
+          </Card>
         </div>
+      </main>
+
+      <footer className="p-4 relative z-[0]">
+        <p>&copy; {new Date().getFullYear()} TaskMaster. All rights reserved.</p>
+      </footer>
+
+      <CommandPalette
+        isCommandPaletteOpen={isCommandPaletteOpen}
+        setIsCommandPaletteOpen={setIsCommandPaletteOpen}
+        currentDate={currentDate}
+        setCurrentDate={setCurrentDate}
+      />
+
+      {taskToOverview && (
+        <TaskOverviewDialog
+          task={taskToOverview}
+          isOpen={isTaskOverviewOpen}
+          onClose={() => {
+            setIsTaskOverviewOpen(false);
+            setTaskToOverview(null);
+          }}
+          onEditClick={handleEditTaskFromOverview}
+          onUpdate={updateTask}
+          onDelete={deleteTask}
+          sections={sections}
+          allCategories={allCategories}
+          allTasks={tasks as Task[]} // Cast to Task[]
+        />
       )}
 
-      <div className="space-y-6">
-        {sections.map((section) => (
-          <TaskSectionComponent 
-            key={section.id} 
-            section={section} 
-            tasks={tasks.filter(task => task.section_id === section.id)}
-            selectedTaskIds={selectedTaskIds}
-            onTaskSelect={toggleTaskSelection}
-            onTaskToggle={toggleTaskCompletion}
-            isMultiSelectMode={isMultiSelectMode}
+      {taskToEdit && (
+        <TaskDetailDialog
+          task={taskToEdit}
+          isOpen={isTaskDetailOpen}
+          onClose={() => setIsTaskDetailOpen(false)}
+          onUpdate={updateTask}
+          onDelete={deleteTask}
+          sections={sections}
+          allCategories={allCategories}
+          createSection={createSection}
+          updateSection={updateSection}
+          deleteSection={deleteSection}
+          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+          allTasks={tasks as Task[]} // Cast to Task[]
+        />
+      )}
+
+      <FocusPanelDrawer
+        isOpen={isFocusPanelOpen}
+        onClose={() => setIsFocusPanelOpen(false)}
+        nextAvailableTask={nextAvailableTask}
+        tasks={tasks as Task[]}
+        filteredTasks={filteredTasks}
+        updateTask={updateTask}
+        onDeleteTask={deleteTask}
+        sections={sections}
+        allCategories={allCategories}
+        onOpenDetail={handleOpenDetail}
+        handleAddTask={handleAddTask}
+        currentDate={currentDate}
+      />
+
+      <Dialog open={isAddTaskDialogOpen} onOpenChange={setIsAddTaskDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add New Task</DialogTitle>
+            <DialogDescription className="sr-only">
+              Fill in the details to add a new task.
+            </DialogDescription>
+          </DialogHeader>
+          <AddTaskForm
+            onAddTask={async (taskData) => {
+              const success = await handleAddTask(taskData);
+              if (success) {
+                setIsAddTaskDialogOpen(false);
+                setPrefilledTaskData(null);
+              }
+              return success;
+            }}
+            onTaskAdded={() => {
+              setIsAddTaskDialogOpen(false);
+              setPrefilledTaskData(null);
+            }}
+            sections={sections}
+            allCategories={allCategories}
+            currentDate={currentDate}
+            createSection={createSection}
+            updateSection={updateSection}
+            deleteSection={deleteSection}
+            updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+            initialData={prefilledTaskData as Task | null}
           />
-        ))}
-        
-        {/* Tasks without section */}
-        <div className="space-y-2">
-          <h2 className="text-lg font-semibold">Other Tasks</h2>
-          {tasks
-            .filter(task => !task.section_id)
-            .map((task) => {
-              const isSelected = selectedTaskIds.includes(task.id);
-              const isCompleted = task.status === 'completed';
-              
-              return (
-                <div 
-                  key={task.id} 
-                  className={`flex items-center gap-2 p-2 rounded transition-colors ${
-                    isSelected && isMultiSelectMode ? 'bg-primary/10 border border-primary/20' : 'hover:bg-muted'
-                  }`}
-                >
-                  {isMultiSelectMode && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="p-0 h-auto"
-                      onClick={(e) => toggleTaskSelection(task.id, e)}
-                    >
-                      {isSelected ? (
-                        <SquareCheck className="h-5 w-5 text-primary" />
-                      ) : (
-                        <Square className="h-5 w-5 text-muted-foreground" />
-                      )}
-                    </Button>
-                  )}
-                  
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="p-0 h-auto"
-                    onClick={() => toggleTaskCompletion(task.id)}
-                  >
-                    {isCompleted ? (
-                      <CheckCircle className="h-5 w-5 text-green-500" />
-                    ) : (
-                      <Circle className="h-5 w-5 text-muted-foreground" />
-                    )}
-                  </Button>
-                  
-                  <span className={`flex-1 ${isCompleted ? 'line-through text-muted-foreground' : ''}`}>
-                    {task.description}
-                  </span>
-                  
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </div>
-              );
-            })}
-            
-          {tasks.filter(task => !task.section_id).length === 0 && (
-            <p className="text-muted-foreground text-sm">No tasks without a section</p>
-          )}
-        </div>
-        
-        <div className="mt-6">
-          <AddSectionButton onAddSection={handleAddSection} />
-        </div>
-      </div>
+        </DialogContent>
+      </Dialog>
+
+      <AnimatePresence>
+        {isFocusViewOpen && nextAvailableTask && (
+          <FullScreenFocusView
+            taskDescription={nextAvailableTask.description || ''} // Ensure description is string
+            onClose={() => setIsFocusViewOpen(false)}
+            onMarkDone={handleMarkDoneFromFocusView}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
