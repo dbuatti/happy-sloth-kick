@@ -107,7 +107,6 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
 
   const { visibleTimeBlocks } = useVisibleTimeBlocks({
     daysInGrid,
-    allWorkHours,
     currentViewDate,
     getWorkHoursForDay,
   });
@@ -362,7 +361,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
               gridTemplateColumns: `minmax(100px, auto) repeat(${daysInGrid.length}, minmax(120px, 1fr))`,
               gridTemplateRows: `${headerHeight}px repeat(${visibleTimeBlocks.length}, ${rowHeight}px)`,
             }}>
-              <ScheduleGridHeader daysInGrid={daysInGrid} headerHeight={headerHeight} />
+              <ScheduleGridHeader daysInGrid={daysInGrid} />
               <ScheduleTimeColumn visibleTimeBlocks={visibleTimeBlocks} rowHeight={rowHeight} />
               <ScheduleDayGridCells
                 daysInGrid={daysInGrid}

@@ -4,7 +4,6 @@ import { cn } from '@/lib/utils';
 
 interface ScheduleGridHeaderProps {
   daysInGrid: Date[];
-  // Removed headerHeight: number;
 }
 
 const ScheduleGridHeader: React.FC<ScheduleGridHeaderProps> = ({ daysInGrid }) => {

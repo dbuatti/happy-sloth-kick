@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { format, parse, getMinutes, getHours, parseISO, isValid, isSameDay, differenceInMinutes } from 'date-fns';
+import { parse, getMinutes, getHours, parseISO, isValid, isSameDay, differenceInMinutes } from 'date-fns';
 import { Appointment } from '@/hooks/useAppointments';
 
 interface TimeBlock {

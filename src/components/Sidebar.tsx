@@ -30,10 +30,9 @@ import { useSettings } from "@/context/SettingsContext";
 interface SidebarProps {
   children: React.ReactNode;
   isDemo?: boolean;
-  demoUserId?: string;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false, demoUserId }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false }) => {
   const location = useLocation();
   const { theme, setTheme } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);

@@ -1,10 +1,9 @@
 import { useMemo } from 'react';
-import { format, addMinutes, parse, getHours, setHours, setMinutes } from 'date-fns';
+import { addMinutes, parse, getHours, setHours, setMinutes } from 'date-fns';
 import { WorkHour } from '@/hooks/useWorkHours';
 
 interface UseVisibleTimeBlocksProps {
   daysInGrid: Date[];
-  // Removed allWorkHours: WorkHour[];
   currentViewDate: Date;
   getWorkHoursForDay: (date: Date) => WorkHour | null;
 }

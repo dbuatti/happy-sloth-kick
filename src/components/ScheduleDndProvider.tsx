@@ -9,7 +9,6 @@ interface ScheduleDndProviderProps {
   children: React.ReactNode;
   onDragStart: (event: DragStartEvent) => void;
   onDragEnd: (event: DragEndEvent) => void;
-  allTasks: Task[];
   sections: TaskSection[];
 }
 
@@ -17,7 +16,6 @@ const ScheduleDndProvider: React.FC<ScheduleDndProviderProps> = ({
   children,
   onDragStart,
   onDragEnd,
-  allTasks,
   sections,
 }) => {
   const [activeDragItem, setActiveDragItem] = useState<any>(null);
