@@ -18,6 +18,7 @@ export interface Task {
   recurring_type: 'none' | 'daily' | 'weekly' | 'monthly';
   created_at: string;
   updated_at: string;
+  completed_at: string | null; // Added new field
   user_id: string;
   category: string | null; // Changed to allow null
   category_color: string;
@@ -85,7 +86,8 @@ const cleanTaskForDb = (task: Partial<Task> | NewTaskData): Omit<Partial<Task>, 
   if (cleaned.section_id === '') cleaned.section_id = null;
   if (cleaned.parent_task_id === '') cleaned.parent_task_id = null;
   if (cleaned.original_task_id === '') cleaned.original_task_id = null;
-
+  if (cleaned.completed_at === '') cleaned.completed_at = null; // Handle new field
+  
   return cleaned;
 };
 
@@ -132,7 +134,7 @@ export const fetchDoTodayOffLog = async (userId: string, date: Date) => {
 export const fetchTasks = async (userId: string): Promise<Omit<Task, 'category_color'>[]> => {
   const { data, error } = await supabase
     .from('tasks')
-    .select('id, description, status, recurring_type, created_at, updated_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link, image_url')
+    .select('id, description, status, recurring_type, created_at, updated_at, completed_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link, image_url')
     .eq('user_id', userId)
     .order('section_id', { ascending: true, nullsFirst: true })
     .order('order', { ascending: true });
@@ -360,6 +362,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
               remind_at: baseTaskForVirtual.remind_at ? format(setHours(setMinutes(todayStart, getMinutes(parseISO(baseTaskForVirtual.remind_at))), getHours(parseISO(baseTaskForVirtual.remind_at))), 'yyyy-MM-ddTHH:mm:ssZ') : null,
               due_date: baseTaskForVirtual.due_date ? todayStart.toISOString() : null,
               category_color: categoriesMapLocal.get(baseTaskForVirtual.category || '') || 'gray',
+              completed_at: null, // Virtual tasks are never completed
             };
             allProcessedTasks.push(virtualTask);
           }
@@ -386,6 +389,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
         user_id: userId,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        completed_at: null, // New tasks are not completed
         status: newTaskData.status || 'to-do',
         recurring_type: newTaskData.recurring_type || 'none',
         category: newTaskData.category || null,
@@ -409,7 +413,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
       const { data, error } = await supabase
         .from('tasks')
         .insert(cleanTaskForDb(tempTask)) // Use tempTask for insertion
-        .select('id, description, status, recurring_type, created_at, updated_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link, image_url')
+        .select('id, description, status, recurring_type, created_at, updated_at, completed_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link, image_url')
         .single();
 
       if (error) throw error;
@@ -462,6 +466,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
             recurring_type: 'none' as const, // New instance is no longer recurring
             created_at: virtualTask.created_at, // Keep original creation date for consistency
             updated_at: new Date().toISOString(),
+            completed_at: (updates.status === 'completed' || updates.status === 'archived') ? new Date().toISOString() : null, // Set completed_at for new instance
             category: updates.category !== undefined ? updates.category : virtualTask.category,
             priority: updates.priority !== undefined ? updates.priority : virtualTask.priority,
             due_date: updates.due_date !== undefined ? updates.due_date : virtualTask.due_date,
@@ -506,17 +511,31 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
       }
 
       // If we reach here, originalTaskState is a real task, proceed with update.
+      const currentStatus = originalTaskState.status;
+      const newStatus = updates.status;
+      const now = new Date().toISOString();
+      
+      let completedAtUpdate: string | null | undefined = originalTaskState.completed_at;
+
+      if (newStatus && (newStatus === 'completed' || newStatus === 'archived') && !(currentStatus === 'completed' || currentStatus === 'archived')) {
+        completedAtUpdate = now; // Set completed_at if status changes to completed/archived
+      } else if (newStatus && !(newStatus === 'completed' || newStatus === 'archived') && (currentStatus === 'completed' || currentStatus === 'archived')) {
+        completedAtUpdate = null; // Clear completed_at if status changes from completed/archived
+      }
+
+      const finalUpdates = { ...updates, completed_at: completedAtUpdate };
+
       // Optimistic update for existing task
       queryClient.setQueryData(['tasks', userId], (oldTasks: Task[] | undefined) => {
-        return oldTasks?.map(t => t.id === taskId ? { ...t, ...updates, ...(categoryColor && { category_color: categoryColor }) } : t) || [];
+        return oldTasks?.map(t => t.id === taskId ? { ...t, ...finalUpdates, ...(categoryColor && { category_color: categoryColor }) } : t) || [];
       });
 
       const { data, error } = await supabase
         .from('tasks')
-        .update(cleanTaskForDb(updates))
+        .update(cleanTaskForDb(finalUpdates))
         .eq('id', taskId)
         .eq('user_id', userId)
-        .select('id, description, status, recurring_type, created_at, updated_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link, image_url')
+        .select('id, description, status, recurring_type, created_at, updated_at, completed_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link, image_url')
         .single();
 
       if (error) throw error;
@@ -603,16 +622,27 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     if (ids.length === 0) {
       return;
     }
+
+    const now = new Date().toISOString();
+    const tasksToUpdate = processedTasks.filter(t => ids.includes(t.id));
+    
+    const updatesWithCompletedAt = { ...updates };
+    if (updates.status && (updates.status === 'completed' || updates.status === 'archived')) {
+      updatesWithCompletedAt.completed_at = now;
+    } else if (updates.status && !(updates.status === 'completed' || updates.status === 'archived')) {
+      updatesWithCompletedAt.completed_at = null;
+    }
+
     ids.forEach(id => inFlightUpdatesRef.current.add(id));
     // Optimistic update
     queryClient.setQueryData(['tasks', userId], (oldTasks: Task[] | undefined) => {
-      return oldTasks?.map(t => (ids.includes(t.id) ? { ...t, ...updates } : t)) || [];
+      return oldTasks?.map(t => (ids.includes(t.id) ? { ...t, ...updatesWithCompletedAt } : t)) || [];
     });
 
     try {
       const { error } = await supabase
         .from('tasks')
-        .update(cleanTaskForDb(updates))
+        .update(cleanTaskForDb(updatesWithCompletedAt))
         .in('id', ids)
         .eq('user_id', userId);
 
@@ -628,7 +658,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
         ids.forEach(id => inFlightUpdatesRef.current.delete(id));
       }, 1500);
     }
-  }, [userId, queryClient, invalidateTasksQueries]);
+  }, [userId, processedTasks, queryClient, invalidateTasksQueries]);
 
   const bulkDeleteTasks = useCallback(async (ids: string[]) => {
     if (!userId) {
@@ -918,6 +948,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
             recurring_type: 'none' as const, // New instance is no longer recurring
             created_at: virtualTask.created_at, // Keep original creation date for consistency
             updated_at: new Date().toISOString(),
+            completed_at: null, // New instance is not completed
             category: virtualTask.category,
             priority: virtualTask.priority,
             due_date: virtualTask.due_date,
@@ -1048,18 +1079,18 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     if (viewMode === 'daily') {
       filtered = filtered.filter(task => {
         // Condition 1: Was completed or archived today (based on local date part)
-        if ((task.status === 'completed' || task.status === 'archived') && task.updated_at) {
-            const updatedAtDate = new Date(task.updated_at); // Interprets UTC string in local timezone
+        if ((task.status === 'completed' || task.status === 'archived') && task.completed_at) { // Use completed_at
+            const completedAtDate = new Date(task.completed_at); // Interprets UTC string in local timezone
             
-            const isUpdatedOnCurrentDate = (
-                isValid(updatedAtDate) &&
-                updatedAtDate.getFullYear() === effectiveCurrentDate.getFullYear() &&
-                updatedAtDate.getMonth() === effectiveCurrentDate.getMonth() &&
-                updatedAtDate.getDate() === effectiveCurrentDate.getDate()
+            const isCompletedOnCurrentDate = (
+                isValid(completedAtDate) &&
+                completedAtDate.getFullYear() === effectiveCurrentDate.getFullYear() &&
+                completedAtDate.getMonth() === effectiveCurrentDate.getMonth() &&
+                completedAtDate.getDate() === effectiveCurrentDate.getDate()
             );
             
-            console.log(`[TasksForToday Filter] Task: ${task.description}, Status: ${task.status}, Updated: ${task.updated_at}, UpdatedAtLocal: ${updatedAtDate.toLocaleString()}, CurrentDateLocal: ${effectiveCurrentDate.toLocaleString()}, IsUpdatedOnCurrentDate: ${isUpdatedOnCurrentDate}`);
-            if (isUpdatedOnCurrentDate) {
+            console.log(`[TasksForToday Filter] Task: ${task.description}, Status: ${task.status}, Completed: ${task.completed_at}, CompletedAtLocal: ${completedAtDate.toLocaleString()}, CurrentDateLocal: ${effectiveCurrentDate.toLocaleString()}, IsCompletedOnCurrentDate: ${isCompletedOnCurrentDate}`);
+            if (isCompletedOnCurrentDate) {
                 return true;
             }
         }
@@ -1328,18 +1359,18 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
 
     const tasksForToday = processedTasks.filter(task => {
         // Condition 1: Was completed or archived today (based on local date part)
-        if ((task.status === 'completed' || task.status === 'archived') && task.updated_at) {
-            const updatedAtDate = new Date(task.updated_at); // Interprets UTC string in local timezone
+        if ((task.status === 'completed' || task.status === 'archived') && task.completed_at) { // Use completed_at
+            const completedAtDate = new Date(task.completed_at); // Interprets UTC string in local timezone
             
-            const isUpdatedOnCurrentDate = (
-                isValid(updatedAtDate) &&
-                updatedAtDate.getFullYear() === effectiveCurrentDate.getFullYear() &&
-                updatedAtDate.getMonth() === effectiveCurrentDate.getMonth() &&
-                updatedAtDate.getDate() === effectiveCurrentDate.getDate()
+            const isCompletedOnCurrentDate = (
+                isValid(completedAtDate) &&
+                completedAtDate.getFullYear() === effectiveCurrentDate.getFullYear() &&
+                completedAtDate.getMonth() === effectiveCurrentDate.getMonth() &&
+                completedAtDate.getDate() === effectiveCurrentDate.getDate()
             );
             
-            console.log(`[TasksForToday Filter] Task: ${task.description}, Status: ${task.status}, Updated: ${task.updated_at}, UpdatedAtLocal: ${updatedAtDate.toLocaleString()}, CurrentDateLocal: ${effectiveCurrentDate.toLocaleString()}, IsUpdatedOnCurrentDate: ${isUpdatedOnCurrentDate}`);
-            if (isUpdatedOnCurrentDate) {
+            console.log(`[TasksForToday Filter] Task: ${task.description}, Status: ${task.status}, Completed: ${task.completed_at}, CompletedAtLocal: ${completedAtDate.toLocaleString()}, CurrentDateLocal: ${effectiveCurrentDate.toLocaleString()}, IsCompletedOnCurrentDate: ${isCompletedOnCurrentDate}`);
+            if (isCompletedOnCurrentDate) {
                 return true;
             }
         }
@@ -1379,19 +1410,19 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     console.log("Focus tasks count:", focusTasks.length);
 
     const completedCount = focusTasks.filter(t => {
-      const updatedAtDate = t.updated_at ? new Date(t.updated_at) : null;
+      const completedAtDate = t.completed_at ? new Date(t.completed_at) : null; // Use completed_at
       
-      const isUpdatedOnCurrentDate = (
-          updatedAtDate && isValid(updatedAtDate) &&
-          updatedAtDate.getFullYear() === effectiveCurrentDate.getFullYear() &&
-          updatedAtDate.getMonth() === effectiveCurrentDate.getMonth() &&
-          updatedAtDate.getDate() === effectiveCurrentDate.getDate()
+      const isCompletedOnCurrentDate = (
+          completedAtDate && isValid(completedAtDate) &&
+          completedAtDate.getFullYear() === effectiveCurrentDate.getFullYear() &&
+          completedAtDate.getMonth() === effectiveCurrentDate.getMonth() &&
+          completedAtDate.getDate() === effectiveCurrentDate.getDate()
       );
 
-      // Count tasks with status 'completed' OR 'archived' if updated today
-      const isCompletedOrArchivedToday = (t.status === 'completed' || t.status === 'archived') && isUpdatedOnCurrentDate;
+      // Count tasks with status 'completed' OR 'archived' if completed today
+      const isCompletedOrArchivedToday = (t.status === 'completed' || t.status === 'archived') && isCompletedOnCurrentDate;
       if (isCompletedOrArchivedToday) {
-        console.log(`[Daily Progress Debug] Counting completed/archived task: ${t.description} (ID: ${t.id}, Status: ${t.status}, Updated: ${t.updated_at}), UpdatedAtLocal: ${updatedAtDate?.toLocaleString()}, CurrentDateLocal: ${effectiveCurrentDate.toLocaleString()}, IsUpdatedOnCurrentDate: ${isUpdatedOnCurrentDate}`);
+        console.log(`[Daily Progress Debug] Counting completed/archived task: ${t.description} (ID: ${t.id}, Status: ${t.status}, Completed: ${t.completed_at}), CompletedAtLocal: ${completedAtDate?.toLocaleString()}, CurrentDateLocal: ${effectiveCurrentDate.toLocaleString()}, IsCompletedOnCurrentDate: ${isCompletedOnCurrentDate}`);
       }
       return isCompletedOrArchivedToday;
     }).length;
