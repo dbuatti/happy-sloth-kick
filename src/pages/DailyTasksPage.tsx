@@ -8,7 +8,6 @@ import TaskSectionComponent from '@/components/TaskSection';
 import AddSectionButton from '@/components/AddSectionButton';
 import SectionSelector from '@/components/SectionSelector';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 
 const DailyTasksPage: React.FC = () => {
   const [sections, setSections] = useState<TaskSection[]>([]);
@@ -100,6 +99,39 @@ const DailyTasksPage: React.FC = () => {
 
   const clearSelection = () => {
     setSelectedTaskIds([]);
+  };
+
+  const toggleTaskCompletion = async (taskId: string) => {
+    try {
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
+
+      const newStatus = task.status === 'completed' ? 'to-do' : 'completed';
+      
+      const { error } = await supabase
+        .from('tasks')
+        .update({ status: newStatus })
+        .eq('id', taskId);
+
+      if (error) throw error;
+
+      // Update local state
+      setTasks(tasks.map(t => 
+        t.id === taskId ? { ...t, status: newStatus } : t
+      ));
+
+      toast({
+        title: 'Task Updated',
+        description: `Task marked as ${newStatus}`,
+      });
+    } catch (error) {
+      console.error('Error updating task:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update task',
+        variant: 'destructive',
+      });
+    }
   };
 
   const moveSelectedTasks = async (sectionId: string | null) => {
@@ -204,6 +236,7 @@ const DailyTasksPage: React.FC = () => {
             tasks={tasks.filter(task => task.section_id === section.id)}
             selectedTaskIds={selectedTaskIds}
             onTaskSelect={toggleTaskSelection}
+            onTaskToggle={toggleTaskCompletion}
           />
         ))}
         
@@ -212,15 +245,53 @@ const DailyTasksPage: React.FC = () => {
           <h2 className="text-lg font-semibold">Other Tasks</h2>
           {tasks
             .filter(task => !task.section_id)
-            .map((task) => (
-              <div key={task.id} className="flex items-center gap-2 p-2 border rounded">
-                <Checkbox
-                  checked={selectedTaskIds.includes(task.id)}
-                  onCheckedChange={() => toggleTaskSelection(task.id)}
-                />
-                <span className="flex-1">{task.description}</span>
-              </div>
-            ))}
+            .map((task) => {
+              const isSelected = selectedTaskIds.includes(task.id);
+              const isCompleted = task.status === 'completed';
+              
+              return (
+                <div 
+                  key={task.id} 
+                  className={`flex items-center gap-2 p-2 rounded transition-colors ${
+                    isSelected ? 'bg-primary/10 border border-primary/20' : 'hover:bg-muted'
+                  }`}
+                >
+                  {/* Selection indicator */}
+                  <div 
+                    className={`w-2 h-2 rounded-full mr-2 cursor-pointer ${
+                      isSelected ? 'bg-primary' : 'bg-transparent border border-muted-foreground'
+                    }`}
+                    onClick={() => toggleTaskSelection(task.id)}
+                  />
+                  
+                  {/* Task completion toggle */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="p-0 h-auto"
+                    onClick={() => toggleTaskCompletion(task.id)}
+                  >
+                    {isCompleted ? (
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                    ) : (
+                      <Circle className="h-5 w-5 text-muted-foreground" />
+                    )}
+                  </Button>
+                  
+                  <span className={`flex-1 ${isCompleted ? 'line-through text-muted-foreground' : ''}`}>
+                    {task.description}
+                  </span>
+                  
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </div>
+              );
+            })}
+            
+          {tasks.filter(task => !task.section_id).length === 0 && (
+            <p className="text-muted-foreground text-sm">No tasks without a section</p>
+          )}
         </div>
         
         <div className="mt-6">
