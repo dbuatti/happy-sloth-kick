@@ -1,4 +1,4 @@
-import { Home, Target, LayoutGrid, CalendarClock, Leaf, Moon, Brain, LayoutDashboard, Code, ListTodo } from 'lucide-react';
+import { Target, LayoutGrid, CalendarClock, Leaf, Moon, Brain, LayoutDashboard, Code, ListTodo } from 'lucide-react';
 
 export const navItems = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, toggleable: false },

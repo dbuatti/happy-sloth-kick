@@ -269,8 +269,6 @@ const DailyTasksV3: React.FC<DailyTasksV3Props> = ({ isDemo = false, demoUserId 
       <CommandPalette
         isCommandPaletteOpen={isCommandPaletteOpen}
         setIsCommandPaletteOpen={setIsCommandPaletteOpen}
-        currentDate={currentDate}
-        setCurrentDate={setCurrentDate}
       />
 
       {taskToOverview && (
