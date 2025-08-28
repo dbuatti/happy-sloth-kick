@@ -115,10 +115,28 @@ export default {
   },
   plugins: [require("tailwindcss-animate")],
   safelist: [
+    // Explicitly safelist theme classes
     'theme-ocean-breeze',
     'theme-sunset-glow',
     'theme-forest-deep',
     'theme-midnight-serenity',
     'theme-desert-bloom',
+    // Safelist common color utility classes for each theme
+    {
+      pattern: /(bg|text|border)-(primary|secondary|accent|muted|destructive|card|popover|foreground|background)/,
+      variants: ['dark', 'theme-ocean-breeze', 'theme-sunset-glow', 'theme-forest-deep', 'theme-midnight-serenity', 'theme-desert-bloom'],
+    },
+    {
+      pattern: /(bg|text|border)-(priority-low|priority-medium|priority-high|priority-urgent|status-overdue|status-due-today|status-completed)/,
+      variants: ['dark', 'theme-ocean-breeze', 'theme-sunset-glow', 'theme-forest-deep', 'theme-midnight-serenity', 'theme-desert-bloom'],
+    },
+    {
+      pattern: /from-\[hsl\(var\(--gradient-start-(light|dark)\)\)\]/,
+      variants: ['dark', 'theme-ocean-breeze', 'theme-sunset-glow', 'theme-forest-deep', 'theme-midnight-serenity', 'theme-desert-bloom'],
+    },
+    {
+      pattern: /to-\[hsl\(var\(--gradient-end-(light|dark)\)\)\]/,
+      variants: ['dark', 'theme-ocean-breeze', 'theme-sunset-glow', 'theme-forest-deep', 'theme-midnight-serenity', 'theme-desert-bloom'],
+    },
   ],
 } satisfies Config;
