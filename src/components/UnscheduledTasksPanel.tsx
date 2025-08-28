@@ -1,7 +1,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { PanelRightClose, PanelRightOpen, ListTodo } from 'lucide-react'; // Added ListTodo icon
+import { PanelRightClose, PanelRightOpen, ListTodo } from 'lucide-react';
 import DraggableScheduleTaskItem from '@/components/DraggableScheduleTaskItem';
 import { Task, TaskSection } from '@/hooks/useTasks';
 
@@ -25,7 +25,7 @@ const UnscheduledTasksPanel: React.FC<UnscheduledTasksPanelProps> = ({
         size="icon"
         onClick={() => setIsTaskPanelCollapsed(!isTaskPanelCollapsed)}
         className={cn(
-          "absolute -left-4 top-1/2 -translate-y-1/2 z-20 bg-background hover:bg-muted rounded-full h-8 w-8 border hidden lg:flex",
+          "absolute -left-4 top-1/2 -translate-y-1/2 z-20 bg-card hover:bg-muted rounded-full h-8 w-8 border hidden lg:flex", // Changed bg-background to bg-card
           isTaskPanelCollapsed && "lg:hidden"
         )}
         aria-label={isTaskPanelCollapsed ? "Show task panel" : "Hide task panel"}

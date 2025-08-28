@@ -342,10 +342,10 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
     >
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-4">
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => handleClearDayClick(currentViewDate)} disabled={appointments.length === 0 || isDemo}>
+          <Button variant="secondary" onClick={() => handleClearDayClick(currentViewDate)} disabled={appointments.length === 0 || isDemo}>
             <X className="mr-2 h-4 w-4" /> Clear Day
           </Button>
-          <Button variant="outline" onClick={() => setIsParsingDialogOpen(true)} disabled={isDemo}>
+          <Button variant="secondary" onClick={() => setIsParsingDialogOpen(true)} disabled={isDemo}>
             <Sparkles className="mr-2 h-4 w-4" /> Parse from Text
           </Button>
         </div>
@@ -358,7 +358,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] lg:gap-6">
           <div className="flex-1 overflow-x-auto">
-            <div className="grid border rounded-lg min-w-max relative bg-gradient-to-br from-background to-muted" style={{
+            <div className="grid border border-gray-200 dark:border-gray-700 rounded-lg min-w-full relative bg-background" style={{
               gridTemplateColumns: `minmax(100px, auto) repeat(${daysInGrid.length}, minmax(120px, 1fr))`,
               gridTemplateRows: `${headerHeight}px repeat(${visibleTimeBlocks.length}, ${rowHeight}px)`,
             }}>

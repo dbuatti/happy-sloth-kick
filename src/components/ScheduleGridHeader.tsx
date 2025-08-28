@@ -11,7 +11,7 @@ const ScheduleGridHeader: React.FC<ScheduleGridHeaderProps> = ({ daysInGrid, hea
   return (
     <>
       {/* Top-left empty cell */}
-      <div className="p-2 border-b border-r bg-muted/30 h-full" style={{ gridColumn: 1, gridRow: 1 }}></div>
+      <div className="p-2 border-b border-r bg-muted/50 h-full" style={{ gridColumn: 1, gridRow: 1 }}></div>
 
       {/* Day Headers */}
       {daysInGrid.map((day, index) => {
@@ -19,9 +19,9 @@ const ScheduleGridHeader: React.FC<ScheduleGridHeaderProps> = ({ daysInGrid, hea
         return (
           <div key={index} className={cn(
             "p-2 border-b text-center font-semibold flex flex-col items-center justify-center h-full",
-            "bg-muted/30",
-            isCurrentDay ? "text-primary border-b-2 border-primary" : "text-foreground",
-            index < daysInGrid.length - 1 ? 'border-r' : 'border-r-0'
+            "bg-muted/50", // Slightly darker background for header cells
+            isCurrentDay ? "text-primary border-b-2 border-primary bg-primary/10" : "text-foreground", // Subtle background for current day
+            index < daysInGrid.length - 1 ? 'border-r border-gray-200 dark:border-gray-700' : 'border-r-0' // Softer border
           )}
             style={{ gridColumn: index + 2, gridRow: 1 }}
           >
