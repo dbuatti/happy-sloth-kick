@@ -56,7 +56,8 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
       className={cn(
         "absolute rounded-lg p-2.5 shadow-md group text-white border border-white/20", // Added border and adjusted padding
         "flex flex-col justify-start items-start transition-all duration-200 ease-in-out",
-        isCompleted && "opacity-70"
+        isCompleted && "opacity-70",
+        "hover:shadow-lg" // Add hover shadow
       )}
     >
       <div className="flex-grow w-full">

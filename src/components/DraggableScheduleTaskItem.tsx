@@ -33,7 +33,8 @@ const DraggableScheduleTaskItem: React.FC<DraggableScheduleTaskItemProps> = ({ t
       className={cn(
         "p-3 rounded-md bg-background shadow-sm flex items-center gap-2 border border-border border-l-4 select-none", // Added border and adjusted padding
         getPriorityColor(task.priority),
-        isDragging && "opacity-50"
+        isDragging && "opacity-50",
+        "hover:shadow-md transition-shadow duration-200" // Add hover shadow
       )}
     >
       <button {...listeners} {...attributes} className="cursor-grab touch-none p-1 -ml-1">

@@ -1,5 +1,6 @@
 import React from 'react';
-import { format } from 'date-fns';
+import { format, isSameDay } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface ScheduleGridHeaderProps {
   daysInGrid: Date[];
@@ -13,14 +14,22 @@ const ScheduleGridHeader: React.FC<ScheduleGridHeaderProps> = ({ daysInGrid, hea
       <div className="p-2 border-b border-r bg-muted/30 h-full" style={{ gridColumn: 1, gridRow: 1 }}></div>
 
       {/* Day Headers */}
-      {daysInGrid.map((day, index) => (
-        <div key={index} className="p-2 border-b text-center font-semibold text-sm flex flex-col items-center justify-center bg-muted/30 h-full"
-          style={{ gridColumn: index + 2, gridRow: 1, borderRight: index < daysInGrid.length - 1 ? '1px solid hsl(var(--border))' : 'none' }}
-        >
-          <span>{format(day, 'EEE')}</span>
-          <span className="text-xs text-muted-foreground">{format(day, 'MMM d')}</span>
-        </div>
-      ))}
+      {daysInGrid.map((day, index) => {
+        const isCurrentDay = isSameDay(day, new Date());
+        return (
+          <div key={index} className={cn(
+            "p-2 border-b text-center font-semibold flex flex-col items-center justify-center h-full",
+            "bg-muted/30",
+            isCurrentDay ? "text-primary border-b-2 border-primary" : "text-foreground",
+            index < daysInGrid.length - 1 ? 'border-r' : 'border-r-0'
+          )}
+            style={{ gridColumn: index + 2, gridRow: 1 }}
+          >
+            <span className={cn("text-base", isCurrentDay && "font-bold")}>{format(day, 'EEE')}</span>
+            <span className={cn("text-sm text-muted-foreground", isCurrentDay && "text-primary/80")}>{format(day, 'MMM d')}</span>
+          </div>
+        );
+      })}
     </>
   );
 };

@@ -1,7 +1,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { PanelRightClose, PanelRightOpen, ListTodo } from 'lucide-react'; // Added ListTodo icon
 import DraggableScheduleTaskItem from '@/components/DraggableScheduleTaskItem';
 import { Task, TaskSection } from '@/hooks/useTasks';
 
@@ -37,7 +37,9 @@ const UnscheduledTasksPanel: React.FC<UnscheduledTasksPanelProps> = ({
         isTaskPanelCollapsed && "hidden"
       )}>
         <div className="lg:sticky lg:top-4 space-y-4 bg-card rounded-lg p-4 shadow-lg">
-          <h3 className="text-lg font-semibold">Unscheduled Tasks</h3>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <ListTodo className="h-5 w-5 text-primary" /> Unscheduled Tasks
+          </h3>
           <div className="space-y-2 max-h-[calc(100vh-20rem)] overflow-y-auto p-1">
             {unscheduledDoTodayTasks.length > 0 ? (
               unscheduledDoTodayTasks.map(task => (

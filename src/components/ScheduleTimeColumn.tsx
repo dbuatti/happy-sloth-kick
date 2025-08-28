@@ -16,7 +16,10 @@ const ScheduleTimeColumn: React.FC<ScheduleTimeColumnProps> = ({ visibleTimeBloc
   return (
     <>
       {visibleTimeBlocks.map((block, blockIndex) => (
-        <div key={`time-label-${blockIndex}`} className="p-2 border-b border-r text-right text-xs font-medium text-muted-foreground flex items-center justify-end bg-muted/30"
+        <div key={`time-label-${blockIndex}`} className={cn(
+          "p-2 border-b border-r text-right font-medium text-muted-foreground flex items-center justify-end bg-muted/30",
+          getMinutes(block.start) === 0 ? "text-sm" : "text-xs opacity-70"
+        )}
           style={{ gridColumn: 1, gridRow: blockIndex + 2, height: `${rowHeight}px` }}
         >
           {getMinutes(block.start) === 0 && format(block.start, 'h a')}

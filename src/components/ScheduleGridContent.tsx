@@ -358,7 +358,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] lg:gap-6">
           <div className="flex-1 overflow-x-auto">
-            <div className="grid border rounded-lg min-w-max relative" style={{
+            <div className="grid border rounded-lg min-w-max relative bg-gradient-to-br from-background to-muted" style={{
               gridTemplateColumns: `minmax(100px, auto) repeat(${daysInGrid.length}, minmax(120px, 1fr))`,
               gridTemplateRows: `${headerHeight}px repeat(${visibleTimeBlocks.length}, ${rowHeight}px)`,
             }}>

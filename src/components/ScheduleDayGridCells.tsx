@@ -53,9 +53,10 @@ const ScheduleDayGridCells: React.FC<ScheduleDayGridCellsProps> = ({
                 key={`${format(day, 'yyyy-MM-dd')}-${format(block.start, 'HH:mm')}`}
                 className={cn(
                   "relative h-full w-full",
-                  "border-b border-gray-200 dark:border-gray-700",
+                  "border-b border-gray-200/80 dark:border-gray-700/80", // Subtle border
                   dayIndex < daysInGrid.length - 1 && "border-r",
-                  isOutsideWorkHours ? "bg-muted/20" : "bg-background"
+                  isOutsideWorkHours ? "bg-muted/20" : "bg-background", // Distinct background for non-work hours
+                  "hover:bg-muted/50 transition-colors duration-100" // Hover effect
                 )}
                 style={{ gridColumn: dayIndex + 2, gridRow: blockIndex + 2, height: `${rowHeight}px`, zIndex: 1 }}
                 data-time-block-start={blockStartWithDate.toISOString()}
