@@ -1,42 +1,34 @@
-export type TaskStatus = 'to-do' | 'completed' | 'in-progress';
+export type TaskStatus = 'to-do' | 'completed';
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
-export type RecurringType = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly';
 
 export interface Task {
   id: string;
-  description: string;
-  status: TaskStatus;
   created_at: string;
   user_id: string;
-  priority: TaskPriority;
-  due_date: string | null;
+  description: string | null; // Changed to string | null to match database
   notes: string | null;
-  remind_at: string | null;
-  section_id: string | null;
-  order: number;
-  parent_task_id: string | null;
-  recurring_type: RecurringType;
-  original_task_id: string | null;
+  due_date: string | null;
+  priority: TaskPriority;
+  status: TaskStatus;
   category: string | null;
-  link: string | null;
-  image_url: string | null;
-  subtasks?: Task[];
+  section_id: string | null;
+  is_all_day: boolean;
+  color: string | null;
 }
 
 export interface TaskSection {
   id: string;
-  name: string;
-  user_id: string;
-  order: number;
   created_at: string;
+  user_id: string;
+  name: string;
+  order: number;
   include_in_focus_mode: boolean;
-  tasks: Task[];
 }
 
-export interface TaskCategory {
+export interface Category {
   id: string;
+  created_at: string;
+  user_id: string;
   name: string;
   color: string;
-  user_id: string;
-  created_at: string;
 }

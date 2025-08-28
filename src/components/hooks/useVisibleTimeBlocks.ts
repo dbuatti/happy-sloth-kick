@@ -1,6 +1,11 @@
 import { useMemo } from 'react';
-import { format, addMinutes, parse, getHours, setHours, setMinutes } from 'date-fns';
+import { addMinutes, getHours, getMinutes, setHours, setMinutes } from 'date-fns'; // Removed format
 import { WorkHour } from '@/hooks/useWorkHours';
+
+interface TimeBlock {
+  start: Date;
+  end: Date;
+}
 
 interface UseVisibleTimeBlocksProps {
   daysInGrid: Date[];
@@ -11,42 +16,44 @@ interface UseVisibleTimeBlocksProps {
 
 export const useVisibleTimeBlocks = ({
   daysInGrid,
-  allWorkHours,
+  allWorkHours, // This is used in the dependency array, so not truly unused.
   currentViewDate,
   getWorkHoursForDay,
 }: UseVisibleTimeBlocksProps) => {
   const visibleTimeBlocks = useMemo(() => {
-    let min = 24;
-    let max = 0;
-    let hasAnyWorkHours = false;
+    let minHour = 24;
+    let maxHour = 0;
 
+    // Determine the overall min and max work hours across all days in the grid
     daysInGrid.forEach(day => {
-        const wh = getWorkHoursForDay(day);
-        if (wh) {
-            hasAnyWorkHours = true;
-            const startHour = getHours(parse(wh.start_time, 'HH:mm:ss', day));
-            const endHour = getHours(parse(wh.end_time, 'HH:mm:ss', day));
-            if (startHour < min) min = startHour;
-            if (endHour > max) max = endHour;
-        }
+      const workHours = getWorkHoursForDay(day);
+      if (workHours && workHours.enabled) {
+        const start = setMinutes(setHours(day, parseInt(workHours.start_time.substring(0, 2))), parseInt(workHours.start_time.substring(3, 5)));
+        const end = setMinutes(setHours(day, parseInt(workHours.end_time.substring(0, 2))), parseInt(workHours.end_time.substring(3, 5)));
+        minHour = Math.min(minHour, getHours(start));
+        maxHour = Math.max(maxHour, getHours(end));
+      }
     });
 
-    if (!hasAnyWorkHours) {
-        min = 9;
-        max = 17; // Default work hours if none are defined
+    // If no work hours are enabled, default to a standard 9-5 day
+    if (minHour === 24 || maxHour === 0) {
+      minHour = 9;
+      maxHour = 17;
     }
 
-    const blocks = [];
-    let currentTime = setHours(setMinutes(currentViewDate, 0), min);
-    const endTime = setHours(setMinutes(currentViewDate, 0), max);
+    const blocks: TimeBlock[] = [];
+    let currentTime = setMinutes(setHours(currentViewDate, minHour), 0); // Use currentViewDate for context
 
-    while (currentTime.getTime() < endTime.getTime()) {
-        blocks.push({ start: currentTime, end: addMinutes(currentTime, 30) });
-        currentTime = addMinutes(currentTime, 30);
+    while (getHours(currentTime) < maxHour || (getHours(currentTime) === maxHour && getMinutes(currentTime) === 0)) {
+      blocks.push({
+        start: currentTime,
+        end: addMinutes(currentTime, 30),
+      });
+      currentTime = addMinutes(currentTime, 30);
     }
-    
+
     return blocks;
-  }, [daysInGrid, getWorkHoursForDay, currentViewDate]);
+  }, [daysInGrid, allWorkHours, currentViewDate, getWorkHoursForDay]);
 
   return { visibleTimeBlocks };
 };

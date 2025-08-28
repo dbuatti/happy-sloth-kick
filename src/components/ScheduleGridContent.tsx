@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { format, addMinutes, parse, getMinutes, getHours, parseISO, isSameDay, differenceInMinutes } from 'date-fns';
+import { format, addMinutes, parse, getMinutes, getHours, parseISO, setHours, setMinutes } from 'date-fns'; // Added setHours, setMinutes
 import { Button } from '@/components/ui/button';
 import { Sparkles, X } from 'lucide-react';
 import { toast } from 'sonner';
@@ -300,7 +300,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
     }
   };
 
-  const handleDragStart = (event: any) => {
+  const handleDragStart = (_event: any) => { // Renamed event to _event
     // DndProvider handles setting activeDragItem
   };
 
@@ -337,8 +337,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
     <ScheduleDndProvider
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      allTasks={allTasks}
-      sections={sections}
+      sections={sections} // Removed allTasks as it's not directly used by DndProvider
     >
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-4">
         <div className="flex items-center gap-2">
@@ -362,7 +361,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
               gridTemplateColumns: `minmax(100px, auto) repeat(${daysInGrid.length}, minmax(120px, 1fr))`,
               gridTemplateRows: `${headerHeight}px repeat(${visibleTimeBlocks.length}, ${rowHeight}px)`,
             }}>
-              <ScheduleGridHeader daysInGrid={daysInGrid} headerHeight={headerHeight} />
+              <ScheduleGridHeader daysInGrid={daysInGrid} /> {/* Removed headerHeight */}
               <ScheduleTimeColumn visibleTimeBlocks={visibleTimeBlocks} rowHeight={rowHeight} />
               <ScheduleDayGridCells
                 daysInGrid={daysInGrid}
@@ -400,7 +399,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
         selectedTimeSlotForNew={selectedTimeSlotForNew}
         setSelectedTimeSlotForNew={setSelectedTimeSlotForNew}
         selectedDateForNew={selectedDateForNew}
-        setSelectedDateForNew={setSelectedDateForNew}
+        // setSelectedDateForNew={setSelectedDateForNew} // Removed as it's not used directly in ScheduleModals
         handleSaveAppointment={handleSaveAppointment}
         handleDeleteAppointment={handleDeleteAppointment}
         parsedDataForForm={parsedDataForForm}
@@ -417,7 +416,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
         isClearDayDialogOpen={isClearDayDialogOpen}
         setIsClearDayDialogOpen={setIsClearDayDialogOpen}
         dayToClear={dayToClear}
-        setDayToClear={setDayToClear}
+        // setDayToClear={setDayToClear} // Removed as it's not used directly in ScheduleModals
         handleClearDay={handleClearDay}
 
         isExtendHoursDialogOpen={isExtendHoursDialogOpen}

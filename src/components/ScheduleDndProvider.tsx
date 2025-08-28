@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
+import { DndContext, DragOverlay, useSensor, useSensors, MouseSensor, TouchSensor, KeyboardSensor, UniqueIdentifier } from '@dnd-kit/core';
+import { Task, TaskSection } from '@/hooks/useTasks'; // Keep TaskSection
 import { createPortal } from 'react-dom';
-import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, useSensor, useSensors, closestCorners } from '@dnd-kit/core';
-import { format, parseISO, isValid } from 'date-fns';
-import DraggableScheduleTaskItem from '@/components/DraggableScheduleTaskItem';
-import { Task, TaskSection } from '@/hooks/useTasks';
+import DraggableScheduleTaskItem from './DraggableScheduleTaskItem';
+import AppointmentCard from './AppointmentCard';
+import { Appointment } from '@/hooks/useAppointments';
 
 interface ScheduleDndProviderProps {
   children: React.ReactNode;
-  onDragStart: (event: DragStartEvent) => void;
-  onDragEnd: (event: DragEndEvent) => void;
-  allTasks: Task[];
+  onDragStart: (event: any) => void;
+  onDragEnd: (event: any) => void;
+  // allTasks: Task[]; // Removed as it's not directly used by DndProvider
   sections: TaskSection[];
 }
 
@@ -17,47 +18,67 @@ const ScheduleDndProvider: React.FC<ScheduleDndProviderProps> = ({
   children,
   onDragStart,
   onDragEnd,
-  allTasks,
+  // allTasks, // Removed
   sections,
 }) => {
-  const [activeDragItem, setActiveDragItem] = useState<any>(null);
+  const [activeDragItem, setActiveDragItem] = useState<{ type: 'task' | 'appointment'; item: Task | Appointment; duration?: number } | null>(null);
 
-  const sensors = useSensors(useSensor(PointerSensor, {
-    activationConstraint: {
-      distance: 8,
-    },
-  }));
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
+    useSensor(KeyboardSensor)
+  );
 
-  const handleInternalDragStart = (event: DragStartEvent) => {
-    setActiveDragItem(event.active.data.current);
-    onDragStart(event); // Pass to parent handler
+  const handleDragStart = (event: any) => {
+    const { active } = event;
+    const { type, task, appointment, duration } = active.data.current;
+
+    if (type === 'task' && task) {
+      setActiveDragItem({ type: 'task', item: task });
+    } else if (type === 'appointment' && appointment) {
+      setActiveDragItem({ type: 'appointment', item: appointment, duration });
+    }
+    onDragStart(event);
   };
 
-  const handleInternalDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = (event: any) => {
     setActiveDragItem(null);
-    onDragEnd(event); // Pass to parent handler
+    onDragEnd(event);
+  };
+
+  const renderDragOverlay = () => {
+    if (!activeDragItem) return null;
+
+    if (activeDragItem.type === 'task') {
+      const task = activeDragItem.item as Task;
+      return (
+        <DraggableScheduleTaskItem task={task} sections={sections} />
+      );
+    } else if (activeDragItem.type === 'appointment') {
+      const appointment = activeDragItem.item as Appointment;
+      return (
+        <AppointmentCard
+          appointment={appointment}
+          onEdit={() => {}} // Placeholder
+          onUnschedule={() => {}} // Placeholder
+          trackIndex={0}
+          totalTracks={1}
+        />
+      );
+    }
+    return null;
   };
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleInternalDragStart} onDragEnd={handleInternalDragEnd}>
+    <DndContext
+      sensors={sensors}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
       {children}
       {createPortal(
-        <DragOverlay dropAnimation={null}>
-          {activeDragItem?.type === 'task' && (
-            <DraggableScheduleTaskItem task={activeDragItem.task} sections={sections} />
-          )}
-          {activeDragItem?.type === 'appointment' && (() => {
-            const startTime = activeDragItem.appointment.start_time ? parseISO(`2000-01-01T${activeDragItem.appointment.start_time}`) : null;
-            const endTime = activeDragItem.appointment.end_time ? parseISO(`2000-01-01T${activeDragItem.appointment.end_time}`) : null;
-            return (
-              <div className="rounded-lg p-2 shadow-md text-white" style={{ backgroundColor: activeDragItem.appointment.color, width: '200px' }}>
-                <h4 className="font-semibold text-sm truncate">{activeDragItem.appointment.title}</h4>
-                <p className="text-xs opacity-90">
-                  {startTime && endTime && isValid(startTime) && isValid(endTime) ? `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}` : 'Invalid time'}
-                </p>
-              </div>
-            );
-          })()}
+        <DragOverlay>
+          {renderDragOverlay()}
         </DragOverlay>,
         document.body
       )}
