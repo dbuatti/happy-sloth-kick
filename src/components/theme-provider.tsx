@@ -10,6 +10,8 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
       enableSystem
       defaultTheme="system"
       themes={[
+        "light", // Added back
+        "dark",  // Added back
         "ocean-breeze",
         "sunset-glow",
         "forest-deep",

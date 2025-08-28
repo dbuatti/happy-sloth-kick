@@ -1,4 +1,6 @@
-/* Default Light Theme */
+/* src/styles/themes/_index.css */
+
+/* Base Light Theme */
 :root {
   --background: 0 0% 100%;
   --foreground: 222.2 84% 4.9%;
@@ -7,7 +9,7 @@
   --popover: 0 0% 100%;
   --popover-foreground: 222.2 84% 4.9%;
   --primary: 221.2 83.2% 53.3%;
-  --primary-foreground: 210 40% 98%;
+  --primary-foreground: 210 20% 98%;
   --secondary: 210 40% 96.1%;
   --secondary-foreground: 222.2 47.4% 11.2%;
   --muted: 210 40% 96.1%;
@@ -15,496 +17,389 @@
   --accent: 210 40% 96.1%;
   --accent-foreground: 222.2 47.4% 11.2%;
   --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 0 0% 98%;
+  --destructive-foreground: 210 20% 98%;
   --border: 214.3 31.8% 91.4%;
   --input: 214.3 31.8% 91.4%;
   --ring: 221.2 83.2% 53.3%;
   --radius: 0.5rem;
 
-  --sidebar-background: 210 40% 96.1%;
-  --sidebar-foreground: 222.2 84% 4.9%;
-  --sidebar-primary: 221.2 83.2% 53.3%;
-  --sidebar-primary-foreground: 210 40% 98%;
-  --sidebar-accent: 210 40% 96.1%;
-  --sidebar-accent-foreground: 222.2 47.4% 11.2%;
-  --sidebar-border: 214.3 31.8% 91.4%;
-  --sidebar-ring: 221.2 83.2% 53.3%;
+  /* Status Colors */
+  --status-completed: 142.1 76.2% 36.3%; /* Green */
+  --priority-low: 210 40% 96.1%; /* Light Blue */
+  --priority-medium: 48 96% 89%; /* Light Yellow */
+  --priority-high: 27 87% 67%; /* Orange */
+  --priority-urgent: 0 84.2% 60.2%; /* Red */
 
-  --status-completed: 142.1 76.2% 36.3%;
-  --priority-low: 210 40% 96.1%;
-  --priority-medium: 48 96% 50%;
-  --priority-high: 20 80% 50%;
-  --priority-urgent: 0 84.2% 60.2%;
-  --border-status-due-today: 48 96% 50%;
-  --border-status-overdue: 0 84.2% 60.2%;
-
-  --gradient-start-light: 221.2 83.2% 90%;
-  --gradient-end-light: 210 40% 90%;
-  --gradient-start-dark: 222.2 84% 20%;
-  --gradient-end-dark: 217.2 32.6% 20%;
+  /* Gradient for ADHD Banner */
+  --gradient-start-light: 210 40% 96.1%; /* Muted */
+  --gradient-end-light: 214.3 31.8% 91.4%; /* Border */
 }
 
-/* Default Dark Theme */
+/* Base Dark Theme */
 .dark {
-  --background: 222.2 84% 4.9%;
-  --foreground: 210 40% 96.1%;
-  --card: 222.2 84% 4.9%;
-  --card-foreground: 210 40% 96.1%;
-  --popover: 222.2 84% 4.9%;
-  --popover-foreground: 210 40% 96.1%;
+  --background: 222.2 47.4% 11.2%;
+  --foreground: 210 20% 98%;
+  --card: 222.2 47.4% 11.2%;
+  --card-foreground: 210 20% 98%;
+  --popover: 222.2 47.4% 11.2%;
+  --popover-foreground: 210 20% 98%;
   --primary: 217.2 91.2% 59.8%;
   --primary-foreground: 222.2 47.4% 11.2%;
-  --secondary: 217.2 32.6% 17.5%;
-  --secondary-foreground: 210 40% 96.1%;
-  --muted: 217.2 32.6% 17.5%;
+  --secondary: 217.2 32.4% 20.8%;
+  --secondary-foreground: 210 20% 98%;
+  --muted: 217.2 32.4% 20.8%;
   --muted-foreground: 215 20.2% 65.1%;
-  --accent: 217.2 32.6% 17.5%;
-  --accent-foreground: 210 40% 96.1%;
+  --accent: 217.2 32.4% 20.8%;
+  --accent-foreground: 210 20% 98%;
   --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 217.2 32.6% 17.5%;
-  --input: 217.2 32.6% 17.5%;
+  --destructive-foreground: 210 20% 98%;
+  --border: 217.2 32.4% 20.8%;
+  --input: 217.2 32.4% 20.8%;
   --ring: 217.2 91.2% 59.8%;
 
-  --sidebar-background: 217.2 32.6% 17.5%;
-  --sidebar-foreground: 210 40% 96.1%;
-  --sidebar-primary: 217.2 91.2% 59.8%;
-  --sidebar-primary-foreground: 222.2 47.4% 11.2%;
-  --sidebar-accent: 217.2 32.6% 17.5%;
-  --sidebar-accent-foreground: 210 40% 96.1%;
-  --sidebar-border: 217.2 32.6% 17.5%;
-  --sidebar-ring: 217.2 91.2% 59.8%;
+  /* Status Colors */
+  --status-completed: 142.1 70.2% 45.3%; /* Green */
+  --priority-low: 217.2 32.4% 20.8%; /* Dark Blue */
+  --priority-medium: 38 92% 50%; /* Yellow */
+  --priority-high: 14 76% 49%; /* Dark Orange */
+  --priority-urgent: 0 62.8% 30.6%; /* Dark Red */
 
-  --status-completed: 142.1 76.2% 36.3%;
-  --priority-low: 217.2 32.6% 17.5%;
-  --priority-medium: 48 96% 50%;
-  --priority-high: 20 80% 50%;
-  --priority-urgent: 0 62.8% 30.6%;
-  --border-status-due-today: 48 96% 50%;
-  --border-status-overdue: 0 62.8% 30.6%;
+  /* Gradient for ADHD Banner */
+  --gradient-start-dark: 217.2 32.4% 20.8%; /* Muted */
+  --gradient-end-dark: 217.2 32.4% 20.8%; /* Border */
 }
 
-/* Ocean Breeze Theme (Light) */
+/* Ocean Breeze Theme */
 .theme-ocean-breeze {
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
-  --card: 0 0% 100%;
-  --card-foreground: 222.2 84% 4.9%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 222.2 84% 4.9%;
-  --primary: 200 80% 40%; /* Ocean Blue */
-  --primary-foreground: 0 0% 98%;
-  --secondary: 160 60% 70%; /* Soft Teal */
-  --secondary-foreground: 222.2 47.4% 11.2%;
-  --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  --accent: 200 80% 50%; /* Brighter Ocean Blue */
-  --accent-foreground: 222.2 47.4% 11.2%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --ring: 200 80% 40%;
+  --background: 200 50% 95%;
+  --foreground: 210 20% 20%;
+  --card: 200 50% 100%;
+  --card-foreground: 210 20% 20%;
+  --popover: 200 50% 100%;
+  --popover-foreground: 210 20% 20%;
+  --primary: 200 70% 50%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 200 30% 85%;
+  --secondary-foreground: 210 20% 20%;
+  --muted: 200 30% 90%;
+  --muted-foreground: 200 20% 50%;
+  --accent: 200 30% 85%;
+  --accent-foreground: 210 20% 20%;
+  --destructive: 0 80% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 200 30% 80%;
+  --input: 200 30% 80%;
+  --ring: 200 70% 50%;
 
-  --sidebar-background: 210 40% 96.1%;
-  --sidebar-foreground: 222.2 84% 4.9%;
-  --sidebar-primary: 200 80% 40%;
-  --sidebar-primary-foreground: 0 0% 98%;
-  --sidebar-accent: 160 60% 70%;
-  --sidebar-accent-foreground: 222.2 47.4% 11.2%;
-  --sidebar-border: 214.3 31.8% 91.4%;
-  --sidebar-ring: 200 80% 40%;
+  /* Status Colors */
+  --status-completed: 140 60% 40%;
+  --priority-low: 200 30% 85%;
+  --priority-medium: 40 80% 70%;
+  --priority-high: 10 70% 60%;
+  --priority-urgent: 0 80% 60%;
 
-  --status-completed: 142.1 76.2% 36.3%;
-  --priority-low: 160 60% 70%;
-  --priority-medium: 48 96% 50%;
-  --priority-high: 20 80% 50%;
-  --priority-urgent: 0 84.2% 60.2%;
-  --border-status-due-today: 48 96% 50%;
-  --border-status-overdue: 0 84.2% 60.2%;
-
-  --gradient-start-light: 200 80% 90%;
-  --gradient-end-light: 160 60% 90%;
-  --gradient-start-dark: 200 80% 20%;
-  --gradient-end-dark: 160 60% 20%;
+  /* Gradient for ADHD Banner */
+  --gradient-start-light: 200 30% 90%;
+  --gradient-end-light: 200 30% 80%;
 }
 
-/* Ocean Breeze Theme (Dark) */
 .dark .theme-ocean-breeze {
-  --background: 222.2 84% 4.9%;
-  --foreground: 210 40% 96.1%;
-  --card: 222.2 84% 4.9%;
-  --card-foreground: 210 40% 96.1%;
-  --popover: 222.2 84% 4.9%;
-  --popover-foreground: 210 40% 96.1%;
-  --primary: 200 80% 60%; /* Lighter Ocean Blue */
-  --primary-foreground: 222.2 47.4% 11.2%;
-  --secondary: 160 60% 40%; /* Darker Teal */
-  --secondary-foreground: 210 40% 96.1%;
-  --muted: 217.2 32.6% 17.5%;
-  --muted-foreground: 215 20.2% 65.1%;
-  --accent: 200 80% 70%; /* Even Lighter Ocean Blue */
-  --accent-foreground: 210 40% 96.1%;
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 217.2 32.6% 17.5%;
-  --input: 217.2 32.6% 17.5%;
-  --ring: 200 80% 60%;
+  --background: 210 20% 15%;
+  --foreground: 200 50% 90%;
+  --card: 210 20% 10%;
+  --card-foreground: 200 50% 90%;
+  --popover: 210 20% 10%;
+  --popover-foreground: 200 50% 90%;
+  --primary: 200 70% 60%;
+  --primary-foreground: 210 20% 15%;
+  --secondary: 210 20% 25%;
+  --secondary-foreground: 200 50% 90%;
+  --muted: 210 20% 20%;
+  --muted-foreground: 200 20% 70%;
+  --accent: 210 20% 25%;
+  --accent-foreground: 200 50% 90%;
+  --destructive: 0 70% 40%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 210 20% 30%;
+  --input: 210 20% 30%;
+  --ring: 200 70% 60%;
 
-  --sidebar-background: 217.2 32.6% 17.5%;
-  --sidebar-foreground: 210 40% 96.1%;
-  --sidebar-primary: 200 80% 60%;
-  --sidebar-primary-foreground: 222.2 47.4% 11.2%;
-  --sidebar-accent: 160 60% 40%;
-  --sidebar-accent-foreground: 210 40% 96.1%;
-  --sidebar-border: 217.2 32.6% 17.5%;
-  --sidebar-ring: 200 80% 60%;
+  /* Status Colors */
+  --status-completed: 140 50% 50%;
+  --priority-low: 210 20% 25%;
+  --priority-medium: 40 70% 50%;
+  --priority-high: 10 60% 40%;
+  --priority-urgent: 0 70% 40%;
 
-  --status-completed: 142.1 76.2% 36.3%;
-  --priority-low: 160 60% 40%;
-  --priority-medium: 48 96% 50%;
-  --priority-high: 20 80% 50%;
-  --priority-urgent: 0 62.8% 30.6%;
-  --border-status-due-today: 48 96% 50%;
-  --border-status-overdue: 0 62.8% 30.6%;
+  /* Gradient for ADHD Banner */
+  --gradient-start-dark: 210 20% 20%;
+  --gradient-end-dark: 210 20% 30%;
 }
 
-/* Sunset Glow Theme (Light) */
+/* Sunset Glow Theme */
 .theme-sunset-glow {
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
-  --card: 0 0% 100%;
-  --card-foreground: 222.2 84% 4.9%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 222.2 84% 4.9%;
-  --primary: 30 90% 50%; /* Warm Orange */
-  --primary-foreground: 0 0% 98%;
-  --secondary: 330 70% 70%; /* Soft Pink */
-  --secondary-foreground: 222.2 47.4% 11.2%;
-  --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  --accent: 330 70% 60%; /* Muted Rose */
-  --accent-foreground: 222.2 47.4% 11.2%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --ring: 30 90% 50%;
+  --background: 30 100% 98%;
+  --foreground: 20 50% 20%;
+  --card: 30 100% 100%;
+  --card-foreground: 20 50% 20%;
+  --popover: 30 100% 100%;
+  --popover-foreground: 20 50% 20%;
+  --primary: 30 90% 55%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 40 80% 90%;
+  --secondary-foreground: 20 50% 20%;
+  --muted: 40 80% 95%;
+  --muted-foreground: 30 30% 50%;
+  --accent: 40 80% 90%;
+  --accent-foreground: 20 50% 20%;
+  --destructive: 0 80% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 40 80% 85%;
+  --input: 40 80% 85%;
+  --ring: 30 90% 55%;
 
-  --sidebar-background: 210 40% 96.1%;
-  --sidebar-foreground: 222.2 84% 4.9%;
-  --sidebar-primary: 30 90% 50%;
-  --sidebar-primary-foreground: 0 0% 98%;
-  --sidebar-accent: 330 70% 70%;
-  --sidebar-accent-foreground: 222.2 47.4% 11.2%;
-  --sidebar-border: 214.3 31.8% 91.4%;
-  --sidebar-ring: 30 90% 50%;
+  /* Status Colors */
+  --status-completed: 140 60% 40%;
+  --priority-low: 40 80% 90%;
+  --priority-medium: 50 90% 70%;
+  --priority-high: 10 70% 60%;
+  --priority-urgent: 0 80% 60%;
 
-  --status-completed: 142.1 76.2% 36.3%;
-  --priority-low: 330 70% 70%;
-  --priority-medium: 48 96% 50%;
-  --priority-high: 20 80% 50%;
-  --priority-urgent: 0 84.2% 60.2%;
-  --border-status-due-today: 48 96% 50%;
-  --border-status-overdue: 0 84.2% 60.2%;
-
-  --gradient-start-light: 30 90% 90%;
-  --gradient-end-light: 330 70% 90%;
-  --gradient-start-dark: 30 90% 20%;
-  --gradient-end-dark: 330 70% 20%;
+  /* Gradient for ADHD Banner */
+  --gradient-start-light: 40 80% 95%;
+  --gradient-end-light: 40 80% 85%;
 }
 
-/* Sunset Glow Theme (Dark) */
 .dark .theme-sunset-glow {
-  --background: 222.2 84% 4.9%;
-  --foreground: 210 40% 96.1%;
-  --card: 222.2 84% 4.9%;
-  --card-foreground: 210 40% 96.1%;
-  --popover: 222.2 84% 4.9%;
-  --popover-foreground: 210 40% 96.1%;
-  --primary: 30 90% 70%; /* Lighter Warm Orange */
-  --primary-foreground: 222.2 47.4% 11.2%;
-  --secondary: 330 70% 40%; /* Darker Pink */
-  --secondary-foreground: 210 40% 96.1%;
-  --muted: 217.2 32.6% 17.5%;
-  --muted-foreground: 215 20.2% 65.1%;
-  --accent: 330 70% 50%; /* Darker Rose */
-  --accent-foreground: 210 40% 96.1%;
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 217.2 32.6% 17.5%;
-  --input: 217.2 32.6% 17.5%;
-  --ring: 30 90% 70%;
+  --background: 20 30% 15%;
+  --foreground: 30 100% 90%;
+  --card: 20 30% 10%;
+  --card-foreground: 30 100% 90%;
+  --popover: 20 30% 10%;
+  --popover-foreground: 30 100% 90%;
+  --primary: 30 90% 65%;
+  --primary-foreground: 20 30% 15%;
+  --secondary: 20 30% 25%;
+  --secondary-foreground: 30 100% 90%;
+  --muted: 20 30% 20%;
+  --muted-foreground: 30 30% 70%;
+  --accent: 20 30% 25%;
+  --accent-foreground: 30 100% 90%;
+  --destructive: 0 70% 40%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 20 30% 30%;
+  --input: 20 30% 30%;
+  --ring: 30 90% 65%;
 
-  --sidebar-background: 217.2 32.6% 17.5%;
-  --sidebar-foreground: 210 40% 96.1%;
-  --sidebar-primary: 30 90% 70%;
-  --sidebar-primary-foreground: 222.2 47.4% 11.2%;
-  --sidebar-accent: 330 70% 40%;
-  --sidebar-accent-foreground: 210 40% 96.1%;
-  --sidebar-border: 217.2 32.6% 17.5%;
-  --sidebar-ring: 30 90% 70%;
+  /* Status Colors */
+  --status-completed: 140 50% 50%;
+  --priority-low: 20 30% 25%;
+  --priority-medium: 50 80% 50%;
+  --priority-high: 10 60% 40%;
+  --priority-urgent: 0 70% 40%;
 
-  --status-completed: 142.1 76.2% 36.3%;
-  --priority-low: 330 70% 40%;
-  --priority-medium: 48 96% 50%;
-  --priority-high: 20 80% 50%;
-  --priority-urgent: 0 62.8% 30.6%;
-  --border-status-due-today: 48 96% 50%;
-  --border-status-overdue: 0 62.8% 30.6%;
+  /* Gradient for ADHD Banner */
+  --gradient-start-dark: 20 30% 20%;
+  --gradient-end-dark: 20 30% 30%;
 }
 
-/* Forest Deep Theme (Light) */
+/* Forest Deep Theme */
 .theme-forest-deep {
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
-  --card: 0 0% 100%;
-  --card-foreground: 222.2 84% 4.9%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 222.2 84% 4.9%;
-  --primary: 120 40% 30%; /* Deep Forest Green */
-  --primary-foreground: 0 0% 98%;
-  --secondary: 30 20% 60%; /* Earthy Brown */
-  --secondary-foreground: 222.2 47.4% 11.2%;
-  --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  --accent: 120 40% 40%; /* Brighter Forest Green */
-  --accent-foreground: 222.2 47.4% 11.2%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --ring: 120 40% 30%;
+  --background: 120 30% 95%;
+  --foreground: 120 20% 20%;
+  --card: 120 30% 100%;
+  --card-foreground: 120 20% 20%;
+  --popover: 120 30% 100%;
+  --popover-foreground: 120 20% 20%;
+  --primary: 120 60% 40%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 120 20% 85%;
+  --secondary-foreground: 120 20% 20%;
+  --muted: 120 20% 90%;
+  --muted-foreground: 120 10% 50%;
+  --accent: 120 20% 85%;
+  --accent-foreground: 120 20% 20%;
+  --destructive: 0 80% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 120 20% 80%;
+  --input: 120 20% 80%;
+  --ring: 120 60% 40%;
 
-  --sidebar-background: 210 40% 96.1%;
-  --sidebar-foreground: 222.2 84% 4.9%;
-  --sidebar-primary: 120 40% 30%;
-  --sidebar-primary-foreground: 0 0% 98%;
-  --sidebar-accent: 30 20% 60%;
-  --sidebar-accent-foreground: 222.2 47.4% 11.2%;
-  --sidebar-border: 214.3 31.8% 91.4%;
-  --sidebar-ring: 120 40% 30%;
+  /* Status Colors */
+  --status-completed: 140 60% 40%;
+  --priority-low: 120 20% 85%;
+  --priority-medium: 40 80% 70%;
+  --priority-high: 10 70% 60%;
+  --priority-urgent: 0 80% 60%;
 
-  --status-completed: 142.1 76.2% 36.3%;
-  --priority-low: 30 20% 60%;
-  --priority-medium: 48 96% 50%;
-  --priority-high: 20 80% 50%;
-  --priority-urgent: 0 84.2% 60.2%;
-  --border-status-due-today: 48 96% 50%;
-  --border-status-overdue: 0 84.2% 60.2%;
-
-  --gradient-start-light: 120 40% 90%;
-  --gradient-end-light: 30 20% 90%;
-  --gradient-start-dark: 120 40% 20%;
-  --gradient-end-dark: 30 20% 20%;
+  /* Gradient for ADHD Banner */
+  --gradient-start-light: 120 20% 90%;
+  --gradient-end-light: 120 20% 80%;
 }
 
-/* Forest Deep Theme (Dark) */
 .dark .theme-forest-deep {
-  --background: 222.2 84% 4.9%;
-  --foreground: 210 40% 96.1%;
-  --card: 222.2 84% 4.9%;
-  --card-foreground: 210 40% 96.1%;
-  --popover: 222.2 84% 4.9%;
-  --popover-foreground: 210 40% 96.1%;
-  --primary: 120 40% 50%; /* Lighter Forest Green */
-  --primary-foreground: 222.2 47.4% 11.2%;
-  --secondary: 30 20% 30%; /* Darker Brown */
-  --secondary-foreground: 210 40% 96.1%;
-  --muted: 217.2 32.6% 17.5%;
-  --muted-foreground: 215 20.2% 65.1%;
-  --accent: 120 40% 60%; /* Even Lighter Forest Green */
-  --accent-foreground: 210 40% 96.1%;
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 217.2 32.6% 17.5%;
-  --input: 217.2 32.6% 17.5%;
-  --ring: 120 40% 50%;
+  --background: 120 20% 15%;
+  --foreground: 120 30% 90%;
+  --card: 120 20% 10%;
+  --card-foreground: 120 30% 90%;
+  --popover: 120 20% 10%;
+  --popover-foreground: 120 30% 90%;
+  --primary: 120 60% 50%;
+  --primary-foreground: 120 20% 15%;
+  --secondary: 120 20% 25%;
+  --secondary-foreground: 120 30% 90%;
+  --muted: 120 20% 20%;
+  --muted-foreground: 120 10% 70%;
+  --accent: 120 20% 25%;
+  --accent-foreground: 120 30% 90%;
+  --destructive: 0 70% 40%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 120 20% 30%;
+  --input: 120 20% 30%;
+  --ring: 120 60% 50%;
 
-  --sidebar-background: 217.2 32.6% 17.5%;
-  --sidebar-foreground: 210 40% 96.1%;
-  --sidebar-primary: 120 40% 50%;
-  --sidebar-primary-foreground: 222.2 47.4% 11.2%;
-  --sidebar-accent: 30 20% 30%;
-  --sidebar-accent-foreground: 210 40% 96.1%;
-  --sidebar-border: 217.2 32.6% 17.5%;
-  --sidebar-ring: 120 40% 50%;
+  /* Status Colors */
+  --status-completed: 140 50% 50%;
+  --priority-low: 120 20% 25%;
+  --priority-medium: 40 70% 50%;
+  --priority-high: 10 60% 40%;
+  --priority-urgent: 0 70% 40%;
 
-  --status-completed: 142.1 76.2% 36.3%;
-  --priority-low: 30 20% 30%;
-  --priority-medium: 48 96% 50%;
-  --priority-high: 20 80% 50%;
-  --priority-urgent: 0 62.8% 30.6%;
-  --border-status-due-today: 48 96% 50%;
-  --border-status-overdue: 0 62.8% 30.6%;
+  /* Gradient for ADHD Banner */
+  --gradient-start-dark: 120 20% 20%;
+  --gradient-end-dark: 120 20% 30%;
 }
 
-/* Midnight Serenity Theme (Light) */
+/* Midnight Serenity Theme */
 .theme-midnight-serenity {
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
-  --card: 0 0% 100%;
-  --card-foreground: 222.2 84% 4.9%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 222.2 84% 4.9%;
-  --primary: 240 60% 40%; /* Deep Indigo */
-  --primary-foreground: 0 0% 98%;
-  --secondary: 210 20% 80%; /* Light Gray-Blue */
-  --secondary-foreground: 222.2 47.4% 11.2%;
-  --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  --accent: 240 60% 50%; /* Brighter Indigo */
-  --accent-foreground: 222.2 47.4% 11.2%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --ring: 240 60% 40%;
+  --background: 240 10% 10%;
+  --foreground: 240 20% 90%;
+  --card: 240 10% 5%;
+  --card-foreground: 240 20% 90%;
+  --popover: 240 10% 5%;
+  --popover-foreground: 240 20% 90%;
+  --primary: 240 60% 70%;
+  --primary-foreground: 240 10% 10%;
+  --secondary: 240 10% 20%;
+  --secondary-foreground: 240 20% 90%;
+  --muted: 240 10% 15%;
+  --muted-foreground: 240 10% 60%;
+  --accent: 240 10% 20%;
+  --accent-foreground: 240 20% 90%;
+  --destructive: 0 70% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 240 10% 25%;
+  --input: 240 10% 25%;
+  --ring: 240 60% 70%;
 
-  --sidebar-background: 210 40% 96.1%;
-  --sidebar-foreground: 222.2 84% 4.9%;
-  --sidebar-primary: 240 60% 40%;
-  --sidebar-primary-foreground: 0 0% 98%;
-  --sidebar-accent: 210 20% 80%;
-  --sidebar-accent-foreground: 222.2 47.4% 11.2%;
-  --sidebar-border: 214.3 31.8% 91.4%;
-  --sidebar-ring: 240 60% 40%;
+  /* Status Colors */
+  --status-completed: 140 50% 50%;
+  --priority-low: 240 10% 20%;
+  --priority-medium: 40 70% 50%;
+  --priority-high: 10 60% 40%;
+  --priority-urgent: 0 70% 50%;
 
-  --status-completed: 142.1 76.2% 36.3%;
-  --priority-low: 210 20% 80%;
-  --priority-medium: 48 96% 50%;
-  --priority-high: 20 80% 50%;
-  --priority-urgent: 0 84.2% 60.2%;
-  --border-status-due-today: 48 96% 50%;
-  --border-status-overdue: 0 84.2% 60.2%;
-
-  --gradient-start-light: 240 60% 90%;
-  --gradient-end-light: 210 20% 90%;
-  --gradient-start-dark: 240 60% 20%;
-  --gradient-end-dark: 210 20% 20%;
+  /* Gradient for ADHD Banner */
+  --gradient-start-light: 240 10% 15%;
+  --gradient-end-light: 240 10% 25%;
 }
 
-/* Midnight Serenity Theme (Dark) */
 .dark .theme-midnight-serenity {
-  --background: 222.2 84% 4.9%;
-  --foreground: 210 40% 96.1%;
-  --card: 222.2 84% 4.9%;
-  --card-foreground: 210 40% 96.1%;
-  --popover: 222.2 84% 4.9%;
-  --popover-foreground: 210 40% 96.1%;
-  --primary: 240 60% 60%; /* Lighter Indigo */
-  --primary-foreground: 222.2 47.4% 11.2%;
-  --secondary: 210 20% 30%; /* Darker Gray-Blue */
-  --secondary-foreground: 210 40% 96.1%;
-  --muted: 217.2 32.6% 17.5%;
-  --muted-foreground: 215 20.2% 65.1%;
-  --accent: 240 60% 70%; /* Even Lighter Indigo */
-  --accent-foreground: 210 40% 96.1%;
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 217.2 32.6% 17.5%;
-  --input: 217.2 32.6% 17.5%;
-  --ring: 240 60% 60%;
+  --background: 240 10% 10%;
+  --foreground: 240 20% 90%;
+  --card: 240 10% 5%;
+  --card-foreground: 240 20% 90%;
+  --popover: 240 10% 5%;
+  --popover-foreground: 240 20% 90%;
+  --primary: 240 60% 70%;
+  --primary-foreground: 240 10% 10%;
+  --secondary: 240 10% 20%;
+  --secondary-foreground: 240 20% 90%;
+  --muted: 240 10% 15%;
+  --muted-foreground: 240 10% 60%;
+  --accent: 240 10% 20%;
+  --accent-foreground: 240 20% 90%;
+  --destructive: 0 70% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 240 10% 25%;
+  --input: 240 10% 25%;
+  --ring: 240 60% 70%;
 
-  --sidebar-background: 217.2 32.6% 17.5%;
-  --sidebar-foreground: 210 40% 96.1%;
-  --sidebar-primary: 240 60% 60%;
-  --sidebar-primary-foreground: 222.2 47.4% 11.2%;
-  --sidebar-accent: 210 20% 30%;
-  --sidebar-accent-foreground: 210 40% 96.1%;
-  --sidebar-border: 217.2 32.6% 17.5%;
-  --sidebar-ring: 240 60% 60%;
+  /* Status Colors */
+  --status-completed: 140 50% 50%;
+  --priority-low: 240 10% 20%;
+  --priority-medium: 40 70% 50%;
+  --priority-high: 10 60% 40%;
+  --priority-urgent: 0 70% 50%;
 
-  --status-completed: 142.1 76.2% 36.3%;
-  --priority-low: 210 20% 30%;
-  --priority-medium: 48 96% 50%;
-  --priority-high: 20 80% 50%;
-  --priority-urgent: 0 62.8% 30.6%;
-  --border-status-due-today: 48 96% 50%;
-  --border-status-overdue: 0 62.8% 30.6%;
+  /* Gradient for ADHD Banner */
+  --gradient-start-dark: 240 10% 15%;
+  --gradient-end-dark: 240 10% 25%;
 }
 
-/* Desert Bloom Theme (Light) */
+/* Desert Bloom Theme */
 .theme-desert-bloom {
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
-  --card: 0 0% 100%;
-  --card-foreground: 222.2 84% 4.9%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 222.2 84% 4.9%;
-  --primary: 20 40% 50%; /* Terracotta */
-  --primary-foreground: 0 0% 98%;
-  --secondary: 40 20% 80%; /* Sandy Beige */
-  --secondary-foreground: 222.2 47.4% 11.2%;
-  --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  --accent: 100 30% 60%; /* Muted Green */
-  --accent-foreground: 222.2 47.4% 11.2%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --ring: 20 40% 50%;
+  --background: 40 60% 98%;
+  --foreground: 40 30% 20%;
+  --card: 40 60% 100%;
+  --card-foreground: 40 30% 20%;
+  --popover: 40 60% 100%;
+  --popover-foreground: 40 30% 20%;
+  --primary: 40 70% 50%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 30 40% 90%;
+  --secondary-foreground: 40 30% 20%;
+  --muted: 30 40% 95%;
+  --muted-foreground: 40 20% 50%;
+  --accent: 30 40% 90%;
+  --accent-foreground: 40 30% 20%;
+  --destructive: 0 80% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 30 40% 85%;
+  --input: 30 40% 85%;
+  --ring: 40 70% 50%;
 
-  --sidebar-background: 210 40% 96.1%;
-  --sidebar-foreground: 222.2 84% 4.9%;
-  --sidebar-primary: 20 40% 50%;
-  --sidebar-primary-foreground: 0 0% 98%;
-  --sidebar-accent: 40 20% 80%;
-  --sidebar-accent-foreground: 222.2 47.4% 11.2%;
-  --sidebar-border: 214.3 31.8% 91.4%;
-  --sidebar-ring: 20 40% 50%;
+  /* Status Colors */
+  --status-completed: 140 60% 40%;
+  --priority-low: 30 40% 90%;
+  --priority-medium: 50 90% 70%;
+  --priority-high: 10 70% 60%;
+  --priority-urgent: 0 80% 60%;
 
-  --status-completed: 142.1 76.2% 36.3%;
-  --priority-low: 40 20% 80%;
-  --priority-medium: 48 96% 50%;
-  --priority-high: 20 80% 50%;
-  --priority-urgent: 0 84.2% 60.2%;
-  --border-status-due-today: 48 96% 50%;
-  --border-status-overdue: 0 84.2% 60.2%;
-
-  --gradient-start-light: 20 40% 90%;
-  --gradient-end-light: 40 20% 90%;
-  --gradient-start-dark: 20 40% 20%;
-  --gradient-end-dark: 40 20% 20%;
+  /* Gradient for ADHD Banner */
+  --gradient-start-light: 30 40% 95%;
+  --gradient-end-light: 30 40% 85%;
 }
 
-/* Desert Bloom Theme (Dark) */
 .dark .theme-desert-bloom {
-  --background: 222.2 84% 4.9%;
-  --foreground: 210 40% 96.1%;
-  --card: 222.2 84% 4.9%;
-  --card-foreground: 210 40% 96.1%;
-  --popover: 222.2 84% 4.9%;
-  --popover-foreground: 210 40% 96.1%;
-  --primary: 20 40% 70%; /* Lighter Terracotta */
-  --primary-foreground: 222.2 47.4% 11.2%;
-  --secondary: 40 20% 30%; /* Darker Sandy Beige */
-  --secondary-foreground: 210 40% 96.1%;
-  --muted: 217.2 32.6% 17.5%;
-  --muted-foreground: 215 20.2% 65.1%;
-  --accent: 100 30% 40%; /* Darker Muted Green */
-  --accent-foreground: 210 40% 96.1%;
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 217.2 32.6% 17.5%;
-  --input: 217.2 32.6% 17.5%;
-  --ring: 20 40% 70%;
+  --background: 30 20% 15%;
+  --foreground: 40 60% 90%;
+  --card: 30 20% 10%;
+  --card-foreground: 40 60% 90%;
+  --popover: 30 20% 10%;
+  --popover-foreground: 40 60% 90%;
+  --primary: 40 70% 60%;
+  --primary-foreground: 30 20% 15%;
+  --secondary: 30 20% 25%;
+  --secondary-foreground: 40 60% 90%;
+  --muted: 30 20% 20%;
+  --muted-foreground: 40 20% 70%;
+  --accent: 30 20% 25%;
+  --accent-foreground: 40 60% 90%;
+  --destructive: 0 70% 40%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 30 20% 30%;
+  --input: 30 20% 30%;
+  --ring: 40 70% 60%;
 
-  --sidebar-background: 217.2 32.6% 17.5%;
-  --sidebar-foreground: 210 40% 96.1%;
-  --sidebar-primary: 20 40% 70%;
-  --sidebar-primary-foreground: 222.2 47.4% 11.2%;
-  --sidebar-accent: 40 20% 30%;
-  --sidebar-accent-foreground: 210 40% 96.1%;
-  --sidebar-border: 217.2 32.6% 17.5%;
-  --sidebar-ring: 20 40% 70%;
+  /* Status Colors */
+  --status-completed: 140 50% 50%;
+  --priority-low: 30 20% 25%;
+  --priority-medium: 50 80% 50%;
+  --priority-high: 10 60% 40%;
+  --priority-urgent: 0 70% 40%;
 
-  --status-completed: 142.1 76.2% 36.3%;
-  --priority-low: 40 20% 30%;
-  --priority-medium: 48 96% 50%;
-  --priority-high: 20 80% 50%;
-  --priority-urgent: 0 62.8% 30.6%;
-  --border-status-due-today: 48 96% 50%;
-  --border-status-overdue: 0 62.8% 30.6%;
+  /* Gradient for ADHD Banner */
+  --gradient-start-dark: 30 20% 20%;
+  --gradient-end-dark: 30 20% 30%;
 }
