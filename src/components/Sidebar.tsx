@@ -1,261 +1,159 @@
-"use client";
+import React, { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { Menu, Volume2, VolumeX } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
+import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
+import { Badge } from '@/components/ui/badge';
+import { useSound } from '@/context/SoundContext';
+import ThemeSelector from './ThemeSelector';
+import { navItems } from '@/lib/navItems';
+import { useSettings } from '@/context/SettingsContext';
+import { useAuth } from '@/context/AuthContext';
 
-import React, { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
-import {
-  Home,
-  Calendar,
-  ListTodo,
-  BarChart2,
-  Archive,
-  Settings,
-  HelpCircle,
-  BookOpen,
-  Moon,
-  Sun,
-  Laptop,
-  Menu,
-  X,
-  LayoutDashboard,
-  Hourglass,
-  Brain,
-  Book,
-  Palette,
-  Github,
-  Coffee,
-  Bed,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { cn } from "@/lib/utils";
-import { useTheme } from "next-themes";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { useAuth } from "@/context/AuthContext"; // Updated import to useAuth
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { useSettings } from "@/context/SettingsContext";
+// Define PointerDownOutsideEvent type locally to resolve import issues
+type PointerDownOutsideEvent = CustomEvent<{ originalEvent: PointerEvent }>;
 
 interface SidebarProps {
+  children: React.ReactNode;
   isDemo?: boolean;
   demoUserId?: string;
 }
 
-export const Sidebar = ({ isDemo = false, demoUserId }: SidebarProps) => {
-  const [isOpen, setIsOpen] = useState(false);
+const NavigationLinks = ({ onLinkClick, isDemo, demoUserId }: { onLinkClick?: () => void; isDemo?: boolean; demoUserId?: string; }) => {
   const location = useLocation();
-  const { theme, setTheme } = useTheme();
-  const { user } = useAuth(); // Using useAuth
-  const { settings, updateSetting } = useSettings();
+  const { dailyTaskCount, loading: countLoading } = useDailyTaskCount({ userId: demoUserId });
+  const { settings } = useSettings();
+  const { user } = useAuth();
 
-  const userId = isDemo ? demoUserId : user?.id;
-
-  const toggleSidebar = () => {
-    setIsOpen(!isOpen);
-  };
-
-  const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast.error("Error signing out: " + error.message);
-    } else {
-      toast.success("Signed out successfully!");
+  const visibleNavItems = navItems.filter(item => {
+    // Hide Dev Space unless it's the specific user
+    if (item.path === '/dev-space') {
+      return user?.id === 'abc41fed-55ba-4249-90df-3b5a25b09e87';
     }
-  };
-
-  const navItems = [
-    {
-      name: "Dashboard",
-      icon: LayoutDashboard,
-      path: "/dashboard",
-      visible: settings?.visible_pages?.dashboard ?? true,
-    },
-    {
-      name: "Daily Tasks",
-      icon: ListTodo,
-      path: "/daily-tasks",
-      visible: settings?.visible_pages?.daily_tasks ?? true,
-    },
-    {
-      name: "Calendar",
-      icon: Calendar,
-      path: "/calendar",
-      visible: settings?.visible_pages?.calendar ?? true,
-    },
-    {
-      name: "Projects",
-      icon: BookOpen,
-      path: "/projects",
-      visible: settings?.visible_pages?.projects ?? true,
-    },
-    {
-      name: "Schedule",
-      icon: Hourglass,
-      path: "/schedule",
-      visible: settings?.visible_pages?.schedule ?? true,
-    },
-    {
-      name: "Sleep",
-      icon: Bed,
-      path: "/sleep",
-      visible: settings?.visible_pages?.sleep ?? true,
-    },
-    {
-      name: "Dev Space",
-      icon: Github,
-      path: "/dev-space",
-      visible: settings?.visible_pages?.dev_space ?? true,
-    },
-    {
-      name: "My Hub",
-      icon: Home,
-      path: "/my-hub",
-      visible: settings?.visible_pages?.my_hub ?? true,
-    },
-    {
-      name: "Analytics",
-      icon: BarChart2,
-      path: "/analytics",
-      visible: settings?.visible_pages?.analytics ?? true,
-    },
-    {
-      name: "Archive",
-      icon: Archive,
-      path: "/archive",
-      visible: settings?.visible_pages?.archive ?? true,
-    },
-    {
-      name: "Settings",
-      icon: Settings,
-      path: "/settings",
-      visible: settings?.visible_pages?.settings ?? true,
-    },
-    {
-      name: "Help",
-      icon: HelpCircle,
-      path: "/help",
-      visible: settings?.visible_pages?.help ?? true,
-    },
-  ].filter(item => item.visible);
-
-  const themes = [
-    { name: "System", value: "system", icon: Laptop },
-    { name: "Light", value: "light", icon: Sun },
-    { name: "Dark", value: "dark", icon: Moon },
-    { name: "ADHD Friendly", value: "adhd-friendly", icon: Brain },
-    { name: "Calm Mist", value: "calm-mist", icon: Coffee },
-    { name: "Warm Dawn", value: "warm-dawn", icon: Sun },
-    { name: "Gentle Night", value: "gentle-night", icon: Moon },
-    { name: "Focus Flow", value: "focus-flow", icon: Book },
-    { name: "Retro Wave", value: "retro-wave", icon: Palette },
-    { name: "Sepia Dusk", value: "sepia-dusk", icon: Palette },
-    { name: "Vibrant Flow", value: "vibrant-flow", icon: Palette },
-    { name: "Honeycomb", value: "honeycomb", icon: Palette },
-    { name: "Forest Calm", value: "forest-calm", icon: Palette },
-    { name: "Rainbow Whimsy", value: "rainbow-whimsy", icon: Palette },
-  ];
-
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
-    }
-    return () => {
-      document.body.style.overflow = "unset";
-    };
-  }, [isOpen]);
+    if (!item.toggleable) return true;
+    return settings?.visible_pages?.[item.path] !== false;
+  });
 
   return (
-    <>
-      {/* Mobile Sidebar Toggle */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="fixed top-4 left-4 z-50 lg:hidden"
-        onClick={toggleSidebar}
-      >
-        {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-      </Button>
-
-      {/* Sidebar */}
-      <aside
-        className={cn(
-          "fixed inset-y-0 left-0 z-40 flex h-full w-64 flex-col border-r bg-sidebar transition-transform duration-200 ease-in-out lg:translate-x-0",
-          isOpen ? "translate-x-0" : "-translate-x-full"
-        )}
-      >
-        <div className="flex h-16 items-center justify-between border-b px-4">
-          <h1 className="text-lg font-semibold text-sidebar-foreground">
-            My App
-          </h1>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="lg:hidden"
-            onClick={toggleSidebar}
+    <nav className="flex-1 px-3 space-y-1">
+      {visibleNavItems.map((item) => {
+        const path = isDemo ? (item.path === '/dashboard' ? '/demo' : `/demo${item.path}`) : item.path;
+        const isActive = location.pathname === path;
+        const Icon = item.icon;
+        return (
+          <Link
+            key={item.path}
+            to={path}
+            className={cn(
+              "flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+              isActive
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'text-foreground/80 hover:bg-muted hover:text-foreground'
+            )}
+            onClick={onLinkClick}
           >
-            <X className="h-5 w-5 text-sidebar-foreground" />
-          </Button>
-        </div>
-        <ScrollArea className="flex-grow py-4">
-          <nav className="grid items-start gap-2 px-4">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = location.pathname === (isDemo ? `/demo${item.path}` : item.path);
-              return (
-                <Link
-                  key={item.name}
-                  to={isDemo ? `/demo${item.path}` : item.path}
-                  className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground transition-all hover:text-sidebar-primary",
-                    isActive && "bg-sidebar-accent text-sidebar-primary"
-                  )}
-                  onClick={() => setIsOpen(false)}
-                >
-                  <Icon className="h-4 w-4" />
-                  {item.name}
-                </Link>
-              );
-            })}
-          </nav>
-        </ScrollArea>
-        <div className="mt-auto border-t p-4">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="w-full justify-start">
-                <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                <span className="ml-2">Toggle Theme</span>
+            <Icon className="h-4 w-4" />
+            <span className="font-medium text-sm">{item.name}</span>
+            {item.showCount && !countLoading && dailyTaskCount > 0 && (
+              <Badge className="ml-auto px-2.5 py-1 text-xs rounded-full bg-primary-foreground text-primary flex-shrink-0">
+                {dailyTaskCount}
+              </Badge>
+            )}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+};
+
+export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false, demoUserId }) => {
+  const isMobile = useIsMobile();
+  const { isSoundEnabled, toggleSound } = useSound();
+
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+
+  if (isMobile) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <header className="flex items-center justify-between p-4 bg-card/80 backdrop-blur shadow-sm sticky top-0 z-50">
+          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" aria-label="Open menu" className="h-9 w-9">
+                <Menu className="h-5 w-5" />
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {themes.map((t) => {
-                const Icon = t.icon;
-                return (
-                  <DropdownMenuItem key={t.value} onClick={() => setTheme(t.value)}>
-                    <Icon className="mr-2 h-4 w-4" />
-                    <span>{t.name}</span>
-                  </DropdownMenuItem>
-                );
-              })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          {user && (
-            <Button
-              variant="outline"
-              className="mt-2 w-full justify-start"
-              onClick={handleSignOut}
+            </SheetTrigger>
+            <SheetContent
+              side="left"
+              className="w-64 bg-card flex flex-col"
+              onPointerDownOutside={(e: PointerDownOutsideEvent) => {
+                if (e.target instanceof HTMLElement && e.target.closest('[data-radix-popper-content-wrapper]')) {
+                  e.preventDefault();
+                }
+              }}
             >
-              Sign Out
+              <div className="p-4 flex justify-between items-center">
+                <Link to={isDemo ? '/demo' : '/dashboard'} className="hover:opacity-80 transition-opacity">
+                  <h1 className="text-2xl font-bubbly">TaskMaster</h1>
+                </Link>
+              </div>
+              <NavigationLinks onLinkClick={() => setIsSheetOpen(false)} isDemo={isDemo} demoUserId={demoUserId} />
+              <div className="p-4 border-t border-border flex justify-between items-center">
+                <p className="text-xs text-muted-foreground">
+                  &copy; {new Date().getFullYear()} TaskMaster
+                </p>
+                <div className="flex items-center space-x-1">
+                  <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"} className="h-8 w-8">
+                    {isSoundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+                  </Button>
+                  <ThemeSelector />
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+          <Link to={isDemo ? '/demo' : '/dashboard'} className="hover:opacity-80 transition-opacity">
+            <h1 className="text-xl font-bubbly sm:text-2xl">TaskMaster</h1> {/* Reduced font size for mobile */}
+          </Link>
+          <div className="flex items-center space-x-1">
+            <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"} className="h-8 w-8">
+              {isSoundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
             </Button>
-          )}
+            <ThemeSelector />
+          </div>
+        </header>
+        <div className="flex-1 overflow-auto">
+          {children}
         </div>
-      </aside>
-    </>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-screen flex overflow-hidden bg-background">
+      <div className="w-64 bg-card/80 backdrop-blur shadow-md h-full flex flex-col flex-shrink-0">
+        <div className="p-4 flex justify-between items-center">
+          <Link to={isDemo ? '/demo' : '/dashboard'} className="hover:opacity-80 transition-opacity">
+            <h1 className="text-2xl font-bubbly">TaskMaster</h1>
+          </Link>
+        </div>
+        <NavigationLinks isDemo={isDemo} demoUserId={demoUserId} />
+        <div className="p-4 border-t border-border flex justify-between items-center">
+          <p className="text-xs text-muted-foreground">
+            &copy; {new Date().getFullYear()} TaskMaster
+          </p>
+          <div className="flex items-center space-x-1">
+            <Button variant="ghost" size="icon" onClick={toggleSound} aria-label={isSoundEnabled ? "Disable sound" : "Enable sound"} className="h-8 w-8">
+              {isSoundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+            </Button>
+            <ThemeSelector />
+          </div>
+        </div>
+      </div>
+      <div className="flex-1 flex flex-col overflow-y-auto">
+        {children}
+      </div>
+    </div>
   );
 };
