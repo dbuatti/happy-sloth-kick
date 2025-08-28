@@ -1388,12 +1388,12 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
           updatedAtDate.getDate() === effectiveCurrentDate.getDate()
       );
 
-      // ONLY count tasks with status 'completed'
-      const isCompletedToday = (t.status === 'completed') && isUpdatedOnCurrentDate;
-      if (isCompletedToday) {
-        console.log(`[Daily Progress Debug] Counting completed task: ${t.description} (ID: ${t.id}, Status: ${t.status}, Updated: ${t.updated_at}), UpdatedAtLocal: ${updatedAtDate?.toLocaleString()}, CurrentDateLocal: ${effectiveCurrentDate.toLocaleString()}, IsUpdatedOnCurrentDate: ${isUpdatedOnCurrentDate}`);
+      // Count tasks with status 'completed' OR 'archived' if updated today
+      const isCompletedOrArchivedToday = (t.status === 'completed' || t.status === 'archived') && isUpdatedOnCurrentDate;
+      if (isCompletedOrArchivedToday) {
+        console.log(`[Daily Progress Debug] Counting completed/archived task: ${t.description} (ID: ${t.id}, Status: ${t.status}, Updated: ${t.updated_at}), UpdatedAtLocal: ${updatedAtDate?.toLocaleString()}, CurrentDateLocal: ${effectiveCurrentDate.toLocaleString()}, IsUpdatedOnCurrentDate: ${isUpdatedOnCurrentDate}`);
       }
-      return isCompletedToday;
+      return isCompletedOrArchivedToday;
     }).length;
     console.log("Completed count (from focusTasks):", completedCount);
     
