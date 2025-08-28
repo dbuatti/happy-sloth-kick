@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { supabase } from '@/integrations/supabase/client'; // Correct import for Supabase client
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { TaskSection, Task } from '@/types/task';
 import TaskSectionComponent from '@/components/TaskSection';
@@ -17,10 +17,8 @@ const DailyTasksPage: React.FC = () => {
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [showMoveSection, setShowMoveSection] = useState(false);
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
-  // const supabase = createClientComponentClient(); // No longer needed
   const { toast } = useToast();
 
-  // Ref to store the ID of the last clicked task for Shift-selection
   const lastClickedTaskId = useRef<string | null>(null);
 
   useEffect(() => {
@@ -31,7 +29,7 @@ const DailyTasksPage: React.FC = () => {
     if (!isMultiSelectMode) {
       setSelectedTaskIds([]);
       setShowMoveSection(false);
-      lastClickedTaskId.current = null; // Clear last clicked when exiting mode
+      lastClickedTaskId.current = null;
     }
   }, [isMultiSelectMode]);
 
@@ -49,7 +47,7 @@ const DailyTasksPage: React.FC = () => {
       const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
         .select('*')
-        .order('created_at', { ascending: true }); // Order by creation for consistent shift-selection
+        .order('created_at', { ascending: true });
 
       if (tasksError) throw tasksError;
 
@@ -118,10 +116,9 @@ const DailyTasksPage: React.FC = () => {
       );
       lastClickedTaskId.current = taskId;
     } else {
-      // Normal click: select only this task, or toggle if already selected
       setSelectedTaskIds(prev => 
         prev.includes(taskId) && prev.length === 1
-          ? [] // Deselect if only this one is selected
+          ? []
           : [taskId]
       );
       lastClickedTaskId.current = taskId;
@@ -304,7 +301,6 @@ const DailyTasksPage: React.FC = () => {
           />
         ))}
         
-        {/* Tasks without section */}
         <div className="space-y-2">
           <h2 className="text-lg font-semibold">Other Tasks</h2>
           {tasks
