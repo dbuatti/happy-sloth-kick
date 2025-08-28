@@ -16,15 +16,17 @@ const DailyTasksPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [showMoveSection, setShowMoveSection] = useState(false);
-  const [isMultiSelectMode, setIsMultiSelectMode] = useState(false); // New state for multi-select mode
+  const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
   const supabase = createClientComponentClient();
   const { toast } = useToast();
+
+  // For debugging: check the state of isMultiSelectMode
+  console.log("isMultiSelectMode:", isMultiSelectMode);
 
   useEffect(() => {
     fetchSectionsAndTasks();
   }, []);
 
-  // Clear selection and exit multi-select mode when component unmounts or mode changes
   useEffect(() => {
     if (!isMultiSelectMode) {
       setSelectedTaskIds([]);
@@ -36,7 +38,6 @@ const DailyTasksPage: React.FC = () => {
     try {
       setLoading(true);
       
-      // Fetch sections
       const { data: sectionsData, error: sectionsError } = await supabase
         .from('task_sections')
         .select('*')
@@ -44,7 +45,6 @@ const DailyTasksPage: React.FC = () => {
 
       if (sectionsError) throw sectionsError;
 
-      // Fetch tasks
       const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
         .select('*')
@@ -120,7 +120,6 @@ const DailyTasksPage: React.FC = () => {
 
       if (error) throw error;
 
-      // Update local state
       setTasks(tasks.map(t => 
         t.id === taskId ? { ...t, status: newStatus } : t
       ));
@@ -150,7 +149,6 @@ const DailyTasksPage: React.FC = () => {
 
       if (error) throw error;
 
-      // Update local state
       setTasks(tasks.map(task => 
         selectedTaskIds.includes(task.id) 
           ? { ...task, section_id: sectionId } 
@@ -162,7 +160,6 @@ const DailyTasksPage: React.FC = () => {
         description: `${selectedTaskIds.length} task(s) moved successfully`,
       });
 
-      // Clear selection and exit multi-select mode
       setSelectedTaskIds([]);
       setShowMoveSection(false);
       setIsMultiSelectMode(false);
@@ -188,7 +185,8 @@ const DailyTasksPage: React.FC = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Daily Tasks</h1>
         
-        <div className="flex items-center gap-2">
+        {/* Temporary border added here to help locate the button container */}
+        <div className="flex items-center gap-2 p-1 border border-dashed border-red-500"> 
           {isMultiSelectMode ? (
             <>
               {hasSelectedTasks && (
@@ -283,7 +281,6 @@ const DailyTasksPage: React.FC = () => {
                     isSelected && isMultiSelectMode ? 'bg-primary/10 border border-primary/20' : 'hover:bg-muted'
                   }`}
                 >
-                  {/* Selection indicator, only visible in multi-select mode */}
                   {isMultiSelectMode && (
                     <Button
                       variant="ghost"
@@ -299,7 +296,6 @@ const DailyTasksPage: React.FC = () => {
                     </Button>
                   )}
                   
-                  {/* Task completion toggle */}
                   <Button
                     variant="ghost"
                     size="sm"
