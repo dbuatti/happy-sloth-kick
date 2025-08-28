@@ -1,0 +1,45 @@
+@layer base {
+  .calm-mist {
+    --background: 140 10% 96%;
+    --foreground: 0 0% 20%;
+    --card: 140 10% 96%;
+    --card-foreground: 0 0% 20%;
+    --popover: 140 10% 96%;
+    --popover-foreground: 0 0% 20%;
+    --primary: 140 25% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 140 15% 75%;
+    --secondary-foreground: 0 0% 20%;
+    --muted: 140 10% 96%;
+    --muted-foreground: 140 10% 40%;
+    --accent: 30 25% 65%;
+    --accent-foreground: 0 0% 20%;
+    --destructive: 15 60% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 140 10% 90%;
+    --input: 140 10% 90%;
+    --ring: 0 0% 20%;
+    --radius: 0.5rem;
+  }
+  .dark .calm-mist {
+    --background: 140 20% 15%;
+    --foreground: 140 10% 90%;
+    --card: 140 20% 20%;
+    --card-foreground: 140 10% 90%;
+    --popover: 140 20% 20%;
+    --popover-foreground: 140 10% 90%;
+    --primary: 140 30% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 140 20% 80%;
+    --secondary-foreground: 140 10% 90%;
+    --muted: 140 20% 20%;
+    --muted-foreground: 140 10% 70%;
+    --accent: 30 30% 70%;
+    --accent-foreground: 140 10% 90%;
+    --destructive: 15 70% 70%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 140 20% 30%;
+    --input: 140 20% 30%;
+    --ring: 0 0% 80%;
+  }
+}

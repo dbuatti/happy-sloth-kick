@@ -1,0 +1,28 @@
+@layer base {
+  .checkbox-root[data-state="checked"] {
+    background-color: hsl(var(--primary));
+    border-color: hsl(var(--primary));
+  }
+
+  .checkbox-root[data-state="checked"] svg {
+    color: hsl(var(--primary-foreground));
+  }
+
+  .rdp-day_selected, .rdp-day_selected:focus-visible, .rdp-day_selected:hover {
+    @apply bg-primary text-primary-foreground rounded-md;
+  }
+  .rdp-day_today {
+    @apply font-bold text-primary;
+  }
+  .rdp-day_hasTasks::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background-color: hsl(var(--primary));
+  }
+}

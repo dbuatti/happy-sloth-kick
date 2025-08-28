@@ -1,0 +1,20 @@
+@keyframes fade-in-out-check {
+  0% { opacity: 0; transform: scale(0.5); }
+  20% { opacity: 1; transform: scale(1.1); }
+  80% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1); }
+}
+
+.animate-fade-in-out-check {
+  animation: fade-in-out-check 0.6s ease-out forwards;
+}
+
+@keyframes breathe-in {
+  from { transform: scale(0.7); }
+  to { transform: scale(1.2); }
+}
+
+@keyframes breathe-out {
+  from { transform: scale(1.2); }
+  to { transform: scale(0.7); }
+}

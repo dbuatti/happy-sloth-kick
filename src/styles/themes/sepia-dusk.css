@@ -1,0 +1,45 @@
+@layer base {
+  .'sepia-dusk' {
+    --background: 29 70% 89%;
+    --foreground: 22 29% 7%;
+    --card: 29 59% 86%;
+    --card-foreground: 22 29% 7%;
+    --popover: 29 59% 86%;
+    --popover-foreground: 22 29% 7%;
+    --primary: 270 28% 36%;
+    --primary-foreground: 270 100% 98%;
+    --secondary: 29 48% 81%;
+    --secondary-foreground: 22 29% 7%;
+    --muted: 29 59% 86%;
+    --muted-foreground: 29 29% 30%;
+    --accent: 99 25% 30%;
+    --accent-foreground: 22 29% 7%;
+    --destructive: 6 48% 31%;
+    --destructive-foreground: 270 100% 98%;
+    --border: 29 48% 81%;
+    --input: 29 59% 86%;
+    --ring: 270 28% 36%;
+    --radius: 0.5rem;
+  }
+  .dark .'sepia-dusk' {
+    --background: 29 29% 13%;
+    --foreground: 29 25% 69%;
+    --card: 22 29% 7%;
+    --card-foreground: 29 25% 69%;
+    --popover: 22 29% 7%;
+    --popover-foreground: 29 25% 69%;
+    --primary: 270 28% 54%;
+    --primary-foreground: 270 100% 98%;
+    --secondary: 29 29% 21%;
+    --secondary-foreground: 29 25% 69%;
+    --muted: 29 29% 21%;
+    --muted-foreground: 29 24% 49%;
+    --accent: 99 34% 38%;
+    --accent-foreground: 29 25% 69%;
+    --destructive: 6 48% 46%;
+    --destructive-foreground: 270 100% 98%;
+    --border: 29 29% 26%;
+    --input: 29 29% 21%;
+    --ring: 270 28% 54%;
+  }
+}

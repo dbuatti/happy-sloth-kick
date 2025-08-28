@@ -1,0 +1,45 @@
+@layer base {
+  .'gentle-night' {
+    --background: 220 10% 95%;
+    --foreground: 220 15% 25%;
+    --card: 220 10% 95%;
+    --card-foreground: 220 15% 25%;
+    --popover: 220 10% 95%;
+    --popover-foreground: 220 15% 25%;
+    --primary: 220 25% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 10% 80%;
+    --secondary-foreground: 220 15% 25%;
+    --muted: 220 10% 95%;
+    --muted-foreground: 220 10% 50%;
+    --accent: 30 25% 65%;
+    --accent-foreground: 220 15% 25%;
+    --destructive: 15 60% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 10% 88%;
+    --input: 220 10% 88%;
+    --ring: 220 15% 35%;
+    --radius: 0.5rem;
+  }
+  .dark .'gentle-night' {
+    --background: 220 20% 18%;
+    --foreground: 220 15% 92%;
+    --card: 220 20% 23%;
+    --card-foreground: 220 15% 92%;
+    --popover: 220 20% 23%;
+    --popover-foreground: 220 15% 92%;
+    --primary: 220 30% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 15% 85%;
+    --secondary-foreground: 220 15% 92%;
+    --muted: 220 20% 23%;
+    --muted-foreground: 220 15% 70%;
+    --accent: 30 30% 70%;
+    --accent-foreground: 220 15% 92%;
+    --destructive: 15 70% 70%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 20% 35%;
+    --input: 220 20% 35%;
+    --ring: 220 20% 85%;
+  }
+}
