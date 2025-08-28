@@ -72,12 +72,13 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
     setIsTaskDetailOpen(true); // Open edit dialog
   };
 
-  // Group tasks by completed_at date
+  // Group tasks by completed_at date, falling back to updated_at if completed_at is null
   const groupedArchivedTasks = useMemo(() => {
     const groups: { [date: string]: Task[] } = {};
     archivedTasks.forEach(task => {
-      if (task.completed_at) { // Use completed_at for grouping
-        const dateKey = format(parseISO(task.completed_at), 'yyyy-MM-dd');
+      const dateToUse = task.completed_at || task.updated_at; // Use completed_at, fallback to updated_at
+      if (dateToUse) {
+        const dateKey = format(parseISO(dateToUse), 'yyyy-MM-dd');
         if (!groups[dateKey]) {
           groups[dateKey] = [];
         }
