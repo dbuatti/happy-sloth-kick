@@ -12,17 +12,11 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
       themes={[
         "light",
         "dark",
-        "adhd-friendly",
-        "calm-mist",
-        "warm-dawn",
-        "gentle-night",
-        "focus-flow",
-        "retro-wave",
-        "sepia-dusk",
-        "vibrant-flow",
-        "honeycomb",
-        "forest-calm",
-        "rainbow-whimsy"
+        "ocean-breeze",
+        "sunset-glow",
+        "forest-deep",
+        "midnight-serenity",
+        "desert-bloom"
       ]}
       {...props}
     >

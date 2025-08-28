@@ -1,0 +1,83 @@
+.theme-midnight-serenity {
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+  --primary: 240 60% 40%; /* Deep Indigo */
+  --primary-foreground: 0 0% 98%;
+  --secondary: 210 20% 80%; /* Light Gray-Blue */
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 240 60% 50%; /* Brighter Indigo */
+  --accent-foreground: 222.2 47.4% 11.2%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 240 60% 40%;
+  --radius: 0.5rem;
+
+  --sidebar-background: 210 40% 96.1%;
+  --sidebar-foreground: 222.2 84% 4.9%;
+  --sidebar-primary: 240 60% 40%;
+  --sidebar-primary-foreground: 0 0% 98%;
+  --sidebar-accent: 210 20% 80%;
+  --sidebar-accent-foreground: 222.2 47.4% 11.2%;
+  --sidebar-border: 214.3 31.8% 91.4%;
+  --sidebar-ring: 240 60% 40%;
+
+  --status-completed: 142.1 76.2% 36.3%;
+  --priority-low: 210 20% 80%;
+  --priority-medium: 48 96% 50%;
+  --priority-high: 20 80% 50%;
+  --priority-urgent: 0 84.2% 60.2%;
+  --border-status-due-today: 48 96% 50%;
+  --border-status-overdue: 0 84.2% 60.2%;
+
+  --gradient-start-light: 240 60% 90%;
+  --gradient-end-light: 210 20% 90%;
+  --gradient-start-dark: 240 60% 20%;
+  --gradient-end-dark: 210 20% 20%;
+}
+
+.dark .theme-midnight-serenity {
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 96.1%;
+  --card: 222.2 84% 4.9%;
+  --card-foreground: 210 40% 96.1%;
+  --popover: 222.2 84% 4.9%;
+  --popover-foreground: 210 40% 96.1%;
+  --primary: 240 60% 60%; /* Lighter Indigo */
+  --primary-foreground: 222.2 47.4% 11.2%;
+  --secondary: 210 20% 30%; /* Darker Gray-Blue */
+  --secondary-foreground: 210 40% 96.1%;
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+  --accent: 240 60% 70%; /* Even Lighter Indigo */
+  --accent-foreground: 210 40% 96.1%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 240 60% 60%;
+
+  --sidebar-background: 217.2 32.6% 17.5%;
+  --sidebar-foreground: 210 40% 96.1%;
+  --sidebar-primary: 240 60% 60%;
+  --sidebar-primary-foreground: 222.2 47.4% 11.2%;
+  --sidebar-accent: 210 20% 30%;
+  --sidebar-accent-foreground: 210 40% 96.1%;
+  --sidebar-border: 217.2 32.6% 17.5%;
+  --sidebar-ring: 240 60% 60%;
+
+  --status-completed: 142.1 76.2% 36.3%;
+  --priority-low: 210 20% 30%;
+  --priority-medium: 48 96% 50%;
+  --priority-high: 20 80% 50%;
+  --priority-urgent: 0 62.8% 30.6%;
+  --border-status-due-today: 48 96% 50%;
+  --border-status-overdue: 0 62.8% 30.6%;
+}
