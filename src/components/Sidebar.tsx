@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -13,6 +13,7 @@ import {
   Moon,
   Code,
   Menu,
+  X,
   Palette,
   Sun,
 } from "lucide-react";
@@ -30,9 +31,10 @@ import { useSettings } from "@/context/SettingsContext";
 interface SidebarProps {
   children: React.ReactNode;
   isDemo?: boolean;
+  demoUserId?: string;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false, demoUserId }) => {
   const location = useLocation();
   const { theme, setTheme } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);

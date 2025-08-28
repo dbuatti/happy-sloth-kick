@@ -2,26 +2,24 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Task, TaskSection, TaskCategory } from '@/types/task-management';
-import { useAuth } from '@/context/AuthContext'; // Import useAuth to get user
 
 // Helper function to build task tree (tasks with subtasks)
 const buildTaskTree = (parentTasks: Task[], allTasks: Task[]): Task[] => {
   return parentTasks.map((task) => ({
     ...task,
     subtasks: buildTaskTree(
-      allTasks.filter((sub) => sub.parent_task_id === task.id).sort((a, b) => (a.order || 0) - (b.order || 0)),
+      allTasks.filter((sub) => sub.parent_task_id === task.id).sort((a, b) => a.order - b.order),
       allTasks
     ),
   }));
 };
 
 // Data Fetching Functions
-const fetchTaskSections = async (userId: string): Promise<TaskSection[]> => {
+const fetchTaskSections = async (): Promise<TaskSection[]> => {
   // Fetch sections
   const { data: sections, error: sectionsError } = await supabase
     .from('task_sections')
     .select('*')
-    .eq('user_id', userId)
     .order('order', { ascending: true });
 
   if (sectionsError) throw new Error(sectionsError.message);
@@ -30,7 +28,6 @@ const fetchTaskSections = async (userId: string): Promise<TaskSection[]> => {
   const { data: tasks, error: tasksError } = await supabase
     .from('tasks')
     .select('*')
-    .eq('user_id', userId)
     .order('order', { ascending: true });
 
   if (tasksError) throw new Error(tasksError.message);
@@ -54,8 +51,8 @@ const fetchTaskSections = async (userId: string): Promise<TaskSection[]> => {
   return Array.from(sectionMap.values());
 };
 
-const fetchTaskCategories = async (userId: string): Promise<TaskCategory[]> => {
-  const { data, error } = await supabase.from('task_categories').select('*').eq('user_id', userId);
+const fetchTaskCategories = async (): Promise<TaskCategory[]> => {
+  const { data, error } = await supabase.from('task_categories').select('*');
   if (error) throw new Error(error.message);
   return data;
 };
@@ -63,8 +60,7 @@ const fetchTaskCategories = async (userId: string): Promise<TaskCategory[]> => {
 // Custom Hook
 export const useTaskManagement = () => {
   const queryClient = useQueryClient();
-  const { user } = useAuth(); // Get user from useAuth
-  const userId = user?.id;
+  const userId = supabase.auth.currentUser?.id;
 
   // --- Queries ---
   const {
@@ -72,8 +68,8 @@ export const useTaskManagement = () => {
     isLoading: isLoadingSections,
     error: sectionsError,
   } = useQuery<TaskSection[], Error>({
-    queryKey: ['taskSections', userId],
-    queryFn: () => fetchTaskSections(userId!),
+    queryKey: ['taskSections'],
+    queryFn: fetchTaskSections,
     enabled: !!userId,
   });
 
@@ -82,8 +78,8 @@ export const useTaskManagement = () => {
     isLoading: isLoadingCategories,
     error: categoriesError,
   } = useQuery<TaskCategory[], Error>({
-    queryKey: ['taskCategories', userId],
-    queryFn: () => fetchTaskCategories(userId!),
+    queryKey: ['taskCategories'],
+    queryFn: fetchTaskCategories,
     enabled: !!userId,
   });
 
@@ -98,7 +94,7 @@ export const useTaskManagement = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['taskSections', userId] });
+      queryClient.invalidateQueries({ queryKey: ['taskSections'] });
       toast.success('Task added successfully!');
     },
     onError: (error) => {
@@ -109,12 +105,12 @@ export const useTaskManagement = () => {
   const updateTaskMutation = useMutation({
     mutationFn: async (updatedTask: Partial<Task>): Promise<Task> => {
       if (!userId) throw new Error('User not authenticated.');
-      const { data, error } = await supabase.from('tasks').update(updatedTask).eq('id', updatedTask.id).eq('user_id', userId).select().single();
+      const { data, error } = await supabase.from('tasks').update(updatedTask).eq('id', updatedTask.id).select().single();
       if (error) throw new Error(error.message);
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['taskSections', userId] });
+      queryClient.invalidateQueries({ queryKey: ['taskSections'] });
       toast.success('Task updated successfully!');
     },
     onError: (error) => {
@@ -125,11 +121,11 @@ export const useTaskManagement = () => {
   const deleteTaskMutation = useMutation({
     mutationFn: async (taskId: string): Promise<void> => {
       if (!userId) throw new Error('User not authenticated.');
-      const { error } = await supabase.from('tasks').delete().eq('id', taskId).eq('user_id', userId);
+      const { error } = await supabase.from('tasks').delete().eq('id', taskId);
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['taskSections', userId] });
+      queryClient.invalidateQueries({ queryKey: ['taskSections'] });
       toast.success('Task deleted successfully!');
     },
     onError: (error) => {
@@ -144,7 +140,7 @@ export const useTaskManagement = () => {
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['taskSections', userId] });
+      queryClient.invalidateQueries({ queryKey: ['taskSections'] });
       toast.success('Task order updated!');
     },
     onError: (error) => {
@@ -161,7 +157,7 @@ export const useTaskManagement = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['taskSections', userId] });
+      queryClient.invalidateQueries({ queryKey: ['taskSections'] });
       toast.success('Section added successfully!');
     },
     onError: (error) => {
@@ -176,14 +172,13 @@ export const useTaskManagement = () => {
         .from('task_sections')
         .update(updatedSection)
         .eq('id', updatedSection.id)
-        .eq('user_id', userId)
         .select()
         .single();
       if (error) throw new Error(error.message);
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['taskSections', userId] });
+      queryClient.invalidateQueries({ queryKey: ['taskSections'] });
       toast.success('Section updated successfully!');
     },
     onError: (error) => {
@@ -194,11 +189,11 @@ export const useTaskManagement = () => {
   const deleteSectionMutation = useMutation({
     mutationFn: async (sectionId: string): Promise<void> => {
       if (!userId) throw new Error('User not authenticated.');
-      const { error } = await supabase.from('task_sections').delete().eq('id', sectionId).eq('user_id', userId);
+      const { error } = await supabase.from('task_sections').delete().eq('id', sectionId);
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['taskSections', userId] });
+      queryClient.invalidateQueries({ queryKey: ['taskSections'] });
       toast.success('Section deleted successfully!');
     },
     onError: (error) => {
@@ -213,7 +208,7 @@ export const useTaskManagement = () => {
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['taskSections', userId] });
+      queryClient.invalidateQueries({ queryKey: ['taskSections'] });
       toast.success('Section order updated!');
     },
     onError: (error) => {
@@ -230,7 +225,7 @@ export const useTaskManagement = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['taskCategories', userId] });
+      queryClient.invalidateQueries({ queryKey: ['taskCategories'] });
       toast.success('Category added successfully!');
     },
     onError: (error) => {
@@ -245,14 +240,13 @@ export const useTaskManagement = () => {
         .from('task_categories')
         .update(updatedCategory)
         .eq('id', updatedCategory.id)
-        .eq('user_id', userId)
         .select()
         .single();
       if (error) throw new Error(error.message);
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['taskCategories', userId] });
+      queryClient.invalidateQueries({ queryKey: ['taskCategories'] });
       toast.success('Category updated successfully!');
     },
     onError: (error) => {
@@ -263,11 +257,11 @@ export const useTaskManagement = () => {
   const deleteCategoryMutation = useMutation({
     mutationFn: async (categoryId: string): Promise<void> => {
       if (!userId) throw new Error('User not authenticated.');
-      const { error } = await supabase.from('task_categories').delete().eq('id', categoryId).eq('user_id', userId);
+      const { error } = await supabase.from('task_categories').delete().eq('id', categoryId);
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['taskCategories', userId] });
+      queryClient.invalidateQueries({ queryKey: ['taskCategories'] });
       toast.success('Category deleted successfully!');
     },
     onError: (error) => {
