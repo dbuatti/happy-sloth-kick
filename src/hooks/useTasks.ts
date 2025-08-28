@@ -1,12 +1,46 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/supabaseClient';
-import { Task as TaskType, TaskSection as TaskSectionType, Category as CategoryType, TaskStatus } from '@/types/task-management'; // Import canonical types
+import { Task as TaskType, TaskSection as TaskSectionType, Category as CategoryType, TaskStatus } from '@/types/task-management';
 import { toast } from 'sonner';
 
 // Re-exporting types for convenience in other components that use this hook
 export type Task = TaskType;
 export type TaskSection = TaskSectionType;
 export type Category = CategoryType;
+
+// Exported standalone fetch functions
+export const fetchTasks = async (userId: string): Promise<Task[]> => {
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+};
+
+export const fetchSections = async (userId: string): Promise<TaskSection[]> => {
+  const { data, error } = await supabase
+    .from('task_sections')
+    .select('*')
+    .eq('user_id', userId)
+    .order('order', { ascending: true });
+
+  if (error) throw error;
+  return data || [];
+};
+
+export const fetchCategories = async (userId: string): Promise<Category[]> => {
+  const { data, error } = await supabase
+    .from('task_categories')
+    .select('*')
+    .eq('user_id', userId)
+    .order('name', { ascending: true });
+
+  if (error) throw error;
+  return data || [];
+};
 
 interface UseTasksProps {
   currentDate: Date;
@@ -26,7 +60,7 @@ export const useTasks = ({ currentDate, userId: propUserId }: UseTasksProps) => 
     return user?.id;
   }, [propUserId]);
 
-  const fetchTasks = useCallback(async () => {
+  const refetchAll = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -34,70 +68,33 @@ export const useTasks = ({ currentDate, userId: propUserId }: UseTasksProps) => 
       if (!userId) {
         console.warn("No user ID found for fetching tasks.");
         setTasks([]);
+        setSections([]);
+        setCategories([]);
         setLoading(false);
         return;
       }
 
-      const { data, error } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+      const [tasksData, sectionsData, categoriesData] = await Promise.all([
+        fetchTasks(userId),
+        fetchSections(userId),
+        fetchCategories(userId),
+      ]);
 
-      if (error) throw error;
-      setTasks(data || []);
+      setTasks(tasksData);
+      setSections(sectionsData);
+      setCategories(categoriesData);
     } catch (err: any) {
-      console.error('Error fetching tasks:', err.message);
+      console.error('Error fetching tasks, sections, or categories:', err.message);
       setError(err.message);
-      toast.error('Failed to load tasks.');
+      toast.error('Failed to load data.');
     } finally {
       setLoading(false);
     }
   }, [getUserId]);
 
-  const fetchSections = useCallback(async () => {
-    try {
-      const userId = await getUserId();
-      if (!userId) return;
-
-      const { data, error } = await supabase
-        .from('task_sections')
-        .select('*')
-        .eq('user_id', userId)
-        .order('order', { ascending: true });
-
-      if (error) throw error;
-      setSections(data || []);
-    } catch (err: any) {
-      console.error('Error fetching sections:', err.message);
-      toast.error('Failed to load sections.');
-    }
-  }, [getUserId]);
-
-  const fetchCategories = useCallback(async () => {
-    try {
-      const userId = await getUserId();
-      if (!userId) return;
-
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .eq('user_id', userId)
-        .order('name', { ascending: true });
-
-      if (error) throw error;
-      setCategories(data || []);
-    } catch (err: any) {
-      console.error('Error fetching categories:', err.message);
-      toast.error('Failed to load categories.');
-    }
-  }, [getUserId]);
-
   useEffect(() => {
-    fetchTasks();
-    fetchSections();
-    fetchCategories();
-  }, [fetchTasks, fetchSections, fetchCategories]);
+    refetchAll();
+  }, [refetchAll]);
 
   const addTask = useCallback(async (newTask: Omit<Task, 'id' | 'created_at' | 'user_id' | 'status'>) => {
     try {
@@ -138,7 +135,8 @@ export const useTasks = ({ currentDate, userId: propUserId }: UseTasksProps) => 
       setTasks(prev => prev.map(task => (task.id === id ? data : task)));
       toast.success('Task updated successfully!');
       return data;
-    } catch (err: any) {
+    }
+    catch (err: any) {
       console.error('Error updating task:', err.message);
       toast.error('Failed to update task.');
       return null;
@@ -234,7 +232,7 @@ export const useTasks = ({ currentDate, userId: propUserId }: UseTasksProps) => 
       if (error) throw error;
       setSections(prev => prev.filter(section => section.id !== id));
       // Re-fetch tasks to reflect the section_id: null change
-      fetchTasks();
+      refetchAll(); // Use refetchAll to update tasks and sections
       toast.success('Section deleted successfully!');
       return true;
     } catch (err: any) {
@@ -242,7 +240,7 @@ export const useTasks = ({ currentDate, userId: propUserId }: UseTasksProps) => 
       toast.error('Failed to delete section.');
       return false;
     }
-  }, [getUserId, fetchTasks]);
+  }, [getUserId, refetchAll]);
 
   const updateSectionOrder = useCallback(async (orderedSections: TaskSection[]) => {
     try {
@@ -299,7 +297,7 @@ export const useTasks = ({ currentDate, userId: propUserId }: UseTasksProps) => 
       if (!userId) throw new Error("User not authenticated.");
 
       const { data, error } = await supabase
-        .from('categories')
+        .from('task_categories')
         .insert({ name, color, user_id: userId })
         .select()
         .single();
@@ -320,7 +318,7 @@ export const useTasks = ({ currentDate, userId: propUserId }: UseTasksProps) => 
       if (!userId) throw new Error("User not authenticated.");
 
       const { data, error } = await supabase
-        .from('categories')
+        .from('task_categories')
         .update(updates)
         .eq('id', id)
         .eq('user_id', userId)
@@ -347,11 +345,11 @@ export const useTasks = ({ currentDate, userId: propUserId }: UseTasksProps) => 
       await supabase
         .from('tasks')
         .update({ category: null })
-        .eq('category', categories.find(c => c.id === id)?.name || '') // Match by name as category field is name
+        .eq('category', id)
         .eq('user_id', userId);
 
       const { error } = await supabase
-        .from('categories')
+        .from('task_categories')
         .delete()
         .eq('id', id)
         .eq('user_id', userId);
@@ -359,7 +357,7 @@ export const useTasks = ({ currentDate, userId: propUserId }: UseTasksProps) => 
       if (error) throw error;
       setCategories(prev => prev.filter(category => category.id !== id));
       // Re-fetch tasks to reflect the category: null change
-      fetchTasks();
+      refetchAll(); // Use refetchAll to update tasks and categories
       toast.success('Category deleted successfully!');
       return true;
     } catch (err: any) {
@@ -367,7 +365,7 @@ export const useTasks = ({ currentDate, userId: propUserId }: UseTasksProps) => 
       toast.error('Failed to delete category.');
       return false;
     }
-  }, [getUserId, categories, fetchTasks]);
+  }, [getUserId, refetchAll]);
 
   return {
     tasks,
@@ -386,6 +384,6 @@ export const useTasks = ({ currentDate, userId: propUserId }: UseTasksProps) => 
     createCategory,
     updateCategory,
     deleteCategory,
-    fetchTasks, // Expose fetchTasks for manual refresh if needed
+    refetchAll, // Expose refetchAll for manual refresh if needed
   };
 };

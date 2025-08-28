@@ -15,8 +15,9 @@ interface DailyCountTask {
   parent_task_id: string | null; // Added parent_task_id
 }
 
-// Re-use query functions from useTasks
-import { fetchSections, fetchTasks, fetchDoTodayOffLog, TaskSection, Task } from './useTasks';
+// Import standalone fetch functions
+import { fetchSections, fetchTasks, TaskSection, Task } from './useTasks';
+import { fetchDoTodayOffLog } from './useDoTodayOffLog'; // Corrected import path
 
 export const useDailyTaskCount = (props?: { userId?: string }) => {
   const { user } = useAuth();
@@ -44,7 +45,7 @@ export const useDailyTaskCount = (props?: { userId?: string }) => {
   // Get "Do Today" off IDs
   const { data: doTodayOffIds = new Set(), isLoading: doTodayOffLoading } = useQuery<Set<string>, Error>({
     queryKey: ['do_today_off_log', userId, format(todayStart, 'yyyy-MM-dd')], // Use the same query key
-    queryFn: () => fetchDoTodayOffLog(userId!, todayStart), // Re-use the fetchDoTodayOffLog function
+    queryFn: () => fetchDoTodayOffLog(userId!, todayStart), // Use the exported fetchDoTodayOffLog function
     enabled: !!userId,
     staleTime: 60 * 1000, // 1 minute
   });
