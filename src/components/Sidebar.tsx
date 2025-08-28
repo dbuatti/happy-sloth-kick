@@ -35,7 +35,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useUser } from "@/hooks/useUser";
+import { useAuth } from "@/context/AuthContext"; // Updated import to useAuth
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useSettings } from "@/context/SettingsContext";
@@ -49,7 +49,7 @@ export const Sidebar = ({ isDemo = false, demoUserId }: SidebarProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const { theme, setTheme } = useTheme();
-  const { user } = useUser();
+  const { user } = useAuth(); // Using useAuth
   const { settings, updateSetting } = useSettings();
 
   const userId = isDemo ? demoUserId : user?.id;

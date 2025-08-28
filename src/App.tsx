@@ -10,11 +10,10 @@ import MyHub from "./pages/MyHub";
 import Help from "./pages/Help";
 import ProjectBalanceTracker from "./pages/ProjectBalanceTracker";
 import TimeBlockSchedule from "./pages/TimeBlockSchedule";
-// Removed Meditation and MindfulnessTools imports
 import FocusMode from "./pages/FocusMode";
 import LandingPage from "./pages/LandingPage";
 import DailyTasksV3 from "./pages/DailyTasksV3";
-import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { AuthProvider, useAuth } from "@/context/AuthContext"; // Ensure AuthProvider and useAuth are imported
 import { ReminderProvider } from "@/context/ReminderContext.tsx";
 import { SoundProvider } from "@/context/SoundContext";
 import { Sidebar } from "./components/Sidebar";
@@ -25,8 +24,7 @@ import { TimerProvider } from "./context/TimerContext";
 import TaskCalendar from "./pages/TaskCalendar";
 import { SettingsProvider } from "./context/SettingsContext";
 import Dashboard from "./pages/Dashboard";
-
-// Removed imports for dedicated mindfulness tool pages
+import MainLayout from "./components/MainLayout"; // Ensure MainLayout is imported
 
 // Import new dedicated pages for MyHub sections
 import Settings from "./pages/Settings";
@@ -76,9 +74,7 @@ const AppContent = () => {
               <Route path="/demo/help" element={<Help />} />
               <Route path="/demo/projects" element={<ProjectBalanceTracker isDemo={true} demoUserId={demoUserId} />} />
               <Route path="/demo/schedule" element={<TimeBlockSchedule isDemo={true} demoUserId={demoUserId} />} />
-              {/* Removed /demo/meditation route */}
               <Route path="/demo/sleep" element={<SleepPage isDemo={true} demoUserId={demoUserId} />} />
-              {/* Removed /demo/mindfulness route and all sub-routes */}
               <Route path="/demo/focus" element={<FocusMode demoUserId={demoUserId} />} />
               <Route path="/demo/dev-space" element={<DevSpace isDemo={true} demoUserId={demoUserId} />} />
               
@@ -113,9 +109,7 @@ const AppContent = () => {
                 <Route path="/help" element={<Help />} />
                 <Route path="/projects" element={<ProjectBalanceTracker />} />
                 <Route path="/schedule" element={<TimeBlockSchedule />} />
-                {/* Removed /meditation route */}
                 <Route path="/sleep" element={<SleepPage />} />
-                {/* Removed /mindfulness route and all sub-routes */}
                 <Route path="/focus" element={<FocusMode />} />
                 <Route path="/dev-space" element={<DevSpace />} />
                 
