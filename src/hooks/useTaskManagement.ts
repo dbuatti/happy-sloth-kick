@@ -1,386 +1,291 @@
-import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/supabaseClient';
-import { Task, TaskSection, Category, TaskStatus } from '@/types/task-management'; // Assuming these are the canonical types
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { Task, TaskSection, TaskCategory } from '@/types/task-management';
 
-interface UseTaskManagementProps {
-  currentDate: Date;
-  userId?: string; // Optional userId for demo mode
-}
+// Helper function to build task tree (tasks with subtasks)
+const buildTaskTree = (parentTasks: Task[], allTasks: Task[]): Task[] => {
+  return parentTasks.map((task) => ({
+    ...task,
+    subtasks: buildTaskTree(
+      allTasks.filter((sub) => sub.parent_task_id === task.id).sort((a, b) => a.order - b.order),
+      allTasks
+    ),
+  }));
+};
 
-export const useTaskManagement = ({ currentDate, userId: propUserId }: UseTaskManagementProps) => {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [sections, setSections] = useState<TaskSection[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+// Data Fetching Functions
+const fetchTaskSections = async (): Promise<TaskSection[]> => {
+  // Fetch sections
+  const { data: sections, error: sectionsError } = await supabase
+    .from('task_sections')
+    .select('*')
+    .order('order', { ascending: true });
 
-  const getUserId = useCallback(async () => {
-    if (propUserId) return propUserId;
-    const { data: { user } } = await supabase.auth.getUser(); // Modern way to get user
-    return user?.id;
-  }, [propUserId]);
+  if (sectionsError) throw new Error(sectionsError.message);
 
-  const fetchTasks = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const userId = await getUserId();
-      if (!userId) {
-        console.warn("No user ID found for fetching tasks.");
-        setTasks([]);
-        setLoading(false);
-        return;
-      }
+  // Fetch all tasks for the user
+  const { data: tasks, error: tasksError } = await supabase
+    .from('tasks')
+    .select('*')
+    .order('order', { ascending: true });
 
-      const { data, error } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+  if (tasksError) throw new Error(tasksError.message);
 
-      if (error) throw error;
-      setTasks(data || []);
-    } catch (err: any) {
-      console.error('Error fetching tasks:', err.message);
-      setError(err.message);
-      toast.error('Failed to load tasks.');
-    } finally {
-      setLoading(false);
+  // Create a map of sections for quick lookup
+  const sectionMap = new Map<string, TaskSection>(
+    sections.map((section) => ({ ...section, tasks: [] })).map((section) => [section.id, section])
+  );
+
+  // Separate top-level tasks and subtasks
+  const topLevelTasks = tasks.filter((task) => !task.parent_task_id);
+  const tasksWithSubtasks = buildTaskTree(topLevelTasks, tasks);
+
+  // Assign tasks to their respective sections
+  tasksWithSubtasks.forEach((task) => {
+    if (task.section_id && sectionMap.has(task.section_id)) {
+      sectionMap.get(task.section_id)?.tasks.push(task);
     }
-  }, [getUserId]);
+  });
 
-  const fetchSections = useCallback(async () => {
-    try {
-      const userId = await getUserId();
-      if (!userId) return;
+  return Array.from(sectionMap.values());
+};
 
-      const { data, error } = await supabase
-        .from('task_sections')
-        .select('*')
-        .eq('user_id', userId)
-        .order('order', { ascending: true });
+const fetchTaskCategories = async (): Promise<TaskCategory[]> => {
+  const { data, error } = await supabase.from('task_categories').select('*');
+  if (error) throw new Error(error.message);
+  return data;
+};
 
-      if (error) throw error;
-      setSections(data || []);
-    } catch (err: any) {
-      console.error('Error fetching sections:', err.message);
-      toast.error('Failed to load sections.');
-    }
-  }, [getUserId]);
+// Custom Hook
+export const useTaskManagement = () => {
+  const queryClient = useQueryClient();
+  const userId = supabase.auth.currentUser?.id;
 
-  const fetchCategories = useCallback(async () => {
-    try {
-      const userId = await getUserId();
-      if (!userId) return;
+  // --- Queries ---
+  const {
+    data: sections = [],
+    isLoading: isLoadingSections,
+    error: sectionsError,
+  } = useQuery<TaskSection[], Error>({
+    queryKey: ['taskSections'],
+    queryFn: fetchTaskSections,
+    enabled: !!userId,
+  });
 
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .eq('user_id', userId)
-        .order('name', { ascending: true });
+  const {
+    data: categories = [],
+    isLoading: isLoadingCategories,
+    error: categoriesError,
+  } = useQuery<TaskCategory[], Error>({
+    queryKey: ['taskCategories'],
+    queryFn: fetchTaskCategories,
+    enabled: !!userId,
+  });
 
-      if (error) throw error;
-      setCategories(data || []);
-    } catch (err: any) {
-      console.error('Error fetching categories:', err.message);
-      toast.error('Failed to load categories.');
-    }
-  }, [getUserId]);
+  // --- Mutations ---
 
-  useEffect(() => {
-    fetchTasks();
-    fetchSections();
-    fetchCategories();
-  }, [fetchTasks, fetchSections, fetchCategories]);
-
-  const addTask = useCallback(async (newTask: Omit<Task, 'id' | 'created_at' | 'user_id' | 'status'>) => {
-    try {
-      const userId = await getUserId();
-      if (!userId) throw new Error("User not authenticated.");
-
-      const { data, error } = await supabase
-        .from('tasks')
-        .insert({ ...newTask, user_id: userId, status: 'to-do' })
-        .select()
-        .single();
-
-      if (error) throw error;
-      setTasks(prev => [data, ...prev]);
+  // Tasks
+  const addTaskMutation = useMutation({
+    mutationFn: async (newTask: Partial<Task>): Promise<Task> => {
+      if (!userId) throw new Error('User not authenticated.');
+      const { data, error } = await supabase.from('tasks').insert({ ...newTask, user_id: userId }).select().single();
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['taskSections'] });
       toast.success('Task added successfully!');
+    },
+    onError: (error) => {
+      toast.error(`Failed to add task: ${error.message}`);
+    },
+  });
+
+  const updateTaskMutation = useMutation({
+    mutationFn: async (updatedTask: Partial<Task>): Promise<Task> => {
+      if (!userId) throw new Error('User not authenticated.');
+      const { data, error } = await supabase.from('tasks').update(updatedTask).eq('id', updatedTask.id).select().single();
+      if (error) throw new Error(error.message);
       return data;
-    } catch (err: any) {
-      console.error('Error adding task:', err.message);
-      toast.error('Failed to add task.');
-      return null;
-    }
-  }, [getUserId]);
-
-  const updateTask = useCallback(async (id: string, updates: Partial<Omit<Task, 'id' | 'created_at' | 'user_id'>>) => {
-    try {
-      const userId = await getUserId();
-      if (!userId) throw new Error("User not authenticated.");
-
-      const { data, error } = await supabase
-        .from('tasks')
-        .update(updates)
-        .eq('id', id)
-        .eq('user_id', userId)
-        .select()
-        .single();
-
-      if (error) throw error;
-      setTasks(prev => prev.map(task => (task.id === id ? data : task)));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['taskSections'] });
       toast.success('Task updated successfully!');
-      return data;
-    } catch (err: any) {
-      console.error('Error updating task:', err.message);
-      toast.error('Failed to update task.');
-      return null;
-    }
-  }, [getUserId]);
+    },
+    onError: (error) => {
+      toast.error(`Failed to update task: ${error.message}`);
+    },
+  });
 
-  const deleteTask = useCallback(async (id: string) => {
-    try {
-      const userId = await getUserId();
-      if (!userId) throw new Error("User not authenticated.");
-
-      const { error } = await supabase
-        .from('tasks')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', userId);
-
-      if (error) throw error;
-      setTasks(prev => prev.filter(task => task.id !== id));
+  const deleteTaskMutation = useMutation({
+    mutationFn: async (taskId: string): Promise<void> => {
+      if (!userId) throw new Error('User not authenticated.');
+      const { error } = await supabase.from('tasks').delete().eq('id', taskId);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['taskSections'] });
       toast.success('Task deleted successfully!');
-      return true;
-    } catch (err: any) {
-      console.error('Error deleting task:', err.message);
-      toast.error('Failed to delete task.');
-      return false;
-    }
-  }, [getUserId]);
+    },
+    onError: (error) => {
+      toast.error(`Failed to delete task: ${error.message}`);
+    },
+  });
 
-  const createSection = useCallback(async (name: string) => {
-    try {
-      const userId = await getUserId();
-      if (!userId) throw new Error("User not authenticated.");
+  const updateTaskOrdersMutation = useMutation({
+    mutationFn: async (updates: { id: string; order: number; section_id: string | null; parent_task_id: string | null }[]) => {
+      if (!userId) throw new Error('User not authenticated.');
+      const { error } = await supabase.rpc('update_tasks_order', { updates });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['taskSections'] });
+      toast.success('Task order updated!');
+    },
+    onError: (error) => {
+      toast.error(`Failed to update task order: ${error.message}`);
+    },
+  });
 
-      const { data, error } = await supabase
-        .from('task_sections')
-        .insert({ name, user_id: userId, order: sections.length })
-        .select()
-        .single();
-
-      if (error) throw error;
-      setSections(prev => [...prev, data]);
-      toast.success('Section created successfully!');
+  // Sections
+  const addSectionMutation = useMutation({
+    mutationFn: async (newSection: Partial<TaskSection>): Promise<TaskSection> => {
+      if (!userId) throw new Error('User not authenticated.');
+      const { data, error } = await supabase.from('task_sections').insert({ ...newSection, user_id: userId, order: sections.length }).select().single();
+      if (error) throw new Error(error.message);
       return data;
-    } catch (err: any) {
-      console.error('Error creating section:', err.message);
-      toast.error('Failed to create section.');
-      return null;
-    }
-  }, [getUserId, sections.length]);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['taskSections'] });
+      toast.success('Section added successfully!');
+    },
+    onError: (error) => {
+      toast.error(`Failed to add section: ${error.message}`);
+    },
+  });
 
-  const updateSection = useCallback(async (id: string, updates: Partial<Omit<TaskSection, 'id' | 'created_at' | 'user_id'>>) => {
-    try {
-      const userId = await getUserId();
-      if (!userId) throw new Error("User not authenticated.");
-
+  const updateSectionMutation = useMutation({
+    mutationFn: async (updatedSection: Partial<TaskSection>): Promise<TaskSection> => {
+      if (!userId) throw new Error('User not authenticated.');
       const { data, error } = await supabase
         .from('task_sections')
-        .update(updates)
-        .eq('id', id)
-        .eq('user_id', userId)
+        .update(updatedSection)
+        .eq('id', updatedSection.id)
         .select()
         .single();
-
-      if (error) throw error;
-      setSections(prev => prev.map(section => (section.id === id ? data : section)));
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['taskSections'] });
       toast.success('Section updated successfully!');
-      return data;
-    } catch (err: any) {
-      console.error('Error updating section:', err.message);
-      toast.error('Failed to update section.');
-      return null;
-    }
-  }, [getUserId]);
+    },
+    onError: (error) => {
+      toast.error(`Failed to update section: ${error.message}`);
+    },
+  });
 
-  const deleteSection = useCallback(async (id: string) => {
-    try {
-      const userId = await getUserId();
-      if (!userId) throw new Error("User not authenticated.");
-
-      // First, update tasks that belong to this section to have no section
-      await supabase
-        .from('tasks')
-        .update({ section_id: null })
-        .eq('section_id', id)
-        .eq('user_id', userId);
-
-      const { error } = await supabase
-        .from('task_sections')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', userId);
-
-      if (error) throw error;
-      setSections(prev => prev.filter(section => section.id !== id));
-      // Re-fetch tasks to reflect the section_id: null change
-      fetchTasks();
+  const deleteSectionMutation = useMutation({
+    mutationFn: async (sectionId: string): Promise<void> => {
+      if (!userId) throw new Error('User not authenticated.');
+      const { error } = await supabase.from('task_sections').delete().eq('id', sectionId);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['taskSections'] });
       toast.success('Section deleted successfully!');
-      return true;
-    } catch (err: any) {
-      console.error('Error deleting section:', err.message);
-      toast.error('Failed to delete section.');
-      return false;
-    }
-  }, [getUserId, fetchTasks]);
+    },
+    onError: (error) => {
+      toast.error(`Failed to delete section: ${error.message}`);
+    },
+  });
 
-  const updateSectionOrder = useCallback(async (orderedSections: TaskSection[]) => {
-    try {
-      const userId = await getUserId();
-      if (!userId) throw new Error("User not authenticated.");
+  const updateSectionOrdersMutation = useMutation({
+    mutationFn: async (updates: { id: string; order: number; name: string; include_in_focus_mode: boolean }[]) => {
+      if (!userId) throw new Error('User not authenticated.');
+      const { error } = await supabase.rpc('update_sections_order', { updates });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['taskSections'] });
+      toast.success('Section order updated!');
+    },
+    onError: (error) => {
+      toast.error(`Failed to update section order: ${error.message}`);
+    },
+  });
 
-      const updates = orderedSections.map((section, index) => ({
-        id: section.id,
-        order: index,
-      }));
-
-      const { error } = await supabase
-        .from('task_sections')
-        .upsert(updates, { onConflict: 'id' });
-
-      if (error) throw error;
-      setSections(orderedSections);
-      // toast.success('Section order updated!'); // Too many toasts if dragging frequently
-      return true;
-    } catch (err: any) {
-      console.error('Error updating section order:', err.message);
-      toast.error('Failed to update section order.');
-      return false;
-    }
-  }, [getUserId]);
-
-  const updateSectionIncludeInFocusMode = useCallback(async (id: string, includeInFocusMode: boolean) => {
-    try {
-      const userId = await getUserId();
-      if (!userId) throw new Error("User not authenticated.");
-
-      const { data, error } = await supabase
-        .from('task_sections')
-        .update({ include_in_focus_mode: includeInFocusMode })
-        .eq('id', id)
-        .eq('user_id', userId)
-        .select()
-        .single();
-
-      if (error) throw error;
-      setSections(prev => prev.map(section => (section.id === id ? data : section)));
-      toast.success('Section focus mode updated!');
+  // Categories
+  const addCategoryMutation = useMutation({
+    mutationFn: async (newCategory: Partial<TaskCategory>): Promise<TaskCategory> => {
+      if (!userId) throw new Error('User not authenticated.');
+      const { data, error } = await supabase.from('task_categories').insert({ ...newCategory, user_id: userId }).select().single();
+      if (error) throw new Error(error.message);
       return data;
-    } catch (err: any) {
-      console.error('Error updating section focus mode:', err.message);
-      toast.error('Failed to update section focus mode.');
-      return null;
-    }
-  }, [getUserId]);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['taskCategories'] });
+      toast.success('Category added successfully!');
+    },
+    onError: (error) => {
+      toast.error(`Failed to add category: ${error.message}`);
+    },
+  });
 
-  const createCategory = useCallback(async (name: string, color: string) => {
-    try {
-      const userId = await getUserId();
-      if (!userId) throw new Error("User not authenticated.");
-
+  const updateCategoryMutation = useMutation({
+    mutationFn: async (updatedCategory: Partial<TaskCategory>): Promise<TaskCategory> => {
+      if (!userId) throw new Error('User not authenticated.');
       const { data, error } = await supabase
-        .from('categories')
-        .insert({ name, color, user_id: userId })
+        .from('task_categories')
+        .update(updatedCategory)
+        .eq('id', updatedCategory.id)
         .select()
         .single();
-
-      if (error) throw error;
-      setCategories(prev => [...prev, data]);
+      if (error) throw new Error(error.message);
       return data;
-    } catch (err: any) {
-      console.error('Error creating category:', err.message);
-      toast.error('Failed to create category.');
-      return null;
-    }
-  }, [getUserId]);
-
-  const updateCategory = useCallback(async (id: string, updates: Partial<Omit<Category, 'id' | 'created_at' | 'user_id'>>) => {
-    try {
-      const userId = await getUserId();
-      if (!userId) throw new Error("User not authenticated.");
-
-      const { data, error } = await supabase
-        .from('categories')
-        .update(updates)
-        .eq('id', id)
-        .eq('user_id', userId)
-        .select()
-        .single();
-
-      if (error) throw error;
-      setCategories(prev => prev.map(category => (category.id === id ? data : category)));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['taskCategories'] });
       toast.success('Category updated successfully!');
-      return data;
-    } catch (err: any) {
-      console.error('Error updating category:', err.message);
-      toast.error('Failed to update category.');
-      return null;
-    }
-  }, [getUserId]);
+    },
+    onError: (error) => {
+      toast.error(`Failed to update category: ${error.message}`);
+    },
+  });
 
-  const deleteCategory = useCallback(async (id: string) => {
-    try {
-      const userId = await getUserId();
-      if (!userId) throw new Error("User not authenticated.");
-
-      // First, update tasks that belong to this category to have no category
-      await supabase
-        .from('tasks')
-        .update({ category: null })
-        .eq('category', categories.find(c => c.id === id)?.name || '') // Match by name as category field is name
-        .eq('user_id', userId);
-
-      const { error } = await supabase
-        .from('categories')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', userId);
-
-      if (error) throw error;
-      setCategories(prev => prev.filter(category => category.id !== id));
-      // Re-fetch tasks to reflect the category: null change
-      fetchTasks();
+  const deleteCategoryMutation = useMutation({
+    mutationFn: async (categoryId: string): Promise<void> => {
+      if (!userId) throw new Error('User not authenticated.');
+      const { error } = await supabase.from('task_categories').delete().eq('id', categoryId);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['taskCategories'] });
       toast.success('Category deleted successfully!');
-      return true;
-    } catch (err: any) {
-      console.error('Error deleting category:', err.message);
-      toast.error('Failed to delete category.');
-      return false;
-    }
-  }, [getUserId, categories, fetchTasks]);
+    },
+    onError: (error) => {
+      toast.error(`Failed to delete category: ${error.message}`);
+    },
+  });
 
   return {
-    tasks,
     sections,
+    isLoadingSections,
+    sectionsError,
     categories,
-    loading,
-    error,
-    addTask,
-    updateTask,
-    deleteTask,
-    createSection,
-    updateSection,
-    deleteSection,
-    updateSectionOrder,
-    updateSectionIncludeInFocusMode,
-    createCategory,
-    updateCategory,
-    deleteCategory,
-    fetchTasks, // Expose fetchTasks for manual refresh if needed
+    isLoadingCategories,
+    categoriesError,
+    addTask: addTaskMutation.mutate,
+    updateTask: updateTaskMutation.mutate,
+    deleteTask: deleteTaskMutation.mutate,
+    updateTaskOrders: updateTaskOrdersMutation.mutateAsync,
+    addSection: addSectionMutation.mutate,
+    updateSection: updateSectionMutation.mutate,
+    deleteSection: deleteSectionMutation.mutate,
+    updateSectionOrders: updateSectionOrdersMutation.mutateAsync,
+    addCategory: addCategoryMutation.mutate,
+    updateCategory: updateCategoryMutation.mutate,
+    deleteCategory: deleteCategoryMutation.mutate,
   };
 };
