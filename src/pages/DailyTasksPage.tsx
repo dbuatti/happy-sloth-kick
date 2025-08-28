@@ -10,7 +10,7 @@ import SectionSelector from '@/components/SectionSelector';
 import { Button } from '@/components/ui/button';
 import { Circle, CheckCircle, MoreHorizontal, Square, SquareCheck } from 'lucide-react';
 
-const DailyTasksV3: React.FC = () => {
+const DailyTasksPage: React.FC = () => {
   const [sections, setSections] = useState<TaskSection[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,7 +39,6 @@ const DailyTasksV3: React.FC = () => {
     try {
       setLoading(true);
       
-      // Fetch sections
       const { data: sectionsData, error: sectionsError } = await supabase
         .from('task_sections')
         .select('*')
@@ -47,7 +46,6 @@ const DailyTasksV3: React.FC = () => {
 
       if (sectionsError) throw sectionsError;
 
-      // Fetch tasks
       const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
         .select('*')
@@ -190,7 +188,7 @@ const DailyTasksV3: React.FC = () => {
 
       toast({
         title: 'Tasks Moved',
-        description: `${selectedTasks.length} task(s) moved successfully`,
+        description: `${selectedTasksCount} task(s) moved successfully`,
       });
 
       setSelectedTaskIds([]);
@@ -217,7 +215,7 @@ const DailyTasksV3: React.FC = () => {
   return (
     <div className="p-4">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Daily Tasks V3</h1>
+        <h1 className="text-2xl font-bold">Daily Tasks</h1>
         
         <div className="flex items-center gap-2">
           {isMultiSelectMode ? (
@@ -374,4 +372,4 @@ const DailyTasksV3: React.FC = () => {
   );
 };
 
-export default DailyTasksV3;
+export default DailyTasksPage;
