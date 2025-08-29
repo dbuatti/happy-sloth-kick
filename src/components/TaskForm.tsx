@@ -12,7 +12,7 @@ import PrioritySelector from "./PrioritySelector";
 import SectionSelector from "./SectionSelector";
 import { format, setHours, setMinutes, parseISO, isValid } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Task } from '@/hooks/useTasks'; // Only import Task type
+import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -20,8 +20,6 @@ import { suggestTaskDetails } from '@/integrations/supabase/api';
 import { showError } from '@/utils/toast';
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
-import { useTaskSections } from '@/hooks/useTaskSections'; // Import useTaskSections
-import { useTaskCategories } from '@/hooks/useTaskCategories'; // Import useTaskCategories
 
 const taskFormSchema = z.object({
   description: z.string().min(1, { message: 'Task description is required.' }).max(255, { message: 'Description must be 255 characters or less.' }),
@@ -93,7 +91,8 @@ interface TaskFormProps {
     image_url: string | null;
   }) => Promise<any>;
   onCancel: () => void;
-  // sections, allCategories are now from hooks, no longer passed as props
+  sections: TaskSection[];
+  allCategories: Category[];
   autoFocus?: boolean;
   preselectedSectionId?: string | null;
   parentTaskId?: string | null;
@@ -108,7 +107,8 @@ const TaskForm: React.FC<TaskFormProps> = ({
   initialData,
   onSave,
   onCancel,
-  // Removed sections, allCategories from props
+  sections,
+  allCategories,
   autoFocus = false,
   preselectedSectionId = null,
   parentTaskId = null,
@@ -118,9 +118,6 @@ const TaskForm: React.FC<TaskFormProps> = ({
   deleteSection,
   updateSectionIncludeInFocusMode,
 }) => {
-  const { data: sections } = useTaskSections(); // Use useTaskSections hook
-  const { data: allCategories } = useTaskCategories(); // Use useTaskCategories hook
-
   const [isSaving, setIsSaving] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -312,6 +309,8 @@ const TaskForm: React.FC<TaskFormProps> = ({
     }
 
     if (imageFile) {
+      // User is not directly available in this component, assuming it's handled by parent or context
+      // For now, we'll use a placeholder or assume userId is passed down if needed for storage path
       const userId = 'anonymous'; // Placeholder, replace with actual user ID if available
       const filePath = `${userId}/${uuidv4()}`;
       const { error: uploadError } = await supabase.storage

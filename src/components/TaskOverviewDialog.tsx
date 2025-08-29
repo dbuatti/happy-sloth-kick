@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerDescription } from "@/components/ui/drawer";
 import { Trash2, ListTodo, Edit, Calendar, StickyNote, BellRing, FolderOpen, Repeat, Link as LinkIcon, ClipboardCopy } from 'lucide-react';
-import { Task } from '@/hooks/useTasks'; // Only import Task type
+import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
 import {
   AlertDialog,
@@ -20,17 +20,16 @@ import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { getCategoryColorProps } from '@/lib/categoryColors';
 import { showSuccess, showError } from '@/utils/toast';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useTaskSections } from '@/hooks/useTaskSections'; // Import useTaskSections
-import { useTaskCategories } from '@/hooks/useTaskCategories'; // Import useTaskCategories
 
 interface TaskOverviewDialogProps {
   task: Task | null;
   isOpen: boolean;
   onClose: () => void;
-  onEditClick: (task: Task) => void;
+  onEditClick: (task: Task) => void; // To open the full edit dialog
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   onDelete: (taskId: string) => void;
-  // sections, allCategories are now from hooks, no longer passed as props
+  sections: TaskSection[];
+  allCategories: Category[]; // This prop is no longer used directly in this component
   allTasks: Task[];
 }
 
@@ -41,16 +40,14 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
   onEditClick,
   onUpdate,
   onDelete,
-  // Removed sections, allCategories from props
+  sections,
+  // Removed allCategories from destructuring as it's not used here
   allTasks,
 }) => {
   const { playSound } = useSound();
   const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const isMobile = useIsMobile();
-
-  const { data: sections } = useTaskSections(); // Use useTaskSections hook
-  const { data: allCategories } = useTaskCategories(); // Use useTaskCategories hook
 
   const subtasks = useMemo(() => {
     return allTasks.filter(t => t.parent_task_id === task?.id)
@@ -220,7 +217,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
           <ul className="space-y-1.5">
             {subtasks.map(subtask => (
               <li key={subtask.id} className="flex items-center space-x-2 p-1.5 rounded-md bg-background shadow-sm">
-                <input
+                <input // Changed from Checkbox to input type="checkbox"
                   type="checkbox"
                   checked={subtask.status === 'completed'}
                   onChange={(e) => handleSubtaskStatusChange(subtask.id, e.target.checked ? 'completed' : 'to-do')}

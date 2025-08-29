@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 
 import { WorkHour } from '@/hooks/useWorkHours';
 import { Appointment, NewAppointmentData, UpdateAppointmentData } from '@/hooks/useAppointments';
-import { Task } from '@/hooks/useTasks'; // Only import Task type
+import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import { parseAppointmentText } from '@/integrations/supabase/api';
 import { showLoading, dismissToast, showError, showSuccess } from '@/utils/toast';
 
@@ -22,8 +22,6 @@ import ScheduleDndProvider from './ScheduleDndProvider';
 // New custom hooks
 import { useVisibleTimeBlocks } from './hooks/useVisibleTimeBlocks';
 import { usePositionedAppointments } from './hooks/usePositionedAppointments';
-import { useTaskSections } from '@/hooks/useTaskSections'; // Import useTaskSections
-import { useTaskCategories } from '@/hooks/useTaskCategories'; // Import useTaskCategories
 
 interface ScheduleGridContentProps {
   isDemo?: boolean;
@@ -44,7 +42,8 @@ interface ScheduleGridContentProps {
   batchAddAppointments: (appointmentsToRestore: Appointment[]) => Promise<boolean>;
   allTasks: Task[];
   allDayTasks: Task[];
-  // allCategories, sections are now from hooks, no longer passed as props
+  allCategories: Category[];
+  sections: TaskSection[];
   settings: any;
 
   // Loading states
@@ -52,7 +51,7 @@ interface ScheduleGridContentProps {
 }
 
 const rowHeight = 50;
-const headerHeight = 80;
+const headerHeight = 80; // Fixed height for the header row
 
 const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
   isDemo = false,
@@ -69,13 +68,12 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
   batchAddAppointments,
   allTasks,
   allDayTasks,
-  // Removed allCategories, sections from props
+  allCategories,
+  sections,
   settings,
   isLoading,
 }) => {
-  const { data: sections } = useTaskSections(); // Use useTaskSections hook
-  const { data: allCategories } = useTaskCategories(); // Use useTaskCategories hook
-
+  // --- State Management ---
   const [isAppointmentFormOpen, setIsAppointmentFormOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const [selectedTimeSlotForNew, setSelectedTimeSlotForNew] = useState<{ start: Date; end: Date } | null>(null);
@@ -100,6 +98,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
   const [newHoursToExtend, setNewHoursToExtend] = useState<{ min: number; max: number } | null>(null);
   const [pendingAppointmentData, setPendingAppointmentData] = useState<NewAppointmentData | null>(null);
 
+  // --- Callbacks and Memoized Values ---
   const getWorkHoursForDay = useCallback((date: Date) => {
     const dayOfWeekString = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][date.getDay()];
     const workHour = allWorkHours.find(wh => wh.day_of_week === dayOfWeekString);
@@ -108,7 +107,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
 
   const { visibleTimeBlocks } = useVisibleTimeBlocks({
     daysInGrid,
-    getWorkHoursForDay,
+    getWorkHoursForDay, // Pass the memoized function
     currentViewDate,
   });
 
@@ -135,6 +134,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
     return tasksToDisplay;
   }, [appointments, allDayTasks, settings?.schedule_show_focus_tasks_only, sections]);
 
+  // --- Handlers ---
   const handleOpenAppointmentForm = (block: { start: Date; end: Date }, date: Date) => {
     setEditingAppointment(null);
     setSelectedTimeSlotForNew(block);
@@ -153,7 +153,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
     const currentMaxHour = workHoursForAppDay ? getHours(parse(workHoursForAppDay.end_time, 'HH:mm:ss', appDate)) : 24;
 
     const appStartHour = getHours(appStartTime);
-    const appEndHour = getHours(appEndTime) + (getMinutes(appEndTime) > 0 ? 1 : 0);
+    const appEndHour = getHours(appEndTime) + (getMinutes(appEndTime) > 0 ? 1 : 0); // Round up to next hour if minutes exist
 
     const requiresExtension = appStartHour < currentMinHour || appEndHour > currentMaxHour;
 
@@ -164,7 +164,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
       });
       setPendingAppointmentData(data);
       setIsExtendHoursDialogOpen(true);
-      return false;
+      return false; // Prevent immediate save
     }
 
     if (editingAppointment) {
@@ -189,13 +189,14 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
       setIsExtendHoursDialogOpen(false);
       setNewHoursToExtend(null);
       if (pendingAppointmentData) {
+        // Now save the pending appointment
         if (editingAppointment) {
           await updateAppointment(editingAppointment.id, pendingAppointmentData);
         } else {
           await addAppointment(pendingAppointmentData);
         }
         setPendingAppointmentData(null);
-        setIsAppointmentFormOpen(false);
+        setIsAppointmentFormOpen(false); // Close form after successful save
       }
     }
   };
@@ -299,6 +300,7 @@ const ScheduleGridContent: React.FC<ScheduleGridContentProps> = ({
   };
 
   const handleDragStart = (_event: any) => {
+    // DndProvider handles setting activeDragItem
   };
 
   const handleDragEnd = (event: any) => {

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess } from '@/utils/toast';
 import { useReminders } from '@/context/ReminderContext';
 import { v4 as uuidv4 } from 'uuid';
@@ -10,30 +11,23 @@ import { arrayMove } from '@dnd-kit/sortable';
 import { useSettings } from '@/context/SettingsContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
-// Import modular hooks and API functions
-import { useAuth } from '@/context/AuthContext';
-import { useTaskSections } from './useTaskSections';
-import { useTaskCategories } from './useTaskCategories';
-import { useDoTodayLog } from './useDoTodayLog';
-import { fetchTasks } from '@/integrations/supabase/api';
-
 export interface Task {
   id: string;
-  description: string | null;
+  description: string | null; // Changed to allow null
   status: 'to-do' | 'completed' | 'skipped' | 'archived';
   recurring_type: 'none' | 'daily' | 'weekly' | 'monthly';
   created_at: string;
   updated_at: string;
-  completed_at: string | null;
+  completed_at: string | null; // Added new field
   user_id: string;
-  category: string | null;
+  category: string | null; // Changed to allow null
   category_color: string;
   priority: 'low' | 'medium' | 'high' | 'urgent' | string;
   due_date: string | null;
   notes: string | null;
   remind_at: string | null;
   section_id: string | null;
-  order: number | null;
+  order: number | null; // Changed to allow null
   original_task_id: string | null;
   parent_task_id: string | null;
   link: string | null;
@@ -62,15 +56,15 @@ interface NewTaskData {
   description: string;
   status?: Task['status'];
   recurring_type?: Task['recurring_type'];
-  category: string | null;
+  category: string | null; // Changed to allow null
   priority?: Task['priority'];
   due_date?: string | null;
   notes?: string | null;
   remind_at?: string | null;
   section_id?: string | null;
   parent_task_id?: string | null;
-  original_task_id?: string | null;
-  created_at?: string;
+  original_task_id?: string | null; // Added for new instance creation
+  created_at?: string; // Added for new instance creation
   link?: string | null;
   image_url?: string | null;
 }
@@ -92,13 +86,66 @@ const cleanTaskForDb = (task: Partial<Task> | NewTaskData): Omit<Partial<Task>, 
   if (cleaned.section_id === '') cleaned.section_id = null;
   if (cleaned.parent_task_id === '') cleaned.parent_task_id = null;
   if (cleaned.original_task_id === '') cleaned.original_task_id = null;
-  if (cleaned.completed_at === '') cleaned.completed_at = null;
+  if (cleaned.completed_at === '') cleaned.completed_at = null; // Handle new field
   
   return cleaned;
 };
 
+// --- Query Functions (moved outside the hook) ---
+
+// Query function for sections
+export const fetchSections = async (userId: string) => {
+  const { data, error } = await supabase
+    .from('task_sections')
+    .select('id, name, user_id, order, include_in_focus_mode')
+    .eq('user_id', userId)
+    .order('order', { ascending: true })
+    .order('name', { ascending: true });
+  if (error) throw error;
+  return data || [];
+};
+
+// Query function for categories
+export const fetchCategories = async (userId: string) => {
+  const { data, error } = await supabase
+    .from('task_categories')
+    .select('id, name, color, user_id, created_at')
+    .eq('user_id', userId);
+  if (error) throw error;
+  return data || [];
+};
+
+// Query function for doTodayOffLog
+export const fetchDoTodayOffLog = async (userId: string, date: Date) => {
+  const formattedDate = format(date, 'yyyy-MM-dd');
+  const { data: offLogData, error: offLogError } = await supabase
+    .from('do_today_off_log')
+    .select('task_id')
+    .eq('user_id', userId)
+    .eq('off_date', formattedDate);
+  if (offLogError) {
+      console.error(offLogError);
+      return new Set<string>();
+  }
+  return new Set(offLogData?.map(item => item.task_id) || new Set());
+};
+
+// Query function for tasks
+export const fetchTasks = async (userId: string): Promise<Omit<Task, 'category_color'>[]> => {
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('id, description, status, recurring_type, created_at, updated_at, completed_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link, image_url')
+    .eq('user_id', userId)
+    .order('section_id', { ascending: true, nullsFirst: true })
+    .order('order', { ascending: true });
+  if (error) throw error;
+  return data || [];
+};
+
+// --- End Query Functions ---
+
 interface UseTasksProps {
-  currentDate: Date;
+  currentDate: Date; // Now required and expected to be stable from parent
   viewMode?: 'daily' | 'archive' | 'focus';
   userId?: string;
 }
@@ -119,12 +166,31 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
   const [sectionFilter, setSectionFilter] = useState('all');
 
   const effectiveCurrentDate = currentDate;
-  const todayStart = startOfDay(effectiveCurrentDate);
+  const todayStart = startOfDay(effectiveCurrentDate); // This is the start of the local day for the selected date
 
-  // Use modular hooks for sections, categories, and doTodayOffLog
-  const { data: sections, loading: sectionsLoading, refetch: refetchSections } = useTaskSections();
-  const { data: allCategories, loading: categoriesLoading, refetch: refetchCategories } = useTaskCategories();
-  const { doTodayOffIds, loading: doTodayOffLoading, toggleDoToday, toggleAllDoToday } = useDoTodayLog({ currentDate: effectiveCurrentDate, userId });
+  // Use useQuery for sections
+  const { data: sections = [], isLoading: sectionsLoading } = useQuery<TaskSection[], Error>({
+    queryKey: ['task_sections', userId],
+    queryFn: () => fetchSections(userId!),
+    enabled: !!userId && !authLoading,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Use useQuery for categories
+  const { data: allCategories = [], isLoading: categoriesLoading } = useQuery<Category[], Error>({
+    queryKey: ['task_categories', userId],
+    queryFn: () => fetchCategories(userId!),
+    enabled: !!userId && !authLoading,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Use useQuery for doTodayOffIds
+  const { data: doTodayOffIds = new Set(), isLoading: doTodayOffLoading } = useQuery<Set<string>, Error>({
+    queryKey: ['do_today_off_log', userId, format(effectiveCurrentDate, 'yyyy-MM-dd')],
+    queryFn: () => fetchDoTodayOffLog(userId!, effectiveCurrentDate),
+    enabled: !!userId && !authLoading,
+    staleTime: 60 * 1000, // 1 minute
+  });
 
   // Use useQuery for raw tasks
   const { data: rawTasks = [], isLoading: tasksLoading } = useQuery<Omit<Task, 'category_color'>[], Error>({
@@ -147,15 +213,25 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
   // Refetch functions for mutations
   const invalidateTasksQueries = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['tasks', userId] });
+    queryClient.invalidateQueries({ queryKey: ['do_today_off_log', userId] }); // Invalidate do_today_off_log as well
     queryClient.invalidateQueries({ queryKey: ['dailyTaskCount', userId] }); // Invalidate daily task count
   }, [queryClient, userId]);
 
-  // Real-time subscription for tasks (other subscriptions are in their respective hooks)
+  const invalidateSectionsQueries = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['task_sections', userId] });
+    queryClient.invalidateQueries({ queryKey: ['dailyTaskCount', userId] }); // Invalidate daily task count
+  }, [queryClient, userId]);
+
+  const invalidateCategoriesQueries = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['task_categories', userId] });
+  }, [queryClient, userId]);
+
+  // Real-time subscriptions to invalidate queries
   useEffect(() => {
     if (!userId) return;
 
     const tasksChannel = supabase
-      .channel('tasks_channel_hook')
+      .channel('tasks_channel')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${userId}` },
@@ -163,7 +239,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
           const newOrOldTask = (payload.new || payload.old) as Task;
           if (inFlightUpdatesRef.current.has(newOrOldTask.id)) return;
           
-          invalidateTasksQueries();
+          invalidateTasksQueries(); // Invalidate to refetch and get correct data/order
           if (payload.eventType === 'UPDATE') {
             if (newOrOldTask.remind_at && newOrOldTask.status === 'to-do') {
               const d = parseISO(newOrOldTask.remind_at);
@@ -178,10 +254,57 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
       )
       .subscribe();
 
+    const sectionsChannel = supabase
+      .channel('sections_channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'task_sections', filter: `user_id=eq.${userId}` },
+        (payload) => {
+          const newOrOldSection = (payload.new || payload.old) as TaskSection;
+          if (inFlightUpdatesRef.current.has(newOrOldSection.id)) return;
+          invalidateSectionsQueries();
+          if (payload.eventType === 'DELETE') {
+            invalidateTasksQueries(); // Tasks might have their section_id set to null
+          }
+        }
+      )
+      .subscribe();
+
+    const categoriesChannel = supabase
+      .channel('categories_channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'task_categories', filter: `user_id=eq.${userId}` },
+        (payload) => {
+          const newOrOldCategory = (payload.new || payload.old) as Category;
+          if (inFlightUpdatesRef.current.has(newOrOldCategory.id)) return;
+          invalidateCategoriesQueries();
+          if (payload.eventType === 'DELETE') {
+            invalidateTasksQueries(); // Tasks might have their category changed
+          }
+        }
+      )
+      .subscribe();
+
+    const doTodayOffLogChannel = supabase
+      .channel('do_today_off_log_channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'do_today_off_log', filter: `user_id=eq.${userId}` },
+        () => { // Removed unused payload parameter
+          queryClient.invalidateQueries({ queryKey: ['do_today_off_log', userId, format(effectiveCurrentDate, 'yyyy-MM-dd')] });
+          invalidateTasksQueries(); // Tasks might change visibility based on this
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(tasksChannel);
+      supabase.removeChannel(sectionsChannel);
+      supabase.removeChannel(categoriesChannel);
+      supabase.removeChannel(doTodayOffLogChannel);
     };
-  }, [userId, addReminder, dismissReminder, invalidateTasksQueries]);
+  }, [userId, addReminder, dismissReminder, invalidateTasksQueries, invalidateSectionsQueries, invalidateCategoriesQueries, queryClient, effectiveCurrentDate]);
 
   const processedTasks = useMemo(() => {
     const allProcessedTasks: Task[] = [];
@@ -239,7 +362,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
               remind_at: baseTaskForVirtual.remind_at ? format(setHours(setMinutes(todayStart, getMinutes(parseISO(baseTaskForVirtual.remind_at))), getHours(parseISO(baseTaskForVirtual.remind_at))), 'yyyy-MM-ddTHH:mm:ssZ') : null,
               due_date: baseTaskForVirtual.due_date ? todayStart.toISOString() : null,
               category_color: categoriesMapLocal.get(baseTaskForVirtual.category || '') || 'gray',
-              completed_at: null,
+              completed_at: null, // Virtual tasks are never completed
             };
             allProcessedTasks.push(virtualTask);
           }
@@ -266,7 +389,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
         user_id: userId,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        completed_at: null,
+        completed_at: null, // New tasks are not completed
         status: newTaskData.status || 'to-do',
         recurring_type: newTaskData.recurring_type || 'none',
         category: newTaskData.category || null,
@@ -276,7 +399,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
         notes: newTaskData.notes || null,
         remind_at: newTaskData.remind_at || null,
         section_id: newTaskData.section_id || null,
-        order: 0,
+        order: 0, // Placeholder order
         original_task_id: null,
         parent_task_id: newTaskData.parent_task_id || null,
         description: newTaskData.description,
@@ -289,13 +412,13 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
 
       const { data, error } = await supabase
         .from('tasks')
-        .insert(cleanTaskForDb(tempTask))
+        .insert(cleanTaskForDb(tempTask)) // Use tempTask for insertion
         .select('id, description, status, recurring_type, created_at, updated_at, completed_at, user_id, category, priority, due_date, notes, remind_at, section_id, order, original_task_id, parent_task_id, link, image_url')
         .single();
 
       if (error) throw error;
       showSuccess('Task added successfully!');
-      invalidateTasksQueries();
+      invalidateTasksQueries(); // Invalidate to refetch and get correct data/order
       if (data.remind_at && data.status === 'to-do') {
         const d = parseISO(data.remind_at);
         if (isValid(d)) addReminder(data.id, `Reminder: ${data.description}`, d);
@@ -304,7 +427,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     } catch (e: any) {
       showError('Failed to add task.');
       console.error('useTasks: Error adding task to DB:', e.message);
-      invalidateTasksQueries();
+      invalidateTasksQueries(); // Revert optimistic update on error
       return false;
     } finally {
       setTimeout(() => {
@@ -318,7 +441,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
       showError('User not authenticated.');
       return null;
     }
-    let idToTrack: string = taskId;
+    let idToTrack: string = taskId; // Declare idToTrack here
     let originalTaskState: Task | undefined;
     
     try {
@@ -328,6 +451,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
       originalTaskState = processedTasks.find(t => t.id === taskId);
 
       if (originalTaskState && originalTaskState.id.startsWith('virtual-')) {
+        // This is a virtual task that needs to become a real one.
         const virtualTask = originalTaskState;
         
         const newInstanceId = uuidv4();
@@ -339,23 +463,24 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
             user_id: userId,
             description: updates.description !== undefined ? updates.description : virtualTask.description,
             status: updates.status ?? virtualTask.status,
-            recurring_type: 'none' as const,
-            created_at: virtualTask.created_at,
+            recurring_type: 'none' as const, // New instance is no longer recurring
+            created_at: virtualTask.created_at, // Keep original creation date for consistency
             updated_at: new Date().toISOString(),
-            completed_at: (updates.status === 'completed' || updates.status === 'archived') ? new Date().toISOString() : null,
+            completed_at: (updates.status === 'completed' || updates.status === 'archived') ? new Date().toISOString() : null, // Set completed_at for new instance
             category: updates.category !== undefined ? updates.category : virtualTask.category,
             priority: updates.priority !== undefined ? updates.priority : virtualTask.priority,
             due_date: updates.due_date !== undefined ? updates.due_date : virtualTask.due_date,
             notes: updates.notes !== undefined ? updates.notes : virtualTask.notes,
             remind_at: updates.remind_at !== undefined ? updates.remind_at : virtualTask.remind_at,
             section_id: updates.section_id !== undefined ? updates.section_id : virtualTask.section_id,
-            order: virtualTask.order,
+            order: virtualTask.order, // Placeholder order
             original_task_id: virtualTask.original_task_id || virtualTask.id.replace(/^virtual-/, '').split(/-\d{4}-\d{2}-\d{2}$/)[0],
             parent_task_id: virtualTask.parent_task_id,
             link: updates.link !== undefined ? updates.link : virtualTask.link,
             image_url: updates.image_url !== undefined ? updates.image_url : virtualTask.image_url,
         };
 
+        // Optimistic update for new instance
         queryClient.setQueryData(['tasks', userId], (oldTasks: Task[] | undefined) => {
             return oldTasks ? [...oldTasks, { ...newInstanceData, category_color: virtualTask.category_color }] : [{ ...newInstanceData, category_color: virtualTask.category_color }];
         });
@@ -369,7 +494,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
         if (insertError) {
             console.error('[DnD Error] Failed to insert new task instance:', insertError);
             showError('Failed to create an instance of the recurring task.');
-            invalidateTasksQueries();
+            invalidateTasksQueries(); // Revert optimistic update
             return null;
         }
         showSuccess('Task created from recurring template!');
@@ -378,12 +503,14 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
             const d = parseISO(dbTask.remind_at);
             if (isValid(d)) addReminder(dbTask.id, `Reminder: ${dbTask.description}`, d);
         }
-        return dbTask.id;
+        return dbTask.id; // Return the new real ID
       } else if (!originalTaskState) {
+        // Task not found (and not a virtual task that was found). This is an error.
         showError('Task not found for update.');
         return null;
       }
 
+      // If we reach here, originalTaskState is a real task, proceed with update.
       const currentStatus = originalTaskState.status;
       const newStatus = updates.status;
       const now = new Date().toISOString();
@@ -391,13 +518,14 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
       let completedAtUpdate: string | null | undefined = originalTaskState.completed_at;
 
       if (newStatus && (newStatus === 'completed' || newStatus === 'archived') && !(currentStatus === 'completed' || currentStatus === 'archived')) {
-        completedAtUpdate = now;
-      } else if (newStatus && (newStatus === 'to-do' || newStatus === 'skipped') && (currentStatus === 'completed' || currentStatus === 'archived')) {
-        completedAtUpdate = null;
+        completedAtUpdate = now; // Set completed_at if status changes to completed/archived
+      } else if (newStatus && (newStatus === 'to-do' || newStatus === 'skipped') && (currentStatus === 'completed' || currentStatus === 'archived')) { // Refined condition
+        completedAtUpdate = null; // Clear completed_at if status changes from completed/archived
       }
 
       const finalUpdates = { ...updates, completed_at: completedAtUpdate };
 
+      // Optimistic update for existing task
       queryClient.setQueryData(['tasks', userId], (oldTasks: Task[] | undefined) => {
         return oldTasks?.map(t => t.id === taskId ? { ...t, ...finalUpdates, ...(categoryColor && { category_color: categoryColor }) } : t) || [];
       });
@@ -413,7 +541,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
       if (error) throw error;
 
       showSuccess('Task updated!');
-      invalidateTasksQueries();
+      invalidateTasksQueries(); // Invalidate to refetch and ensure consistency
 
       if (updates.remind_at) {
         const d = parseISO(updates.remind_at as string);
@@ -426,7 +554,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     } catch (e: any) {
       showError('Failed to update task.');
       console.error('useTasks: Error updating task:', e.message);
-      invalidateTasksQueries();
+      invalidateTasksQueries(); // Revert optimistic update on error
       return null;
     } finally {
       setTimeout(() => {
@@ -465,6 +593,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
       }
       
       idsToDelete.forEach(id => inFlightUpdatesRef.current.add(id));
+      // Optimistic update
       queryClient.setQueryData(['tasks', userId], (oldTasks: Task[] | undefined) => {
         return oldTasks?.filter(t => !idsToDelete.includes(t.id)) || [];
       });
@@ -473,11 +602,11 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
       if (error) throw error;
       showSuccess('Task(s) deleted!');
       idsToDelete.forEach(dismissReminder);
-      invalidateTasksQueries();
+      invalidateTasksQueries(); // Invalidate to ensure consistency
     } catch (e: any) {
       showError('Failed to delete task.');
       console.error(`useTasks: Error deleting task(s) from DB:`, e.message);
-      invalidateTasksQueries();
+      invalidateTasksQueries(); // Revert optimistic update on error
     } finally {
       setTimeout(() => {
         idsToDelete.forEach(id => inFlightUpdatesRef.current.delete(id));
@@ -495,15 +624,17 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     }
 
     const now = new Date().toISOString();
+    // Removed unused tasksToUpdate variable
     
     const updatesWithCompletedAt = { ...updates };
     if (updates.status && (updates.status === 'completed' || updates.status === 'archived')) {
       updatesWithCompletedAt.completed_at = now;
-    } else if (updates.status && (updates.status === 'to-do' || updates.status === 'skipped')) {
+    } else if (updates.status && (updates.status === 'to-do' || updates.status === 'skipped')) { // Refined condition
       updatesWithCompletedAt.completed_at = null;
     }
 
     ids.forEach(id => inFlightUpdatesRef.current.add(id));
+    // Optimistic update
     queryClient.setQueryData(['tasks', userId], (oldTasks: Task[] | undefined) => {
       return oldTasks?.map(t => (ids.includes(t.id) ? { ...t, ...updatesWithCompletedAt } : t)) || [];
     });
@@ -517,11 +648,11 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
 
       if (error) throw error;
       showSuccess('Tasks updated!');
-      invalidateTasksQueries();
+      invalidateTasksQueries(); // Invalidate to ensure consistency
     } catch (e: any) {
       showError('Failed to update tasks.');
       console.error(`useTasks: Error during bulk update for tasks ${ids.join(', ')}:`, e.message);
-      invalidateTasksQueries();
+      invalidateTasksQueries(); // Revert optimistic update on error
     } finally {
       setTimeout(() => {
         ids.forEach(id => inFlightUpdatesRef.current.delete(id));
@@ -550,6 +681,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
       }
 
       ids.forEach(id => inFlightUpdatesRef.current.add(id));
+      // Optimistic update
       queryClient.setQueryData(['tasks', userId], (oldTasks: Task[] | undefined) => {
         return oldTasks?.filter(t => !ids.includes(t.id)) || [];
       });
@@ -559,12 +691,12 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
 
       showSuccess(`${ids.length} task(s) deleted!`);
       ids.forEach(dismissReminder);
-      invalidateTasksQueries();
+      invalidateTasksQueries(); // Invalidate to ensure consistency
       return true;
     } catch (e: any) {
       showError('Failed to delete tasks.');
       console.error(`useTasks: Error during bulk delete for tasks ${ids.join(', ')}:`, e.message);
-      invalidateTasksQueries();
+      invalidateTasksQueries(); // Revert optimistic update on error
       return false;
     } finally {
       setTimeout(() => {
@@ -614,9 +746,10 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
       return;
     }
     const newOrder = sections.length;
-    const tempSectionId = uuidv4();
+    const tempSectionId = uuidv4(); // Declare tempSectionId here
     inFlightUpdatesRef.current.add(tempSectionId);
     try {
+      // Optimistic update
       queryClient.setQueryData(['task_sections', userId], (oldSections: TaskSection[] | undefined) => {
         return oldSections ? [...oldSections, { id: tempSectionId, name, user_id: userId, order: newOrder, include_in_focus_mode: true }] : [{ id: tempSectionId, name, user_id: userId, order: newOrder, include_in_focus_mode: true }];
       });
@@ -628,17 +761,17 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
         .single();
       if (error) throw error;
       showSuccess('Section created!');
-      refetchSections(); // Use refetch from useTaskSections
+      invalidateSectionsQueries(); // Invalidate to refetch and get correct ID/order
     } catch (e: any) {
       showError('Failed to create section.');
       console.error('useTasks: Error creating section:', e.message);
-      refetchSections();
+      invalidateSectionsQueries(); // Revert optimistic update on error
     } finally {
       setTimeout(() => {
         inFlightUpdatesRef.current.delete(tempSectionId);
       }, 1500);
     }
-  }, [userId, sections.length, queryClient, refetchSections]);
+  }, [userId, sections.length, queryClient, invalidateSectionsQueries]);
 
   const updateSection = useCallback(async (sectionId: string, newName: string) => {
     if (!userId) {
@@ -646,6 +779,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
       return;
     }
     inFlightUpdatesRef.current.add(sectionId);
+    // Optimistic update
     queryClient.setQueryData(['task_sections', userId], (oldSections: TaskSection[] | undefined) => {
       return oldSections?.map(s => s.id === sectionId ? { ...s, name: newName } : s) || [];
     });
@@ -658,17 +792,17 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
         .eq('user_id', userId);
       if (error) throw error;
       showSuccess('Section updated!');
-      refetchSections();
+      invalidateSectionsQueries(); // Invalidate to ensure consistency
     } catch (e: any) {
       showError('Failed to update section.');
       console.error(`useTasks: Error updating section ${sectionId}:`, e.message);
-      refetchSections();
+      invalidateSectionsQueries(); // Revert optimistic update on error
     } finally {
       setTimeout(() => {
         inFlightUpdatesRef.current.delete(sectionId);
       }, 1500);
     }
-  }, [userId, queryClient, refetchSections]);
+  }, [userId, queryClient, invalidateSectionsQueries]);
 
   const deleteSection = useCallback(async (sectionId: string) => {
     if (!userId) {
@@ -676,6 +810,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
       return;
     }
     inFlightUpdatesRef.current.add(sectionId);
+    // Optimistic update
     queryClient.setQueryData(['task_sections', userId], (oldSections: TaskSection[] | undefined) => {
       return oldSections?.filter(s => s.id !== sectionId) || [];
     });
@@ -697,20 +832,20 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
         .eq('user_id', userId);
       if (error) throw error;
       showSuccess('Section deleted!');
-      refetchSections();
-      invalidateTasksQueries();
+      invalidateSectionsQueries(); // Invalidate sections
+      invalidateTasksQueries(); // Invalidate tasks as well
     }
     catch (e: any) {
       showError('Failed to delete section.');
       console.error(`useTasks: Error deleting section ${sectionId}:`, e.message);
-      refetchSections();
-      invalidateTasksQueries();
+      invalidateSectionsQueries(); // Revert optimistic update on error
+      invalidateTasksQueries(); // Revert optimistic update on error
     } finally {
       setTimeout(() => {
         inFlightUpdatesRef.current.delete(sectionId);
       }, 1500);
     }
-  }, [userId, queryClient, refetchSections, invalidateTasksQueries]);
+  }, [userId, queryClient, invalidateSectionsQueries, invalidateTasksQueries]);
 
   const updateSectionIncludeInFocusMode = useCallback(async (sectionId: string, include: boolean) => {
     if (!userId) {
@@ -718,6 +853,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
       return;
     }
     inFlightUpdatesRef.current.add(sectionId);
+    // Optimistic update
     queryClient.setQueryData(['task_sections', userId], (oldSections: TaskSection[] | undefined) => {
       return oldSections?.map(s => s.id === sectionId ? { ...s, include_in_focus_mode: include } : s) || [];
     });
@@ -730,17 +866,17 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
         .eq('user_id', userId);
       if (error) throw error;
       showSuccess('Focus mode setting updated!');
-      refetchSections();
+      invalidateSectionsQueries(); // Invalidate to ensure consistency
     } catch (e: any) {
       showError('Failed to update focus mode setting.');
       console.error(`useTasks: Error updating focus mode for section ${sectionId}:`, e.message);
-      refetchSections();
+      invalidateSectionsQueries(); // Revert optimistic update on error
     } finally {
       setTimeout(() => {
         inFlightUpdatesRef.current.delete(sectionId);
       }, 1500);
     }
-  }, [userId, queryClient, refetchSections]);
+  }, [userId, queryClient, invalidateSectionsQueries]);
 
   const reorderSections = useCallback(async (activeId: string, overId: string) => {
     if (!userId) {
@@ -764,23 +900,24 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     const updatedIds = updates.map(s => s.id);
     updatedIds.forEach(id => inFlightUpdatesRef.current.add(id));
 
+    // Optimistic update
     queryClient.setQueryData(['task_sections', userId], newOrderedSections);
 
     try {
       const { error } = await supabase.from('task_sections').upsert(updates, { onConflict: 'id' });
       if (error) throw error;
       showSuccess('Sections reordered!');
-      refetchSections();
+      invalidateSectionsQueries(); // Invalidate to ensure consistency
     } catch (e: any) {
       showError('Failed to reorder sections.');
       console.error('useTasks: Error reordering sections:', e.message);
-      refetchSections();
+      invalidateSectionsQueries(); // Revert optimistic update on error
     } finally {
       setTimeout(() => {
         updatedIds.forEach(id => inFlightUpdatesRef.current.delete(id));
       }, 1500);
     }
-  }, [userId, sections, queryClient, refetchSections]);
+  }, [userId, sections, queryClient, invalidateSectionsQueries]);
 
   const updateTaskParentAndOrder = useCallback(async (activeId: string, newParentId: string | null, newSectionId: string | null, overId: string | null, isDraggingDown: boolean) => {
     if (!userId) {
@@ -806,25 +943,26 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
         const newInstanceData: Omit<Task, 'category_color'> = {
             id: newInstanceId,
             user_id: userId,
-            description: updates.description !== undefined ? updates.description : virtualTask.description,
-            status: updates.status ?? virtualTask.status,
-            recurring_type: 'none' as const,
-            created_at: virtualTask.created_at,
+            description: virtualTask.description,
+            status: virtualTask.status,
+            recurring_type: 'none' as const, // New instance is no longer recurring
+            created_at: virtualTask.created_at, // Keep original creation date for consistency
             updated_at: new Date().toISOString(),
-            completed_at: (updates.status === 'completed' || updates.status === 'archived') ? new Date().toISOString() : null,
-            category: updates.category !== undefined ? updates.category : virtualTask.category,
-            priority: updates.priority !== undefined ? updates.priority : virtualTask.priority,
-            due_date: updates.due_date !== undefined ? updates.due_date : virtualTask.due_date,
-            notes: updates.notes !== undefined ? updates.notes : virtualTask.notes,
-            remind_at: updates.remind_at !== undefined ? updates.remind_at : virtualTask.remind_at,
+            completed_at: null, // New instance is not completed
+            category: virtualTask.category,
+            priority: virtualTask.priority,
+            due_date: virtualTask.due_date,
+            notes: virtualTask.notes,
+            remind_at: virtualTask.remind_at,
             section_id: newSectionId,
-            order: virtualTask.order,
+            order: virtualTask.order, // Placeholder order
             original_task_id: virtualTask.original_task_id || virtualTask.id.replace(/^virtual-/, '').split(/-\d{4}-\d{2}-\d{2}$/)[0],
             parent_task_id: virtualTask.parent_task_id,
-            link: updates.link !== undefined ? updates.link : virtualTask.link,
-            image_url: updates.image_url !== undefined ? updates.image_url : virtualTask.image_url,
+            link: virtualTask.link,
+            image_url: virtualTask.image_url,
         };
 
+        // Optimistic update for new instance
         queryClient.setQueryData(['tasks', userId], (oldTasks: Task[] | undefined) => {
             return oldTasks ? [...oldTasks, { ...newInstanceData, category_color: virtualTask.category_color }] : [{ ...newInstanceData, category_color: virtualTask.category_color }];
         });
@@ -838,7 +976,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
         if (insertError) {
             console.error('[DnD Error] Failed to insert new task instance:', insertError);
             showError('Failed to create an instance of the recurring task.');
-            invalidateTasksQueries();
+            invalidateTasksQueries(); // Revert optimistic update
             return;
         }
         showSuccess('Task created from recurring template!');
@@ -847,7 +985,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
             const d = parseISO(dbTask.remind_at);
             if (isValid(d)) addReminder(dbTask.id, `Reminder: ${dbTask.description}`, d);
         }
-        return;
+        return; // Exit early as new instance is handled
     } else {
         activeTask = processedTasks.find(t => t.id === finalActiveId);
     }
@@ -909,6 +1047,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
             updatedTasksMap.set(update.id, { ...taskToUpdate, ...update });
         }
     });
+    // Optimistic update
     queryClient.setQueryData(['tasks', userId], Array.from(updatedTasksMap.values()));
 
     const updatedIds = updatesForDb.map(t => t.id!);
@@ -922,11 +1061,11 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
             }
         }
         showSuccess('Task moved!');
-        invalidateTasksQueries();
+        invalidateTasksQueries(); // Invalidate to ensure consistency
     } catch (e: any) {
         showError(`Failed to move task: ${e.message}`);
         console.error('useTasks: Error moving task:', e.message);
-        invalidateTasksQueries();
+        invalidateTasksQueries(); // Revert optimistic update on error
     } finally {
       setTimeout(() => {
         updatedIds.forEach(id => inFlightUpdatesRef.current.delete(id));
@@ -939,8 +1078,9 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
 
     if (viewMode === 'daily') {
       filtered = filtered.filter(task => {
-        if ((task.status === 'completed' || task.status === 'archived') && task.completed_at) {
-            const completedAtDate = new Date(task.completed_at);
+        // Condition 1: Was completed or archived today (based on local date part)
+        if ((task.status === 'completed' || task.status === 'archived') && task.completed_at) { // Use completed_at
+            const completedAtDate = new Date(task.completed_at); // Interprets UTC string in local timezone
             
             const isCompletedOnCurrentDate = (
                 isValid(completedAtDate) &&
@@ -949,19 +1089,23 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
                 completedAtDate.getDate() === effectiveCurrentDate.getDate()
             );
             
+            console.log(`[TasksForToday Filter] Task: ${task.description}, Status: ${task.status}, Completed: ${task.completed_at}, CompletedAtLocal: ${completedAtDate.toLocaleString()}, CurrentDateLocal: ${effectiveCurrentDate.toLocaleString()}, IsCompletedOnCurrentDate: ${isCompletedOnCurrentDate}`);
             if (isCompletedOnCurrentDate) {
                 return true;
             }
         }
 
+        // Condition 2: Is a relevant 'to-do' task
         if (task.status === 'to-do') {
             const createdAt = startOfDay(parseISO(task.created_at));
             const dueDate = task.due_date ? startOfDay(parseISO(task.due_date)) : null;
 
+            // Due on or before today
             if (dueDate && !isAfter(dueDate, todayStart)) {
                 return true;
             }
             
+            // No due date, created on or before today
             if (!dueDate && !isAfter(createdAt, todayStart)) {
                 return true;
             }
@@ -973,7 +1117,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
 
     if (searchFilter) {
       filtered = filtered.filter(task =>
-        task.description?.toLowerCase().includes(searchFilter.toLowerCase()) ||
+        task.description?.toLowerCase().includes(searchFilter.toLowerCase()) || // Added null check
         task.notes?.toLowerCase().includes(searchFilter.toLowerCase()) ||
         task.link?.toLowerCase().includes(searchFilter.toLowerCase())
       );
@@ -1012,9 +1156,10 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
 
       filtered = filtered.filter(task => {
         if (!task.due_date) {
-          return true;
+          return true; // Always show tasks without a due date
         }
         const dueDate = startOfDay(parseISO(task.due_date));
+        // Show if due date is today or in the past, or within the visibility window
         return !isAfter(dueDate, futureLimit);
       });
     }
@@ -1100,14 +1245,122 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     return null;
   }, [processedTasks, sections, userSettings?.focused_task_id, doTodayOffIds]);
 
+  const toggleDoToday = useCallback(async (task: Task) => {
+    if (!userId) {
+      console.log("[Do Today Debug] User not authenticated.");
+      showError('User not authenticated.');
+      return;
+    }
+    const taskIdToLog = task.original_task_id || task.id;
+    const formattedDate = format(effectiveCurrentDate, 'yyyy-MM-dd');
+    const isCurrentlyOff = doTodayOffIds.has(taskIdToLog); // Corrected logic: `doTodayOffIds` stores tasks that are *off* for today
+
+    console.log(`[Do Today Debug] Toggling task ${taskIdToLog}. Currently OFF: ${isCurrentlyOff}`);
+
+    // Optimistic update
+    queryClient.setQueryData(['do_today_off_log', userId, formattedDate], (oldSet: Set<string> | undefined) => {
+        const newSet = new Set(oldSet || []);
+        if (isCurrentlyOff) { // If it was OFF, we're turning it ON (remove from off_log)
+            newSet.delete(taskIdToLog);
+            console.log(`[Do Today Debug] Optimistically removing ${taskIdToLog} from off_log.`);
+        } else { // If it was ON, we're turning it OFF (add to off_log)
+            newSet.add(taskIdToLog);
+            console.log(`[Do Today Debug] Optimistically adding ${taskIdToLog} to off_log.`);
+        }
+        return newSet;
+    });
+
+    try {
+        if (isCurrentlyOff) { // If it was OFF, we're turning it ON (delete from off_log)
+            const { error } = await supabase
+                .from('do_today_off_log')
+                .delete()
+                .eq('user_id', userId)
+                .eq('task_id', taskIdToLog)
+                .eq('off_date', formattedDate);
+            if (error) throw error;
+            console.log(`[Do Today Debug] Supabase: Deleted ${taskIdToLog} from do_today_off_log.`);
+        } else { // If it was ON, we're turning it OFF (insert into off_log)
+            const { error } = await supabase
+                .from('do_today_off_log')
+                .insert({ user_id: userId, task_id: taskIdToLog, off_date: formattedDate });
+            if (error) throw error;
+            console.log(`[Do Today Debug] Supabase: Inserted ${taskIdToLog} into do_today_off_log.`);
+        }
+        // No success toast here, as it's a quick toggle
+        invalidateTasksQueries(); // Invalidate tasks to re-evaluate `isDoToday` in filteredTasks
+        queryClient.invalidateQueries({ queryKey: ['do_today_off_log', userId, formattedDate] }); // Invalidate specific do_today_off_log query
+        console.log(`[Do Today Debug] Queries invalidated.`);
+    } catch (e: any) {
+        showError("Failed to sync 'Do Today' setting.");
+        console.error("[Do Today Debug] Error toggling Do Today:", e);
+        invalidateTasksQueries(); // Revert optimistic update on error
+        queryClient.invalidateQueries({ queryKey: ['do_today_off_log', userId, formattedDate] }); // Revert optimistic update on error
+    }
+  }, [userId, effectiveCurrentDate, doTodayOffIds, queryClient, invalidateTasksQueries]);
+
+  const toggleAllDoToday = useCallback(async () => {
+    if (!userId) return;
+
+    const nonRecurringTasks = finalFilteredTasks.filter(t => t.recurring_type === 'none');
+    if (nonRecurringTasks.length === 0) {
+      showSuccess("No non-recurring tasks to toggle.");
+      return;
+    }
+
+    const nonRecurringTaskIds = nonRecurringTasks.map(t => t.original_task_id || t.id);
+    const currentlyOnCount = nonRecurringTasks.filter(t => !doTodayOffIds.has(t.original_task_id || t.id)).length;
+    const turnAllOff = currentlyOnCount > nonRecurringTasks.length / 2; // If more than half are ON, turn all OFF
+
+    const formattedDate = format(effectiveCurrentDate, 'yyyy-MM-dd');
+    
+    // Optimistic update
+    queryClient.setQueryData(['do_today_off_log', userId, formattedDate], (oldSet: Set<string> | undefined) => {
+        const newSet = new Set(oldSet || []);
+        if (turnAllOff) {
+            nonRecurringTaskIds.forEach(id => newSet.add(id));
+        } else {
+            nonRecurringTaskIds.forEach(id => newSet.delete(id));
+        }
+        return newSet;
+    });
+
+    try {
+        // Always delete all for the day first to simplify logic
+        await supabase.from('do_today_off_log').delete().eq('user_id', userId).eq('off_date', formattedDate);
+
+        if (turnAllOff) {
+            const recordsToInsert = nonRecurringTaskIds.map(taskId => ({ user_id: userId, task_id: taskId, off_date: formattedDate }));
+            if (recordsToInsert.length > 0) {
+                const { error } = await supabase.from('do_today_off_log').insert(recordsToInsert);
+                if (error) throw error;
+            }
+            showSuccess("All tasks toggled off for today.");
+        } else {
+            showSuccess("All tasks toggled on for today.");
+        }
+        invalidateTasksQueries(); // Invalidate tasks to re-evaluate `isDoToday` in filteredTasks
+        queryClient.invalidateQueries({ queryKey: ['do_today_off_log', userId, formattedDate] }); // Invalidate specific do_today_off_log query
+    } catch (e: any) {
+        showError("Failed to sync 'Do Today' settings.");
+        console.error("Error toggling all Do Today:", e);
+        invalidateTasksQueries(); // Revert optimistic update on error
+        queryClient.invalidateQueries({ queryKey: ['do_today_off_log', userId, formattedDate] }); // Revert optimistic update on error
+    }
+  }, [userId, finalFilteredTasks, doTodayOffIds, effectiveCurrentDate, queryClient, invalidateTasksQueries]);
+
   const dailyProgress = useMemo(() => {
     if (viewMode !== 'daily') {
       return { totalPendingCount: 0, completedCount: 0, overdueCount: 0 };
     }
 
+    console.log("Daily Progress Calculation for:", format(todayStart, 'yyyy-MM-dd'));
+    console.log("Processed Tasks count:", processedTasks.length);
+
     const tasksForToday = processedTasks.filter(task => {
-        if ((task.status === 'completed' || task.status === 'archived') && task.completed_at) {
-            const completedAtDate = new Date(task.completed_at);
+        // Condition 1: Was completed or archived today (based on local date part)
+        if ((task.status === 'completed' || task.status === 'archived') && task.completed_at) { // Use completed_at
+            const completedAtDate = new Date(task.completed_at); // Interprets UTC string in local timezone
             
             const isCompletedOnCurrentDate = (
                 isValid(completedAtDate) &&
@@ -1116,19 +1369,23 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
                 completedAtDate.getDate() === effectiveCurrentDate.getDate()
             );
             
+            console.log(`[TasksForToday Filter] Task: ${task.description}, Status: ${task.status}, Completed: ${task.completed_at}, CompletedAtLocal: ${completedAtDate.toLocaleString()}, CurrentDateLocal: ${effectiveCurrentDate.toLocaleString()}, IsCompletedOnCurrentDate: ${isCompletedOnCurrentDate}`);
             if (isCompletedOnCurrentDate) {
                 return true;
             }
         }
 
+        // Condition 2: Is a relevant 'to-do' task
         if (task.status === 'to-do') {
             const createdAt = startOfDay(parseISO(task.created_at));
             const dueDate = task.due_date ? startOfDay(parseISO(task.due_date)) : null;
 
+            // Due on or before today
             if (dueDate && !isAfter(dueDate, todayStart)) {
                 return true;
             }
             
+            // No due date, created on or before today
             if (!dueDate && !isAfter(createdAt, todayStart)) {
                 return true;
             }
@@ -1137,10 +1394,12 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
         return false;
     });
 
+    console.log("Tasks relevant for today's progress (tasksForToday count):", tasksForToday.length);
+
     const focusModeSectionIds = new Set(sections.filter(s => s.include_in_focus_mode).map(s => s.id));
 
     const focusTasks = tasksForToday.filter(t => {
-      if (t.parent_task_id !== null) return false;
+      if (t.parent_task_id !== null) return false; // Only top-level tasks
 
       const isInFocusArea = t.section_id === null || focusModeSectionIds.has(t.section_id);
       const isDoToday = t.recurring_type !== 'none' || !doTodayOffIds.has(t.original_task_id || t.id);
@@ -1148,8 +1407,10 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
       return isInFocusArea && isDoToday;
     });
 
+    console.log("Focus tasks count:", focusTasks.length);
+
     const completedCount = focusTasks.filter(t => {
-      const completedAtDate = t.completed_at ? new Date(t.completed_at) : null;
+      const completedAtDate = t.completed_at ? new Date(t.completed_at) : null; // Use completed_at
       
       const isCompletedOnCurrentDate = (
           completedAtDate && isValid(completedAtDate) &&
@@ -1158,14 +1419,20 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
           completedAtDate.getDate() === effectiveCurrentDate.getDate()
       );
 
+      // Count tasks with status 'completed' OR 'archived' if completed today
       const isCompletedOrArchivedToday = (t.status === 'completed' || t.status === 'archived') && isCompletedOnCurrentDate;
+      if (isCompletedOrArchivedToday) {
+        console.log(`[Daily Progress Debug] Counting completed/archived task: ${t.description} (ID: ${t.id}, Status: ${t.status}, Completed: ${t.completed_at}), CompletedAtLocal: ${completedAtDate?.toLocaleString()}, CurrentDateLocal: ${effectiveCurrentDate.toLocaleString()}, IsCompletedOnCurrentDate: ${isCompletedOnCurrentDate}`);
+      }
       return isCompletedOrArchivedToday;
     }).length;
+    console.log("Completed count (from focusTasks):", completedCount);
     
     const totalPendingCount = focusTasks.filter(t => t.status === 'to-do').length;
+    console.log("Pending count (from focusTasks):", totalPendingCount);
 
     const overdueCount = focusTasks.filter(t => {
-      if (!t.due_date || t.status !== 'to-do') return false;
+      if (!t.due_date || t.status !== 'to-do') return false; // Only count 'to-do' tasks as overdue
       const due = parseISO(t.due_date);
       return isValid(due) && isBefore(startOfDay(due), startOfDay(todayStart));
     }).length;
@@ -1174,12 +1441,13 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
   }, [processedTasks, viewMode, sections, doTodayOffIds, todayStart, effectiveCurrentDate]);
 
   return {
-    tasks: rawTasks,
+    tasks: rawTasks, // Expose rawTasks for direct access if needed, but processedTasks is usually preferred
     processedTasks,
     filteredTasks: finalFilteredTasks,
     nextAvailableTask,
     loading,
-    currentDate: effectiveCurrentDate,
+    currentDate: effectiveCurrentDate, // Expose effectiveCurrentDate
+    setCurrentDate: null, // No longer expose internal setter
     userId,
     handleAddTask,
     updateTask,

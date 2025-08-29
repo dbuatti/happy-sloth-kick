@@ -3,15 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Edit, Target, ListTodo, Clock, Plus, Sparkles, Wind, Home, TreePine, UtensilsCrossed, ScanEye, Armchair, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Task } from '@/hooks/useTasks'; // Only import Task type
+import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import TaskOverviewDialog from './TaskOverviewDialog';
+import { useAuth } from '@/context/AuthContext';
 import { Input } from './ui/input';
 import { suggestTaskDetails } from '@/integrations/supabase/api';
 import { dismissToast, showError, showLoading } from '@/utils/toast';
 import { useNavigate } from 'react-router-dom';
 import PomodoroTimer from './PomodoroTimer';
-import { useTaskSections } from '@/hooks/useTaskSections'; // Import useTaskSections
-import { useTaskCategories } from '@/hooks/useTaskCategories'; // Import useTaskCategories
 
 interface FocusToolsPanelProps {
   nextAvailableTask: Task | null;
@@ -20,7 +19,8 @@ interface FocusToolsPanelProps {
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   onOpenDetail: (task: Task) => void;
   onDeleteTask: (taskId: string) => void;
-  // sections, allCategories are now from hooks, no longer passed as props
+  sections: TaskSection[];
+  allCategories: Category[];
   currentDate: Date;
   handleAddTask: (taskData: any) => Promise<any>;
 }
@@ -32,15 +32,15 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
   updateTask,
   onOpenDetail,
   onDeleteTask,
-  // Removed sections, allCategories from props
+  sections,
+  allCategories,
   currentDate,
   handleAddTask,
 }) => {
+  useAuth(); 
+
   const navigate = useNavigate();
   
-  const { data: sections } = useTaskSections(); // Use useTaskSections hook
-  const { data: allCategories } = useTaskCategories(); // Use useTaskCategories hook
-
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
 

@@ -3,11 +3,9 @@ import { CardContent } from "@/components/ui/card";
 import { useWorkHours, WorkHour } from '@/hooks/useWorkHours';
 import DateNavigator from '@/components/DateNavigator';
 import { useAppointments } from '@/hooks/useAppointments';
-import { Task, useTasks } from '@/hooks/useTasks'; // Only import Task type
+import { useTasks, Task } from '@/hooks/useTasks';
 import { useSettings } from '@/context/SettingsContext';
-import ScheduleGridContent from './ScheduleGridContent';
-import { useTaskSections } from '@/hooks/useTaskSections'; // Import useTaskSections
-import { useTaskCategories } from '@/hooks/useTaskCategories'; // Import useTaskCategories
+import ScheduleGridContent from './ScheduleGridContent'; // Import the new component
 
 interface DailyScheduleViewProps {
   currentDate: Date;
@@ -31,9 +29,9 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
   const { 
     tasks: allTasks,
     filteredTasks: allDayTasks, 
+    allCategories, 
+    sections, 
   } = useTasks({ currentDate, userId: demoUserId });
-  const { data: allCategories } = useTaskCategories(); // Use useTaskCategories hook
-  const { data: sections } = useTaskSections(); // Use useTaskSections hook
   const { settings } = useSettings();
 
   const daysInGrid = useMemo(() => [currentDate], [currentDate]);
@@ -64,10 +62,10 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
         deleteAppointment={deleteAppointment}
         clearDayAppointments={clearDayAppointments}
         batchAddAppointments={batchAddAppointments}
-        allTasks={allTasks as Task[]}
+        allTasks={allTasks as Task[]} // Cast to Task[]
         allDayTasks={allDayTasks}
-        allCategories={allCategories} // Pass from hook
-        sections={sections} // Pass from hook
+        allCategories={allCategories}
+        sections={sections}
         settings={settings}
         isLoading={workHoursLoading || appointmentsLoading}
       />

@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import TaskList from '@/components/TaskList';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import TaskOverviewDialog from '@/components/TaskOverviewDialog';
-import { useTasks, Task } from '@/hooks/useTasks'; // Only import Task type
+import { useTasks, Task } from '@/hooks/useTasks';
 import { useAuth } from '@/context/AuthContext';
 import { addDays, startOfDay } from 'date-fns';
 import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
@@ -17,9 +17,6 @@ import { Appointment } from '@/hooks/useAppointments';
 import FullScreenFocusView from '@/components/FullScreenFocusView';
 import { AnimatePresence } from 'framer-motion';
 import { useSound } from '@/context/SoundContext';
-import { useTaskSections } from '@/hooks/useTaskSections'; // Import useTaskSections
-import { useTaskCategories } from '@/hooks/useTaskCategories'; // Import useTaskCategories
-import { useDoTodayLog } from '@/hooks/useDoTodayLog'; // Import useDoTodayLog
 
 
 interface DailyTasksPageProps {
@@ -31,6 +28,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   const { user } = useAuth();
   const { playSound } = useSound();
 
+  // Manage currentDate state locally in DailyTasksPage
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const {
@@ -41,6 +39,8 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     updateTask,
     deleteTask,
     loading: tasksLoading,
+    sections,
+    allCategories,
     handleAddTask,
     bulkUpdateTasks,
     archiveAllCompletedTasks,
@@ -61,13 +61,14 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     setPriorityFilter,
     sectionFilter,
     setSectionFilter,
+    // currentDate is now managed here, so remove from useTasks destructuring
+    // setCurrentDate is also managed here
     setFocusTask,
+    doTodayOffIds,
+    toggleDoToday,
+    toggleAllDoToday,
     dailyProgress,
-  } = useTasks({ viewMode: 'daily', userId: demoUserId, currentDate: currentDate });
-
-  const { data: sections } = useTaskSections(); // Use useTaskSections hook
-  const { data: allCategories } = useTaskCategories(); // Use useTaskCategories hook
-  const { doTodayOffIds, toggleDoToday, toggleAllDoToday } = useDoTodayLog({ currentDate, userId: demoUserId }); // Use useDoTodayLog hook
+  } = useTasks({ viewMode: 'daily', userId: demoUserId, currentDate: currentDate }); // Pass the stable currentDate
 
   const { appointments: allAppointments } = useAllAppointments();
 
@@ -184,9 +185,10 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
           <DailyTasksHeader
             currentDate={currentDate}
             setCurrentDate={setCurrentDate}
-            tasks={tasks as Task[]}
+            tasks={tasks as Task[]} // Cast to Task[]
             filteredTasks={filteredTasks}
-            // sections, allCategories, doTodayOffIds are now from hooks
+            sections={sections}
+            allCategories={allCategories}
             handleAddTask={handleAddTask}
             userId={user?.id || null}
             setIsFocusPanelOpen={setIsFocusPanelOpen}
@@ -222,7 +224,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
             <CardContent className="p-4 flex-1 flex flex-col">
               <div className="flex-1 overflow-y-auto">
                 <TaskList
-                  tasks={tasks as Task[]}
+                  tasks={tasks as Task[]} // Cast to Task[]
                   processedTasks={processedTasks}
                   filteredTasks={filteredTasks}
                   loading={tasksLoading}
@@ -231,18 +233,18 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
                   deleteTask={deleteTask}
                   bulkUpdateTasks={bulkUpdateTasks}
                   markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
-                  sections={sections} // Pass from hook
+                  sections={sections}
                   createSection={createSection}
                   updateSection={updateSection}
                   deleteSection={deleteSection}
                   updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
                   updateTaskParentAndOrder={updateTaskParentAndOrder}
                   reorderSections={reorderSections}
-                  allCategories={allCategories} // Pass from hook
+                  allCategories={allCategories}
                   setIsAddTaskOpen={() => {}}
                   onOpenOverview={handleOpenOverview}
                   currentDate={currentDate}
-                  setCurrentDate={setCurrentDate}
+                  setCurrentDate={setCurrentDate} // Pass setCurrentDate to TaskList
                   expandedSections={expandedSections}
                   toggleSection={toggleSection}
                   toggleAllSections={toggleAllSections}
@@ -280,9 +282,9 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
           onEditClick={handleEditTaskFromOverview}
           onUpdate={updateTask}
           onDelete={deleteTask}
-          sections={sections} // Pass from hook
-          allCategories={allCategories} // Pass from hook
-          allTasks={tasks as Task[]}
+          sections={sections}
+          allCategories={allCategories}
+          allTasks={tasks as Task[]} // Cast to Task[]
         />
       )}
 
@@ -293,13 +295,13 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
           onClose={() => setIsTaskDetailOpen(false)}
           onUpdate={updateTask}
           onDelete={deleteTask}
-          sections={sections} // Pass from hook
-          allCategories={allCategories} // Pass from hook
+          sections={sections}
+          allCategories={allCategories}
           createSection={createSection}
           updateSection={updateSection}
           deleteSection={deleteSection}
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-          allTasks={tasks as Task[]}
+          allTasks={tasks as Task[]} // Cast to Task[]
         />
       )}
 
@@ -311,8 +313,8 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         filteredTasks={filteredTasks}
         updateTask={updateTask}
         onDeleteTask={deleteTask}
-        sections={sections} // Pass from hook
-        allCategories={allCategories} // Pass from hook
+        sections={sections}
+        allCategories={allCategories}
         onOpenDetail={handleOpenDetail}
         handleAddTask={handleAddTask}
         currentDate={currentDate}
@@ -339,8 +341,8 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
               setIsAddTaskDialogOpen(false);
               setPrefilledTaskData(null);
             }}
-            sections={sections} // Pass from hook
-            allCategories={allCategories} // Pass from hook
+            sections={sections}
+            allCategories={allCategories}
             currentDate={currentDate}
             createSection={createSection}
             updateSection={updateSection}
@@ -354,7 +356,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
       <AnimatePresence>
         {isFocusViewOpen && nextAvailableTask && (
           <FullScreenFocusView
-            taskDescription={nextAvailableTask.description || ''}
+            taskDescription={nextAvailableTask.description || ''} // Ensure description is string
             onClose={() => setIsFocusViewOpen(false)}
             onMarkDone={handleMarkDoneFromFocusView}
           />

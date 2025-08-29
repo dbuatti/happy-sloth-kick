@@ -1,16 +1,23 @@
 import { Label } from "@/components/ui/label";
 import { FolderOpen, Plus } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+// Removed useAuth as it's not directly used in this component
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import ManageSectionsDialog from './ManageSectionsDialog';
-import { TaskSection } from '@/hooks/useTasks'; // Import TaskSection type
-import { useTaskSections } from '@/hooks/useTaskSections'; // Import useTaskSections
+import ManageSectionsDialog from './ManageSectionsDialog'; // Import the new dialog
+
+interface TaskSection {
+  id: string;
+  name: string;
+  user_id: string;
+  order: number | null;
+  include_in_focus_mode: boolean; // Added for consistency
+}
 
 interface SectionSelectorProps {
   value: string | null;
   onChange: (sectionId: string | null) => void;
-  sections: TaskSection[]; // Still passed as prop for initial display
+  sections: TaskSection[];
   createSection: (name: string) => Promise<void>;
   updateSection: (sectionId: string, newName: string) => Promise<void>;
   deleteSection: (sectionId: string) => Promise<void>;
@@ -27,7 +34,6 @@ const SectionSelector: React.FC<SectionSelectorProps> = ({
   updateSectionIncludeInFocusMode,
 }) => {
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
-  const { refetch: refetchSections } = useTaskSections(); // Use refetch from useTaskSections
 
   const selectedSection = sections.find(sec => sec.id === value);
 
@@ -64,10 +70,7 @@ const SectionSelector: React.FC<SectionSelectorProps> = ({
 
       <ManageSectionsDialog
         isOpen={isManageSectionsOpen}
-        onClose={() => {
-          setIsManageSectionsOpen(false);
-          refetchSections(); // Refetch sections when dialog closes
-        }}
+        onClose={() => setIsManageSectionsOpen(false)}
         sections={sections}
         createSection={createSection}
         updateSection={updateSection}
