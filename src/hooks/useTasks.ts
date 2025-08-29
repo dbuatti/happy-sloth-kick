@@ -519,7 +519,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
 
       if (newStatus && (newStatus === 'completed' || newStatus === 'archived') && !(currentStatus === 'completed' || currentStatus === 'archived')) {
         completedAtUpdate = now; // Set completed_at if status changes to completed/archived
-      } else if (newStatus && !(newStatus === 'completed' || newStatus === 'archived') && (currentStatus === 'completed' || currentStatus === 'archived')) {
+      } else if (newStatus && (newStatus === 'to-do' || newStatus === 'skipped') && (currentStatus === 'completed' || currentStatus === 'archived')) { // Refined condition
         completedAtUpdate = null; // Clear completed_at if status changes from completed/archived
       }
 
@@ -580,7 +580,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
             await supabase.storage.from('taskimages').remove([imagePath]);
           }
         } catch (imgErr) {
-          console.error("Failed to delete task image, but proceeding with task deletion:", imgErr);
+          console.error("Failed to delete old image, but proceeding with task deletion:", imgErr);
         }
       }
 
@@ -624,12 +624,12 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     }
 
     const now = new Date().toISOString();
-    const tasksToUpdate = processedTasks.filter(t => ids.includes(t.id));
+    // Removed unused tasksToUpdate variable
     
     const updatesWithCompletedAt = { ...updates };
     if (updates.status && (updates.status === 'completed' || updates.status === 'archived')) {
       updatesWithCompletedAt.completed_at = now;
-    } else if (updates.status && !(updates.status === 'completed' || updates.status === 'archived')) {
+    } else if (updates.status && (updates.status === 'to-do' || updates.status === 'skipped')) { // Refined condition
       updatesWithCompletedAt.completed_at = null;
     }
 
@@ -658,7 +658,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
         ids.forEach(id => inFlightUpdatesRef.current.delete(id));
       }, 1500);
     }
-  }, [userId, processedTasks, queryClient, invalidateTasksQueries]);
+  }, [userId, queryClient, invalidateTasksQueries]);
 
   const bulkDeleteTasks = useCallback(async (ids: string[]) => {
     if (!userId) {
