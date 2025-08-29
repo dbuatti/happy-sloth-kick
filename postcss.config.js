@@ -5,9 +5,9 @@ import tailwindcssNesting from 'tailwindcss/nesting';
 
 export default {
   plugins: {
-    'postcss-import': {},
-    'tailwindcss/nesting': {},
-    tailwindcss: {},
-    autoprefixer: {},
+    'postcss-import': postcssImport,
+    'tailwindcss/nesting': tailwindcssNesting,
+    tailwindcss: tailwindcss,
+    autoprefixer: autoprefixer,
   },
 };
