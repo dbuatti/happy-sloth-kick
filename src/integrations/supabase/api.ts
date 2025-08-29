@@ -101,15 +101,23 @@ export const suggestTaskDetails = async (description: string, categories: { id: 
 };
 
 export const getDailyBriefing = async (userId: string, date: Date) => {
-  // ... (existing implementation)
   const API_URL = `https://gdmjttmjjhadltaihpgr.supabase.co/functions/v1/daily-briefing`; // Hardcoded URL
   const localDayStart = startOfDay(date);
   const localDayEnd = addDays(localDayStart, 1); // End of day is start of next day for range
+
   try {
+    const session = await supabase.auth.getSession();
+    const token = session.data?.session?.access_token;
+
+    if (!token) {
+      throw new Error('No access token found. User may not be signed in.');
+    }
+
     const response = await fetch(API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`, // Attach the JWT
       },
       body: JSON.stringify({
         userId,
@@ -120,6 +128,7 @@ export const getDailyBriefing = async (userId: string, date: Date) => {
 
     if (!response.ok) {
       const errorData = await response.json();
+      console.error('Daily Briefing API Error:', errorData);
       throw new Error(errorData.error || 'Failed to get daily briefing.');
     }
 
@@ -127,6 +136,6 @@ export const getDailyBriefing = async (userId: string, date: Date) => {
     return data.briefing;
   } catch (error) {
     console.error('Error fetching daily briefing:', error);
-    return null;
+    throw error;
   }
 };

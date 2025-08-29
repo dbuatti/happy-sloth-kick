@@ -52,6 +52,9 @@ serve(async (req: Request) => {
     const { userId, localDayStartISO, localDayEndISO } = await req.json();
     console.log("Daily Briefing: Received request:", { userId, localDayStartISO, localDayEndISO });
 
+    // Log all request headers for debugging
+    console.log("Daily Briefing: Request Headers:", req.headers);
+
     // Validate required input parameters
     if (!userId || !localDayStartISO || !localDayEndISO) {
       return new Response(JSON.stringify({ error: 'User ID and local day boundaries are required.' }), {
@@ -207,7 +210,7 @@ serve(async (req: Request) => {
   } catch (error: any) {
     // Catch and log any errors during the function execution
     console.error("Error in Edge Function 'daily-briefing' (outer catch):", error);
-    return new Response(JSON.stringify({ error: error.message || 'An unexpected error occurred in the Edge Function.' }), {
+    return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
     });
