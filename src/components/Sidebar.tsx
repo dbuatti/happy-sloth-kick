@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -45,18 +45,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false }) =>
   const { theme, setTheme } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { settings } = useSettings();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Add console log here to see what theme is being set
-  useEffect(() => {
-    if (mounted) {
-      console.log("Current theme from next-themes (Sidebar):", theme);
-    }
-  }, [theme, mounted]);
 
   const navItems = [
     {

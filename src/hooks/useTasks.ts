@@ -517,15 +517,11 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
       
       let completedAtUpdate: string | null | undefined = originalTaskState.completed_at;
 
-      const wasCompletedOrArchived = currentStatus === 'completed' || currentStatus === 'archived';
-      const willBeCompletedOrArchived = newStatus === 'completed' || newStatus === 'archived';
-
-      if (willBeCompletedOrArchived && !wasCompletedOrArchived) {
-        completedAtUpdate = now; // Task is becoming completed/archived
-      } else if (!willBeCompletedOrArchived && wasCompletedOrArchived) {
-        completedAtUpdate = null; // Task is no longer completed/archived
+      if (newStatus && (newStatus === 'completed' || newStatus === 'archived') && !(currentStatus === 'completed' || currentStatus === 'archived')) {
+        completedAtUpdate = now; // Set completed_at if status changes to completed/archived
+      } else if (newStatus && !(newStatus === 'completed' || newStatus === 'archived') && (currentStatus === 'completed' || currentStatus === 'archived')) {
+        completedAtUpdate = null; // Clear completed_at if status changes from completed/archived
       }
-      // If both are true or both are false, completedAtUpdate retains its original value.
 
       const finalUpdates = { ...updates, completed_at: completedAtUpdate };
 
@@ -628,11 +624,12 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     }
 
     const now = new Date().toISOString();
+    const tasksToUpdate = processedTasks.filter(t => ids.includes(t.id));
     
     const updatesWithCompletedAt = { ...updates };
     if (updates.status && (updates.status === 'completed' || updates.status === 'archived')) {
       updatesWithCompletedAt.completed_at = now;
-    } else if (updates.status && !['completed', 'archived'].includes(updates.status)) { // Corrected type comparison
+    } else if (updates.status && !(updates.status === 'completed' || updates.status === 'archived')) {
       updatesWithCompletedAt.completed_at = null;
     }
 
@@ -661,7 +658,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
         ids.forEach(id => inFlightUpdatesRef.current.delete(id));
       }, 1500);
     }
-  }, [userId, queryClient, invalidateTasksQueries]);
+  }, [userId, processedTasks, queryClient, invalidateTasksQueries]);
 
   const bulkDeleteTasks = useCallback(async (ids: string[]) => {
     if (!userId) {
@@ -907,7 +904,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     queryClient.setQueryData(['task_sections', userId], newOrderedSections);
 
     try {
-      const { error } = await supabase.rpc('update_sections_order', { updates: updates });
+      const { error } = await supabase.from('task_sections').upsert(updates, { onConflict: 'id' });
       if (error) throw error;
       showSuccess('Sections reordered!');
       invalidateSectionsQueries(); // Invalidate to ensure consistency
@@ -1014,16 +1011,14 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
 
     let overIndex = overId ? destinationSiblings.findIndex(t => t.id === overId) : -1;
     
-    let insertIndex = overIndex;
-    if (overIndex === -1) { // Dropped into empty space or at the very end
-        insertIndex = destinationSiblings.length;
-    } else if (isDraggingDown) { // Dropped over an item, dragging down
-        insertIndex = overIndex + 1;
+    if (overIndex !== -1 && isDraggingDown) {
+        overIndex += 1;
     }
-    // If dragging up, insertIndex remains overIndex
 
+    const newIndex = overIndex !== -1 ? overIndex : destinationSiblings.length;
+    
     const newDestinationSiblings = [...destinationSiblings];
-    newDestinationSiblings.splice(insertIndex, 0, { ...activeTask, parent_task_id: newParentId, section_id: newSectionId });
+    newDestinationSiblings.splice(newIndex, 0, { ...activeTask, parent_task_id: newParentId, section_id: newSectionId });
 
     newDestinationSiblings.forEach((task, index) => {
         updatesForDb.push({

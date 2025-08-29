@@ -28,7 +28,6 @@ import Analytics from "./pages/Analytics";
 import Archive from "./pages/Archive";
 import SleepPage from "./pages/SleepPage";
 import CommandPalette from "./components/CommandPalette";
-import { ThemeProvider } from 'next-themes';
 
 const queryClient = new QueryClient();
 
@@ -142,9 +141,7 @@ const App = () => {
             <TimerProvider>
               <ReminderProvider>
                 <BrowserRouter>
-                  <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
-                    <AppContent />
-                  </ThemeProvider>
+                  <AppContent />
                 </BrowserRouter>
               </ReminderProvider>
             </TimerProvider>

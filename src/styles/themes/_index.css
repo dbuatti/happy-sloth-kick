@@ -1,2 +1,5 @@
-/* src/styles/themes/_index.css */
-/* This file is now empty as its content has been moved to src/globals.css */
+@import './ocean-breeze.css';
+@import './sunset-glow.css';
+@import './forest-deep.css';
+@import './midnight-serenity.css';
+@import './desert-bloom.css';

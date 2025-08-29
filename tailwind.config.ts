@@ -19,8 +19,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
-        bubbly: ['Fredoka', 'sans-serif'],
+        sans: ['Inter', 'sans-serif'], // Changed font to Inter
+        bubbly: ['Fredoka', 'sans-serif'], // Added new bubbly font
       },
       colors: {
         border: "hsl(var(--border))",
@@ -66,13 +66,15 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        // New semantic colors for consistency
         'status-overdue': 'hsl(var(--destructive))',
         'status-due-today': 'hsl(var(--accent))',
-        'status-completed': 'hsl(var(--status-completed))',
+        'status-completed': 'hsl(var(--status-completed))', // New color for completed status
         'priority-low': 'hsl(var(--priority-low))',
         'priority-medium': 'hsl(var(--priority-medium))',
         'priority-high': 'hsl(var(--priority-high))',
         'priority-urgent': 'hsl(var(--priority-urgent))',
+        // New colors for status borders
         'border-status-due-today': 'hsl(var(--border-status-due-today))',
         'border-status-overdue': 'hsl(var(--border-status-overdue))',
       },
@@ -80,7 +82,7 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 4px)",
         sm: "calc(var(--radius) - 8px)",
-        '2xl': '1.5rem',
+        '2xl': '1.5rem', // Added 2xl radius
       },
       keyframes: {
         "accordion-down": {
@@ -104,6 +106,7 @@ export default {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
       },
+      // New shadow utilities
       boxShadow: {
         'sm': 'var(--shadow-sm)',
         'DEFAULT': 'var(--shadow)',
@@ -114,29 +117,4 @@ export default {
     },
   },
   plugins: [require("tailwindcss-animate")],
-  safelist: [
-    // Explicitly safelist theme classes
-    'theme-ocean-breeze',
-    'theme-sunset-glow',
-    'theme-forest-deep',
-    'theme-midnight-serenity',
-    'theme-desert-bloom',
-    // Safelist common color utility classes for each theme
-    {
-      pattern: /(bg|text|border)-(primary|secondary|accent|muted|destructive|card|popover|foreground|background)/,
-      variants: ['dark', 'theme-ocean-breeze', 'theme-sunset-glow', 'theme-forest-deep', 'theme-midnight-serenity', 'theme-desert-bloom'],
-    },
-    {
-      pattern: /(bg|text|border)-(priority-low|priority-medium|priority-high|priority-urgent|status-overdue|status-due-today|status-completed)/,
-      variants: ['dark', 'theme-ocean-breeze', 'theme-sunset-glow', 'theme-forest-deep', 'theme-midnight-serenity', 'theme-desert-bloom'],
-    },
-    {
-      pattern: /from-\[hsl\(var\(--gradient-start-(light|dark)\)\)\]/,
-      variants: ['dark', 'theme-ocean-breeze', 'theme-sunset-glow', 'theme-forest-deep', 'theme-midnight-serenity', 'theme-desert-bloom'],
-    },
-    {
-      pattern: /to-\[hsl\(var\(--gradient-end-(light|dark)\)\)\]/,
-      variants: ['dark', 'theme-ocean-breeze', 'theme-sunset-glow', 'theme-forest-deep', 'theme-midnight-serenity', 'theme-desert-bloom'],
-    },
-  ],
 } satisfies Config;
