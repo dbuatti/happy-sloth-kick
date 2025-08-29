@@ -3,7 +3,4 @@
 @import './styles/animations.css';
 @import './styles/utilities.css';
 @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&display=swap');
-
-@layer base {
-  @import './styles/themes/_index.css';
-}
+@import './styles/themes/_index.css';

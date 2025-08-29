@@ -1,3 +1,4 @@
+/*! tailwindcss ignore start */
 /* src/styles/themes/_index.css */
 
 /* Base Light Theme */
@@ -403,3 +404,4 @@
   --gradient-start-dark: 30 20% 20%;
   --gradient-end-dark: 30 20% 30%;
 }
+/*! tailwindcss ignore end */
