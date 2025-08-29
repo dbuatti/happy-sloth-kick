@@ -1,3 +1,7 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
 @import './styles/base.css';
 @import './styles/components.css';
 @import './styles/animations.css';
@@ -305,8 +309,8 @@
   --priority-urgent: 0 70% 50%;
 
   /* Gradient for ADHD Banner */
-  --gradient-start-light: 240 10% 15%;
-  --gradient-end-light: 240 10% 25%;
+  --gradient-start-dark: 240 10% 15%;
+  --gradient-end-dark: 240 10% 25%;
 }
 
 .dark .theme-midnight-serenity {
