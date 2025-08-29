@@ -1,0 +1,45 @@
+@layer base {
+  .'focus-flow' {
+    --background: 200 15% 98%;
+    --foreground: 200 20% 15%;
+    --card: 200 15% 98%;
+    --card-foreground: 200 20% 15%;
+    --popover: 200 15% 98%;
+    --popover-foreground: 200 20% 15%;
+    --primary: 200 60% 35%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 30 40% 75%;
+    --secondary-foreground: 200 20% 15%;
+    --muted: 200 15% 98%;
+    --muted-foreground: 200 10% 45%;
+    --accent: 60 70% 45%;
+    --accent-foreground: 200 20% 15%;
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 200 15% 90%;
+    --input: 200 15% 90%;
+    --ring: 200 20% 20%;
+    --radius: 0.5rem;
+  }
+  .dark .'focus-flow' {
+    --background: 200 25% 12%;
+    --foreground: 200 15% 92%;
+    --card: 200 30% 16%;
+    --card-foreground: 200 15% 92%;
+    --popover: 200 30% 16%;
+    --popover-foreground: 200 15% 92%;
+    --primary: 200 65% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 30 45% 80%;
+    --secondary-foreground: 200 15% 92%;
+    --muted: 200 30% 16%;
+    --muted-foreground: 200 15% 70%;
+    --accent: 60 75% 55%;
+    --accent-foreground: 200 15% 92%;
+    --destructive: 0 75% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 200 30% 25%;
+    --input: 200 30% 25%;
+    --ring: 200 25% 85%;
+  }
+}
