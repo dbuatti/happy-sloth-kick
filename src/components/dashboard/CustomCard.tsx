@@ -1,14 +1,13 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"; // Import Card components
 import { Button } from "@/components/ui/button";
-import { Edit, Save, X, StickyNote, Trash2, Link as LinkIcon } from 'lucide-react'; // Added LinkIcon
-import { useState, useEffect } from 'react'; // Import useState
+import { StickyNote, Trash2, Link as LinkIcon } from 'lucide-react'; // Removed Edit, Save, X
+import { useState, useEffect } from 'react';
 import { useDashboardData, CustomCard as CustomCardType } from '@/hooks/useDashboardData';
 import EditableCard from './EditableCard';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"; // Added Tooltip imports
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface CustomCardProps {
   card: CustomCardType;

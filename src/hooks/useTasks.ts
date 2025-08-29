@@ -517,11 +517,15 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
       
       let completedAtUpdate: string | null | undefined = originalTaskState.completed_at;
 
-      if (newStatus && (newStatus === 'completed' || newStatus === 'archived') && !(currentStatus === 'completed' || currentStatus === 'archived')) {
-        completedAtUpdate = now; // Set completed_at if status changes to completed/archived
-      } else if (newStatus && !(newStatus === 'completed' || newStatus === 'archived') && (currentStatus === 'completed' || currentStatus === 'archived')) {
-        completedAtUpdate = null; // Clear completed_at if status changes from completed/archived
+      const wasCompletedOrArchived = currentStatus === 'completed' || currentStatus === 'archived';
+      const willBeCompletedOrArchived = newStatus === 'completed' || newStatus === 'archived';
+
+      if (willBeCompletedOrArchived && !wasCompletedOrArchived) {
+        completedAtUpdate = now; // Task is becoming completed/archived
+      } else if (!willBeCompletedOrArchived && wasCompletedOrArchived) {
+        completedAtUpdate = null; // Task is no longer completed/archived
       }
+      // If both are true or both are false, completedAtUpdate retains its original value.
 
       const finalUpdates = { ...updates, completed_at: completedAtUpdate };
 
@@ -624,7 +628,6 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     }
 
     const now = new Date().toISOString();
-    const tasksToUpdate = processedTasks.filter(t => ids.includes(t.id));
     
     const updatesWithCompletedAt = { ...updates };
     if (updates.status && (updates.status === 'completed' || updates.status === 'archived')) {
@@ -658,7 +661,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
         ids.forEach(id => inFlightUpdatesRef.current.delete(id));
       }, 1500);
     }
-  }, [userId, processedTasks, queryClient, invalidateTasksQueries]);
+  }, [userId, queryClient, invalidateTasksQueries]);
 
   const bulkDeleteTasks = useCallback(async (ids: string[]) => {
     if (!userId) {
@@ -904,7 +907,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     queryClient.setQueryData(['task_sections', userId], newOrderedSections);
 
     try {
-      const { error } = await supabase.from('task_sections').upsert(updates, { onConflict: 'id' });
+      const { error } = await supabase.rpc('update_sections_order', { updates: updates });
       if (error) throw error;
       showSuccess('Sections reordered!');
       invalidateSectionsQueries(); // Invalidate to ensure consistency
@@ -1015,8 +1018,6 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
         overIndex += 1;
     }
 
-    const newIndex = overIndex !== -1 ? overIndex : destinationSiblings.length;
-    
     const newDestinationSiblings = [...destinationSiblings];
     newDestinationSiblings.splice(newIndex, 0, { ...activeTask, parent_task_id: newParentId, section_id: newSectionId });
 
