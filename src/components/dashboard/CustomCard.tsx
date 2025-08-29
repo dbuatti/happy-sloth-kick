@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { StickyNote, Trash2, Link as LinkIcon } from 'lucide-react'; // Removed Edit, Save, X
+import { StickyNote, Trash2, Link as LinkIcon } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useDashboardData, CustomCard as CustomCardType } from '@/hooks/useDashboardData';
 import EditableCard from './EditableCard';

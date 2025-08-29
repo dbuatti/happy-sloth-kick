@@ -632,7 +632,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     const updatesWithCompletedAt = { ...updates };
     if (updates.status && (updates.status === 'completed' || updates.status === 'archived')) {
       updatesWithCompletedAt.completed_at = now;
-    } else if (updates.status && !(updates.status === 'completed' || updates.status === 'archived')) {
+    } else if (updates.status && !['completed', 'archived'].includes(updates.status)) { // Corrected type comparison
       updatesWithCompletedAt.completed_at = null;
     }
 
