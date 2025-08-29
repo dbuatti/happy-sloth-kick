@@ -1014,12 +1014,16 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
 
     let overIndex = overId ? destinationSiblings.findIndex(t => t.id === overId) : -1;
     
-    if (overIndex !== -1 && isDraggingDown) {
-        overIndex += 1;
+    let insertIndex = overIndex;
+    if (overIndex === -1) { // Dropped into empty space or at the very end
+        insertIndex = destinationSiblings.length;
+    } else if (isDraggingDown) { // Dropped over an item, dragging down
+        insertIndex = overIndex + 1;
     }
+    // If dragging up, insertIndex remains overIndex
 
     const newDestinationSiblings = [...destinationSiblings];
-    newDestinationSiblings.splice(newIndex, 0, { ...activeTask, parent_task_id: newParentId, section_id: newSectionId });
+    newDestinationSiblings.splice(insertIndex, 0, { ...activeTask, parent_task_id: newParentId, section_id: newSectionId });
 
     newDestinationSiblings.forEach((task, index) => {
         updatesForDb.push({
