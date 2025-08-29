@@ -5,7 +5,7 @@ import { Plus, ListTodo, Brain, CheckCircle2, Clock, Target, Edit, Sparkles, Fol
 import DateNavigator from './DateNavigator';
 import TaskFilter from './TaskFilter';
 import { cn } from '@/lib/utils';
-import { Task, TaskSection, Category } from '@/hooks/useTasks';
+import { Task } from '@/hooks/useTasks'; // Only import Task type
 import { showError, showLoading, dismissToast } from '@/utils/toast';
 import { suggestTaskDetails } from '@/integrations/supabase/api';
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
@@ -15,14 +15,16 @@ import ManageCategoriesDialog from './ManageCategoriesDialog';
 import ManageSectionsDialog from './ManageSectionsDialog';
 import DoTodaySwitch from './DoTodaySwitch';
 import { Label } from '@/components/ui/label';
+import { useTaskSections } from '@/hooks/useTaskSections'; // Import useTaskSections
+import { useTaskCategories } from '@/hooks/useTaskCategories'; // Import useTaskCategories
+import { useDoTodayLog } from '@/hooks/useDoTodayLog'; // Import useDoTodayLog
 
 interface DailyTasksHeaderProps {
   currentDate: Date;
   setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
-  tasks: Task[];
-  filteredTasks: Task[];
-  sections: TaskSection[];
-  allCategories: Category[];
+  tasks: Task[]; // All tasks
+  filteredTasks: Task[]; // Filtered tasks
+  // sections, allCategories, doTodayOffIds are now from hooks, no longer passed as props
   handleAddTask: (taskData: any) => Promise<any>;
   userId: string | null;
   setIsFocusPanelOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -43,26 +45,22 @@ interface DailyTasksHeaderProps {
   updateSection: (sectionId: string, newName: string) => Promise<void>;
   deleteSection: (sectionId: string) => Promise<void>;
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
-  doTodayOffIds: Set<string>;
   archiveAllCompletedTasks: () => Promise<void>;
-  toggleAllDoToday: () => Promise<void>;
   setIsAddTaskDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
   setPrefilledTaskData: React.Dispatch<React.SetStateAction<Partial<Task> | null>>;
   dailyProgress: {
-    totalPendingCount: number; // Updated from totalCount
+    totalPendingCount: number;
     completedCount: number;
     overdueCount: number;
   };
   isDemo?: boolean;
-  toggleDoToday: (task: Task) => void;
   onOpenFocusView: () => void;
 }
 
 const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   currentDate,
   setCurrentDate,
-  sections,
-  allCategories,
+  // Removed sections, allCategories, doTodayOffIds from props
   handleAddTask,
   setIsFocusPanelOpen,
   searchFilter,
@@ -82,14 +80,11 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   updateSection,
   deleteSection,
   updateSectionIncludeInFocusMode,
-  doTodayOffIds,
   archiveAllCompletedTasks,
-  toggleAllDoToday,
   setIsAddTaskDialogOpen,
   setPrefilledTaskData,
   dailyProgress,
   isDemo = false,
-  toggleDoToday,
   onOpenFocusView,
 }) => {
   useDailyTaskCount(); 
@@ -98,10 +93,14 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   const quickAddInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  const { data: sections } = useTaskSections(); // Use useTaskSections hook
+  const { data: allCategories } = useTaskCategories(); // Use useTaskCategories hook
+  const { doTodayOffIds, toggleDoToday, toggleAllDoToday } = useDoTodayLog({ currentDate, userId: null }); // Use useDoTodayLog hook
+
   const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
 
-  const { totalPendingCount, completedCount, overdueCount } = dailyProgress; // Updated destructuring
+  const { totalPendingCount, completedCount, overdueCount } = dailyProgress;
 
   const handleQuickAdd = async () => {
     const description = quickAddTaskDescription.trim();
@@ -197,7 +196,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
     }
   };
 
-  const totalTasksForProgress = totalPendingCount + completedCount; // Calculate total for progress bar
+  const totalTasksForProgress = totalPendingCount + completedCount;
 
   return (
     <div className="flex flex-col bg-gradient-to-br from-[hsl(var(--gradient-start-light))] to-[hsl(var(--gradient-end-light))] dark:from-[hsl(var(--gradient-start-dark))] dark:to-[hsl(var(--gradient-end-dark))] sticky top-0 z-10 shadow-sm">
@@ -246,7 +245,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
           <span className="flex items-center gap-1">
             <ListTodo className="h-4 w-4 text-foreground" />
-            <span className="font-semibold text-foreground text-lg">{totalPendingCount} pending</span> {/* Updated to totalPendingCount */}
+            <span className="font-semibold text-foreground text-lg">{totalPendingCount} pending</span>
           </span>
           <span className="flex items-center gap-1">
             <CheckCircle2 className="h-4 w-4 text-primary" />
@@ -254,7 +253,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
           </span>
         </div>
         <Progress
-          value={totalTasksForProgress > 0 ? (completedCount / totalTasksForProgress) * 100 : 0} // Updated total for progress bar
+          value={totalTasksForProgress > 0 ? (completedCount / totalTasksForProgress) * 100 : 0}
           className="h-4 rounded-full"
           indicatorClassName="bg-gradient-to-r from-primary to-accent rounded-full"
         />
@@ -265,7 +264,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
             </p>
           ) : <div />}
           <div className="flex items-center gap-2 self-end">
-            <Button variant="outline" size="sm" onClick={toggleAllDoToday} className="h-8 text-xs" disabled={isDemo}>
+            <Button variant="outline" size="sm" onClick={() => toggleAllDoToday(filteredTasks.filter(t => t.recurring_type === 'none'))} className="h-8 text-xs" disabled={isDemo}>
               <ToggleRight className="mr-2 h-3.5 w-3.5" /> Toggle All 'Do Today'
             </Button>
             {completedCount > 0 && (
@@ -282,7 +281,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         onClick={onOpenFocusView}
       >
         <div className="w-full flex justify-center items-center mb-3 relative">
-          <h3 className="text-xl font-bold text-primary flex items-center gap-2 font-bubbly"> {/* Added font-bubbly */}
+          <h3 className="text-xl font-bold text-primary flex items-center gap-2 font-bubbly">
             <Target className="h-6 w-6" /> Your Next Task
           </h3>
           {nextAvailableTask && nextAvailableTask.recurring_type === 'none' && (
@@ -301,7 +300,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
           <div className="w-full space-y-4">
             <div className="flex items-center justify-center gap-3">
               <div className={cn("w-5 h-5 rounded-full flex-shrink-0", getPriorityDotColor(nextAvailableTask.priority))} />
-              <p className="text-4xl sm:text-5xl font-extrabold text-foreground leading-tight line-clamp-2 font-bubbly"> {/* Increased font size, added font-bubbly */}
+              <p className="text-4xl sm:text-5xl font-extrabold text-foreground leading-tight line-clamp-2 font-bubbly">
                 {nextAvailableTask.description}
               </p>
             </div>
@@ -324,7 +323,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
       <div
         ref={quickAddBarRef}
         className={cn(
-          "quick-add-bar px-4 py-3 border border-input rounded-xl mx-4 mb-4", // Added border and rounded-xl
+          "quick-add-bar px-4 py-3 border border-input rounded-xl mx-4 mb-4",
           stuck ? "stuck" : ""
         )}
       >

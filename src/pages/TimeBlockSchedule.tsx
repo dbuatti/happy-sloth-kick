@@ -3,10 +3,12 @@ import { CalendarDays } from 'lucide-react';
 import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import DailyScheduleView from '@/components/DailyScheduleView';
-import { Task, useTasks } from '@/hooks/useTasks';
+import { Task, useTasks } from '@/hooks/useTasks'; // Only import Task type
 import TaskOverviewDialog from '@/components/TaskOverviewDialog';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import { useSettings } from '@/context/SettingsContext';
+import { useTaskSections } from '@/hooks/useTaskSections'; // Import useTaskSections
+import { useTaskCategories } from '@/hooks/useTaskCategories'; // Import useTaskCategories
 
 interface TimeBlockScheduleProps {
   isDemo?: boolean;
@@ -18,18 +20,18 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
 
   const [currentDate, setCurrentDate] = useState(new Date());
 
-  // Fetch allTasks here to pass to TaskDetailDialog
   const {
     tasks: allTasks,
-    sections,
-    allCategories,
     updateTask,
     deleteTask,
     createSection,
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode,
-  } = useTasks({ currentDate: new Date(), userId: demoUserId }); // Pass a dummy date for this global fetch
+  } = useTasks({ currentDate: new Date(), userId: demoUserId });
+
+  const { data: sections } = useTaskSections(); // Use useTaskSections hook
+  const { data: allCategories } = useTaskCategories(); // Use useTaskCategories hook
 
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
@@ -105,8 +107,8 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
           onEditClick={handleOpenTaskDetail}
           onUpdate={updateTask}
           onDelete={deleteTask}
-          sections={sections}
-          allCategories={allCategories}
+          sections={sections} // Pass from hook
+          allCategories={allCategories} // Pass from hook
           allTasks={allTasks as Task[]}
         />
       )}
@@ -117,8 +119,8 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
           onClose={() => setIsTaskDetailOpen(false)}
           onUpdate={updateTask}
           onDelete={deleteTask}
-          sections={sections}
-          allCategories={allCategories}
+          sections={sections} // Pass from hook
+          allCategories={allCategories} // Pass from hook
           createSection={createSection}
           updateSection={updateSection}
           deleteSection={deleteSection}

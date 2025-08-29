@@ -1,8 +1,9 @@
 import React from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import FocusToolsPanel from './FocusToolsPanel';
-import { Task, TaskSection, Category } from '@/hooks/useTasks';
-// Removed useAuth as it's not directly used in this component's logic
+import { Task } from '@/hooks/useTasks'; // Only import Task type
+import { useTaskSections } from '@/hooks/useTaskSections'; // Import useTaskSections
+import { useTaskCategories } from '@/hooks/useTaskCategories'; // Import useTaskCategories
 
 interface FocusPanelDrawerProps {
   isOpen: boolean;
@@ -13,10 +14,9 @@ interface FocusPanelDrawerProps {
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   onOpenDetail: (task: Task) => void;
   onDeleteTask: (taskId: string) => void;
-  sections: TaskSection[];
-  allCategories: Category[];
-  handleAddTask: (taskData: any) => Promise<any>; // Added handleAddTask
-  currentDate: Date; // Added currentDate
+  // sections, allCategories are now from hooks, no longer passed as props
+  handleAddTask: (taskData: any) => Promise<any>;
+  currentDate: Date;
 }
 
 const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
@@ -28,11 +28,13 @@ const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
   updateTask,
   onOpenDetail,
   onDeleteTask,
-  sections,
-  allCategories,
-  handleAddTask, // Destructure handleAddTask
-  currentDate, // Destructure currentDate
+  // Removed sections, allCategories from props
+  handleAddTask,
+  currentDate,
 }) => {
+  const { data: sections } = useTaskSections(); // Use useTaskSections hook
+  const { data: allCategories } = useTaskCategories(); // Use useTaskCategories hook
+
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent side="right" className="w-full sm:max-w-md flex flex-col">
@@ -46,11 +48,11 @@ const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
             filteredTasks={filteredTasks}
             updateTask={updateTask}
             onDeleteTask={onDeleteTask}
-            sections={sections}
-            allCategories={allCategories}
+            sections={sections} // Pass from hook
+            allCategories={allCategories} // Pass from hook
             onOpenDetail={onOpenDetail}
-            handleAddTask={handleAddTask} // Pass handleAddTask
-            currentDate={currentDate} // Pass currentDate
+            handleAddTask={handleAddTask}
+            currentDate={currentDate}
           />
         </div>
       </SheetContent>

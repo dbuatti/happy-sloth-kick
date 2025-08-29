@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { ChevronsDownUp } from 'lucide-react';
-import { Task, TaskSection, Category } from '@/hooks/useTasks';
+import { Task } from '@/hooks/useTasks'; // Only import Task type
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -27,10 +27,11 @@ import SortableTaskItem from './SortableTaskItem';
 import SortableSectionHeader from './SortableSectionHeader';
 import TaskForm from './TaskForm';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/context/AuthContext';
 import TaskItem from './TaskItem';
 import QuickAddTask from './QuickAddTask';
 import { Appointment } from '@/hooks/useAppointments';
+import { useTaskSections } from '@/hooks/useTaskSections'; // Import useTaskSections
+import { useTaskCategories } from '@/hooks/useTaskCategories'; // Import useTaskCategories
 
 interface TaskListProps {
   tasks: Task[];
@@ -42,14 +43,13 @@ interface TaskListProps {
   deleteTask: (taskId: string) => void;
   bulkUpdateTasks: (updates: Partial<Task>, ids: string[]) => Promise<void>;
   markAllTasksInSectionCompleted: (sectionId: string | null) => Promise<void>;
-  sections: TaskSection[];
+  // sections, allCategories are now from hooks, no longer passed as props
   createSection: (name: string) => Promise<void>;
   updateSection: (sectionId: string, newName: string) => Promise<void>;
   deleteSection: (sectionId: string) => Promise<void>;
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
   updateTaskParentAndOrder: (activeId: string, newParentId: string | null, newSectionId: string | null, overId: string | null, isDraggingDown: boolean) => Promise<void>;
   reorderSections: (activeId: string, overId: string) => Promise<void>;
-  allCategories: Category[];
   setIsAddTaskOpen: (open: boolean) => void;
   onOpenOverview: (task: Task) => void;
   currentDate: Date;
@@ -75,15 +75,15 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     handleAddTask,
     updateTask,
     deleteTask,
+    bulkUpdateTasks,
     markAllTasksInSectionCompleted,
-    sections,
+    // Removed sections, allCategories from props
     createSection,
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode,
     updateTaskParentAndOrder,
     reorderSections,
-    allCategories,
     onOpenOverview,
     currentDate,
     expandedSections,
@@ -98,8 +98,8 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     isDemo = false,
   } = props;
 
-  const { user } = useAuth();
-  const userId = user?.id || '';
+  const { data: sections } = useTaskSections(); // Use useTaskSections hook
+  const { data: allCategories } = useTaskCategories(); // Use useTaskCategories hook
 
   const [isAddTaskOpenLocal, setIsAddTaskOpenLocal] = useState(false);
   const [preselectedSectionId, setPreselectedSectionId] = useState<string | null>(null);
@@ -110,7 +110,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8, // User must move 8px before a drag starts
+        distance: 8,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -133,12 +133,12 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     const noSection: TaskSection = {
       id: 'no-section-header',
       name: 'No Section',
-      user_id: userId,
+      user_id: '', // userId is not directly available here, but not strictly needed for display
       order: sections.length,
       include_in_focus_mode: true,
     };
     return [...sections, noSection];
-  }, [sections, userId]);
+  }, [sections]);
 
   const allVisibleItemIds = useMemo(() => {
     const ids: UniqueIdentifier[] = [];
@@ -240,15 +240,14 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     setIsAddTaskOpenLocal(true);
   };
 
-  // Effect to automatically collapse sections when all tasks are completed
   useEffect(() => {
     allSortableSections.forEach(section => {
       const topLevelTasksInSection = filteredTasks
         .filter(t => t.parent_task_id === null && (t.section_id === section.id || (t.section_id === null && section.id === 'no-section-header')))
-        .filter(t => t.status === 'to-do'); // Only count 'to-do' tasks
+        .filter(t => t.status === 'to-do');
       const remainingTasksCount = topLevelTasksInSection.length;
 
-      if (remainingTasksCount === 0 && (expandedSections[section.id] ?? true)) { // Check if it's currently expanded
+      if (remainingTasksCount === 0 && (expandedSections[section.id] ?? true)) {
         toggleSection(section.id);
       }
     });
@@ -344,7 +343,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                         ))}
                       </ul>
                     )}
-                    {/* QuickAddTask is always rendered, its visibility is controlled by parent's max-height/opacity */}
                     <div className={cn("mt-2", topLevelTasksInSection.length === 0 ? "pt-2" : "")} data-no-dnd="true">
                       <QuickAddTask
                         sectionId={currentSection.id === 'no-section-header' ? null : currentSection.id}
@@ -395,7 +393,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                       isDoToday={!doTodayOffIds.has((activeItemData as Task).original_task_id || (activeItemData as Task).id)}
                       toggleDoToday={toggleDoToday}
                       scheduledTasksMap={scheduledTasksMap}
-                      level={0} // Pass level prop
+                      level={0}
                     />
                   </div>
                 )

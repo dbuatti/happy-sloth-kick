@@ -11,6 +11,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import AddTaskForm from './AddTaskForm';
 import { useSound } from '@/context/SoundContext';
+import { useTaskSections } from '@/hooks/useTaskSections'; // Import useTaskSections
+import { useTaskCategories } from '@/hooks/useTaskCategories'; // Import useTaskCategories
 
 interface CommandPaletteProps {
   isCommandPaletteOpen: boolean;
@@ -20,7 +22,9 @@ interface CommandPaletteProps {
 const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, setIsCommandPaletteOpen }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { handleAddTask, sections, allCategories, createSection, updateSection, deleteSection, updateSectionIncludeInFocusMode } = useTasks({ currentDate: new Date() }); // Removed setCurrentDate from props
+  const { handleAddTask, createSection, updateSection, deleteSection, updateSectionIncludeInFocusMode } = useTasks({ currentDate: new Date() });
+  const { data: sections } = useTaskSections(); // Use useTaskSections hook
+  const { data: allCategories } = useTaskCategories(); // Use useTaskCategories hook
   const isMobile = useIsMobile();
   const { playSound } = useSound();
 
@@ -85,7 +89,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
                     <Home className="mr-2 h-3.5 w-3.5" />
                     <span>Go to Daily Tasks</span>
                   </CommandItem>
-                  <CommandItem onSelect={() => handleSelect(() => new Date())}> {/* Removed setCurrentDate */}
+                  <CommandItem onSelect={() => handleSelect(() => new Date())}>
                     <CalendarDays className="mr-2 h-3.5 w-3.5" />
                     <span>Go to Today</span>
                   </CommandItem>
@@ -113,11 +117,11 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
                     <Settings className="mr-2 h-3.5 w-3.5" />
                     <span>Go to Settings</span>
                   </CommandItem>
-                  <CommandItem onSelect={() => handleSelect(() => new Date().setDate(new Date().getDate() - 1))}> {/* Removed setCurrentDate */}
+                  <CommandItem onSelect={() => handleSelect(() => new Date().setDate(new Date().getDate() - 1))}>
                     <ChevronLeft className="mr-2 h-3.5 w-3.5" />
                     <span>Previous Day</span>
                   </CommandItem>
-                  <CommandItem onSelect={() => handleSelect(() => new Date().setDate(new Date().getDate() + 1))}> {/* Removed setCurrentDate */}
+                  <CommandItem onSelect={() => handleSelect(() => new Date().setDate(new Date().getDate() + 1))}>
                     <ChevronRight className="mr-2 h-3.5 w-3.5" />
                     <span>Next Day</span>
                   </CommandItem>
@@ -163,7 +167,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
                 <Home className="mr-2 h-3.5 w-3.5" />
                 <span>Go to Daily Tasks</span>
               </CommandItem>
-              <CommandItem onSelect={() => handleSelect(() => new Date())}> {/* Removed setCurrentDate */}
+              <CommandItem onSelect={() => handleSelect(() => new Date())}>
                 <CalendarDays className="mr-2 h-3.5 w-3.5" />
                 <span>Go to Today</span>
               </CommandItem>
@@ -191,11 +195,11 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
                 <Settings className="mr-2 h-3.5 w-3.5" />
                 <span>Go to Settings</span>
               </CommandItem>
-              <CommandItem onSelect={() => handleSelect(() => new Date().setDate(new Date().getDate() - 1))}> {/* Removed setCurrentDate */}
+              <CommandItem onSelect={() => handleSelect(() => new Date().setDate(new Date().getDate() - 1))}>
                 <ChevronLeft className="mr-2 h-3.5 w-3.5" />
                 <span>Previous Day</span>
               </CommandItem>
-              <CommandItem onSelect={() => handleSelect(() => new Date().setDate(new Date().getDate() + 1))}> {/* Removed setCurrentDate */}
+              <CommandItem onSelect={() => handleSelect(() => new Date().setDate(new Date().getDate() + 1))}>
                 <ChevronRight className="mr-2 h-3.5 w-3.5" />
                 <span>Next Day</span>
               </CommandItem>

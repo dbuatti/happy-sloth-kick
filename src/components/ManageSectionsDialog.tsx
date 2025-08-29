@@ -5,15 +5,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Edit, Trash2, Eye, EyeOff, Plus } from 'lucide-react';
-import { TaskSection } from '@/hooks/useTasks';
+import { TaskSection } from '@/hooks/useTasks'; // Import TaskSection type
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { showError } from '@/utils/toast'; // Removed showSuccess, it is not used here
+import { showError } from '@/utils/toast';
+import { useTaskSections } from '@/hooks/useTaskSections'; // Import useTaskSections
 
 interface ManageSectionsDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  sections: TaskSection[];
+  sections: TaskSection[]; // Still passed as prop for initial display
   createSection: (name: string) => Promise<void>;
   updateSection: (sectionId: string, newName: string) => Promise<void>;
   deleteSection: (sectionId: string) => Promise<void>;
@@ -29,6 +30,8 @@ const ManageSectionsDialog: React.FC<ManageSectionsDialogProps> = ({
   deleteSection,
   updateSectionIncludeInFocusMode,
 }) => {
+  const { refetch: refetchSections } = useTaskSections(); // Use refetch from useTaskSections
+
   const [newSectionName, setNewSectionName] = useState('');
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [editingSectionName, setEditingSectionName] = useState('');
@@ -38,7 +41,6 @@ const ManageSectionsDialog: React.FC<ManageSectionsDialogProps> = ({
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    // Reset new section form when dialog opens/closes
     if (!isOpen) {
       setNewSectionName('');
       setEditingSectionId(null);
@@ -61,6 +63,7 @@ const ManageSectionsDialog: React.FC<ManageSectionsDialogProps> = ({
     await createSection(newSectionName.trim());
     setNewSectionName('');
     setIsSaving(false);
+    refetchSections(); // Trigger refetch in useTaskSections
   };
 
   const handleEditClick = (section: TaskSection) => {
@@ -79,6 +82,7 @@ const ManageSectionsDialog: React.FC<ManageSectionsDialogProps> = ({
       setEditingSectionId(null);
       setEditingSectionName('');
       setIsSaving(false);
+      refetchSections(); // Trigger refetch in useTaskSections
     }
   };
 
@@ -99,6 +103,7 @@ const ManageSectionsDialog: React.FC<ManageSectionsDialogProps> = ({
     setSectionToDeleteName(null);
     setShowConfirmDeleteDialog(false);
     setIsSaving(false);
+    refetchSections(); // Trigger refetch in useTaskSections
   };
 
   return (
@@ -108,7 +113,6 @@ const ManageSectionsDialog: React.FC<ManageSectionsDialogProps> = ({
           <DialogTitle>Manage Sections</DialogTitle>
         </DialogHeader>
         <div className="py-4 space-y-3">
-          {/* New Section Form */}
           <div className="border-b pb-4 mb-4">
             <h4 className="text-md font-semibold mb-3">Create New Section</h4>
             <div className="flex gap-2">
@@ -126,7 +130,6 @@ const ManageSectionsDialog: React.FC<ManageSectionsDialogProps> = ({
             </div>
           </div>
 
-          {/* Existing sections list */}
           {sections.length === 0 ? (
             <p className="text-muted-foreground text-center">No sections created yet.</p>
           ) : (
@@ -163,7 +166,10 @@ const ManageSectionsDialog: React.FC<ManageSectionsDialogProps> = ({
                     <Switch
                       id={`focus-mode-toggle-${section.id}`}
                       checked={section.include_in_focus_mode}
-                      onCheckedChange={(checked) => updateSectionIncludeInFocusMode(section.id, checked)}
+                      onCheckedChange={async (checked) => {
+                        await updateSectionIncludeInFocusMode(section.id, checked);
+                        refetchSections(); // Trigger refetch in useTaskSections
+                      }}
                       aria-label={`Include ${section.name} in Focus Mode`}
                       disabled={isSaving}
                     />

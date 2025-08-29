@@ -3,12 +3,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { X } from 'lucide-react'; // Removed Plus
+import { X } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
 import { cn } from '@/lib/utils';
 import { categoryColorMap, CategoryColorKey, getCategoryColorProps } from '@/lib/categoryColors';
-import { Category } from '@/hooks/useTasks';
+import { Category } from '@/hooks/useTasks'; // Import Category type
 import { useAuth } from '@/context/AuthContext';
 import {
   AlertDialog,
@@ -20,13 +20,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useTaskCategories } from '@/hooks/useTaskCategories'; // Import useTaskCategories
 
 interface ManageCategoriesDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  categories: Category[];
-  onCategoryCreated: () => void; // Callback to refresh categories in parent
-  onCategoryDeleted: (deletedId: string) => void; // Callback to handle category deletion
+  categories: Category[]; // Still passed as prop for initial display
+  onCategoryCreated: () => void;
+  onCategoryDeleted: (deletedId: string) => void;
 }
 
 const ManageCategoriesDialog: React.FC<ManageCategoriesDialogProps> = ({
@@ -38,6 +39,7 @@ const ManageCategoriesDialog: React.FC<ManageCategoriesDialogProps> = ({
 }) => {
   const { user } = useAuth();
   const userId = user?.id;
+  const { refetch: refetchCategories } = useTaskCategories(); // Use refetch from useTaskCategories
 
   const [newCategoryName, setNewCategoryName] = useState('');
   const [selectedColorKey, setSelectedColorKey] = useState<CategoryColorKey>('gray');
@@ -47,7 +49,6 @@ const ManageCategoriesDialog: React.FC<ManageCategoriesDialogProps> = ({
   const [categoryToDeleteName, setCategoryToDeleteName] = useState<string | null>(null);
 
   useEffect(() => {
-    // Reset form when dialog opens/closes
     if (!isOpen) {
       setNewCategoryName('');
       setSelectedColorKey('gray');
@@ -82,7 +83,8 @@ const ManageCategoriesDialog: React.FC<ManageCategoriesDialogProps> = ({
       showSuccess('Category created successfully!');
       setNewCategoryName('');
       setSelectedColorKey('gray');
-      onCategoryCreated(); // Trigger refresh in parent
+      refetchCategories(); // Trigger refetch in useTaskCategories
+      onCategoryCreated();
     } catch (error: any) {
       showError('Failed to create category.');
       console.error('Error creating category:', error);
@@ -105,7 +107,6 @@ const ManageCategoriesDialog: React.FC<ManageCategoriesDialogProps> = ({
 
     setIsSaving(true);
     try {
-      // First, update tasks that use this category to a default or null
       const { error: updateTasksError } = await supabase
         .from('tasks')
         .update({ category: categories.find(cat => cat.name.toLowerCase() === 'general')?.id || null })
@@ -123,7 +124,8 @@ const ManageCategoriesDialog: React.FC<ManageCategoriesDialogProps> = ({
       if (error) throw error;
       
       showSuccess('Category deleted successfully!');
-      onCategoryDeleted(categoryToDeleteId); // Notify parent of deletion
+      refetchCategories(); // Trigger refetch in useTaskCategories
+      onCategoryDeleted(categoryToDeleteId);
     } catch (error: any) {
       showError('Failed to delete category.');
       console.error('Error deleting category:', error);
@@ -142,7 +144,6 @@ const ManageCategoriesDialog: React.FC<ManageCategoriesDialogProps> = ({
           <DialogTitle>Manage Categories</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-4">
-          {/* Existing categories list */}
           {categories.length > 0 && (
             <div className="space-y-2">
               <h4 className="text-md font-semibold">Existing Categories</h4>
@@ -172,7 +173,6 @@ const ManageCategoriesDialog: React.FC<ManageCategoriesDialogProps> = ({
             </div>
           )}
           
-          {/* New Category Form */}
           <div className="border-t pt-4 mt-4">
             <h4 className="text-md font-semibold mb-3">Create New Category</h4>
             <div>
