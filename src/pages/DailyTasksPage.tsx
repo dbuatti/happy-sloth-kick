@@ -19,7 +19,7 @@ import { Appointment } from '@/hooks/useAppointments';
 import FullScreenFocusView from '@/components/FullScreenFocusView';
 import { AnimatePresence } from 'framer-motion';
 import { useSound } from '@/context/SoundContext';
-
+import FloatingAddTaskButton from '@/components/FloatingAddTaskButton'; // Import the new FAB
 
 interface DailyTasksPageProps {
   isDemo?: boolean;
@@ -256,6 +256,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
                   toggleDoToday={toggleDoToday}
                   scheduledTasksMap={scheduledTasksMap}
                   isDemo={isDemo}
+                  // QuickAddTask is removed from here
                 />
               </div>
             </CardContent>
@@ -266,6 +267,8 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
       <footer className="p-4 relative z-[0]">
         <p>&copy; {new Date().getFullYear()} TaskMaster. All rights reserved.</p>
       </footer>
+
+      <FloatingAddTaskButton onClick={() => setIsAddTaskDialogOpen(true)} isDemo={isDemo} />
 
       <CommandPalette
         isCommandPaletteOpen={isCommandPaletteOpen}
@@ -360,7 +363,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
       <AnimatePresence>
         {isFocusViewOpen && nextAvailableTask && (
           <FullScreenFocusView
-            taskDescription={nextAvailableTask.description || ''}
+            taskDescription={nextAvailableTask.description || ''} // Ensure description is string
             onClose={() => setIsFocusViewOpen(false)}
             onMarkDone={handleMarkDoneFromFocusView}
           />

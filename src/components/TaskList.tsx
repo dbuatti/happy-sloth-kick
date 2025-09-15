@@ -29,7 +29,6 @@ import TaskForm from './TaskForm';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import TaskItem from './TaskItem';
-import QuickAddTask from './QuickAddTask';
 import { Appointment } from '@/hooks/useAppointments';
 
 interface TaskListProps {
@@ -282,18 +281,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
               </Button>
             </div>
 
-            {/* Quick Add Task at the top of the list */}
-            <div className="mb-4">
-              <QuickAddTask
-                sectionId={null} // Default to no section for global quick add
-                onAddTask={async (data) => { await handleAddTask(data); }}
-                defaultCategoryId={defaultCategory?.id || ''}
-                isDemo={isDemo}
-                allCategories={allCategories}
-                sections={sections}
-                currentDate={currentDate}
-              />
-            </div>
+            {/* Quick Add Task is removed from here */}
 
             {allSortableSections.map((currentSection: TaskSection, index) => {
               const isExpanded = expandedSections[currentSection.id] !== false;
@@ -359,7 +347,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                     ) : (
                       <p className="text-sm text-muted-foreground text-center py-4">No tasks in this section.</p>
                     )}
-                    {/* Removed QuickAddTask from inside sections */}
                   </div>
                 </div>
               );
