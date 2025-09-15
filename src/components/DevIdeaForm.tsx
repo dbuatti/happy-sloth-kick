@@ -10,9 +10,8 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 import { showError } from '@/utils/toast';
-import { UploadCloud, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import TagInput from './TagInput'; // Import the new TagInput component
+import TagInput from './TagInput';
+import ImageUploadArea from './ImageUploadArea'; // Import the new component
 
 interface DevIdeaFormProps {
   isOpen: boolean;
@@ -29,13 +28,12 @@ const DevIdeaForm: React.FC<DevIdeaFormProps> = ({ isOpen, onClose, onSave, init
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState<'idea' | 'in-progress' | 'completed'>('idea');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
-  const [localFilePath, setLocalFilePath] = useState(''); // New state for file path
+  const [localFilePath, setLocalFilePath] = useState('');
   const [selectedTags, setSelectedTags] = useState<DevIdeaTag[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -44,7 +42,7 @@ const DevIdeaForm: React.FC<DevIdeaFormProps> = ({ isOpen, onClose, onSave, init
         setDescription(initialData.description || '');
         setStatus(initialData.status);
         setPriority(initialData.priority);
-        setLocalFilePath(initialData.local_file_path || ''); // Set initial file path
+        setLocalFilePath(initialData.local_file_path || '');
         setImagePreview(initialData.image_url || null);
         setSelectedTags(initialData.tags || []);
       } else {
@@ -52,64 +50,13 @@ const DevIdeaForm: React.FC<DevIdeaFormProps> = ({ isOpen, onClose, onSave, init
         setDescription('');
         setStatus('idea');
         setPriority('medium');
-        setLocalFilePath(''); // Reset file path
+        setLocalFilePath('');
         setImagePreview(null);
         setSelectedTags([]);
       }
       setImageFile(null);
     }
   }, [isOpen, initialData]);
-
-  const handleFile = (file: File | null) => {
-    if (file && file.type.startsWith('image/')) {
-      setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
-    } else {
-      showError('Please upload a valid image file.');
-    }
-  };
-
-  const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
-    const items = event.clipboardData.items;
-    for (let i = 0; i < items.length; i++) {
-      if (items[i].type.indexOf('image') !== -1) {
-        const file = items[i].getAsFile();
-        handleFile(file);
-        break;
-      }
-    }
-  };
-
-  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-    setIsDragging(false);
-    if (event.dataTransfer.files && event.dataTransfer.files[0]) {
-      handleFile(event.dataTransfer.files[0]);
-    }
-  };
-
-  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-  };
-
-  const handleDragEnter = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-    setIsDragging(false);
-  };
-
-  const handleRemoveImage = () => {
-    setImageFile(null);
-    setImagePreview(null);
-  };
 
   const handleSubmit = async (event?: React.FormEvent) => {
     if (event) event.preventDefault();
@@ -145,7 +92,7 @@ const DevIdeaForm: React.FC<DevIdeaFormProps> = ({ isOpen, onClose, onSave, init
       status,
       priority,
       image_url: imageUrlToSave,
-      local_file_path: localFilePath.trim() || null, // Save the file path
+      local_file_path: localFilePath.trim() || null,
       tagIds: selectedTags.map(t => t.id),
     });
     setIsSaving(false);
@@ -158,7 +105,6 @@ const DevIdeaForm: React.FC<DevIdeaFormProps> = ({ isOpen, onClose, onSave, init
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent 
         className="sm:max-w-[425px]"
-        onPaste={handlePaste}
       >
         <DialogHeader>
           <DialogTitle>{initialData ? 'Edit Idea' : 'Add New Idea'}</DialogTitle>
@@ -168,30 +114,12 @@ const DevIdeaForm: React.FC<DevIdeaFormProps> = ({ isOpen, onClose, onSave, init
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
-            <div 
-              className={cn(
-                "relative border-2 border-dashed rounded-lg p-4 text-center transition-colors",
-                isDragging ? "border-primary bg-primary/10" : "border-border"
-              )}
-              onDrop={handleDrop}
-              onDragOver={handleDragOver}
-              onDragEnter={handleDragEnter}
-              onDragLeave={handleDragLeave}
-            >
-              {imagePreview ? (
-                <>
-                  <img src={imagePreview} alt="Preview" className="rounded-md max-h-40 mx-auto" />
-                  <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-6 w-6 bg-background/50 hover:bg-background/80" onClick={handleRemoveImage}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </>
-              ) : (
-                <div className="flex flex-col items-center justify-center space-y-2 text-muted-foreground">
-                  <UploadCloud className="h-8 w-8" />
-                  <p>Drag & drop an image here, or paste from clipboard.</p>
-                </div>
-              )}
-            </div>
+            <ImageUploadArea
+              imagePreview={imagePreview}
+              setImagePreview={setImagePreview}
+              setImageFile={setImageFile}
+              disabled={isSaving}
+            />
 
             <div className="space-y-2">
               <Label htmlFor="title">Title</Label>
