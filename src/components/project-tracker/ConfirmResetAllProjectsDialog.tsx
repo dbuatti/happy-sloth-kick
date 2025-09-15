@@ -37,7 +37,7 @@ const ConfirmResetAllProjectsDialog: React.FC<ConfirmResetAllProjectsDialogProps
           <AlertDialogAction onClick={onConfirm} disabled={isResetting}>
             {isResetting ? 'Resetting...' : 'Reset All'}
           </AlertDialogAction>
-        </DialogFooter>
+        </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
   );

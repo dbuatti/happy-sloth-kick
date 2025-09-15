@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { CheckCircle2, ListTodo, CalendarDays } from 'lucide-react';
 import WeeklyFocusCard from '@/components/dashboard/WeeklyFocus';
 import MeditationNotesCard from '@/components/dashboard/MeditationNotes';
@@ -78,6 +78,8 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
     deleteSection,
     updateSectionIncludeInFocusMode,
     loading: tasksLoading,
+    doTodayOffIds, // Import doTodayOffIds
+    toggleDoToday, // Import toggleDoToday
   } = useTasks({ viewMode: 'daily', userId: demoUserId, currentDate: new Date() }); // Pass new Date()
 
   const { playSound } = useSound();
@@ -178,6 +180,8 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
 
   const defaultPanelSizes = settings?.dashboard_panel_sizes || [66, 34];
 
+  const isNextTaskDoToday = nextAvailableTask ? !doTodayOffIds.has(nextAvailableTask.original_task_id || nextAvailableTask.id) : false;
+
   return (
     <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="flex-1 flex flex-col">
@@ -220,12 +224,15 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
                 </SortableContext>
               </div>
               <div className="space-y-6">
-                <NextTaskCard 
+                <NextTaskCard
                   nextAvailableTask={nextAvailableTask}
                   updateTask={updateTask}
                   onOpenOverview={handleOpenOverview}
                   loading={tasksLoading}
                   onFocusViewOpen={handleOpenFocusView}
+                  isDoToday={isNextTaskDoToday}
+                  toggleDoToday={toggleDoToday}
+                  isDemo={isDemo}
                 />
                 {settings?.dashboard_layout?.['weeklyFocusVisible'] !== false && (
                   <WeeklyFocusCard 
@@ -270,12 +277,15 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
               <PanelResizeHandle />
               <Panel defaultSize={defaultPanelSizes[1]} minSize={20}>
                 <div className="flex h-full flex-col p-4 space-y-6">
-                  <NextTaskCard 
+                  <NextTaskCard
                     nextAvailableTask={nextAvailableTask}
                     updateTask={updateTask}
                     onOpenOverview={handleOpenOverview}
                     loading={tasksLoading}
                     onFocusViewOpen={handleOpenFocusView}
+                    isDoToday={isNextTaskDoToday}
+                    toggleDoToday={toggleDoToday}
+                    isDemo={isDemo}
                   />
                   {settings?.dashboard_layout?.['weeklyFocusVisible'] !== false && (
                     <WeeklyFocusCard 
@@ -342,7 +352,10 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
           <TaskOverviewDialog
             task={taskToOverview}
             isOpen={isTaskOverviewOpen}
-            onClose={() => setIsTaskOverviewOpen(false)}
+            onClose={() => {
+              setIsTaskOverviewOpen(false);
+              setTaskToOverview(null);
+            }}
             onEditClick={handleEditTaskFromOverview}
             onUpdate={updateTask}
             onDelete={deleteTask}

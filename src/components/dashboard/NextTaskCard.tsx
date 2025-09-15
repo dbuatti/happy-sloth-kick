@@ -57,7 +57,7 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ nextAvailableTask, updateTa
     }
   };
 
-  const handleToggleDoTodaySwitch = (checked: boolean) => {
+  const handleToggleDoTodaySwitch = () => {
     if (nextAvailableTask) {
       toggleDoToday(nextAvailableTask);
     }
