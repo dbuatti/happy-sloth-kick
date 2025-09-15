@@ -16,7 +16,8 @@ interface DailyCountTask {
 }
 
 // Re-use query functions from useTasks
-import { fetchSections, fetchTasks, fetchDoTodayOffLog, TaskSection, Task } from './useTasks';
+import { fetchSections, fetchTasks, fetchDoTodayOffLog } from '@/integrations/supabase/queries'; // Corrected import path
+import { TaskSection, Task } from './useTasks'; // Keep types from useTasks
 
 export const useDailyTaskCount = (props?: { userId?: string }) => {
   const { user } = useAuth();
