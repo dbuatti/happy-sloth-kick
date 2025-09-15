@@ -2,7 +2,7 @@ import { QueryClient } from '@tanstack/react-query';
 import { Task, TaskSection } from '@/hooks/useTasks'; // Import Task type
 import { v4 as uuidv4 } from 'uuid'; // Import uuid for generating new IDs
 import { supabase } from '@/integrations/supabase/client';
-import { format, parseISO, isValid } from 'date-fns'; // Removed unused addDays, startOfDay, isBefore
+import { format, parseISO, isValid } from 'date-fns';
 import { showSuccess, showError } from '@/utils/toast'; // Import toast utilities
 
 // Define a more comprehensive MutationContext interface
@@ -54,8 +54,6 @@ export const addTaskMutation = async (
     status: 'to-do' as Task['status'], // Explicitly cast
     recurring_type: 'none' as Task['recurring_type'], // Explicitly cast
     priority: 'medium' as Task['priority'], // Explicitly cast
-    description: '',
-    category: null,
     category_color: categoryColor,
     due_date: null,
     notes: null,
@@ -75,12 +73,23 @@ export const addTaskMutation = async (
     id: newId,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    ...payload,
     description: payload.description || '', // Ensure description is string
     status: payload.status,
     recurring_type: payload.recurring_type,
     priority: payload.priority,
+    category: payload.category, // Ensure category is included
     category_color: categoryColor,
+    due_date: payload.due_date,
+    notes: payload.notes,
+    remind_at: payload.remind_at,
+    section_id: payload.section_id,
+    order: payload.order,
+    original_task_id: payload.original_task_id,
+    parent_task_id: payload.parent_task_id,
+    link: payload.link,
+    image_url: payload.image_url,
+    user_id: userId, // Add user_id
+    completed_at: payload.completed_at, // Add completed_at
   };
 
   inFlightUpdatesRef.current.add(newId);
