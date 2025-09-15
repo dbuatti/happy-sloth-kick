@@ -309,7 +309,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
 
                   <div className={cn(
                     "mt-3 overflow-hidden transition-all duration-300 ease-in-out",
-                    isExpanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+                    isExpanded ? "max-h-[9999px] opacity-100" : "max-h-0 opacity-0" // Changed max-h-[500px] to max-h-[9999px]
                   )}>
                     {topLevelTasksInSection.length > 0 && (
                       <ul className="list-none space-y-1.5">
