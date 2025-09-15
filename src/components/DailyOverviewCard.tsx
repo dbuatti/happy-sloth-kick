@@ -1,10 +1,10 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { ListTodo, Brain, CheckCircle2, Clock, Sparkles, FolderOpen, Tag, Archive, ToggleRight, Settings, ChevronDown } from 'lucide-react';
-import { Task, TaskSection, Category } from '@/hooks/useTasks';
+import { ListTodo, Brain, CheckCircle2, Clock, Sparkles, FolderOpen, Tag, Archive, ToggleRight, ChevronDown } from 'lucide-react';
+import { Task } from '@/hooks/useTasks';
 import { Progress } from '@/components/Progress';
 import NextTaskCard from './dashboard/NextTaskCard';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardTitle } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { cn } from '@/lib/utils';
 

@@ -29,6 +29,7 @@ import TaskForm from './TaskForm';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import TaskItem from './TaskItem';
+import QuickAddTask from './QuickAddTask';
 import { Appointment } from '@/hooks/useAppointments';
 
 interface TaskListProps {
@@ -123,10 +124,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
       if (!id) return undefined;
       return tasksMap.get(String(id));
   }, [tasksMap]);
-
-  const defaultCategory = useMemo(() => {
-    return allCategories.find(c => c.name.toLowerCase() === 'general') || allCategories[0];
-  }, [allCategories]);
 
   const allSortableSections = useMemo(() => {
     const noSection: TaskSection = {
@@ -281,8 +278,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
               </Button>
             </div>
 
-            {/* Quick Add Task is removed from here */}
-
             {allSortableSections.map((currentSection: TaskSection, index) => {
               const isExpanded = expandedSections[currentSection.id] !== false;
               const topLevelTasksInSection = filteredTasks
@@ -290,8 +285,8 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                 .sort((a, b) => (a.order || 0) - (b.order || 0));
               const remainingTasksCount = topLevelTasksInSection.filter(t => t.status === 'to-do').length;
 
-              if (currentSection.id === 'no-section-header' && topLevelTasksInSection.length === 0 && filteredTasks.filter(t => t.section_id === null).length === 0) {
-                return null; // Only hide 'No Section' header if there are no tasks in it AND no other tasks without a section
+              if (currentSection.id === 'no-section-header' && topLevelTasksInSection.length === 0) {
+                return null;
               }
 
               return (
@@ -316,7 +311,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                     "mt-3 overflow-hidden transition-all duration-300 ease-in-out",
                     isExpanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
                   )}>
-                    {topLevelTasksInSection.length > 0 ? (
+                    {topLevelTasksInSection.length > 0 && (
                       <ul className="list-none space-y-1.5">
                         {topLevelTasksInSection.map(task => (
                           <SortableTaskItem
@@ -344,9 +339,18 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                           />
                         ))}
                       </ul>
-                    ) : (
-                      <p className="text-sm text-muted-foreground text-center py-4">No tasks in this section.</p>
                     )}
+                    <div className="mt-2 pt-2" data-no-dnd="true">
+                      <QuickAddTask
+                        sectionId={currentSection.id === 'no-section-header' ? null : currentSection.id}
+                        onAddTask={async (data) => { await handleAddTask(data); }}
+                        defaultCategoryId={allCategories.find(c => c.name.toLowerCase() === 'general')?.id || allCategories[0]?.id || ''}
+                        isDemo={isDemo}
+                        allCategories={allCategories} // Pass allCategories
+                        sections={sections} // Pass sections
+                        currentDate={currentDate} // Pass currentDate
+                      />
+                    </div>
                   </div>
                 </div>
               );

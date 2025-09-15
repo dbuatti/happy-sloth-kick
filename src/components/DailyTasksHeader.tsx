@@ -1,12 +1,7 @@
 import React, { useRef, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Plus, Settings } from 'lucide-react';
 import DateNavigator from './DateNavigator';
 import TaskFilter from './TaskFilter';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
-import { showError, showLoading, dismissToast } from '@/utils/toast';
-import { suggestTaskDetails } from '@/integrations/supabase/api';
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
 import ManageCategoriesDialog from './ManageCategoriesDialog';
 import ManageSectionsDialog from './ManageSectionsDialog';
@@ -19,7 +14,6 @@ interface DailyTasksHeaderProps {
   filteredTasks: Task[];
   sections: TaskSection[];
   allCategories: Category[];
-  handleAddTask: (taskData: any) => Promise<any>;
   userId: string | null;
   setIsFocusPanelOpen: React.Dispatch<React.SetStateAction<boolean>>;
   searchFilter: string;
@@ -38,8 +32,6 @@ interface DailyTasksHeaderProps {
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
   archiveAllCompletedTasks: () => Promise<void>;
   toggleAllDoToday: () => Promise<void>;
-  setIsAddTaskDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  setPrefilledTaskData: React.Dispatch<React.SetStateAction<Partial<Task> | null>>;
   dailyProgress: {
     totalPendingCount: number;
     completedCount: number;
@@ -60,7 +52,6 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   setCurrentDate,
   sections,
   allCategories,
-  handleAddTask,
   setIsFocusPanelOpen,
   searchFilter,
   setSearchFilter,
@@ -78,8 +69,6 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   updateSectionIncludeInFocusMode,
   archiveAllCompletedTasks,
   toggleAllDoToday,
-  setIsAddTaskDialogOpen,
-  setPrefilledTaskData,
   dailyProgress,
   isDemo = false,
   nextAvailableTask,
@@ -95,8 +84,6 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
 
   const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
-
-  // Removed handleQuickAdd as quick add is moving
 
   return (
     <div className="flex flex-col bg-gradient-to-br from-[hsl(var(--gradient-start-light))] to-[hsl(var(--gradient-end-light))] dark:from-[hsl(var(--gradient-start-dark))] dark:to-[hsl(var(--gradient-end-dark))] rounded-b-2xl shadow-lg">
