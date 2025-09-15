@@ -1,28 +1,19 @@
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Edit, Trash2, Sparkles, RefreshCcw, Lightbulb, RotateCcw, LayoutGrid, CheckCircle2, Minus, Link as LinkIcon, StickyNote } from 'lucide-react';
+import { LayoutGrid } from 'lucide-react';
 import { useProjects, Project } from '@/hooks/useProjects';
-import { cn } from '@/lib/utils';
-import { Progress } from '@/components/Progress';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Skeleton } from '@/components/ui/skeleton';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from '@/context/AuthContext';
 import ProjectNotesDialog from '@/components/ProjectNotesDialog';
+
+// Import new modular components
+import ProjectActionsBar from '@/components/project-tracker/ProjectActionsBar';
+import AddProjectDialog from '@/components/project-tracker/AddProjectDialog';
+import ProjectList from '@/components/project-tracker/ProjectList';
+import ProjectCelebrationBanner from '@/components/project-tracker/ProjectCelebrationBanner';
+import ProjectRecommendationBanner from '@/components/project-tracker/ProjectRecommendationBanner';
+import ConfirmDeleteProjectDialog from '@/components/project-tracker/ConfirmDeleteProjectDialog';
+import ConfirmResetIndividualProjectDialog from '@/components/project-tracker/ConfirmResetIndividualProjectDialog';
+import ConfirmResetAllProjectsDialog from '@/components/project-tracker/ConfirmResetAllProjectsDialog';
 
 interface ProjectBalanceTrackerProps {
   isDemo?: boolean;
@@ -30,7 +21,7 @@ interface ProjectBalanceTrackerProps {
 }
 
 const ProjectBalanceTracker: React.FC<ProjectBalanceTrackerProps> = ({ isDemo = false, demoUserId }) => {
-  useAuth(); 
+  useAuth();
 
   const {
     projects,
@@ -47,15 +38,9 @@ const ProjectBalanceTracker: React.FC<ProjectBalanceTrackerProps> = ({ isDemo = 
   } = useProjects({ userId: demoUserId });
 
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
-  const [newProjectName, setNewProjectName] = useState('');
-  const [newProjectDescription, setNewProjectDescription] = useState('');
-  const [newProjectLink, setNewProjectLink] = useState('');
-  const [isSavingProject, setIsSavingProject] = useState(false);
+  const [isSavingProject, setIsSavingProject] = useState(false); // Used for add/edit/delete operations
 
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
-  const [editingProjectName, setEditingProjectName] = useState('');
-  const [editingProjectDescription, setEditingProjectDescription] = useState('');
-  const [editingProjectLink, setEditingProjectLink] = useState('');
 
   const [showCelebration, setShowCelebration] = useState(false);
 
@@ -64,7 +49,7 @@ const ProjectBalanceTracker: React.FC<ProjectBalanceTrackerProps> = ({ isDemo = 
   const [showConfirmResetIndividualDialog, setShowConfirmResetIndividualDialog] = useState(false);
   const [projectToResetId, setProjectToResetId] = useState<string | null>(null);
   const [showConfirmResetAllDialog, setShowConfirmResetAllDialog] = useState(false);
-  const [isResettingAll, setIsResettingAll] = useState(false);
+  const [isResettingAll, setIsResettingAll] = useState(false); // Specific for reset all
 
   const [isNotesOpen, setIsNotesOpen] = useState(false);
   const [selectedProjectForNotes, setSelectedProjectForNotes] = useState<Project | null>(null);
@@ -89,14 +74,11 @@ const ProjectBalanceTracker: React.FC<ProjectBalanceTrackerProps> = ({ isDemo = 
     }
   }, [allProjectsMaxed, projects.length]);
 
-  const handleAddProject = async () => {
-    if (newProjectName.trim()) {
+  const handleAddProject = async (name: string, description: string, link: string) => {
+    if (name.trim()) {
       setIsSavingProject(true);
-      const success = await addProject({ name: newProjectName.trim(), description: newProjectDescription.trim() || null, link: newProjectLink.trim() || null });
+      const success = await addProject({ name, description: description || null, link: link || null });
       if (success) {
-        setNewProjectName('');
-        setNewProjectDescription('');
-        setNewProjectLink('');
         setIsAddProjectOpen(false);
       }
       setIsSavingProject(false);
@@ -105,27 +87,25 @@ const ProjectBalanceTracker: React.FC<ProjectBalanceTrackerProps> = ({ isDemo = 
 
   const handleEditProject = (project: Project) => {
     setEditingProjectId(project.id);
-    setEditingProjectName(project.name);
-    setEditingProjectDescription(project.description || '');
-    setEditingProjectLink(project.link || '');
   };
 
-  const handleSaveProjectEdit = async () => {
-    if (editingProjectId && editingProjectName.trim()) {
+  const handleSaveProjectEdit = async (projectId: string, name: string, description: string, link: string) => {
+    if (projectId && name.trim()) {
       setIsSavingProject(true);
-      const success = await updateProject({ projectId: editingProjectId, updates: {
-        name: editingProjectName.trim(),
-        description: editingProjectDescription.trim() || null,
-        link: editingProjectLink.trim() || null,
+      const success = await updateProject({ projectId, updates: {
+        name,
+        description: description || null,
+        link: link || null,
       }});
       if (success) {
         setEditingProjectId(null);
-        setEditingProjectName('');
-        setEditingProjectDescription('');
-        setEditingProjectLink('');
       }
       setIsSavingProject(false);
     }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingProjectId(null);
   };
 
   const handleDeleteProjectClick = (projectId: string) => {
@@ -180,12 +160,6 @@ const ProjectBalanceTracker: React.FC<ProjectBalanceTrackerProps> = ({ isDemo = 
     setShowConfirmResetAllDialog(false);
   };
 
-  const getProgressColor = (count: number) => {
-    if (count >= 8) return 'bg-primary';
-    if (count >= 4) return 'bg-accent';
-    return 'bg-destructive';
-  };
-
   const handleOpenNotes = (project: Project) => {
     setSelectedProjectForNotes(project);
     setIsNotesOpen(true);
@@ -203,327 +177,74 @@ const ProjectBalanceTracker: React.FC<ProjectBalanceTrackerProps> = ({ isDemo = 
             <CardTitle className="text-3xl font-bold flex items-center justify-center gap-2">
               <LayoutGrid className="h-7 w-7" /> {sectionTitle}
             </CardTitle>
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-4">
-              <Dialog open={isAddProjectOpen} onOpenChange={setIsAddProjectOpen}>
-                <DialogTrigger asChild>
-                  <Button disabled={isSavingProject || isDemo} className="w-full sm:w-auto h-9">
-                    <Plus className="mr-2 h-4 w-4" /> Add Project
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Add New Project</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-3 py-3">
-                    <div>
-                      <Label htmlFor="project-name">Project Name</Label>
-                      <Input
-                        id="project-name"
-                        value={newProjectName}
-                        onChange={(e) => setNewProjectName(e.target.value)}
-                        placeholder="e.g., Learn Rust, Garden Design"
-                        autoFocus
-                        disabled={isSavingProject}
-                        className="h-9"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="project-description">Description (Optional)</Label>
-                      <Textarea
-                        id="project-description"
-                        value={newProjectDescription}
-                        onChange={(e) => setNewProjectDescription(e.target.value)}
-                        placeholder="Notes about this project..."
-                        rows={2}
-                        disabled={isSavingProject}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="project-link">Link (Optional)</Label>
-                      <Input
-                        id="project-link"
-                        type="url"
-                        value={newProjectLink}
-                        onChange={(e) => setNewProjectLink(e.target.value)}
-                        placeholder="e.g., https://github.com/my-project"
-                        disabled={isSavingProject}
-                        className="h-9"
-                      />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setIsAddProjectOpen(false)} disabled={isSavingProject} className="h-9">Cancel</Button>
-                    <Button onClick={handleAddProject} disabled={isSavingProject || !newProjectName.trim()} className="h-9">
-                      {isSavingProject ? 'Adding...' : 'Add Project'}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <Label htmlFor="sort-by">Sort by:</Label>
-                <Select value={sortOption} onValueChange={(value: 'name_asc' | 'count_asc' | 'count_desc' | 'created_at_asc' | 'created_at_desc') => setSortOption(value)}>
-                  <SelectTrigger className="w-full sm:w-[180px] h-9">
-                    <SelectValue placeholder="Sort projects" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="name_asc">Alphabetical (A-Z)</SelectItem>
-                    <SelectItem value="count_asc">Tally (Low to High)</SelectItem>
-                    <SelectItem value="count_desc">Tally (High to Low)</SelectItem>
-                    <SelectItem value="created_at_asc">Oldest First</SelectItem>
-                    <SelectItem value="created_at_desc">Newest First</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+            <ProjectActionsBar
+              onAddProjectClick={() => setIsAddProjectOpen(true)}
+              sortOption={sortOption}
+              onSortChange={setSortOption}
+              isSavingProject={isSavingProject}
+              isDemo={isDemo}
+            />
           </CardHeader>
           <CardContent className="pt-0">
             {showCelebration && (
-              <div className="bg-primary/5 dark:bg-primary/10 text-primary p-4 rounded-xl mb-4 text-center flex flex-col items-center gap-2">
-                <Sparkles className="h-8 w-8 text-primary animate-bounce" />
-                <p className="text-xl font-semibold">Congratulations! All projects are balanced!</p>
-                <p>Ready to start a new cycle?</p>
-                <Button onClick={handleResetAllClick} className="mt-2 h-9" disabled={isResettingAll || isDemo}>
-                  {isResettingAll ? 'Resetting...' : <><RefreshCcw className="mr-2 h-4 w-4" /> Reset All Counters</>}
-                </Button>
-              </div>
+              <ProjectCelebrationBanner
+                onResetAllClick={handleResetAllClick}
+                isResettingAll={isResettingAll}
+                isDemo={isDemo}
+              />
             )}
 
-            {loading ? (
-              <div className="space-y-4">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="rounded-xl p-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-card dark:bg-gray-800 shadow-sm">
-                    <div className="flex-1 min-w-0 space-y-2">
-                      <Skeleton className="h-6 w-3/4" />
-                      <Skeleton className="h-4 w-1/2" />
-                    </div>
-                    <div className="flex items-center gap-3 flex-shrink-0 mt-3 sm:mt-0">
-                      <Skeleton className="h-7 w-7 rounded-full" />
-                      <Skeleton className="h-7 w-7 rounded-full" />
-                      <Skeleton className="h-7 w-7 rounded-full" />
-                      <Skeleton className="h-7 w-7 rounded-full" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : projects.length === 0 ? (
-              <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
-                <LayoutGrid className="h-12 w-12 text-muted-foreground" />
-                <p className="text-lg font-medium mb-2">No projects added yet!</p>
-                <p className="text-sm">Click "Add Project" to start tracking your balance and ensure you're giving attention to all your important areas.</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {leastWorkedOnProject && (
-                  <div className="bg-primary/5 dark:bg-primary/10 text-primary p-4 rounded-xl mb-4 text-center flex flex-col items-center gap-2">
-                    <Lightbulb className="h-5 w-5 text-primary flex-shrink-0" />
-                    <p className="text-sm text-foreground">
-                      Consider focusing on: <span className="font-semibold">{leastWorkedOnProject.name}</span> (Current count: {leastWorkedOnProject.current_count})
-                    </p>
-                  </div>
-                )}
-
-                <ul className="space-y-2">
-                  {projects.map(project => (
-                    <li
-                      key={project.id}
-                      className={cn(
-                        "rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4",
-                        "transition-all duration-200 ease-in-out group",
-                        "hover:shadow-md",
-                        editingProjectId === project.id ? "bg-accent/5 dark:bg-accent/10 border-accent/30 dark:border-accent/70" : "bg-card dark:bg-gray-800 shadow-sm",
-                        leastWorkedOnProject?.id === project.id && "border-2 border-primary dark:border-primary"
-                      )}
-                    >
-                      <div className="flex-1 min-w-0">
-                        {editingProjectId === project.id ? (
-                          <div className="space-y-2">
-                            <Input
-                              value={editingProjectName}
-                              onChange={(e) => setEditingProjectName(e.target.value)}
-                              onKeyDown={(e) => e.key === 'Enter' && handleSaveProjectEdit()}
-                              className="text-lg font-semibold h-9"
-                              autoFocus
-                              disabled={isSavingProject}
-                            />
-                            <Textarea
-                              value={editingProjectDescription}
-                              onChange={(e) => setEditingProjectDescription(e.target.value)}
-                              placeholder="Description..."
-                              rows={2}
-                              disabled={isSavingProject}
-                            />
-                            <Input
-                              type="url"
-                              value={editingProjectLink}
-                              onChange={(e) => setEditingProjectLink(e.target.value)}
-                              placeholder="e.g., https://github.com/my-project"
-                              disabled={isSavingProject}
-                              className="h-9"
-                            />
-                          </div>
-                        ) : (
-                          <>
-                            <h3 className="text-xl font-bold truncate flex items-center gap-2">
-                              {project.name}
-                              {project.current_count === 10 && (
-                                <CheckCircle2 className="h-5 w-5" />
-                              )}
-                              {project.link && (
-                                <a 
-                                  href={project.link} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer" 
-                                  className="text-primary hover:text-primary/90 dark:text-primary/90 dark:hover:text-primary"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <LinkIcon className="h-4 w-4" />
-                                </a>
-                              )}
-                            </h3>
-                            {project.description && (
-                              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{project.description}</p>
-                            )}
-                          </>
-                        )}
-                      </div>
-
-                      <div className="flex flex-col sm:flex-row items-center gap-3 flex-shrink-0 w-full sm:w-64 md:w-80 lg:w-96">
-                        {editingProjectId === project.id ? (
-                          <div className="flex gap-2 w-full">
-                            <Button size="sm" onClick={(e) => { e.stopPropagation(); handleSaveProjectEdit(); }} disabled={isSavingProject || !editingProjectName.trim()} className="flex-1 h-9">
-                              {isSavingProject ? 'Saving...' : 'Save'}
-                            </Button>
-                            <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setEditingProjectId(null); }} disabled={isSavingProject} className="flex-1 h-9">Cancel</Button>
-                          </div>
-                        ) : (
-                          <>
-                            <div className="flex items-center gap-2 w-full">
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-9 w-9"
-                                onClick={(e) => { e.stopPropagation(); handleDecrement(project.id); }}
-                                disabled={project.current_count <= 0 || isDemo}
-                              >
-                                <Minus className="h-5 w-5" />
-                              </Button>
-                              <div className="flex-1">
-                                <Progress value={project.current_count * 10} className="h-3" indicatorClassName={getProgressColor(project.current_count)} />
-                                <p className="text-sm text-muted-foreground text-center mt-1">{project.current_count}/10</p>
-                              </div>
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-9 w-9"
-                                onClick={(e) => { e.stopPropagation(); handleIncrement(project.id); }}
-                                disabled={project.current_count >= 10 || isDemo}
-                              >
-                                <Plus className="h-5 w-5" />
-                              </Button>
-                            </div>
-                            <div className="flex gap-2 w-full sm:w-auto sm:ml-2">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                                onClick={(e) => { e.stopPropagation(); handleOpenNotes(project); }}
-                                aria-label={`Notes for ${project.name}`}
-                                disabled={isSavingProject || isDemo}
-                              >
-                                <StickyNote className="h-5 w-5" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                                onClick={(e) => { e.stopPropagation(); handleEditProject(project); }}
-                                aria-label={`Edit ${project.name}`}
-                                disabled={isSavingProject || isDemo}
-                              >
-                                <Edit className="h-5 w-5" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                                onClick={(e) => { e.stopPropagation(); handleResetIndividualProjectClick(project.id); }}
-                                aria-label={`Reset ${project.name}`}
-                                disabled={isSavingProject || isDemo}
-                              >
-                                <RotateCcw className="h-5 w-5" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-destructive"
-                                onClick={(e) => { e.stopPropagation(); handleDeleteProjectClick(project.id); }}
-                                aria-label={`Delete ${project.name}`}
-                                disabled={isSavingProject || isDemo}
-                              >
-                                <Trash2 className="h-5 w-5" />
-                              </Button>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+            {projects.length > 0 && !loading && (
+              <ProjectRecommendationBanner project={leastWorkedOnProject} />
             )}
+
+            <ProjectList
+              projects={projects}
+              loading={loading}
+              leastWorkedOnProject={leastWorkedOnProject}
+              onIncrement={handleIncrement}
+              onDecrement={handleDecrement}
+              onEdit={handleEditProject}
+              onSaveEdit={handleSaveProjectEdit}
+              onCancelEdit={handleCancelEdit}
+              onDelete={handleDeleteProjectClick}
+              onResetIndividual={handleResetIndividualProjectClick}
+              onOpenNotes={handleOpenNotes}
+              editingProjectId={editingProjectId}
+              isSavingProject={isSavingProject}
+              isDemo={isDemo}
+            />
           </CardContent>
         </Card>
       </main>
-      <AlertDialog open={showConfirmDeleteDialog} onOpenChange={setShowConfirmDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete your project.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSavingProject}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteProject} disabled={isSavingProject}>
-              {isSavingProject ? 'Deleting...' : 'Continue'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
-      <AlertDialog open={showConfirmResetIndividualDialog} onOpenChange={setShowConfirmResetIndividualDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Reset Project Counter?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will reset the tally for this project to 0. Are you sure?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSavingProject}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmResetIndividualProject} disabled={isSavingProject}>
-              {isSavingProject ? 'Resetting...' : 'Reset'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <AddProjectDialog
+        isOpen={isAddProjectOpen}
+        onClose={() => setIsAddProjectOpen(false)}
+        onSave={handleAddProject}
+        isSaving={isSavingProject}
+      />
 
-      <AlertDialog open={showConfirmResetAllDialog} onOpenChange={setShowConfirmResetAllDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Reset All Project Counters?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will reset the tally for ALL your projects to 0. Are you sure you want to start a new cycle?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isResettingAll}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmResetAll} disabled={isResettingAll}>
-              {isResettingAll ? 'Resetting...' : 'Reset All'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDeleteProjectDialog
+        isOpen={showConfirmDeleteDialog}
+        onClose={() => setShowConfirmDeleteDialog(false)}
+        onConfirm={confirmDeleteProject}
+        isSaving={isSavingProject}
+      />
+
+      <ConfirmResetIndividualProjectDialog
+        isOpen={showConfirmResetIndividualDialog}
+        onClose={() => setShowConfirmResetIndividualDialog(false)}
+        onConfirm={confirmResetIndividualProject}
+        isSaving={isSavingProject}
+      />
+
+      <ConfirmResetAllProjectsDialog
+        isOpen={showConfirmResetAllDialog}
+        onClose={() => setShowConfirmResetAllDialog(false)}
+        onConfirm={confirmResetAll}
+        isResetting={isResettingAll}
+      />
 
       <ProjectNotesDialog
         project={selectedProjectForNotes}
