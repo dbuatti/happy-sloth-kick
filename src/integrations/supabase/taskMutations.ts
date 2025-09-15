@@ -18,7 +18,7 @@ interface MutationContext {
   sections: TaskSection[];
   addReminder: (id: string, message: string, date: Date) => void;
   dismissReminder: (id: string) => void;
-  bulkUpdateTasksMutation: (updates: Partial<Task>, ids: string[], context: Omit<MutationContext, 'bulkUpdateTasksMutation'>) => Promise<void>;
+  // bulkUpdateTasksMutation is an external function, not a property of this context object
 }
 
 // Helper to add/remove task from in-flight updates
@@ -84,7 +84,7 @@ export const updateTaskMutation = async (
     // Handle status change to 'completed'
     if (updates.status === 'completed' && currentTask.status !== 'completed') {
       payload.completed_at = new Date().toISOString();
-    } else if (updates.status !== undefined && currentTask.status === 'completed' && updates.status !== 'completed') {
+    } else if (updates.status !== undefined && updates.status !== 'completed') { // Check if status is explicitly set to a non-completed status
       payload.completed_at = null; // Clear completed_at if status changes from completed
     }
 
@@ -173,7 +173,7 @@ export const bulkUpdateTasksMutation = async (
     // Handle completed_at for bulk completion
     if (updates.status === 'completed') {
       payload.completed_at = new Date().toISOString();
-    } else if (updates.status !== undefined && updates.status !== 'completed') {
+    } else if (updates.status !== undefined && updates.status !== 'completed') { // Check if status is explicitly set to a non-completed status
       payload.completed_at = null;
     }
 
@@ -239,7 +239,7 @@ export const bulkDeleteTasksMutation = async (
 export const archiveAllCompletedTasksMutation = async (
   context: MutationContext
 ) => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, invalidateSectionsQueries, invalidateCategoriesQueries, processedTasks, sections, categoriesMap, addReminder, dismissReminder, bulkUpdateTasksMutation } = context;
+  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, invalidateSectionsQueries, invalidateCategoriesQueries, processedTasks, sections, categoriesMap, addReminder, dismissReminder } = context;
   const completedTaskIds = processedTasks
     .filter(task => task.status === 'completed' && task.parent_task_id === null)
     .map(task => task.id);
@@ -257,7 +257,7 @@ export const markAllTasksInSectionCompletedMutation = async (
   sectionId: string | null,
   context: MutationContext
 ) => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, invalidateSectionsQueries, invalidateCategoriesQueries, processedTasks, sections, categoriesMap, addReminder, dismissReminder, bulkUpdateTasksMutation } = context;
+  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, invalidateSectionsQueries, invalidateCategoriesQueries, processedTasks, sections, categoriesMap, addReminder, dismissReminder } = context;
   const tasksToCompleteIds = processedTasks
     .filter(task =>
       task.status === 'to-do' &&

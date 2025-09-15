@@ -103,7 +103,7 @@ interface MutationContext {
   sections: TaskSection[];
   addReminder: (id: string, message: string, date: Date) => void;
   dismissReminder: (id: string) => void;
-  bulkUpdateTasksMutation: (updates: Partial<Task>, ids: string[], context: Omit<MutationContext, 'bulkUpdateTasksMutation'>) => Promise<void>;
+  // bulkUpdateTasksMutation is an external function, not a property of this context object
 }
 
 interface UseTasksProps {
@@ -287,7 +287,6 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     sections,
     addReminder,
     dismissReminder,
-    bulkUpdateTasksMutation, // Pass the mutation function itself
   }), [userId, queryClient, inFlightUpdatesRef, categoriesMap, invalidateTasksQueries, invalidateSectionsQueries, invalidateCategoriesQueries, processedTasks, sections, addReminder, dismissReminder]);
 
   const handleAddTask = useCallback(async (newTaskData: NewTaskData) => {
@@ -298,7 +297,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
       status: newTaskData.status || 'to-do',
       recurring_type: newTaskData.recurring_type || 'none',
       category: newTaskData.category || 'general', // Ensure category is not null
-      priority: newTaskData.priority || 'medium', // Ensure priority is not undefined
+      priority: newTaskData.priority ?? 'medium', // Ensure priority is not undefined using nullish coalescing
     };
     return addTaskMutation(dataWithDefaults, mutationContext);
   }, [userId, mutationContext]);
