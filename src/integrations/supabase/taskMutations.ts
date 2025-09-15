@@ -84,7 +84,7 @@ export const updateTaskMutation = async (
     // Handle status change to 'completed'
     if (updates.status === 'completed' && currentTask.status !== 'completed') {
       payload.completed_at = new Date().toISOString();
-    } else if (updates.status !== undefined && updates.status !== 'completed') { // Check if status is explicitly set to a non-completed status
+    } else if (updates.status !== undefined && currentTask.status === 'completed' && updates.status !== 'completed') { // Check if status is explicitly set to a non-completed status
       payload.completed_at = null; // Clear completed_at if status changes from completed
     }
 
