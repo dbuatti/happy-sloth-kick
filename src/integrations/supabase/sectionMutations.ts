@@ -24,7 +24,7 @@ const trackInFlight = (id: string, inFlightUpdatesRef: React.MutableRefObject<Se
 
 export const createSectionMutation = async (
   name: string,
-  { userId, queryClient, inFlightUpdatesRef, invalidateSectionsQueries, sections }: MutationContext
+  { userId, inFlightUpdatesRef, invalidateSectionsQueries, sections }: MutationContext
 ): Promise<void> => {
   trackInFlight('create-section-temp', inFlightUpdatesRef, 'add');
   try {
@@ -45,7 +45,7 @@ export const createSectionMutation = async (
 export const updateSectionMutation = async (
   sectionId: string,
   newName: string,
-  { userId, queryClient, inFlightUpdatesRef, invalidateSectionsQueries }: MutationContext
+  { userId, inFlightUpdatesRef, invalidateSectionsQueries }: MutationContext
 ): Promise<void> => {
   trackInFlight(sectionId, inFlightUpdatesRef, 'add');
   try {
@@ -67,7 +67,7 @@ export const updateSectionMutation = async (
 
 export const deleteSectionMutation = async (
   sectionId: string,
-  { userId, queryClient, inFlightUpdatesRef, invalidateSectionsQueries, invalidateTasksQueries }: MutationContext
+  { userId, inFlightUpdatesRef, invalidateSectionsQueries, invalidateTasksQueries }: MutationContext
 ): Promise<void> => {
   trackInFlight(sectionId, inFlightUpdatesRef, 'add');
   try {
@@ -101,7 +101,7 @@ export const deleteSectionMutation = async (
 export const updateSectionIncludeInFocusModeMutation = async (
   sectionId: string,
   include: boolean,
-  { userId, queryClient, inFlightUpdatesRef, invalidateSectionsQueries }: MutationContext
+  { userId, inFlightUpdatesRef, invalidateSectionsQueries }: MutationContext
 ): Promise<void> => {
   trackInFlight(sectionId, inFlightUpdatesRef, 'add');
   try {
@@ -122,12 +122,12 @@ export const updateSectionIncludeInFocusModeMutation = async (
 };
 
 export const reorderSectionsMutation = async (
-  activeId: string,
-  overId: string,
+  _activeId: string, // Unused, but kept for consistency with dnd-kit event
+  _overId: string,   // Unused, but kept for consistency with dnd-kit event
   newOrderedSections: TaskSection[],
-  { userId, queryClient, inFlightUpdatesRef, invalidateSectionsQueries }: MutationContext
+  { userId, inFlightUpdatesRef, invalidateSectionsQueries }: MutationContext
 ): Promise<void> => {
-  trackInFlight(activeId, inFlightUpdatesRef, 'add'); // Track activeId as it's the one being moved
+  // We don't track activeId here as the entire list is updated
   try {
     const updates = newOrderedSections.map((section, index) => ({
       id: section.id,
@@ -146,7 +146,5 @@ export const reorderSectionsMutation = async (
   } catch (err: any) {
     showError('Failed to reorder sections.');
     console.error('Error reordering sections:', err.message);
-  } finally {
-    trackInFlight(activeId, inFlightUpdatesRef, 'remove');
   }
 };

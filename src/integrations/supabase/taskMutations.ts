@@ -1,11 +1,9 @@
 import { supabase } from '@/integrations/supabase/client';
-import { v4 as uuidv4 } from 'uuid';
 import { parseISO, isValid } from 'date-fns';
 import { QueryClient } from '@tanstack/react-query';
 import { showError, showSuccess } from '@/utils/toast';
 import { cleanTaskForDb } from '@/utils/taskUtils';
-import { Task, TaskSection, Category } from '@/hooks/useTasks'; // Import types
-import { arrayMove } from '@dnd-kit/sortable';
+import { Task, TaskSection } from '@/hooks/useTasks'; // Import types
 
 // Define a more comprehensive MutationContext interface
 interface MutationContext {
@@ -33,8 +31,8 @@ const trackInFlight = (id: string, inFlightUpdatesRef: React.MutableRefObject<Se
 };
 
 export const addTaskMutation = async (
-  newTaskData: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'completed_at' | 'category_color'>,
-  { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, addReminder }: MutationContext
+  newTaskData: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'completed_at' | 'category_color'> & { order?: number | null },
+  { userId, inFlightUpdatesRef, invalidateTasksQueries, addReminder }: MutationContext
 ): Promise<string | null> => {
   trackInFlight('add-task-temp', inFlightUpdatesRef, 'add'); // Use a temp ID for add operation
   try {
@@ -43,7 +41,7 @@ export const addTaskMutation = async (
       user_id: userId,
       status: newTaskData.status || 'to-do',
       recurring_type: newTaskData.recurring_type || 'none',
-      order: 0, // Default order
+      order: newTaskData.order || 0, // Default order
     };
 
     const { data, error } = await supabase
@@ -74,7 +72,7 @@ export const addTaskMutation = async (
 export const updateTaskMutation = async (
   taskId: string,
   updates: Partial<Omit<Task, 'id' | 'user_id' | 'created_at' | 'category_color'>>,
-  { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, addReminder, dismissReminder, processedTasks }: MutationContext
+  { userId, inFlightUpdatesRef, invalidateTasksQueries, addReminder, dismissReminder, processedTasks }: MutationContext
 ): Promise<string | null> => {
   trackInFlight(taskId, inFlightUpdatesRef, 'add');
   try {
@@ -86,7 +84,7 @@ export const updateTaskMutation = async (
     // Handle status change to 'completed'
     if (updates.status === 'completed' && currentTask.status !== 'completed') {
       payload.completed_at = new Date().toISOString();
-    } else if (updates.status !== 'completed' && currentTask.status === 'completed') {
+    } else if (updates.status && updates.status !== 'completed' && currentTask.status === 'completed') {
       payload.completed_at = null; // Clear completed_at if status changes from completed
     }
 
@@ -121,7 +119,7 @@ export const updateTaskMutation = async (
 
 export const deleteTaskMutation = async (
   taskId: string,
-  { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, dismissReminder, processedTasks }: MutationContext
+  { userId, inFlightUpdatesRef, invalidateTasksQueries, dismissReminder, processedTasks }: MutationContext
 ): Promise<void> => {
   trackInFlight(taskId, inFlightUpdatesRef, 'add');
   try {
@@ -163,7 +161,7 @@ export const deleteTaskMutation = async (
 export const bulkUpdateTasksMutation = async (
   updates: Partial<Task>,
   ids: string[],
-  { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, addReminder, dismissReminder, processedTasks }: MutationContext
+  { userId, inFlightUpdatesRef, invalidateTasksQueries, addReminder, dismissReminder, processedTasks }: MutationContext
 ): Promise<void> => {
   const inFlightIds = ids.map(id => `bulk-update-${id}`);
   inFlightIds.forEach(id => trackInFlight(id, inFlightUpdatesRef, 'add'));
@@ -174,7 +172,7 @@ export const bulkUpdateTasksMutation = async (
     // Handle completed_at for bulk completion
     if (updates.status === 'completed') {
       payload.completed_at = new Date().toISOString();
-    } else if (updates.status !== 'completed') {
+    } else if (updates.status && updates.status !== 'completed') {
       payload.completed_at = null;
     }
 
@@ -210,7 +208,7 @@ export const bulkUpdateTasksMutation = async (
 
 export const bulkDeleteTasksMutation = async (
   ids: string[],
-  { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, dismissReminder }: MutationContext
+  { userId, inFlightUpdatesRef, invalidateTasksQueries, dismissReminder }: MutationContext
 ): Promise<boolean> => {
   const inFlightIds = ids.map(id => `bulk-delete-${id}`);
   inFlightIds.forEach(id => trackInFlight(id, inFlightUpdatesRef, 'add'));
@@ -238,7 +236,7 @@ export const bulkDeleteTasksMutation = async (
 };
 
 export const archiveAllCompletedTasksMutation = async (
-  { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, processedTasks, bulkUpdateTasksMutation }: MutationContext
+  { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, invalidateSectionsQueries, invalidateCategoriesQueries, processedTasks, sections, categoriesMap, addReminder, dismissReminder, bulkUpdateTasksMutation }: MutationContext
 ) => {
   const completedTaskIds = processedTasks
     .filter(task => task.status === 'completed' && task.parent_task_id === null)
@@ -249,13 +247,13 @@ export const archiveAllCompletedTasksMutation = async (
     return;
   }
 
-  await bulkUpdateTasksMutation({ status: 'archived' }, completedTaskIds, { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, addReminder: () => {}, dismissReminder: () => {}, categoriesMap: new Map(), processedTasks: [], sections: [] });
+  await bulkUpdateTasksMutation({ status: 'archived' }, completedTaskIds, { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, invalidateSectionsQueries, invalidateCategoriesQueries, addReminder, dismissReminder, categoriesMap, processedTasks, sections });
   showSuccess('All completed tasks archived!');
 };
 
 export const markAllTasksInSectionCompletedMutation = async (
   sectionId: string | null,
-  { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, processedTasks, bulkUpdateTasksMutation }: MutationContext
+  { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, invalidateSectionsQueries, invalidateCategoriesQueries, processedTasks, sections, categoriesMap, addReminder, dismissReminder, bulkUpdateTasksMutation }: MutationContext
 ) => {
   const tasksToCompleteIds = processedTasks
     .filter(task =>
@@ -269,7 +267,7 @@ export const markAllTasksInSectionCompletedMutation = async (
     return;
   }
 
-  await bulkUpdateTasksMutation({ status: 'completed' }, tasksToCompleteIds, { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, addReminder: () => {}, dismissReminder: () => {}, categoriesMap: new Map(), processedTasks: [], sections: [] });
+  await bulkUpdateTasksMutation({ status: 'completed' }, tasksToCompleteIds, { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, invalidateSectionsQueries, invalidateCategoriesQueries, addReminder, dismissReminder, categoriesMap, processedTasks, sections });
   showSuccess('All tasks in section marked completed!');
 };
 
@@ -279,7 +277,7 @@ export const updateTaskParentAndOrderMutation = async (
   newSectionId: string | null,
   overId: string | null,
   isDraggingDown: boolean,
-  { userId, queryClient, inFlightUpdatesRef, processedTasks, invalidateTasksQueries }: MutationContext
+  { userId, inFlightUpdatesRef, processedTasks, invalidateTasksQueries }: MutationContext
 ) => {
   trackInFlight(activeId, inFlightUpdatesRef, 'add');
   try {
@@ -357,7 +355,7 @@ export const toggleDoTodayMutation = async (
   task: Task,
   currentDate: Date,
   doTodayOffIds: Set<string>,
-  { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries }: MutationContext
+  { userId, inFlightUpdatesRef, invalidateTasksQueries }: MutationContext
 ) => {
   trackInFlight(task.id, inFlightUpdatesRef, 'add');
   try {
@@ -399,7 +397,7 @@ export const toggleAllDoTodayMutation = async (
   filteredTasks: Task[],
   currentDate: Date,
   doTodayOffIds: Set<string>,
-  { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries }: MutationContext
+  { userId, inFlightUpdatesRef, invalidateTasksQueries }: MutationContext
 ) => {
   const formattedDate = new Date(currentDate).toISOString().split('T')[0];
   const tasksToToggle = filteredTasks.filter(t => t.recurring_type === 'none' && t.parent_task_id === null);

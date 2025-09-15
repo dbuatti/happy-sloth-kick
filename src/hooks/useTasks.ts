@@ -7,7 +7,7 @@ import { useReminders } from '@/context/ReminderContext';
 import { parseISO, isValid, format, startOfDay, isAfter, isBefore } from 'date-fns';
 import { arrayMove } from '@dnd-kit/sortable';
 import { useSettings } from '@/context/SettingsContext';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, QueryClient } from '@tanstack/react-query';
 import { fetchSections, fetchCategories, fetchDoTodayOffLog, fetchTasks } from '@/integrations/supabase/queries';
 import {
   addTaskMutation,
@@ -29,6 +29,7 @@ import {
   reorderSectionsMutation,
 } from '@/integrations/supabase/sectionMutations';
 import { useTaskProcessing } from './useTaskProcessing'; // Import the new hook
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 export interface Task {
   id: string;
@@ -86,6 +87,7 @@ interface NewTaskData {
   created_at?: string;
   link?: string | null;
   image_url?: string | null;
+  order?: number | null; // Added order as optional
 }
 
 // Define a more comprehensive MutationContext interface
@@ -286,7 +288,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     addReminder,
     dismissReminder,
     bulkUpdateTasksMutation, // Pass the mutation function itself
-  }), [userId, queryClient, inFlightUpdatesRef, categoriesMap, invalidateTasksQueries, invalidateSectionsQueries, processedTasks, sections, addReminder, dismissReminder]);
+  }), [userId, queryClient, inFlightUpdatesRef, categoriesMap, invalidateTasksQueries, invalidateSectionsQueries, invalidateCategoriesQueries, processedTasks, sections, addReminder, dismissReminder]);
 
   const handleAddTask = useCallback(async (newTaskData: NewTaskData) => {
     if (!userId) { showError('User not authenticated.'); return false; }
