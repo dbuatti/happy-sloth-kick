@@ -11,7 +11,7 @@ import {
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
-  DropdownMenuTrigger, // Added missing import
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock, ChevronRight } from 'lucide-react';
 import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
@@ -37,14 +37,14 @@ interface TaskItemProps {
   currentDate: Date;
   onMoveUp: (taskId: string) => Promise<void>;
   onMoveDown: (taskId: string) => Promise<void>;
-  level: number; // New prop for indentation level
-  isOverlay?: boolean; // New prop for drag overlay
+  level: number;
+  isOverlay?: boolean;
   hasSubtasks?: boolean;
   isExpanded?: boolean;
   toggleTask?: (taskId: string) => void;
   setFocusTask: (taskId: string | null) => Promise<void>;
-  isDoToday: boolean; // This is a prop, not internal state
-  toggleDoToday: (task: Task) => void; // This is the function from useTasks
+  isDoToday: boolean;
+  toggleDoToday: (task: Task) => void;
   scheduledTasksMap: Map<string, Appointment>;
   isDemo?: boolean;
 }
@@ -63,15 +63,15 @@ const TaskItem: React.FC<TaskItemProps> = ({
   isExpanded = true,
   toggleTask,
   setFocusTask,
-  isDoToday, // Destructure prop
-  toggleDoToday, // Destructure prop
+  isDoToday,
+  toggleDoToday,
   scheduledTasksMap,
   isDemo = false,
 }) => {
   const { playSound } = useSound();
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [editText, setEditText] = useState(task.description || ''); // Initialize with empty string if null
+  const [editText, setEditText] = useState(task.description || '');
   const inputRef = useRef<HTMLInputElement>(null);
 
   const scheduledAppointment = useMemo(() => scheduledTasksMap.get(task.id), [scheduledTasksMap, task.id]);
@@ -90,11 +90,9 @@ const TaskItem: React.FC<TaskItemProps> = ({
     }
   }, [isEditing]);
 
-  // Log the isDoToday prop whenever it changes
   useEffect(() => {
-    console.log(`TaskItem: Task ${task.id} (${task.description}) - isDoToday prop changed to: ${isDoToday}`);
-  }, [isDoToday, task.id, task.description]);
-
+    setEditText(task.description || '');
+  }, [task.description]);
 
   const handleStartEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -103,14 +101,14 @@ const TaskItem: React.FC<TaskItemProps> = ({
   };
 
   const handleSaveEdit = async () => {
-    if (editText.trim() && editText.trim() !== (task.description || '')) { // Add null check for task.description
+    if (editText.trim() && editText.trim() !== (task.description || '')) {
       await onUpdate(task.id, { description: editText.trim() });
     }
     setIsEditing(false);
   };
 
   const handleCancelEdit = () => {
-    setEditText(task.description || ''); // Reset to original description or empty string
+    setEditText(task.description || '');
     setIsEditing(false);
   };
 
@@ -174,35 +172,42 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const isDueToday = task.due_date && task.status !== 'completed' && isSameDay(parseISO(task.due_date), currentDate);
 
   const handleToggleDoTodaySwitch = (newCheckedState: boolean) => {
-    console.log(`[Do Today Debug] TaskItem: handleToggleDoTodaySwitch called for task ${task.id}. New state from switch: ${newCheckedState}`);
-    toggleDoToday(task); // Call the prop function from useTasks
+    toggleDoToday(task);
   };
 
   return (
     <div
       className={cn(
-        "relative flex items-center w-full rounded-lg transition-colors duration-200 py-3 pl-5 shadow-sm", // Increased padding, added shadow-sm
-        task.status === 'completed' ? "text-muted-foreground bg-task-completed-bg" : "bg-card text-foreground",
-        !isDoToday && "opacity-40", // Apply opacity if NOT 'Do Today'
-        "group hover:bg-muted/50"
+        "relative flex items-center w-full rounded-xl transition-all duration-300 py-4 pl-5 shadow-sm border",
+        task.status === 'completed' 
+          ? "text-task-completed-text bg-task-completed-bg border-task-completed-text/20" 
+          : "bg-card text-foreground border-border hover:shadow-md",
+        !isDoToday && "opacity-60",
+        "group"
       )}
     >
       {/* Priority Pill */}
-      <div className={cn("absolute left-0 top-0 h-full w-2 rounded-l-lg", getPriorityDotColor(task.priority))} /> {/* Increased width */}
+      <div className={cn(
+        "absolute left-0 top-0 h-full w-1.5 rounded-l-xl", 
+        getPriorityDotColor(task.priority)
+      )} />
 
-      <div className="flex-shrink-0 pr-1 flex items-center" onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}>
+      <div className="flex-shrink-0 pr-3 flex items-center" onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}>
         {hasSubtasks && (
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7" // Slightly larger for easier interaction
+            className="h-8 w-8"
             onClick={(e: React.MouseEvent) => {
               e.stopPropagation();
               toggleTask?.(task.id);
             }}
             aria-label={isExpanded ? 'Collapse sub-tasks' : 'Expand sub-tasks'}
           >
-            <ChevronRight className={cn("h-4 w-4 transition-transform", isExpanded ? "rotate-90" : "rotate-0")} />
+            <ChevronRight className={cn(
+              "h-5 w-5 transition-transform duration-200", 
+              isExpanded ? "rotate-90" : "rotate-0"
+            )} />
           </Button>
         )}
       </div>
@@ -215,7 +220,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           onCheckedChange={handleCheckboxChange}
           id={`task-${task.id}`}
           onClick={(e: React.MouseEvent) => e.stopPropagation()}
-          className="flex-shrink-0 h-5 w-5 checkbox-root"
+          className="flex-shrink-0 h-5 w-5 checkbox-root rounded-full border-2"
           aria-label={`Mark task "${task.description}" as ${task.status === 'completed' ? 'to-do' : 'completed'}`}
           disabled={isOverlay || isDemo}
         />
@@ -223,26 +228,26 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
       {/* Clickable Content Area */}
       <div 
-        className="flex-grow flex items-center space-x-2 min-w-0"
+        className="flex-grow flex items-center space-x-3 min-w-0"
         onClick={() => !isOverlay && !isEditing && onOpenOverview(task)}
       >
         <div className="flex-grow min-w-0 w-full">
           {isEditing ? (
             <Input
               ref={inputRef}
-              value={editText || ''} // Ensure value is always a string
+              value={editText || ''}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditText(e.target.value)}
               onBlur={handleSaveEdit}
               onKeyDown={handleInputKeyDown}
-              className="h-auto text-lg leading-tight p-0 border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full"
+              className="h-auto text-lg leading-tight p-0 border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full font-medium"
               onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
             />
           ) : (
             <>
               <span
                 className={cn(
-                  "text-lg leading-tight line-clamp-2",
-                  task.status === 'completed' ? 'line-through' : '',
+                  "text-lg leading-tight font-medium line-clamp-2",
+                  task.status === 'completed' ? 'line-through opacity-75' : '',
                   "inline-block cursor-text"
                 )}
                 onClick={handleStartEdit}
@@ -286,7 +291,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 flex-shrink-0 text-muted-foreground hover:text-primary"
+                    className="h-8 w-8 flex-shrink-0 text-muted-foreground hover:text-primary"
                     onClick={(e: React.MouseEvent) => handleCopyPath(e, task.link!)}
                   >
                     <ClipboardCopy className="h-4 w-4" />
@@ -303,12 +308,12 @@ const TaskItem: React.FC<TaskItemProps> = ({
             <Tooltip>
               <TooltipTrigger asChild>
                 <span className={cn(
-                  "inline-flex items-center flex-shrink-0 text-xs font-medium px-1 py-0.5 rounded-sm",
-                  "text-muted-foreground",
-                  isOverdue && "text-status-overdue",
-                  isDueToday && "text-status-due-today"
+                  "inline-flex items-center flex-shrink-0 text-xs font-medium px-2 py-1 rounded-full",
+                  "text-foreground bg-muted",
+                  isOverdue && "text-status-overdue bg-status-overdue/10",
+                  isDueToday && "text-status-due-today bg-status-due-today/10"
                 )}>
-                  <CalendarIcon className="h-3.5 w-3.5 mr-1" /> {getDueDateDisplay(task.due_date)}
+                  <CalendarIcon className="h-3 w-3 mr-1" /> {getDueDateDisplay(task.due_date)}
                 </span>
               </TooltipTrigger>
               <TooltipContent>
@@ -352,7 +357,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuItem onSelect={() => onOpenOverview(task)}>
               <Edit className="mr-2 h-4 w-4" /> View Details
             </DropdownMenuItem>
@@ -425,7 +430,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
       {showCompletionEffect && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-          <CheckCircle2 className="h-14 w-14 text-primary animate-fade-in-out-check" />
+          <CheckCircle2 className="h-16 w-16 text-primary animate-task-complete" />
         </div>
       )}
     </div>

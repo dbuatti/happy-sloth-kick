@@ -1,2 +1,68 @@
-@import './light.css';
-@import './dark.css';
+/* Enhanced theme variables for a more polished look */
+:root {
+  /* Primary color palette - softer, more modern tones */
+  --primary: 142 72% 50%;
+  --primary-foreground: 0 0% 100%;
+  
+  /* Secondary colors with better contrast */
+  --secondary: 215 20% 65%;
+  --secondary-foreground: 0 0% 10%;
+  
+  /* Background gradients for depth */
+  --gradient-start-light: 210 40% 98%;
+  --gradient-end-light: 210 20% 95%;
+  --gradient-start-dark: 220 15% 10%;
+  --gradient-end-dark: 220 20% 5%;
+  
+  /* Enhanced status colors */
+  --status-overdue: 0 84% 60%;
+  --status-due-today: 30 90% 55%;
+  --status-completed: 142 72% 50%;
+  
+  /* Priority colors with better visual hierarchy */
+  --priority-low: 210 20% 70%;
+  --priority-medium: 215 20% 65%;
+  --priority-high: 35 90% 55%;
+  --priority-urgent: 0 84% 60%;
+  
+  /* Shadows for depth */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  
+  /* Border radius for modern cards */
+  --radius: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  
+  /* Enhanced task colors */
+  --task-completed-bg: 142 72% 95%;
+  --task-completed-text: 142 72% 30%;
+  
+  /* Focus states */
+  --focus-ring: 217 90% 65%;
+}
+
+.dark {
+  --background: 220 15% 8%;
+  --foreground: 0 0% 95%;
+  --card: 220 15% 12%;
+  --card-foreground: 0 0% 95%;
+  --popover: 220 15% 10%;
+  --popover-foreground: 0 0% 95%;
+  --border: 215 20% 20%;
+  --input: 215 20% 20%;
+  --muted: 215 20% 25%;
+  --muted-foreground: 215 20% 65%;
+  --accent: 215 20% 25%;
+  --accent-foreground: 0 0% 95%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 98%;
+  --ring: 217 90% 65%;
+  
+  /* Dark mode task colors */
+  --task-completed-bg: 142 72% 15%;
+  --task-completed-text: 142 72% 80%;
+}

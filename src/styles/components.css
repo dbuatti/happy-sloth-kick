@@ -1,28 +1,145 @@
-@layer base {
-  .checkbox-root[data-state="checked"] {
-    background-color: hsl(var(--primary));
-    border-color: hsl(var(--primary));
-  }
+/* Enhanced component styles for a more modern look */
 
-  .checkbox-root[data-state="checked"] svg {
-    color: hsl(var(--primary-foreground));
-  }
+/* Card enhancements */
+.card {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  transition: all 0.3s ease;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
+}
 
-  .rdp-day_selected, .rdp-day_selected:focus-visible, .rdp-day_selected:hover {
-    @apply bg-primary text-primary-foreground rounded-md;
-  }
-  .rdp-day_today {
-    @apply font-bold text-primary;
-  }
-  .rdp-day_hasTasks::after {
-    content: '';
-    position: absolute;
-    bottom: 4px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background-color: hsl(var(--primary));
-  }
+.card:hover {
+  box-shadow: var(--shadow-xl);
+  transform: translateY(-2px);
+}
+
+.card-header {
+  padding: 1.5rem;
+}
+
+.card-title {
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.card-content {
+  padding: 0 1.5rem 1.5rem;
+}
+
+/* Button enhancements */
+.btn {
+  border-radius: var(--radius);
+  font-weight: 500;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn-primary {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.btn-primary:hover {
+  background: hsl(var(--primary) / 0.9);
+}
+
+/* Input enhancements */
+.input {
+  border-radius: var(--radius);
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--background));
+  transition: all 0.2s ease;
+}
+
+.input:focus {
+  border-color: hsl(var(--focus-ring));
+  box-shadow: 0 0 0 3px hsl(var(--focus-ring) / 0.3);
+  outline: none;
+}
+
+/* Task item enhancements */
+.task-item {
+  border-radius: var(--radius);
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.task-item:hover {
+  background: hsl(var(--muted) / 0.5);
+  border-color: hsl(var(--border));
+}
+
+.task-item.completed {
+  background: hsl(var(--task-completed-bg));
+  color: hsl(var(--task-completed-text));
+}
+
+/* Section header enhancements */
+.section-header {
+  border-radius: var(--radius);
+  background: hsl(var(--muted) / 0.3);
+  transition: all 0.3s ease;
+}
+
+.section-header:hover {
+  background: hsl(var(--muted) / 0.5);
+}
+
+/* Dialog enhancements */
+.dialog-content {
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  border: 1px solid hsl(var(--border));
+}
+
+/* Sidebar enhancements */
+.sidebar {
+  background: hsl(var(--sidebar-background));
+  border-right: 1px solid hsl(var(--border));
+}
+
+.sidebar-item {
+  border-radius: var(--radius);
+  transition: all 0.2s ease;
+}
+
+.sidebar-item.active {
+  background: hsl(var(--sidebar-accent));
+  color: hsl(var(--sidebar-accent-foreground));
+}
+
+/* Progress bar enhancements */
+.progress {
+  border-radius: var(--radius-full);
+  height: 0.75rem;
+  overflow: hidden;
+}
+
+.progress-indicator {
+  border-radius: var(--radius-full);
+  transition: width 0.3s ease;
+}
+
+/* Badge enhancements */
+.badge {
+  border-radius: var(--radius-full);
+  font-weight: 500;
+  padding: 0.25rem 0.75rem;
+}
+
+/* Tooltip enhancements */
+.tooltip-content {
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid hsl(var(--border));
 }
