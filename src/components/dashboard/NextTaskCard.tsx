@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Edit, Target, Link as LinkIcon, ClipboardCopy } from 'lucide-react';
+import { CheckCircle2, Edit, Link as LinkIcon, ClipboardCopy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Task } from '@/hooks/useTasks';
 import { Skeleton } from '@/components/ui/skeleton';

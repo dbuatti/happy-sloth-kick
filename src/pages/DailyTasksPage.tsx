@@ -154,22 +154,22 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   }, [expandedSections, allSortableSections]);
 
 
-  const handleOpenOverview = (task: Task) => {
+  const onOpenOverview = (task: Task) => {
     setTaskToOverview(task);
     setIsTaskOverviewOpen(true);
   };
 
-  const handleOpenDetail = (task: Task) => {
+  const onOpenDetail = (task: Task) => {
     setTaskToEdit(task);
     setIsTaskDetailOpen(true);
   };
 
   const handleEditTaskFromOverview = (task: Task) => {
     setIsTaskOverviewOpen(false);
-    handleOpenDetail(task);
+    onOpenDetail(task);
   };
 
-  const handleOpenFocusView = () => {
+  const onOpenFocusView = () => {
     if (nextAvailableTask) {
       setIsFocusViewOpen(true);
     }
@@ -253,7 +253,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
                   reorderSections={reorderSections}
                   allCategories={allCategories}
                   setIsAddTaskOpen={() => {}}
-                  onOpenOverview={handleOpenOverview}
+                  onOpenOverview={onOpenOverview}
                   currentDate={currentDate}
                   setCurrentDate={setCurrentDate}
                   expandedSections={expandedSections}
@@ -329,7 +329,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         onDeleteTask={deleteTask}
         sections={sections}
         allCategories={allCategories}
-        onOpenDetail={handleOpenDetail}
+        onOpenDetail={onOpenDetail}
         handleAddTask={handleAddTask}
         currentDate={currentDate}
       />
