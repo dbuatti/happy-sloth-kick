@@ -71,7 +71,8 @@ export interface Category {
   created_at: string;
 }
 
-type TaskUpdate = Partial<Omit<Task, 'id' | 'user_id' | 'created_at'>>;
+// Omit category_color from TaskUpdate as it's a derived client-side property, not a database column
+type TaskUpdate = Partial<Omit<Task, 'id' | 'user_id' | 'created_at' | 'category_color'>>;
 
 interface NewTaskData {
   description: string;
@@ -85,10 +86,10 @@ interface NewTaskData {
   section_id?: string | null;
   parent_task_id?: string | null;
   original_task_id?: string | null;
-  created_at?: string;
+  created_at?: string; // Allow created_at to be passed for virtual tasks
   link?: string | null;
   image_url?: string | null;
-  order?: number | null; // Added order as optional
+  order?: number | null;
 }
 
 // Define a more comprehensive MutationContext interface

@@ -38,7 +38,7 @@ interface NewTaskData {
   order?: number | null;
 }
 
-type TaskUpdate = Partial<Omit<Task, 'id' | 'user_id' | 'created_at'>>;
+type TaskUpdate = Partial<Omit<Task, 'id' | 'user_id' | 'created_at' | 'category_color'>>;
 
 export const addTaskMutation = async (
   newTaskData: NewTaskData,
@@ -54,7 +54,6 @@ export const addTaskMutation = async (
     status: 'to-do' as Task['status'], // Explicitly cast
     recurring_type: 'none' as Task['recurring_type'], // Explicitly cast
     priority: 'medium' as Task['priority'], // Explicitly cast
-    category_color: categoryColor,
     due_date: null,
     notes: null,
     remind_at: null,
@@ -136,11 +135,11 @@ export const updateTaskMutation = async (
     return null;
   }
 
-  const categoryColor = updates.category ? categoriesMap.get(updates.category) || 'gray' : currentTask.category_color;
+  // Remove category_color from updates before sending to DB
+  const { category_color, ...updatesWithoutColor } = updates;
 
   const finalUpdates: Partial<Task> = {
-    ...updates,
-    category_color: categoryColor,
+    ...updatesWithoutColor,
     updated_at: new Date().toISOString(),
   };
 
@@ -153,7 +152,6 @@ export const updateTaskMutation = async (
   // Handle virtual task conversion to real task if it's being updated
   let realTaskId = taskId;
   if (taskId.startsWith('virtual-') && !currentTask.original_task_id) {
-    // const originalRecurringTask = processedTasks.find(t => t.id === currentTask.original_task_id); // Unused
     const virtualTaskCreatedAt = parseISO(currentTask.created_at);
 
     const newRealTaskData: NewTaskData = {
@@ -185,7 +183,7 @@ export const updateTaskMutation = async (
   // Optimistic update
   inFlightUpdatesRef.current.add(realTaskId);
   queryClient.setQueryData(['tasks', userId], (old: Task[] | undefined) => {
-    return old?.map(task => task.id === realTaskId ? { ...task, ...finalUpdates } : task) || [];
+    return old?.map(task => task.id === realTaskId ? { ...task, ...finalUpdates, category_color: category_color || currentTask.category_color } : task) || [];
   });
 
   try {
@@ -258,16 +256,19 @@ export const bulkUpdateTasksMutation = async (
 ): Promise<void> => {
   const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, addReminder, dismissReminder } = context;
 
+  // Filter out category_color from updates before sending to DB
+  const { category_color, ...updatesWithoutColor } = updates;
+
   // Optimistic update
   ids.forEach(id => inFlightUpdatesRef.current.add(id));
   queryClient.setQueryData(['tasks', userId], (old: Task[] | undefined) => {
-    return old?.map(task => ids.includes(task.id) ? { ...task, ...updates } : task) || [];
+    return old?.map(task => ids.includes(task.id) ? { ...task, ...updates, category_color: category_color || task.category_color } : task) || [];
   });
 
   try {
     const { error } = await supabase
       .from('tasks')
-      .update(updates)
+      .update(updatesWithoutColor)
       .in('id', ids)
       .eq('user_id', userId);
 
