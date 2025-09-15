@@ -4,7 +4,7 @@ import { Plus, Sparkles } from 'lucide-react';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import { suggestTaskDetails } from '@/integrations/supabase/api';
 import { dismissToast, showError, showLoading } from '@/utils/toast';
-import { parseISO, isValid } from 'date-fns';
+import { Button } from '@/components/ui/button'; // Added Button import
 
 interface QuickAddTaskProps {
   sectionId: string | null;
