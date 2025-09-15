@@ -74,7 +74,7 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
 
   const groupedArchivedTasks = useMemo(() => {
     const groups: { [date: string]: Task[] } = {};
-    archivedTasks.forEach(task => {
+    archivedTasks.forEach((task: Task) => {
       const dateToUse = task.completed_at || task.updated_at;
       if (dateToUse) {
         const dateKey = format(parseISO(dateToUse), 'yyyy-MM-dd');

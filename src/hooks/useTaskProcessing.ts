@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { isSameDay, parseISO, isValid, isBefore, format, startOfDay, addDays, isAfter } from 'date-fns';
-import { Task, TaskSection, Category } from './useTasks'; // Import types
+import { Task, TaskSection } from './useTasks'; // Import types
 import { UserSettings } from './useUserSettings'; // Import UserSettings type
 
 interface UseTaskProcessingProps {
@@ -102,34 +102,36 @@ export const useTaskProcessing = ({
     return allProcessedTasks;
   }, [rawTasks, todayStart, categoriesMap]);
 
-  const finalFilteredTasks = useMemo(() => {
-    let filtered = processedTasks;
+  const filtered = useMemo(() => {
+    let filteredTasks = processedTasks;
 
     if (viewMode === 'daily') {
-      filtered = filtered.filter(task => {
+      filteredTasks = filteredTasks.filter(task => {
+        // Include tasks completed/archived today
         if ((task.status === 'completed' || task.status === 'archived') && task.completed_at) {
             const completedAtDate = new Date(task.completed_at);
-            
             const isCompletedOnCurrentDate = (
                 isValid(completedAtDate) &&
                 completedAtDate.getFullYear() === effectiveCurrentDate.getFullYear() &&
                 completedAtDate.getMonth() === effectiveCurrentDate.getMonth() &&
                 completedAtDate.getDate() === effectiveCurrentDate.getDate()
             );
-            
             if (isCompletedOnCurrentDate) {
                 return true;
             }
         }
 
+        // Include 'to-do' tasks that are due today or before, or created today or before
         if (task.status === 'to-do') {
             const createdAt = startOfDay(parseISO(task.created_at));
             const dueDate = task.due_date ? startOfDay(parseISO(task.due_date)) : null;
 
+            // If it has a due date, it's relevant if due today or in the past
             if (dueDate && !isAfter(dueDate, todayStart)) {
                 return true;
             }
             
+            // If no due date, it's relevant if created today or in the past
             if (!dueDate && !isAfter(createdAt, todayStart)) {
                 return true;
             }
@@ -140,7 +142,7 @@ export const useTaskProcessing = ({
     }
 
     if (searchFilter) {
-      filtered = filtered.filter(task =>
+      filteredTasks = filteredTasks.filter(task =>
         task.description?.toLowerCase().includes(searchFilter.toLowerCase()) ||
         task.notes?.toLowerCase().includes(searchFilter.toLowerCase()) ||
         task.link?.toLowerCase().includes(searchFilter.toLowerCase())
@@ -148,29 +150,47 @@ export const useTaskProcessing = ({
     }
 
     if (viewMode === 'archive') {
-      filtered = filtered.filter(task => task.status === 'archived');
+      filteredTasks = filteredTasks.filter(task => task.status === 'archived');
     } else {
       if (statusFilter !== 'all') {
-        filtered = filtered.filter(task => task.status === statusFilter);
+        filteredTasks = filteredTasks.filter(task => task.status === statusFilter);
       } else {
-        filtered = filtered.filter(task => task.status !== 'archived');
+        filteredTasks = filteredTasks.filter(task => task.status !== 'archived');
       }
     }
 
     if (categoryFilter !== 'all') {
-      filtered = filtered.filter(task => task.category === categoryFilter);
+      filteredTasks = filteredTasks.filter(task => task.category === categoryFilter);
     }
 
     if (priorityFilter !== 'all') {
-      filtered = filtered.filter(task => task.priority === priorityFilter);
+      filteredTasks = filteredTasks.filter(task => task.priority === priorityFilter);
     }
 
     if (sectionFilter !== 'all') {
       if (sectionFilter === 'no-section') {
-        filtered = filtered.filter(task => task.section_id === null);
+        filteredTasks = filteredTasks.filter(task => task.section_id === null);
       } else {
-        filtered = filtered.filter(task => task.section_id === sectionFilter);
+        filteredTasks = filteredTasks.filter(task => task.section_id === sectionFilter);
       }
+    }
+
+    // Apply "Do Today" filter for daily and focus modes
+    if (viewMode === 'daily' || viewMode === 'focus') {
+      filteredTasks = filteredTasks.filter(task => {
+        // Recurring tasks are always "Do Today"
+        if (task.recurring_type !== 'none') return true;
+        // Non-recurring tasks are "Do Today" if their ID is NOT in the doTodayOffIds set
+        return !doTodayOffIds.has(task.original_task_id || task.id);
+      });
+    }
+
+    // Apply focus mode section filter
+    if (viewMode === 'focus' && userSettings?.schedule_show_focus_tasks_only) {
+      const focusModeSectionIds = new Set(sections.filter(s => s.include_in_focus_mode).map(s => s.id));
+      filteredTasks = filteredTasks.filter(task => {
+        return task.section_id === null || focusModeSectionIds.has(task.section_id);
+      });
     }
 
     if (userSettings && userSettings.future_tasks_days_visible !== -1 && viewMode === 'daily') {
@@ -178,7 +198,7 @@ export const useTaskProcessing = ({
       const today = startOfDay(effectiveCurrentDate);
       const futureLimit = addDays(today, visibilityDays);
 
-      filtered = filtered.filter(task => {
+      filteredTasks = filteredTasks.filter(task => {
         if (!task.due_date) {
           return true;
         }
@@ -187,7 +207,7 @@ export const useTaskProcessing = ({
       });
     }
 
-    return filtered;
+    return filteredTasks;
   }, [
     processedTasks,
     searchFilter,
@@ -199,7 +219,9 @@ export const useTaskProcessing = ({
     effectiveCurrentDate,
     userSettings,
     todayStart,
+    doTodayOffIds,
+    sections,
   ]);
 
-  return { processedTasks, filteredTasks };
+  return { processedTasks, filteredTasks: filtered };
 };

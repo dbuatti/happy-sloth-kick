@@ -2,10 +2,9 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess } from '@/utils/toast';
 import { useReminders } from '@/context/ReminderContext';
-import { isSameDay, parseISO, isValid, format, startOfDay, addDays } from 'date-fns';
+import { parseISO, isValid, format, startOfDay, isAfter, isBefore } from 'date-fns';
 import { arrayMove } from '@dnd-kit/sortable';
 import { useSettings } from '@/context/SettingsContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -19,14 +18,16 @@ import {
   archiveAllCompletedTasksMutation,
   markAllTasksInSectionCompletedMutation,
   updateTaskParentAndOrderMutation,
+  toggleDoTodayMutation,
+  toggleAllDoTodayMutation,
+} from '@/integrations/supabase/taskMutations';
+import {
   createSectionMutation,
   updateSectionMutation,
   deleteSectionMutation,
   updateSectionIncludeInFocusModeMutation,
   reorderSectionsMutation,
-  toggleDoTodayMutation,
-  toggleAllDoTodayMutation,
-} from '@/integrations/supabase/mutations';
+} from '@/integrations/supabase/sectionMutations';
 import { useTaskProcessing } from './useTaskProcessing'; // Import the new hook
 
 export interface Task {
@@ -85,6 +86,22 @@ interface NewTaskData {
   created_at?: string;
   link?: string | null;
   image_url?: string | null;
+}
+
+// Define a more comprehensive MutationContext interface
+interface MutationContext {
+  userId: string;
+  queryClient: QueryClient;
+  inFlightUpdatesRef: React.MutableRefObject<Set<string>>;
+  categoriesMap: Map<string, string>;
+  invalidateTasksQueries: () => void;
+  invalidateSectionsQueries: () => void;
+  invalidateCategoriesQueries: () => void;
+  processedTasks: Task[];
+  sections: TaskSection[];
+  addReminder: (id: string, message: string, date: Date) => void;
+  dismissReminder: (id: string) => void;
+  bulkUpdateTasksMutation: (updates: Partial<Task>, ids: string[], context: Omit<MutationContext, 'bulkUpdateTasksMutation'>) => Promise<void>;
 }
 
 interface UseTasksProps {
@@ -256,7 +273,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     doTodayOffIds,
   });
 
-  const mutationContext = useMemo(() => ({
+  const mutationContext: MutationContext = useMemo(() => ({
     userId: userId!,
     queryClient,
     inFlightUpdatesRef,
@@ -265,8 +282,11 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     invalidateSectionsQueries,
     invalidateCategoriesQueries,
     processedTasks,
-    sections, // Pass sections for reorderSectionsMutation
-  }), [userId, queryClient, inFlightUpdatesRef, categoriesMap, invalidateTasksQueries, invalidateSectionsQueries, processedTasks, sections]);
+    sections,
+    addReminder,
+    dismissReminder,
+    bulkUpdateTasksMutation, // Pass the mutation function itself
+  }), [userId, queryClient, inFlightUpdatesRef, categoriesMap, invalidateTasksQueries, invalidateSectionsQueries, processedTasks, sections, addReminder, dismissReminder]);
 
   const handleAddTask = useCallback(async (newTaskData: NewTaskData) => {
     if (!userId) { showError('User not authenticated.'); return false; }
@@ -295,18 +315,18 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
 
   const archiveAllCompletedTasks = useCallback(async () => {
     if (!userId) { showError('User not authenticated.'); return; }
-    return archiveAllCompletedTasksMutation({ ...mutationContext, processedTasks });
-  }, [userId, mutationContext, processedTasks]);
+    return archiveAllCompletedTasksMutation(mutationContext);
+  }, [userId, mutationContext]);
 
   const markAllTasksInSectionCompleted = useCallback(async (sectionId: string | null) => {
     if (!userId) { showError('User not authenticated.'); return; }
-    return markAllTasksInSectionCompletedMutation(sectionId, { ...mutationContext, processedTasks });
-  }, [userId, mutationContext, processedTasks]);
+    return markAllTasksInSectionCompletedMutation(sectionId, mutationContext);
+  }, [userId, mutationContext]);
 
   const createSection = useCallback(async (name: string) => {
     if (!userId) { showError('User not authenticated.'); return; }
-    return createSectionMutation(name, { ...mutationContext, sections });
-  }, [userId, mutationContext, sections]);
+    return createSectionMutation(name, mutationContext);
+  }, [userId, mutationContext]);
 
   const updateSection = useCallback(async (sectionId: string, newName: string) => {
     if (!userId) { showError('User not authenticated.'); return; }
