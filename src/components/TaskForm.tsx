@@ -77,7 +77,7 @@ const taskFormSchema = z.object({
 type TaskFormData = z.infer<typeof taskFormSchema>;
 
 interface TaskFormProps {
-  initialData?: Task | null;
+  initialData?: Partial<Task> | null; // Changed to Partial<Task>
   onSave: (taskData: {
     description: string;
     category: string;
@@ -102,7 +102,8 @@ interface TaskFormProps {
   updateSection: (sectionId: string, newName: string) => Promise<void>;
   deleteSection: (sectionId: string) => Promise<void>;
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
-  className?: string; // Added className prop
+  className?: string;
+  allTasks?: Task[]; // Added allTasks prop
 }
 
 const TaskForm: React.FC<TaskFormProps> = ({
@@ -119,7 +120,8 @@ const TaskForm: React.FC<TaskFormProps> = ({
   updateSection,
   deleteSection,
   updateSectionIncludeInFocusMode,
-  className, // Destructure className
+  className,
+  allTasks, // Destructure allTasks
 }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
@@ -151,15 +153,22 @@ const TaskForm: React.FC<TaskFormProps> = ({
 
   useEffect(() => {
     const generalCategory = allCategories.find(cat => cat.name.toLowerCase() === 'general');
+    const defaultCategoryId = generalCategory?.id || allCategories[0]?.id || '';
+
+    let parentTask: Task | undefined;
+    if (parentTaskId && allTasks) {
+      parentTask = allTasks.find(t => t.id === parentTaskId);
+    }
+
     const defaultValues = {
       description: '',
-      category: generalCategory?.id || allCategories[0]?.id || '',
-      priority: 'medium',
+      category: parentTask?.category || defaultCategoryId, // Inherit from parent or use general/first
+      priority: parentTask?.priority || 'medium', // Inherit from parent or use medium
       dueDate: null,
       notes: null,
       remindAtDate: null,
       remindAtTime: '',
-      sectionId: preselectedSectionId,
+      sectionId: parentTask?.section_id || preselectedSectionId, // Inherit from parent or use preselected
       recurringType: 'none' as const,
       parentTaskId: parentTaskId ?? null,
       link: null,
@@ -188,7 +197,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
       setImagePreview(null);
     }
     setImageFile(null);
-  }, [initialData, preselectedSectionId, parentTaskId, allCategories, reset]);
+  }, [initialData, preselectedSectionId, parentTaskId, allCategories, reset, allTasks]);
 
   const handleSuggest = useCallback(async () => {
     if (!description.trim()) {
@@ -260,7 +269,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
     }
 
     if (imageFile) {
-      const userId = 'anonymous';
+      const userId = 'anonymous'; // This should ideally come from useAuth, but for image upload, it's often handled by RLS
       const filePath = `${userId}/${uuidv4()}`;
       const { error: uploadError } = await supabase.storage
         .from('taskimages')

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerDescription } from "@/components/ui/drawer";
-import { Trash2, ListTodo } from 'lucide-react';
+import { Trash2, ListTodo, Plus, CheckCircle2 } from 'lucide-react';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import { useTasks } from '@/hooks/useTasks';
 import {
@@ -54,10 +54,11 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   useAuth(); 
   const isMobile = useIsMobile();
 
-  const { updateTask: updateSubtask } = useTasks({ currentDate: new Date() });
+  const { updateTask: updateSubtask, handleAddTask, bulkUpdateTasks } = useTasks({ currentDate: new Date() });
   const { playSound } = useSound();
   const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isAddSubtaskOpen, setIsAddSubtaskOpen] = useState(false);
 
   type TaskFormData = Parameters<typeof TaskForm>['0']['onSave'] extends ((taskData: infer T) => any) ? T : never;
 
@@ -67,6 +68,20 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
     await onUpdate(task.id, taskData);
     setIsSaving(false);
     return true;
+  };
+
+  const handleAddSubtask = async (subtaskData: TaskFormData) => {
+    if (!task) return false;
+    const success = await handleAddTask({
+      ...subtaskData,
+      parent_task_id: task.id,
+      section_id: task.section_id, // Inherit section from parent
+      category: task.category, // Inherit category from parent
+    });
+    if (success) {
+      setIsAddSubtaskOpen(false);
+    }
+    return success;
   };
 
   const handleDeleteClick = () => {
@@ -99,6 +114,17 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
     onClose();
   };
 
+  const handleMarkAllSubtasksCompleted = async () => {
+    if (!task) return;
+    const subtaskIdsToComplete = subtasks.filter(st => st.status !== 'completed').map(st => st.id);
+    if (subtaskIdsToComplete.length > 0) {
+      setIsSaving(true);
+      await bulkUpdateTasks({ status: 'completed' }, subtaskIdsToComplete);
+      playSound('success');
+      setIsSaving(false);
+    }
+  };
+
   if (!task) return null;
 
   const subtasks = allTasks.filter(t => t.parent_task_id === task?.id)
@@ -118,14 +144,22 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
         deleteSection={deleteSection}
         updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
         className="text-foreground" // Changed to text-foreground
+        allTasks={allTasks} // Pass allTasks for parent lookup
       />
 
       <div className="space-y-2 mt-3 border-t pt-2">
         <div className="flex justify-between items-center">
           <h3 className="text-base font-semibold text-foreground">Sub-tasks ({subtasks.length})</h3>
-          <Button variant="outline" size="sm" className="h-8 text-base" onClick={() => { /* Removed setIsAddSubtaskOpen(true) */ }}>
-            Add Sub-task
-          </Button>
+          <div className="flex gap-2">
+            {subtasks.length > 0 && (
+              <Button variant="outline" size="sm" className="h-8 text-base" onClick={handleMarkAllSubtasksCompleted} disabled={isSaving || subtasks.every(st => st.status === 'completed')}>
+                <CheckCircle2 className="mr-2 h-3.5 w-3.5" /> Mark All Complete
+              </Button>
+            )}
+            <Button variant="outline" size="sm" className="h-8 text-base" onClick={() => setIsAddSubtaskOpen(true)} disabled={isSaving}>
+              <Plus className="mr-2 h-3.5 w-3.5" /> Add Sub-task
+            </Button>
+          </div>
         </div>
         {subtasks.length === 0 ? (
           <p className="text-sm text-muted-foreground">No sub-tasks yet. Break down this task into smaller steps!</p>
@@ -229,6 +263,33 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Dialog for adding a new subtask */}
+      <Dialog open={isAddSubtaskOpen} onOpenChange={setIsAddSubtaskOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Sub-task to "{task?.description}"</DialogTitle>
+            <DialogDescription className="sr-only">
+              Fill in the details to add a new sub-task.
+            </DialogDescription>
+          </DialogHeader>
+          <TaskForm
+            onSave={handleAddSubtask}
+            onCancel={() => setIsAddSubtaskOpen(false)}
+            sections={sections}
+            allCategories={allCategories}
+            currentDate={new Date()}
+            createSection={createSection}
+            updateSection={updateSection}
+            deleteSection={deleteSection}
+            updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+            parentTaskId={task?.id}
+            preselectedSectionId={task?.section_id}
+            initialData={{ category: task?.category || '' } as Partial<Task>} // Pass category for pre-fill
+            allTasks={allTasks} // Pass allTasks for parent lookup
+          />
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

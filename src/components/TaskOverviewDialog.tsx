@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerDescription } from "@/components/ui/drawer";
-import { Trash2, ListTodo, Edit, Calendar, StickyNote, BellRing, FolderOpen, Repeat, Link as LinkIcon, ClipboardCopy } from 'lucide-react';
+import { Trash2, ListTodo, Edit, Calendar, StickyNote, BellRing, FolderOpen, Repeat, Link as LinkIcon, ClipboardCopy, CheckCircle2 } from 'lucide-react';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
 import {
@@ -20,6 +20,7 @@ import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { getCategoryColorProps } from '@/lib/categoryColors';
 import { showSuccess, showError } from '@/utils/toast';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useTasks } from '@/hooks/useTasks'; // Import useTasks to get bulkUpdateTasks
 
 interface TaskOverviewDialogProps {
   task: Task | null;
@@ -44,6 +45,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
   allTasks,
 }) => {
   const { playSound } = useSound();
+  const { bulkUpdateTasks } = useTasks({ currentDate: new Date() }); // Get bulkUpdateTasks
   const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const isMobile = useIsMobile();
@@ -105,6 +107,17 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
       onDelete(task.id);
       setShowConfirmDeleteDialog(false);
       onClose();
+    }
+  };
+
+  const handleMarkAllSubtasksCompleted = async () => {
+    if (!task) return;
+    const subtaskIdsToComplete = subtasks.filter(st => st.status !== 'completed').map(st => st.id);
+    if (subtaskIdsToComplete.length > 0) {
+      setIsUpdatingStatus(true);
+      await bulkUpdateTasks({ status: 'completed' }, subtaskIdsToComplete);
+      playSound('success');
+      setIsUpdatingStatus(false);
     }
   };
 
@@ -209,7 +222,14 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
       )}
 
       <div className="space-y-1.5">
-        <h4 className="font-semibold flex items-center gap-2"><ListTodo className="h-3.5 w-3.5 text-muted-foreground" /> Sub-tasks ({subtasks.length})</h4>
+        <div className="flex justify-between items-center">
+          <h4 className="font-semibold flex items-center gap-2"><ListTodo className="h-3.5 w-3.5 text-muted-foreground" /> Sub-tasks ({subtasks.length})</h4>
+          {subtasks.length > 0 && (
+            <Button variant="outline" size="sm" className="h-8 text-base" onClick={handleMarkAllSubtasksCompleted} disabled={isUpdatingStatus || subtasks.every(st => st.status === 'completed')}>
+              <CheckCircle2 className="mr-2 h-3.5 w-3.5" /> Mark All Complete
+            </Button>
+          )}
+        </div>
         {subtasks.length === 0 ? (
           <p className="text-sm text-muted-foreground">No sub-tasks for this task.</p>
         ) : (

@@ -666,7 +666,6 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
       showError('Failed to delete tasks.');
       console.error(`useTasks: Error during bulk delete for tasks ${ids.join(', ')}:`, e.message);
       invalidateTasksQueries();
-      return false;
     } finally {
       setTimeout(() => {
         ids.forEach(id => inFlightUpdatesRef.current.delete(id));
@@ -1385,7 +1384,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     handleAddTask,
     updateTask,
     deleteTask,
-    bulkUpdateTasks,
+    bulkUpdateTasks, // Exposed for external use
     bulkDeleteTasks,
     searchFilter,
     setSearchFilter,

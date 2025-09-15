@@ -350,6 +350,9 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                         onAddTask={async (data) => { await handleAddTask(data); }}
                         defaultCategoryId={defaultCategory?.id || ''}
                         isDemo={isDemo}
+                        allCategories={allCategories} // Pass allCategories
+                        sections={sections} // Pass sections
+                        currentDate={currentDate} // Pass currentDate
                       />
                     </div>
                   </div>
@@ -432,6 +435,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
             updateSection={updateSection}
             deleteSection={deleteSection}
             updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+            allTasks={tasks} // Pass allTasks
           />
         </DialogContent>
       </Dialog>
