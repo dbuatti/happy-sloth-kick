@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess } from '@/utils/toast';
 import { useReminders } from '@/context/ReminderContext';
-import { isSameDay, parseISO, isValid, isBefore, format, startOfDay, addDays } from 'date-fns';
+import { isSameDay, parseISO, isValid, format, startOfDay, addDays } from 'date-fns';
 import { arrayMove } from '@dnd-kit/sortable';
 import { useSettings } from '@/context/SettingsContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -27,6 +27,7 @@ import {
   toggleDoTodayMutation,
   toggleAllDoTodayMutation,
 } from '@/integrations/supabase/mutations';
+import { useTaskProcessing } from './useTaskProcessing'; // Import the new hook
 
 export interface Task {
   id: string;
@@ -240,73 +241,20 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     };
   }, [userId, addReminder, dismissReminder, invalidateTasksQueries, invalidateSectionsQueries, invalidateCategoriesQueries, queryClient, effectiveCurrentDate]);
 
-  const processedTasks = useMemo(() => {
-    const allProcessedTasks: Task[] = [];
-    const processedSeriesKeys = new Set<string>();
-    const categoriesMapLocal = categoriesMap;
-
-    const taskSeriesMap = new Map<string, Omit<Task, 'category_color'>[]>();
-    rawTasks.forEach((task: Omit<Task, 'category_color'>) => {
-      const seriesKey = task.original_task_id || task.id;
-      if (!taskSeriesMap.has(seriesKey)) {
-        taskSeriesMap.set(seriesKey, []);
-      }
-      taskSeriesMap.get(seriesKey)!.push(task);
-    });
-
-    taskSeriesMap.forEach((seriesInstances, seriesKey) => {
-      if (processedSeriesKeys.has(seriesKey)) return;
-      processedSeriesKeys.add(seriesKey);
-
-      const templateTask: Omit<Task, 'category_color'> | undefined = rawTasks.find((t: Omit<Task, 'category_color'>) => t.id === seriesKey);
-
-      if (!templateTask) {
-        seriesInstances.forEach(orphanTask => {
-            allProcessedTasks.push({ ...orphanTask, category_color: categoriesMapLocal.get(orphanTask.category || '') || 'gray' });
-        });
-        return;
-      }
-
-      if (templateTask.recurring_type === 'none') {
-        allProcessedTasks.push({ ...templateTask, category_color: categoriesMapLocal.get(templateTask.category || '') || 'gray' });
-      } else {
-        const sortedInstances = [...seriesInstances].sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime());
-        let relevantInstance: Omit<Task, 'category_color'> | null = sortedInstances.find(t => isSameDay(startOfDay(parseISO(t.created_at)), todayStart)) || null;
-
-        if (!relevantInstance) {
-          relevantInstance = sortedInstances.find(t => isBefore(startOfDay(parseISO(t.created_at)), todayStart) && t.status === 'to-do') || null;
-        }
-
-        if (!relevantInstance) {
-          const mostRecentRealInstance = sortedInstances.find(t => isBefore(startOfDay(parseISO(t.created_at)), todayStart));
-          const baseTaskForVirtual = mostRecentRealInstance || templateTask;
-
-          const templateCreatedAt = parseISO(templateTask.created_at);
-          const isDailyMatch = templateTask.recurring_type === 'daily';
-          const isWeeklyMatch = templateTask.recurring_type === 'weekly' && todayStart.getUTCDay() === templateCreatedAt.getUTCDay();
-          const isMonthlyMatch = templateTask.recurring_type === 'monthly' && todayStart.getUTCDate() === templateCreatedAt.getUTCDate();
-
-          if ((isDailyMatch || isWeeklyMatch || isMonthlyMatch) && templateTask.status !== 'archived') {
-            const virtualTask: Task = {
-              ...baseTaskForVirtual,
-              id: `virtual-${templateTask.id}-${format(todayStart, 'yyyy-MM-dd')}`,
-              created_at: todayStart.toISOString(),
-              status: 'to-do',
-              original_task_id: templateTask.id,
-              remind_at: baseTaskForVirtual.remind_at ? format(parseISO(baseTaskForVirtual.remind_at), 'yyyy-MM-ddTHH:mm:ssZ') : null,
-              due_date: baseTaskForVirtual.due_date ? todayStart.toISOString() : null,
-              category_color: categoriesMapLocal.get(baseTaskForVirtual.category || '') || 'gray',
-              completed_at: null,
-            };
-            allProcessedTasks.push(virtualTask);
-          }
-        } else {
-          allProcessedTasks.push({ ...relevantInstance, category_color: categoriesMapLocal.get(relevantInstance.category || '') || 'gray' });
-        }
-      }
-    });
-    return allProcessedTasks;
-  }, [rawTasks, todayStart, categoriesMap]);
+  const { processedTasks, filteredTasks: finalFilteredTasks } = useTaskProcessing({
+    rawTasks,
+    categoriesMap,
+    effectiveCurrentDate,
+    viewMode,
+    searchFilter,
+    statusFilter,
+    categoryFilter,
+    priorityFilter,
+    sectionFilter,
+    userSettings,
+    sections,
+    doTodayOffIds,
+  });
 
   const mutationContext = useMemo(() => ({
     userId: userId!,
@@ -314,11 +262,11 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     inFlightUpdatesRef,
     categoriesMap,
     invalidateTasksQueries,
-    invalidateSectionsQueries: () => queryClient.invalidateQueries({ queryKey: ['task_sections', userId] }),
-    invalidateCategoriesQueries: () => queryClient.invalidateQueries({ queryKey: ['task_categories', userId] }),
+    invalidateSectionsQueries,
+    invalidateCategoriesQueries,
     processedTasks,
     sections, // Pass sections for reorderSectionsMutation
-  }), [userId, queryClient, inFlightUpdatesRef, categoriesMap, invalidateTasksQueries, processedTasks, sections]);
+  }), [userId, queryClient, inFlightUpdatesRef, categoriesMap, invalidateTasksQueries, invalidateSectionsQueries, processedTasks, sections]);
 
   const handleAddTask = useCallback(async (newTaskData: NewTaskData) => {
     if (!userId) { showError('User not authenticated.'); return false; }
@@ -388,105 +336,6 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     if (!userId) { showError('User not authenticated.'); return; }
     return updateTaskParentAndOrderMutation(activeId, newParentId, newSectionId, overId, isDraggingDown, mutationContext);
   }, [userId, mutationContext]);
-
-  const finalFilteredTasks = useMemo(() => {
-    let filtered = processedTasks;
-
-    if (viewMode === 'daily') {
-      filtered = filtered.filter(task => {
-        if ((task.status === 'completed' || task.status === 'archived') && task.completed_at) {
-            const completedAtDate = new Date(task.completed_at);
-            
-            const isCompletedOnCurrentDate = (
-                isValid(completedAtDate) &&
-                completedAtDate.getFullYear() === effectiveCurrentDate.getFullYear() &&
-                completedAtDate.getMonth() === effectiveCurrentDate.getMonth() &&
-                completedAtDate.getDate() === effectiveCurrentDate.getDate()
-            );
-            
-            if (isCompletedOnCurrentDate) {
-                return true;
-            }
-        }
-
-        if (task.status === 'to-do') {
-            const createdAt = startOfDay(parseISO(task.created_at));
-            const dueDate = task.due_date ? startOfDay(parseISO(task.due_date)) : null;
-
-            if (dueDate && !isAfter(dueDate, todayStart)) {
-                return true;
-            }
-            
-            if (!dueDate && !isAfter(createdAt, todayStart)) {
-                return true;
-            }
-        }
-
-        return false;
-      });
-    }
-
-    if (searchFilter) {
-      filtered = filtered.filter(task =>
-        task.description?.toLowerCase().includes(searchFilter.toLowerCase()) ||
-        task.notes?.toLowerCase().includes(searchFilter.toLowerCase()) ||
-        task.link?.toLowerCase().includes(searchFilter.toLowerCase())
-      );
-    }
-
-    if (viewMode === 'archive') {
-      filtered = filtered.filter(task => task.status === 'archived');
-    } else {
-      if (statusFilter !== 'all') {
-        filtered = filtered.filter(task => task.status === statusFilter);
-      } else {
-        filtered = filtered.filter(task => task.status !== 'archived');
-      }
-    }
-
-    if (categoryFilter !== 'all') {
-      filtered = filtered.filter(task => task.category === categoryFilter);
-    }
-
-    if (priorityFilter !== 'all') {
-      filtered = filtered.filter(task => task.priority === priorityFilter);
-    }
-
-    if (sectionFilter !== 'all') {
-      if (sectionFilter === 'no-section') {
-        filtered = filtered.filter(task => task.section_id === null);
-      } else {
-        filtered = filtered.filter(task => task.section_id === sectionFilter);
-      }
-    }
-
-    if (userSettings && userSettings.future_tasks_days_visible !== -1 && viewMode === 'daily') {
-      const visibilityDays = userSettings.future_tasks_days_visible;
-      const today = startOfDay(effectiveCurrentDate);
-      const futureLimit = addDays(today, visibilityDays);
-
-      filtered = filtered.filter(task => {
-        if (!task.due_date) {
-          return true;
-        }
-        const dueDate = startOfDay(parseISO(task.due_date));
-        return !isAfter(dueDate, futureLimit);
-      });
-    }
-
-    return filtered;
-  }, [
-    processedTasks,
-    searchFilter,
-    statusFilter,
-    categoryFilter,
-    priorityFilter,
-    sectionFilter,
-    viewMode,
-    effectiveCurrentDate,
-    userSettings,
-    todayStart,
-  ]);
 
   const setFocusTask = useCallback(async (taskId: string | null) => {
     if (!userId) {
