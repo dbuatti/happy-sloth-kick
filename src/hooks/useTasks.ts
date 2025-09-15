@@ -305,6 +305,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
       section_id: newTaskData.section_id ?? null, // Fix: Add nullish coalescing for section_id
       order: newTaskData.order ?? null, // Fix: Add nullish coalescing for order
       original_task_id: newTaskData.original_task_id ?? null, // Fix: Add nullish coalescing for original_task_id
+      parent_task_id: newTaskData.parent_task_id ?? null, // Fix: Add nullish coalescing for parent_task_id
     };
     return addTaskMutation(dataWithDefaults, mutationContext);
   }, [userId, mutationContext]);
