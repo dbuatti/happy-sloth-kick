@@ -3,3 +3,9 @@
 @import './styles/components.css';
 @import './styles/animations.css';
 @import './styles/utilities.css';
+
+/* Custom override for shadcn dialog/drawer overlays to make them fully opaque */
+.fixed.inset-0.z-50[data-state="open"] {
+  background-color: hsl(var(--background)) !important; /* Use background color, make it fully opaque */
+  opacity: 1 !important; /* Ensure full opacity */
+}
