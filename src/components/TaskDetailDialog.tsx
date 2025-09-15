@@ -184,7 +184,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
     <>
       {isMobile ? (
         <Drawer open={isOpen} onOpenChange={onClose}>
-          <DrawerContent>
+          <DrawerContent className="bg-card"> {/* Added bg-card */}
             <DrawerHeader className="text-left">
               <DrawerTitle>Edit Task</DrawerTitle>
               <DrawerDescription className="sr-only">
@@ -199,7 +199,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
         </Drawer>
       ) : (
         <Dialog open={isOpen} onOpenChange={onClose}>
-          <DialogContent className="sm:max-w-[425px] md:max-w-lg lg:max-w-xl">
+          <DialogContent className="sm:max-w-[425px] md:max-w-lg lg:max-w-xl bg-card"> {/* Added bg-card */}
             <DialogHeader>
               <DialogTitle>Edit Task</DialogTitle>
               <DialogDescription className="sr-only">

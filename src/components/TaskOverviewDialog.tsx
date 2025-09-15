@@ -78,7 +78,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
     } else if (isPast(date) && !isSameDay(date, new Date())) {
       return `Overdue ${format(date, 'MMM d')}`;
     } else {
-      return `Due ${format(date, 'MMM d')}`;
+      return format(date, 'MMM d');
     }
   };
 
@@ -281,7 +281,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
     <>
       {isMobile ? (
         <Drawer open={isOpen} onOpenChange={onClose}>
-          <DrawerContent className="z-[9999]"> {/* Added z-[9999] */}
+          <DrawerContent className="z-[9999] bg-card"> {/* Added bg-card */}
             <DrawerHeader className="text-left">
               <TitleContent isDrawer />
               <DrawerDescription className="sr-only">
@@ -296,7 +296,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
         </Drawer>
       ) : (
         <Dialog open={isOpen} onOpenChange={onClose}>
-          <DialogContent className="sm:max-w-[425px] md:max-w-lg lg:max-w-xl z-[9999]"> {/* Added z-[9999] */}
+          <DialogContent className="sm:max-w-[425px] md:max-w-lg lg:max-w-xl z-[9999] bg-card"> {/* Added bg-card */}
             <DialogHeader>
               <TitleContent />
               <DialogDescription className="sr-only">
