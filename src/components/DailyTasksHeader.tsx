@@ -97,6 +97,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   const [quickAddTaskDescription, setQuickAddTaskDescription] = useState('');
   const quickAddInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const quickAddBarRef = useRef<HTMLDivElement>(null); // Declared quickAddBarRef
 
   const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
