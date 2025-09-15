@@ -122,7 +122,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
 
       <div className="space-y-2 mt-3 border-t pt-2">
         <div className="flex justify-between items-center">
-          <h3 className="text-base font-semibold">Sub-tasks ({subtasks.length})</h3>
+          <h3 className="text-base font-semibold text-card-foreground">Sub-tasks ({subtasks.length})</h3>
           <Button variant="outline" size="sm" className="h-8 text-base" onClick={() => { /* Removed setIsAddSubtaskOpen(true) */ }}>
             Add Sub-task
           </Button>
