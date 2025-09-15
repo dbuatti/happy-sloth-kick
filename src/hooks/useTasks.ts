@@ -298,6 +298,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
       status: newTaskData.status || 'to-do',
       recurring_type: newTaskData.recurring_type || 'none',
       category: newTaskData.category || 'general', // Ensure category is not null
+      priority: newTaskData.priority || 'medium', // Ensure priority is not undefined
     };
     return addTaskMutation(dataWithDefaults, mutationContext);
   }, [userId, mutationContext]);

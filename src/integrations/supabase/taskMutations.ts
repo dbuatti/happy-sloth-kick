@@ -161,8 +161,9 @@ export const deleteTaskMutation = async (
 export const bulkUpdateTasksMutation = async (
   updates: Partial<Task>,
   ids: string[],
-  { userId, inFlightUpdatesRef, invalidateTasksQueries, addReminder, dismissReminder, processedTasks }: MutationContext
+  context: Omit<MutationContext, 'bulkUpdateTasksMutation'> // Changed to Omit
 ): Promise<void> => {
+  const { userId, inFlightUpdatesRef, invalidateTasksQueries, addReminder, dismissReminder, processedTasks } = context; // Destructure from context
   const inFlightIds = ids.map(id => `bulk-update-${id}`);
   inFlightIds.forEach(id => trackInFlight(id, inFlightUpdatesRef, 'add'));
 
@@ -236,8 +237,9 @@ export const bulkDeleteTasksMutation = async (
 };
 
 export const archiveAllCompletedTasksMutation = async (
-  { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, invalidateSectionsQueries, invalidateCategoriesQueries, processedTasks, sections, categoriesMap, addReminder, dismissReminder, bulkUpdateTasksMutation }: MutationContext
+  context: MutationContext
 ) => {
+  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, invalidateSectionsQueries, invalidateCategoriesQueries, processedTasks, sections, categoriesMap, addReminder, dismissReminder, bulkUpdateTasksMutation } = context;
   const completedTaskIds = processedTasks
     .filter(task => task.status === 'completed' && task.parent_task_id === null)
     .map(task => task.id);
@@ -253,8 +255,9 @@ export const archiveAllCompletedTasksMutation = async (
 
 export const markAllTasksInSectionCompletedMutation = async (
   sectionId: string | null,
-  { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, invalidateSectionsQueries, invalidateCategoriesQueries, processedTasks, sections, categoriesMap, addReminder, dismissReminder, bulkUpdateTasksMutation }: MutationContext
+  context: MutationContext
 ) => {
+  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, invalidateSectionsQueries, invalidateCategoriesQueries, processedTasks, sections, categoriesMap, addReminder, dismissReminder, bulkUpdateTasksMutation } = context;
   const tasksToCompleteIds = processedTasks
     .filter(task =>
       task.status === 'to-do' &&
