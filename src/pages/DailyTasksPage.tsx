@@ -180,7 +180,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
 
   return (
     <div className="flex-1 flex flex-col h-full">
-      <main className="flex-grow overflow-y-auto">
+      <main className="flex-grow overflow-y-auto"> {/* Added overflow-y-auto here */}
         <div className="w-full max-w-4xl mx-auto flex flex-col">
           <DailyTasksHeader
             currentDate={currentDate}
