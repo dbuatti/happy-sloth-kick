@@ -33,9 +33,6 @@ interface DailyTasksHeaderProps {
   setPriorityFilter: (value: string) => void;
   sectionFilter: string;
   setSectionFilter: (value: string) => void;
-  nextAvailableTask: Task | null; // Added
-  updateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>; // Added
-  onOpenOverview: (task: Task) => void; // Added
   createSection: (name: string) => Promise<void>;
   updateSection: (sectionId: string, newName: string) => Promise<void>;
   deleteSection: (sectionId: string) => Promise<void>;
@@ -50,9 +47,12 @@ interface DailyTasksHeaderProps {
     overdueCount: number;
   };
   isDemo?: boolean;
-  toggleDoToday: (task: Task) => void;
-  onOpenFocusView: () => void; // Added
-  tasksLoading: boolean; // Added
+  // Props for NextTaskCard
+  nextAvailableTask: Task | null;
+  updateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
+  onOpenOverview: (task: Task) => void;
+  onOpenFocusView: () => void;
+  tasksLoading: boolean;
 }
 
 const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
@@ -72,9 +72,6 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   setPriorityFilter,
   sectionFilter,
   setSectionFilter,
-  nextAvailableTask, // Destructure
-  updateTask, // Destructure
-  onOpenOverview, // Destructure
   createSection,
   updateSection,
   deleteSection,
@@ -85,9 +82,12 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   setPrefilledTaskData,
   dailyProgress,
   isDemo = false,
-  toggleDoToday,
-  onOpenFocusView, // Destructure
-  tasksLoading, // Destructure
+  // Destructure NextTaskCard props
+  nextAvailableTask,
+  updateTask,
+  onOpenOverview,
+  onOpenFocusView,
+  tasksLoading,
 }) => {
   useDailyTaskCount(); 
   const [quickAddTaskDescription, setQuickAddTaskDescription] = useState('');

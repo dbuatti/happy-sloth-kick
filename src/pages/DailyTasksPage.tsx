@@ -158,12 +158,6 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     handleOpenDetail(task);
   };
 
-  const handleOpenFocusView = () => {
-    if (nextAvailableTask) {
-      setIsFocusViewOpen(true);
-    }
-  };
-
   const handleMarkDoneFromFocusView = async () => {
     if (nextAvailableTask) {
       await updateTask(nextAvailableTask.id, { status: 'completed' });
@@ -204,9 +198,6 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
             setPriorityFilter={setPriorityFilter}
             sectionFilter={sectionFilter}
             setSectionFilter={setSectionFilter}
-            nextAvailableTask={nextAvailableTask} {/* Pass nextAvailableTask */}
-            updateTask={updateTask} {/* Pass updateTask */}
-            onOpenOverview={handleOpenOverview} {/* Pass onOpenOverview */}
             createSection={createSection}
             updateSection={updateSection}
             deleteSection={deleteSection}
@@ -217,9 +208,11 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
             setPrefilledTaskData={setPrefilledTaskData}
             dailyProgress={dailyProgress}
             isDemo={isDemo}
-            toggleDoToday={toggleDoToday}
-            onOpenFocusView={handleOpenFocusView} {/* Pass onOpenFocusView */}
-            tasksLoading={tasksLoading} {/* Pass tasksLoading */}
+            nextAvailableTask={nextAvailableTask}
+            updateTask={updateTask}
+            onOpenOverview={handleOpenOverview}
+            onOpenFocusView={handleOpenFocusView}
+            tasksLoading={tasksLoading}
           />
 
           <Card className="flex-1 flex flex-col rounded-none shadow-none border-0 relative z-[1]">
