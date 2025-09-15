@@ -293,7 +293,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
               created_at: todayStart.toISOString(),
               status: 'to-do',
               original_task_id: templateTask.id,
-              remind_at: baseTaskForVirtual.remind_at ? format(setHours(setMinutes(todayStart, getMinutes(parseISO(baseTaskForVirtual.remind_at))), getHours(parseISO(baseTaskForVirtual.remind_at))), 'yyyy-MM-ddTHH:mm:ssZ') : null,
+              remind_at: baseTaskForVirtual.remind_at ? format(parseISO(baseTaskForVirtual.remind_at), 'yyyy-MM-ddTHH:mm:ssZ') : null,
               due_date: baseTaskForVirtual.due_date ? todayStart.toISOString() : null,
               category_color: categoriesMapLocal.get(baseTaskForVirtual.category || '') || 'gray',
               completed_at: null,
@@ -314,10 +314,11 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     inFlightUpdatesRef,
     categoriesMap,
     invalidateTasksQueries,
-    invalidateSectionsQueries,
-    invalidateCategoriesQueries,
+    invalidateSectionsQueries: () => queryClient.invalidateQueries({ queryKey: ['task_sections', userId] }),
+    invalidateCategoriesQueries: () => queryClient.invalidateQueries({ queryKey: ['task_categories', userId] }),
     processedTasks,
-  }), [userId, queryClient, inFlightUpdatesRef, categoriesMap, invalidateTasksQueries, invalidateSectionsQueries, invalidateCategoriesQueries, processedTasks]);
+    sections, // Pass sections for reorderSectionsMutation
+  }), [userId, queryClient, inFlightUpdatesRef, categoriesMap, invalidateTasksQueries, processedTasks, sections]);
 
   const handleAddTask = useCallback(async (newTaskData: NewTaskData) => {
     if (!userId) { showError('User not authenticated.'); return false; }
@@ -346,18 +347,18 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
 
   const archiveAllCompletedTasks = useCallback(async () => {
     if (!userId) { showError('User not authenticated.'); return; }
-    return archiveAllCompletedTasksMutation(mutationContext);
-  }, [userId, mutationContext]);
+    return archiveAllCompletedTasksMutation({ ...mutationContext, processedTasks });
+  }, [userId, mutationContext, processedTasks]);
 
   const markAllTasksInSectionCompleted = useCallback(async (sectionId: string | null) => {
     if (!userId) { showError('User not authenticated.'); return; }
-    return markAllTasksInSectionCompletedMutation(sectionId, mutationContext);
-  }, [userId, mutationContext]);
+    return markAllTasksInSectionCompletedMutation(sectionId, { ...mutationContext, processedTasks });
+  }, [userId, mutationContext, processedTasks]);
 
   const createSection = useCallback(async (name: string) => {
     if (!userId) { showError('User not authenticated.'); return; }
-    return createSectionMutation(name, mutationContext);
-  }, [userId, mutationContext]);
+    return createSectionMutation(name, { ...mutationContext, sections });
+  }, [userId, mutationContext, sections]);
 
   const updateSection = useCallback(async (sectionId: string, newName: string) => {
     if (!userId) { showError('User not authenticated.'); return; }
