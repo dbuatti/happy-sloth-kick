@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock, ChevronRight, GripVertical } from 'lucide-react';
 import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
-import { cn } "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -134,9 +134,9 @@ const TaskItem: React.FC<TaskItemProps> = ({
     }
   };
 
-  const handleCheckboxChange = (checked: boolean) => {
+  const handleCheckboxChange = async (checked: boolean) => {
     if (isOverlay || isDemo) return;
-    onStatusChange(task.id, checked ? 'completed' : 'to-do');
+    await onStatusChange(task.id, checked ? 'completed' : 'to-do');
     if (checked) {
       playSound('success');
       setShowCompletionEffect(true);
