@@ -127,7 +127,7 @@ export const updateTaskMutation = async (
   updates: TaskUpdate,
   context: MutationContext
 ): Promise<string | null> => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, addReminder, dismissReminder, categoriesMap, processedTasks } = context;
+  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, addReminder, dismissReminder, processedTasks, categoriesMap } = context;
 
   const currentTask = processedTasks.find(t => t.id === taskId);
   if (!currentTask) {
@@ -135,11 +135,12 @@ export const updateTaskMutation = async (
     return null;
   }
 
-  // Remove category_color from updates before sending to DB
-  const { category_color, ...updatesWithoutColor } = updates;
+  // category_color is not part of TaskUpdate, so it won't be in 'updates'.
+  // We derive it for the optimistic update based on 'updates.category' or 'currentTask.category'.
+  const newCategoryColor = updates.category ? categoriesMap.get(updates.category) || 'gray' : currentTask.category_color;
 
-  const finalUpdates: Partial<Task> = {
-    ...updatesWithoutColor,
+  const finalUpdates: Partial<Omit<Task, 'category_color'>> = { // Ensure category_color is not in this object
+    ...updates,
     updated_at: new Date().toISOString(),
   };
 
@@ -183,7 +184,7 @@ export const updateTaskMutation = async (
   // Optimistic update
   inFlightUpdatesRef.current.add(realTaskId);
   queryClient.setQueryData(['tasks', userId], (old: Task[] | undefined) => {
-    return old?.map(task => task.id === realTaskId ? { ...task, ...finalUpdates, category_color: category_color || currentTask.category_color } : task) || [];
+    return old?.map(task => task.id === realTaskId ? { ...task, ...finalUpdates, category_color: newCategoryColor } : task) || [];
   });
 
   try {
