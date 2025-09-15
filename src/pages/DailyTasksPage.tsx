@@ -204,22 +204,16 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
             setPriorityFilter={setPriorityFilter}
             sectionFilter={sectionFilter}
             setSectionFilter={setSectionFilter}
-            nextAvailableTask={nextAvailableTask}
-            updateTask={updateTask}
-            onOpenOverview={handleOpenOverview}
             createSection={createSection}
             updateSection={updateSection}
             deleteSection={deleteSection}
             updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-            doTodayOffIds={doTodayOffIds}
             archiveAllCompletedTasks={archiveAllCompletedTasks}
             toggleAllDoToday={toggleAllDoToday}
             setIsAddTaskDialogOpen={setIsAddTaskDialogOpen}
             setPrefilledTaskData={setPrefilledTaskData}
             dailyProgress={dailyProgress}
             isDemo={isDemo}
-            toggleDoToday={toggleDoToday}
-            onOpenFocusView={handleOpenFocusView}
           />
 
           <Card className="flex-1 flex flex-col rounded-none shadow-none border-0 relative z-[1]">
@@ -332,7 +326,10 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
           </DialogHeader>
           <TaskForm
             onSave={async (taskData) => {
-              const success = await handleAddTask(taskData);
+              const success = await handleAddTask({
+                ...taskData,
+                section_id: preselectedSectionId ?? null,
+              });
               if (success) {
                 setIsAddTaskDialogOpen(false);
                 setPrefilledTaskData(null);

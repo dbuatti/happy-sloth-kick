@@ -8,7 +8,6 @@ import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import { showError, showLoading, dismissToast } from '@/utils/toast';
 import { suggestTaskDetails } from '@/integrations/supabase/api';
 import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
-import { useSound } from '@/context/SoundContext';
 import { Progress } from '@/components/Progress';
 import ManageCategoriesDialog from './ManageCategoriesDialog';
 import ManageSectionsDialog from './ManageSectionsDialog';
@@ -33,8 +32,6 @@ interface DailyTasksHeaderProps {
   setPriorityFilter: (value: string) => void;
   sectionFilter: string;
   setSectionFilter: (value: string) => void;
-  nextAvailableTask: Task | null;
-  updateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   createSection: (name: string) => Promise<void>;
   updateSection: (sectionId: string, newName: string) => Promise<void>;
   deleteSection: (sectionId: string) => Promise<void>;
@@ -68,8 +65,6 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   setPriorityFilter,
   sectionFilter,
   setSectionFilter,
-  nextAvailableTask,
-  updateTask,
   createSection,
   updateSection,
   deleteSection,
@@ -82,7 +77,6 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   isDemo = false,
 }) => {
   useDailyTaskCount(); 
-  const { playSound } = useSound();
   const [quickAddTaskDescription, setQuickAddTaskDescription] = useState('');
   const quickAddInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
