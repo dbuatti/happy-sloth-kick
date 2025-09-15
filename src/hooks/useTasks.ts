@@ -298,6 +298,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
       recurring_type: newTaskData.recurring_type || 'none',
       category: newTaskData.category || 'general', // Ensure category is not null
       priority: newTaskData.priority ?? 'medium', // Ensure priority is not undefined using nullish coalescing
+      due_date: newTaskData.due_date ?? null, // Fix: Add nullish coalescing for due_date
     };
     return addTaskMutation(dataWithDefaults, mutationContext);
   }, [userId, mutationContext]);

@@ -81,11 +81,13 @@ export const updateTaskMutation = async (
 
     const payload = cleanTaskForDb(updates);
 
-    // Handle status change to 'completed'
-    if (updates.status === 'completed' && currentTask.status !== 'completed') {
-      payload.completed_at = new Date().toISOString();
-    } else if (updates.status !== undefined && currentTask.status === 'completed' && updates.status !== 'completed') { // Check if status is explicitly set to a non-completed status
-      payload.completed_at = null; // Clear completed_at if status changes from completed
+    // Only modify completed_at if status is explicitly updated
+    if (updates.status !== undefined) {
+        if (updates.status === 'completed') {
+            payload.completed_at = new Date().toISOString();
+        } else {
+            payload.completed_at = null;
+        }
     }
 
     const { data, error } = await supabase
@@ -170,11 +172,13 @@ export const bulkUpdateTasksMutation = async (
   try {
     const payload = cleanTaskForDb(updates);
 
-    // Handle completed_at for bulk completion
-    if (updates.status === 'completed') {
-      payload.completed_at = new Date().toISOString();
-    } else if (updates.status !== undefined && updates.status !== 'completed') { // Check if status is explicitly set to a non-completed status
-      payload.completed_at = null;
+    // Only modify completed_at if status is explicitly updated
+    if (updates.status !== undefined) {
+        if (updates.status === 'completed') {
+            payload.completed_at = new Date().toISOString();
+        } else {
+            payload.completed_at = null;
+        }
     }
 
     const { error } = await supabase
