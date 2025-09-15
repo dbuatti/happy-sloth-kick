@@ -152,7 +152,7 @@ export const updateTaskMutation = async (
 
   // Handle virtual task conversion to real task if it's being updated
   let realTaskId = taskId;
-  if (taskId.startsWith('virtual-') && !currentTask.original_task_id) {
+  if (taskId.startsWith('virtual-')) { // Corrected condition: simply check if it's a virtual ID
     const virtualTaskCreatedAt = parseISO(currentTask.created_at);
 
     const newRealTaskData: NewTaskData = {
@@ -166,7 +166,7 @@ export const updateTaskMutation = async (
       remind_at: currentTask.remind_at,
       section_id: currentTask.section_id,
       order: currentTask.order,
-      original_task_id: currentTask.id, // The virtual task's ID becomes the original_task_id for the new real instance
+      original_task_id: currentTask.original_task_id, // Corrected: Use the original_task_id from the virtual task
       parent_task_id: currentTask.parent_task_id,
       created_at: virtualTaskCreatedAt.toISOString(), // Set created_at to the virtual task's date
       link: currentTask.link,
