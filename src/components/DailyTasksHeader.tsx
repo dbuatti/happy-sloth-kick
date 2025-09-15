@@ -1,10 +1,9 @@
 import React, { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, ListTodo, Brain, CheckCircle2, Clock, Target, Edit, Sparkles, FolderOpen, Tag, Archive, ToggleRight } from 'lucide-react';
+import { Plus, ListTodo, Brain, CheckCircle2, Clock, Sparkles, FolderOpen, Tag, Archive, ToggleRight } from 'lucide-react';
 import DateNavigator from './DateNavigator';
 import TaskFilter from './TaskFilter';
-import { cn } from '@/lib/utils';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import { showError, showLoading, dismissToast } from '@/utils/toast';
 import { suggestTaskDetails } from '@/integrations/supabase/api';
@@ -13,8 +12,6 @@ import { useSound } from '@/context/SoundContext';
 import { Progress } from '@/components/Progress';
 import ManageCategoriesDialog from './ManageCategoriesDialog';
 import ManageSectionsDialog from './ManageSectionsDialog';
-import DoTodaySwitch from './DoTodaySwitch';
-import { Label } from '@/components/ui/label';
 
 interface DailyTasksHeaderProps {
   currentDate: Date;
@@ -38,12 +35,10 @@ interface DailyTasksHeaderProps {
   setSectionFilter: (value: string) => void;
   nextAvailableTask: Task | null;
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
-  onOpenOverview: (task: Task) => void;
   createSection: (name: string) => Promise<void>;
   updateSection: (sectionId: string, newName: string) => Promise<void>;
   deleteSection: (sectionId: string) => Promise<void>;
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
-  doTodayOffIds: Set<string>;
   archiveAllCompletedTasks: () => Promise<void>;
   toggleAllDoToday: () => Promise<void>;
   setIsAddTaskDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -54,8 +49,6 @@ interface DailyTasksHeaderProps {
     overdueCount: number;
   };
   isDemo?: boolean;
-  toggleDoToday: (task: Task) => void;
-  onOpenFocusView: () => void;
 }
 
 const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
@@ -77,20 +70,16 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   setSectionFilter,
   nextAvailableTask,
   updateTask,
-  onOpenOverview,
   createSection,
   updateSection,
   deleteSection,
   updateSectionIncludeInFocusMode,
-  doTodayOffIds,
   archiveAllCompletedTasks,
   toggleAllDoToday,
   setIsAddTaskDialogOpen,
   setPrefilledTaskData,
   dailyProgress,
   isDemo = false,
-  toggleDoToday,
-  onOpenFocusView,
 }) => {
   useDailyTaskCount(); 
   const { playSound } = useSound();
@@ -155,24 +144,6 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   };
 
   const quickAddBarRef = useRef<HTMLDivElement>(null);
-
-  const getPriorityDotColor = (priority: string) => {
-    switch (priority) {
-      case 'urgent': return 'bg-priority-urgent';
-      case 'high': return 'bg-priority-high';
-      case 'medium': return 'bg-priority-medium';
-      case 'low': return 'bg-priority-low';
-      default: return 'bg-gray-500';
-    }
-  };
-
-  const handleMarkNextTaskComplete = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (nextAvailableTask) {
-      await updateTask(nextAvailableTask.id, { status: 'completed' });
-      playSound('success');
-    }
-  };
 
   const totalTasksForProgress = totalPendingCount + completedCount;
 

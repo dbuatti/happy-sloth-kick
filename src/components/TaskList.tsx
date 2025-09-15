@@ -321,7 +321,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                           <SortableTaskItem
                             key={task.id}
                             task={task}
-                            onStatusChange={async (taskId, newStatus) => updateTask(taskId, { status: newStatus })}
+                            onStatusChange={async (taskId, newStatus) => { await updateTask(taskId, { status: newStatus }); }}
                             onDelete={deleteTask}
                             onUpdate={updateTask}
                             sections={sections}
@@ -384,7 +384,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                     <TaskItem
                       task={activeItemData as Task}
                       allTasks={tasks}
-                      onStatusChange={async (taskId, newStatus) => { await updateTask(taskId, { status: newStatus }); return taskId; }}
+                      onStatusChange={async (taskId, newStatus) => { await updateTask(taskId, { status: newStatus }); }}
                       onDelete={() => {}}
                       onUpdate={async (taskId, updates) => { await updateTask(taskId, updates); return taskId; }}
                       sections={sections}
