@@ -140,7 +140,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
   };
 
   const MainContent = () => (
-    <div className="space-y-3 text-sm text-card-foreground">
+    <div className="space-y-3 text-sm text-foreground">
       {task.image_url && (
         <div className="mb-3">
           <img src={task.image_url} alt="Task attachment" className="rounded-lg max-h-64 w-full object-contain bg-muted" />
@@ -228,7 +228,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
                   htmlFor={`subtask-overview-${subtask.id}`}
                   className={cn(
                     "flex-1 text-sm font-medium leading-tight",
-                    subtask.status === 'completed' ? 'line-through text-gray-500 dark:text-gray-400' : 'text-card-foreground',
+                    subtask.status === 'completed' ? 'line-through text-gray-500 dark:text-gray-400' : 'text-foreground',
                     "block truncate"
                   )}
                 >
@@ -281,7 +281,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
     <>
       {isMobile ? (
         <Drawer open={isOpen} onOpenChange={onClose}>
-          <DrawerContent className="z-[9999] bg-card"> {/* Added bg-card */}
+          <DrawerContent className="z-[9999] bg-background"> {/* Changed to bg-background */}
             <DrawerHeader className="text-left">
               <TitleContent isDrawer />
               <DrawerDescription className="sr-only">
@@ -296,7 +296,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
         </Drawer>
       ) : (
         <Dialog open={isOpen} onOpenChange={onClose}>
-          <DialogContent className="sm:max-w-[425px] md:max-w-lg lg:max-w-xl z-[9999] bg-card"> {/* Added bg-card */}
+          <DialogContent className="sm:max-w-[425px] md:max-w-lg lg:max-w-xl z-[9999] bg-background"> {/* Changed to bg-background */}
             <DialogHeader>
               <TitleContent />
               <DialogDescription className="sr-only">

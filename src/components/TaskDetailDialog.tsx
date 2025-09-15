@@ -117,12 +117,12 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
         updateSection={updateSection}
         deleteSection={deleteSection}
         updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-        className="text-card-foreground" // Added text-card-foreground here
+        className="text-foreground" // Changed to text-foreground
       />
 
       <div className="space-y-2 mt-3 border-t pt-2">
         <div className="flex justify-between items-center">
-          <h3 className="text-base font-semibold text-card-foreground">Sub-tasks ({subtasks.length})</h3>
+          <h3 className="text-base font-semibold text-foreground">Sub-tasks ({subtasks.length})</h3>
           <Button variant="outline" size="sm" className="h-8 text-base" onClick={() => { /* Removed setIsAddSubtaskOpen(true) */ }}>
             Add Sub-task
           </Button>
@@ -143,7 +143,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
                   htmlFor={`subtask-${subtask.id}`}
                   className={cn(
                     "flex-1 text-sm font-medium leading-tight",
-                    subtask.status === 'completed' ? 'line-through text-gray-500 dark:text-gray-400' : 'text-card-foreground',
+                    subtask.status === 'completed' ? 'line-through text-gray-500 dark:text-gray-400' : 'text-foreground',
                     "block truncate"
                   )}
                 >
@@ -185,7 +185,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
     <>
       {isMobile ? (
         <Drawer open={isOpen} onOpenChange={onClose}>
-          <DrawerContent className="bg-card"> {/* Added bg-card */}
+          <DrawerContent className="bg-background"> {/* Changed to bg-background */}
             <DrawerHeader className="text-left">
               <DrawerTitle>Edit Task</DrawerTitle>
               <DrawerDescription className="sr-only">
@@ -200,7 +200,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
         </Drawer>
       ) : (
         <Dialog open={isOpen} onOpenChange={onClose}>
-          <DialogContent className="sm:max-w-[425px] md:max-w-lg lg:max-w-xl bg-card"> {/* Added bg-card */}
+          <DialogContent className="sm:max-w-[425px] md:max-w-lg lg:max-w-xl bg-background"> {/* Changed to bg-background */}
             <DialogHeader>
               <DialogTitle>Edit Task</DialogTitle>
               <DialogDescription className="sr-only">
