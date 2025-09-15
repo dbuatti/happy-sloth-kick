@@ -189,7 +189,6 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
             filteredTasks={filteredTasks}
             sections={sections}
             allCategories={allCategories}
-            handleAddTask={handleAddTask}
             userId={user?.id || null}
             setIsFocusPanelOpen={setIsFocusPanelOpen}
             searchFilter={searchFilter}
@@ -208,8 +207,6 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
             updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
             archiveAllCompletedTasks={archiveAllCompletedTasks}
             toggleAllDoToday={toggleAllDoToday}
-            setIsAddTaskDialogOpen={setIsAddTaskDialogOpen}
-            setPrefilledTaskData={setPrefilledTaskData}
             dailyProgress={dailyProgress}
             isDemo={isDemo}
             nextAvailableTask={nextAvailableTask}
