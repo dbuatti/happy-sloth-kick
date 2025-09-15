@@ -13,7 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import FocusPanelDrawer from '@/components/FocusPanelDrawer';
 import DailyTasksHeader from '@/components/DailyTasksHeader';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import TaskForm from '@/components/TaskForm'; // Updated import
+import TaskForm from '@/components/TaskForm';
 import { useAllAppointments } from '@/hooks/useAllAppointments';
 import { Appointment } from '@/hooks/useAppointments';
 import FullScreenFocusView from '@/components/FullScreenFocusView';
@@ -63,14 +63,12 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     setPriorityFilter,
     sectionFilter,
     setSectionFilter,
-    // currentDate is now managed here, so remove from useTasks destructuring
-    // setCurrentDate is also managed here
     setFocusTask,
     doTodayOffIds,
     toggleDoToday,
     toggleAllDoToday,
     dailyProgress,
-  } = useTasks({ viewMode: 'daily', userId: demoUserId, currentDate: currentDate }); // Pass the stable currentDate
+  } = useTasks({ viewMode: 'daily', userId: demoUserId, currentDate: currentDate });
 
   const { appointments: allAppointments } = useAllAppointments();
 
@@ -219,6 +217,8 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
             onOpenOverview={handleOpenOverview}
             onOpenFocusView={handleOpenFocusView}
             tasksLoading={tasksLoading}
+            doTodayOffIds={doTodayOffIds} // Pass doTodayOffIds
+            toggleDoToday={toggleDoToday} // Pass toggleDoToday
           />
 
           <Card className="flex-1 flex flex-col rounded-none shadow-none border-0 relative z-[1]">
@@ -360,7 +360,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
       <AnimatePresence>
         {isFocusViewOpen && nextAvailableTask && (
           <FullScreenFocusView
-            taskDescription={nextAvailableTask.description || ''} // Ensure description is string
+            taskDescription={nextAvailableTask.description || ''}
             onClose={() => setIsFocusViewOpen(false)}
             onMarkDone={handleMarkDoneFromFocusView}
           />

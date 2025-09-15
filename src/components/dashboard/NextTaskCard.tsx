@@ -6,7 +6,8 @@ import { Task } from '@/hooks/useTasks';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { showSuccess, showError } from '@/utils/toast';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"; // Import Card components
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import DoTodaySwitch from '@/components/DoTodaySwitch'; // Import DoTodaySwitch
 
 interface NextTaskCardProps {
   nextAvailableTask: Task | null;
@@ -14,9 +15,12 @@ interface NextTaskCardProps {
   onOpenOverview: (task: Task) => void;
   loading: boolean;
   onFocusViewOpen: () => void;
+  isDoToday: boolean; // New prop
+  toggleDoToday: (task: Task) => void; // New prop
+  isDemo?: boolean; // New prop
 }
 
-const NextTaskCard: React.FC<NextTaskCardProps> = ({ nextAvailableTask, updateTask, onOpenOverview, loading, onFocusViewOpen }) => {
+const NextTaskCard: React.FC<NextTaskCardProps> = ({ nextAvailableTask, updateTask, onOpenOverview, loading, onFocusViewOpen, isDoToday, toggleDoToday, isDemo = false }) => {
   const getPriorityDotColor = (priority: string) => {
     switch (priority) {
       case 'urgent': return 'bg-priority-urgent';
@@ -53,9 +57,15 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ nextAvailableTask, updateTa
     }
   };
 
+  const handleToggleDoTodaySwitch = (checked: boolean) => {
+    if (nextAvailableTask) {
+      toggleDoToday(nextAvailableTask);
+    }
+  };
+
   return (
     <Card
-      className="h-full shadow-lg rounded-xl flex flex-col justify-center cursor-pointer" // Adjusted classes
+      className="h-full shadow-lg rounded-xl flex flex-col justify-center cursor-pointer"
       onClick={onFocusViewOpen}
     >
       <CardHeader className="pb-2">
@@ -63,7 +73,7 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ nextAvailableTask, updateTa
           <Target className="h-5 w-5" /> Your Next Task
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex-grow flex items-center justify-center pt-0"> {/* Adjusted padding */}
+      <CardContent className="flex-grow flex items-center justify-center pt-0">
         {loading ? (
           <div className="space-y-3 w-full flex flex-col items-center">
             <Skeleton className="h-6 w-3/4" />
@@ -74,7 +84,15 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ nextAvailableTask, updateTa
           </div>
         ) : nextAvailableTask ? (
           <div className="flex flex-col items-center text-center space-y-3">
-            <div className={cn("w-3 h-3 rounded-full", getPriorityDotColor(nextAvailableTask.priority))} />
+            <div className="flex items-center gap-2">
+              <div className={cn("w-3 h-3 rounded-full", getPriorityDotColor(nextAvailableTask.priority))} />
+              <DoTodaySwitch
+                isOn={isDoToday}
+                onToggle={handleToggleDoTodaySwitch}
+                taskId={nextAvailableTask.id}
+                isDemo={isDemo}
+              />
+            </div>
             <p className="text-xl sm:text-2xl font-bold leading-tight text-foreground line-clamp-2">
               {nextAvailableTask.description}
             </p>
@@ -119,10 +137,10 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ nextAvailableTask, updateTa
               </div>
             )}
             <div className="flex space-x-2">
-              <Button size="sm" onClick={handleMarkComplete}>
+              <Button size="sm" onClick={handleMarkComplete} disabled={isDemo}>
                 <CheckCircle2 className="mr-2 h-4 w-4" /> Done
               </Button>
-              <Button size="sm" variant="outline" onClick={handleOpenOverviewClick}>
+              <Button size="sm" variant="outline" onClick={handleOpenOverviewClick} disabled={isDemo}>
                 <Edit className="mr-2 h-4 w-4" /> Details
               </Button>
             </div>

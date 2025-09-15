@@ -11,7 +11,7 @@ import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
 import { Progress } from '@/components/Progress';
 import ManageCategoriesDialog from './ManageCategoriesDialog';
 import ManageSectionsDialog from './ManageSectionsDialog';
-import NextTaskCard from './dashboard/NextTaskCard'; // Import NextTaskCard
+import NextTaskCard from './dashboard/NextTaskCard';
 
 interface DailyTasksHeaderProps {
   currentDate: Date;
@@ -53,6 +53,8 @@ interface DailyTasksHeaderProps {
   onOpenOverview: (task: Task) => void;
   onOpenFocusView: () => void;
   tasksLoading: boolean;
+  doTodayOffIds: Set<string>; // New prop
+  toggleDoToday: (task: Task) => void; // New prop
 }
 
 const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
@@ -88,6 +90,8 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   onOpenOverview,
   onOpenFocusView,
   tasksLoading,
+  doTodayOffIds, // Destructure new prop
+  toggleDoToday, // Destructure new prop
 }) => {
   useDailyTaskCount(); 
   const [quickAddTaskDescription, setQuickAddTaskDescription] = useState('');
@@ -154,6 +158,8 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
 
   const totalTasksForProgress = totalPendingCount + completedCount;
 
+  const isNextTaskDoToday = nextAvailableTask ? !doTodayOffIds.has(nextAvailableTask.original_task_id || nextAvailableTask.id) : false;
+
   return (
     <div className="flex flex-col bg-gradient-to-br from-[hsl(var(--gradient-start-light))] to-[hsl(var(--gradient-end-light))] dark:from-[hsl(var(--gradient-start-dark))] dark:to-[hsl(var(--gradient-end-dark))] rounded-b-2xl shadow-lg">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 pt-4">
@@ -205,6 +211,9 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
           onOpenOverview={onOpenOverview}
           loading={tasksLoading}
           onFocusViewOpen={onOpenFocusView}
+          isDoToday={isNextTaskDoToday} // Pass isDoToday
+          toggleDoToday={toggleDoToday} // Pass toggleDoToday
+          isDemo={isDemo}
         />
       </div>
 
