@@ -255,7 +255,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
       </div>
 
       <div
-        className="bg-card p-6 mx-4 rounded-xl shadow-lg mb-4 flex flex-col items-center text-center cursor-pointer hover:shadow-xl transition-shadow duration-200"
+        className="bg-background p-6 mx-4 rounded-xl shadow-lg mb-4 flex flex-col items-center text-center cursor-pointer hover:shadow-xl transition-shadow duration-200"
         onClick={onOpenFocusView}
       >
         <div className="w-full flex justify-center items-center mb-3 relative">
@@ -278,7 +278,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
           <div className="w-full space-y-4">
             <div className="flex items-center justify-center gap-3">
               <div className={cn("w-5 h-5 rounded-full flex-shrink-0", getPriorityDotColor(nextAvailableTask.priority))} />
-              <p className="text-4xl sm:text-5xl font-extrabold text-foreground leading-tight line-clamp-2 font-bubbly">
+              <p className="text-3xl sm:text-4xl font-extrabold text-foreground leading-tight line-clamp-2 font-bubbly">
                 {nextAvailableTask.description}
               </p>
             </div>
