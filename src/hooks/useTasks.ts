@@ -88,7 +88,7 @@ interface NewTaskData {
   created_at?: string;
   link?: string | null;
   image_url?: string | null;
-  order?: number | null; // Added order as optional
+  order?: number | null;
 }
 
 // Define a more comprehensive MutationContext interface
@@ -292,24 +292,8 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
 
   const handleAddTask = useCallback(async (newTaskData: NewTaskData) => {
     if (!userId) { showError('User not authenticated.'); return false; }
-    // Ensure status and recurring_type are explicitly set for addTaskMutation
-    const dataWithDefaults: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'completed_at' | 'category_color'> & { order?: number | null } = {
-      ...newTaskData,
-      status: newTaskData.status || 'to-do',
-      recurring_type: newTaskData.recurring_type || 'none',
-      category: newTaskData.category || 'general', // Ensure category is not null
-      priority: newTaskData.priority ?? 'medium', // Ensure priority is not undefined using nullish coalescing
-      due_date: newTaskData.due_date ?? null, // Fix: Add nullish coalescing for due_date
-      notes: newTaskData.notes ?? null, // Fix: Add nullish coalescing for notes
-      remind_at: newTaskData.remind_at ?? null, // Fix: Add nullish coalescing for remind_at
-      section_id: newTaskData.section_id ?? null, // Fix: Add nullish coalescing for section_id
-      order: newTaskData.order ?? null, // Fix: Add nullish coalescing for order
-      original_task_id: newTaskData.original_task_id ?? null, // Fix: Add nullish coalescing for original_task_id
-      parent_task_id: newTaskData.parent_task_id ?? null, // Fix: Add nullish coalescing for parent_task_id
-      link: newTaskData.link ?? null, // Fix: Add nullish coalescing for link
-      image_url: newTaskData.image_url ?? null, // Fix: Add nullish coalescing for image_url
-    };
-    return addTaskMutation(dataWithDefaults, mutationContext);
+    // Pass newTaskData directly, as its type already defines optionality
+    return addTaskMutation(newTaskData, mutationContext);
   }, [userId, mutationContext]);
 
   const updateTask = useCallback(async (taskId: string, updates: TaskUpdate): Promise<string | null> => {

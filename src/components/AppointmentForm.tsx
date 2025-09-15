@@ -142,7 +142,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     });
     setIsSaving(false);
     if (success) {
-      onClose();
+      onClose(); // Close form on successful save
     }
   };
 

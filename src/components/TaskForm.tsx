@@ -303,7 +303,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
     });
     setIsSaving(false);
     if (success) {
-      onCancel();
+      onCancel(); // Close form on successful save
     }
     return success;
   };

@@ -255,50 +255,6 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
       </div>
 
       <div
-        className="bg-background p-6 mx-4 rounded-xl shadow-lg mb-4 flex flex-col items-center text-center cursor-pointer hover:shadow-xl transition-shadow duration-200"
-        onClick={onOpenFocusView}
-      >
-        <div className="w-full flex justify-center items-center mb-3 relative">
-          <h3 className="text-xl font-bold text-primary flex items-center gap-2 font-bubbly">
-            <Target className="h-6 w-6" /> Your Next Task
-          </h3>
-          {nextAvailableTask && nextAvailableTask.recurring_type === 'none' && (
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-2">
-              <Label htmlFor={`do-today-focus-${nextAvailableTask.id}`} className="text-sm font-medium text-muted-foreground">Do Today</Label>
-              <DoTodaySwitch
-                isOn={!doTodayOffIds.has(nextAvailableTask.original_task_id || nextAvailableTask.id)}
-                onToggle={() => toggleDoToday(nextAvailableTask)}
-                taskId={`focus-${nextAvailableTask.id}`}
-                isDemo={isDemo}
-              />
-            </div>
-          )}
-        </div>
-        {nextAvailableTask ? (
-          <div className="w-full space-y-4">
-            <div className="flex items-center justify-center gap-3">
-              <div className={cn("w-5 h-5 rounded-full flex-shrink-0", getPriorityDotColor(nextAvailableTask.priority))} />
-              <p className="text-3xl sm:text-4xl font-extrabold text-foreground leading-tight line-clamp-2 font-bubbly">
-                {nextAvailableTask.description}
-              </p>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button onClick={handleMarkNextTaskComplete} className="h-11 px-6 text-base sm:h-12 sm:px-8 sm:text-lg" disabled={isDemo}>
-                <CheckCircle2 className="mr-2 h-5 w-5" /> Mark Done
-              </Button>
-              <Button variant="outline" onClick={(e) => { e.stopPropagation(); onOpenOverview(nextAvailableTask); }} className="h-11 px-6 text-base sm:h-12 sm:px-8 sm:text-lg">
-                <Edit className="mr-2 h-5 w-5" /> Details
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <p className="text-muted-foreground text-base py-4">
-            No pending tasks for today. Time to relax or add new ones!
-          </p>
-        )}
-      </div>
-
-      <div
         ref={quickAddBarRef}
         className="quick-add-bar px-4 py-3 border border-input rounded-xl mx-4 mb-4 bg-background"
       >

@@ -8,7 +8,7 @@ import { Appointment } from '@/hooks/useAppointments';
 
 interface SortableTaskItemProps {
   task: Task;
-  onStatusChange: (taskId: string, newStatus: Task['status']) => Promise<string | null>;
+  onStatusChange: (taskId: string, newStatus: Task['status']) => Promise<void>;
   onDelete: (taskId: string) => void;
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   sections: { id: string; name: string }[];
@@ -58,7 +58,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
     transition,
     opacity: isDragging && !isOverlay ? 0 : 1,
     visibility: isDragging && !isOverlay ? 'hidden' : 'visible',
-    paddingLeft: `${level * 12}px`,
+    paddingLeft: `${level * 12}px`, // Apply padding based on level
   };
 
   const directSubtasks = allTasks.filter(t => t.parent_task_id === task.id)

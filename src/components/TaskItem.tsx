@@ -29,7 +29,7 @@ import { Appointment } from '@/hooks/useAppointments';
 interface TaskItemProps {
   task: Task;
   allTasks: Task[];
-  onStatusChange: (taskId: string, newStatus: Task['status']) => Promise<string | null>;
+  onStatusChange: (taskId: string, newStatus: Task['status']) => Promise<void>;
   onDelete: (taskId: string) => void;
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   sections: { id: string; name: string }[];
@@ -130,9 +130,9 @@ const TaskItem: React.FC<TaskItemProps> = ({
     }
   };
 
-  const handleCheckboxChange = (checked: boolean) => {
+  const handleCheckboxChange = async (checked: boolean) => {
     if (isOverlay || isDemo) return;
-    onStatusChange(task.id, checked ? 'completed' : 'to-do');
+    await onStatusChange(task.id, checked ? 'completed' : 'to-do');
     if (checked) {
       playSound('success');
       setShowCompletionEffect(true);
