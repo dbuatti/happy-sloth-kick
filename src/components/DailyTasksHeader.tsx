@@ -163,6 +163,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
 
   return (
     <div className="flex flex-col bg-gradient-to-br from-[hsl(var(--gradient-start-light))] to-[hsl(var(--gradient-end-light))] dark:from-[hsl(var(--gradient-start-dark))] dark:to-[hsl(var(--gradient-end-dark))] rounded-b-2xl shadow-lg">
+      {/* Top Bar: Date Navigator and Action Buttons */}
       <div className="flex items-center justify-between px-4 pt-4">
         <DateNavigator
           currentDate={currentDate}
@@ -221,14 +222,14 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
       {/* Progress and Action Buttons */}
       <Card className="mx-4 mt-4 p-4 shadow-sm rounded-xl bg-background">
         <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
-          <span className="flex items-center gap-1">
+          <div className="flex items-center gap-1">
             <ListTodo className="h-4 w-4 text-foreground" />
             <span className="font-semibold text-foreground text-lg">{totalPendingCount} pending</span>
-          </span>
-          <span className="flex items-center gap-1">
+          </div>
+          <div className="flex items-center gap-1">
             <CheckCircle2 className="h-4 w-4 text-primary" />
             <span className="font-semibold text-primary text-lg">{completedCount} completed</span>
-          </span>
+          </div>
         </div>
         <Progress
           value={totalTasksForProgress > 0 ? (completedCount / totalTasksForProgress) * 100 : 0}
@@ -242,14 +243,12 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
             </p>
           ) : <div />}
           <div className="flex items-center gap-2 self-end">
+            <Button variant="outline" size="sm" onClick={archiveAllCompletedTasks} className="h-8 text-xs" disabled={isDemo}>
+              <Archive className="mr-2 h-3.5 w-3.5" /> Archive Completed
+            </Button>
             <Button variant="outline" size="sm" onClick={toggleAllDoToday} className="h-8 text-xs" disabled={isDemo}>
               <ToggleRight className="mr-2 h-3.5 w-3.5" /> Toggle All 'Do Today'
             </Button>
-            {completedCount > 0 && (
-              <Button variant="outline" size="sm" onClick={archiveAllCompletedTasks} className="h-8 text-xs" disabled={isDemo}>
-                <Archive className="mr-2 h-3.5 w-3.5" /> Archive Completed
-              </Button>
-            )}
           </div>
         </div>
       </Card>
