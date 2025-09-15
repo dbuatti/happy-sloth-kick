@@ -13,7 +13,7 @@ const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
     updateTask,
     sections,
     allCategories,
-    tasks,
+    processedTasks, // Use processedTasks here
     nextAvailableTask,
     createSection,
     updateSection,
@@ -37,7 +37,7 @@ const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
         <div className="w-full max-w-4xl mx-auto space-y-6">
           <FocusToolsPanel
             nextAvailableTask={nextAvailableTask}
-            tasks={tasks}
+            tasks={processedTasks} // Pass processedTasks
             filteredTasks={filteredTasks}
             updateTask={updateTask}
             onOpenDetail={handleOpenDetail}
@@ -62,7 +62,7 @@ const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
           updateSection={updateSection}
           deleteSection={deleteSection}
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-          allTasks={tasks}
+          allTasks={processedTasks} // Pass processedTasks
         />
       )}
     </div>
