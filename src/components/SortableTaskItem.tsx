@@ -8,7 +8,7 @@ import { Appointment } from '@/hooks/useAppointments';
 
 interface SortableTaskItemProps {
   task: Task;
-  onStatusChange: (taskId: string, newStatus: Task['status']) => Promise<void>;
+  onStatusChange: (taskId: string, newStatus: Task['status']) => Promise<string | null>;
   onDelete: (taskId: string) => void;
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   sections: { id: string; name: string }[];
@@ -51,14 +51,14 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: task.id, data: { type: 'task', task } });
+  } = useSortable({ id: task.id, data: { type: 'task', task }, disabled: isDemo || !!task.parent_task_id }); // Disable drag for subtasks and in demo mode
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform || null),
     transition,
     opacity: isDragging && !isOverlay ? 0 : 1,
     visibility: isDragging && !isOverlay ? 'hidden' : 'visible',
-    paddingLeft: `${level * 12}px`, // Apply padding based on level
+    marginLeft: `${level * 16}px`, // Use marginLeft for indentation
   };
 
   const directSubtasks = allTasks.filter(t => t.parent_task_id === task.id)
@@ -80,8 +80,6 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         level > 0 ? "border-l border-l-primary/50" : "",
         "flex items-center"
       )}
-      {...attributes}
-      {...listeners}
     >
       <div className="flex-1">
         <TaskItem
@@ -98,6 +96,8 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           scheduledTasksMap={scheduledTasksMap}
           isDemo={isDemo}
           level={level}
+          attributes={attributes} // Pass attributes for drag handle
+          listeners={listeners}   // Pass listeners for drag handle
         />
         {isExpanded && directSubtasks.length > 0 && (
           <ul className="list-none mt-1.5 space-y-1.5">

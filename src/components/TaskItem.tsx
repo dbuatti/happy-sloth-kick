@@ -13,9 +13,9 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock, ChevronRight } from 'lucide-react';
+import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock, ChevronRight, GripVertical } from 'lucide-react';
 import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
-import { cn } from "@/lib/utils";
+import { cn } "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -29,7 +29,7 @@ import { Appointment } from '@/hooks/useAppointments';
 interface TaskItemProps {
   task: Task;
   allTasks: Task[];
-  onStatusChange: (taskId: string, newStatus: Task['status']) => Promise<void>;
+  onStatusChange: (taskId: string, newStatus: Task['status']) => Promise<string | null>;
   onDelete: (taskId: string) => void;
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   sections: { id: string; name: string }[];
@@ -47,6 +47,8 @@ interface TaskItemProps {
   toggleDoToday: (task: Task) => void;
   scheduledTasksMap: Map<string, Appointment>;
   isDemo?: boolean;
+  attributes?: React.HTMLAttributes<HTMLDivElement>; // Added for drag handle
+  listeners?: React.HTMLAttributes<HTMLDivElement>; // Added for drag handle
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -67,6 +69,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
   toggleDoToday,
   scheduledTasksMap,
   isDemo = false,
+  attributes, // Destructure
+  listeners, // Destructure
 }) => {
   const { playSound } = useSound();
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
@@ -130,9 +134,9 @@ const TaskItem: React.FC<TaskItemProps> = ({
     }
   };
 
-  const handleCheckboxChange = async (checked: boolean) => {
+  const handleCheckboxChange = (checked: boolean) => {
     if (isOverlay || isDemo) return;
-    await onStatusChange(task.id, checked ? 'completed' : 'to-do');
+    onStatusChange(task.id, checked ? 'completed' : 'to-do');
     if (checked) {
       playSound('success');
       setShowCompletionEffect(true);
@@ -178,7 +182,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   return (
     <div
       className={cn(
-        "relative flex items-center w-full rounded-xl transition-all duration-300 py-3 pl-5 shadow-sm border",
+        "relative flex items-center w-full rounded-xl transition-all duration-300 py-2.5 pl-5 shadow-sm border", // Adjusted vertical padding
         task.status === 'completed' 
           ? "text-task-completed-text bg-task-completed-bg border-task-completed-text/20" 
           : "bg-card text-foreground border-border hover:shadow-md",
@@ -191,6 +195,15 @@ const TaskItem: React.FC<TaskItemProps> = ({
         "absolute left-0 top-0 h-full w-1.5 rounded-l-xl", 
         getPriorityDotColor(task.priority)
       )} />
+
+      {/* Drag Handle */}
+      {!isOverlay && !task.parent_task_id && ( // Only show drag handle for top-level tasks
+        <div className="flex-shrink-0 pr-2 -ml-3" {...listeners} {...attributes} onPointerDown={(e) => e.stopPropagation()}>
+          <Button variant="ghost" size="icon" className="h-8 w-8 cursor-grab touch-none text-muted-foreground hover:bg-transparent">
+            <GripVertical className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
 
       <div className="flex-shrink-0 pr-3 flex items-center" onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}>
         {hasSubtasks && (
@@ -239,23 +252,23 @@ const TaskItem: React.FC<TaskItemProps> = ({
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditText(e.target.value)}
               onBlur={handleSaveEdit}
               onKeyDown={handleInputKeyDown}
-              className="h-auto text-lg leading-tight p-0 border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full font-medium"
+              className="h-auto text-base leading-tight p-0 border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full font-medium" // Adjusted text size
               onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
             />
           ) : (
             <>
               <span
                 className={cn(
-                  "text-lg leading-tight font-medium line-clamp-2",
+                  "block text-base leading-tight font-medium", // Changed to block, adjusted text size
                   task.status === 'completed' ? 'line-through opacity-75' : '',
-                  "inline-block cursor-text"
+                  "cursor-text"
                 )}
                 onClick={handleStartEdit}
               >
                 {task.description}
               </span>
               {scheduledAppointment && (
-                <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                <div className="text-sm text-muted-foreground flex items-center gap-1 mt-1"> {/* Adjusted text size */}
                   <CalendarClock className="h-3 w-3" />
                   <span>
                     Scheduled: {format(parseISO(scheduledAppointment.date), 'dd/MM')} {format(parseISO(`1970-01-01T${scheduledAppointment.start_time}`), 'h:mm a')}
