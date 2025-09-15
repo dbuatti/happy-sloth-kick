@@ -99,7 +99,7 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
         placeholder="Add a task (AI-powered) and press Enter..."
         value={description}
         onChange={(e) => setDescription(e.target.value)}
-        className="h-8 border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 text-base"
+        className="h-8 border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 text-sm"
         disabled={isSaving || isDemo}
         onKeyDown={(e) => {
           if (e.key === 'Enter' && !e.shiftKey) {

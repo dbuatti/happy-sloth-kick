@@ -105,7 +105,7 @@ const SortableSectionHeader = ({
       {...(listeners || {})}
     >
       <div
-        className="relative flex items-center p-2 cursor-grab bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors duration-200"
+        className="relative flex items-center p-3 cursor-grab bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors duration-200"
         onClick={!isOverlay && !isEditingLocal ? () => toggleSection(section.id) : undefined}
       >
         <div
@@ -143,7 +143,7 @@ const SortableSectionHeader = ({
                 {section.name}
               </h3>
               <div className={cn(
-                "ml-2 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 transition-colors duration-200",
+                "ml-3 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 transition-colors duration-200",
                 getTaskCountCircleClasses()
               )} data-no-dnd="true">
                 {sectionTasksCount}
