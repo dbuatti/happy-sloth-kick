@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, ListTodo, Brain, CheckCircle2, Clock, Sparkles, FolderOpen, Tag, Archive, ToggleRight } from 'lucide-react';
+import { Plus, ListTodo, Brain, CheckCircle2, Clock, Sparkles, FolderOpen, Tag, Archive, ToggleRight, Settings } from 'lucide-react';
 import DateNavigator from './DateNavigator';
 import TaskFilter from './TaskFilter';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
@@ -12,7 +12,8 @@ import { Progress } from '@/components/Progress';
 import ManageCategoriesDialog from './ManageCategoriesDialog';
 import ManageSectionsDialog from './ManageSectionsDialog';
 import NextTaskCard from './dashboard/NextTaskCard';
-import { Card } from '@/components/ui/card'; // Import Card for the progress section
+import { Card } from '@/components/ui/card';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
 interface DailyTasksHeaderProps {
   currentDate: Date;
@@ -48,7 +49,6 @@ interface DailyTasksHeaderProps {
     overdueCount: number;
   };
   isDemo?: boolean;
-  // Props for NextTaskCard
   nextAvailableTask: Task | null;
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   onOpenOverview: (task: Task) => void;
@@ -85,7 +85,6 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   setPrefilledTaskData,
   dailyProgress,
   isDemo = false,
-  // Destructure NextTaskCard props
   nextAvailableTask,
   updateTask,
   onOpenOverview,
@@ -155,8 +154,6 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
     }
   };
 
-  const quickAddBarRef = useRef<HTMLDivElement>(null);
-
   const totalTasksForProgress = totalPendingCount + completedCount;
 
   const isNextTaskDoToday = nextAvailableTask ? !doTodayOffIds.has(nextAvailableTask.original_task_id || nextAvailableTask.id) : false;
@@ -173,35 +170,31 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
           setCurrentDate={setCurrentDate}
         />
         <div className="flex items-center space-x-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsManageCategoriesOpen(true)}
-            aria-label="Manage Categories"
-            className="h-9 w-9 hover:bg-primary/10 text-primary"
-            disabled={isDemo}
-          >
-            <Tag className="h-5 w-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsManageSectionsOpen(true)}
-            aria-label="Manage Sections"
-            className="h-9 w-9 hover:bg-primary/10 text-primary"
-            disabled={isDemo}
-          >
-            <FolderOpen className="h-5 w-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsFocusPanelOpen(true)}
-            aria-label="Open focus tools"
-            className="h-9 w-9 hover:bg-primary/10 text-primary"
-          >
-            <Brain className="h-5 w-5" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Task Settings"
+                className="h-9 w-9 hover:bg-primary/10 text-primary"
+                disabled={isDemo}
+              >
+                <Settings className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={() => setIsManageCategoriesOpen(true)}>
+                <Tag className="mr-2 h-4 w-4" /> Manage Categories
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setIsManageSectionsOpen(true)}>
+                <FolderOpen className="mr-2 h-4 w-4" /> Manage Sections
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={() => setIsFocusPanelOpen(true)}>
+                <Brain className="mr-2 h-4 w-4" /> Open Focus Tools
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
