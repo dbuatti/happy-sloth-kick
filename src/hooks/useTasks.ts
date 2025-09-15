@@ -292,13 +292,14 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
 
   const handleAddTask = useCallback(async (newTaskData: NewTaskData) => {
     if (!userId) { showError('User not authenticated.'); return false; }
-    // Ensure status is explicitly set for addTaskMutation
-    const dataWithStatus: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'completed_at' | 'category_color'> & { order?: number | null } = {
+    // Ensure status and recurring_type are explicitly set for addTaskMutation
+    const dataWithDefaults: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'completed_at' | 'category_color'> & { order?: number | null } = {
       ...newTaskData,
       status: newTaskData.status || 'to-do',
+      recurring_type: newTaskData.recurring_type || 'none',
       category: newTaskData.category || 'general', // Ensure category is not null
     };
-    return addTaskMutation(dataWithStatus, mutationContext);
+    return addTaskMutation(dataWithDefaults, mutationContext);
   }, [userId, mutationContext]);
 
   const updateTask = useCallback(async (taskId: string, updates: TaskUpdate): Promise<string | null> => {
