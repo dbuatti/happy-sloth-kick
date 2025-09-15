@@ -77,10 +77,11 @@ export default {
         'border-status-overdue': 'hsl(var(--border-status-overdue))',
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 4px)",
-        sm: "calc(var(--radius) - 8px)",
-        '2xl': '1.5rem',
+        lg: "var(--radius-lg)",
+        md: "var(--radius-md)",
+        sm: "var(--radius-sm)",
+        xl: "var(--radius-xl)",
+        '2xl': 'var(--radius-2xl)',
       },
       keyframes: {
         "accordion-down": {

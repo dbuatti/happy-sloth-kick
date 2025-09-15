@@ -249,7 +249,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
           ) : (
             <PanelGroup
               direction="horizontal"
-              className="flex-grow rounded-lg border relative z-[1]"
+              className="flex-grow rounded-xl border relative z-[1]"
               onLayout={handlePanelLayoutChange}
             >
               <Panel defaultSize={defaultPanelSizes[0]} minSize={30}>

@@ -91,9 +91,22 @@ const PeopleMemoryCard: React.FC = () => {
     }
   };
 
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => e.preventDefault();
-  const handleDragEnter = () => setIsDragging(true);
-  const handleDragLeave = () => setIsDragging(false);
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
 
   return (
     <>
