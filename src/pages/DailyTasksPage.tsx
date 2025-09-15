@@ -180,8 +180,8 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
 
   return (
     <div className="flex-1 flex flex-col h-full">
-      <main className="flex-grow overflow-y-auto"> {/* Added overflow-y-auto here */}
-        <div className="w-full max-w-4xl mx-auto flex flex-col">
+      <main className="flex-grow"> {/* Removed overflow-y-auto from main */}
+        <div className="w-full max-w-4xl mx-auto flex flex-col h-full"> {/* Added h-full here */}
           <DailyTasksHeader
             currentDate={currentDate}
             setCurrentDate={setCurrentDate}
@@ -219,7 +219,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
           />
 
           <Card className="flex-1 flex flex-col rounded-none shadow-none border-0 relative z-[1]">
-            <CardContent className="p-4 flex-1 flex flex-col">
+            <CardContent className="p-4 flex-1 flex flex-col overflow-y-auto"> {/* Added overflow-y-auto here */}
               <div className="flex-1">
                 <TaskList
                   tasks={tasks as Task[]}
