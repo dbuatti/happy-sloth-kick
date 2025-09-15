@@ -11,8 +11,7 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
       defaultTheme="system"
       themes={[
         "light",
-        "dark",
-        "minimalist"
+        "dark"
       ]}
       {...props}
     >

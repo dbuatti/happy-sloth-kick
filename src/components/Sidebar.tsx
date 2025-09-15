@@ -27,7 +27,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useSettings } from "@/context/SettingsContext";
-import { themes as customThemes } from "@/lib/themes";
+// Removed customThemes import as it's no longer needed
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -161,7 +161,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false }) =>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="w-full justify-start h-9">
               <Palette className="mr-2 h-4 w-4" />
-              <span>Theme: {theme === 'system' ? 'System' : theme === 'light' ? 'Light' : theme === 'dark' ? 'Dark' : customThemes[theme as keyof typeof customThemes]?.name || 'Unknown'}</span>
+              <span>Theme: {theme === 'system' ? 'System' : theme === 'light' ? 'Light' : theme === 'dark' ? 'Dark' : 'Unknown'}</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -177,17 +177,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false }) =>
               <Moon className="h-3.5 w-3.5 mr-2" />
               Dark
             </DropdownMenuItem>
-            <Separator className="my-1" />
-            {Object.entries(customThemes).map(([themeName, themeData]) => (
-              <DropdownMenuItem
-                key={themeName}
-                onClick={() => setTheme(themeName)}
-                className={theme === themeName ? 'font-bold' : ''}
-              >
-                <Palette className="h-3.5 w-3.5 mr-2" />
-                {themeData.name}
-              </DropdownMenuItem>
-            ))}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
