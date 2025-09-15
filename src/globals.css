@@ -6,6 +6,7 @@
 
 /* Custom override for shadcn dialog/drawer overlays to make them fully opaque */
 .fixed.inset-0.z-50[data-state="open"] {
-  background-color: hsl(var(--background)) !important; /* Use background color, make it fully opaque */
-  opacity: 1 !important; /* Ensure full opacity */
+  /* Use a semi-transparent black for the overlay to ensure content behind is obscured */
+  background-color: rgba(0, 0, 0, 0.6) !important; 
+  opacity: 1 !important; /* Ensure full opacity of the overlay element itself */
 }
