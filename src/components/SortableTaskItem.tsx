@@ -16,9 +16,9 @@ interface SortableTaskItemProps {
   currentDate: Date;
   onMoveUp: (taskId: string) => Promise<void>;
   onMoveDown: (taskId: string) => Promise<void>;
-  level: number; // New prop for indentation level
-  allTasks: Task[]; // Pass all tasks to filter subtasks
-  isOverlay?: boolean; // New prop for drag overlay
+  level: number;
+  allTasks: Task[];
+  isOverlay?: boolean;
   expandedTasks: Record<string, boolean>;
   toggleTask: (taskId: string) => void;
   setFocusTask: (taskId: string | null) => Promise<void>;
@@ -33,7 +33,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   task,
   level,
   allTasks,
-  isOverlay = false, // Default to false
+  isOverlay = false,
   expandedTasks,
   toggleTask,
   setFocusTask,
@@ -54,7 +54,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   } = useSortable({ id: task.id, data: { type: 'task', task } });
 
   const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform || null), // Correctly handle null transform
+    transform: CSS.Transform.toString(transform || null),
     transition,
     opacity: isDragging && !isOverlay ? 0 : 1,
     visibility: isDragging && !isOverlay ? 'hidden' : 'visible',
@@ -83,7 +83,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
       {...attributes}
       {...listeners}
     >
-      <div className="flex-1"> {/* This div now contains the TaskItem and subtasks */}
+      <div className="flex-1">
         <TaskItem
           task={task}
           hasSubtasks={directSubtasks.length > 0}
@@ -97,7 +97,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           toggleDoToday={toggleDoToday}
           scheduledTasksMap={scheduledTasksMap}
           isDemo={isDemo}
-          level={level} // Pass level prop
+          level={level}
         />
         {isExpanded && directSubtasks.length > 0 && (
           <ul className="list-none mt-1.5 space-y-1.5">

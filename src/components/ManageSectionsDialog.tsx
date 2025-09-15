@@ -8,7 +8,7 @@ import { Edit, Trash2, Eye, EyeOff, Plus } from 'lucide-react';
 import { TaskSection } from '@/hooks/useTasks';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { showError } from '@/utils/toast'; // Removed showSuccess, it is not used here
+import { showError } from '@/utils/toast';
 
 interface ManageSectionsDialogProps {
   isOpen: boolean;
@@ -38,7 +38,6 @@ const ManageSectionsDialog: React.FC<ManageSectionsDialogProps> = ({
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    // Reset new section form when dialog opens/closes
     if (!isOpen) {
       setNewSectionName('');
       setEditingSectionId(null);
@@ -108,7 +107,6 @@ const ManageSectionsDialog: React.FC<ManageSectionsDialogProps> = ({
           <DialogTitle>Manage Sections</DialogTitle>
         </DialogHeader>
         <div className="py-4 space-y-3">
-          {/* New Section Form */}
           <div className="border-b pb-4 mb-4">
             <h4 className="text-md font-semibold mb-3">Create New Section</h4>
             <div className="flex gap-2">
@@ -126,7 +124,6 @@ const ManageSectionsDialog: React.FC<ManageSectionsDialogProps> = ({
             </div>
           </div>
 
-          {/* Existing sections list */}
           {sections.length === 0 ? (
             <p className="text-muted-foreground text-center">No sections created yet.</p>
           ) : (

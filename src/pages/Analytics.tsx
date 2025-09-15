@@ -316,7 +316,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ demoUserId }) => {
                                 dataKey="value"
                                 label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                               >
-                                {categoryData.map((_entry, index) => ( // Renamed entry to _entry
+                                {categoryData.map((_entry, index) => (
                                   <Cell key={`cell-${index}`} fill={analyticsColors[index % analyticsColors.length]} />
                                 ))}
                               </Pie>

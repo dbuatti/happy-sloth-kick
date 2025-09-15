@@ -20,7 +20,7 @@ import { suggestTaskDetails } from '@/integrations/supabase/api';
 import { showError } from '@/utils/toast';
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
-import ImageUploadArea from './ImageUploadArea'; // Import the new component
+import ImageUploadArea from './ImageUploadArea';
 
 const taskFormSchema = z.object({
   description: z.string().min(1, { message: 'Task description is required.' }).max(255, { message: 'Description must be 255 characters or less.' }),
@@ -258,7 +258,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
     }
 
     if (imageFile) {
-      const userId = 'anonymous'; // Placeholder, replace with actual user ID if available
+      const userId = 'anonymous';
       const filePath = `${userId}/${uuidv4()}`;
       const { error: uploadError } = await supabase.storage
         .from('taskimages')

@@ -25,11 +25,11 @@ interface TaskOverviewDialogProps {
   task: Task | null;
   isOpen: boolean;
   onClose: () => void;
-  onEditClick: (task: Task) => void; // To open the full edit dialog
+  onEditClick: (task: Task) => void;
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   onDelete: (taskId: string) => void;
   sections: TaskSection[];
-  allCategories: Category[]; // This prop is no longer used directly in this component
+  allCategories: Category[];
   allTasks: Task[];
 }
 
@@ -41,7 +41,6 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
   onUpdate,
   onDelete,
   sections,
-  // Removed allCategories from destructuring as it's not used here
   allTasks,
 }) => {
   const { playSound } = useSound();
@@ -217,7 +216,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
           <ul className="space-y-1.5">
             {subtasks.map(subtask => (
               <li key={subtask.id} className="flex items-center space-x-2 p-1.5 rounded-md bg-background shadow-sm">
-                <input // Changed from Checkbox to input type="checkbox"
+                <input
                   type="checkbox"
                   checked={subtask.status === 'completed'}
                   onChange={(e) => handleSubtaskStatusChange(subtask.id, e.target.checked ? 'completed' : 'to-do')}

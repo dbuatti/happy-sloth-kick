@@ -49,7 +49,7 @@ interface DailyTasksHeaderProps {
   setIsAddTaskDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
   setPrefilledTaskData: React.Dispatch<React.SetStateAction<Partial<Task> | null>>;
   dailyProgress: {
-    totalPendingCount: number; // Updated from totalCount
+    totalPendingCount: number;
     completedCount: number;
     overdueCount: number;
   };
@@ -101,7 +101,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
 
-  const { totalPendingCount, completedCount, overdueCount } = dailyProgress; // Updated destructuring
+  const { totalPendingCount, completedCount, overdueCount } = dailyProgress;
 
   const handleQuickAdd = async () => {
     const description = quickAddTaskDescription.trim();
@@ -197,7 +197,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
     }
   };
 
-  const totalTasksForProgress = totalPendingCount + completedCount; // Calculate total for progress bar
+  const totalTasksForProgress = totalPendingCount + completedCount;
 
   return (
     <div className="flex flex-col bg-gradient-to-br from-[hsl(var(--gradient-start-light))] to-[hsl(var(--gradient-end-light))] dark:from-[hsl(var(--gradient-start-dark))] dark:to-[hsl(var(--gradient-end-dark))] sticky top-0 z-10 shadow-sm">
@@ -246,7 +246,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
           <span className="flex items-center gap-1">
             <ListTodo className="h-4 w-4 text-foreground" />
-            <span className="font-semibold text-foreground text-lg">{totalPendingCount} pending</span> {/* Updated to totalPendingCount */}
+            <span className="font-semibold text-foreground text-lg">{totalPendingCount} pending</span>
           </span>
           <span className="flex items-center gap-1">
             <CheckCircle2 className="h-4 w-4 text-primary" />
@@ -254,7 +254,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
           </span>
         </div>
         <Progress
-          value={totalTasksForProgress > 0 ? (completedCount / totalTasksForProgress) * 100 : 0} // Updated total for progress bar
+          value={totalTasksForProgress > 0 ? (completedCount / totalTasksForProgress) * 100 : 0}
           className="h-4 rounded-full"
           indicatorClassName="bg-gradient-to-r from-primary to-accent rounded-full"
         />
@@ -282,7 +282,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         onClick={onOpenFocusView}
       >
         <div className="w-full flex justify-center items-center mb-3 relative">
-          <h3 className="text-xl font-bold text-primary flex items-center gap-2 font-bubbly"> {/* Added font-bubbly */}
+          <h3 className="text-xl font-bold text-primary flex items-center gap-2 font-bubbly">
             <Target className="h-6 w-6" /> Your Next Task
           </h3>
           {nextAvailableTask && nextAvailableTask.recurring_type === 'none' && (
@@ -301,7 +301,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
           <div className="w-full space-y-4">
             <div className="flex items-center justify-center gap-3">
               <div className={cn("w-5 h-5 rounded-full flex-shrink-0", getPriorityDotColor(nextAvailableTask.priority))} />
-              <p className="text-4xl sm:text-5xl font-extrabold text-foreground leading-tight line-clamp-2 font-bubbly"> {/* Increased font size, added font-bubbly */}
+              <p className="text-4xl sm:text-5xl font-extrabold text-foreground leading-tight line-clamp-2 font-bubbly">
                 {nextAvailableTask.description}
               </p>
             </div>
@@ -324,7 +324,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
       <div
         ref={quickAddBarRef}
         className={cn(
-          "quick-add-bar px-4 py-3 border border-input rounded-xl mx-4 mb-4", // Added border and rounded-xl
+          "quick-add-bar px-4 py-3 border border-input rounded-xl mx-4 mb-4",
           stuck ? "stuck" : ""
         )}
       >

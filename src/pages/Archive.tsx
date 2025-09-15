@@ -17,22 +17,22 @@ interface ArchiveProps {
 
 const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
   const {
-    tasks: allTasks, // Need all tasks for subtask filtering in overview
+    tasks: allTasks,
     filteredTasks: archivedTasks, 
     loading: archiveLoading,
     updateTask,
     deleteTask,
     sections,
     allCategories,
-    setStatusFilter, // To ensure only archived tasks are fetched
-    createSection, // Destructure new props
+    setStatusFilter,
+    createSection,
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode,
     setFocusTask,
     toggleDoToday,
     doTodayOffIds,
-  } = useTasks({ viewMode: 'archive', userId: demoUserId, currentDate: new Date() }); // Pass new Date()
+  } = useTasks({ viewMode: 'archive', userId: demoUserId, currentDate: new Date() });
 
   const { appointments: allAppointments } = useAllAppointments();
 
@@ -67,16 +67,15 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
   };
 
   const handleEditTaskFromOverview = (task: Task) => {
-    setIsTaskOverviewOpen(false); // Close overview
+    setIsTaskOverviewOpen(false);
     setTaskToEdit(task);
-    setIsTaskDetailOpen(true); // Open edit dialog
+    setIsTaskDetailOpen(true);
   };
 
-  // Group tasks by completed_at date, falling back to updated_at if completed_at is null
   const groupedArchivedTasks = useMemo(() => {
     const groups: { [date: string]: Task[] } = {};
     archivedTasks.forEach(task => {
-      const dateToUse = task.completed_at || task.updated_at; // Use completed_at, fallback to updated_at
+      const dateToUse = task.completed_at || task.updated_at;
       if (dateToUse) {
         const dateKey = format(parseISO(dateToUse), 'yyyy-MM-dd');
         if (!groups[dateKey]) {
@@ -86,7 +85,6 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
       }
     });
 
-    // Sort groups by date descending
     return Object.entries(groups).sort(([dateA], [dateB]) => {
       return parseISO(dateB).getTime() - parseISO(dateA).getTime();
     });
@@ -126,7 +124,7 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
                         <li key={task.id} className="relative rounded-xl p-2 transition-all duration-200 ease-in-out group hover:shadow-md">
                           <TaskItem
                             task={task}
-                            allTasks={allTasks as Task[]} // Cast to Task[]
+                            allTasks={allTasks}
                             onStatusChange={handleTaskStatusChange}
                             onDelete={deleteTask}
                             onUpdate={updateTask}
@@ -140,7 +138,7 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
                             toggleDoToday={() => toggleDoToday(task)}
                             scheduledTasksMap={scheduledTasksMap}
                             isDemo={isDemo}
-                            level={0} // Pass level prop
+                            level={0}
                           />
                         </li>
                       ))}
@@ -165,7 +163,7 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
           onDelete={deleteTask}
           sections={sections}
           allCategories={allCategories}
-          allTasks={allTasks as Task[]} // Cast to Task[]
+          allTasks={allTasks}
         />
       )}
       {taskToEdit && (
@@ -181,7 +179,7 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
           updateSection={updateSection}
           deleteSection={deleteSection}
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-          allTasks={allTasks as Task[]} // Cast to Task[]
+          allTasks={allTasks}
         />
       )}
     </div>

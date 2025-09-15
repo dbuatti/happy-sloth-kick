@@ -70,11 +70,10 @@ const SleepDashboard: React.FC<SleepDashboardProps> = ({ dateRange, setDateRange
     return `${hours}h ${minutes}m`;
   };
 
-  // Formatter for Y-axis and tooltips for time values (e.g., -6 for 6 PM, 0 for midnight, 6 for 6 AM)
   const timeAxisFormatter = (value: number) => {
     let displayHour = value;
-    if (value < 0) displayHour += 24; // Convert negative hours back to 24-hour format for formatting
-    const date = new Date(2000, 0, 1, displayHour, 0); // Use 0 minutes for axis labels
+    if (value < 0) displayHour += 24;
+    const date = new Date(2000, 0, 1, displayHour, 0);
     return format(date, 'h a');
   };
 
@@ -277,7 +276,7 @@ const SleepDashboard: React.FC<SleepDashboardProps> = ({ dateRange, setDateRange
                             <LineChart data={analyticsData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
                               <CartesianGrid strokeDasharray="3 3" />
                               <XAxis dataKey="date" />
-                              <YAxis tickFormatter={timeAxisFormatter} domain={[-6, 12]} /> {/* -6 for 6 PM, 0 for midnight, 12 for 12 PM */}
+                              <YAxis tickFormatter={timeAxisFormatter} domain={[-6, 12]} />
                               <Tooltip formatter={timeTooltipFormatter} />
                               <Line type="monotone" dataKey="bedTimeValue" name="Bed Time" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
                               <Line type="monotone" dataKey="lightsOffTimeValue" name="Lights Off" stroke="hsl(var(--accent))" strokeWidth={2} dot={false} />

@@ -23,7 +23,6 @@ interface SortableSectionHeaderProps {
   isOverlay?: boolean;
 }
 
-// Changed from React.FC<SortableSectionHeaderProps> to inline type annotation
 const SortableSectionHeader = ({
   section,
   sectionTasksCount,
@@ -35,7 +34,7 @@ const SortableSectionHeader = ({
   updateSectionIncludeInFocusMode,
   onUpdateSectionName,
   isOverlay = false,
-}: SortableSectionHeaderProps) => { // Added type annotation here
+}: SortableSectionHeaderProps) => {
   const sortable = !isOverlay ? useSortable({ id: section.id, data: { type: 'section', section } }) : null;
 
   const attributes = sortable?.attributes;

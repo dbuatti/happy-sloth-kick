@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Lightbulb, Keyboard, Palette, Settings, ChevronLeft, ChevronRight, Edit, User, BarChart3 } from 'lucide-react'; // Removed LogOut
+import { Lightbulb, Keyboard, Palette, Settings, ChevronLeft, ChevronRight, Edit, User, BarChart3 } from 'lucide-react';
 
 const Help = () => {
   return (

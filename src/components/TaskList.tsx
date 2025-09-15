@@ -110,7 +110,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8, // User must move 8px before a drag starts
+        distance: 8,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -245,10 +245,10 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     allSortableSections.forEach(section => {
       const topLevelTasksInSection = filteredTasks
         .filter(t => t.parent_task_id === null && (t.section_id === section.id || (t.section_id === null && section.id === 'no-section-header')))
-        .filter(t => t.status === 'to-do'); // Only count 'to-do' tasks
+        .filter(t => t.status === 'to-do');
       const remainingTasksCount = topLevelTasksInSection.length;
 
-      if (remainingTasksCount === 0 && (expandedSections[section.id] ?? true)) { // Check if it's currently expanded
+      if (remainingTasksCount === 0 && (expandedSections[section.id] ?? true)) {
         toggleSection(section.id);
       }
     });
@@ -344,7 +344,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                         ))}
                       </ul>
                     )}
-                    {/* QuickAddTask is always rendered, its visibility is controlled by parent's max-height/opacity */}
                     <div className={cn("mt-2", topLevelTasksInSection.length === 0 ? "pt-2" : "")} data-no-dnd="true">
                       <QuickAddTask
                         sectionId={currentSection.id === 'no-section-header' ? null : currentSection.id}
@@ -395,7 +394,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                       isDoToday={!doTodayOffIds.has((activeItemData as Task).original_task_id || (activeItemData as Task).id)}
                       toggleDoToday={toggleDoToday}
                       scheduledTasksMap={scheduledTasksMap}
-                      level={0} // Pass level prop
+                      level={0}
                     />
                   </div>
                 )

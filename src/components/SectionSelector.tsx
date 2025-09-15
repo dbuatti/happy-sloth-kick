@@ -1,17 +1,16 @@
 import { Label } from "@/components/ui/label";
 import { FolderOpen, Plus } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-// Removed useAuth as it's not directly used in this component
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import ManageSectionsDialog from './ManageSectionsDialog'; // Import the new dialog
+import ManageSectionsDialog from './ManageSectionsDialog';
 
 interface TaskSection {
   id: string;
   name: string;
   user_id: string;
   order: number | null;
-  include_in_focus_mode: boolean; // Added for consistency
+  include_in_focus_mode: boolean;
 }
 
 interface SectionSelectorProps {

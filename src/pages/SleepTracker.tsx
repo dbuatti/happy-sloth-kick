@@ -34,7 +34,6 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
   const [plannedWakeUpTime, setPlannedWakeUpTime] = useState<string>('');
   const [isFormInitialized, setIsFormInitialized] = useState(false);
 
-  // Memoize the current form state
   const formState = useMemo(() => ({
     bed_time: bedTime || null,
     lights_off_time: lightsOffTime || null,
@@ -47,7 +46,6 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
     planned_wake_up_time: plannedWakeUpTime || null,
   }), [bedTime, lightsOffTime, wakeUpTime, getOutOfBedTime, timeToFallAsleepMinutes, sleepInterruptionsCount, sleepInterruptionsDurationMinutes, timesLeftBedCount, plannedWakeUpTime]);
 
-  // Effect to populate form fields when sleepRecord or loading state changes
   useEffect(() => {
     if (!loading) {
       setBedTime(sleepRecord?.bed_time ? sleepRecord.bed_time.substring(0, 5) : '');
@@ -59,11 +57,10 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ currentDate, setCurrentDate
       setSleepInterruptionsDurationMinutes(sleepRecord?.sleep_interruptions_duration_minutes ?? '');
       setTimesLeftBedCount(sleepRecord?.times_left_bed_count ?? '');
       setPlannedWakeUpTime(sleepRecord?.planned_wake_up_time ? sleepRecord.planned_wake_up_time.substring(0, 5) : '');
-      setIsFormInitialized(true); // Mark form as initialized after populating
+      setIsFormInitialized(true);
     }
   }, [sleepRecord, loading]);
 
-  // Effect to save form state to database with a debounce
   useEffect(() => {
     if (!isFormInitialized || isDemo || !userId || loading) {
       return;

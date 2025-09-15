@@ -18,7 +18,6 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
 
   const [currentDate, setCurrentDate] = useState(new Date());
 
-  // Fetch allTasks here to pass to TaskDetailDialog
   const {
     tasks: allTasks,
     sections,
@@ -29,7 +28,7 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode,
-  } = useTasks({ currentDate: new Date(), userId: demoUserId }); // Pass a dummy date for this global fetch
+  } = useTasks({ currentDate: new Date(), userId: demoUserId });
 
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
@@ -107,7 +106,7 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
           onDelete={deleteTask}
           sections={sections}
           allCategories={allCategories}
-          allTasks={allTasks as Task[]}
+          allTasks={allTasks}
         />
       )}
       {taskToEdit && (
@@ -123,7 +122,7 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
           updateSection={updateSection}
           deleteSection={deleteSection}
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-          allTasks={allTasks as Task[]}
+          allTasks={allTasks}
         />
       )}
     </div>

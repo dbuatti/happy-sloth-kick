@@ -15,9 +15,7 @@ interface SleepPageProps {
 }
 
 const SleepPage: React.FC<SleepPageProps> = ({ isDemo = false, demoUserId }) => {
-  // State for SleepTracker (daily date)
   const [currentDate, setCurrentDate] = useState(new Date());
-  // State for SleepDashboard (date range)
   const [analyticsDateRange, setAnalyticsDateRange] = useState<DateRange | undefined>(() => ({
     from: startOfMonth(new Date()),
     to: new Date(),

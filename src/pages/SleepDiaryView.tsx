@@ -15,7 +15,6 @@ const SleepDiaryView: React.FC<SleepDiaryViewProps> = ({ isDemo = false, demoUse
 
   return (
     <div className="space-y-4">
-      {/* Timeline Header */}
       <div className="sticky top-0 bg-background z-10 py-2 px-2 md:px-0">
         <div className="grid grid-cols-1 md:grid-cols-[100px_1fr] gap-x-4">
           <div className="hidden md:block"></div>
@@ -38,9 +37,8 @@ const SleepDiaryView: React.FC<SleepDiaryViewProps> = ({ isDemo = false, demoUse
         </div>
       </div>
 
-      {/* Diary Entries */}
       <div className="space-y-3 px-2 md:px-0">
-        {records.map((record: any) => { // Explicitly type record as any for now
+        {records.map((record: any) => {
           const recordDate = parseISO(record.date);
           return (
             <div key={record.id} className="md:grid md:grid-cols-[100px_1fr] md:gap-x-4 md:items-center p-2 rounded-lg bg-muted/30 md:bg-transparent md:p-0">
@@ -56,7 +54,6 @@ const SleepDiaryView: React.FC<SleepDiaryViewProps> = ({ isDemo = false, demoUse
         })}
       </div>
 
-      {/* Loading State & Button */}
       {loading && (
         <div className="space-y-2 px-2 md:px-0">
             {[...Array(5)].map((_, i) => (

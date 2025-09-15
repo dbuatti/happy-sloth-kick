@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerDescription } from "@/components/ui/drawer";
 import { Trash2, ListTodo } from 'lucide-react';
-import { Task, TaskSection, Category } from '@/hooks/useTasks'; // Import Task, TaskSection, Category types
-import { useTasks } from '@/hooks/useTasks'; // Keep useTasks for subtask updates and handleAddTask
+import { Task, TaskSection, Category } from '@/hooks/useTasks';
+import { useTasks } from '@/hooks/useTasks';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,7 +19,7 @@ import { useSound } from '@/context/SoundContext';
 import TaskForm from './TaskForm';
 import { cn } from '@/lib/utils';
 import { Checkbox } from "@/components/ui/checkbox";
-import { useAuth } from '@/context/AuthContext'; // Import useAuth
+import { useAuth } from '@/context/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface TaskDetailDialogProps {
@@ -28,14 +28,13 @@ interface TaskDetailDialogProps {
   onClose: () => void;
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   onDelete: (taskId: string) => void;
-  sections: TaskSection[]; // Passed as prop
-  allCategories: Category[]; // Passed as prop
-  // New props for section management
+  sections: TaskSection[];
+  allCategories: Category[];
   createSection: (name: string) => Promise<void>;
   updateSection: (sectionId: string, newName: string) => Promise<void>;
   deleteSection: (sectionId: string) => Promise<void>;
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
-  allTasks: Task[]; // Add allTasks prop
+  allTasks: Task[];
 }
 
 const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
@@ -44,21 +43,18 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   onClose,
   onUpdate,
   onDelete,
-  sections, // Destructure from props
-  allCategories, // Destructure from props
-  createSection, // Destructure new props
+  sections,
+  allCategories,
+  createSection,
   updateSection,
   deleteSection,
   updateSectionIncludeInFocusMode,
-  allTasks, // Destructure allTasks
+  allTasks,
 }) => {
-  // Removed 'user' and 'userId' from useAuth destructuring as they are not directly used here.
   useAuth(); 
   const isMobile = useIsMobile();
 
-  // Only use useTasks for actions that require it, not for fetching global state
-  // Removed internal useTasks() call, now using allTasks prop for subtasks
-  const { updateTask: updateSubtask } = useTasks({ currentDate: new Date() }); // Keep useTasks for updateSubtask, provide a dummy date
+  const { updateTask: updateSubtask } = useTasks({ currentDate: new Date() });
   const { playSound } = useSound();
   const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -117,7 +113,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
         sections={sections}
         allCategories={allCategories}
         autoFocus={false}
-        createSection={createSection} // Pass new props
+        createSection={createSection}
         updateSection={updateSection}
         deleteSection={deleteSection}
         updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}

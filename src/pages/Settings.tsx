@@ -39,7 +39,7 @@ const Settings: React.FC<SettingsProps> = ({ isDemo = false, demoUserId }) => {
           .eq('id', currentUserId)
           .single();
 
-        if (error && status !== 406) { // PGRST116 means no rows found
+        if (error && status !== 406) {
           throw error;
         }
 
@@ -49,7 +49,6 @@ const Settings: React.FC<SettingsProps> = ({ isDemo = false, demoUserId }) => {
         }
       } catch (error: any) {
         console.error('Error fetching profile:', error);
-        // Consider adding a toast error here if needed
       } finally {
         setProfileLoading(false);
       }
@@ -76,10 +75,8 @@ const Settings: React.FC<SettingsProps> = ({ isDemo = false, demoUserId }) => {
       if (error) {
         throw error;
       }
-      // showSuccess('Profile updated successfully!'); // Re-add toast if needed
     } catch (error: any) {
       console.error('Error updating profile:', error);
-      // showError(error.message); // Re-add toast if needed
     } finally {
       setIsSavingProfile(false);
     }
@@ -87,14 +84,12 @@ const Settings: React.FC<SettingsProps> = ({ isDemo = false, demoUserId }) => {
 
   const handleSignOut = async () => {
     try {
-      setIsSavingProfile(true); // Use profile saving state for sign out button
+      setIsSavingProfile(true);
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      // showSuccess('Signed out successfully!'); // Re-add toast if needed
       window.location.href = '/'; 
     } catch (error: any) {
       console.error('Error signing out:', error);
-      // showError(error.message); // Re-add toast if needed
     } finally {
       setIsSavingProfile(false);
     }
@@ -165,7 +160,6 @@ const Settings: React.FC<SettingsProps> = ({ isDemo = false, demoUserId }) => {
               </CardContent>
             </Card>
 
-            {/* Theme Toggle */}
             <Card className="w-full shadow-lg rounded-xl">
               <CardHeader className="pb-2">
                 <CardTitle className="text-2xl font-bold flex items-center gap-2">
@@ -196,7 +190,6 @@ const Settings: React.FC<SettingsProps> = ({ isDemo = false, demoUserId }) => {
             <WorkHoursSettings />
             <ProjectTrackerSettings />
 
-            {/* Chat Link Placeholder */}
             <Card className="w-full shadow-lg rounded-xl">
               <CardHeader className="pb-2">
                 <CardTitle className="text-2xl font-bold flex items-center gap-2">
