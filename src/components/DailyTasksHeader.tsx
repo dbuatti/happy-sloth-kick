@@ -53,8 +53,8 @@ interface DailyTasksHeaderProps {
   onOpenOverview: (task: Task) => void;
   onOpenFocusView: () => void;
   tasksLoading: boolean;
-  doTodayOffIds: Set<string>; // New prop
-  toggleDoToday: (task: Task) => void; // New prop
+  doTodayOffIds: Set<string>;
+  toggleDoToday: (task: Task) => void;
 }
 
 const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
@@ -90,8 +90,8 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   onOpenOverview,
   onOpenFocusView,
   tasksLoading,
-  doTodayOffIds, // Destructure new prop
-  toggleDoToday, // Destructure new prop
+  doTodayOffIds,
+  toggleDoToday,
 }) => {
   useDailyTaskCount(); 
   const [quickAddTaskDescription, setQuickAddTaskDescription] = useState('');
@@ -211,8 +211,8 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
           onOpenOverview={onOpenOverview}
           loading={tasksLoading}
           onFocusViewOpen={onOpenFocusView}
-          isDoToday={isNextTaskDoToday} // Pass isDoToday
-          toggleDoToday={toggleDoToday} // Pass toggleDoToday
+          isDoToday={isNextTaskDoToday}
+          toggleDoToday={toggleDoToday}
           isDemo={isDemo}
         />
       </div>

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from '@/components/Progress';
 import { cn } from '@/lib/utils';
-import { Plus, Minus, Edit, Trash2, RotateCcw, CheckCircle2, Link as LinkIcon, StickyNote, LayoutGrid } from 'lucide-react'; // Added LayoutGrid
+import { Plus, Minus, Edit, Trash2, RotateCcw, CheckCircle2, Link as LinkIcon, StickyNote, LayoutGrid } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface ProjectListProps {
