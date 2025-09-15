@@ -4,7 +4,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import TaskList from '@/components/TaskList';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import TaskOverviewDialog from '@/components/TaskOverviewDialog';
-import { useTasks, Task } from '@/hooks/useTasks';
+import { useTasks, Task, TaskSection } from '@/hooks/useTasks';
 import { useAuth } from '@/context/AuthContext';
 import { addDays, startOfDay } from 'date-fns';
 import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
@@ -112,6 +112,18 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     }
   });
 
+  // Define allSortableSections here to be used in toggleAllSections
+  const allSortableSections = useMemo(() => {
+    const noSection: TaskSection = {
+      id: 'no-section-header',
+      name: 'No Section',
+      user_id: user?.id || '',
+      order: sections.length,
+      include_in_focus_mode: true,
+    };
+    return [...sections, noSection];
+  }, [sections, user?.id]);
+
   const toggleSection = useCallback((sectionId: string) => {
     setExpandedSections(prev => {
       const newState = { ...prev, [sectionId]: !(prev[sectionId] ?? true) };
@@ -129,16 +141,17 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   }, []);
 
   const toggleAllSections = useCallback(() => {
-    const allExpanded = Object.values(expandedSections).every(val => val === true);
+    // Determine if ALL currently managed sections are expanded
+    const allCurrentlyExpanded = allSortableSections.every(section => expandedSections[section.id] !== false);
+
     const newExpandedState: Record<string, boolean> = {};
-    sections.forEach(section => {
-      newExpandedState[section.id] = !allExpanded;
+    allSortableSections.forEach(section => {
+      newExpandedState[section.id] = !allCurrentlyExpanded;
     });
-    newExpandedState['no-section-header'] = !allExpanded;
 
     setExpandedSections(newExpandedState);
     localStorage.setItem('taskList_expandedSections', JSON.stringify(newExpandedState));
-  }, [expandedSections, sections]);
+  }, [expandedSections, allSortableSections]);
 
 
   const handleOpenOverview = (task: Task) => {
@@ -211,8 +224,8 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
             isDemo={isDemo}
             nextAvailableTask={nextAvailableTask}
             updateTask={updateTask}
-            onOpenOverview={handleOpenOverview}
-            onOpenFocusView={handleOpenFocusView}
+            onOpenOverview={onOpenOverview}
+            onOpenFocusView={onOpenFocusView}
             tasksLoading={tasksLoading}
             doTodayOffIds={doTodayOffIds} // Pass doTodayOffIds
             toggleDoToday={toggleDoToday} // Pass toggleDoToday
