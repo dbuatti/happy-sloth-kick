@@ -282,6 +282,19 @@ const TaskList: React.FC<TaskListProps> = (props) => {
               </Button>
             </div>
 
+            {/* Quick Add Task at the top of the list */}
+            <div className="mb-4">
+              <QuickAddTask
+                sectionId={null} // Default to no section for global quick add
+                onAddTask={async (data) => { await handleAddTask(data); }}
+                defaultCategoryId={defaultCategory?.id || ''}
+                isDemo={isDemo}
+                allCategories={allCategories}
+                sections={sections}
+                currentDate={currentDate}
+              />
+            </div>
+
             {allSortableSections.map((currentSection: TaskSection, index) => {
               const isExpanded = expandedSections[currentSection.id] !== false;
               const topLevelTasksInSection = filteredTasks
@@ -289,8 +302,8 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                 .sort((a, b) => (a.order || 0) - (b.order || 0));
               const remainingTasksCount = topLevelTasksInSection.filter(t => t.status === 'to-do').length;
 
-              if (currentSection.id === 'no-section-header' && topLevelTasksInSection.length === 0) {
-                return null;
+              if (currentSection.id === 'no-section-header' && topLevelTasksInSection.length === 0 && filteredTasks.filter(t => t.section_id === null).length === 0) {
+                return null; // Only hide 'No Section' header if there are no tasks in it AND no other tasks without a section
               }
 
               return (
@@ -315,7 +328,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                     "mt-3 overflow-hidden transition-all duration-300 ease-in-out",
                     isExpanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
                   )}>
-                    {topLevelTasksInSection.length > 0 && (
+                    {topLevelTasksInSection.length > 0 ? (
                       <ul className="list-none space-y-1.5">
                         {topLevelTasksInSection.map(task => (
                           <SortableTaskItem
@@ -343,18 +356,10 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                           />
                         ))}
                       </ul>
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-4">No tasks in this section.</p>
                     )}
-                    <div className="mt-2 pt-2" data-no-dnd="true">
-                      <QuickAddTask
-                        sectionId={currentSection.id === 'no-section-header' ? null : currentSection.id}
-                        onAddTask={async (data) => { await handleAddTask(data); }}
-                        defaultCategoryId={defaultCategory?.id || ''}
-                        isDemo={isDemo}
-                        allCategories={allCategories} // Pass allCategories
-                        sections={sections} // Pass sections
-                        currentDate={currentDate} // Pass currentDate
-                      />
-                    </div>
+                    {/* Removed QuickAddTask from inside sections */}
                   </div>
                 </div>
               );

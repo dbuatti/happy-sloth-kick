@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, ListTodo, Brain, CheckCircle2, Clock, Sparkles, FolderOpen, Tag, Archive, ToggleRight, Settings } from 'lucide-react';
+import { Plus, ListTodo, Brain, CheckCircle2, Clock, Sparkles, FolderOpen, Tag, Archive, ToggleRight, Settings, ChevronDown } from 'lucide-react';
 import DateNavigator from './DateNavigator';
 import TaskFilter from './TaskFilter';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
@@ -94,66 +94,15 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   toggleDoToday,
 }) => {
   useDailyTaskCount(); 
-  const [quickAddTaskDescription, setQuickAddTaskDescription] = useState('');
-  const quickAddInputRef = useRef<HTMLInputElement>(null);
+  // Removed quickAddTaskDescription state and quickAddInputRef as quick add is moving
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const quickAddBarRef = useRef<HTMLDivElement>(null); // Declared quickAddBarRef
 
   const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
 
   const { totalPendingCount, completedCount, overdueCount } = dailyProgress;
 
-  const handleQuickAdd = async () => {
-    const description = quickAddTaskDescription.trim();
-    if (!description) {
-      setPrefilledTaskData(null);
-      setIsAddTaskDialogOpen(true);
-      return;
-    }
-
-    const loadingToastId = showLoading('Getting AI suggestions...');
-    try {
-      const categoriesForAI = allCategories.map(cat => ({ id: cat.id, name: cat.name }));
-      const suggestions = await suggestTaskDetails(description, categoriesForAI, currentDate);
-      dismissToast(loadingToastId);
-
-      if (!suggestions) {
-        showError('AI suggestions failed. Please add task details manually.');
-        setPrefilledTaskData({ description });
-        setIsAddTaskDialogOpen(true);
-        setQuickAddTaskDescription('');
-        return;
-      }
-
-      const suggestedCategoryId = allCategories.find(cat => cat.name.toLowerCase() === suggestions.category.toLowerCase())?.id || allCategories.find(cat => cat.name.toLowerCase() === 'general')?.id || allCategories[0]?.id || '';
-      const suggestedSectionId = sections.find(sec => sec.name.toLowerCase() === suggestions.section?.toLowerCase())?.id || null;
-
-      const success = await handleAddTask({
-        description: suggestions.cleanedDescription,
-        category: suggestedCategoryId,
-        priority: suggestions.priority as Task['priority'],
-        due_date: suggestions.dueDate,
-        notes: suggestions.notes,
-        remind_at: suggestions.remindAt,
-        section_id: suggestedSectionId,
-        recurring_type: 'none',
-        parent_task_id: null,
-        link: suggestions.link,
-      });
-
-      if (success) {
-        setQuickAddTaskDescription('');
-        quickAddInputRef.current?.focus();
-      }
-    } catch (error) {
-      dismissToast(loadingToastId);
-      showError('An error occurred. Please add task details manually.');
-      setPrefilledTaskData({ description });
-      setIsAddTaskDialogOpen(true);
-      setQuickAddTaskDescription('');
-    }
-  };
+  // Removed handleQuickAdd as quick add is moving
 
   const totalTasksForProgress = totalPendingCount + completedCount;
 
@@ -236,42 +185,25 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
               <Clock className="h-4 w-4" /> {overdueCount} overdue
             </p>
           ) : <div />}
-          <div className="flex items-center gap-2 self-end">
-            <Button variant="outline" size="sm" onClick={archiveAllCompletedTasks} className="h-8 text-xs" disabled={isDemo}>
-              <Archive className="mr-2 h-3.5 w-3.5" /> Archive Completed
-            </Button>
-            <Button variant="outline" size="sm" onClick={toggleAllDoToday} className="h-8 text-xs" disabled={isDemo}>
-              <ToggleRight className="mr-2 h-3.5 w-3.5" /> Toggle All 'Do Today'
-            </Button>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 text-xs" disabled={isDemo}>
+                Bulk Actions <ChevronDown className="ml-2 h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={archiveAllCompletedTasks}>
+                <Archive className="mr-2 h-3.5 w-3.5" /> Archive Completed
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={toggleAllDoToday}>
+                <ToggleRight className="mr-2 h-3.5 w-3.5" /> Toggle All 'Do Today'
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </Card>
 
-      {/* Quick Add Task Bar */}
-      <div
-        ref={quickAddBarRef}
-        className="quick-add-bar px-4 py-3 border border-input rounded-xl mx-4 mt-4 bg-background"
-      >
-        <div className="flex items-center gap-2">
-          <Input
-            ref={quickAddInputRef}
-            placeholder='Quick add a task (AI-powered) — press "/" to focus, Enter to add'
-            value={quickAddTaskDescription}
-            onChange={(e) => setQuickAddTaskDescription(e.target.value)}
-            className="flex-1 h-10 text-base"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleQuickAdd();
-              }
-            }}
-            disabled={isDemo}
-          />
-          <Button type="button" onClick={handleQuickAdd} className="whitespace-nowrap h-10 text-base" disabled={isDemo}>
-            <Plus className="mr-1 h-4 w-4" /> Add <Sparkles className="ml-1 h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+      {/* Removed Quick Add Task Bar */}
 
       {/* Task Filter */}
       <TaskFilter
