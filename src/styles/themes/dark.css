@@ -1,56 +1,45 @@
-/* This file defines the dark theme variables. */
-.theme-dark {
-  --background: 222.2 84% 4.9%; /* Dark background */
-  --foreground: 210 40% 98%; /* Light foreground */
+/* Dark Theme */
+.dark {
+  --background: 224 71.4% 4.1%; /* Darker background */
+  --foreground: 210 20% 98%; /* Lighter text for better contrast */
 
-  --muted: 217.2 32.6% 17.5%; /* Darker muted */
-  --muted-foreground: 215 20.2% 65.1%; /* Lighter muted foreground */
+  --card: 224 71.4% 4.1%;
+  --card-foreground: 210 20% 98%;
 
-  --popover: 222.2 84% 4.9%;
-  --popover-foreground: 210 40% 98%;
+  --popover: 224 71.4% 4.1%;
+  --popover-foreground: 210 20% 98%;
+
+  --primary: 221.2 83.2% 53.3%;
+  --primary-foreground: 210 20% 98%;
+
+  --secondary: 217.2 32.6% 17.5%;
+  --secondary-foreground: 210 20% 98%;
+
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+
+  --accent: 217.2 32.6% 17.5%;
+  --accent-foreground: 210 20% 98%;
+
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 20% 98%;
 
   --border: 217.2 32.6% 17.5%;
   --input: 217.2 32.6% 17.5%;
-  --card: 222.2 84% 4.9%;
-  --card-foreground: 210 40% 98%;
+  --ring: 221.2 83.2% 53.3%;
 
-  --primary: 210 40% 98%; /* Light primary */
-  --primary-foreground: 222.2 47.4% 11.2%; /* Dark primary foreground */
+  /* Status Colors */
+  --status-overdue: 0 84.2% 60.2%;
+  --status-due-today: 38 92% 50%;
+  --status-completed: 142.1 76.2% 36.3%;
 
-  --secondary: 217.2 32.6% 17.5%;
-  --secondary-foreground: 210 40% 98%;
+  /* Priority Colors */
+  --priority-low: 210 80% 60%;
+  --priority-medium: 40 90% 60%;
+  --priority-high: 0 80% 60%;
+  --priority-urgent: 350 90% 50%;
 
-  --accent: 217.2 32.6% 17.5%;
-  --accent-foreground: 210 40% 98%;
-
-  --destructive: 0 62.8% 30.6%; /* Darker red */
-  --destructive-foreground: 210 40% 98%;
-
-  --ring: 217.2 32.6% 17.5%;
-
-  --radius: 0.5rem;
-
-  /* Custom colors for minimalist dark theme */
-  --sidebar-background: 222.2 84% 4.9%;
-  --sidebar-foreground: 210 40% 98%;
-  --sidebar-primary: 210 40% 98%;
-  --sidebar-primary-foreground: 222.2 47.4% 11.2%;
-  --sidebar-accent: 217.2 32.6% 17.5%;
-  --sidebar-accent-foreground: 210 40% 98%;
-  --sidebar-border: 217.2 32.6% 17.5%;
-  --sidebar-ring: 217.2 32.6% 17.5%;
-
-  --status-completed: 142.1 70.2% 40.3%; /* Slightly darker green for completed */
-  --priority-low: 217.2 32.6% 17.5%; /* Muted for low */
-  --priority-medium: 215 20.2% 65.1%; /* Lighter muted foreground for medium */
-  --priority-high: 38.2 95.7% 50.9%; /* Yellow for high (same as light) */
-  --priority-urgent: 0 62.8% 30.6%; /* Destructive for urgent */
-
-  --border-status-due-today: 38.2 95.7% 50.9%; /* Yellow for due today */
-  --border-status-overdue: 0 62.8% 30.6%; /* Red for overdue */
-
-  --gradient-start-light: 222.2 84% 4.9%; /* This should be dark for dark theme */
-  --gradient-end-light: 217.2 32.6% 17.5%; /* This should be dark for dark theme */
-  --gradient-start-dark: 222.2 84% 4.9%;
-  --gradient-end-dark: 217.2 32.6% 17.5%;
+  /* Gradient for headers/banners */
+  --gradient-start-dark: 224 71.4% 4.1%;
+  --gradient-end-dark: 220 60% 8%;
 }
