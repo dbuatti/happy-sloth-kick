@@ -125,7 +125,7 @@ export const reorderSectionsMutation = async (
   _activeId: string, // Unused, but kept for consistency with dnd-kit event
   _overId: string,   // Unused, but kept for consistency with dnd-kit event
   newOrderedSections: TaskSection[],
-  { userId, inFlightUpdatesRef, invalidateSectionsQueries }: MutationContext
+  { userId, invalidateSectionsQueries }: MutationContext
 ): Promise<void> => {
   // We don't track activeId here as the entire list is updated
   try {

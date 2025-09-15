@@ -292,7 +292,13 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
 
   const handleAddTask = useCallback(async (newTaskData: NewTaskData) => {
     if (!userId) { showError('User not authenticated.'); return false; }
-    return addTaskMutation(newTaskData, mutationContext);
+    // Ensure status is explicitly set for addTaskMutation
+    const dataWithStatus: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'completed_at' | 'category_color'> & { order?: number | null } = {
+      ...newTaskData,
+      status: newTaskData.status || 'to-do',
+      category: newTaskData.category || 'general', // Ensure category is not null
+    };
+    return addTaskMutation(dataWithStatus, mutationContext);
   }, [userId, mutationContext]);
 
   const updateTask = useCallback(async (taskId: string, updates: TaskUpdate): Promise<string | null> => {
