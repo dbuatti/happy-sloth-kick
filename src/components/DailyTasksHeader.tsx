@@ -12,6 +12,7 @@ import { Progress } from '@/components/Progress';
 import ManageCategoriesDialog from './ManageCategoriesDialog';
 import ManageSectionsDialog from './ManageSectionsDialog';
 import NextTaskCard from './dashboard/NextTaskCard';
+import { Card } from '@/components/ui/card'; // Import Card for the progress section
 
 interface DailyTasksHeaderProps {
   currentDate: Date;
@@ -162,7 +163,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
 
   return (
     <div className="flex flex-col bg-gradient-to-br from-[hsl(var(--gradient-start-light))] to-[hsl(var(--gradient-end-light))] dark:from-[hsl(var(--gradient-start-dark))] dark:to-[hsl(var(--gradient-end-dark))] rounded-b-2xl shadow-lg">
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 pt-4">
+      <div className="flex items-center justify-between px-4 pt-4">
         <DateNavigator
           currentDate={currentDate}
           onPreviousDay={() => setCurrentDate(prevDate => new Date(prevDate.setDate(prevDate.getDate() - 1)))}
@@ -176,34 +177,34 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
             size="icon"
             onClick={() => setIsManageCategoriesOpen(true)}
             aria-label="Manage Categories"
-            className="h-10 w-10 hover:bg-primary/10 text-primary"
+            className="h-9 w-9 hover:bg-primary/10 text-primary"
             disabled={isDemo}
           >
-            <Tag className="h-6 w-6" />
+            <Tag className="h-5 w-5" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setIsManageSectionsOpen(true)}
             aria-label="Manage Sections"
-            className="h-10 w-10 hover:bg-primary/10 text-primary"
+            className="h-9 w-9 hover:bg-primary/10 text-primary"
             disabled={isDemo}
           >
-            <FolderOpen className="h-6 w-6" />
+            <FolderOpen className="h-5 w-5" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setIsFocusPanelOpen(true)}
             aria-label="Open focus tools"
-            className="h-10 w-10 hover:bg-primary/10 text-primary"
+            className="h-9 w-9 hover:bg-primary/10 text-primary"
           >
-            <Brain className="h-6 w-6" />
+            <Brain className="h-5 w-5" />
           </Button>
         </div>
       </div>
 
-      {/* Next Task Card - Restored */}
+      {/* Next Task Card */}
       <div className="px-4 pt-2">
         <NextTaskCard
           nextAvailableTask={nextAvailableTask}
@@ -217,7 +218,8 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         />
       </div>
 
-      <div className="px-4 pb-3 pt-2">
+      {/* Progress and Action Buttons */}
+      <Card className="mx-4 mt-4 p-4 shadow-sm rounded-xl bg-background">
         <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
           <span className="flex items-center gap-1">
             <ListTodo className="h-4 w-4 text-foreground" />
@@ -233,7 +235,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
           className="h-4 rounded-full"
           indicatorClassName="bg-gradient-to-r from-primary to-accent rounded-full"
         />
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-2 gap-2">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-3 gap-2">
           {overdueCount > 0 ? (
             <p className="text-sm text-destructive flex items-center gap-1">
               <Clock className="h-4 w-4" /> {overdueCount} overdue
@@ -250,11 +252,12 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
             )}
           </div>
         </div>
-      </div>
+      </Card>
 
+      {/* Quick Add Task Bar */}
       <div
         ref={quickAddBarRef}
-        className="quick-add-bar px-4 py-3 border border-input rounded-xl mx-4 mb-4 bg-background"
+        className="quick-add-bar px-4 py-3 border border-input rounded-xl mx-4 mt-4 bg-background"
       >
         <div className="flex items-center gap-2">
           <Input
@@ -277,6 +280,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         </div>
       </div>
 
+      {/* Task Filter */}
       <TaskFilter
         currentDate={currentDate}
         setCurrentDate={setCurrentDate}
