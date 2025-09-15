@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { CheckCircle2, ListTodo, CalendarDays } from 'lucide-react';
 import WeeklyFocusCard from '@/components/dashboard/WeeklyFocus';
 import MeditationNotesCard from '@/components/dashboard/MeditationNotes';
