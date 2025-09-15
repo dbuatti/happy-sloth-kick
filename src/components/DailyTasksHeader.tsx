@@ -11,6 +11,7 @@ import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
 import { Progress } from '@/components/Progress';
 import ManageCategoriesDialog from './ManageCategoriesDialog';
 import ManageSectionsDialog from './ManageSectionsDialog';
+import NextTaskCard from './dashboard/NextTaskCard'; // Import NextTaskCard
 
 interface DailyTasksHeaderProps {
   currentDate: Date;
@@ -32,6 +33,9 @@ interface DailyTasksHeaderProps {
   setPriorityFilter: (value: string) => void;
   sectionFilter: string;
   setSectionFilter: (value: string) => void;
+  nextAvailableTask: Task | null; // Added
+  updateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>; // Added
+  onOpenOverview: (task: Task) => void; // Added
   createSection: (name: string) => Promise<void>;
   updateSection: (sectionId: string, newName: string) => Promise<void>;
   deleteSection: (sectionId: string) => Promise<void>;
@@ -46,6 +50,9 @@ interface DailyTasksHeaderProps {
     overdueCount: number;
   };
   isDemo?: boolean;
+  toggleDoToday: (task: Task) => void;
+  onOpenFocusView: () => void; // Added
+  tasksLoading: boolean; // Added
 }
 
 const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
@@ -65,6 +72,9 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   setPriorityFilter,
   sectionFilter,
   setSectionFilter,
+  nextAvailableTask, // Destructure
+  updateTask, // Destructure
+  onOpenOverview, // Destructure
   createSection,
   updateSection,
   deleteSection,
@@ -75,6 +85,9 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   setPrefilledTaskData,
   dailyProgress,
   isDemo = false,
+  toggleDoToday,
+  onOpenFocusView, // Destructure
+  tasksLoading, // Destructure
 }) => {
   useDailyTaskCount(); 
   const [quickAddTaskDescription, setQuickAddTaskDescription] = useState('');
@@ -182,6 +195,17 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
             <Brain className="h-6 w-6" />
           </Button>
         </div>
+      </div>
+
+      {/* Next Task Card - Restored */}
+      <div className="px-4 pt-2">
+        <NextTaskCard
+          nextAvailableTask={nextAvailableTask}
+          updateTask={updateTask}
+          onOpenOverview={onOpenOverview}
+          loading={tasksLoading}
+          onFocusViewOpen={onOpenFocusView}
+        />
       </div>
 
       <div className="px-4 pb-3 pt-2">
