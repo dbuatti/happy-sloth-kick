@@ -158,12 +158,6 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     handleOpenDetail(task);
   };
 
-  const handleOpenFocusView = () => {
-    if (nextAvailableTask) {
-      setIsFocusViewOpen(true);
-    }
-  };
-
   const handleMarkDoneFromFocusView = async () => {
     if (nextAvailableTask) {
       await updateTask(nextAvailableTask.id, { status: 'completed' });
@@ -328,7 +322,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
             onSave={async (taskData) => {
               const success = await handleAddTask({
                 ...taskData,
-                section_id: preselectedSectionId ?? null,
+                section_id: prefilledTaskData?.section_id ?? null,
               });
               if (success) {
                 setIsAddTaskDialogOpen(false);
