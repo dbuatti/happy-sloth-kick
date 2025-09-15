@@ -154,30 +154,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
     }
   };
 
-  const [stuck, setStuck] = useState(false);
   const quickAddBarRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setStuck(!entry.isIntersecting);
-      },
-      {
-        rootMargin: '-1px 0px 0px 0px',
-        threshold: [0, 1],
-      }
-    );
-
-    if (quickAddBarRef.current) {
-      observer.observe(quickAddBarRef.current);
-    }
-
-    return () => {
-      if (quickAddBarRef.current) {
-        observer.unobserve(quickAddBarRef.current);
-      }
-    };
-  }, []);
 
   const getPriorityDotColor = (priority: string) => {
     switch (priority) {
@@ -200,7 +177,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   const totalTasksForProgress = totalPendingCount + completedCount;
 
   return (
-    <div className="flex flex-col bg-gradient-to-br from-[hsl(var(--gradient-start-light))] to-[hsl(var(--gradient-end-light))] dark:from-[hsl(var(--gradient-start-dark))] dark:to-[hsl(var(--gradient-end-dark))] sticky top-0 z-10 shadow-lg rounded-b-2xl"> {/* Added rounded-b-2xl and shadow-lg */}
+    <div className="flex flex-col bg-gradient-to-br from-[hsl(var(--gradient-start-light))] to-[hsl(var(--gradient-end-light))] dark:from-[hsl(var(--gradient-start-dark))] dark:to-[hsl(var(--gradient-end-dark))] rounded-b-2xl shadow-lg">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 pt-4">
         <DateNavigator
           currentDate={currentDate}
@@ -323,10 +300,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
 
       <div
         ref={quickAddBarRef}
-        className={cn(
-          "quick-add-bar px-4 py-3 border border-input rounded-xl mx-4 mb-4 bg-background",
-          stuck ? "stuck" : ""
-        )}
+        className="quick-add-bar px-4 py-3 border border-input rounded-xl mx-4 mb-4 bg-background"
       >
         <div className="flex items-center gap-2">
           <Input

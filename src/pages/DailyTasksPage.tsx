@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useCallback, useMemo } from 'react';
 import TaskList from '@/components/TaskList';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
@@ -179,8 +181,8 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   useKeyboardShortcuts(shortcuts);
 
   return (
-    <div className="flex-1 flex flex-col">
-      <main className="flex-grow">
+    <div className="flex-1 flex flex-col h-full">
+      <main className="flex-grow overflow-y-auto">
         <div className="w-full max-w-4xl mx-auto flex flex-col">
           <DailyTasksHeader
             currentDate={currentDate}
@@ -222,7 +224,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
 
           <Card className="flex-1 flex flex-col rounded-none shadow-none border-0 relative z-[1]">
             <CardContent className="p-4 flex-1 flex flex-col">
-              <div className="flex-1 overflow-y-auto">
+              <div className="flex-1">
                 <TaskList
                   tasks={tasks as Task[]}
                   processedTasks={processedTasks}
@@ -356,7 +358,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
       <AnimatePresence>
         {isFocusViewOpen && nextAvailableTask && (
           <FullScreenFocusView
-            taskDescription={nextAvailableTask.description || ''}
+            taskDescription={nextAvailableTask.description || ''} // Ensure description is string
             onClose={() => setIsFocusViewOpen(false)}
             onMarkDone={handleMarkDoneFromFocusView}
           />
