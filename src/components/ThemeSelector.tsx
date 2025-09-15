@@ -4,6 +4,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Monitor, Palette, Sun, Moon } from "lucide-react";
 import { themes } from "@/lib/themes";
 import { useState, useEffect } from "react";
+import { Separator } from "@/components/ui/separator"; // Import Separator
 
 const ThemeSelector = () => {
   const { theme, setTheme } = useTheme();
@@ -44,7 +45,7 @@ const ThemeSelector = () => {
           Dark
         </DropdownMenuItem>
 
-        <div className="my-1 h-px bg-muted" />
+        <Separator className="my-1 h-px bg-muted" />
         
         {Object.entries(themes).map(([themeName, themeData]) => (
           <DropdownMenuItem 

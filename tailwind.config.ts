@@ -19,8 +19,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Inter', 'sans-serif'], // Changed font to Inter
-        bubbly: ['Fredoka', 'sans-serif'], // Added new bubbly font
+        sans: ['Inter', 'sans-serif'],
+        bubbly: ['Fredoka', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -66,15 +66,13 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
-        // New semantic colors for consistency
-        'status-overdue': 'hsl(var(--destructive))',
-        'status-due-today': 'hsl(var(--accent))',
-        'status-completed': 'hsl(var(--status-completed))', // New color for completed status
+        'status-overdue': 'hsl(var(--status-overdue))',
+        'status-due-today': 'hsl(var(--status-due-today))',
+        'status-completed': 'hsl(var(--status-completed))',
         'priority-low': 'hsl(var(--priority-low))',
         'priority-medium': 'hsl(var(--priority-medium))',
         'priority-high': 'hsl(var(--priority-high))',
         'priority-urgent': 'hsl(var(--priority-urgent))',
-        // New colors for status borders
         'border-status-due-today': 'hsl(var(--border-status-due-today))',
         'border-status-overdue': 'hsl(var(--border-status-overdue))',
       },
@@ -82,7 +80,7 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 4px)",
         sm: "calc(var(--radius) - 8px)",
-        '2xl': '1.5rem', // Added 2xl radius
+        '2xl': '1.5rem',
       },
       keyframes: {
         "accordion-down": {
@@ -106,7 +104,6 @@ export default {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
       },
-      // New shadow utilities
       boxShadow: {
         'sm': 'var(--shadow-sm)',
         'DEFAULT': 'var(--shadow)',
