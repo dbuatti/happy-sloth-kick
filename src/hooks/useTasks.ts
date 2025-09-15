@@ -303,6 +303,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
       notes: newTaskData.notes ?? null, // Fix: Add nullish coalescing for notes
       remind_at: newTaskData.remind_at ?? null, // Fix: Add nullish coalescing for remind_at
       section_id: newTaskData.section_id ?? null, // Fix: Add nullish coalescing for section_id
+      order: newTaskData.order ?? null, // Fix: Add nullish coalescing for order
     };
     return addTaskMutation(dataWithDefaults, mutationContext);
   }, [userId, mutationContext]);
