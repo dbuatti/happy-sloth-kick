@@ -105,7 +105,7 @@ const SortableSectionHeader = ({
       {...(listeners || {})}
     >
       <div
-        className="relative flex items-center p-2 cursor-pointer bg-muted/30 rounded-lg"
+        className="relative flex items-center p-2 cursor-grab bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors duration-200"
         onClick={!isOverlay && !isEditingLocal ? () => toggleSection(section.id) : undefined}
       >
         <div
@@ -159,7 +159,7 @@ const SortableSectionHeader = ({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 p-0"
+                    className="h-8 w-8 p-0 hover:bg-primary/10 text-primary"
                     tabIndex={isOverlay ? -1 : 0}
                     onClick={(e) => e.stopPropagation()}
                   >
@@ -191,7 +191,7 @@ const SortableSectionHeader = ({
                 variant="ghost"
                 size="icon"
                 onClick={(e) => { e.stopPropagation(); toggleSection(section.id); }}
-                className="h-8 w-8 p-0"
+                className="h-8 w-8 p-0 hover:bg-primary/10 text-primary"
                 tabIndex={isOverlay ? -1 : 0}
               >
                 <ChevronDown className={cn("h-5 w-5 transition-transform", isExpanded ? "rotate-0" : "-rotate-90")} />

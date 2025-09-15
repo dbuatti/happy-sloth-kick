@@ -200,7 +200,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   const totalTasksForProgress = totalPendingCount + completedCount;
 
   return (
-    <div className="flex flex-col bg-gradient-to-br from-[hsl(var(--gradient-start-light))] to-[hsl(var(--gradient-end-light))] dark:from-[hsl(var(--gradient-start-dark))] dark:to-[hsl(var(--gradient-end-dark))] sticky top-0 z-10 shadow-sm">
+    <div className="flex flex-col bg-gradient-to-br from-[hsl(var(--gradient-start-light))] to-[hsl(var(--gradient-end-light))] dark:from-[hsl(var(--gradient-start-dark))] dark:to-[hsl(var(--gradient-end-dark))] sticky top-0 z-10 shadow-lg rounded-b-2xl"> {/* Added rounded-b-2xl and shadow-lg */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 pt-4">
         <DateNavigator
           currentDate={currentDate}
@@ -215,7 +215,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
             size="icon"
             onClick={() => setIsManageCategoriesOpen(true)}
             aria-label="Manage Categories"
-            className="h-10 w-10"
+            className="h-10 w-10 hover:bg-primary/10 text-primary"
             disabled={isDemo}
           >
             <Tag className="h-6 w-6" />
@@ -225,7 +225,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
             size="icon"
             onClick={() => setIsManageSectionsOpen(true)}
             aria-label="Manage Sections"
-            className="h-10 w-10"
+            className="h-10 w-10 hover:bg-primary/10 text-primary"
             disabled={isDemo}
           >
             <FolderOpen className="h-6 w-6" />
@@ -235,7 +235,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
             size="icon"
             onClick={() => setIsFocusPanelOpen(true)}
             aria-label="Open focus tools"
-            className="h-10 w-10"
+            className="h-10 w-10 hover:bg-primary/10 text-primary"
           >
             <Brain className="h-6 w-6" />
           </Button>
@@ -278,7 +278,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
       </div>
 
       <div
-        className="bg-card p-6 mx-4 rounded-xl shadow-lg mb-4 flex flex-col items-center text-center cursor-pointer"
+        className="bg-card p-6 mx-4 rounded-xl shadow-lg mb-4 flex flex-col items-center text-center cursor-pointer hover:shadow-xl transition-shadow duration-200"
         onClick={onOpenFocusView}
       >
         <div className="w-full flex justify-center items-center mb-3 relative">
@@ -324,7 +324,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
       <div
         ref={quickAddBarRef}
         className={cn(
-          "quick-add-bar px-4 py-3 border border-input rounded-xl mx-4 mb-4",
+          "quick-add-bar px-4 py-3 border border-input rounded-xl mx-4 mb-4 bg-background",
           stuck ? "stuck" : ""
         )}
       >

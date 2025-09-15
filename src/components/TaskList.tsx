@@ -245,10 +245,10 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     allSortableSections.forEach(section => {
       const topLevelTasksInSection = filteredTasks
         .filter(t => t.parent_task_id === null && (t.section_id === section.id || (t.section_id === null && section.id === 'no-section-header')))
-        .filter(t => t.status === 'to-do');
+        .filter(t => t.status === 'to-do'); // Only count 'to-do' tasks
       const remainingTasksCount = topLevelTasksInSection.length;
 
-      if (remainingTasksCount === 0 && (expandedSections[section.id] ?? true)) {
+      if (remainingTasksCount === 0 && (expandedSections[section.id] ?? true)) { // Check if it's currently expanded
         toggleSection(section.id);
       }
     });
@@ -276,7 +276,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                 size="sm"
                 onClick={toggleAllSections}
                 aria-label="Toggle all sections"
-                className="h-9 px-3"
+                className="h-9 px-3 text-primary hover:bg-primary/10"
               >
                 <ChevronsDownUp className="h-5 w-5 mr-2" /> Toggle All Sections
               </Button>
@@ -344,7 +344,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
                         ))}
                       </ul>
                     )}
-                    <div className={cn("mt-2", topLevelTasksInSection.length === 0 ? "pt-2" : "")} data-no-dnd="true">
+                    <div className="mt-2 pt-2" data-no-dnd="true">
                       <QuickAddTask
                         sectionId={currentSection.id === 'no-section-header' ? null : currentSection.id}
                         onAddTask={async (data) => { await handleAddTask(data); }}
