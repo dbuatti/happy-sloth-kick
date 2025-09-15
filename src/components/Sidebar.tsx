@@ -15,7 +15,7 @@ import {
   Menu,
   Palette,
   Sun,
-  Monitor, // Import Monitor icon for system theme
+  Monitor,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -27,13 +27,12 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useSettings } from "@/context/SettingsContext";
-// Removed customThemes import as it's no longer needed
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"; // Import DropdownMenu components
+} from "@/components/ui/dropdown-menu";
 
 interface SidebarProps {
   children: React.ReactNode;
@@ -82,12 +81,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false }) =>
       href: isDemo ? "/demo/dev-space" : "/dev-space",
       icon: Code,
       visible: settings?.visible_pages?.devSpace !== false,
-    },
-    {
-      name: "My Hub",
-      href: isDemo ? "/demo/my-hub" : "/my-hub",
-      icon: Settings,
-      visible: settings?.visible_pages?.myHub !== false,
     },
   ].filter(item => item.visible);
 

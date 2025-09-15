@@ -11,7 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import FocusPanelDrawer from '@/components/FocusPanelDrawer';
 import DailyTasksHeader from '@/components/DailyTasksHeader';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import AddTaskForm from '@/components/AddTaskForm';
+import TaskForm from '@/components/TaskForm'; // Updated import
 import { useAllAppointments } from '@/hooks/useAllAppointments';
 import { Appointment } from '@/hooks/useAppointments';
 import FullScreenFocusView from '@/components/FullScreenFocusView';
@@ -185,7 +185,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
           <DailyTasksHeader
             currentDate={currentDate}
             setCurrentDate={setCurrentDate}
-            tasks={tasks as Task[]} // Cast to Task[]
+            tasks={tasks as Task[]}
             filteredTasks={filteredTasks}
             sections={sections}
             allCategories={allCategories}
@@ -224,7 +224,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
             <CardContent className="p-4 flex-1 flex flex-col">
               <div className="flex-1 overflow-y-auto">
                 <TaskList
-                  tasks={tasks as Task[]} // Cast to Task[]
+                  tasks={tasks as Task[]}
                   processedTasks={processedTasks}
                   filteredTasks={filteredTasks}
                   loading={tasksLoading}
@@ -244,7 +244,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
                   setIsAddTaskOpen={() => {}}
                   onOpenOverview={handleOpenOverview}
                   currentDate={currentDate}
-                  setCurrentDate={setCurrentDate} // Pass setCurrentDate to TaskList
+                  setCurrentDate={setCurrentDate}
                   expandedSections={expandedSections}
                   toggleSection={toggleSection}
                   toggleAllSections={toggleAllSections}
@@ -284,7 +284,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
           onDelete={deleteTask}
           sections={sections}
           allCategories={allCategories}
-          allTasks={tasks as Task[]} // Cast to Task[]
+          allTasks={tasks as Task[]}
         />
       )}
 
@@ -301,7 +301,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
           updateSection={updateSection}
           deleteSection={deleteSection}
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-          allTasks={tasks as Task[]} // Cast to Task[]
+          allTasks={tasks as Task[]}
         />
       )}
 
@@ -328,8 +328,8 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
               Fill in the details to add a new task.
             </DialogDescription>
           </DialogHeader>
-          <AddTaskForm
-            onAddTask={async (taskData) => {
+          <TaskForm
+            onSave={async (taskData) => {
               const success = await handleAddTask(taskData);
               if (success) {
                 setIsAddTaskDialogOpen(false);
@@ -337,7 +337,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
               }
               return success;
             }}
-            onTaskAdded={() => {
+            onCancel={() => {
               setIsAddTaskDialogOpen(false);
               setPrefilledTaskData(null);
             }}
@@ -356,7 +356,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
       <AnimatePresence>
         {isFocusViewOpen && nextAvailableTask && (
           <FullScreenFocusView
-            taskDescription={nextAvailableTask.description || ''} // Ensure description is string
+            taskDescription={nextAvailableTask.description || ''}
             onClose={() => setIsFocusViewOpen(false)}
             onMarkDone={handleMarkDoneFromFocusView}
           />
