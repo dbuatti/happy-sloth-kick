@@ -281,7 +281,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
     <>
       {isMobile ? (
         <Drawer open={isOpen} onOpenChange={onClose}>
-          <DrawerContent>
+          <DrawerContent className="z-[9999]"> {/* Added z-[9999] */}
             <DrawerHeader className="text-left">
               <TitleContent isDrawer />
               <DrawerDescription className="sr-only">
@@ -296,7 +296,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
         </Drawer>
       ) : (
         <Dialog open={isOpen} onOpenChange={onClose}>
-          <DialogContent className="sm:max-w-[425px] md:max-w-lg lg:max-w-xl">
+          <DialogContent className="sm:max-w-[425px] md:max-w-lg lg:max-w-xl z-[9999]"> {/* Added z-[9999] */}
             <DialogHeader>
               <TitleContent />
               <DialogDescription className="sr-only">
