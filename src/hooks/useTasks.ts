@@ -34,7 +34,7 @@ import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 export interface Task {
   id: string;
-  description: string | null;
+  description: string; // Changed to non-nullable string
   status: 'to-do' | 'completed' | 'skipped' | 'archived';
   recurring_type: 'none' | 'daily' | 'weekly' | 'monthly';
   created_at: string;
@@ -295,6 +295,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     // Ensure status and recurring_type are explicitly set for addTaskMutation
     const dataWithDefaults: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'completed_at' | 'category_color'> & { order?: number | null } = {
       ...newTaskData,
+      description: newTaskData.description || '', // Ensure description is string
       status: newTaskData.status || 'to-do',
       recurring_type: newTaskData.recurring_type || 'none',
       category: newTaskData.category || 'general', // Ensure category is not null

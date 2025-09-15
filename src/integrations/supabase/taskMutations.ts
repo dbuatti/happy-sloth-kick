@@ -2,7 +2,7 @@ import { QueryClient } from '@tanstack/react-query';
 import { Task, TaskSection } from '@/hooks/useTasks'; // Import Task type
 import { v4 as uuidv4 } from 'uuid'; // Import uuid for generating new IDs
 import { supabase } from '@/integrations/supabase/client';
-import { format, parseISO, addDays, startOfDay, isBefore } from 'date-fns';
+import { format, parseISO, isValid } from 'date-fns'; // Removed unused addDays, startOfDay, isBefore
 import { showSuccess, showError } from '@/utils/toast'; // Import toast utilities
 
 // Define a more comprehensive MutationContext interface
@@ -51,9 +51,9 @@ export const addTaskMutation = async (
   const payload = {
     user_id: userId,
     completed_at: null,
-    status: 'to-do',
-    recurring_type: 'none',
-    priority: 'medium',
+    status: 'to-do' as Task['status'], // Explicitly cast
+    recurring_type: 'none' as Task['recurring_type'], // Explicitly cast
+    priority: 'medium' as Task['priority'], // Explicitly cast
     description: '',
     category: null,
     category_color: categoryColor,
@@ -76,6 +76,10 @@ export const addTaskMutation = async (
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     ...payload,
+    description: payload.description || '', // Ensure description is string
+    status: payload.status,
+    recurring_type: payload.recurring_type,
+    priority: payload.priority,
     category_color: categoryColor,
   };
 
@@ -140,11 +144,11 @@ export const updateTaskMutation = async (
   // Handle virtual task conversion to real task if it's being updated
   let realTaskId = taskId;
   if (taskId.startsWith('virtual-') && !currentTask.original_task_id) {
-    const originalRecurringTask = processedTasks.find(t => t.id === currentTask.original_task_id);
+    // const originalRecurringTask = processedTasks.find(t => t.id === currentTask.original_task_id); // Unused
     const virtualTaskCreatedAt = parseISO(currentTask.created_at);
 
     const newRealTaskData: NewTaskData = {
-      description: currentTask.description,
+      description: currentTask.description || '', // Ensure description is string
       status: currentTask.status,
       recurring_type: currentTask.recurring_type,
       category: currentTask.category,
@@ -207,7 +211,7 @@ export const deleteTaskMutation = async (
   taskId: string,
   context: MutationContext
 ): Promise<void> => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, dismissReminder, processedTasks } = context;
+  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, dismissReminder } = context;
 
   // Optimistic update
   inFlightUpdatesRef.current.add(taskId);
