@@ -117,6 +117,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
         updateSection={updateSection}
         deleteSection={deleteSection}
         updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+        className="text-card-foreground" // Added text-card-foreground here
       />
 
       <div className="space-y-2 mt-3 border-t pt-2">
@@ -142,7 +143,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
                   htmlFor={`subtask-${subtask.id}`}
                   className={cn(
                     "flex-1 text-sm font-medium leading-tight",
-                    subtask.status === 'completed' ? 'line-through text-gray-500 dark:text-gray-400' : 'text-foreground',
+                    subtask.status === 'completed' ? 'line-through text-gray-500 dark:text-gray-400' : 'text-card-foreground',
                     "block truncate"
                   )}
                 >

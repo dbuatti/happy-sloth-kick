@@ -102,6 +102,7 @@ interface TaskFormProps {
   updateSection: (sectionId: string, newName: string) => Promise<void>;
   deleteSection: (sectionId: string) => Promise<void>;
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
+  className?: string; // Added className prop
 }
 
 const TaskForm: React.FC<TaskFormProps> = ({
@@ -118,6 +119,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
   updateSection,
   deleteSection,
   updateSectionIncludeInFocusMode,
+  className, // Destructure className
 }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
@@ -309,7 +311,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 py-3">
+    <form onSubmit={handleSubmit(onSubmit)} className={cn("space-y-3 py-3", className)}>
       <div>
         <Label htmlFor="task-description">Task Description</Label>
         <div className="flex gap-1.5">

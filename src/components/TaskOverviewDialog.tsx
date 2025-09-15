@@ -140,7 +140,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
   };
 
   const MainContent = () => (
-    <div className="space-y-3 text-sm text-foreground">
+    <div className="space-y-3 text-sm text-card-foreground">
       {task.image_url && (
         <div className="mb-3">
           <img src={task.image_url} alt="Task attachment" className="rounded-lg max-h-64 w-full object-contain bg-muted" />
@@ -228,7 +228,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
                   htmlFor={`subtask-overview-${subtask.id}`}
                   className={cn(
                     "flex-1 text-sm font-medium leading-tight",
-                    subtask.status === 'completed' ? 'line-through text-gray-500 dark:text-gray-400' : 'text-foreground',
+                    subtask.status === 'completed' ? 'line-through text-gray-500 dark:text-gray-400' : 'text-card-foreground',
                     "block truncate"
                   )}
                 >
