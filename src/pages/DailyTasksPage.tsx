@@ -4,7 +4,7 @@ import React, { useState, useCallback, useMemo, useRef } from 'react';
 import TaskList from '@/components/TaskList';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import TaskOverviewDialog from '@/components/TaskOverviewDialog';
-import { useTasks, Task, TaskSection } from '@/hooks/useTasks';
+import { useTasks, Task } from '@/hooks/useTasks'; // Removed TaskSection
 import { useAuth } from '@/context/AuthContext';
 import { addDays, startOfDay } from 'date-fns';
 import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
@@ -94,96 +94,36 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   const [prefilledTaskData, setPrefilledTaskData] = useState<Partial<Task> | null>(null);
   const [isFocusViewOpen, setIsFocusViewOpen] = useState(false);
 
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() => {
-    try {
-      const saved = localStorage.getItem('taskList_expandedSections');
-      return saved ? JSON.parse(saved) : {};
-    } catch {
-      return {};
-    }
-  });
-
-  const [expandedTasks, setExpandedTasks] = useState<Record<string, boolean>>(() => {
-    try {
-      const saved = localStorage.getItem('taskList_expandedTasks');
-      return saved ? JSON.parse(saved) : {};
-    } catch {
-      return {};
-    }
-  });
-
   // We need a ref to TaskList to call its internal toggleAllSections
   const taskListRef = useRef<any>(null);
 
-  const toggleSection = useCallback((sectionId: string) => {
-    setExpandedSections(prev => {
-      const newState = { ...prev, [sectionId]: !(prev[sectionId] ?? true) };
-      localStorage.setItem('taskList_expandedSections', JSON.stringify(newState));
-      return newState;
-    });
-  }, []);
-
-  const toggleTask = useCallback((taskId: string) => {
-    setExpandedTasks(prev => {
-      const newState = { ...prev, [taskId]: !(prev[taskId] ?? true) };
-      localStorage.setItem('taskList_expandedTasks', JSON.stringify(newState));
-      return newState;
-    });
-  }, []);
-
-  // Define allSortableSections here to be used in toggleAllSections
-  const allSortableSections = useMemo(() => {
-    const noSection: TaskSection = {
-      id: 'no-section-header',
-      name: 'No Section',
-      user_id: user?.id || '',
-      order: sections.length,
-      include_in_focus_mode: true,
-    };
-    return [...sections, noSection];
-  }, [sections, user?.id]);
-
-  const toggleAllSections = useCallback(() => {
-    // Determine if ALL currently managed sections are expanded
-    const allCurrentlyExpanded = allSortableSections.every(section => expandedSections[section.id] !== false);
-
-    const newExpandedState: Record<string, boolean> = {};
-    allSortableSections.forEach(section => {
-      newExpandedState[section.id] = !allCurrentlyExpanded;
-    });
-
-    setExpandedSections(newExpandedState);
-    localStorage.setItem('taskList_expandedSections', JSON.stringify(newExpandedState));
-  }, [expandedSections, allSortableSections]);
-
-
-  const onOpenOverview = (task: Task) => {
+  const handleOpenOverview = useCallback((task: Task) => {
     setTaskToOverview(task);
     setIsTaskOverviewOpen(true);
-  };
+  }, []);
 
-  const onOpenDetail = (task: Task) => {
+  const handleOpenDetail = useCallback((task: Task) => {
     setTaskToEdit(task);
     setIsTaskDetailOpen(true);
-  };
+  }, []);
 
-  const handleEditTaskFromOverview = (task: Task) => {
+  const handleEditTaskFromOverview = useCallback((task: Task) => {
     setIsTaskOverviewOpen(false);
-    onOpenDetail(task);
-  };
+    handleOpenDetail(task);
+  }, [handleOpenDetail]);
 
-  const onOpenFocusView = () => {
+  const onOpenFocusView = useCallback(() => {
     if (nextAvailableTask) {
       setIsFocusViewOpen(true);
     }
-  };
+  }, [nextAvailableTask]);
 
-  const handleMarkDoneFromFocusView = async () => {
+  const handleMarkDoneFromFocusView = useCallback(async () => {
     if (nextAvailableTask) {
       await updateTask(nextAvailableTask.id, { status: 'completed' });
       playSound('success');
     }
-  };
+  }, [nextAvailableTask, updateTask, playSound]);
 
   const handleToggleAllSectionsFromHeader = useCallback(() => {
     if (taskListRef.current && taskListRef.current.toggleAllSections) {
@@ -233,7 +173,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
             isDemo={isDemo}
             nextAvailableTask={nextAvailableTask}
             updateTask={updateTask}
-            onOpenOverview={onOpenOverview}
+            onOpenOverview={handleOpenOverview}
             onOpenFocusView={onOpenFocusView}
             tasksLoading={tasksLoading}
             doTodayOffIds={doTodayOffIds} // Pass doTodayOffIds
@@ -264,19 +204,14 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
                   reorderSections={reorderSections}
                   allCategories={allCategories}
                   setIsAddTaskOpen={() => {}}
-                  onOpenOverview={onOpenOverview}
+                  onOpenOverview={handleOpenOverview}
                   currentDate={currentDate}
                   setCurrentDate={setCurrentDate}
-                  expandedSections={expandedSections}
-                  toggleSection={toggleSection}
-                  expandedTasks={expandedTasks}
-                  toggleTask={toggleTask}
                   setFocusTask={setFocusTask}
                   doTodayOffIds={doTodayOffIds}
                   toggleDoToday={toggleDoToday}
                   scheduledTasksMap={scheduledTasksMap}
                   isDemo={isDemo}
-                  toggleAllSections={toggleAllSections}
                   // QuickAddTask is removed from here
                 />
               </div>
@@ -340,7 +275,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         onDeleteTask={deleteTask}
         sections={sections}
         allCategories={allCategories}
-        onOpenDetail={onOpenDetail}
+        onOpenDetail={handleOpenDetail}
         handleAddTask={handleAddTask}
         currentDate={currentDate}
       />

@@ -59,11 +59,6 @@ interface TaskListProps {
   toggleDoToday: (task: Task) => void;
   scheduledTasksMap: Map<string, Appointment>;
   isDemo?: boolean;
-  expandedSections: Record<string, boolean>;
-  toggleSection: (sectionId: string) => void;
-  expandedTasks: Record<string, boolean>;
-  toggleTask: (taskId: string) => void;
-  toggleAllSections: () => void;
 }
 
 const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
@@ -91,11 +86,6 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
     toggleDoToday,
     scheduledTasksMap,
     isDemo = false,
-    expandedSections,
-    toggleSection,
-    expandedTasks,
-    toggleTask,
-    toggleAllSections,
   } = props;
 
   const { user } = useAuth();
@@ -106,6 +96,24 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
 
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
   const [activeItemData, setActiveItemData] = useState<Task | TaskSection | null>(null);
+
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem('taskList_expandedSections');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const [expandedTasks, setExpandedTasks] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem('taskList_expandedTasks');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
 
   const justToggledAllRef = useRef(false); // New ref to track if toggleAllSections was just called
 
@@ -173,14 +181,40 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
     return id === 'no-section-header' || sections.some(s => s.id === id);
   };
 
+  const toggleSection = useCallback((sectionId: string) => {
+    setExpandedSections(prev => {
+      const newState = { ...prev, [sectionId]: !(prev[sectionId] ?? true) };
+      localStorage.setItem('taskList_expandedSections', JSON.stringify(newState));
+      return newState;
+    });
+  }, []);
+
+  const toggleTask = useCallback((taskId: string) => {
+    setExpandedTasks(prev => {
+      const newState = { ...prev, [taskId]: !(prev[taskId] ?? true) };
+      localStorage.setItem('taskList_expandedTasks', JSON.stringify(newState));
+      return newState;
+    });
+  }, []);
+
+  const toggleAllSections = useCallback(() => {
+    const allCurrentlyExpanded = allSortableSections.every(section => expandedSections[section.id] !== false);
+
+    const newExpandedState: Record<string, boolean> = {};
+    allSortableSections.forEach(section => {
+      newExpandedState[section.id] = !allCurrentlyExpanded;
+    });
+
+    setExpandedSections(newExpandedState);
+    localStorage.setItem('taskList_expandedSections', JSON.stringify(newExpandedState));
+    justToggledAllRef.current = true; // Set flag
+    setTimeout(() => {
+      justToggledAllRef.current = false; // Reset flag after a short delay
+    }, 100); // Short delay to allow re-render
+  }, [expandedSections, allSortableSections]);
+
   useImperativeHandle(ref, () => ({
-    toggleAllSections: () => {
-      toggleAllSections();
-      justToggledAllRef.current = true; // Set flag
-      setTimeout(() => {
-        justToggledAllRef.current = false; // Reset flag after a short delay
-      }, 100); // Short delay to allow re-render
-    },
+    toggleAllSections: toggleAllSections,
   }));
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -437,7 +471,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
               return success;
             }}
             onCancel={() => setIsAddTaskOpenLocal(false)}
-            sections={sections}
+            sections={sections} {/* Corrected: Pass sections here */}
             allCategories={allCategories}
             preselectedSectionId={preselectedSectionId ?? undefined}
             currentDate={currentDate}
