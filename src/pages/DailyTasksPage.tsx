@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import TaskList from '@/components/TaskList';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import TaskOverviewDialog from '@/components/TaskOverviewDialog';
-import { useTasks, Task, TaskSection } from '@/hooks/useTasks';
+import { useTasks, Task } from '@/hooks/useTasks';
 import { useAuth } from '@/context/AuthContext';
 import { addDays, startOfDay } from 'date-fns';
 import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
@@ -94,23 +94,40 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   const [prefilledTaskData, setPrefilledTaskData] = useState<Partial<Task> | null>(null);
   const [isFocusViewOpen, setIsFocusViewOpen] = useState(false);
 
-  // expandedSections and expandedTasks state and toggles are now managed internally by TaskList
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem('taskList_expandedSections');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const [expandedTasks, setExpandedTasks] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem('taskList_expandedTasks');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
   // We need a ref to TaskList to call its internal toggleAllSections
   const taskListRef = useRef<any>(null);
 
-  const handleOpenOverview = (task: Task) => {
+  const onOpenOverview = (task: Task) => {
     setTaskToOverview(task);
     setIsTaskOverviewOpen(true);
   };
 
-  const handleOpenDetail = (task: Task) => {
+  const onOpenDetail = (task: Task) => {
     setTaskToEdit(task);
     setIsTaskDetailOpen(true);
   };
 
   const handleEditTaskFromOverview = (task: Task) => {
     setIsTaskOverviewOpen(false);
-    handleOpenDetail(task);
+    onOpenDetail(task);
   };
 
   const onOpenFocusView = () => {
@@ -208,11 +225,16 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
                   onOpenOverview={onOpenOverview}
                   currentDate={currentDate}
                   setCurrentDate={setCurrentDate}
+                  expandedSections={expandedSections}
+                  toggleSection={toggleSection}
+                  expandedTasks={expandedTasks}
+                  toggleTask={toggleTask}
                   setFocusTask={setFocusTask}
                   doTodayOffIds={doTodayOffIds}
                   toggleDoToday={toggleDoToday}
                   scheduledTasksMap={scheduledTasksMap}
                   isDemo={isDemo}
+                  toggleAllSections={toggleAllSections}
                   // QuickAddTask is removed from here
                 />
               </div>
@@ -276,7 +298,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         onDeleteTask={deleteTask}
         sections={sections}
         allCategories={allCategories}
-        onOpenDetail={handleOpenDetail}
+        onOpenDetail={onOpenDetail}
         handleAddTask={handleAddTask}
         currentDate={currentDate}
       />
