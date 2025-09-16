@@ -1,13 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Flame } from 'lucide-react';
+import { Plus, Sparkles, CalendarDays, Flame } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useHabits, HabitWithLogs } from '@/hooks/useHabits';
 import HabitCard from '@/components/HabitCard';
 import HabitFormDialog from '@/components/HabitFormDialog';
 import DateNavigator from '@/components/DateNavigator';
 import { Skeleton } from '@/components/ui/skeleton';
-import { addDays } from 'date-fns';
+import { addDays, format } from 'date-fns';
 import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
 
 interface HabitTrackerPageProps {
@@ -30,7 +30,7 @@ const HabitTrackerPage: React.FC<HabitTrackerPageProps> = ({ isDemo = false, dem
   const [editingHabit, setEditingHabit] = useState<HabitWithLogs | null>(null);
   const [isSavingHabit, setIsSavingHabit] = useState(false);
 
-  const activeHabits = useMemo(() => habits.filter((h: HabitWithLogs) => h.is_active), [habits]);
+  const activeHabits = useMemo(() => habits.filter(h => h.is_active), [habits]);
 
   const handleOpenForm = (habit: HabitWithLogs | null) => {
     setEditingHabit(habit);
@@ -113,7 +113,7 @@ const HabitTrackerPage: React.FC<HabitTrackerPageProps> = ({ isDemo = false, dem
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {activeHabits.map((habit: HabitWithLogs) => (
+                {activeHabits.map(habit => (
                   <HabitCard
                     key={habit.id}
                     habit={habit}

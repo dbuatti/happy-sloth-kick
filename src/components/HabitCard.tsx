@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, X, MoreHorizontal, Edit, Flame, CalendarDays, Target } from 'lucide-react';
+import { CheckCircle2, X, MoreHorizontal, Edit, Flame, CalendarDays, Clock, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { HabitWithLogs } from '@/hooks/useHabits';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { format, parseISO } from 'date-fns';
+import { useSound } from '@/context/SoundContext'; // Import useSound
 
 interface HabitCardProps {
   habit: HabitWithLogs;
@@ -17,23 +18,50 @@ interface HabitCardProps {
 }
 
 const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit, currentDate, isDemo = false }) => {
+  const { playSound } = useSound(); // Use the sound hook
   const [isSaving, setIsSaving] = useState(false);
+  const [showCompletionEffect, setShowCompletionEffect] = useState(false);
 
   const handleToggle = async () => {
     if (isDemo) return;
     setIsSaving(true);
-    await onToggleCompletion(habit.id, currentDate, !habit.completedToday);
+    const success = await onToggleCompletion(habit.id, currentDate, !habit.completedToday);
+    if (success && !habit.completedToday) {
+      playSound('success');
+      setShowCompletionEffect(true);
+      setTimeout(() => setShowCompletionEffect(false), 600); // Animation duration
+    } else if (success && habit.completedToday) {
+      playSound('reset'); // Or a different sound for un-completing
+    }
     setIsSaving(false);
   };
 
   const getUnitDisplay = (value: number | null, unit: string | null) => {
-    if (value === null || unit === null) return '';
-    return `${value} ${unit}`;
+    if (value === null || unit === null || unit === '') return '';
+    
+    let formattedUnit = unit;
+    if (value > 1 && !unit.endsWith('s')) { // Simple pluralization
+      formattedUnit += 's';
+    }
+
+    switch (unit.toLowerCase()) {
+      case 'minutes': return `${value} min`;
+      case 'kilometers': return `${value} km`;
+      case 'miles': return `${value} mi`;
+      case 'liters': return `${value} L`;
+      case 'milliliters': return `${value} ml`;
+      case 'glasses': return `${value} glasses`;
+      case 'reps': return `${value} reps`;
+      case 'pages': return `${value} pages`;
+      case 'times': return `${value} times`;
+      case 'steps': return `${value} steps`;
+      default: return `${value} ${formattedUnit}`;
+    }
   };
 
   return (
     <Card className={cn(
-      "relative group shadow-lg rounded-xl transition-all duration-200 ease-in-out",
+      "relative group shadow-lg rounded-xl transition-all duration-200 ease-in-out overflow-hidden", // Added overflow-hidden
       habit.completedToday ? "bg-green-500/10 border-green-500/30" : "bg-card border-border hover:shadow-xl",
       isDemo && "opacity-70 cursor-not-allowed"
     )}>
@@ -114,6 +142,11 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
           )}
         </Button>
       </CardContent>
+      {showCompletionEffect && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+          <CheckCircle2 className="h-16 w-16 text-green-500 animate-task-complete" />
+        </div>
+      )}
     </Card>
   );
 };

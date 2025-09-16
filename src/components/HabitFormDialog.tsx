@@ -42,6 +42,20 @@ const presetColors = [
   { name: 'Teal', value: '#14b8a6', class: 'bg-teal-500' },
 ];
 
+const unitOptions = [
+  { value: '', label: 'None' },
+  { value: 'minutes', label: 'Minutes' },
+  { value: 'reps', label: 'Reps' },
+  { value: 'pages', label: 'Pages' },
+  { value: 'times', label: 'Times' },
+  { value: 'km', label: 'Kilometers' },
+  { value: 'miles', label: 'Miles' },
+  { value: 'ml', label: 'Milliliters' },
+  { value: 'liters', label: 'Liters' },
+  { value: 'glasses', label: 'Glasses' },
+  { value: 'steps', label: 'Steps' },
+];
+
 const HabitFormDialog: React.FC<HabitFormDialogProps> = ({
   isOpen,
   onClose,
@@ -196,7 +210,7 @@ const HabitFormDialog: React.FC<HabitFormDialogProps> = ({
                   type="number"
                   value={targetValue}
                   onChange={(e) => setTargetValue(e.target.value === '' ? '' : Number(e.target.value))}
-                  placeholder="e.g., 10 (reps), 5 (minutes)"
+                  placeholder="e.g., 10, 5"
                   min="0"
                   disabled={isSaving}
                   className="h-9 text-base"
@@ -204,14 +218,18 @@ const HabitFormDialog: React.FC<HabitFormDialogProps> = ({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="unit">Unit (Optional)</Label>
-                <Input
-                  id="unit"
-                  value={unit}
-                  onChange={(e) => setUnit(e.target.value)}
-                  placeholder="e.g., minutes, reps, pages"
-                  disabled={isSaving}
-                  className="h-9 text-base"
-                />
+                <Select value={unit} onValueChange={setUnit} disabled={isSaving}>
+                  <SelectTrigger className="h-9 text-base">
+                    <SelectValue placeholder="Select unit" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {unitOptions.map(option => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
