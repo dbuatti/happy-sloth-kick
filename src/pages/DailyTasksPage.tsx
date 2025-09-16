@@ -178,7 +178,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     }
   };
 
-  const handleMarkDoneFromFocusView = async () => {
+  const handleMarkDoneFromFocusView = useCallback(async () => {
     if (nextAvailableTask) {
       await updateTask(nextAvailableTask.id, { status: 'completed' });
       playSound('success');
