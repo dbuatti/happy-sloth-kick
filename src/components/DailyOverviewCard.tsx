@@ -27,6 +27,7 @@ interface DailyOverviewCardProps {
   setIsFocusPanelOpen: React.Dispatch<React.SetStateAction<boolean>>;
   setIsManageCategoriesOpen: React.Dispatch<React.SetStateAction<boolean>>;
   setIsManageSectionsOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  onToggleAllSections: () => void; // New prop
 }
 
 const DailyOverviewCard: React.FC<DailyOverviewCardProps> = ({
@@ -44,6 +45,7 @@ const DailyOverviewCard: React.FC<DailyOverviewCardProps> = ({
   setIsFocusPanelOpen,
   setIsManageCategoriesOpen,
   setIsManageSectionsOpen,
+  onToggleAllSections, // Destructure new prop
 }) => {
   const { totalPendingCount, completedCount, overdueCount } = dailyProgress;
   const totalTasksForProgress = totalPendingCount + completedCount;
@@ -116,6 +118,9 @@ const DailyOverviewCard: React.FC<DailyOverviewCardProps> = ({
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={toggleAllDoToday}>
                   <ToggleRight className="mr-2 h-3.5 w-3.5" /> Toggle All 'Do Today'
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={onToggleAllSections}> {/* Use the new prop here */}
+                  <ChevronDown className="mr-2 h-3.5 w-3.5" /> Toggle All Sections
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={() => setIsManageCategoriesOpen(true)}>

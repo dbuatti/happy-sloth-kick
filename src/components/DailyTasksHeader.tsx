@@ -45,6 +45,7 @@ interface DailyTasksHeaderProps {
   tasksLoading: boolean;
   doTodayOffIds: Set<string>;
   toggleDoToday: (task: Task) => void;
+  onToggleAllSections: () => void; // New prop for toggleAllSections
 }
 
 const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
@@ -78,6 +79,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   tasksLoading,
   doTodayOffIds,
   toggleDoToday,
+  onToggleAllSections, // Destructure new prop
 }) => {
   useDailyTaskCount(); 
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -115,6 +117,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         setIsFocusPanelOpen={setIsFocusPanelOpen}
         setIsManageCategoriesOpen={setIsManageCategoriesOpen}
         setIsManageSectionsOpen={setIsManageSectionsOpen}
+        onToggleAllSections={onToggleAllSections} // Pass the new prop
       />
 
       {/* Task Filter */}

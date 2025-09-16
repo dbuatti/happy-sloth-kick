@@ -94,79 +94,23 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   const [prefilledTaskData, setPrefilledTaskData] = useState<Partial<Task> | null>(null);
   const [isFocusViewOpen, setIsFocusViewOpen] = useState(false);
 
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() => {
-    try {
-      const saved = localStorage.getItem('taskList_expandedSections');
-      return saved ? JSON.parse(saved) : {};
-    } catch {
-      return {};
-    }
-  });
+  // expandedSections and expandedTasks state and toggles are now managed internally by TaskList
+  // We need a ref to TaskList to call its internal toggleAllSections
+  const taskListRef = useRef<any>(null);
 
-  const [expandedTasks, setExpandedTasks] = useState<Record<string, boolean>>(() => {
-    try {
-      const saved = localStorage.getItem('taskList_expandedTasks');
-      return saved ? JSON.parse(saved) : {};
-    } catch {
-      return {};
-    }
-  });
-
-  // Define allSortableSections here to be used in toggleAllSections
-  const allSortableSections = useMemo(() => {
-    const noSection: TaskSection = {
-      id: 'no-section-header',
-      name: 'No Section',
-      user_id: user?.id || '',
-      order: sections.length,
-      include_in_focus_mode: true,
-    };
-    return [...sections, noSection];
-  }, [sections, user?.id]);
-
-  const toggleSection = useCallback((sectionId: string) => {
-    setExpandedSections(prev => {
-      const newState = { ...prev, [sectionId]: !(prev[sectionId] ?? true) };
-      localStorage.setItem('taskList_expandedSections', JSON.stringify(newState));
-      return newState;
-    });
-  }, []);
-
-  const toggleTask = useCallback((taskId: string) => {
-    setExpandedTasks(prev => {
-      const newState = { ...prev, [taskId]: !(prev[taskId] ?? true) };
-      localStorage.setItem('taskList_expandedTasks', JSON.stringify(newState));
-      return newState;
-    });
-  }, []);
-
-  const toggleAllSections = useCallback(() => {
-    // Determine if ALL currently managed sections are expanded
-    const allCurrentlyExpanded = allSortableSections.every(section => expandedSections[section.id] !== false);
-
-    const newExpandedState: Record<string, boolean> = {};
-    allSortableSections.forEach(section => {
-      newExpandedState[section.id] = !allCurrentlyExpanded;
-    });
-
-    setExpandedSections(newExpandedState);
-    localStorage.setItem('taskList_expandedSections', JSON.stringify(newExpandedState));
-  }, [expandedSections, allSortableSections]);
-
-
-  const onOpenOverview = (task: Task) => {
+  const handleOpenOverview = (task: Task) => {
     setTaskToOverview(task);
     setIsTaskOverviewOpen(true);
   };
 
-  const onOpenDetail = (task: Task) => {
+  const handleOpenDetail = (task: Task) => {
     setTaskToEdit(task);
     setIsTaskDetailOpen(true);
   };
 
   const handleEditTaskFromOverview = (task: Task) => {
     setIsTaskOverviewOpen(false);
-    onOpenDetail(task);
+    handleOpenDetail(task);
   };
 
   const onOpenFocusView = () => {
@@ -181,6 +125,12 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
       playSound('success');
     }
   };
+
+  const handleToggleAllSectionsFromHeader = useCallback(() => {
+    if (taskListRef.current && taskListRef.current.toggleAllSections) {
+      taskListRef.current.toggleAllSections();
+    }
+  }, []);
 
   const shortcuts: ShortcutMap = {
     'arrowleft': () => setCurrentDate(prevDate => startOfDay(addDays(prevDate, -1))),
@@ -229,12 +179,14 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
             tasksLoading={tasksLoading}
             doTodayOffIds={doTodayOffIds} // Pass doTodayOffIds
             toggleDoToday={toggleDoToday} // Pass toggleDoToday
+            onToggleAllSections={handleToggleAllSectionsFromHeader} // Pass the new handler
           />
 
           <Card className="flex-1 flex flex-col rounded-none shadow-none border-0 relative z-[1]">
             <CardContent className="p-4 flex-1 flex flex-col overflow-y-auto"> {/* Added overflow-y-auto here */}
               <div className="flex-1">
                 <TaskList
+                  ref={taskListRef} // Attach ref here
                   tasks={tasks as Task[]}
                   processedTasks={processedTasks}
                   filteredTasks={filteredTasks}
@@ -256,11 +208,6 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
                   onOpenOverview={onOpenOverview}
                   currentDate={currentDate}
                   setCurrentDate={setCurrentDate}
-                  expandedSections={expandedSections}
-                  toggleSection={toggleSection}
-                  toggleAllSections={toggleAllSections}
-                  expandedTasks={expandedTasks}
-                  toggleTask={toggleTask}
                   setFocusTask={setFocusTask}
                   doTodayOffIds={doTodayOffIds}
                   toggleDoToday={toggleDoToday}
@@ -329,7 +276,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         onDeleteTask={deleteTask}
         sections={sections}
         allCategories={allCategories}
-        onOpenDetail={onOpenDetail}
+        onOpenDetail={handleOpenDetail}
         handleAddTask={handleAddTask}
         currentDate={currentDate}
       />

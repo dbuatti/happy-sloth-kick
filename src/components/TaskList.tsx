@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { ChevronsDownUp } from 'lucide-react';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
@@ -54,11 +54,6 @@ interface TaskListProps {
   onOpenOverview: (task: Task) => void;
   currentDate: Date;
   setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
-  expandedSections: Record<string, boolean>;
-  expandedTasks: Record<string, boolean>;
-  toggleTask: (taskId: string) => void;
-  toggleSection: (sectionId: string) => void;
-  toggleAllSections: () => void;
   setFocusTask: (taskId: string | null) => Promise<void>;
   doTodayOffIds: Set<string>;
   toggleDoToday: (task: Task) => void;
@@ -86,11 +81,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     allCategories,
     onOpenOverview,
     currentDate,
-    expandedSections,
-    expandedTasks,
-    toggleTask,
-    toggleSection,
-    toggleAllSections,
     setFocusTask,
     doTodayOffIds,
     toggleDoToday,
@@ -106,6 +96,26 @@ const TaskList: React.FC<TaskListProps> = (props) => {
 
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
   const [activeItemData, setActiveItemData] = useState<Task | TaskSection | null>(null);
+
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem('taskList_expandedSections');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const [expandedTasks, setExpandedTasks] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem('taskList_expandedTasks');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const justToggledAllRef = useRef(false); // New ref to track if toggleAllSections was just called
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -170,6 +180,38 @@ const TaskList: React.FC<TaskListProps> = (props) => {
     if (!id) return false;
     return id === 'no-section-header' || sections.some(s => s.id === id);
   };
+
+  const toggleSection = useCallback((sectionId: string) => {
+    setExpandedSections(prev => {
+      const newState = { ...prev, [sectionId]: !(prev[sectionId] ?? true) };
+      localStorage.setItem('taskList_expandedSections', JSON.stringify(newState));
+      return newState;
+    });
+  }, []);
+
+  const toggleTask = useCallback((taskId: string) => {
+    setExpandedTasks(prev => {
+      const newState = { ...prev, [taskId]: !(prev[taskId] ?? true) };
+      localStorage.setItem('taskList_expandedTasks', JSON.stringify(newState));
+      return newState;
+    });
+  }, []);
+
+  const toggleAllSections = useCallback(() => {
+    const allCurrentlyExpanded = allSortableSections.every(section => expandedSections[section.id] !== false);
+
+    const newExpandedState: Record<string, boolean> = {};
+    allSortableSections.forEach(section => {
+      newExpandedState[section.id] = !allCurrentlyExpanded;
+    });
+
+    setExpandedSections(newExpandedState);
+    localStorage.setItem('taskList_expandedSections', JSON.stringify(newExpandedState));
+    justToggledAllRef.current = true; // Set flag
+    setTimeout(() => {
+      justToggledAllRef.current = false; // Reset flag after a short delay
+    }, 100); // Short delay to allow re-render
+  }, [expandedSections, allSortableSections]);
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id);
@@ -238,6 +280,9 @@ const TaskList: React.FC<TaskListProps> = (props) => {
 
   // Effect to automatically collapse sections when all tasks are completed
   useEffect(() => {
+    if (justToggledAllRef.current) {
+      return; // Skip auto-collapse if 'Toggle All' was just clicked
+    }
     allSortableSections.forEach(section => {
       const topLevelTasksInSection = filteredTasks
         .filter(t => t.parent_task_id === null && (t.section_id === section.id || (t.section_id === null && section.id === 'no-section-header')))
@@ -422,7 +467,7 @@ const TaskList: React.FC<TaskListProps> = (props) => {
               return success;
             }}
             onCancel={() => setIsAddTaskOpenLocal(false)}
-            sections={sections}
+            sections={allCategories}
             allCategories={allCategories}
             preselectedSectionId={preselectedSectionId ?? undefined}
             currentDate={currentDate}
