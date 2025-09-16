@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { ChevronsDownUp } from 'lucide-react';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
@@ -54,19 +54,19 @@ interface TaskListProps {
   onOpenOverview: (task: Task) => void;
   currentDate: Date;
   setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
+  expandedSections: Record<string, boolean>;
+  expandedTasks: Record<string, boolean>;
+  toggleTask: (taskId: string) => void;
+  toggleSection: (sectionId: string) => void;
+  toggleAllSections: () => void;
   setFocusTask: (taskId: string | null) => Promise<void>;
   doTodayOffIds: Set<string>;
   toggleDoToday: (task: Task) => void;
   scheduledTasksMap: Map<string, Appointment>;
   isDemo?: boolean;
-  expandedSections: Record<string, boolean>;
-  toggleSection: (sectionId: string) => void;
-  expandedTasks: Record<string, boolean>;
-  toggleTask: (taskId: string) => void;
-  toggleAllSections: () => void;
 }
 
-const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
+const TaskList: React.FC<TaskListProps> = (props) => {
   const {
     tasks,
     processedTasks,
@@ -86,16 +86,16 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
     allCategories,
     onOpenOverview,
     currentDate,
+    expandedSections,
+    expandedTasks,
+    toggleTask,
+    toggleSection,
+    toggleAllSections,
     setFocusTask,
     doTodayOffIds,
     toggleDoToday,
     scheduledTasksMap,
     isDemo = false,
-    expandedSections,
-    toggleSection,
-    expandedTasks,
-    toggleTask,
-    toggleAllSections,
   } = props;
 
   const { user } = useAuth();
@@ -106,8 +106,6 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
 
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
   const [activeItemData, setActiveItemData] = useState<Task | TaskSection | null>(null);
-
-  const justToggledAllRef = useRef(false); // New ref to track if toggleAllSections was just called
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -172,16 +170,6 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
     if (!id) return false;
     return id === 'no-section-header' || sections.some(s => s.id === id);
   };
-
-  useImperativeHandle(ref, () => ({
-    toggleAllSections: () => {
-      toggleAllSections();
-      justToggledAllRef.current = true; // Set flag
-      setTimeout(() => {
-        justToggledAllRef.current = false; // Reset flag after a short delay
-      }, 100); // Short delay to allow re-render
-    },
-  }));
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id);
@@ -250,9 +238,6 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
 
   // Effect to automatically collapse sections when all tasks are completed
   useEffect(() => {
-    if (justToggledAllRef.current) {
-      return; // Skip auto-collapse if 'Toggle All' was just clicked
-    }
     allSortableSections.forEach(section => {
       const topLevelTasksInSection = filteredTasks
         .filter(t => t.parent_task_id === null && (t.section_id === section.id || (t.section_id === null && section.id === 'no-section-header')))
@@ -307,7 +292,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
               return (
                 <div
                   key={currentSection.id}
-                  className={cn("mb-4", index < allSortableSections.length - 1 && "border-b border-border pb-4")}
+                  className={cn("mb-2", index < allSortableSections.length - 1 && "border-b border-border pb-2")}
                 >
                   <SortableSectionHeader
                     section={currentSection}
@@ -324,7 +309,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
 
                   <div className={cn(
                     "mt-3 overflow-hidden transition-all duration-300 ease-in-out",
-                    isExpanded ? "max-h-[9999px] opacity-100" : "max-h-0 opacity-0" // Changed max-h-[500px] to max-h-[9999px]
+                    isExpanded ? "max-h-[9999px] opacity-100" : "max-h-0 opacity-0"
                   )}>
                     {topLevelTasksInSection.length > 0 && (
                       <ul className="list-none space-y-1.5">
@@ -452,6 +437,6 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
       </Dialog>
     </>
   );
-});
+};
 
 export default TaskList;
