@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Edit, Link as LinkIcon, ClipboardCopy } from 'lucide-react';
+import { CheckCircle2, Edit, Target, Link as LinkIcon, ClipboardCopy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Task } from '@/hooks/useTasks';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -64,8 +64,7 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ nextAvailableTask, updateTa
 
   return (
     <div
-      className="flex flex-col justify-center cursor-pointer"
-      onClick={onFocusViewOpen}
+      className="flex flex-col justify-center" // Removed cursor-pointer from here
     >
       {loading ? (
         <div className="space-y-3 w-full flex flex-col items-center">
@@ -86,7 +85,10 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ nextAvailableTask, updateTa
               isDemo={isDemo}
             />
           </div>
-          <p className="text-xl sm:text-2xl font-bold leading-tight text-foreground line-clamp-2">
+          <p
+            className="text-xl sm:text-2xl font-bold leading-tight text-foreground line-clamp-2 cursor-pointer hover:text-primary transition-colors" // Added cursor-pointer and hover effect here
+            onClick={onFocusViewOpen}
+          >
             {nextAvailableTask.description}
           </p>
           {nextAvailableTask.link && (

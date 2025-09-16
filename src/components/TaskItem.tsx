@@ -172,9 +172,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
     }
   };
 
-  const isOverdue = task.due_date && task.status !== 'completed' && isPast(parseISO(task.due_date)) && !isSameDay(parseISO(task.due_date), currentDate);
-  const isDueToday = task.due_date && task.status !== 'completed' && isSameDay(parseISO(task.due_date), currentDate);
-
   const handleToggleDoTodaySwitch = () => {
     toggleDoToday(task);
   };
@@ -182,17 +179,17 @@ const TaskItem: React.FC<TaskItemProps> = ({
   return (
     <div
       className={cn(
-        "relative flex items-center w-full rounded-xl transition-all duration-300 py-2.5 pl-5 shadow-sm border", // Adjusted vertical padding
+        "relative flex items-center w-full rounded-xl transition-all duration-300 py-2 pl-4 shadow-sm border", // Adjusted vertical padding and left padding
         task.status === 'completed' 
           ? "text-task-completed-text bg-task-completed-bg border-task-completed-text/20" 
-          : "bg-card text-foreground border-border hover:shadow-md",
+          : "bg-card text-foreground border-border hover:shadow-md hover:scale-[1.005]", // Added hover scale and shadow
         !isDoToday && "opacity-60",
         "group"
       )}
     >
       {/* Priority Pill */}
       <div className={cn(
-        "absolute left-0 top-0 h-full w-1.5 rounded-l-xl", 
+        "absolute left-0 top-0 h-full w-2 rounded-l-xl", // Increased width from w-1.5 to w-2
         getPriorityDotColor(task.priority)
       )} />
 
