@@ -1,13 +1,13 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Sparkles, CalendarDays, Flame } from 'lucide-react';
+import { Plus, Flame } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useHabits, HabitWithLogs } from '@/hooks/useHabits';
 import HabitCard from '@/components/HabitCard';
 import HabitFormDialog from '@/components/HabitFormDialog';
 import DateNavigator from '@/components/DateNavigator';
 import { Skeleton } from '@/components/ui/skeleton';
-import { addDays, format } from 'date-fns';
+import { addDays } from 'date-fns';
 import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
 import HabitSuggestionCard from '@/components/HabitSuggestionCard'; // Import the new component
 import { getNewHabitSuggestion } from '@/integrations/supabase/habit-api'; // Import the API call
@@ -38,7 +38,7 @@ const HabitTrackerPage: React.FC<HabitTrackerPageProps> = ({ isDemo = false, dem
   const [habitSuggestion, setHabitSuggestion] = useState<string | null>(null);
   const [isLoadingSuggestion, setIsLoadingSuggestion] = useState(false);
 
-  const activeHabits = useMemo(() => habits.filter(h => h.is_active), [habits]);
+  const activeHabits = useMemo(() => habits.filter((h: HabitWithLogs) => h.is_active), [habits]);
 
   useEffect(() => {
     const fetchSuggestion = async () => {
@@ -141,7 +141,7 @@ const HabitTrackerPage: React.FC<HabitTrackerPageProps> = ({ isDemo = false, dem
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {activeHabits.map(habit => (
+                {activeHabits.map((habit: HabitWithLogs) => (
                   <HabitCard
                     key={habit.id}
                     habit={habit}
