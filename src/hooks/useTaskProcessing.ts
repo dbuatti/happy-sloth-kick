@@ -175,15 +175,8 @@ export const useTaskProcessing = ({
       }
     }
 
-    // Apply "Do Today" filter for daily and focus modes
-    if (viewMode === 'daily' || viewMode === 'focus') {
-      filteredTasks = filteredTasks.filter(task => {
-        // Recurring tasks are always "Do Today"
-        if (task.recurring_type !== 'none') return true;
-        // Non-recurring tasks are "Do Today" if their ID is NOT in the doTodayOffIds set
-        return !doTodayOffIds.has(task.original_task_id || task.id);
-      });
-    }
+    // The "Do Today" filter is removed here to keep tasks visible but greyed out.
+    // The `isDoToday` prop passed to TaskItem will handle the visual greying out.
 
     // Apply focus mode section filter
     if (viewMode === 'focus' && userSettings?.schedule_show_focus_tasks_only) {
@@ -219,7 +212,6 @@ export const useTaskProcessing = ({
     effectiveCurrentDate,
     userSettings,
     todayStart,
-    doTodayOffIds,
     sections,
   ]);
 
