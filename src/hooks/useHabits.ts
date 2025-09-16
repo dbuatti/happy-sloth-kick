@@ -8,7 +8,6 @@ import {
   HabitLog,
   NewHabitData,
   UpdateHabitData,
-  NewHabitLogData,
   getHabits,
   addHabit,
   updateHabit,
@@ -16,10 +15,9 @@ import {
   getHabitLogs,
   getHabitLogForDay,
   upsertHabitLog,
-  deleteHabitLog,
   getHabitLogsForHabit,
 } from '@/integrations/supabase/habit-api';
-import { format, differenceInDays, parseISO, isSameDay, startOfDay, endOfDay } from 'date-fns';
+import { format, differenceInDays, parseISO, isSameDay, startOfDay, endOfDay, isValid, addDays, isBefore, isAfter } from 'date-fns';
 
 export interface HabitWithLogs extends Habit {
   logs: HabitLog[];
@@ -40,14 +38,16 @@ export const useHabits = ({ userId: propUserId, currentDate, startDate, endDate 
   const userId = propUserId || user?.id;
   const queryClient = useQueryClient();
 
-  const formattedCurrentDate = currentDate ? format(currentDate, 'yyyy-MM-dd') : undefined;
   const formattedStartDate = startDate ? format(startDate, 'yyyy-MM-dd') : undefined;
   const formattedEndDate = endDate ? format(endDate, 'yyyy-MM-dd') : undefined;
 
   // Fetch all habits
   const { data: rawHabits = [], isLoading: habitsLoading, error: habitsError } = useQuery<Habit[], Error>({
     queryKey: ['habits', userId],
-    queryFn: () => getHabits(userId!),
+    queryFn: async () => {
+      const data = await getHabits(userId!);
+      return data || [];
+    },
     enabled: !!userId,
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
@@ -55,7 +55,10 @@ export const useHabits = ({ userId: propUserId, currentDate, startDate, endDate 
   // Fetch habit logs for a specific date range (or all if no range specified)
   const { data: rawHabitLogs = [], isLoading: logsLoading, error: logsError } = useQuery<HabitLog[], Error>({
     queryKey: ['habitLogs', userId, formattedStartDate, formattedEndDate],
-    queryFn: () => getHabitLogs(userId!, startDate || startOfDay(new Date(0)), endDate || endOfDay(new Date())), // Fetch all if no range
+    queryFn: async () => {
+      const data = await getHabitLogs(userId!, startDate || startOfDay(new Date(0)), endDate || endOfDay(new Date())); // Fetch all if no range
+      return data || [];
+    },
     enabled: !!userId,
     staleTime: 1000 * 30, // 30 seconds for logs
   });
@@ -72,14 +75,14 @@ export const useHabits = ({ userId: propUserId, currentDate, startDate, endDate 
     if (!rawHabits.length) return [];
 
     const logsByHabitId = new Map<string, HabitLog[]>();
-    rawHabitLogs.forEach(log => {
+    (rawHabitLogs || []).forEach((log: HabitLog) => {
       if (!logsByHabitId.has(log.habit_id)) {
         logsByHabitId.set(log.habit_id, []);
       }
       logsByHabitId.get(log.habit_id)!.push(log);
     });
 
-    return rawHabits.map(habit => {
+    return (rawHabits || []).map((habit: Habit) => {
       const habitLogs = logsByHabitId.get(habit.id) || [];
       const sortedLogs = [...habitLogs].sort((a, b) => parseISO(a.log_date).getTime() - parseISO(b.log_date).getTime());
 

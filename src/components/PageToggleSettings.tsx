@@ -4,7 +4,6 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useSettings } from '@/context/SettingsContext';
 import { Skeleton } from '@/components/ui/skeleton';
-import { navItems } from '@/lib/navItems';
 import { LayoutDashboard } from 'lucide-react';
 
 const PageToggleSettings: React.FC = () => {
