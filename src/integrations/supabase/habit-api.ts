@@ -132,3 +132,18 @@ export const deleteHabitLog = async (logId: string): Promise<boolean> => {
   if (error) throw error;
   return true;
 };
+
+// --- AI Suggestion API Functions ---
+
+export const getNewHabitSuggestion = async (userId: string): Promise<string | null> => {
+  try {
+    const { data, error } = await supabase.functions.invoke('suggest-new-habit', {
+      body: { userId },
+    });
+    if (error) throw error;
+    return data.suggestion;
+  } catch (error) {
+    console.error('Error fetching new habit suggestion:', error);
+    return null;
+  }
+};

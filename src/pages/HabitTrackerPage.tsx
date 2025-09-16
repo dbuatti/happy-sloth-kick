@@ -1,14 +1,17 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Flame } from 'lucide-react';
+import { Plus, Sparkles, CalendarDays, Flame } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useHabits, HabitWithLogs } from '@/hooks/useHabits';
 import HabitCard from '@/components/HabitCard';
 import HabitFormDialog from '@/components/HabitFormDialog';
 import DateNavigator from '@/components/DateNavigator';
 import { Skeleton } from '@/components/ui/skeleton';
-import { addDays } from 'date-fns';
+import { addDays, format } from 'date-fns';
 import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
+import HabitSuggestionCard from '@/components/HabitSuggestionCard'; // Import the new component
+import { getNewHabitSuggestion } from '@/integrations/supabase/habit-api'; // Import the API call
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 interface HabitTrackerPageProps {
   isDemo?: boolean;
@@ -16,6 +19,9 @@ interface HabitTrackerPageProps {
 }
 
 const HabitTrackerPage: React.FC<HabitTrackerPageProps> = ({ isDemo = false, demoUserId }) => {
+  const { user } = useAuth();
+  const userId = demoUserId || user?.id;
+
   const [currentDate, setCurrentDate] = useState(new Date());
   const {
     habits,
@@ -29,8 +35,26 @@ const HabitTrackerPage: React.FC<HabitTrackerPageProps> = ({ isDemo = false, dem
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingHabit, setEditingHabit] = useState<HabitWithLogs | null>(null);
   const [isSavingHabit, setIsSavingHabit] = useState(false);
+  const [habitSuggestion, setHabitSuggestion] = useState<string | null>(null);
+  const [isLoadingSuggestion, setIsLoadingSuggestion] = useState(false);
 
-  const activeHabits = useMemo(() => habits.filter((h: HabitWithLogs) => h.is_active), [habits]);
+  const activeHabits = useMemo(() => habits.filter(h => h.is_active), [habits]);
+
+  useEffect(() => {
+    const fetchSuggestion = async () => {
+      if (!userId || isDemo) {
+        setHabitSuggestion(null);
+        return;
+      }
+      setIsLoadingSuggestion(true);
+      const suggestion = await getNewHabitSuggestion(userId);
+      setHabitSuggestion(suggestion);
+      setIsLoadingSuggestion(false);
+    };
+
+    // Fetch suggestion when habits change or on page load
+    fetchSuggestion();
+  }, [userId, isDemo, habits]); // Re-fetch when habits data changes
 
   const handleOpenForm = (habit: HabitWithLogs | null) => {
     setEditingHabit(habit);
@@ -99,6 +123,10 @@ const HabitTrackerPage: React.FC<HabitTrackerPageProps> = ({ isDemo = false, dem
               </Button>
             </div>
 
+            <div className="mb-6">
+              <HabitSuggestionCard suggestion={habitSuggestion} isLoading={isLoadingSuggestion} isDemo={isDemo} />
+            </div>
+
             {loading ? (
               <div className="space-y-4">
                 {[...Array(3)].map((_, i) => (
@@ -113,7 +141,7 @@ const HabitTrackerPage: React.FC<HabitTrackerPageProps> = ({ isDemo = false, dem
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {activeHabits.map((habit: HabitWithLogs) => (
+                {activeHabits.map(habit => (
                   <HabitCard
                     key={habit.id}
                     habit={habit}
