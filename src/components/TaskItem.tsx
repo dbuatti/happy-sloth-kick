@@ -176,6 +176,9 @@ const TaskItem: React.FC<TaskItemProps> = ({
     toggleDoToday(task);
   };
 
+  const isOverdue = task.due_date && task.status !== 'completed' && isPast(parseISO(task.due_date)) && !isSameDay(parseISO(task.due_date), currentDate);
+  const isDueToday = task.due_date && task.status !== 'completed' && isSameDay(parseISO(task.due_date), currentDate);
+
   return (
     <div
       className={cn(

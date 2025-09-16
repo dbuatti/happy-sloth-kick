@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Button } from "@/components/ui/button";
 import { ChevronsDownUp } from 'lucide-react';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
@@ -66,7 +66,7 @@ interface TaskListProps {
   isDemo?: boolean;
 }
 
-const TaskList: React.FC<TaskListProps> = (props) => {
+const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
   const {
     tasks,
     processedTasks,
@@ -249,6 +249,13 @@ const TaskList: React.FC<TaskListProps> = (props) => {
       }
     });
   }, [filteredTasks, sections, allSortableSections, expandedSections, toggleSection]);
+
+  // Expose toggleAllSections via ref
+  useImperativeHandle(ref, () => ({
+    toggleAllSections: () => {
+      toggleAllSections();
+    }
+  }));
 
   return (
     <>
@@ -437,6 +444,6 @@ const TaskList: React.FC<TaskListProps> = (props) => {
       </Dialog>
     </>
   );
-};
+});
 
 export default TaskList;
