@@ -10,12 +10,27 @@ import { LayoutDashboard } from 'lucide-react';
 const PageToggleSettings: React.FC = () => {
   const { settings, loading, updateSettings } = useSettings();
 
-  const toggleablePages = navItems.filter(item => item.toggleable);
+  // Define navItems locally or import them if they are a shared constant
+  const localNavItems = [
+    { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard, toggleable: true },
+    { name: "Daily Tasks", path: "/daily-tasks", icon: LayoutDashboard, toggleable: true },
+    { name: "Schedule", path: "/schedule", icon: LayoutDashboard, toggleable: true },
+    { name: "Projects", path: "/projects", icon: LayoutDashboard, toggleable: true },
+    { name: "Sleep", path: "/sleep", icon: LayoutDashboard, toggleable: true },
+    { name: "Habits", path: "/habits", icon: LayoutDashboard, toggleable: true }, // New item
+    { name: "Dev Space", path: "/dev-space", icon: LayoutDashboard, toggleable: true },
+    { name: "Settings", path: "/settings", icon: LayoutDashboard, toggleable: true },
+    { name: "Analytics", path: "/analytics", icon: LayoutDashboard, toggleable: true },
+    { name: "Archive", path: "/archive", icon: LayoutDashboard, toggleable: true },
+    { name: "Help", path: "/help", icon: LayoutDashboard, toggleable: true },
+  ];
+
+  const toggleablePages = localNavItems.filter(item => item.toggleable);
 
   const handleToggle = (path: string, checked: boolean) => {
     const newVisiblePages = {
       ...(settings?.visible_pages || {}),
-      [path]: checked,
+      [path.replace('/','').replace('-','').replace(' ','')]: checked, // Normalize path to match settings key
     };
     updateSettings({ visible_pages: newVisiblePages });
   };
@@ -51,7 +66,8 @@ const PageToggleSettings: React.FC = () => {
         <div className="space-y-4">
           {toggleablePages.map(page => {
             const Icon = page.icon;
-            const isVisible = settings?.visible_pages?.[page.path] !== false;
+            const settingsKey = page.path.replace('/','').replace('-','').replace(' ','');
+            const isVisible = settings?.visible_pages?.[settingsKey] !== false;
             return (
               <div key={page.path} className="flex items-center justify-between">
                 <Label htmlFor={`toggle-${page.path}`} className="text-base font-medium flex items-center gap-2">

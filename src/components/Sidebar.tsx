@@ -16,6 +16,7 @@ import {
   Palette,
   Sun,
   Monitor,
+  Flame, // Import Flame icon for habits
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -75,6 +76,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false }) =>
       href: isDemo ? "/demo/sleep" : "/sleep",
       icon: Moon,
       visible: settings?.visible_pages?.sleep !== false,
+    },
+    {
+      name: "Habits", // New navigation item
+      href: isDemo ? "/demo/habits" : "/habits",
+      icon: Flame, // Using Flame icon for habits
+      visible: settings?.visible_pages?.habits !== false, // New setting for habits page visibility
     },
     {
       name: "Dev Space",

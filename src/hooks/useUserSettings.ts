@@ -23,7 +23,19 @@ const defaultSettings: Omit<UserSettings, 'user_id'> = {
   future_tasks_days_visible: 7,
   meditation_notes: null,
   dashboard_layout: null,
-  visible_pages: {},
+  visible_pages: {
+    dashboard: true,
+    dailyTasks: true,
+    schedule: true,
+    projects: true,
+    sleep: true,
+    habits: true, // Default to visible
+    devSpace: true,
+    settings: true,
+    analytics: true,
+    archive: true,
+    help: true,
+  },
   schedule_show_focus_tasks_only: true,
   dashboard_panel_sizes: [66, 34], // Default sizes for the two main dashboard panels
 };
@@ -54,6 +66,7 @@ export const useUserSettings = (props?: { userId?: string }) => {
           ...defaultSettings,
           ...data,
           dashboard_layout: { ...defaultSettings.dashboard_layout, ...(data.dashboard_layout || {}) },
+          visible_pages: { ...defaultSettings.visible_pages, ...(data.visible_pages || {}) }, // Merge visible_pages
           dashboard_panel_sizes: data.dashboard_panel_sizes || defaultSettings.dashboard_panel_sizes,
         };
       } else {

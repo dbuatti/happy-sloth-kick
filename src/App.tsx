@@ -26,6 +26,7 @@ import Settings from "./pages/Settings";
 import Analytics from "./pages/Analytics";
 import Archive from "./pages/Archive";
 import SleepPage from "./pages/SleepPage";
+import HabitTrackerPage from "./pages/HabitTrackerPage"; // Import the new page
 import CommandPalette from "./components/CommandPalette";
 
 const queryClient = new QueryClient();
@@ -67,6 +68,7 @@ const AppContent = () => {
               <Route path="/demo/projects" element={<ProjectBalanceTracker isDemo={true} demoUserId={demoUserId} />} />
               <Route path="/demo/schedule" element={<TimeBlockSchedule isDemo={true} demoUserId={demoUserId} />} />
               <Route path="/demo/sleep" element={<SleepPage isDemo={true} demoUserId={demoUserId} />} />
+              <Route path="/demo/habits" element={<HabitTrackerPage isDemo={true} demoUserId={demoUserId} />} /> {/* New Route */}
               <Route path="/demo/focus" element={<FocusMode demoUserId={demoUserId} />} />
               <Route path="/demo/dev-space" element={<DevSpace isDemo={true} demoUserId={demoUserId} />} />
               <Route path="/demo/settings" element={<Settings isDemo={true} demoUserId={demoUserId} />} />
@@ -98,6 +100,7 @@ const AppContent = () => {
                 <Route path="/projects" element={<ProjectBalanceTracker />} />
                 <Route path="/schedule" element={<TimeBlockSchedule />} />
                 <Route path="/sleep" element={<SleepPage />} />
+                <Route path="/habits" element={<HabitTrackerPage />} /> {/* New Route */}
                 <Route path="/focus" element={<FocusMode />} />
                 <Route path="/dev-space" element={<DevSpace />} />
                 <Route path="/settings" element={<Settings />} />
