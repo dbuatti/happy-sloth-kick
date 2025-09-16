@@ -9,8 +9,11 @@ import DailyOverviewCard from './DailyOverviewCard';
 interface DailyTasksHeaderProps {
   currentDate: Date;
   setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
+  tasks: Task[]; // Added
+  filteredTasks: Task[]; // Added
   sections: TaskSection[];
   allCategories: Category[];
+  userId: string | null;
   setIsFocusPanelOpen: React.Dispatch<React.SetStateAction<boolean>>;
   searchFilter: string;
   setSearchFilter: (value: string) => void;
@@ -113,6 +116,8 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
       />
 
       <TaskFilter
+        currentDate={currentDate}
+        setCurrentDate={setCurrentDate}
         searchFilter={searchFilter}
         setSearchFilter={setSearchFilter}
         statusFilter={statusFilter}

@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from '@/lib/utils';
 import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
-import { getCategoryColorProps } from '@/lib/categoryColors';
 import { showSuccess, showError } from '@/utils/toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -116,7 +115,6 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
       // Assuming bulkUpdateTasks is available through a context or another hook
       // For now, I'll simulate it or assume it's passed down if needed.
       // If it's not passed, this would be a missing dependency.
-      // For this refactor, I'll assume it's available or will be added.
       // For now, I'll just update each subtask individually.
       for (const subtaskId of subtaskIdsToComplete) {
         await onUpdate(subtaskId, { status: 'completed' });
@@ -139,12 +137,6 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
 
   if (!task) return null;
 
-  const categoryColorProps = {
-    backgroundClass: 'bg-gray-500/10', // Placeholder, replace with actual logic if needed
-    dotBorder: 'border-gray-500/30', // Placeholder
-    dotColor: 'gray', // Placeholder
-  };
-  // const categoryColorProps = getCategoryColorProps(task.category_color); // This line was commented out or missing context
   const sectionName = task.section_id ? sections.find(s => s.id === task.section_id)?.name : 'No Section';
 
   const isOverdue = task.due_date && task.status !== 'completed' && isPast(parseISO(task.due_date)) && !isSameDay(parseISO(task.due_date), new Date());
@@ -154,9 +146,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
     const TitleComponent = isDrawer ? DrawerTitle : DialogTitle;
     return (
       <TitleComponent className="flex items-center gap-2">
-        <div className={cn("w-3.5 h-3.5 rounded-full flex items-center justify-center border", categoryColorProps.backgroundClass, categoryColorProps.dotBorder)}>
-          <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: categoryColorProps.dotColor }}></div>
-        </div>
+        <div className="w-3.5 h-3.5 rounded-full flex items-center justify-center border" style={{ backgroundColor: task.category_color }}></div>
         <span className="flex-1 truncate">{task.description}</span>
       </TitleComponent>
     );
