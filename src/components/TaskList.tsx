@@ -437,7 +437,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
               return success;
             }}
             onCancel={() => setIsAddTaskOpenLocal(false)}
-            sections={sections} {/* Corrected: Pass sections here */}
+            sections={sections}
             allCategories={allCategories}
             preselectedSectionId={preselectedSectionId ?? undefined}
             currentDate={currentDate}

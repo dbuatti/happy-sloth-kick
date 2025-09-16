@@ -4,7 +4,7 @@ import React, { useState, useCallback, useMemo, useRef } from 'react';
 import TaskList from '@/components/TaskList';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import TaskOverviewDialog from '@/components/TaskOverviewDialog';
-import { useTasks, Task } from '@/hooks/useTasks';
+import { useTasks, Task, TaskSection } from '@/hooks/useTasks';
 import { useAuth } from '@/context/AuthContext';
 import { addDays, startOfDay } from 'date-fns';
 import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
@@ -114,6 +114,48 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
 
   // We need a ref to TaskList to call its internal toggleAllSections
   const taskListRef = useRef<any>(null);
+
+  const toggleSection = useCallback((sectionId: string) => {
+    setExpandedSections(prev => {
+      const newState = { ...prev, [sectionId]: !(prev[sectionId] ?? true) };
+      localStorage.setItem('taskList_expandedSections', JSON.stringify(newState));
+      return newState;
+    });
+  }, []);
+
+  const toggleTask = useCallback((taskId: string) => {
+    setExpandedTasks(prev => {
+      const newState = { ...prev, [taskId]: !(prev[taskId] ?? true) };
+      localStorage.setItem('taskList_expandedTasks', JSON.stringify(newState));
+      return newState;
+    });
+  }, []);
+
+  // Define allSortableSections here to be used in toggleAllSections
+  const allSortableSections = useMemo(() => {
+    const noSection: TaskSection = {
+      id: 'no-section-header',
+      name: 'No Section',
+      user_id: user?.id || '',
+      order: sections.length,
+      include_in_focus_mode: true,
+    };
+    return [...sections, noSection];
+  }, [sections, user?.id]);
+
+  const toggleAllSections = useCallback(() => {
+    // Determine if ALL currently managed sections are expanded
+    const allCurrentlyExpanded = allSortableSections.every(section => expandedSections[section.id] !== false);
+
+    const newExpandedState: Record<string, boolean> = {};
+    allSortableSections.forEach(section => {
+      newExpandedState[section.id] = !allCurrentlyExpanded;
+    });
+
+    setExpandedSections(newExpandedState);
+    localStorage.setItem('taskList_expandedSections', JSON.stringify(newExpandedState));
+  }, [expandedSections, allSortableSections]);
+
 
   const onOpenOverview = (task: Task) => {
     setTaskToOverview(task);
