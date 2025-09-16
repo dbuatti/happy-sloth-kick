@@ -126,13 +126,12 @@ export const useTaskProcessing = ({
             const createdAt = startOfDay(parseISO(task.created_at));
             const dueDate = task.due_date ? startOfDay(parseISO(task.due_date)) : null;
 
-            // If it has a due date, it's relevant if due today or in the past
-            if (dueDate && !isAfter(dueDate, todayStart)) {
-                return true;
-            }
-            
-            // If no due date, it's relevant if created today or in the past
-            if (!dueDate && !isAfter(createdAt, todayStart)) {
+            const isRelevantByDate = (dueDate && !isAfter(dueDate, todayStart)) || (!dueDate && !isAfter(createdAt, todayStart));
+
+            // Check if the task is marked as "Do Today" (not in doTodayOffIds)
+            const isDoToday = task.recurring_type !== 'none' || !doTodayOffIds.has(task.original_task_id || task.id);
+
+            if (isRelevantByDate && isDoToday) {
                 return true;
             }
         }
@@ -175,14 +174,11 @@ export const useTaskProcessing = ({
       }
     }
 
-    // The "Do Today" filter is removed here to keep tasks visible but greyed out.
-    // The `isDoToday` prop passed to TaskItem will handle the visual greying out.
-
     // Apply focus mode section filter
     if (viewMode === 'focus' && userSettings?.schedule_show_focus_tasks_only) {
       const focusModeSectionIds = new Set(sections.filter(s => s.include_in_focus_mode).map(s => s.id));
       filteredTasks = filteredTasks.filter(task => {
-        return task.section_id === null || focusModeSectionIds.has(task.section_id);
+        return task.parent_task_id === null && (task.section_id === null || focusModeSectionIds.has(task.section_id));
       });
     }
 
@@ -213,6 +209,7 @@ export const useTaskProcessing = ({
     userSettings,
     todayStart,
     sections,
+    doTodayOffIds, // Added doTodayOffIds to dependency array
   ]);
 
   return { processedTasks, filteredTasks: filtered };
