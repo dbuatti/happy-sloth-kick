@@ -1,11 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Edit, Target, ListTodo, Clock, Plus, Sparkles, Wind, Home, TreePine, UtensilsCrossed, ScanEye, Armchair, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import TaskOverviewDialog from './TaskOverviewDialog';
-import { useAuth } from '@/context/AuthContext';
 import { Input } from './ui/input';
 import { suggestTaskDetails } from '@/integrations/supabase/api';
 import { dismissToast, showError, showLoading } from '@/utils/toast';
@@ -37,8 +36,6 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
   currentDate,
   handleAddTask,
 }) => {
-  useAuth(); 
-
   const navigate = useNavigate();
   
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);

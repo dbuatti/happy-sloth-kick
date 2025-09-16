@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +17,7 @@ const AddProjectDialog: React.FC<AddProjectDialogProps> = ({ isOpen, onClose, on
   const [newProjectDescription, setNewProjectDescription] = useState('');
   const [newProjectLink, setNewProjectLink] = useState('');
 
-  useEffect(() => {
+  useMemo(() => {
     if (!isOpen) {
       setNewProjectName('');
       setNewProjectDescription('');

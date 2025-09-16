@@ -2,7 +2,6 @@ import React from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import FocusToolsPanel from './FocusToolsPanel';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
-// Removed useAuth as it's not directly used in this component's logic
 
 interface FocusPanelDrawerProps {
   isOpen: boolean;
@@ -15,8 +14,8 @@ interface FocusPanelDrawerProps {
   onDeleteTask: (taskId: string) => void;
   sections: TaskSection[];
   allCategories: Category[];
-  handleAddTask: (taskData: any) => Promise<any>; // Added handleAddTask
-  currentDate: Date; // Added currentDate
+  handleAddTask: (taskData: any) => Promise<any>;
+  currentDate: Date;
 }
 
 const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
@@ -30,8 +29,8 @@ const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
   onDeleteTask,
   sections,
   allCategories,
-  handleAddTask, // Destructure handleAddTask
-  currentDate, // Destructure currentDate
+  handleAddTask,
+  currentDate,
 }) => {
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
@@ -49,8 +48,8 @@ const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
             sections={sections}
             allCategories={allCategories}
             onOpenDetail={onOpenDetail}
-            handleAddTask={handleAddTask} // Pass handleAddTask
-            currentDate={currentDate} // Pass currentDate
+            handleAddTask={handleAddTask}
+            currentDate={currentDate}
           />
         </div>
       </SheetContent>

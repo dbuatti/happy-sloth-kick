@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -77,7 +77,7 @@ const taskFormSchema = z.object({
 type TaskFormData = z.infer<typeof taskFormSchema>;
 
 interface TaskFormProps {
-  initialData?: Partial<Task> | null; // Changed to Partial<Task>
+  initialData?: Partial<Task> | null;
   onSave: (taskData: {
     description: string;
     category: string;
@@ -103,7 +103,7 @@ interface TaskFormProps {
   deleteSection: (sectionId: string) => Promise<void>;
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
   className?: string;
-  allTasks?: Task[]; // Added allTasks prop
+  allTasks?: Task[];
 }
 
 const TaskForm: React.FC<TaskFormProps> = ({
@@ -121,7 +121,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
   deleteSection,
   updateSectionIncludeInFocusMode,
   className,
-  allTasks, // Destructure allTasks
+  allTasks,
 }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
@@ -162,13 +162,13 @@ const TaskForm: React.FC<TaskFormProps> = ({
 
     const defaultValues = {
       description: '',
-      category: parentTask?.category || defaultCategoryId, // Inherit from parent or use general/first
-      priority: parentTask?.priority || 'medium', // Inherit from parent or use medium
+      category: parentTask?.category || defaultCategoryId,
+      priority: parentTask?.priority || 'medium',
       dueDate: null,
       notes: null,
       remindAtDate: null,
       remindAtTime: '',
-      sectionId: parentTask?.section_id || preselectedSectionId, // Inherit from parent or use preselected
+      sectionId: parentTask?.section_id || preselectedSectionId,
       recurringType: 'none' as const,
       parentTaskId: parentTaskId ?? null,
       link: null,
@@ -269,7 +269,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
     }
 
     if (imageFile) {
-      const userId = 'anonymous'; // This should ideally come from useAuth, but for image upload, it's often handled by RLS
+      const userId = 'anonymous';
       const filePath = `${userId}/${uuidv4()}`;
       const { error: uploadError } = await supabase.storage
         .from('taskimages')
@@ -303,7 +303,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
     });
     setIsSaving(false);
     if (success) {
-      onCancel(); // Close form on successful save
+      onCancel();
     }
     return success;
   };

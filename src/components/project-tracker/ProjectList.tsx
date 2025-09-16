@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Project } from '@/hooks/useProjects';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,7 +45,7 @@ const ProjectList: React.FC<ProjectListProps> = ({
   const [editingProjectDescription, setEditingProjectDescription] = useState('');
   const [editingProjectLink, setEditingProjectLink] = useState('');
 
-  useEffect(() => {
+  useMemo(() => {
     if (editingProjectId) {
       const project = projects.find(p => p.id === editingProjectId);
       if (project) {

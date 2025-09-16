@@ -4,7 +4,7 @@ import { ListTodo, Brain, CheckCircle2, Clock, Sparkles, FolderOpen, Tag, Archiv
 import { Task } from '@/hooks/useTasks';
 import { Progress } from '@/components/Progress';
 import NextTaskCard from './dashboard/NextTaskCard';
-import { Card, CardTitle, CardHeader, CardContent } from '@/components/ui/card'; // Import CardHeader and CardContent
+import { Card, CardTitle, CardHeader, CardContent } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { cn } from '@/lib/utils';
 
@@ -27,7 +27,7 @@ interface DailyOverviewCardProps {
   setIsFocusPanelOpen: React.Dispatch<React.SetStateAction<boolean>>;
   setIsManageCategoriesOpen: React.Dispatch<React.SetStateAction<boolean>>;
   setIsManageSectionsOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  onToggleAllSections: () => void; // New prop
+  onToggleAllSections: () => void;
 }
 
 const DailyOverviewCard: React.FC<DailyOverviewCardProps> = ({
@@ -45,7 +45,7 @@ const DailyOverviewCard: React.FC<DailyOverviewCardProps> = ({
   setIsFocusPanelOpen,
   setIsManageCategoriesOpen,
   setIsManageSectionsOpen,
-  onToggleAllSections, // Destructure new prop
+  onToggleAllSections,
 }) => {
   const { totalPendingCount, completedCount, overdueCount } = dailyProgress;
   const totalTasksForProgress = totalPendingCount + completedCount;
@@ -54,13 +54,13 @@ const DailyOverviewCard: React.FC<DailyOverviewCardProps> = ({
   const showNextTask = nextAvailableTask && totalPendingCount > 0;
 
   return (
-    <Card className="mx-4 mt-4 p-0 shadow-sm rounded-xl bg-background"> {/* Removed p-4, added p-0 */}
+    <Card className="mx-4 mt-4 p-0 shadow-sm rounded-xl bg-background">
       <CardHeader className="pb-2">
         <CardTitle className="text-xl font-bold flex items-center justify-center gap-2">
           <Sparkles className="h-5 w-5 text-primary" /> Daily Overview
         </CardTitle>
       </CardHeader>
-      <CardContent className="pt-0 p-4"> {/* Added p-4 here */}
+      <CardContent className="pt-0 p-4">
         {showNextTask ? (
           <NextTaskCard
             nextAvailableTask={nextAvailableTask}
@@ -119,7 +119,7 @@ const DailyOverviewCard: React.FC<DailyOverviewCardProps> = ({
                 <DropdownMenuItem onSelect={toggleAllDoToday}>
                   <ToggleRight className="mr-2 h-3.5 w-3.5" /> Toggle All 'Do Today'
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={onToggleAllSections}> {/* Use the new prop here */}
+                <DropdownMenuItem onSelect={onToggleAllSections}>
                   <ChevronDown className="mr-2 h-3.5 w-3.5" /> Toggle All Sections
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />

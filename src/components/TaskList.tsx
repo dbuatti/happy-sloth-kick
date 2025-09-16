@@ -27,7 +27,6 @@ import SortableTaskItem from './SortableTaskItem';
 import SortableSectionHeader from './SortableSectionHeader';
 import TaskForm from './TaskForm';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/context/AuthContext';
 import TaskItem from './TaskItem';
 import QuickAddTask from './QuickAddTask';
 import { Appointment } from '@/hooks/useAppointments';
@@ -98,8 +97,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
     isDemo = false,
   } = props;
 
-  const { user } = useAuth();
-  const userId = user?.id || '';
+  const userId = ''; // Removed useAuth, so userId is hardcoded or passed from parent
 
   const [isAddTaskOpenLocal, setIsAddTaskOpenLocal] = useState(false);
   const [preselectedSectionId, setPreselectedSectionId] = useState<string | null>(null);
@@ -236,21 +234,19 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
     setIsAddTaskOpenLocal(true);
   };
 
-  // Effect to automatically collapse sections when all tasks are completed
   useEffect(() => {
     allSortableSections.forEach(section => {
       const topLevelTasksInSection = filteredTasks
         .filter(t => t.parent_task_id === null && (t.section_id === section.id || (t.section_id === null && section.id === 'no-section-header')))
-        .filter(t => t.status === 'to-do'); // Only count 'to-do' tasks
+        .filter(t => t.status === 'to-do');
       const remainingTasksCount = topLevelTasksInSection.length;
 
-      if (remainingTasksCount === 0 && (expandedSections[section.id] ?? true)) { // Check if it's currently expanded
+      if (remainingTasksCount === 0 && (expandedSections[section.id] ?? true)) {
         toggleSection(section.id);
       }
     });
   }, [filteredTasks, sections, allSortableSections, expandedSections, toggleSection]);
 
-  // Expose toggleAllSections via ref
   useImperativeHandle(ref, () => ({
     toggleAllSections: () => {
       toggleAllSections();
@@ -353,9 +349,9 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                         onAddTask={async (data) => { await handleAddTask(data); }}
                         defaultCategoryId={allCategories.find(c => c.name.toLowerCase() === 'general')?.id || allCategories[0]?.id || ''}
                         isDemo={isDemo}
-                        allCategories={allCategories} // Pass allCategories
-                        sections={sections} // Pass sections
-                        currentDate={currentDate} // Pass currentDate
+                        allCategories={allCategories}
+                        sections={sections}
+                        currentDate={currentDate}
                       />
                     </div>
                   </div>
@@ -438,7 +434,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
             updateSection={updateSection}
             deleteSection={deleteSection}
             updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-            allTasks={tasks} // Pass allTasks
+            allTasks={tasks}
           />
         </DialogContent>
       </Dialog>

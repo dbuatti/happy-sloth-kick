@@ -1,7 +1,6 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 import { Plus } from 'lucide-react';
 
 interface ProjectActionsBarProps {
@@ -25,7 +24,7 @@ const ProjectActionsBar: React.FC<ProjectActionsBarProps> = ({
         <Plus className="mr-2 h-4 w-4" /> Add Project
       </Button>
       <div className="flex items-center gap-2 w-full sm:w-auto">
-        <Label htmlFor="sort-by">Sort by:</Label>
+        <label htmlFor="sort-by">Sort by:</label>
         <Select value={sortOption} onValueChange={onSortChange}>
           <SelectTrigger className="w-full sm:w-[180px] h-9">
             <SelectValue placeholder="Sort projects" />

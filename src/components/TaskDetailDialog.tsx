@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerDescription } from "@/components/ui/drawer";
@@ -19,7 +19,6 @@ import { useSound } from '@/context/SoundContext';
 import TaskForm from './TaskForm';
 import { cn } from '@/lib/utils';
 import { Checkbox } from "@/components/ui/checkbox";
-import { useAuth } from '@/context/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface TaskDetailDialogProps {
@@ -51,7 +50,6 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   updateSectionIncludeInFocusMode,
   allTasks,
 }) => {
-  useAuth(); 
   const isMobile = useIsMobile();
 
   const { updateTask: updateSubtask, handleAddTask, bulkUpdateTasks } = useTasks({ currentDate: new Date() });
@@ -75,8 +73,8 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
     const success = await handleAddTask({
       ...subtaskData,
       parent_task_id: task.id,
-      section_id: task.section_id, // Inherit section from parent
-      category: task.category, // Inherit category from parent
+      section_id: task.section_id,
+      category: task.category,
     });
     if (success) {
       setIsAddSubtaskOpen(false);
@@ -143,8 +141,8 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
         updateSection={updateSection}
         deleteSection={deleteSection}
         updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-        className="text-foreground" // Changed to text-foreground
-        allTasks={allTasks} // Pass allTasks for parent lookup
+        className="text-foreground"
+        allTasks={allTasks}
       />
 
       <div className="space-y-2 mt-3 border-t pt-2">
@@ -219,7 +217,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
     <>
       {isMobile ? (
         <Drawer open={isOpen} onOpenChange={onClose}>
-          <DrawerContent className="bg-background"> {/* Changed to bg-background */}
+          <DrawerContent className="bg-background">
             <DrawerHeader className="text-left">
               <DrawerTitle>Edit Task</DrawerTitle>
               <DrawerDescription className="sr-only">
@@ -234,7 +232,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
         </Drawer>
       ) : (
         <Dialog open={isOpen} onOpenChange={onClose}>
-          <DialogContent className="sm:max-w-[425px] md:max-w-lg lg:max-w-xl bg-background"> {/* Changed to bg-background */}
+          <DialogContent className="sm:max-w-[425px] md:max-w-lg lg:max-w-xl bg-background">
             <DialogHeader>
               <DialogTitle>Edit Task</DialogTitle>
               <DialogDescription className="sr-only">
@@ -264,7 +262,6 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Dialog for adding a new subtask */}
       <Dialog open={isAddSubtaskOpen} onOpenChange={setIsAddSubtaskOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -285,8 +282,8 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
             updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
             parentTaskId={task?.id}
             preselectedSectionId={task?.section_id}
-            initialData={{ category: task?.category || '' } as Partial<Task>} // Pass category for pre-fill
-            allTasks={allTasks} // Pass allTasks for parent lookup
+            initialData={{ category: task?.category || '' } as Partial<Task>}
+            allTasks={allTasks}
           />
         </DialogContent>
       </Dialog>

@@ -2,19 +2,15 @@ import React, { useRef, useState } from 'react';
 import DateNavigator from './DateNavigator';
 import TaskFilter from './TaskFilter';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
-import { useDailyTaskCount } from '@/hooks/useDailyTaskCount';
 import ManageCategoriesDialog from './ManageCategoriesDialog';
 import ManageSectionsDialog from './ManageSectionsDialog';
-import DailyOverviewCard from './DailyOverviewCard'; // Import the new component
+import DailyOverviewCard from './DailyOverviewCard';
 
 interface DailyTasksHeaderProps {
   currentDate: Date;
   setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
-  tasks: Task[];
-  filteredTasks: Task[];
   sections: TaskSection[];
   allCategories: Category[];
-  userId: string | null;
   setIsFocusPanelOpen: React.Dispatch<React.SetStateAction<boolean>>;
   searchFilter: string;
   setSearchFilter: (value: string) => void;
@@ -45,7 +41,7 @@ interface DailyTasksHeaderProps {
   tasksLoading: boolean;
   doTodayOffIds: Set<string>;
   toggleDoToday: (task: Task) => void;
-  onToggleAllSections: () => void; // New prop for toggleAllSections
+  onToggleAllSections: () => void;
 }
 
 const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
@@ -79,9 +75,8 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   tasksLoading,
   doTodayOffIds,
   toggleDoToday,
-  onToggleAllSections, // Destructure new prop
+  onToggleAllSections,
 }) => {
-  useDailyTaskCount(); 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
@@ -89,7 +84,6 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
 
   return (
     <div className="flex flex-col bg-gradient-to-br from-[hsl(var(--gradient-start-light))] to-[hsl(var(--gradient-end-light))] dark:from-[hsl(var(--gradient-start-dark))] dark:to-[hsl(var(--gradient-end-dark))] rounded-b-2xl shadow-lg">
-      {/* Top Bar: Date Navigator and Action Buttons */}
       <div className="flex items-center justify-between px-4 pt-4">
         <DateNavigator
           currentDate={currentDate}
@@ -98,10 +92,8 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
           onGoToToday={() => setCurrentDate(new Date())}
           setCurrentDate={setCurrentDate}
         />
-        {/* Settings button is now removed from here as its actions are in DailyOverviewCard */}
       </div>
 
-      {/* Daily Overview Card (combines Next Task and Progress) */}
       <DailyOverviewCard
         dailyProgress={dailyProgress}
         nextAvailableTask={nextAvailableTask}
@@ -117,13 +109,10 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         setIsFocusPanelOpen={setIsFocusPanelOpen}
         setIsManageCategoriesOpen={setIsManageCategoriesOpen}
         setIsManageSectionsOpen={setIsManageSectionsOpen}
-        onToggleAllSections={onToggleAllSections} // Pass the new prop
+        onToggleAllSections={onToggleAllSections}
       />
 
-      {/* Task Filter */}
       <TaskFilter
-        currentDate={currentDate}
-        setCurrentDate={setCurrentDate}
         searchFilter={searchFilter}
         setSearchFilter={setSearchFilter}
         statusFilter={statusFilter}
