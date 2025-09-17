@@ -16,7 +16,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import HabitAnalyticsDashboard from '@/components/HabitAnalyticsDashboard';
 import { DateRange } from 'react-day-picker';
-import { Label } from '@/components/ui/label'; // Added Label import
+import { Label } from '@/components/ui/label';
 
 interface HabitTrackerPageProps {
   isDemo?: boolean;
@@ -32,8 +32,8 @@ const HabitTrackerPage: React.FC<HabitTrackerPageProps> = ({ isDemo = false, dem
     from: startOfMonth(new Date()),
     to: new Date(),
   }));
-  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('active'); // New state for filter
-  const [sortOption, setSortOption] = useState<'name_asc' | 'created_at_desc'>('created_at_desc'); // New state for sort
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('active');
+  const [sortOption, setSortOption] = useState<'name_asc' | 'created_at_desc'>('created_at_desc');
 
   const {
     habits,
@@ -42,7 +42,7 @@ const HabitTrackerPage: React.FC<HabitTrackerPageProps> = ({ isDemo = false, dem
     updateHabit,
     deleteHabit,
     toggleHabitCompletion,
-  } = useHabits({ userId: demoUserId, currentDate, filterStatus, sortOption }); // Pass filter and sort
+  } = useHabits({ userId: demoUserId, currentDate, filterStatus, sortOption });
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingHabit, setEditingHabit] = useState<HabitWithLogs | null>(null);
@@ -128,7 +128,7 @@ const HabitTrackerPage: React.FC<HabitTrackerPageProps> = ({ isDemo = false, dem
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="tracker" className="mt-4">
+              <TabsContent value="tracker" className="mt-4 space-y-6"> {/* Added space-y-6 for consistent vertical spacing */}
                 <DateNavigator
                   currentDate={currentDate}
                   setCurrentDate={setCurrentDate}
@@ -137,7 +137,7 @@ const HabitTrackerPage: React.FC<HabitTrackerPageProps> = ({ isDemo = false, dem
                   onGoToToday={handleGoToToday}
                 />
 
-                <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mb-4 mt-4">
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-3"> {/* Removed mb-4, now handled by space-y-6 */}
                   <Button onClick={() => handleOpenForm(null)} disabled={isDemo} className="h-9 w-full sm:w-auto">
                     <Plus className="mr-2 h-4 w-4" /> Add New Habit
                   </Button>
@@ -168,14 +168,12 @@ const HabitTrackerPage: React.FC<HabitTrackerPageProps> = ({ isDemo = false, dem
                   </div>
                 </div>
 
-                <div className="mb-6">
-                  <HabitSuggestionCard suggestion={habitSuggestion} isLoading={isLoadingSuggestion} isDemo={isDemo} />
-                </div>
+                <HabitSuggestionCard suggestion={habitSuggestion} isLoading={isLoadingSuggestion} isDemo={isDemo} />
 
                 {loading ? (
-                  <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"> {/* Adjusted to grid for skeleton */}
                     {[...Array(3)].map((_, i) => (
-                      <Skeleton key={i} className="h-32 w-full rounded-xl" />
+                      <Skeleton key={i} className="h-48 w-full rounded-xl" /> {/* Increased height for better representation */}
                     ))}
                   </div>
                 ) : habits.length === 0 ? (
