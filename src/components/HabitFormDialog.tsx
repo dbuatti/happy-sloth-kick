@@ -69,7 +69,7 @@ const HabitFormDialog: React.FC<HabitFormDialogProps> = ({
   const [color, setColor] = useState(presetColors[0].value);
   const [targetValue, setTargetValue] = useState<number | ''>('');
   const [unit, setUnit] = useState<string | null>(null); // State can be string or null
-  const [frequency, setFrequency] = useState('daily');
+  const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'monthly'>('daily'); // Stricter type for frequency
   const [startDate, setStartDate] = useState<Date | undefined>(new Date());
   const [isActive, setIsActive] = useState(true);
 

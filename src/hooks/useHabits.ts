@@ -17,6 +17,7 @@ import {
   getHabitLogsForHabit,
 } from '@/integrations/supabase/habit-api';
 import { format, differenceInDays, parseISO, isSameDay, startOfDay, endOfDay, isValid, addDays, isBefore, isAfter } from 'date-fns';
+import { useAuth } from '@/context/AuthContext'; // Added missing import
 
 export interface HabitWithLogs extends Habit {
   logs: HabitLog[];
@@ -185,8 +186,8 @@ export const useHabits = ({ userId: propUserId, currentDate, startDate, endDate 
       queryClient.invalidateQueries({ queryKey: ['habitLogs', userId] });
     },
     onError: (err) => {
-      console.error('Error deleting habit:', err.message);
       showError('Failed to delete habit.');
+      console.error(err);
     },
   });
 
