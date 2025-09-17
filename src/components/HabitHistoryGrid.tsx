@@ -45,7 +45,7 @@ const HabitHistoryGrid: React.FC<HabitHistoryGridProps> = ({
       // Determine if this day is a month boundary for display purposes
       // It's a boundary if it's the oldest day in the range, or if the next day (chronologically earlier) is in a different month
       const isMonthBoundary = (index === days.length - 1) || 
-                              (index < days.length - 1 && !isSameMonth(day, days[index + 1].date));
+                              (index < days.length - 1 && !isSameMonth(day, days[index + 1]));
 
       return {
         date: day,
