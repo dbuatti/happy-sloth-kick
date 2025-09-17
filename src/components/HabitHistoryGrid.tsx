@@ -24,9 +24,9 @@ const HabitHistoryGrid: React.FC<HabitHistoryGridProps> = ({
   const dayLabels = useMemo(() => {
     const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     if (weekStartsOn === 0) { // If week starts on Sunday
-      return ['S', 'M', 'T', 'W', 'T', 'F', 'S']; // Shorter labels
+      return ['Sun', ...labels.slice(0, 6)];
     }
-    return ['M', 'T', 'W', 'T', 'F', 'S', 'S']; // Shorter labels
+    return labels;
   }, [weekStartsOn]);
 
   const gridDays = useMemo(() => {
@@ -55,66 +55,58 @@ const HabitHistoryGrid: React.FC<HabitHistoryGridProps> = ({
       const isCompleted = log?.is_completed === true;
       const isFutureDay = isBefore(today, day) && !isSameDay(today, day);
       const isBeforeHabitStart = isBefore(day, habitStart);
+      const isToday = isSameDay(day, today);
 
       return {
         date: day,
         isCompleted,
         isFutureDay,
         isBeforeHabitStart,
+        isToday,
         log,
       };
     });
   }, [habitLogs, habitStartDate, currentDate, weeksToShow, weekStartsOn]);
 
-  const monthLabels = useMemo(() => {
-    const labels: { month: string; span: number }[] = [];
-    let currentMonth: string | null = null;
-    let currentMonthSpan = 0;
+  const monthHeaders = useMemo(() => {
+    const headers: { month: string; weekIndex: number }[] = [];
+    let lastMonth: string | null = null;
 
-    // Iterate through weeks, not days, for month labels to align with week columns
     for (let i = 0; i < weeksToShow; i++) {
-      const weekStartDay = gridDays[i * 7]?.date;
-      if (!weekStartDay) continue;
+      const firstDayOfWeek = gridDays[i * 7]?.date;
+      if (!firstDayOfWeek) continue;
 
-      const month = format(weekStartDay, 'MMM');
-      if (month !== currentMonth) {
-        if (currentMonth !== null) {
-          labels.push({ month: currentMonth, span: currentMonthSpan });
-        }
-        currentMonth = month;
-        currentMonthSpan = 1;
-      } else {
-        currentMonthSpan++;
-      }
-      if (i === weeksToShow - 1 && currentMonth !== null) {
-        labels.push({ month: currentMonth, span: currentMonthSpan });
+      const currentMonth = format(firstDayOfWeek, 'MMM');
+      if (currentMonth !== lastMonth) {
+        headers.push({ month: currentMonth, weekIndex: i });
+        lastMonth = currentMonth;
       }
     }
-    return labels;
+    return headers;
   }, [gridDays, weeksToShow]);
 
   return (
-    <div className="flex flex-col w-full">
+    <div className="flex flex-col w-full overflow-x-auto">
       {/* Month Labels */}
-      <div className="grid gap-0.5 mb-1" style={{ gridTemplateColumns: `repeat(${weeksToShow}, 1fr)` }}>
-        {monthLabels.map((label, index) => (
-          <div 
-            key={index} 
-            className="text-xs text-muted-foreground text-center"
-            style={{ gridColumn: `span ${label.span}` }} // Span across weeks
+      <div className="relative h-4 mb-1">
+        {monthHeaders.map((header) => (
+          <div
+            key={header.month + header.weekIndex}
+            className="absolute text-xs text-muted-foreground"
+            style={{ left: `calc((100% / ${weeksToShow}) * ${header.weekIndex} + 20px)` }} // Adjust 20px for week number column width
           >
-            {label.month}
+            {header.month}
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-[auto_repeat(7,minmax(0,1fr))] gap-0.5">
+      <div className="grid gap-px" style={{ gridTemplateColumns: `20px repeat(7, minmax(0, 1fr))` }}> {/* 20px for week numbers */}
         {/* Empty corner for day labels */}
         <div className="h-4 w-4"></div> 
         {/* Day Labels */}
         {dayLabels.map(label => (
           <div key={label} className="text-xs text-muted-foreground text-center font-medium">
-            {label}
+            {label.charAt(0)}
           </div>
         ))}
 
@@ -123,12 +115,11 @@ const HabitHistoryGrid: React.FC<HabitHistoryGridProps> = ({
           const weekStartDayIndex = weekIndex * 7;
           const weekDays = gridDays.slice(weekStartDayIndex, weekStartDayIndex + 7);
           
-          // Display week number or a simple indicator
           const weekNumber = format(weekDays[0]?.date || new Date(), 'w');
 
           return (
             <React.Fragment key={`week-${weekIndex}`}>
-              <div className="text-xs text-muted-foreground text-right pr-1 flex items-center justify-end">
+              <div className="text-xs text-muted-foreground text-right pr-0.5 flex items-center justify-end">
                 {weekNumber}
               </div>
               {weekDays.map((dayData, dayIndex) => (
@@ -136,10 +127,11 @@ const HabitHistoryGrid: React.FC<HabitHistoryGridProps> = ({
                   <TooltipTrigger asChild>
                     <div
                       className={cn(
-                        "h-4 w-4 rounded-sm transition-colors duration-100 flex-shrink-0",
+                        "h-3.5 w-3.5 rounded-sm transition-colors duration-100 flex-shrink-0", // Smaller cells
                         dayData.isBeforeHabitStart ? "bg-muted/10" :
                         dayData.isFutureDay ? "bg-muted/20" :
-                        (dayData.isCompleted ? "" : "bg-muted/40")
+                        (dayData.isCompleted ? "" : "bg-muted/40"),
+                        dayData.isToday && "ring-1 ring-primary ring-offset-1" // Highlight today
                       )}
                       style={{ backgroundColor: dayData.isCompleted ? habitColor : undefined, opacity: dayData.isCompleted ? 0.8 : undefined }}
                     />
