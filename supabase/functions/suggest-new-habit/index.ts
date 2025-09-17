@@ -1,6 +1,4 @@
 // @ts-ignore
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-// @ts-ignore
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 // @ts-ignore
 import { format, parseISO, differenceInDays, startOfDay, subDays, isAfter } from 'https://esm.sh/date-fns@3.6.0';
@@ -10,8 +8,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req: Request) => {
-  console.log("Suggest New Habit: Edge Function started."); // New log at the very beginning
+Deno.serve(async (req: Request) => {
+  console.log("Suggest New Habit: Edge Function started.");
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -22,6 +20,7 @@ serve(async (req: Request) => {
     console.log("Suggest New Habit: Received request for userId:", userId);
 
     if (!userId) {
+      console.error("Suggest New Habit: User ID is missing.");
       return new Response(JSON.stringify({ error: 'User ID is required.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
@@ -33,7 +32,7 @@ serve(async (req: Request) => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 
-    console.log("Suggest New Habit: Environment variables retrieved check - SUPABASE_URL:", !!SUPABASE_URL, "SUPABASE_SERVICE_ROLE_KEY:", !!SUPABASE_SERVICE_ROLE_KEY, "GEMINI_API_KEY:", !!GEMINI_API_KEY); // More detailed log
+    console.log("Suggest New Habit: Environment variables check - SUPABASE_URL:", !!SUPABASE_URL, "SUPABASE_SERVICE_ROLE_KEY:", !!SUPABASE_SERVICE_ROLE_KEY, "GEMINI_API_KEY:", !!GEMINI_API_KEY);
 
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !GEMINI_API_KEY) {
       console.error("Suggest New Habit: Missing Supabase or Gemini API environment variables.");
@@ -55,14 +54,18 @@ serve(async (req: Request) => {
     const fourteenDaysAgo = subDays(today, 14);
 
     // Fetch active habits
+    console.log("Suggest New Habit: Fetching active habits for user:", userId);
     const { data: habits, error: habitsError } = await supabaseAdmin
       .from('habits')
       .select('id, name, created_at')
       .eq('user_id', userId)
       .eq('is_active', true);
 
-    if (habitsError) throw habitsError;
-    console.log("Suggest New Habit: Fetched habits:", habits);
+    if (habitsError) {
+      console.error("Suggest New Habit: Error fetching habits:", habitsError);
+      throw habitsError;
+    }
+    console.log("Suggest New Habit: Fetched habits count:", habits.length);
 
     const activeHabitIds = habits.map(h => h.id);
     const recentlyAddedHabits = habits.filter(h => isAfter(parseISO(h.created_at), fourteenDaysAgo));
@@ -77,6 +80,7 @@ serve(async (req: Request) => {
     }
 
     // Fetch habit logs for the last 30 days for active habits
+    console.log("Suggest New Habit: Fetching habit logs for active habits.");
     const { data: logs, error: logsError } = await supabaseAdmin
       .from('habit_logs')
       .select('habit_id, log_date, is_completed')
@@ -84,8 +88,11 @@ serve(async (req: Request) => {
       .gte('log_date', format(thirtyDaysAgo, 'yyyy-MM-dd'))
       .lte('log_date', format(today, 'yyyy-MM-dd'));
 
-    if (logsError) throw logsError;
-    console.log("Suggest New Habit: Fetched logs:", logs);
+    if (logsError) {
+      console.error("Suggest New Habit: Error fetching logs:", logsError);
+      throw logsError;
+    }
+    console.log("Suggest New Habit: Fetched logs count:", logs.length);
 
     // Calculate completion rates
     const habitCompletionData: { [habitId: string]: { completedDays: number; totalDays: number } } = {};
@@ -113,9 +120,8 @@ serve(async (req: Request) => {
       }
     }
 
-    // Ensure averageCompletionRate is a valid number, defaulting to 0 if no data
     const averageCompletionRate = totalHabitsWithData > 0 ? (totalCompletionRate / totalHabitsWithData) * 100 : 0;
-    console.log("Suggest New Habit: Calculated average completion rate:", averageCompletionRate);
+    console.log("Suggest New Habit: Calculated average completion rate:", averageCompletionRate.toFixed(2));
 
     let prompt;
     if (activeHabitIds.length === 0) {
@@ -127,10 +133,11 @@ serve(async (req: Request) => {
     } else {
       prompt = `The user has ${activeHabitIds.length} active habits with an average completion rate of ${averageCompletionRate.toFixed(0)}% over the last 30 days. Suggest a supportive message to focus on simplifying and strengthening their current habits.`;
     }
-    console.log("Suggest New Habit: Generated prompt:", prompt);
+    console.log("Suggest New Habit: Generated prompt for Gemini.");
 
     const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
 
+    console.log("Suggest New Habit: Calling Gemini API at:", API_URL);
     const geminiResponse = await fetch(API_URL, {
       method: 'POST',
       headers: {
@@ -140,6 +147,7 @@ serve(async (req: Request) => {
         contents: [{ parts: [{ text: prompt }] }],
       }),
     });
+    console.log("Suggest New Habit: Received response from Gemini API. Status:", geminiResponse.status);
 
     // Handle non-OK responses from Gemini API
     if (!geminiResponse.ok) {
@@ -148,10 +156,23 @@ serve(async (req: Request) => {
       throw new Error(`Gemini API request failed with status ${geminiResponse.status}: ${errorBody}`);
     }
 
-    const geminiData = await geminiResponse.json();
-    console.log("Suggest New Habit: Gemini raw response data:", JSON.stringify(geminiData)); // New log for raw Gemini response
-    const suggestionText = geminiData.candidates[0].content.parts[0].text;
-    console.log("Suggest New Habit: Gemini suggestion received.");
+    let geminiData;
+    try {
+      geminiData = await geminiResponse.json();
+      console.log("Suggest New Habit: Gemini raw response data:", JSON.stringify(geminiData));
+    } catch (jsonError) {
+      console.error("Suggest New Habit: Failed to parse Gemini JSON response:", jsonError);
+      throw new Error("Failed to parse Gemini API response.");
+    }
+    
+    let suggestionText;
+    try {
+      suggestionText = geminiData.candidates[0].content.parts[0].text;
+      console.log("Suggest New Habit: Gemini suggestion extracted.");
+    } catch (accessError) {
+      console.error("Suggest New Habit: Failed to access suggestion text from Gemini data:", accessError, "Data:", JSON.stringify(geminiData));
+      throw new Error("Failed to extract suggestion text from Gemini API response.");
+    }
 
     // Return the generated briefing
     return new Response(JSON.stringify({ suggestion: suggestionText }), {
@@ -161,7 +182,7 @@ serve(async (req: Request) => {
 
   } catch (error: any) {
     // Catch and log any errors during the function execution
-    console.error("Error in Edge Function 'suggest-new-habit' (outer catch):", error);
+    console.error("Error in Edge Function 'suggest-new-habit' (outer catch):", error.message || error);
     return new Response(JSON.stringify({ error: error.message || 'An unexpected error occurred in the Edge Function.' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
