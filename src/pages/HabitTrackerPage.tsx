@@ -173,7 +173,7 @@ const HabitTrackerPage: React.FC<HabitTrackerPageProps> = ({ isDemo = false, dem
                 </div>
 
                 {loading ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 gap-4"> {/* Changed to grid-cols-1 */}
                     {[...Array(3)].map((_, i) => (
                       <Skeleton key={i} className="h-48 w-full rounded-xl" />
                     ))}
@@ -185,7 +185,7 @@ const HabitTrackerPage: React.FC<HabitTrackerPageProps> = ({ isDemo = false, dem
                     <p className="text-sm">Click "Add New Habit" to start building your routine.</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 gap-4"> {/* Changed to grid-cols-1 */}
                     {habits.map((habit: HabitWithLogs) => (
                       <HabitCard
                         key={habit.id}
