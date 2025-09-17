@@ -62,7 +62,6 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
       case 'reps': return `${value} reps`;
       case 'pages': return `${value} pages`;
       case 'times': return `${value} times`;
-      case 'steps': return `${value} steps`;
       default: return `${value} ${formattedUnit}`;
     }
   };
@@ -215,8 +214,9 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
               habitStartDate={habit.start_date}
               habitColor={habit.color}
               currentDate={currentDate}
-              weeksToShow={30}
-              weekStartsOn={1} // Monday
+              onToggleCompletionForDay={handleToggleCompletionForDay} {/* Pass the handler */}
+              habitId={habit.id} {/* Pass habit ID */}
+              isDemo={isDemo} {/* Pass isDemo */}
             />
           </div>
 
