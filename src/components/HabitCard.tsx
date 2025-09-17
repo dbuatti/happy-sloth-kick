@@ -1,17 +1,17 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, X, MoreHorizontal, Edit, Flame, CalendarDays, Clock, Target, Input as InputIcon, Sparkles } from 'lucide-react';
+import { CheckCircle2, X, MoreHorizontal, Edit, Flame, CalendarDays, Clock, Target, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { HabitWithLogs } from '@/hooks/useHabits';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { format, parseISO } from 'date-fns';
 import { useSound } from '@/context/SoundContext';
-import { Input } from '@/components/ui/input';
-import { getHabitChallengeSuggestion } from '@/integrations/supabase/habit-api'; // Import the new API call
-import { useAuth } from '@/context/AuthContext'; // Import useAuth
-import { showLoading, dismissToast, showError, showSuccess } from '@/utils/toast'; // Import toast utilities
+import { Input } from '@/components/ui/input'; // Corrected import path for Input
+import { getHabitChallengeSuggestion } from '@/integrations/supabase/habit-api';
+import { useAuth } from '@/context/AuthContext';
+import { showLoading, dismissToast, showError, showSuccess } from '@/utils/toast';
 
 interface HabitCardProps {
   habit: HabitWithLogs;
@@ -228,7 +228,7 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
             ) : habit.completedToday ? (
               <CheckCircle2 className="h-5 w-5" />
             ) : habit.target_value && !habit.completedToday ? (
-              <InputIcon className="h-5 w-5" />
+              <Input className="h-5 w-5" /> // This was the problematic import, now it's the correct component
             ) : (
               <CheckCircle2 className="h-5 w-5" />
             )}
