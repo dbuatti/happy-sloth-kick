@@ -1,22 +1,25 @@
-import { supabase } from '@/integrations/supabase/client';
 import { showError } from '@/utils/toast';
 
-export const getHabitChallengeSuggestion = async (userId: string, habitId: string): Promise<string | null> => {
+export async function getHabitChallengeSuggestion(userId: string, habitId: string): Promise<string | null> {
   try {
-    const { data, error } = await supabase.functions.invoke('suggest-habit-challenge', {
-      body: { userId, habitId },
+    const response = await fetch('https://gdmjttmjjhadltaihpgr.supabase.co/functions/v1/suggest-habit-challenge', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId, habitId }),
     });
 
-    if (error) {
-      console.error('Error invoking suggest-habit-challenge Edge Function:', error);
-      showError('Failed to get habit challenge suggestion.');
-      return null;
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to fetch habit challenge suggestion.');
     }
 
-    return data.suggestion || null;
+    const data = await response.json();
+    return data.suggestion;
   } catch (error: any) {
     console.error('Error fetching habit challenge suggestion:', error);
-    showError('Failed to get habit challenge suggestion.');
+    showError(error.message || 'Failed to get habit challenge suggestion.');
     return null;
   }
-};
+}

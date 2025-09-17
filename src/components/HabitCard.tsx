@@ -1,18 +1,17 @@
-import React, { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState } from 'react';
+import { Card, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, X, MoreHorizontal, Edit, Flame, CalendarDays, Clock, Target, Input as InputIcon, Sparkles } from 'lucide-react';
+import { CheckCircle2, Plus, MoreHorizontal, Edit, Flame, CalendarDays, Clock, Target, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { HabitWithLogs } from '@/hooks/useHabits';
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { format, parseISO, eachDayOfInterval, subDays, isSameDay, isBefore, startOfDay } from 'date-fns';
 import { useSound } from '@/context/SoundContext';
 import { Input } from '@/components/ui/input';
-import { getHabitChallengeSuggestion } from '@/integrations/supabase/habit-api';
+import { getHabitChallengeSuggestion } from '@/integrations/supabase/habit-challenge-api';
 import { useAuth } from '@/context/AuthContext';
-import { showLoading, dismissToast, showError, showSuccess } from '@/utils/toast';
-import HabitChallengeDialog from './HabitChallengeDialog'; // Import the new dialog component
+import { showLoading, dismissToast, showError } from '@/utils/toast';
+import HabitChallengeDialog from './HabitChallengeDialog';
 import HabitIconDisplay from './HabitIconDisplay'; // Import new component
 import HabitHistoryGrid from './HabitHistoryGrid'; // Import new component
 
@@ -35,8 +34,8 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
     return log?.value_recorded ?? '';
   });
   const [isRecordingValue, setIsRecordingValue] = useState(false);
-  const [isChallengeDialogOpen, setIsChallengeDialogOpen] = useState(false); // State for the new dialog
-  const [challengeSuggestion, setChallengeSuggestion] = useState<string | null>(null); // State for the suggestion text
+  const [isChallengeDialogOpen, setIsChallengeDialogOpen] = useState(false);
+  const [challengeSuggestion, setChallengeSuggestion] = useState<string | null>(null);
 
   const getUnitDisplay = (value: number | null, unit: string | null) => {
     if (value === null || unit === null || unit === '') return '';
@@ -56,7 +55,6 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
       case 'reps': return `${value} reps`;
       case 'pages': return `${value} pages`;
       case 'times': return `${value} times`;
-      case 'steps': return `${value} steps`;
       default: return `${value} ${formattedUnit}`;
     }
   };
@@ -114,30 +112,14 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
     }
   };
 
-  const last7Days = useMemo(() => {
-    const days = eachDayOfInterval({
-      start: subDays(currentDate, 6),
-      end: currentDate,
-    });
-    const logsMap = new Map<string, boolean>();
-    habit.logs.forEach(log => {
-      logsMap.set(format(parseISO(log.log_date), 'yyyy-MM-dd'), log.is_completed);
-    });
-
-    return days.map(day => {
-      const formattedDay = format(day, 'yyyy-MM-dd');
-      const isCompleted = logsMap.get(formattedDay) === true;
-      const isFutureDay = isBefore(startOfDay(currentDate), startOfDay(day)); // Check if the day is in the future relative to currentDate
-      const isHabitStarted = !isBefore(day, parseISO(habit.start_date));
-
-      return {
-        date: day,
-        isCompleted,
-        isFutureDay,
-        isHabitStarted,
-      };
-    });
-  }, [habit.logs, currentDate, habit.start_date]);
+  const last7Days = eachDayOfInterval({
+    start: subDays(currentDate, 6),
+    end: currentDate,
+  });
+  const logsMap = new Map<string, boolean>();
+  habit.logs.forEach(log => {
+    logsMap.set(format(parseISO(log.log_date), 'yyyy-MM-dd'), log.is_completed);
+  });
 
   return (
     <>
@@ -147,7 +129,7 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
         isDemo && "opacity-70 cursor-not-allowed"
       )}>
         <div className="absolute inset-0 rounded-xl" style={{ backgroundColor: habit.color, opacity: completedToday ? 0.1 : 0.05 }} />
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+        <div className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <HabitIconDisplay iconName={habit.icon} color={habit.color} className="h-6 w-6" />
             {habit.name}
@@ -191,7 +173,7 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
               </DropdownMenu>
             )}
           </div>
-        </CardHeader>
+        </div>
         <CardContent className="relative z-10 pt-0 flex flex-col">
           <div className="space-y-1 text-sm text-muted-foreground mb-3">
             {habit.description && <p className="line-clamp-2">{habit.description}</p>}
@@ -215,34 +197,15 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
             )}
           </div>
 
-          {/* Interactive 7-day history grid */}
-          <div className="flex items-center justify-between mt-2">
-            <div className="flex gap-1">
-              {last7Days.map((day, index) => (
-                <Tooltip key={index}>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className={cn(
-                        "h-8 w-8 rounded-full text-xs font-semibold",
-                        day.isFutureDay && "opacity-50 cursor-not-allowed",
-                        !day.isHabitStarted && "opacity-30 cursor-not-allowed",
-                        isSameDay(day.date, currentDate) && "ring-2 ring-primary ring-offset-2",
-                        day.isCompleted ? "bg-green-500 text-white hover:bg-green-600" : "bg-muted/50 text-muted-foreground hover:bg-muted/70"
-                      )}
-                      onClick={() => !day.isFutureDay && day.isHabitStarted && handleToggleCompletionForDay(day.date, !day.isCompleted)}
-                      disabled={isDemo || day.isFutureDay || !day.isHabitStarted}
-                    >
-                      {format(day.date, 'dd')}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {format(day.date, 'EEE, MMM d')} - {day.isFutureDay ? 'Future' : (day.isHabitStarted ? (day.isCompleted ? 'Completed' : 'Incomplete') : 'Not started')}
-                  </TooltipContent>
-                </Tooltip>
-              ))}
-            </div>
+          {/* Habit History Grid */}
+          <HabitHistoryGrid
+            habitLogs={habit.logs}
+            habitStartDate={habit.start_date}
+            habitColor={habit.color}
+            currentDate={currentDate}
+          />
+
+          <div className="flex items-center justify-end mt-2">
             {isRecordingValue && !completedToday ? (
               <div className="flex items-center gap-2">
                 <Input
@@ -287,7 +250,7 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
                 ) : completedToday ? (
                   <CheckCircle2 className="h-5 w-5" />
                 ) : habit.target_value && !completedToday ? (
-                  <InputIcon className="h-5 w-5" />
+                  <Target className="h-5 w-5" />
                 ) : (
                   <CheckCircle2 className="h-5 w-5" />
                 )}
