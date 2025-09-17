@@ -229,7 +229,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
                   updateTask={updateTask}
                   onOpenOverview={handleOpenOverview}
                   loading={tasksLoading}
-                  onFocusViewOpen={handleOpenFocusView}
+                  onOpenFocusView={handleOpenFocusView} // Corrected prop name
                   isDoToday={isNextTaskDoToday}
                   toggleDoToday={toggleDoToday}
                   isDemo={isDemo}
@@ -282,7 +282,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
                     updateTask={updateTask}
                     onOpenOverview={handleOpenOverview}
                     loading={tasksLoading}
-                    onFocusViewOpen={handleOpenFocusView}
+                    onOpenFocusView={handleOpenFocusView} // Corrected prop name
                     isDoToday={isNextTaskDoToday}
                     toggleDoToday={toggleDoToday}
                     isDemo={isDemo}
