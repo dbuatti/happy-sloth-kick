@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, X, MoreHorizontal, Edit, Flame, CalendarDays, Pencil as PencilIcon, Sparkles, Info, Target } from 'lucide-react';
+import { CheckCircle2, X, MoreHorizontal, Edit, Flame, CalendarDays, Pencil as PencilIcon, Sparkles, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { HabitWithLogs } from '@/hooks/useHabits';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -62,6 +62,7 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
       case 'reps': return `${value} reps`;
       case 'pages': return `${value} pages`;
       case 'times': return `${value} times`;
+      case 'steps': return `${value} steps`;
       default: return `${value} ${formattedUnit}`;
     }
   };
@@ -208,15 +209,15 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
           )}
 
           {/* Habit History Grid */}
-          <div className="w-full flex justify-center mb-4">
+          <div className="w-full flex mb-4 px-4">
             <HabitHistoryGrid
               habitLogs={habit.logs}
               habitStartDate={habit.start_date}
               habitColor={habit.color}
               currentDate={currentDate}
-              onToggleCompletionForDay={handleToggleCompletionForDay} {/* Pass the handler */}
-              habitId={habit.id} {/* Pass habit ID */}
-              isDemo={isDemo} {/* Pass isDemo */}
+              onToggleCompletionForDay={handleToggleCompletionForDay}
+              isDemo={isDemo}
+              weeksToShow={13}
             />
           </div>
 

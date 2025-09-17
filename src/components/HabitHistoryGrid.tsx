@@ -9,9 +9,9 @@ interface HabitHistoryGridProps {
   habitStartDate: string; // YYYY-MM-DD
   habitColor: string;
   currentDate: Date;
-  onToggleCompletionForDay: (date: Date, isCompleted: boolean, valueRecorded?: number | null) => Promise<boolean>; // New
-  habitId: string; // New
-  isDemo?: boolean; // New
+  onToggleCompletionForDay: (date: Date, isCompleted: boolean, valueRecorded?: number | null) => Promise<boolean>;
+  isDemo?: boolean;
+  weeksToShow?: number; // New prop to control how many weeks to display
   weekStartsOn?: 0 | 1; // 0 for Sunday, 1 for Monday
 }
 
@@ -20,9 +20,9 @@ const HabitHistoryGrid: React.FC<HabitHistoryGridProps> = ({
   habitStartDate,
   habitColor,
   currentDate,
-  onToggleCompletionForDay, // Destructure new prop
-  habitId, // Destructure new prop
-  isDemo = false, // Destructure new prop
+  onToggleCompletionForDay,
+  isDemo = false,
+  weeksToShow = 4, // Default to 4 weeks
   weekStartsOn = 1, // Default to Monday
 }) => {
   const dayLabels = useMemo(() => {
@@ -37,41 +37,45 @@ const HabitHistoryGrid: React.FC<HabitHistoryGridProps> = ({
     const today = startOfDay(currentDate);
     const habitStart = startOfDay(parseISO(habitStartDate));
 
-    // Calculate days for the current week only
-    const startOfCurrentWeek = startOfWeek(currentDate, { weekStartsOn });
-    
-    const allDaysInWeek = eachDayOfInterval({
-      start: startOfCurrentWeek,
-      end: addDays(startOfCurrentWeek, 6),
-    });
+    const allDays: {
+      date: Date;
+      isCompleted: boolean;
+      isFutureDay: boolean;
+      isBeforeHabitStart: boolean;
+      isToday: boolean;
+      log: HabitLog | undefined;
+    }[] = [];
 
-    const logsMap = new Map<string, HabitLog>();
-    habitLogs.forEach(log => {
-      logsMap.set(log.log_date, log);
-    });
+    // Calculate the start of the first week to display
+    const endOfCurrentWeek = addDays(startOfWeek(currentDate, { weekStartsOn }), 6);
+    let currentDay = addDays(endOfCurrentWeek, 1 - (weeksToShow * 7)); // Start 'weeksToShow' weeks ago
 
-    return allDaysInWeek.map(day => {
+    for (let i = 0; i < weeksToShow * 7; i++) {
+      const day = currentDay;
       const formattedDay = format(day, 'yyyy-MM-dd');
-      const log = logsMap.get(formattedDay);
+      const log = habitLogs.find(l => l.log_date === formattedDay);
       const isCompleted = log?.is_completed === true;
       const isFutureDay = isBefore(today, day) && !isSameDay(today, day);
       const isBeforeHabitStart = isBefore(day, habitStart);
       const isToday = isSameDay(day, today);
 
-      return {
+      allDays.push({
         date: day,
         isCompleted,
         isFutureDay,
         isBeforeHabitStart,
         isToday,
         log,
-      };
-    });
-  }, [habitLogs, habitStartDate, currentDate, weekStartsOn]);
+      });
+      currentDay = addDays(currentDay, 1);
+    }
+
+    return allDays;
+  }, [habitLogs, habitStartDate, currentDate, weeksToShow, weekStartsOn]);
 
   return (
     <div className="flex flex-col w-full overflow-x-auto">
-      <div className="grid grid-cols-7 gap-0.5"> {/* Changed grid-cols to 7 */}
+      <div className="grid grid-cols-7 gap-0.5">
         {/* Day Labels */}
         {dayLabels.map(label => (
           <div key={label} className="text-xs text-muted-foreground text-center font-medium">
@@ -79,7 +83,7 @@ const HabitHistoryGrid: React.FC<HabitHistoryGridProps> = ({
           </div>
         ))}
 
-        {/* Week Row (only one week now) */}
+        {/* Grid Cells */}
         {gridDays.map((dayData, dayIndex) => {
           const isDisabled = isDemo || dayData.isFutureDay || dayData.isBeforeHabitStart;
           return (
@@ -87,13 +91,13 @@ const HabitHistoryGrid: React.FC<HabitHistoryGridProps> = ({
               <TooltipTrigger asChild>
                 <div
                   className={cn(
-                    "h-3.5 w-3.5 rounded-sm transition-colors duration-100 flex-shrink-0", // Smaller cells
-                    "cursor-pointer", // Added cursor-pointer
+                    "h-3.5 w-3.5 rounded-sm transition-colors duration-100 flex-shrink-0",
+                    "cursor-pointer",
                     dayData.isBeforeHabitStart ? "bg-muted/10" :
                     dayData.isFutureDay ? "bg-muted/20" :
                     (dayData.isCompleted ? "" : "bg-muted/40"),
-                    dayData.isToday && "ring-1 ring-primary ring-offset-1", // Highlight today
-                    isDisabled && "cursor-not-allowed opacity-50" // Dim and disable cursor for disabled days
+                    dayData.isToday && "ring-1 ring-primary ring-offset-1",
+                    isDisabled && "cursor-not-allowed opacity-50"
                   )}
                   style={{ backgroundColor: dayData.isCompleted ? habitColor : undefined, opacity: dayData.isCompleted ? 0.8 : undefined }}
                   onClick={() => {
