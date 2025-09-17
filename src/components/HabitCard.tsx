@@ -9,7 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { format, parseISO } from 'date-fns';
 import { useSound } from '@/context/SoundContext';
 import { Input } from '@/components/ui/input'; // Corrected import path for Input
-import { getHabitChallengeSuggestion } from '@/integrations/supabase/habit-api';
+import { getHabitChallengeSuggestion } from '@/integrations/supabase/habit-challenge-api';
 import { useAuth } from '@/context/AuthContext';
 import { showLoading, dismissToast, showError, showSuccess } from '@/utils/toast';
 
