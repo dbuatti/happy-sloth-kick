@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Flame, BarChart3, Filter, ArrowUpNarrowWide, ArrowDownNarrowWide } from 'lucide-react';
+import { Plus, Flame, BarChart3, Filter, ArrowUpNarrowWide } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useHabits, HabitWithLogs } from '@/hooks/useHabits';
@@ -16,6 +16,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import HabitAnalyticsDashboard from '@/components/HabitAnalyticsDashboard';
 import { DateRange } from 'react-day-picker';
+import { Label } from '@/components/ui/label'; // Added Label import
 
 interface HabitTrackerPageProps {
   isDemo?: boolean;
