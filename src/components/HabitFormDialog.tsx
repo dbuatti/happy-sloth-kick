@@ -43,7 +43,7 @@ const presetColors = [
 ];
 
 const unitOptions = [
-  { value: '', label: 'None' },
+  { value: 'none-unit', label: 'None' }, // Changed value from '' to 'none-unit'
   { value: 'minutes', label: 'Minutes' },
   { value: 'reps', label: 'Reps' },
   { value: 'pages', label: 'Pages' },
@@ -68,7 +68,7 @@ const HabitFormDialog: React.FC<HabitFormDialogProps> = ({
   const [description, setDescription] = useState('');
   const [color, setColor] = useState(presetColors[0].value);
   const [targetValue, setTargetValue] = useState<number | ''>('');
-  const [unit, setUnit] = useState('');
+  const [unit, setUnit] = useState<string | null>(null); // State can be string or null
   const [frequency, setFrequency] = useState('daily');
   const [startDate, setStartDate] = useState<Date | undefined>(new Date());
   const [isActive, setIsActive] = useState(true);
@@ -82,7 +82,7 @@ const HabitFormDialog: React.FC<HabitFormDialogProps> = ({
         setDescription(initialData.description || '');
         setColor(initialData.color);
         setTargetValue(initialData.target_value ?? '');
-        setUnit(initialData.unit || '');
+        setUnit(initialData.unit || null); // Set to null if initialData.unit is falsy
         setFrequency(initialData.frequency);
         setStartDate(parseISO(initialData.start_date));
         setIsActive(initialData.is_active);
@@ -91,7 +91,7 @@ const HabitFormDialog: React.FC<HabitFormDialogProps> = ({
         setDescription('');
         setColor(presetColors[0].value);
         setTargetValue('');
-        setUnit('');
+        setUnit(null); // Default to null for new habits
         setFrequency('daily');
         setStartDate(new Date());
         setIsActive(true);
@@ -107,7 +107,7 @@ const HabitFormDialog: React.FC<HabitFormDialogProps> = ({
       description: description.trim() || null,
       color,
       target_value: targetValue === '' ? null : Number(targetValue),
-      unit: unit.trim() || null,
+      unit: unit, // Use the unit state directly (can be string or null)
       frequency,
       start_date: startDate ? format(startDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
       is_active: isActive,
@@ -218,7 +218,11 @@ const HabitFormDialog: React.FC<HabitFormDialogProps> = ({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="unit">Unit (Optional)</Label>
-                <Select value={unit} onValueChange={setUnit} disabled={isSaving}>
+                <Select
+                  value={unit || 'none-unit'} // Use 'none-unit' for display when unit is null
+                  onValueChange={(value) => setUnit(value === 'none-unit' ? null : value)}
+                  disabled={isSaving}
+                >
                   <SelectTrigger className="h-9 text-base">
                     <SelectValue placeholder="Select unit" />
                   </SelectTrigger>
