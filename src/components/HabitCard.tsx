@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Plus, MoreHorizontal, Edit, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -89,32 +89,6 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
       showError('Failed to get challenge suggestion. Please try again.');
     }
   };
-
-  const getUnitDisplay = (value: number | null, unit: string | null) => {
-    if (value === null || unit === null || unit === 'none-unit' || unit === '') return '';
-    
-    let formattedUnit = unit;
-    if (value > 1 && !unit.endsWith('s') && unit !== 'reps' && unit !== 'times') {
-      formattedUnit += 's';
-    }
-
-    switch (unit.toLowerCase()) {
-      case 'minutes': return `${value} min`;
-      case 'kilometers': return `${value} km`;
-      case 'miles': return `${value} mi`;
-      case 'liters': return `${value} L`;
-      case 'milliliters': return `${value} ml`;
-      case 'glasses': return `${value} glasses`;
-      case 'reps': return `${value} reps`;
-      case 'pages': return `${value} pages`;
-      case 'times': return `${value} times`;
-      case 'steps': return `${value} steps`;
-      default: return `${value} ${formattedUnit}`;
-    }
-  };
-
-  const currentDayLog = habit.logs.find(l => l.log_date === format(currentDate, 'yyyy-MM-dd'));
-  const displayedRecordedValue = currentDayLog?.value_recorded ?? null;
 
   return (
     <>
