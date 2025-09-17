@@ -24,6 +24,7 @@ export interface HabitWithLogs extends Habit {
   currentStreak: number;
   longestStreak: number;
   completedToday: boolean;
+  currentDayRecordedValue: number | null; // New field for current day's recorded value
 }
 
 interface UseHabitsProps {
@@ -31,9 +32,11 @@ interface UseHabitsProps {
   currentDate?: Date; // For daily view context
   startDate?: Date; // For range-based log fetching
   endDate?: Date;   // For range-based log fetching
+  filterStatus?: 'all' | 'active' | 'inactive'; // New filter prop
+  sortOption?: 'name_asc' | 'created_at_desc'; // New sort prop
 }
 
-export const useHabits = ({ userId: propUserId, currentDate, startDate, endDate }: UseHabitsProps = {}) => {
+export const useHabits = ({ userId: propUserId, currentDate, startDate, endDate, filterStatus = 'active', sortOption = 'created_at_desc' }: UseHabitsProps = {}) => {
   const { user } = useAuth();
   const userId = propUserId || user?.id;
   const queryClient = useQueryClient();
@@ -43,9 +46,9 @@ export const useHabits = ({ userId: propUserId, currentDate, startDate, endDate 
 
   // Fetch all habits
   const { data: rawHabits = [], isLoading: habitsLoading, error: habitsError } = useQuery<Habit[], Error>({
-    queryKey: ['habits', userId],
+    queryKey: ['habits', userId, filterStatus, sortOption], // Include filter and sort in query key
     queryFn: async () => {
-      const data = await getHabits(userId!);
+      const data = await getHabits(userId!, filterStatus, sortOption); // Pass filter and sort
       return data || [];
     },
     enabled: !!userId,
@@ -137,6 +140,10 @@ export const useHabits = ({ userId: propUserId, currentDate, startDate, endDate 
       const completedToday = currentDate
         ? sortedLogs.some(log => isSameDay(parseISO(log.log_date), currentDate) && log.is_completed)
         : false;
+      
+      const currentDayRecordedValue = currentDate
+        ? sortedLogs.find(log => isSameDay(parseISO(log.log_date), currentDate))?.value_recorded ?? null
+        : null;
 
       return {
         ...habit,
@@ -144,6 +151,7 @@ export const useHabits = ({ userId: propUserId, currentDate, startDate, endDate 
         currentStreak,
         longestStreak,
         completedToday,
+        currentDayRecordedValue,
       };
     });
   }, [rawHabits, rawHabitLogs, currentDate]);
@@ -201,7 +209,7 @@ export const useHabits = ({ userId: propUserId, currentDate, startDate, endDate 
       const existingLog = await getHabitLogForDay(userId, habitId, date);
 
       if (existingLog) {
-        if (existingLog.is_completed === isCompleted) {
+        if (existingLog.is_completed === isCompleted && existingLog.value_recorded === valueRecorded) {
           // No change needed, or already in desired state
           return true;
         }
@@ -222,6 +230,7 @@ export const useHabits = ({ userId: propUserId, currentDate, startDate, endDate 
         });
       }
       queryClient.invalidateQueries({ queryKey: ['habitLogs', userId] });
+      queryClient.invalidateQueries({ queryKey: ['habits', userId] }); // Invalidate habits to re-calculate streaks/completion
       showSuccess(isCompleted ? 'Habit marked complete!' : 'Habit marked incomplete.');
       return true;
     } catch (err: any) {

@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Flame, BarChart3 } from 'lucide-react';
+import { Plus, Flame, BarChart3, Filter, ArrowUpNarrowWide, ArrowDownNarrowWide } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useHabits, HabitWithLogs } from '@/hooks/useHabits';
 import HabitCard from '@/components/HabitCard';
 import HabitFormDialog from '@/components/HabitFormDialog';
@@ -10,11 +11,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { addDays, startOfMonth } from 'date-fns';
 import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
 import HabitSuggestionCard from '@/components/HabitSuggestionCard';
-import { getNewHabitSuggestion } from '@/integrations/supabase/habit-suggestion-api'; // Corrected import path
+import { getNewHabitSuggestion } from '@/integrations/supabase/habit-api';
 import { useAuth } from '@/context/AuthContext';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; // Import Tabs components
-import HabitAnalyticsDashboard from '@/components/HabitAnalyticsDashboard'; // Import the new analytics dashboard
-import { DateRange } from 'react-day-picker'; // Import DateRange
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import HabitAnalyticsDashboard from '@/components/HabitAnalyticsDashboard';
+import { DateRange } from 'react-day-picker';
 
 interface HabitTrackerPageProps {
   isDemo?: boolean;
@@ -30,6 +31,8 @@ const HabitTrackerPage: React.FC<HabitTrackerPageProps> = ({ isDemo = false, dem
     from: startOfMonth(new Date()),
     to: new Date(),
   }));
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('active'); // New state for filter
+  const [sortOption, setSortOption] = useState<'name_asc' | 'created_at_desc'>('created_at_desc'); // New state for sort
 
   const {
     habits,
@@ -38,15 +41,13 @@ const HabitTrackerPage: React.FC<HabitTrackerPageProps> = ({ isDemo = false, dem
     updateHabit,
     deleteHabit,
     toggleHabitCompletion,
-  } = useHabits({ userId: demoUserId, currentDate });
+  } = useHabits({ userId: demoUserId, currentDate, filterStatus, sortOption }); // Pass filter and sort
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingHabit, setEditingHabit] = useState<HabitWithLogs | null>(null);
   const [isSavingHabit, setIsSavingHabit] = useState(false);
   const [habitSuggestion, setHabitSuggestion] = useState<string | null>(null);
   const [isLoadingSuggestion, setIsLoadingSuggestion] = useState(false);
-
-  const activeHabits = useMemo(() => habits.filter((h: HabitWithLogs) => h.is_active), [habits]);
 
   useEffect(() => {
     const fetchSuggestion = async () => {
@@ -60,9 +61,8 @@ const HabitTrackerPage: React.FC<HabitTrackerPageProps> = ({ isDemo = false, dem
       setIsLoadingSuggestion(false);
     };
 
-    // Fetch suggestion when habits change or on page load
     fetchSuggestion();
-  }, [userId, isDemo, habits]); // Re-fetch when habits data changes
+  }, [userId, isDemo, habits]);
 
   const handleOpenForm = (habit: HabitWithLogs | null) => {
     setEditingHabit(habit);
@@ -136,10 +136,35 @@ const HabitTrackerPage: React.FC<HabitTrackerPageProps> = ({ isDemo = false, dem
                   onGoToToday={handleGoToToday}
                 />
 
-                <div className="flex justify-end mb-4">
-                  <Button onClick={() => handleOpenForm(null)} disabled={isDemo} className="h-9">
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mb-4 mt-4">
+                  <Button onClick={() => handleOpenForm(null)} disabled={isDemo} className="h-9 w-full sm:w-auto">
                     <Plus className="mr-2 h-4 w-4" /> Add New Habit
                   </Button>
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <Label htmlFor="filter-status" className="sr-only">Filter by status</Label>
+                    <Select value={filterStatus} onValueChange={(value) => setFilterStatus(value as 'all' | 'active' | 'inactive')}>
+                      <SelectTrigger className="w-full sm:w-[140px] h-9">
+                        <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
+                        <SelectValue placeholder="Filter" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                        <SelectItem value="all">All</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Label htmlFor="sort-option" className="sr-only">Sort by</Label>
+                    <Select value={sortOption} onValueChange={(value) => setSortOption(value as 'name_asc' | 'created_at_desc')}>
+                      <SelectTrigger className="w-full sm:w-[160px] h-9">
+                        <ArrowUpNarrowWide className="mr-2 h-4 w-4 text-muted-foreground" />
+                        <SelectValue placeholder="Sort" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="name_asc">Name (A-Z)</SelectItem>
+                        <SelectItem value="created_at_desc">Newest First</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 <div className="mb-6">
@@ -152,15 +177,15 @@ const HabitTrackerPage: React.FC<HabitTrackerPageProps> = ({ isDemo = false, dem
                       <Skeleton key={i} className="h-32 w-full rounded-xl" />
                     ))}
                   </div>
-                ) : activeHabits.length === 0 ? (
+                ) : habits.length === 0 ? (
                   <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
                     <Flame className="h-12 w-12 text-muted-foreground" />
-                    <p className="text-lg font-medium mb-2">No active habits yet!</p>
-                    <p className="text-sm">Start building your routine by adding your first habit.</p>
+                    <p className="text-lg font-medium mb-2">No habits found!</p>
+                    <p className="text-sm">Click "Add New Habit" to start building your routine.</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {activeHabits.map((habit: HabitWithLogs) => (
+                    {habits.map((habit: HabitWithLogs) => (
                       <HabitCard
                         key={habit.id}
                         habit={habit}
