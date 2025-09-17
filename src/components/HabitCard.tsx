@@ -1,20 +1,20 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Card, CardContent, CardTitle } from "@/components/ui/card";
+import React, { useState, useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, X, MoreHorizontal, Edit, Flame, CalendarDays, Clock, Target, Sparkles } from 'lucide-react';
+import { CheckCircle2, X, MoreHorizontal, Edit, Flame, CalendarDays, Clock, Target, Input as InputIcon, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { HabitWithLogs } from '@/hooks/useHabits';
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, eachDayOfInterval, subDays, isSameDay, isBefore, startOfDay } from 'date-fns';
 import { useSound } from '@/context/SoundContext';
 import { Input } from '@/components/ui/input';
-import { getHabitChallengeSuggestion } from '@/integrations/supabase/habit-challenge-api';
+import { getHabitChallengeSuggestion } from '@/integrations/supabase/habit-api';
 import { useAuth } from '@/context/AuthContext';
-import { showLoading, dismissToast, showError } from '@/utils/toast';
+import { showLoading, dismissToast, showError, showSuccess } from '@/utils/toast';
 import HabitChallengeDialog from './HabitChallengeDialog';
-import HabitIconDisplay from './HabitIconDisplay'; // Import new component
-import HabitHistoryGrid from './HabitHistoryGrid'; // Import new component
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"; // Re-added Tooltip imports
+import HabitIconDisplay from './HabitIconDisplay';
+import { Progress } from './Progress'; // Import the Progress component
 
 interface HabitCardProps {
   habit: HabitWithLogs;
@@ -31,23 +31,15 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
   const [isSaving, setIsSaving] = useState(false);
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
   const [recordedValue, setRecordedValue] = useState<number | ''>(() => {
-    const log = habit.logs.find(l => l.log_date === format(currentDate, 'yyyy-MM-dd'));
-    return log?.value_recorded ?? '';
+    return habit.currentDayRecordedValue ?? '';
   });
   const [isRecordingValue, setIsRecordingValue] = useState(false);
   const [isChallengeDialogOpen, setIsChallengeDialogOpen] = useState(false);
   const [challengeSuggestion, setChallengeSuggestion] = useState<string | null>(null);
 
-  // Re-introduce displayedRecordedValue as a useMemo
-  const displayedRecordedValue = useMemo(() => {
-    const log = habit.logs.find(l => l.log_date === format(currentDate, 'yyyy-MM-dd'));
-    return log?.value_recorded ?? null;
-  }, [habit.logs, currentDate]);
-
   useEffect(() => {
-    const log = habit.logs.find(l => l.log_date === format(currentDate, 'yyyy-MM-dd'));
-    setRecordedValue(log?.value_recorded ?? '');
-  }, [currentDate, habit.logs]);
+    setRecordedValue(habit.currentDayRecordedValue ?? '');
+  }, [currentDate, habit.currentDayRecordedValue]);
 
   const getUnitDisplay = (value: number | null, unit: string | null) => {
     if (value === null || unit === null || unit === '') return '';
@@ -67,22 +59,22 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
       case 'reps': return `${value} reps`;
       case 'pages': return `${value} pages`;
       case 'times': return `${value} times`;
+      case 'steps': return `${value} steps`;
       default: return `${value} ${formattedUnit}`;
     }
   };
 
-  const currentDayLog = habit.logs.find(l => l.log_date === format(currentDate, 'yyyy-MM-dd'));
-  const completedToday = currentDayLog?.is_completed ?? false;
+  const completedToday = habit.completedToday;
 
   const handleToggleCompletionForDay = async (date: Date, isCompleted: boolean, value: number | null = null) => {
     if (isDemo) return;
     setIsSaving(true);
     const success = await onToggleCompletion(habit.id, date, isCompleted, value);
-    if (success && isCompleted) { // Check isCompleted directly
+    if (success && isSameDay(date, currentDate) && isCompleted) {
       playSound('success');
       setShowCompletionEffect(true);
       setTimeout(() => setShowCompletionEffect(false), 600);
-    } else if (success && !isCompleted) {
+    } else if (success && isSameDay(date, currentDate) && !isCompleted) {
       playSound('reset');
       setRecordedValue('');
     }
@@ -93,7 +85,6 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
   const handleMainCompletionButtonClick = () => {
     if (isDemo) return;
 
-    // If habit has a target value and is not completed for currentDate, prompt for value
     if (habit.target_value && !completedToday) {
       setIsRecordingValue(true);
       return;
@@ -117,46 +108,132 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
     dismissToast(loadingToastId);
     if (suggestion) {
       setChallengeSuggestion(suggestion);
-      setIsChallengeDialogOpen(true); // Open the dialog with the suggestion
+      setIsChallengeDialogOpen(true);
     } else {
       showError('Failed to get challenge suggestion. Please try again.');
     }
   };
 
+  const last7Days = useMemo(() => {
+    const days = eachDayOfInterval({
+      start: subDays(currentDate, 6),
+      end: currentDate,
+    });
+    const logsMap = new Map<string, boolean>();
+    habit.logs.forEach(log => {
+      logsMap.set(format(parseISO(log.log_date), 'yyyy-MM-dd'), log.is_completed);
+    });
+
+    return days.map(day => {
+      const formattedDay = format(day, 'yyyy-MM-dd');
+      const isCompleted = logsMap.get(formattedDay) === true;
+      const isFutureDay = isBefore(startOfDay(currentDate), startOfDay(day));
+      const isHabitStarted = !isBefore(day, parseISO(habit.start_date));
+
+      return {
+        date: day,
+        isCompleted,
+        isFutureDay,
+        isHabitStarted,
+      };
+    });
+  }, [habit.logs, currentDate, habit.start_date]);
+
+  const showProgressSection = habit.target_value !== null && habit.unit !== null && habit.unit !== 'none-unit';
+  const progressValue = showProgressSection && habit.target_value ? ((habit.currentDayRecordedValue || 0) / habit.target_value) * 100 : 0;
+
   return (
     <>
       <Card className={cn(
-        "relative group shadow-lg rounded-xl transition-all duration-200 ease-in-out overflow-hidden p-4", // Added padding
+        "relative group shadow-lg rounded-xl transition-all duration-200 ease-in-out overflow-hidden p-4",
         completedToday ? "bg-green-500/10 border-green-500/30" : "bg-card border-border hover:shadow-xl",
         isDemo && "opacity-70 cursor-not-allowed"
       )}>
         <div className="absolute inset-0 rounded-xl" style={{ backgroundColor: habit.color, opacity: completedToday ? 0.1 : 0.05 }} />
-        <div className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <HabitIconDisplay iconName={habit.icon} color={habit.color} className="h-6 w-6" />
+        <CardHeader className="flex flex-col items-center justify-center space-y-2 pb-2 relative z-10">
+          <HabitIconDisplay iconName={habit.icon} color={habit.color} size="lg" />
+          <CardTitle className="text-xl font-bold text-center flex items-center gap-2">
             {habit.name}
           </CardTitle>
-          <div className="flex items-center gap-1">
-            {habit.currentStreak > 0 && (
-              <Tooltip>
+          {habit.currentStreak > 0 && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="flex items-center text-sm font-medium text-muted-foreground">
+                  <Flame className="h-4 w-4 mr-1 text-orange-500" /> {habit.currentStreak} days streak
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                Current Streak: {habit.currentStreak} days
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </CardHeader>
+        <CardContent className="relative z-10 pt-0 flex flex-col">
+          <div className="space-y-1 text-sm text-muted-foreground mb-3 text-center">
+            {habit.description && <p className="line-clamp-2">{habit.description}</p>}
+            <p className="flex items-center justify-center gap-1">
+              <CalendarDays className="h-3.5 w-3.5" /> Started: {format(parseISO(habit.start_date), 'MMM d, yyyy')}
+            </p>
+            {habit.longestStreak > 0 && (
+              <p className="flex items-center justify-center gap-1">
+                <Flame className="h-3.5 w-3.5 text-orange-500" /> Longest Streak: {habit.longestStreak} days
+              </p>
+            )}
+          </div>
+
+          {showProgressSection && (
+            <div className="mb-4 space-y-2">
+              <div className="flex items-center justify-between text-sm font-medium">
+                <span className="text-muted-foreground">Progress</span>
+                <span className="text-primary">
+                  {getUnitDisplay(habit.currentDayRecordedValue || 0, habit.unit)} / {getUnitDisplay(habit.target_value, habit.unit)}
+                </span>
+              </div>
+              <Progress
+                value={progressValue}
+                className="h-2 rounded-full"
+                indicatorClassName={completedToday ? "bg-green-500" : "bg-primary"}
+              />
+            </div>
+          )}
+
+          {/* Interactive 7-day history grid */}
+          <div className="flex items-center justify-center gap-1 mb-4">
+            {last7Days.map((day, index) => (
+              <Tooltip key={index}>
                 <TooltipTrigger asChild>
-                  <span className="flex items-center text-sm font-medium text-muted-foreground">
-                    <Flame className="h-4 w-4 mr-1 text-orange-500" /> {habit.currentStreak}
-                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      "h-7 w-7 rounded-full text-xs font-semibold",
+                      day.isFutureDay && "opacity-50 cursor-not-allowed",
+                      !day.isHabitStarted && "opacity-30 cursor-not-allowed",
+                      isSameDay(day.date, currentDate) && "ring-2 ring-primary ring-offset-2",
+                      day.isCompleted ? "bg-green-500/20 text-green-600 hover:bg-green-500/30" : "bg-muted/50 text-muted-foreground hover:bg-muted/70"
+                    )}
+                    onClick={() => !day.isFutureDay && day.isHabitStarted && handleToggleCompletionForDay(day.date, !day.isCompleted)}
+                    disabled={isDemo || day.isFutureDay || !day.isHabitStarted}
+                  >
+                    {format(day.date, 'dd')}
+                  </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  Current Streak: {habit.currentStreak} days
+                  {format(day.date, 'EEE, MMM d')} - {day.isFutureDay ? 'Future' : (day.isHabitStarted ? (day.isCompleted ? 'Completed' : 'Incomplete') : 'Not started')}
                 </TooltipContent>
               </Tooltip>
-            )}
+            ))}
+          </div>
+
+          <div className="flex items-center justify-between mt-auto pt-4 border-t border-border">
             {!isDemo && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <MoreHorizontal className="h-4 w-4" />
+                  <Button variant="ghost" size="icon" className="h-9 w-9">
+                    <MoreHorizontal className="h-5 w-5" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="start">
                   <DropdownMenuItem onSelect={() => onEdit(habit)}>
                     <Edit className="mr-2 h-4 w-4" /> Edit Habit
                   </DropdownMenuItem>
@@ -174,40 +251,6 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
-          </div>
-        </div>
-        <CardContent className="relative z-10 pt-0 flex flex-col">
-          <div className="space-y-1 text-sm text-muted-foreground mb-3">
-            {habit.description && <p className="line-clamp-2">{habit.description}</p>}
-            {habit.target_value && habit.unit && (
-              <p className="flex items-center gap-1">
-                <Target className="h-3.5 w-3.5" /> Target: {getUnitDisplay(habit.target_value, habit.unit)}
-              </p>
-            )}
-            {completedToday && displayedRecordedValue !== null && (
-              <p className="flex items-center gap-1 text-green-600 dark:text-green-400 font-medium">
-                <Clock className="h-3.5 w-3.5" /> Logged: {getUnitDisplay(displayedRecordedValue, habit.unit)}
-              </p>
-            )}
-            <p className="flex items-center gap-1">
-              <CalendarDays className="h-3.5 w-3.5" /> Started: {format(parseISO(habit.start_date), 'MMM d, yyyy')}
-            </p>
-            {habit.longestStreak > 0 && (
-              <p className="flex items-center gap-1">
-                <Flame className="h-3.5 w-3.5 text-orange-500" /> Longest Streak: {habit.longestStreak} days
-              </p>
-            )}
-          </div>
-
-          {/* Habit History Grid */}
-          <HabitHistoryGrid
-            habitLogs={habit.logs}
-            habitStartDate={habit.start_date}
-            habitColor={habit.color}
-            currentDate={currentDate}
-          />
-
-          <div className="flex items-center justify-end mt-2">
             {isRecordingValue && !completedToday ? (
               <div className="flex items-center gap-2">
                 <Input
@@ -251,8 +294,8 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
                   <span className="animate-spin h-4 w-4 border-b-2 border-white rounded-full" />
                 ) : completedToday ? (
                   <CheckCircle2 className="h-5 w-5" />
-                ) : habit.target_value && !completedToday ? (
-                  <Target className="h-5 w-5" />
+                ) : showProgressSection ? (
+                  <InputIcon className="h-5 w-5" />
                 ) : (
                   <CheckCircle2 className="h-5 w-5" />
                 )}

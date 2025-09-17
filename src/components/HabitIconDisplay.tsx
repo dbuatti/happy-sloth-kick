@@ -6,20 +6,34 @@ interface HabitIconDisplayProps {
   iconName: string | null;
   color: string;
   className?: string;
+  size?: 'sm' | 'md' | 'lg'; // New size prop
 }
 
-const HabitIconDisplay: React.FC<HabitIconDisplayProps> = ({ iconName, color, className }) => {
+const HabitIconDisplay: React.FC<HabitIconDisplayProps> = ({ iconName, color, className, size = 'md' }) => {
   const IconComponent = iconName ? (LucideIcons as any)[iconName] : LucideIcons.Flame; // Default to Flame
+
+  const sizeClasses = cn({
+    'h-8 w-8': size === 'sm',
+    'h-10 w-10': size === 'md',
+    'h-12 w-12': size === 'lg',
+  });
+
+  const iconSizeClasses = cn({
+    'h-4 w-4': size === 'sm',
+    'h-5 w-5': size === 'md',
+    'h-6 w-6': size === 'lg',
+  });
 
   return (
     <div
       className={cn(
-        "flex items-center justify-center h-14 w-14 rounded-xl flex-shrink-0",
+        "flex items-center justify-center rounded-full flex-shrink-0",
+        sizeClasses,
         className
       )}
       style={{ backgroundColor: color, opacity: 0.15 }}
     >
-      <IconComponent className="h-8 w-8" style={{ color: color }} />
+      <IconComponent className={iconSizeClasses} style={{ color: color }} />
     </div>
   );
 };
