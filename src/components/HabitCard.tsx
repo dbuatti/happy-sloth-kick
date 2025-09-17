@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, X, MoreHorizontal, Edit, Flame, CalendarDays, Clock, Target, Input as InputIcon, Sparkles } from 'lucide-react';
+import { CheckCircle2, X, MoreHorizontal, Edit, Flame, CalendarDays, Pencil as PencilIcon, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { HabitWithLogs } from '@/hooks/useHabits';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -11,7 +11,7 @@ import { useSound } from '@/context/SoundContext';
 import { Input } from '@/components/ui/input';
 import { getHabitChallengeSuggestion } from '@/integrations/supabase/habit-api';
 import { useAuth } from '@/context/AuthContext';
-import { showLoading, dismissToast, showError, showSuccess } from '@/utils/toast';
+import { showLoading, dismissToast, showError } from '@/utils/toast';
 import HabitChallengeDialog from './HabitChallengeDialog';
 import HabitIconDisplay from './HabitIconDisplay';
 import { Progress } from './Progress'; // Import the Progress component
@@ -145,11 +145,11 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
   return (
     <>
       <Card className={cn(
-        "relative group shadow-lg rounded-3xl transition-all duration-200 ease-in-out overflow-hidden p-4", // Increased roundedness to 3xl
+        "relative group shadow-lg rounded-xl transition-all duration-200 ease-in-out overflow-hidden p-4",
         completedToday ? "bg-green-500/10 border-green-500/30" : "bg-card border-border hover:shadow-xl",
         isDemo && "opacity-70 cursor-not-allowed"
       )}>
-        <div className="absolute inset-0 rounded-3xl" style={{ backgroundColor: habit.color, opacity: completedToday ? 0.1 : 0.05 }} /> {/* Increased roundedness */}
+        <div className="absolute inset-0 rounded-xl" style={{ backgroundColor: habit.color, opacity: completedToday ? 0.1 : 0.05 }} />
         <CardHeader className="flex flex-col items-center justify-center space-y-2 pb-2 relative z-10">
           <HabitIconDisplay iconName={habit.icon} color={habit.color} size="lg" />
           <CardTitle className="text-xl font-bold text-center flex items-center gap-2">
@@ -204,7 +204,7 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
                 <TooltipTrigger asChild>
                   <div
                     className={cn(
-                      "h-6 w-6 rounded-full flex items-center justify-center text-xs font-semibold transition-colors duration-100 cursor-pointer", // Made round
+                      "h-6 w-6 rounded-full flex items-center justify-center text-xs font-semibold transition-colors duration-100 cursor-pointer",
                       day.isFutureDay && "opacity-50 cursor-not-allowed",
                       !day.isHabitStarted && "opacity-30 cursor-not-allowed",
                       isSameDay(day.date, currentDate) && "ring-2 ring-primary ring-offset-2",
@@ -228,7 +228,7 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
             {!isDemo && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full"> {/* Made round */}
+                  <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
                     <MoreHorizontal className="h-5 w-5" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -257,7 +257,7 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
                   value={recordedValue}
                   onChange={(e) => setRecordedValue(e.target.value === '' ? '' : Number(e.target.value))}
                   placeholder="Value"
-                  className="w-24 h-9 text-base rounded-xl" // Made rounded
+                  className="w-24 h-9 text-base rounded-xl"
                   min="0"
                   autoFocus
                   onKeyDown={(e) => {
@@ -269,7 +269,7 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
                 <Button
                   onClick={handleRecordValueAndComplete}
                   disabled={isSaving || isDemo || recordedValue === ''}
-                  className="h-10 w-10 rounded-full flex-shrink-0" // Made round
+                  className="h-10 w-10 rounded-full flex-shrink-0"
                   size="icon"
                 >
                   {isSaving ? (
@@ -284,7 +284,7 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
                 onClick={handleMainCompletionButtonClick}
                 disabled={isSaving || isDemo}
                 className={cn(
-                  "h-12 w-12 rounded-full flex-shrink-0 shadow-md", // Larger, rounder, more solid
+                  "h-12 w-12 rounded-full flex-shrink-0 shadow-md",
                   completedToday ? "bg-green-500 hover:bg-green-600 text-white" : "bg-primary hover:bg-primary/90 text-primary-foreground"
                 )}
                 size="icon"
@@ -294,7 +294,7 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
                 ) : completedToday ? (
                   <CheckCircle2 className="h-6 w-6" />
                 ) : showProgressSection ? (
-                  <InputIcon className="h-6 w-6" />
+                  <PencilIcon className="h-6 w-6" />
                 ) : (
                   <CheckCircle2 className="h-6 w-6" />
                 )}

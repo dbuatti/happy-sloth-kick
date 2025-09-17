@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Flame, BarChart3, Filter, ArrowUpNarrowWide, Sparkles } from 'lucide-react';
+import { Plus, Flame, BarChart3, Filter, ArrowUpNarrowWide } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useHabits, HabitWithLogs } from '@/hooks/useHabits';
@@ -108,7 +108,7 @@ const HabitTrackerPage: React.FC<HabitTrackerPageProps> = ({ isDemo = false, dem
   return (
     <div className="flex-1 flex flex-col">
       <main className="flex-grow p-4 flex justify-center">
-        <Card className="w-full max-w-4xl mx-auto shadow-lg rounded-3xl p-4"> {/* Increased roundedness to 3xl */}
+        <Card className="w-full max-w-4xl mx-auto shadow-lg rounded-xl p-4">
           <CardHeader className="pb-2">
             <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
               <Flame className="h-7 w-7 text-primary" /> Habit Tracker
@@ -119,16 +119,16 @@ const HabitTrackerPage: React.FC<HabitTrackerPageProps> = ({ isDemo = false, dem
           </CardHeader>
           <CardContent className="pt-0">
             <Tabs defaultValue="tracker" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 rounded-2xl"> {/* Increased roundedness */}
-                <TabsTrigger value="tracker" className="rounded-2xl"> {/* Increased roundedness */}
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="tracker">
                   <Flame className="h-4 w-4 mr-2" /> Tracker
                 </TabsTrigger>
-                <TabsTrigger value="analytics" className="rounded-2xl"> {/* Increased roundedness */}
+                <TabsTrigger value="analytics">
                   <BarChart3 className="h-4 w-4 mr-2" /> Analytics
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="tracker" className="mt-6 space-y-6"> {/* Increased top margin and consistent vertical spacing */}
+              <TabsContent value="tracker" className="mt-4 space-y-6">
                 <DateNavigator
                   currentDate={currentDate}
                   setCurrentDate={setCurrentDate}
@@ -138,17 +138,17 @@ const HabitTrackerPage: React.FC<HabitTrackerPageProps> = ({ isDemo = false, dem
                 />
 
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
-                  <Button onClick={() => handleOpenForm(null)} disabled={isDemo} className="h-9 w-full sm:w-auto rounded-xl"> {/* Increased roundedness */}
+                  <Button onClick={() => handleOpenForm(null)} disabled={isDemo} className="h-9 w-full sm:w-auto">
                     <Plus className="mr-2 h-4 w-4" /> Add New Habit
                   </Button>
                   <div className="flex items-center gap-2 w-full sm:w-auto">
                     <Label htmlFor="filter-status" className="sr-only">Filter by status</Label>
                     <Select value={filterStatus} onValueChange={(value) => setFilterStatus(value as 'all' | 'active' | 'inactive')}>
-                      <SelectTrigger className="w-full sm:w-[140px] h-9 rounded-xl"> {/* Increased roundedness */}
+                      <SelectTrigger className="w-full sm:w-[140px] h-9">
                         <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
                         <SelectValue placeholder="Filter" />
                       </SelectTrigger>
-                      <SelectContent className="rounded-xl"> {/* Increased roundedness */}
+                      <SelectContent>
                         <SelectItem value="active">Active</SelectItem>
                         <SelectItem value="inactive">Inactive</SelectItem>
                         <SelectItem value="all">All</SelectItem>
@@ -156,11 +156,11 @@ const HabitTrackerPage: React.FC<HabitTrackerPageProps> = ({ isDemo = false, dem
                     </Select>
                     <Label htmlFor="sort-option" className="sr-only">Sort by</Label>
                     <Select value={sortOption} onValueChange={(value) => setSortOption(value as 'name_asc' | 'created_at_desc')}>
-                      <SelectTrigger className="w-full sm:w-[160px] h-9 rounded-xl"> {/* Increased roundedness */}
+                      <SelectTrigger className="w-full sm:w-[160px] h-9">
                         <ArrowUpNarrowWide className="mr-2 h-4 w-4 text-muted-foreground" />
                         <SelectValue placeholder="Sort" />
                       </SelectTrigger>
-                      <SelectContent className="rounded-xl"> {/* Increased roundedness */}
+                      <SelectContent>
                         <SelectItem value="name_asc">Name (A-Z)</SelectItem>
                         <SelectItem value="created_at_desc">Newest First</SelectItem>
                       </SelectContent>
@@ -168,16 +168,18 @@ const HabitTrackerPage: React.FC<HabitTrackerPageProps> = ({ isDemo = false, dem
                   </div>
                 </div>
 
-                <HabitSuggestionCard suggestion={habitSuggestion} isLoading={isLoadingSuggestion} isDemo={isDemo} />
+                <div className="mb-6">
+                  <HabitSuggestionCard suggestion={habitSuggestion} isLoading={isLoadingSuggestion} isDemo={isDemo} />
+                </div>
 
                 {loading ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {[...Array(3)].map((_, i) => (
-                      <Skeleton key={i} className="h-48 w-full rounded-3xl" /> {/* Increased roundedness */}
+                      <Skeleton key={i} className="h-48 w-full rounded-xl" />
                     ))}
                   </div>
                 ) : habits.length === 0 ? (
-                  <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2 rounded-2xl bg-muted/50"> {/* Added roundedness and background */}
+                  <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
                     <Flame className="h-12 w-12 text-muted-foreground" />
                     <p className="text-lg font-medium mb-2">No habits found!</p>
                     <p className="text-sm">Click "Add New Habit" to start building your routine.</p>
