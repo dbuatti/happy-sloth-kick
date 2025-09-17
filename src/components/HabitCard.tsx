@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, X, MoreHorizontal, Edit, Flame, CalendarDays, Pencil as PencilIcon, Sparkles, Info } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { CheckCircle2, X, MoreHorizontal, Edit, Flame, CalendarDays, Pencil as PencilIcon, Sparkles, Info, Target } from 'lucide-react';
+import { cn } '@/lib/utils';
 import { HabitWithLogs } from '@/hooks/useHabits';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -10,7 +10,7 @@ import { format, parseISO, isSameDay } from 'date-fns';
 import { useSound } from '@/context/SoundContext';
 import { Input } from '@/components/ui/input';
 import { getHabitChallengeSuggestion } from '@/integrations/supabase/habit-api';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } '@/context/AuthContext';
 import { showLoading, dismissToast, showError } from '@/utils/toast';
 import HabitChallengeDialog from './HabitChallengeDialog';
 import HabitIconDisplay from './HabitIconDisplay';
@@ -62,15 +62,14 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
       case 'reps': return `${value} reps`;
       case 'pages': return `${value} pages`;
       case 'times': return `${value} times`;
-      case 'steps': return `${value} steps`;
       default: return `${value} ${formattedUnit}`;
     }
   };
 
   const completedToday = habit.completedToday;
 
-  const handleToggleCompletionForDay = async (date: Date, isCompleted: boolean, value: number | null = null) => {
-    if (isDemo) return;
+  const handleToggleCompletionForDay = async (date: Date, isCompleted: boolean, value: number | null = null): Promise<boolean> => {
+    if (isDemo) return false;
     setIsSaving(true);
     const success = await onToggleCompletion(habit.id, date, isCompleted, value);
     if (success && isSameDay(date, currentDate) && isCompleted) {
@@ -83,6 +82,7 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
     }
     setIsSaving(false);
     setIsRecordingValue(false);
+    return success;
   };
 
   const handleMainCompletionButtonClick = () => {
@@ -186,16 +186,16 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
             {showProgressSection && (
               <div className="flex items-center gap-1">
                 <Target className="h-3.5 w-3.5" />
-                <span>Target: <span className="font-semibold text-foreground">{getUnitDisplay(habit.target_value, habit.unit)}</span></span>
+                <span>Target: <span className="font-semibold text-foreground">{getUnitDisplay(habit.currentDayRecordedValue || 0, habit.unit)} / {getUnitDisplay(habit.target_value, habit.unit)}</span></span>
               </div>
             )}
           </div>
 
           {/* Progress Bar (Conditional) */}
           {showProgressSection && (
-            <div className="mb-4 space-y-1">
-              <div className="flex items-center justify-between text-xs font-medium">
-                <span className="text-muted-foreground">Progress Today</span>
+            <div className="mb-4 space-y-2">
+              <div className="flex items-center justify-between text-sm font-medium">
+                <span className="text-muted-foreground">Progress</span>
                 <span className="text-primary">
                   {getUnitDisplay(habit.currentDayRecordedValue || 0, habit.unit)} / {getUnitDisplay(habit.target_value, habit.unit)}
                 </span>

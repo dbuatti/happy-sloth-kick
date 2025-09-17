@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { format, eachDayOfInterval, parseISO, isBefore, startOfDay, startOfWeek, isSameDay, addDays } from 'date-fns';
+import { format, parseISO, isBefore, startOfDay, startOfWeek, isSameDay, addDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { HabitLog } from '@/integrations/supabase/habit-api';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
