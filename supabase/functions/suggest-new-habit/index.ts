@@ -166,12 +166,15 @@ Deno.serve(async (req: Request) => {
     }
     
     let suggestionText;
-    try {
+    // Safely access the suggestion text, checking for existence of properties
+    if (geminiData && geminiData.candidates && geminiData.candidates.length > 0 &&
+        geminiData.candidates[0].content && geminiData.candidates[0].content.parts &&
+        geminiData.candidates[0].content.parts.length > 0 && geminiData.candidates[0].content.parts[0].text) {
       suggestionText = geminiData.candidates[0].content.parts[0].text;
       console.log("Suggest New Habit: Gemini suggestion extracted.");
-    } catch (accessError) {
-      console.error("Suggest New Habit: Failed to access suggestion text from Gemini data:", accessError, "Data:", JSON.stringify(geminiData));
-      throw new Error("Failed to extract suggestion text from Gemini API response.");
+    } else {
+      console.error("Suggest New Habit: Failed to access suggestion text from Gemini data. Data structure unexpected:", JSON.stringify(geminiData));
+      throw new Error("Failed to extract suggestion text from Gemini API response due to unexpected data structure.");
     }
 
     console.log("Suggest New Habit: Successfully generated suggestion.");
