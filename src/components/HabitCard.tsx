@@ -152,7 +152,7 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
           )}
 
           {/* Habit History Grid */}
-          <div className="w-full flex mb-4 px-1"> {/* Removed justify-center and gap-1, added px-1 */}
+          <div className="w-full flex mb-4 px-4"> {/* Increased px-1 to px-4 */}
             <HabitHistoryGrid
               habitLogs={habit.logs}
               habitStartDate={habit.start_date}
