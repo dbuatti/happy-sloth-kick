@@ -212,7 +212,6 @@ const HabitFormDialog: React.FC<HabitFormDialogProps> = ({
               <IconPicker
                 value={icon}
                 onChange={setIcon}
-                habitName={name}
                 disabled={isSaving}
               />
             </div>
