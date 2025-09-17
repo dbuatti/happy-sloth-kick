@@ -183,7 +183,7 @@ Deno.serve(async (req: Request) => {
 
   } catch (error: any) {
     // Catch and log any errors during the function execution
-    console.error("Error in Edge Function 'suggest-new-habit' (outer catch):", error); // Log the full error object
+    console.error("Error in Edge Function 'suggest-new-habit' (outer catch):", JSON.stringify(error, Object.getOwnPropertyNames(error)));
     return new Response(JSON.stringify({ error: error.message || 'An unexpected error occurred in the Edge Function.' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
