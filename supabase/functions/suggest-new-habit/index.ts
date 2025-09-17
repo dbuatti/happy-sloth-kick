@@ -11,6 +11,7 @@ const corsHeaders = {
 };
 
 serve(async (req: Request) => {
+  console.log("Suggest New Habit: Edge Function started."); // New log at the very beginning
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -27,12 +28,15 @@ serve(async (req: Request) => {
       });
     }
 
+    // Retrieve environment variables for Supabase and Gemini API
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 
+    console.log("Suggest New Habit: Environment variables retrieved check - SUPABASE_URL:", !!SUPABASE_URL, "SUPABASE_SERVICE_ROLE_KEY:", !!SUPABASE_SERVICE_ROLE_KEY, "GEMINI_API_KEY:", !!GEMINI_API_KEY); // More detailed log
+
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !GEMINI_API_KEY) {
-      console.error("Suggest New Habit: Missing environment variables.");
+      console.error("Suggest New Habit: Missing Supabase or Gemini API environment variables.");
       return new Response(JSON.stringify({ error: 'Missing Supabase or Gemini API environment variables.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
@@ -137,6 +141,7 @@ serve(async (req: Request) => {
       }),
     });
 
+    // Handle non-OK responses from Gemini API
     if (!geminiResponse.ok) {
       const errorBody = await geminiResponse.text();
       console.error("Suggest New Habit: Gemini API request failed:", geminiResponse.status, errorBody);
@@ -144,15 +149,18 @@ serve(async (req: Request) => {
     }
 
     const geminiData = await geminiResponse.json();
+    console.log("Suggest New Habit: Gemini raw response data:", JSON.stringify(geminiData)); // New log for raw Gemini response
     const suggestionText = geminiData.candidates[0].content.parts[0].text;
     console.log("Suggest New Habit: Gemini suggestion received.");
 
+    // Return the generated briefing
     return new Response(JSON.stringify({ suggestion: suggestionText }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
 
   } catch (error: any) {
+    // Catch and log any errors during the function execution
     console.error("Error in Edge Function 'suggest-new-habit' (outer catch):", error);
     return new Response(JSON.stringify({ error: error.message || 'An unexpected error occurred in the Edge Function.' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
