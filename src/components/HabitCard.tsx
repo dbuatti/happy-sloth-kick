@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, X, MoreHorizontal, Edit, Flame, CalendarDays, Target } from 'lucide-react';
+import { CheckCircle2, X, MoreHorizontal, Edit, Flame, CalendarDays, Clock, Target, Input as InputIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { HabitWithLogs } from '@/hooks/useHabits';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { format, parseISO } from 'date-fns';
+import { useSound } from '@/context/SoundContext';
+import { Input } from '@/components/ui/input'; // Import Input component
 
 interface HabitCardProps {
   habit: HabitWithLogs;
@@ -17,23 +19,80 @@ interface HabitCardProps {
 }
 
 const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit, currentDate, isDemo = false }) => {
+  const { playSound } = useSound();
   const [isSaving, setIsSaving] = useState(false);
+  const [showCompletionEffect, setShowCompletionEffect] = useState(false);
+  const [recordedValue, setRecordedValue] = useState<number | ''>(() => {
+    const log = habit.logs.find(l => l.log_date === format(currentDate, 'yyyy-MM-dd'));
+    return log?.value_recorded ?? '';
+  });
+  const [isRecordingValue, setIsRecordingValue] = useState(false);
 
   const handleToggle = async () => {
     if (isDemo) return;
+
+    if (habit.target_value && !habit.completedToday && recordedValue === '') {
+      // If habit has a target and is not completed, and no value is recorded, prompt for value
+      setIsRecordingValue(true);
+      return;
+    }
+
     setIsSaving(true);
-    await onToggleCompletion(habit.id, currentDate, !habit.completedToday);
+    const success = await onToggleCompletion(habit.id, currentDate, !habit.completedToday, recordedValue === '' ? null : Number(recordedValue));
+    if (success && !habit.completedToday) {
+      playSound('success');
+      setShowCompletionEffect(true);
+      setTimeout(() => setShowCompletionEffect(false), 600);
+    } else if (success && habit.completedToday) {
+      playSound('reset');
+      setRecordedValue(''); // Clear recorded value when un-completing
+    }
     setIsSaving(false);
+    setIsRecordingValue(false);
+  };
+
+  const handleRecordValueAndComplete = async () => {
+    if (isDemo) return;
+    setIsSaving(true);
+    const success = await onToggleCompletion(habit.id, currentDate, true, recordedValue === '' ? null : Number(recordedValue));
+    if (success) {
+      playSound('success');
+      setShowCompletionEffect(true);
+      setTimeout(() => setShowCompletionEffect(false), 600);
+    }
+    setIsSaving(false);
+    setIsRecordingValue(false);
   };
 
   const getUnitDisplay = (value: number | null, unit: string | null) => {
-    if (value === null || unit === null) return '';
-    return `${value} ${unit}`;
+    if (value === null || unit === null || unit === '') return '';
+    
+    let formattedUnit = unit;
+    if (value > 1 && !unit.endsWith('s') && unit !== 'reps' && unit !== 'times') { // Simple pluralization, exclude already plural or specific units
+      formattedUnit += 's';
+    }
+
+    switch (unit.toLowerCase()) {
+      case 'minutes': return `${value} min`;
+      case 'kilometers': return `${value} km`;
+      case 'miles': return `${value} mi`;
+      case 'liters': return `${value} L`;
+      case 'milliliters': return `${value} ml`;
+      case 'glasses': return `${value} glasses`;
+      case 'reps': return `${value} reps`;
+      case 'pages': return `${value} pages`;
+      case 'times': return `${value} times`;
+      case 'steps': return `${value} steps`;
+      default: return `${value} ${formattedUnit}`;
+    }
   };
+
+  const currentDayLog = habit.logs.find(l => l.log_date === format(currentDate, 'yyyy-MM-dd'));
+  const displayedRecordedValue = currentDayLog?.value_recorded ?? null;
 
   return (
     <Card className={cn(
-      "relative group shadow-lg rounded-xl transition-all duration-200 ease-in-out",
+      "relative group shadow-lg rounded-xl transition-all duration-200 ease-in-out overflow-hidden",
       habit.completedToday ? "bg-green-500/10 border-green-500/30" : "bg-card border-border hover:shadow-xl",
       isDemo && "opacity-70 cursor-not-allowed"
     )}>
@@ -68,7 +127,7 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
                   <Edit className="mr-2 h-4 w-4" /> Edit Habit
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => onToggleCompletion(habit.id, currentDate, true)} disabled={habit.completedToday}>
+                <DropdownMenuItem onSelect={() => onToggleCompletion(habit.id, currentDate, true, recordedValue === '' ? null : Number(recordedValue))} disabled={habit.completedToday}>
                   <CheckCircle2 className="mr-2 h-4 w-4" /> Mark Complete
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => onToggleCompletion(habit.id, currentDate, false)} disabled={!habit.completedToday}>
@@ -87,6 +146,11 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
               <Target className="h-3.5 w-3.5" /> Target: {getUnitDisplay(habit.target_value, habit.unit)}
             </p>
           )}
+          {habit.completedToday && displayedRecordedValue !== null && (
+            <p className="flex items-center gap-1 text-green-600 dark:text-green-400 font-medium">
+              <Clock className="h-3.5 w-3.5" /> Logged: {getUnitDisplay(displayedRecordedValue, habit.unit)}
+            </p>
+          )}
           <p className="flex items-center gap-1">
             <CalendarDays className="h-3.5 w-3.5" /> Started: {format(parseISO(habit.start_date), 'MMM d, yyyy')}
           </p>
@@ -96,24 +160,62 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
             </p>
           )}
         </div>
-        <Button
-          onClick={handleToggle}
-          disabled={isSaving || isDemo}
-          className={cn(
-            "h-10 w-10 rounded-full flex-shrink-0",
-            habit.completedToday ? "bg-green-500 hover:bg-green-600 text-white" : "bg-primary hover:bg-primary/90 text-primary-foreground"
-          )}
-          size="icon"
-        >
-          {isSaving ? (
-            <span className="animate-spin h-4 w-4 border-b-2 border-white rounded-full" />
-          ) : habit.completedToday ? (
-            <CheckCircle2 className="h-5 w-5" />
-          ) : (
-            <CheckCircle2 className="h-5 w-5" />
-          )}
-        </Button>
+        {isRecordingValue && !habit.completedToday ? (
+          <div className="flex items-center gap-2">
+            <Input
+              type="number"
+              value={recordedValue}
+              onChange={(e) => setRecordedValue(e.target.value === '' ? '' : Number(e.target.value))}
+              placeholder="Value"
+              className="w-24 h-9 text-base"
+              min="0"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleRecordValueAndComplete();
+                }
+              }}
+            />
+            <Button
+              onClick={handleRecordValueAndComplete}
+              disabled={isSaving || isDemo || recordedValue === ''}
+              className="h-9 w-9 rounded-full flex-shrink-0"
+              size="icon"
+            >
+              {isSaving ? (
+                <span className="animate-spin h-4 w-4 border-b-2 border-white rounded-full" />
+              ) : (
+                <CheckCircle2 className="h-5 w-5" />
+              )}
+            </Button>
+          </div>
+        ) : (
+          <Button
+            onClick={handleToggle}
+            disabled={isSaving || isDemo}
+            className={cn(
+              "h-10 w-10 rounded-full flex-shrink-0",
+              habit.completedToday ? "bg-green-500 hover:bg-green-600 text-white" : "bg-primary hover:bg-primary/90 text-primary-foreground"
+            )}
+            size="icon"
+          >
+            {isSaving ? (
+              <span className="animate-spin h-4 w-4 border-b-2 border-white rounded-full" />
+            ) : habit.completedToday ? (
+              <CheckCircle2 className="h-5 w-5" />
+            ) : habit.target_value && !habit.completedToday ? (
+              <InputIcon className="h-5 w-5" />
+            ) : (
+              <CheckCircle2 className="h-5 w-5" />
+            )}
+          </Button>
+        )}
       </CardContent>
+      {showCompletionEffect && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+          <CheckCircle2 className="h-16 w-16 text-green-500 animate-task-complete" />
+        </div>
+      )}
     </Card>
   );
 };
