@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, X, MoreHorizontal, Edit, Flame, CalendarDays, Pencil as PencilIcon, Sparkles } from 'lucide-react';
+import { CheckCircle2, X, MoreHorizontal, Edit, Flame, Info, Pencil as PencilIcon, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { HabitWithLogs } from '@/hooks/useHabits';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { format, parseISO, isSameDay } from 'date-fns';
+import { isSameDay } from 'date-fns';
 import { useSound } from '@/context/SoundContext';
 import { Input } from '@/components/ui/input';
 import { getHabitChallengeSuggestion } from '@/integrations/supabase/habit-api';
@@ -16,6 +16,7 @@ import HabitChallengeDialog from './HabitChallengeDialog';
 import HabitIconDisplay from './HabitIconDisplay';
 import { Progress } from './Progress'; // Import the Progress component
 import HabitHistoryGrid from './HabitHistoryGrid'; // Import the HabitHistoryGrid
+import HabitInfoDialog from './HabitInfoDialog'; // Import the new HabitInfoDialog
 
 interface HabitCardProps {
   habit: HabitWithLogs;
@@ -37,6 +38,7 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
   const [isRecordingValue, setIsRecordingValue] = useState(false);
   const [isChallengeDialogOpen, setIsChallengeDialogOpen] = useState(false);
   const [challengeSuggestion, setChallengeSuggestion] = useState<string | null>(null);
+  const [isInfoDialogOpen, setIsInfoDialogOpen] = useState(false); // New state for info dialog
 
   useEffect(() => {
     setRecordedValue(habit.currentDayRecordedValue ?? '');
@@ -131,32 +133,8 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
           <CardTitle className="text-xl font-bold text-center flex items-center gap-2">
             {habit.name}
           </CardTitle>
-          {habit.currentStreak > 0 && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="flex items-center text-sm font-medium text-muted-foreground">
-                  <Flame className="h-4 w-4 mr-1 text-orange-500" /> {habit.currentStreak} days streak
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>
-                Current Streak: {habit.currentStreak} days
-              </TooltipContent>
-            </Tooltip>
-          )}
         </CardHeader>
         <CardContent className="relative z-10 pt-0 flex flex-col">
-          <div className="space-y-1 text-sm text-muted-foreground mb-3 text-center">
-            {habit.description && <p className="line-clamp-2">{habit.description}</p>}
-            <p className="flex items-center justify-center gap-1">
-              <CalendarDays className="h-3.5 w-3.5" /> Started: {format(parseISO(habit.start_date), 'MMM d, yyyy')}
-            </p>
-            {habit.longestStreak > 0 && (
-              <p className="flex items-center justify-center gap-1">
-                <Flame className="h-3.5 w-3.5 text-orange-500" /> Longest Streak: {habit.longestStreak} days
-              </p>
-            )}
-          </div>
-
           {showProgressSection && (
             <div className="mb-4 space-y-2">
               <div className="flex items-center justify-between text-sm font-medium">
@@ -174,7 +152,7 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
           )}
 
           {/* Habit History Grid */}
-          <div className="w-full flex mb-4"> {/* Changed from 'flex items-center justify-center gap-1 mb-4' */}
+          <div className="w-full flex mb-4 px-1"> {/* Removed justify-center and gap-1, added px-1 */}
             <HabitHistoryGrid
               habitLogs={habit.logs}
               habitStartDate={habit.start_date}
@@ -192,6 +170,9 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
+                  <DropdownMenuItem onSelect={() => setIsInfoDialogOpen(true)}> {/* New Info button */}
+                    <Info className="mr-2 h-4 w-4" /> View Info
+                  </DropdownMenuItem>
                   <DropdownMenuItem onSelect={() => onEdit(habit)}>
                     <Edit className="mr-2 h-4 w-4" /> Edit Habit
                   </DropdownMenuItem>
@@ -272,6 +253,11 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
         isOpen={isChallengeDialogOpen}
         onClose={() => setIsChallengeDialogOpen(false)}
         suggestion={challengeSuggestion}
+      />
+      <HabitInfoDialog
+        isOpen={isInfoDialogOpen}
+        onClose={() => setIsInfoDialogOpen(false)}
+        habit={habit}
       />
     </>
   );
