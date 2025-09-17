@@ -174,6 +174,7 @@ Deno.serve(async (req: Request) => {
       throw new Error("Failed to extract suggestion text from Gemini API response.");
     }
 
+    console.log("Suggest New Habit: Successfully generated suggestion.");
     // Return the generated briefing
     return new Response(JSON.stringify({ suggestion: suggestionText }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -182,7 +183,7 @@ Deno.serve(async (req: Request) => {
 
   } catch (error: any) {
     // Catch and log any errors during the function execution
-    console.error("Error in Edge Function 'suggest-new-habit' (outer catch):", error.message || error);
+    console.error("Error in Edge Function 'suggest-new-habit' (outer catch):", error); // Log the full error object
     return new Response(JSON.stringify({ error: error.message || 'An unexpected error occurred in the Edge Function.' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
