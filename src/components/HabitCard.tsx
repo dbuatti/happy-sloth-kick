@@ -11,7 +11,7 @@ import { useSound } from '@/context/SoundContext';
 import { Input } from '@/components/ui/input';
 import { getHabitChallengeSuggestion } from '@/integrations/supabase/habit-challenge-api';
 import { useAuth } from '@/context/AuthContext';
-import { showLoading, dismissToast, showError, showSuccess } from '@/utils/toast';
+import { showLoading, dismissToast, showError } from '@/utils/toast';
 import HabitChallengeDialog from './HabitChallengeDialog'; // Import the new dialog component
 
 interface HabitCardProps {

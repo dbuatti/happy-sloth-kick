@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { addDays, startOfMonth } from 'date-fns';
 import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
 import HabitSuggestionCard from '@/components/HabitSuggestionCard';
-import { getNewHabitSuggestion } from '@/integrations/supabase/habit-api'; // Corrected import path
+import { getNewHabitSuggestion } from '@/integrations/supabase/habit-suggestion-api'; // Corrected import path
 import { useAuth } from '@/context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; // Import Tabs components
 import HabitAnalyticsDashboard from '@/components/HabitAnalyticsDashboard'; // Import the new analytics dashboard
