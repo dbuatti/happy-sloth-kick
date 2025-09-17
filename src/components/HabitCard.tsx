@@ -180,7 +180,6 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
               habitStartDate={habit.start_date}
               habitColor={habit.color}
               currentDate={currentDate}
-              daysToShow={365} // Display 365 days of history
             />
           </div>
 

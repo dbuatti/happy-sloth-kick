@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { format, eachDayOfInterval, parseISO, isBefore, startOfDay, getDay, addDays, startOfYear, endOfYear, isSameMonth } from 'date-fns';
+import { format, eachDayOfInterval, parseISO, isBefore, startOfDay, getDay, addDays, subWeeks, addWeeks, startOfWeek, endOfWeek, isSameMonth } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { HabitLog } from '@/integrations/supabase/habit-api';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -29,43 +29,29 @@ const HabitHistoryGrid: React.FC<HabitHistoryGridProps> = ({
     const today = startOfDay(currentDate);
     const habitStartActualDate = parseISO(habitStartDate);
 
-    // Define the start and end of the current calendar year
-    const yearStart = startOfYear(today);
-    const yearEnd = endOfYear(today);
+    // Calculate the start and end of the 30-week window
+    // Start 15 weeks before the Monday of the current week
+    const displayWindowStart = subWeeks(startOfWeek(today, { weekStartsOn: 1 }), 15);
+    // End 14 weeks after the Sunday of the current week (making it 15 weeks before + current week + 14 weeks after = 30 weeks total)
+    const displayWindowEnd = addWeeks(endOfWeek(today, { weekStartsOn: 1 }), 14);
 
-    // Generate all days in the interval from yearStart to yearEnd
+    // Generate all days in the interval
     let daysInInterval = eachDayOfInterval({
-        start: yearStart,
-        end: yearEnd,
+        start: displayWindowStart,
+        end: displayWindowEnd,
     });
 
-    // Pad the beginning of the interval to start on a Monday
-    // getDay: 0=Sun, 1=Mon, ..., 6=Sat
-    let firstDayInInterval = daysInInterval[0];
-    let dayOfWeekOfFirstDay = getDay(firstDayInInterval); // 0=Sun, 1=Mon
-    let daysToPrepend = (dayOfWeekOfFirstDay === 0) ? 6 : (dayOfWeekOfFirstDay - 1); // If Sunday, need 6 days before. If Monday, 0 days. If Tuesday, 1 day.
-
-    for (let i = 0; i < daysToPrepend; i++) {
-        daysInInterval.unshift(addDays(firstDayInInterval, -(daysToPrepend - i)));
-    }
-
-    // Pad the end of the interval to end on a Sunday
-    let lastDayInInterval = daysInInterval[daysInInterval.length - 1];
-    let dayOfWeekOfLastDay = getDay(lastDayInInterval);
-    let daysToAppend = (dayOfWeekOfLastDay === 0) ? 0 : (7 - dayOfWeekOfLastDay); // If Sunday, 0 days. If Monday, 6 days.
-
-    for (let i = 0; i < daysToAppend; i++) {
-        daysInInterval.push(addDays(lastDayInInterval, i + 1));
-    }
-
-    // Now, group these days into weeks
-    const weeks: (DayData | null)[][] = [];
-    let currentWeek: (DayData | null)[] = [];
+    // The padding logic is now mostly handled by startOfWeek/endOfWeek,
+    // but we ensure the array is exactly aligned to weeks.
+    // (This part of the code is largely kept from previous versions but the date range is now fixed)
 
     const logsMap = new Map<string, HabitLog>();
     habitLogs.forEach(log => {
       logsMap.set(log.log_date, log);
     });
+
+    const weeks: (DayData | null)[][] = [];
+    let currentWeek: (DayData | null)[] = [];
 
     daysInInterval.forEach((day) => {
         const formattedDay = format(day, 'yyyy-MM-dd');
