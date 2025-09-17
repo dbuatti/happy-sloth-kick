@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"; // Card components used for habit display
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, X, MoreHorizontal, Edit, Flame, CalendarDays, Pencil as PencilIcon, Sparkles, Info } from 'lucide-react';
+import { CheckCircle2, X, MoreHorizontal, Edit, Flame, CalendarDays, Pencil as PencilIcon, Sparkles, Info, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { HabitWithLogs } from '@/hooks/useHabits';
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"; // Tooltip components used for info tooltips
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { format, parseISO, isSameDay } from 'date-fns';
 import { useSound } from '@/context/SoundContext';
@@ -14,9 +14,9 @@ import { useAuth } from '@/context/AuthContext';
 import { showLoading, dismissToast, showError } from '@/utils/toast';
 import HabitChallengeDialog from './HabitChallengeDialog';
 import HabitIconDisplay from './HabitIconDisplay';
-import { Progress } from './Progress'; // Import the Progress component
-import HabitHistoryGrid from './HabitHistoryGrid'; // Import the HabitHistoryGrid
-import HabitInfoDialog from './HabitInfoDialog'; // Import the new HabitInfoDialog
+import { Progress } from './Progress';
+import HabitHistoryGrid from './HabitHistoryGrid';
+import HabitInfoDialog from './HabitInfoDialog';
 
 interface HabitCardProps {
   habit: HabitWithLogs;
@@ -38,7 +38,7 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
   const [isRecordingValue, setIsRecordingValue] = useState(false);
   const [isChallengeDialogOpen, setIsChallengeDialogOpen] = useState(false);
   const [challengeSuggestion, setChallengeSuggestion] = useState<string | null>(null);
-  const [isInfoDialogOpen, setIsInfoDialogOpen] = useState(false); // New state for info dialog
+  const [isInfoDialogOpen, setIsInfoDialogOpen] = useState(false);
 
   useEffect(() => {
     setRecordedValue(habit.currentDayRecordedValue ?? '');
@@ -128,41 +128,74 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
         isDemo && "opacity-70 cursor-not-allowed"
       )}>
         <div className="absolute inset-0 rounded-xl" style={{ backgroundColor: habit.color, opacity: completedToday ? 0.1 : 0.05 }} />
-        <CardHeader className="flex flex-col items-center justify-center space-y-2 pb-2 relative z-10">
-          <HabitIconDisplay iconName={habit.icon} color={habit.color} size="lg" />
-          <CardTitle className="text-xl font-bold text-center flex items-center gap-2">
-            {habit.name}
-          </CardTitle>
-          {habit.currentStreak > 0 && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="flex items-center text-sm font-medium text-muted-foreground">
-                  <Flame className="h-4 w-4 mr-1 text-orange-500" /> {habit.currentStreak} days streak
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>
-                Current Streak: {habit.currentStreak} days
-              </TooltipContent>
-            </Tooltip>
+        
+        {/* Header: Icon, Name, Description, Dropdown */}
+        <div className="flex items-center justify-between relative z-10 mb-3">
+          <div className="flex items-center gap-3">
+            <HabitIconDisplay iconName={habit.icon} color={habit.color} size="md" className="flex-shrink-0" />
+            <div>
+              <CardTitle className="text-lg font-bold">{habit.name}</CardTitle>
+              {habit.description && <p className="text-xs text-muted-foreground line-clamp-1">{habit.description}</p>}
+            </div>
+          </div>
+          {!isDemo && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => setIsInfoDialogOpen(true)}>
+                  <Info className="mr-2 h-4 w-4" /> View Info
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => onEdit(habit)}>
+                  <Edit className="mr-2 h-4 w-4" /> Edit Habit
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={handleSuggestChallenge}>
+                  <Sparkles className="mr-2 h-4 w-4" /> Suggest Challenge
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => handleToggleCompletionForDay(currentDate, true, recordedValue === '' ? null : Number(recordedValue))} disabled={completedToday}>
+                  <CheckCircle2 className="mr-2 h-4 w-4" /> Mark Complete (Today)
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => handleToggleCompletionForDay(currentDate, false)} disabled={!completedToday}>
+                  <X className="mr-2 h-4 w-4" /> Mark Incomplete (Today)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
-        </CardHeader>
+        </div>
+
         <CardContent className="relative z-10 pt-0 flex flex-col">
-          <div className="space-y-1 text-sm text-muted-foreground mb-3 text-center">
-            {habit.description && <p className="line-clamp-2">{habit.description}</p>}
-            <p className="flex items-center justify-center gap-1">
-              <CalendarDays className="h-3.5 w-3.5" /> Started: {format(parseISO(habit.start_date), 'MMM d, yyyy')}
-            </p>
-            {habit.longestStreak > 0 && (
-              <p className="flex items-center justify-center gap-1">
-                <Flame className="h-3.5 w-3.5 text-orange-500" /> Longest Streak: {habit.longestStreak} days
-              </p>
+          {/* Key Stats */}
+          <div className="grid grid-cols-2 gap-y-1.5 gap-x-4 text-sm text-muted-foreground mb-4">
+            <div className="flex items-center gap-1">
+              <Flame className="h-3.5 w-3.5 text-orange-500" />
+              <span>Current Streak: <span className="font-semibold text-foreground">{habit.currentStreak} days</span></span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Flame className="h-3.5 w-3.5 text-orange-500" />
+              <span>Longest Streak: <span className="font-semibold text-foreground">{habit.longestStreak} days</span></span>
+            </div>
+            <div className="flex items-center gap-1">
+              <CalendarDays className="h-3.5 w-3.5" />
+              <span>Started: <span className="font-semibold text-foreground">{format(parseISO(habit.start_date), 'MMM d, yyyy')}</span></span>
+            </div>
+            {showProgressSection && (
+              <div className="flex items-center gap-1">
+                <Target className="h-3.5 w-3.5" />
+                <span>Target: <span className="font-semibold text-foreground">{getUnitDisplay(habit.target_value, habit.unit)}</span></span>
+              </div>
             )}
           </div>
 
+          {/* Progress Bar (Conditional) */}
           {showProgressSection && (
-            <div className="mb-4 space-y-2">
-              <div className="flex items-center justify-between text-sm font-medium">
-                <span className="text-muted-foreground">Progress</span>
+            <div className="mb-4 space-y-1">
+              <div className="flex items-center justify-between text-xs font-medium">
+                <span className="text-muted-foreground">Progress Today</span>
                 <span className="text-primary">
                   {getUnitDisplay(habit.currentDayRecordedValue || 0, habit.unit)} / {getUnitDisplay(habit.target_value, habit.unit)}
                 </span>
@@ -176,45 +209,19 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
           )}
 
           {/* Habit History Grid */}
-          <div className="w-full flex mb-4 px-4">
+          <div className="w-full flex justify-center mb-4">
             <HabitHistoryGrid
               habitLogs={habit.logs}
               habitStartDate={habit.start_date}
               habitColor={habit.color}
               currentDate={currentDate}
-              weeksToShow={13} // Displaying approximately 90 days (13 weeks) of history
+              weeksToShow={30}
+              weekStartsOn={1} // Monday
             />
           </div>
 
-          <div className="flex items-center justify-between mt-auto pt-4 border-t border-border">
-            {!isDemo && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
-                    <MoreHorizontal className="h-5 w-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  <DropdownMenuItem onSelect={() => setIsInfoDialogOpen(true)}>
-                    <Info className="mr-2 h-4 w-4" /> View Info
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => onEdit(habit)}>
-                    <Edit className="mr-2 h-4 w-4" /> Edit Habit
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onSelect={handleSuggestChallenge}>
-                    <Sparkles className="mr-2 h-4 w-4" /> Suggest Challenge
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onSelect={() => handleToggleCompletionForDay(currentDate, true, recordedValue === '' ? null : Number(recordedValue))} disabled={completedToday}>
-                    <CheckCircle2 className="mr-2 h-4 w-4" /> Mark Complete (Today)
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => handleToggleCompletionForDay(currentDate, false)} disabled={!completedToday}>
-                    <X className="mr-2 h-4 w-4" /> Mark Incomplete (Today)
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+          {/* Main Action Area */}
+          <div className="flex items-center justify-center mt-auto pt-4 border-t border-border">
             {isRecordingValue && !completedToday ? (
               <div className="flex items-center gap-2">
                 <Input

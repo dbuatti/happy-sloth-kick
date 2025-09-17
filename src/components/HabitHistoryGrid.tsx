@@ -24,9 +24,9 @@ const HabitHistoryGrid: React.FC<HabitHistoryGridProps> = ({
   const dayLabels = useMemo(() => {
     const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     if (weekStartsOn === 0) { // If week starts on Sunday
-      return ['Sun', ...labels.slice(0, 6)];
+      return ['S', 'M', 'T', 'W', 'T', 'F', 'S']; // Shorter labels
     }
-    return labels;
+    return ['M', 'T', 'W', 'T', 'F', 'S', 'S']; // Shorter labels
   }, [weekStartsOn]);
 
   const gridDays = useMemo(() => {
@@ -69,18 +69,25 @@ const HabitHistoryGrid: React.FC<HabitHistoryGridProps> = ({
   }, [habitLogs, habitStartDate, currentDate, weeksToShow, weekStartsOn]);
 
   const monthHeaders = useMemo(() => {
-    const headers: { month: string; weekIndex: number }[] = [];
-    let lastMonth: string | null = null;
+    const headers: { month: string; weekIndex: number; span: number }[] = [];
+    let currentMonth: string | null = null;
+    let currentMonthStartWeekIndex = 0;
 
     for (let i = 0; i < weeksToShow; i++) {
       const firstDayOfWeek = gridDays[i * 7]?.date;
       if (!firstDayOfWeek) continue;
 
-      const currentMonth = format(firstDayOfWeek, 'MMM');
-      if (currentMonth !== lastMonth) {
-        headers.push({ month: currentMonth, weekIndex: i });
-        lastMonth = currentMonth;
+      const month = format(firstDayOfWeek, 'MMM');
+      if (month !== currentMonth) {
+        if (currentMonth !== null) {
+          headers.push({ month: currentMonth, weekIndex: currentMonthStartWeekIndex, span: i - currentMonthStartWeekIndex });
+        }
+        currentMonth = month;
+        currentMonthStartWeekIndex = i;
       }
+    }
+    if (currentMonth !== null) {
+      headers.push({ month: currentMonth, weekIndex: currentMonthStartWeekIndex, span: weeksToShow - currentMonthStartWeekIndex });
     }
     return headers;
   }, [gridDays, weeksToShow]);
@@ -92,21 +99,25 @@ const HabitHistoryGrid: React.FC<HabitHistoryGridProps> = ({
         {monthHeaders.map((header) => (
           <div
             key={header.month + header.weekIndex}
-            className="absolute text-xs text-muted-foreground"
-            style={{ left: `calc((100% / ${weeksToShow}) * ${header.weekIndex} + 20px)` }} // Adjust 20px for week number column width
+            className="absolute text-xs text-muted-foreground text-center"
+            style={{
+              left: `calc((100% / ${weeksToShow}) * ${header.weekIndex} + 20px)`, // Offset for day labels column
+              width: `calc((100% / ${weeksToShow}) * ${header.span} - 20px)`, // Adjust width to span weeks
+              transform: `translateX(-50%)`, // Center text within its span
+            }}
           >
             {header.month}
           </div>
         ))}
       </div>
 
-      <div className="grid gap-px" style={{ gridTemplateColumns: `20px repeat(7, minmax(0, 1fr))` }}> {/* 20px for week numbers */}
+      <div className="grid grid-cols-[auto_repeat(7,minmax(0,1fr))] gap-0.5">
         {/* Empty corner for day labels */}
         <div className="h-4 w-4"></div> 
         {/* Day Labels */}
         {dayLabels.map(label => (
           <div key={label} className="text-xs text-muted-foreground text-center font-medium">
-            {label.charAt(0)}
+            {label}
           </div>
         ))}
 
