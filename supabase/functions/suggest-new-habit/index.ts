@@ -83,7 +83,7 @@ serve(async (req: Request) => {
     if (logsError) throw logsError;
     console.log("Suggest New Habit: Fetched logs:", logs);
 
-    // Calculate completion rates (moved this section up)
+    // Calculate completion rates
     const habitCompletionData: { [habitId: string]: { completedDays: number; totalDays: number } } = {};
     activeHabitIds.forEach(id => {
       habitCompletionData[id] = { completedDays: 0, totalDays: 0 };
@@ -109,6 +109,7 @@ serve(async (req: Request) => {
       }
     }
 
+    // Ensure averageCompletionRate is a valid number, defaulting to 0 if no data
     const averageCompletionRate = totalHabitsWithData > 0 ? (totalCompletionRate / totalHabitsWithData) * 100 : 0;
     console.log("Suggest New Habit: Calculated average completion rate:", averageCompletionRate);
 
