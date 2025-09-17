@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { HabitWithLogs } from '@/hooks/useHabits';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { format, parseISO, isSameDay } from 'date-fns';
+import { format, parseISO, isSameDay, eachDayOfInterval, subDays, isBefore, startOfDay } from 'date-fns';
 import { useSound } from '@/context/SoundContext';
 import { Input } from '@/components/ui/input';
 import { getHabitChallengeSuggestion } from '@/integrations/supabase/habit-api';
@@ -121,78 +121,107 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
   return (
     <>
       <Card className={cn(
-        "relative group shadow-lg rounded-xl transition-all duration-200 ease-in-out overflow-hidden p-4",
+        "relative group shadow-lg rounded-xl transition-all duration-200 ease-in-out overflow-hidden p-4 flex", // Added flex to make it horizontal
         completedToday ? "bg-green-500/10 border-green-500/30" : "bg-card border-border hover:shadow-xl",
         isDemo && "opacity-70 cursor-not-allowed"
       )}>
         <div className="absolute inset-0 rounded-xl" style={{ backgroundColor: habit.color, opacity: completedToday ? 0.1 : 0.05 }} />
-        <CardHeader className="flex flex-col items-center justify-center space-y-2 pb-2 relative z-10">
-          <HabitIconDisplay iconName={habit.icon} color={habit.color} size="lg" />
-          <CardTitle className="text-xl font-bold text-center flex items-center gap-2">
-            {habit.name}
-          </CardTitle>
-          {habit.currentStreak > 0 && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="flex items-center text-sm font-medium text-muted-foreground">
-                  <Flame className="h-4 w-4 mr-1 text-orange-500" /> {habit.currentStreak} days streak
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>
-                Current Streak: {habit.currentStreak} days
-              </TooltipContent>
-            </Tooltip>
-          )}
-        </CardHeader>
-        <CardContent className="relative z-10 pt-0 flex flex-col">
-          <div className="space-y-1 text-sm text-muted-foreground mb-3 text-center">
-            {habit.description && <p className="line-clamp-2">{habit.description}</p>}
-            <p className="flex items-center justify-center gap-1">
-              <CalendarDays className="h-3.5 w-3.5" /> Started: {format(parseISO(habit.start_date), 'MMM d, yyyy')}
-            </p>
-            {habit.longestStreak > 0 && (
-              <p className="flex items-center justify-center gap-1">
-                <Flame className="h-3.5 w-3.5 text-orange-500" /> Longest Streak: {habit.longestStreak} days
-              </p>
+        
+        {/* Left Section: Icon and Main Action Button */}
+        <div className="flex flex-col items-center justify-between pr-4 relative z-10 flex-shrink-0">
+          <HabitIconDisplay iconName={habit.icon} color={habit.color} size="md" />
+          <div className="mt-auto"> {/* Pushes button to the bottom */}
+            {isRecordingValue && !completedToday ? (
+              <div className="flex flex-col items-center gap-1">
+                <Input
+                  type="number"
+                  value={recordedValue}
+                  onChange={(e) => setRecordedValue(e.target.value === '' ? '' : Number(e.target.value))}
+                  placeholder="Val"
+                  className="w-16 h-8 text-sm rounded-md"
+                  min="0"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleRecordValueAndComplete();
+                    }
+                  }}
+                />
+                <Button
+                  onClick={handleRecordValueAndComplete}
+                  disabled={isSaving || isDemo || recordedValue === ''}
+                  className="h-8 w-8 rounded-full flex-shrink-0"
+                  size="icon"
+                >
+                  {isSaving ? (
+                    <span className="animate-spin h-3 w-3 border-b-2 border-white rounded-full" />
+                  ) : (
+                    <CheckCircle2 className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            ) : (
+              <Button
+                onClick={handleMainCompletionButtonClick}
+                disabled={isSaving || isDemo}
+                className={cn(
+                  "h-10 w-10 rounded-full flex-shrink-0 shadow-md",
+                  completedToday ? "bg-green-500 hover:bg-green-600 text-white" : "bg-primary hover:bg-primary/90 text-primary-foreground"
+                )}
+                size="icon"
+              >
+                {isSaving ? (
+                  <span className="animate-spin h-4 w-4 border-b-2 border-white rounded-full" />
+                ) : completedToday ? (
+                  <CheckCircle2 className="h-5 w-5" />
+                ) : showProgressSection ? (
+                  <PencilIcon className="h-5 w-5" />
+                ) : (
+                  <CheckCircle2 className="h-5 w-5" />
+                )}
+              </Button>
             )}
           </div>
+        </div>
 
-          {showProgressSection && (
-            <div className="mb-4 space-y-2">
-              <div className="flex items-center justify-between text-sm font-medium">
-                <span className="text-muted-foreground">Progress</span>
-                <span className="text-primary">
-                  {getUnitDisplay(habit.currentDayRecordedValue || 0, habit.unit)} / {getUnitDisplay(habit.target_value, habit.unit)}
-                </span>
-              </div>
-              <Progress
-                value={progressValue}
-                className="h-2 rounded-full"
-                indicatorClassName={completedToday ? "bg-green-500" : "bg-primary"}
-              />
-            </div>
-          )}
-
-          {/* Habit History Grid */}
-          <div className="flex items-center justify-center gap-1 mb-4">
-            <HabitHistoryGrid
-              habitLogs={habit.logs}
-              habitStartDate={habit.start_date}
-              habitColor={habit.color}
-              currentDate={currentDate}
-              daysToShow={90} // Display 90 days of history
-            />
-          </div>
-
-          <div className="flex items-center justify-between mt-auto pt-4 border-t border-border">
+        {/* Right Section: Details, Progress, History */}
+        <div className="flex-grow flex flex-col relative z-10">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-0 pb-2">
+            <CardTitle className="text-lg font-bold flex items-center gap-2">
+              {habit.name}
+              {(habit.currentStreak > 0 || habit.longestStreak > 0) && (
+                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                  {habit.currentStreak > 0 && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="flex items-center gap-1">
+                          <Flame className="h-3.5 w-3.5 text-orange-500" /> {habit.currentStreak}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>Current Streak</TooltipContent>
+                    </Tooltip>
+                  )}
+                  {habit.longestStreak > 0 && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="flex items-center gap-1">
+                          <Flame className="h-3.5 w-3.5 text-orange-500" /> {habit.longestStreak} (Max)
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>Longest Streak</TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
+              )}
+            </CardTitle>
             {!isDemo && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
                     <MoreHorizontal className="h-5 w-5" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
+                <DropdownMenuContent align="end">
                   <DropdownMenuItem onSelect={() => onEdit(habit)}>
                     <Edit className="mr-2 h-4 w-4" /> Edit Habit
                   </DropdownMenuItem>
@@ -210,58 +239,52 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
-            {isRecordingValue && !completedToday ? (
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  value={recordedValue}
-                  onChange={(e) => setRecordedValue(e.target.value === '' ? '' : Number(e.target.value))}
-                  placeholder="Value"
-                  className="w-24 h-9 text-base rounded-xl"
-                  min="0"
-                  autoFocus
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handleRecordValueAndComplete();
-                    }
-                  }}
+          </CardHeader>
+          <CardContent className="p-0 flex-grow flex flex-col justify-between">
+            <div className="space-y-1 text-sm text-muted-foreground mb-2">
+              {habit.description && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <p className="line-clamp-1">{habit.description}</p>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    {habit.description}
+                  </TooltipContent>
+                </Tooltip>
+              )}
+              <p className="flex items-center gap-1 text-xs">
+                <CalendarDays className="h-3 w-3" /> Started: {format(parseISO(habit.start_date), 'MMM d, yyyy')}
+              </p>
+            </div>
+
+            {showProgressSection && (
+              <div className="mb-2 space-y-1">
+                <div className="flex items-center justify-between text-xs font-medium">
+                  <span className="text-muted-foreground">Progress</span>
+                  <span className="text-primary">
+                    {getUnitDisplay(habit.currentDayRecordedValue || 0, habit.unit)} / {getUnitDisplay(habit.target_value, habit.unit)}
+                  </span>
+                </div>
+                <Progress
+                  value={progressValue}
+                  className="h-2 rounded-full"
+                  indicatorClassName={completedToday ? "bg-green-500" : "bg-primary"}
                 />
-                <Button
-                  onClick={handleRecordValueAndComplete}
-                  disabled={isSaving || isDemo || recordedValue === ''}
-                  className="h-10 w-10 rounded-full flex-shrink-0"
-                  size="icon"
-                >
-                  {isSaving ? (
-                    <span className="animate-spin h-4 w-4 border-b-2 border-white rounded-full" />
-                  ) : (
-                    <CheckCircle2 className="h-5 w-5" />
-                  )}
-                </Button>
               </div>
-            ) : (
-              <Button
-                onClick={handleMainCompletionButtonClick}
-                disabled={isSaving || isDemo}
-                className={cn(
-                  "h-12 w-12 rounded-full flex-shrink-0 shadow-md",
-                  completedToday ? "bg-green-500 hover:bg-green-600 text-white" : "bg-primary hover:bg-primary/90 text-primary-foreground"
-                )}
-                size="icon"
-              >
-                {isSaving ? (
-                  <span className="animate-spin h-5 w-5 border-b-2 border-white rounded-full" />
-                ) : completedToday ? (
-                  <CheckCircle2 className="h-6 w-6" />
-                ) : showProgressSection ? (
-                  <PencilIcon className="h-6 w-6" />
-                ) : (
-                  <CheckCircle2 className="h-6 w-6" />
-                )}
-              </Button>
             )}
-          </div>
-        </CardContent>
+
+            {/* Habit History Grid */}
+            <div className="flex items-center justify-start gap-1 mt-auto pt-2 border-t border-border">
+              <HabitHistoryGrid
+                habitLogs={habit.logs}
+                habitStartDate={habit.start_date}
+                habitColor={habit.color}
+                currentDate={currentDate}
+                daysToShow={90} // Display 90 days of history
+              />
+            </div>
+          </CardContent>
+        </div>
         {showCompletionEffect && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
             <CheckCircle2 className="h-16 w-16 text-green-500 animate-task-complete" />
