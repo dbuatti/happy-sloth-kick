@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { format, eachDayOfInterval, parseISO, subDays, isBefore, startOfDay } from 'date-fns';
+import { format, eachDayOfInterval, parseISO, subDays, isBefore, startOfDay, isSameMonth } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { HabitLog } from '@/integrations/supabase/habit-api';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -22,7 +22,7 @@ const HabitHistoryGrid: React.FC<HabitHistoryGridProps> = ({
   const historyDays = useMemo(() => {
     const today = startOfDay(currentDate);
     const startDate = parseISO(habitStartDate);
-    const oldestDayToShow = subDays(today, daysToShow - 1); // Calculate the oldest day to display
+    const oldestDayToShow = subDays(today, daysToShow - 1);
 
     const intervalStart = isBefore(oldestDayToShow, startDate) ? startDate : oldestDayToShow;
     
@@ -31,39 +31,66 @@ const HabitHistoryGrid: React.FC<HabitHistoryGridProps> = ({
       end: today,
     }).reverse(); // Show most recent days first
 
-    const logsMap = new Map<string, boolean>();
+    const logsMap = new Map<string, HabitLog>();
     habitLogs.forEach(log => {
-      logsMap.set(log.log_date, log.is_completed);
+      logsMap.set(log.log_date, log);
     });
 
-    return days.map(day => {
+    return days.map((day, index) => {
       const formattedDay = format(day, 'yyyy-MM-dd');
-      const isCompleted = logsMap.get(formattedDay) === true;
-      const isFutureDay = isBefore(today, day); // Check if the day is in the future relative to currentDate
+      const log = logsMap.get(formattedDay);
+      const isCompleted = log?.is_completed === true;
+      const isFutureDay = isBefore(today, day);
+      
+      // Determine if this day is a month boundary for display purposes
+      // It's a boundary if it's the oldest day in the range, or if the next day (chronologically earlier) is in a different month
+      const isMonthBoundary = (index === days.length - 1) || 
+                              (index < days.length - 1 && !isSameMonth(day, days[index + 1].date));
 
       return {
         date: day,
         isCompleted,
         isFutureDay,
+        log,
+        isMonthBoundary,
       };
     });
   }, [habitLogs, habitStartDate, currentDate, daysToShow]);
 
   return (
-    <div className="flex flex-row-reverse gap-0.5 mt-3 overflow-x-auto pb-1"> {/* Changed to flex-row-reverse with overflow-x-auto */}
-      {historyDays.map((day, index) => (
+    <div className="flex flex-row-reverse gap-0.5 mt-3 overflow-x-auto pb-1">
+      {historyDays.map((dayData, index) => (
         <Tooltip key={index}>
           <TooltipTrigger asChild>
             <div
               className={cn(
-                "h-3 w-3 rounded-sm transition-colors duration-100 flex-shrink-0", // Small rounded squares, flex-shrink-0 to prevent shrinking
-                day.isFutureDay ? "bg-muted/20" : (day.isCompleted ? "" : "bg-muted/40") // Lighter for future, muted for incomplete
+                "h-3 w-3 rounded-sm transition-colors duration-100 flex-shrink-0 relative",
+                dayData.isFutureDay ? "bg-muted/20" : (dayData.isCompleted ? "" : "bg-muted/40"),
+                dayData.isMonthBoundary && "border-l border-muted-foreground/30" // Subtle border for month start
               )}
-              style={{ backgroundColor: day.isCompleted ? habitColor : undefined, opacity: day.isCompleted ? 0.8 : undefined }} // Use habitColor for completed, slightly transparent
-            />
+              style={{ backgroundColor: dayData.isCompleted ? habitColor : undefined, opacity: dayData.isCompleted ? 0.8 : undefined }}
+            >
+              {dayData.isMonthBoundary && (
+                <span className="absolute -top-4 left-0 text-xs text-muted-foreground whitespace-nowrap -translate-x-1/2">
+                  {format(dayData.date, 'MMM')}
+                </span>
+              )}
+            </div>
           </TooltipTrigger>
           <TooltipContent>
-            {format(day.date, 'EEE, MMM d')} - {day.isFutureDay ? 'Future' : (day.isCompleted ? 'Completed' : 'Incomplete')}
+            <p className="font-semibold">{format(dayData.date, 'EEE, MMM d, yyyy')}</p>
+            {dayData.isFutureDay ? (
+              <p>Future</p>
+            ) : dayData.log ? (
+              <>
+                <p>Status: {dayData.isCompleted ? 'Completed' : 'Incomplete'}</p>
+                {dayData.log.value_recorded !== null && (
+                  <p>Value: {dayData.log.value_recorded}</p>
+                )}
+              </>
+            ) : (
+              <p>No log for this day</p>
+            )}
           </TooltipContent>
         </Tooltip>
       ))}
