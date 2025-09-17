@@ -21,13 +21,13 @@ const HabitHistoryGrid: React.FC<HabitHistoryGridProps> = ({
 }) => {
   const historyDays = useMemo(() => {
     const today = startOfDay(currentDate);
-    const startDate = parseISO(habitStartDate);
-    const oldestDayToShow = subDays(today, daysToShow - 1);
+    const habitStartActualDate = parseISO(habitStartDate); // Actual start date of the habit
 
-    const intervalStart = isBefore(oldestDayToShow, startDate) ? startDate : oldestDayToShow;
+    // Always calculate the start of the display window (e.g., 365 days ending today)
+    const displayStartDate = subDays(today, daysToShow - 1); 
     
     const days = eachDayOfInterval({
-      start: intervalStart,
+      start: displayStartDate, // Use the fixed display start date
       end: today,
     }).reverse(); // Show most recent days first
 
@@ -41,11 +41,11 @@ const HabitHistoryGrid: React.FC<HabitHistoryGridProps> = ({
       const log = logsMap.get(formattedDay);
       const isCompleted = log?.is_completed === true;
       const isFutureDay = isBefore(today, day);
-      
+      const isBeforeHabitStart = isBefore(day, habitStartActualDate); // New flag
+
       // Determine if this day is a month boundary for display purposes
-      // It's a boundary if it's the oldest day in the range, or if the next day (chronologically earlier) is in a different month
       const isMonthBoundary = (index === days.length - 1) || 
-                              (index < days.length - 1 && !isSameMonth(day, days[index + 1]));
+                              (index < days.length - 1 && !isSameMonth(day, days[index + 1].date));
 
       return {
         date: day,
@@ -53,6 +53,7 @@ const HabitHistoryGrid: React.FC<HabitHistoryGridProps> = ({
         isFutureDay,
         log,
         isMonthBoundary,
+        isBeforeHabitStart, // Include new flag
       };
     });
   }, [habitLogs, habitStartDate, currentDate, daysToShow]);
@@ -65,10 +66,18 @@ const HabitHistoryGrid: React.FC<HabitHistoryGridProps> = ({
             <div
               className={cn(
                 "h-3 w-3 rounded-sm transition-colors duration-100 flex-shrink-0 relative",
-                dayData.isFutureDay ? "bg-muted/20" : (dayData.isCompleted ? "" : "bg-muted/40"),
                 dayData.isMonthBoundary && "border-l border-muted-foreground/30" // Subtle border for month start
               )}
-              style={{ backgroundColor: dayData.isCompleted ? habitColor : undefined, opacity: dayData.isCompleted ? 0.8 : undefined }}
+              style={{
+                backgroundColor: dayData.isBeforeHabitStart
+                  ? 'hsl(var(--muted))' // Very muted for days before habit started
+                  : dayData.isFutureDay
+                  ? 'hsl(var(--muted)/20)' // Lighter muted for future days
+                  : dayData.isCompleted
+                  ? habitColor // Habit color for completed
+                  : 'hsl(var(--muted)/40)', // Muted for incomplete/skipped
+                opacity: dayData.isBeforeHabitStart ? 0.5 : (dayData.isCompleted ? 0.8 : 1), // Adjust opacity
+              }}
             >
               {dayData.isMonthBoundary && (
                 <span className="absolute -top-4 left-0 text-xs text-muted-foreground whitespace-nowrap -translate-x-1/2">
@@ -79,7 +88,9 @@ const HabitHistoryGrid: React.FC<HabitHistoryGridProps> = ({
           </TooltipTrigger>
           <TooltipContent>
             <p className="font-semibold">{format(dayData.date, 'EEE, MMM d, yyyy')}</p>
-            {dayData.isFutureDay ? (
+            {dayData.isBeforeHabitStart ? (
+              <p>Before Habit Start</p>
+            ) : dayData.isFutureDay ? (
               <p>Future</p>
             ) : dayData.log ? (
               <>
