@@ -118,23 +118,6 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
   const showProgressSection = habit.target_value !== null && habit.unit !== null && habit.unit !== 'none-unit';
   const progressValue = showProgressSection && habit.target_value ? ((habit.currentDayRecordedValue || 0) / habit.target_value) * 100 : 0;
 
-  const last7Days = eachDayOfInterval({
-    start: subDays(currentDate, 6),
-    end: currentDate,
-  }).map(day => {
-    const formattedDay = format(day, 'yyyy-MM-dd');
-    const isCompleted = habit.logs.some(log => isSameDay(parseISO(log.log_date), day) && log.is_completed);
-    const isFutureDay = isBefore(startOfDay(currentDate), startOfDay(day));
-    const isHabitStarted = !isBefore(day, parseISO(habit.start_date));
-
-    return {
-      date: day,
-      isCompleted,
-      isFutureDay,
-      isHabitStarted,
-    };
-  });
-
   return (
     <>
       <Card className={cn(
@@ -190,31 +173,15 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
             </div>
           )}
 
-          {/* Interactive 7-day history grid - now minimalist circles */}
+          {/* Habit History Grid */}
           <div className="flex items-center justify-center gap-1 mb-4">
-            {last7Days.map((day, index) => (
-              <Tooltip key={index}>
-                <TooltipTrigger asChild>
-                  <div
-                    className={cn(
-                      "h-6 w-6 rounded-full flex items-center justify-center text-xs font-semibold transition-colors duration-100 cursor-pointer",
-                      day.isFutureDay && "opacity-50 cursor-not-allowed",
-                      !day.isHabitStarted && "opacity-30 cursor-not-allowed",
-                      isSameDay(day.date, currentDate) && "ring-2 ring-primary ring-offset-2",
-                      day.isCompleted ? "bg-green-500/20 text-green-600 hover:bg-green-500/30" : "bg-muted/50 text-muted-foreground hover:bg-muted/70"
-                    )}
-                    onClick={() => !day.isFutureDay && day.isHabitStarted && handleToggleCompletionForDay(day.date, !day.isCompleted)}
-                    role="button"
-                    aria-label={`${format(day.date, 'EEE, MMM d')} - ${day.isCompleted ? 'Completed' : 'Incomplete'}`}
-                  >
-                    {format(day.date, 'dd')}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {format(day.date, 'EEE, MMM d')} - {day.isFutureDay ? 'Future' : (day.isHabitStarted ? (day.isCompleted ? 'Completed' : 'Incomplete') : 'Not started')}
-                </TooltipContent>
-              </Tooltip>
-            ))}
+            <HabitHistoryGrid
+              habitLogs={habit.logs}
+              habitStartDate={habit.start_date}
+              habitColor={habit.color}
+              currentDate={currentDate}
+              daysToShow={90} // Display 90 days of history
+            />
           </div>
 
           <div className="flex items-center justify-between mt-auto pt-4 border-t border-border">
