@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import HabitAnalyticsDashboard from '@/components/HabitAnalyticsDashboard';
 import { DateRange } from 'react-day-picker';
 import { Label } from '@/components/ui/label';
-import HabitSuggestionDialog from '@/components/HabitSuggestionDialog';
+import HabitSuggestionDialog from '@/components/HabitSuggestionDialog'; // Import the new dialog
 
 interface HabitTrackerPageProps {
   isDemo?: boolean;
@@ -50,16 +50,16 @@ const HabitTrackerPage: React.FC<HabitTrackerPageProps> = ({ isDemo = false, dem
   
   const [habitSuggestion, setHabitSuggestion] = useState<string | null>(null);
   const [isLoadingSuggestion, setIsLoadingSuggestion] = useState(false);
-  const [isSuggestionDialogOpen, setIsSuggestionDialogOpen] = useState(false);
+  const [isSuggestionDialogOpen, setIsSuggestionDialogOpen] = useState(false); // New state for dialog
 
   const handleFetchSuggestion = async () => {
     if (!userId || isDemo) {
       setHabitSuggestion(null);
-      setIsSuggestionDialogOpen(true);
+      setIsSuggestionDialogOpen(true); // Open dialog even if no suggestion in demo
       return;
     }
     setIsLoadingSuggestion(true);
-    setIsSuggestionDialogOpen(true);
+    setIsSuggestionDialogOpen(true); // Open dialog immediately to show loading state
     const suggestion = await getNewHabitSuggestion(userId);
     setHabitSuggestion(suggestion);
     setIsLoadingSuggestion(false);
@@ -173,8 +173,8 @@ const HabitTrackerPage: React.FC<HabitTrackerPageProps> = ({ isDemo = false, dem
 
                 {loading ? (
                   <div className="grid grid-cols-1 gap-4">
-                    {[...Array(3)].map((_, i) => (
-                      <Skeleton key={i} className="h-64 w-full rounded-xl" /> {/* Adjusted height for new card size */}
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <Skeleton key={i} className="h-64 w-full rounded-xl" />
                     ))}
                   </div>
                 ) : habits.length === 0 ? (
