@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { Card, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Plus, MoreHorizontal, Edit, Flame, CalendarDays, Clock, Target, Sparkles } from 'lucide-react';
+import { CheckCircle2, X, MoreHorizontal, Edit, Flame, CalendarDays, Clock, Target, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { HabitWithLogs } from '@/hooks/useHabits';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { format, parseISO, eachDayOfInterval, subDays, isSameDay, isBefore, startOfDay } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { useSound } from '@/context/SoundContext';
 import { Input } from '@/components/ui/input';
 import { getHabitChallengeSuggestion } from '@/integrations/supabase/habit-challenge-api';
@@ -14,6 +14,7 @@ import { showLoading, dismissToast, showError } from '@/utils/toast';
 import HabitChallengeDialog from './HabitChallengeDialog';
 import HabitIconDisplay from './HabitIconDisplay'; // Import new component
 import HabitHistoryGrid from './HabitHistoryGrid'; // Import new component
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"; // Re-added Tooltip imports
 
 interface HabitCardProps {
   habit: HabitWithLogs;
@@ -67,11 +68,11 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
     if (isDemo) return;
     setIsSaving(true);
     const success = await onToggleCompletion(habit.id, date, isCompleted, value);
-    if (success && isSameDay(date, currentDate) && isCompleted) {
+    if (success && isCompleted) { // Check isCompleted directly
       playSound('success');
       setShowCompletionEffect(true);
       setTimeout(() => setShowCompletionEffect(false), 600);
-    } else if (success && isSameDay(date, currentDate) && !isCompleted) {
+    } else if (success && !isCompleted) {
       playSound('reset');
       setRecordedValue('');
     }
@@ -111,15 +112,6 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
       showError('Failed to get challenge suggestion. Please try again.');
     }
   };
-
-  const last7Days = eachDayOfInterval({
-    start: subDays(currentDate, 6),
-    end: currentDate,
-  });
-  const logsMap = new Map<string, boolean>();
-  habit.logs.forEach(log => {
-    logsMap.set(format(parseISO(log.log_date), 'yyyy-MM-dd'), log.is_completed);
-  });
 
   return (
     <>
