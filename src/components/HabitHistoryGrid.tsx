@@ -95,7 +95,7 @@ const HabitHistoryGrid: React.FC<HabitHistoryGridProps> = ({
                               <TooltipTrigger asChild>
                                   <div
                                       className={cn(
-                                          "h-3 w-full rounded-sm transition-colors duration-100 flex-shrink-0", // w-full to fill column width
+                                          "w-full aspect-square rounded-sm transition-colors duration-100 flex-shrink-0", // w-full to fill column width
                                       )}
                                       style={{
                                           backgroundColor: dayData.isBeforeHabitStart
@@ -128,7 +128,7 @@ const HabitHistoryGrid: React.FC<HabitHistoryGridProps> = ({
                               </TooltipContent>
                           </Tooltip>
                       ) : (
-                          <div key={`${weekIndex}-${dayIndex}-null`} className="h-3 w-full rounded-sm bg-transparent" /> // Placeholder for padding
+                          <div key={`${weekIndex}-${dayIndex}-null`} className="w-full aspect-square rounded-sm bg-transparent" /> // Placeholder for padding
                       )
                   ))}
               </div>
