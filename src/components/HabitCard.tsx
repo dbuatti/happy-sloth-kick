@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, X, MoreHorizontal, Edit, Flame, CalendarDays, Clock, Target, Input as InputIcon } from 'lucide-react';
+import { CheckCircle2, X, MoreHorizontal, Edit, Flame, CalendarDays, Clock, Target, Input as InputIcon, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { HabitWithLogs } from '@/hooks/useHabits';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { format, parseISO } from 'date-fns';
 import { useSound } from '@/context/SoundContext';
-import { Input } from '@/components/ui/input'; // Import Input component
+import { Input } from '@/components/ui/input';
+import { getHabitChallengeSuggestion } from '@/integrations/supabase/habit-api'; // Import the new API call
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
+import { showLoading, dismissToast, showError, showSuccess } from '@/utils/toast'; // Import toast utilities
 
 interface HabitCardProps {
   habit: HabitWithLogs;
@@ -19,6 +22,8 @@ interface HabitCardProps {
 }
 
 const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit, currentDate, isDemo = false }) => {
+  const { user } = useAuth();
+  const userId = user?.id;
   const { playSound } = useSound();
   const [isSaving, setIsSaving] = useState(false);
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
@@ -62,6 +67,21 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
     }
     setIsSaving(false);
     setIsRecordingValue(false);
+  };
+
+  const handleSuggestChallenge = async () => {
+    if (isDemo || !userId) {
+      showError('AI suggestions are not available in demo mode or without a user ID.');
+      return;
+    }
+    const loadingToastId = showLoading('Generating challenge suggestion...');
+    const suggestion = await getHabitChallengeSuggestion(userId, habit.id);
+    dismissToast(loadingToastId);
+    if (suggestion) {
+      showSuccess(suggestion);
+    } else {
+      showError('Failed to get challenge suggestion. Please try again.');
+    }
   };
 
   const getUnitDisplay = (value: number | null, unit: string | null) => {
@@ -125,6 +145,10 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onSelect={() => onEdit(habit)}>
                   <Edit className="mr-2 h-4 w-4" /> Edit Habit
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={handleSuggestChallenge}>
+                  <Sparkles className="mr-2 h-4 w-4" /> Suggest Challenge
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={() => onToggleCompletion(habit.id, currentDate, true, recordedValue === '' ? null : Number(recordedValue))} disabled={habit.completedToday}>
