@@ -62,7 +62,7 @@ Deno.serve(async (req: Request) => {
       .eq("is_active", true);
 
     if (habitsError) {
-      console.error("Suggest New Habit: Error fetching habits:", habitsError);
+      console.error("Suggest New Habit: Error fetching habits from Supabase:", habitsError);
       throw habitsError;
     }
     console.log("Suggest New Habit: Fetched habits count:", habits.length);
@@ -89,7 +89,7 @@ Deno.serve(async (req: Request) => {
       .lte("log_date", format(today, "yyyy-MM-dd"));
 
     if (logsError) {
-      console.error("Suggest New Habit: Error fetching logs:", logsError);
+      console.error("Suggest New Habit: Error fetching logs from Supabase:", logsError);
       throw logsError;
     }
     console.log("Suggest New Habit: Fetched logs count:", logs.length);
@@ -183,7 +183,7 @@ Deno.serve(async (req: Request) => {
       throw new Error("Failed to extract suggestion text from Gemini API response due to unexpected data structure.");
     }
 
-    console.log("Suggest New Habit: Final suggestion text:", suggestionText);
+    console.log("Suggest New Habit: Successfully generated suggestion.");
     // Return the generated briefing
     return new Response(JSON.stringify({ suggestion: suggestionText }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -191,28 +191,11 @@ Deno.serve(async (req: Request) => {
     });
 
   } catch (error: any) {
-    let errorMessage = 'An unexpected error occurred in the Edge Function.';
-    let errorDetails = '';
-
-    if (error instanceof Error) {
-      errorMessage = error.message;
-      errorDetails = error.stack || error.toString();
-    } else if (typeof error === 'object' && error !== null) {
-      // Attempt to stringify object, handle potential circular references
-      try {
-        errorMessage = JSON.stringify(error);
-        errorDetails = JSON.stringify(error);
-      } catch (e) {
-        errorMessage = `Non-serializable error object: ${String(error)}`;
-        errorDetails = `Non-serializable error object: ${String(error)}`;
-      }
-    } else {
-      errorMessage = String(error);
-      errorDetails = String(error);
-    }
-    
-    console.error("Error in Edge Function 'suggest-new-habit' (outer catch):", errorMessage, "Details:", errorDetails);
-    return new Response(JSON.stringify({ error: errorMessage }), {
+    console.error("Error in Edge Function 'suggest-new-habit' (outer catch):", error); // Log raw error object
+    return new Response(JSON.stringify({ 
+      error: error.message || "An unexpected error occurred in the Edge Function.",
+      details: JSON.stringify(error, Object.getOwnPropertyNames(error)) // Include more details
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });
