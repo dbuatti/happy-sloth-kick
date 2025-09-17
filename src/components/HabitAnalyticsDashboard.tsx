@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Flame, CalendarIcon, CheckCircle2, TrendingUp, Target, Clock } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { format, startOfMonth, eachDayOfInterval, isSameDay, parseISO, differenceInDays, isBefore, startOfDay, isAfter } from 'date-fns';
+import { format, startOfMonth, eachDayOfInterval, isSameDay, parseISO, differenceInDays, isBefore, startOfDay } from 'date-fns';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -99,37 +99,26 @@ const HabitAnalyticsDashboard: React.FC<HabitAnalyticsDashboardProps> = ({ dateR
     longestStreak = Math.max(longestStreak, tempStreak);
 
     // Calculate current streak up to today
-    let currentStreakValue = 0;
-    let tempCurrentStreak = 0;
-    let lastDateForCurrentStreak: Date | null = null;
-    const todayForStreak = startOfDay(new Date());
-
-    // Filter analyticsData to only include days up to and including today, and sort ascending
-    const relevantAnalyticsData = analyticsData.filter(day => {
+    tempStreak = 0;
+    lastDate = null;
+    const today = startOfDay(new Date()); // Corrected to startOfDay for accurate daily comparison
+    for (let i = analyticsData.length - 1; i >= 0; i--) {
+      const day = analyticsData[i];
       const dayDate = parseISO(format(new Date(day.date), 'yyyy-MM-dd'));
-      return !isAfter(dayDate, todayForStreak);
-    }).sort((a, b) => parseISO(format(new Date(a.date), 'yyyy-MM-dd')).getTime() - parseISO(format(new Date(b.date), 'yyyy-MM-dd')).getTime());
-
-    for (let i = relevantAnalyticsData.length - 1; i >= 0; i--) {
-      const day = relevantAnalyticsData[i];
-      const dayDate = parseISO(format(new Date(day.date), 'yyyy-MM-dd'));
-
-      if (day.completedHabits > 0 && day.completedHabits === day.totalHabits) {
-        if (lastDateForCurrentStreak === null) {
-          tempCurrentStreak = 1;
-        } else if (differenceInDays(lastDateForCurrentStreak, dayDate) === 1) {
-          tempCurrentStreak++;
-        } else if (differenceInDays(lastDateForCurrentStreak, dayDate) > 1) {
-          // Gap found, reset streak
-          tempCurrentStreak = 1;
+      if (isSameDay(dayDate, today) || isBefore(dayDate, today)) { // Only consider up to today
+        if (day.completedHabits > 0 && day.completedHabits === day.totalHabits) {
+          if (lastDate === null || differenceInDays(lastDate, dayDate) === 1) { // Check backwards
+            tempStreak++;
+          } else if (differenceInDays(lastDate, dayDate) > 1) {
+            tempStreak = 1;
+          }
+          lastDate = dayDate;
+        } else {
+          break;
         }
-        lastDateForCurrentStreak = dayDate;
-      } else {
-        // Day not fully completed, break streak
-        break;
       }
     }
-    currentStreakValue = tempCurrentStreak;
+    currentStreak = tempStreak;
 
 
     return {
@@ -138,7 +127,7 @@ const HabitAnalyticsDashboard: React.FC<HabitAnalyticsDashboardProps> = ({ dateR
       overallCompletionRate: Math.round(overallCompletionRate),
       avgDailyCompletionRate: Math.round(avgDailyCompletionRate),
       longestStreak,
-      currentStreak: currentStreakValue,
+      currentStreak,
     };
   }, [analyticsData, habits]);
 
