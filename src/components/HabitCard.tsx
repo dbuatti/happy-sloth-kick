@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, X, MoreHorizontal, Edit, Flame, CalendarDays, Clock, Target, Input as InputIcon, Sparkles } from 'lucide-react';
+import { CheckCircle2, X, MoreHorizontal, Edit, Flame, CalendarDays, Clock, Target, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { HabitWithLogs } from '@/hooks/useHabits';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -9,7 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { format, parseISO } from 'date-fns';
 import { useSound } from '@/context/SoundContext';
 import { Input } from '@/components/ui/input';
-import { getHabitChallengeSuggestion } from '@/integrations/supabase/habit-api';
+import { getHabitChallengeSuggestion } from '@/integrations/supabase/habit-challenge-api';
 import { useAuth } from '@/context/AuthContext';
 import { showLoading, dismissToast, showError, showSuccess } from '@/utils/toast';
 import HabitChallengeDialog from './HabitChallengeDialog'; // Import the new dialog component
@@ -178,7 +178,7 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
               <p className="flex items-center gap-1 text-green-600 dark:text-green-400 font-medium">
                 <Clock className="h-3.5 w-3.5" /> Logged: {getUnitDisplay(displayedRecordedValue, habit.unit)}
               </p>
-            )}
+          )}
             <p className="flex items-center gap-1">
               <CalendarDays className="h-3.5 w-3.5" /> Started: {format(parseISO(habit.start_date), 'MMM d, yyyy')}
             </p>
@@ -232,7 +232,7 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
               ) : habit.completedToday ? (
                 <CheckCircle2 className="h-5 w-5" />
               ) : habit.target_value && !habit.completedToday ? (
-                <InputIcon className="h-5 w-5" />
+                <Input className="h-5 w-5" />
               ) : (
                 <CheckCircle2 className="h-5 w-5" />
               )}
