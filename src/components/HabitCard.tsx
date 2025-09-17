@@ -1,20 +1,21 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, X, MoreHorizontal, Edit, Flame, CalendarDays, Pencil as PencilIcon, Sparkles } from 'lucide-react';
+import { CheckCircle2, X, MoreHorizontal, Edit, Flame, CalendarDays, Clock, Target, Input as InputIcon, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { HabitWithLogs } from '@/hooks/useHabits';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { format, parseISO, eachDayOfInterval, subDays, isSameDay, isBefore, startOfDay } from 'date-fns';
+import { format, parseISO, isSameDay, isBefore, startOfDay } from 'date-fns';
 import { useSound } from '@/context/SoundContext';
 import { Input } from '@/components/ui/input';
 import { getHabitChallengeSuggestion } from '@/integrations/supabase/habit-api';
 import { useAuth } from '@/context/AuthContext';
-import { showLoading, dismissToast, showError } from '@/utils/toast';
+import { showLoading, dismissToast, showError, showSuccess } from '@/utils/toast';
 import HabitChallengeDialog from './HabitChallengeDialog';
 import HabitIconDisplay from './HabitIconDisplay';
 import { Progress } from './Progress'; // Import the Progress component
+import HabitHistoryGrid from './HabitHistoryGrid'; // Import the HabitHistoryGrid
 
 interface HabitCardProps {
   habit: HabitWithLogs;
@@ -114,42 +115,14 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
     }
   };
 
-  const last7Days = useMemo(() => {
-    const days = eachDayOfInterval({
-      start: subDays(currentDate, 6),
-      end: currentDate,
-    });
-    const logsMap = new Map<string, boolean>();
-    habit.logs.forEach(log => {
-      logsMap.set(format(parseISO(log.log_date), 'yyyy-MM-dd'), log.is_completed);
-    });
-
-    return days.map(day => {
-      const formattedDay = format(day, 'yyyy-MM-dd');
-      const isCompleted = logsMap.get(formattedDay) === true;
-      const isFutureDay = isBefore(startOfDay(currentDate), startOfDay(day));
-      const isHabitStarted = !isBefore(day, parseISO(habit.start_date));
-
-      return {
-        date: day,
-        isCompleted,
-        isFutureDay,
-        isHabitStarted,
-      };
-    });
-  }, [habit.logs, currentDate, habit.start_date]);
-
-  const showProgressSection = habit.target_value !== null && habit.unit !== null && habit.unit !== 'none-unit';
-  const progressValue = showProgressSection && habit.target_value ? ((habit.currentDayRecordedValue || 0) / habit.target_value) * 100 : 0;
-
   return (
     <>
       <Card className={cn(
-        "relative group shadow-lg rounded-xl transition-all duration-200 ease-in-out overflow-hidden p-4",
+        "relative group shadow-lg rounded-3xl transition-all duration-200 ease-in-out overflow-hidden p-4",
         completedToday ? "bg-green-500/10 border-green-500/30" : "bg-card border-border hover:shadow-xl",
         isDemo && "opacity-70 cursor-not-allowed"
       )}>
-        <div className="absolute inset-0 rounded-xl" style={{ backgroundColor: habit.color, opacity: completedToday ? 0.1 : 0.05 }} />
+        <div className="absolute inset-0 rounded-3xl" style={{ backgroundColor: habit.color, opacity: completedToday ? 0.1 : 0.05 }} />
         <CardHeader className="flex flex-col items-center justify-center space-y-2 pb-2 relative z-10">
           <HabitIconDisplay iconName={habit.icon} color={habit.color} size="lg" />
           <CardTitle className="text-xl font-bold text-center flex items-center gap-2">
@@ -197,31 +170,15 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
             </div>
           )}
 
-          {/* Interactive 7-day history grid - now minimalist circles */}
-          <div className="flex items-center justify-center gap-1 mb-4">
-            {last7Days.map((day, index) => (
-              <Tooltip key={index}>
-                <TooltipTrigger asChild>
-                  <div
-                    className={cn(
-                      "h-6 w-6 rounded-full flex items-center justify-center text-xs font-semibold transition-colors duration-100 cursor-pointer",
-                      day.isFutureDay && "opacity-50 cursor-not-allowed",
-                      !day.isHabitStarted && "opacity-30 cursor-not-allowed",
-                      isSameDay(day.date, currentDate) && "ring-2 ring-primary ring-offset-2",
-                      day.isCompleted ? "bg-green-500/20 text-green-600 hover:bg-green-500/30" : "bg-muted/50 text-muted-foreground hover:bg-muted/70"
-                    )}
-                    onClick={() => !day.isFutureDay && day.isHabitStarted && handleToggleCompletionForDay(day.date, !day.isCompleted)}
-                    role="button"
-                    aria-label={`${format(day.date, 'EEE, MMM d')} - ${day.isCompleted ? 'Completed' : 'Incomplete'}`}
-                  >
-                    {format(day.date, 'dd')}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {format(day.date, 'EEE, MMM d')} - {day.isFutureDay ? 'Future' : (day.isHabitStarted ? (day.isCompleted ? 'Completed' : 'Incomplete') : 'Not started')}
-                </TooltipContent>
-              </Tooltip>
-            ))}
+          {/* Integrated HabitHistoryGrid */}
+          <div className="flex items-center justify-center mb-4">
+            <HabitHistoryGrid
+              habitLogs={habit.logs}
+              habitStartDate={habit.start_date}
+              habitColor={habit.color}
+              currentDate={currentDate}
+              daysToShow={90} // Display 90 days of history
+            />
           </div>
 
           <div className="flex items-center justify-between mt-auto pt-4 border-t border-border">
@@ -294,7 +251,7 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
                 ) : completedToday ? (
                   <CheckCircle2 className="h-6 w-6" />
                 ) : showProgressSection ? (
-                  <PencilIcon className="h-6 w-6" />
+                  <InputIcon className="h-6 w-6" />
                 ) : (
                   <CheckCircle2 className="h-6 w-6" />
                 )}

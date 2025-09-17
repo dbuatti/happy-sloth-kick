@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { format, eachDayOfInterval, parseISO, subDays, isBefore, startOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { HabitLog } from '@/integrations/supabase/habit-api';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface HabitHistoryGridProps {
   habitLogs: HabitLog[];
@@ -49,16 +50,22 @@ const HabitHistoryGrid: React.FC<HabitHistoryGridProps> = ({
   }, [habitLogs, habitStartDate, currentDate, daysToShow]);
 
   return (
-    <div className="grid grid-cols-10 gap-1 mt-3"> {/* Adjusted grid columns and gap */}
+    <div className="grid grid-cols-15 gap-0.5 mt-3 w-full"> {/* Adjusted to grid-cols-15 and smaller gap */}
       {historyDays.map((day, index) => (
-        <div
-          key={index}
-          className={cn(
-            "h-3 w-3 rounded-sm transition-colors duration-100", // Smaller squares, rounded corners
-            day.isFutureDay ? "bg-muted/20" : (day.isCompleted ? "" : "bg-muted/40") // Lighter for future, muted for incomplete
-          )}
-          style={{ backgroundColor: day.isCompleted ? habitColor : undefined, opacity: day.isCompleted ? 0.8 : undefined }} // Use habitColor for completed, slightly transparent
-        />
+        <Tooltip key={index}>
+          <TooltipTrigger asChild>
+            <div
+              className={cn(
+                "h-3 w-3 rounded-sm transition-colors duration-100", // Small rounded squares
+                day.isFutureDay ? "bg-muted/20" : (day.isCompleted ? "" : "bg-muted/40") // Lighter for future, muted for incomplete
+              )}
+              style={{ backgroundColor: day.isCompleted ? habitColor : undefined, opacity: day.isCompleted ? 0.8 : undefined }} // Use habitColor for completed, slightly transparent
+            />
+          </TooltipTrigger>
+          <TooltipContent>
+            {format(day.date, 'EEE, MMM d')} - {day.isFutureDay ? 'Future' : (day.isCompleted ? 'Completed' : 'Incomplete')}
+          </TooltipContent>
+        </Tooltip>
       ))}
     </div>
   );
