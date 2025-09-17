@@ -176,13 +176,13 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
           )}
 
           {/* Habit History Grid */}
-          <div className="w-full flex mb-4 px-4"> {/* Increased px-1 to px-4 */}
+          <div className="w-full flex mb-4 px-4">
             <HabitHistoryGrid
               habitLogs={habit.logs}
               habitStartDate={habit.start_date}
               habitColor={habit.color}
               currentDate={currentDate}
-              daysToShow={90} // Display 90 days of history
+              weeksToShow={13} // Displaying approximately 90 days (13 weeks) of history
             />
           </div>
 
@@ -195,7 +195,7 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
-                  <DropdownMenuItem onSelect={() => setIsInfoDialogOpen(true)}> {/* New Info button */}
+                  <DropdownMenuItem onSelect={() => setIsInfoDialogOpen(true)}>
                     <Info className="mr-2 h-4 w-4" /> View Info
                   </DropdownMenuItem>
                   <DropdownMenuItem onSelect={() => onEdit(habit)}>
