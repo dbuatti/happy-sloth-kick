@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, X, MoreHorizontal, Edit, Flame, CalendarDays, Pencil as PencilIcon, Sparkles, Info, Target } from 'lucide-react';
+import { CheckCircle2, X, MoreHorizontal, Edit, Flame, CalendarDays, Pencil as PencilIcon, Sparkles, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { HabitWithLogs } from '@/hooks/useHabits';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -128,7 +128,7 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
         isDemo && "opacity-70 cursor-not-allowed"
       )}>
         <div className="absolute inset-0 rounded-xl" style={{ backgroundColor: habit.color, opacity: completedToday ? 0.1 : 0.05 }} />
-        <div className="flex items-center justify-center space-y-2 pb-2 relative z-10">
+        <CardHeader className="flex flex-col items-center justify-center space-y-2 pb-2 relative z-10">
           <HabitIconDisplay iconName={habit.icon} color={habit.color} size="lg" />
           <CardTitle className="text-xl font-bold text-center flex items-center gap-2">
             {habit.name}
@@ -145,7 +145,7 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
               </TooltipContent>
             </Tooltip>
           )}
-        </div>
+        </CardHeader>
         <CardContent className="relative z-10 pt-0 flex flex-col">
           <div className="space-y-1 text-sm text-muted-foreground mb-3 text-center">
             {habit.description && <p className="line-clamp-2">{habit.description}</p>}
