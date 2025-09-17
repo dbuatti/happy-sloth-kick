@@ -11,12 +11,14 @@ const corsHeaders = {
 };
 
 serve(async (req: Request) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const { userId } = await req.json();
+    console.log("Suggest New Habit: Received request for userId:", userId);
 
     if (!userId) {
       return new Response(JSON.stringify({ error: 'User ID is required.' }), {
@@ -56,12 +58,14 @@ serve(async (req: Request) => {
       .eq('is_active', true);
 
     if (habitsError) throw habitsError;
+    console.log("Suggest New Habit: Fetched habits:", habits);
 
     const activeHabitIds = habits.map(h => h.id);
     const recentlyAddedHabits = habits.filter(h => isAfter(parseISO(h.created_at), fourteenDaysAgo));
 
     // If a habit was added recently, don't suggest another one immediately
     if (recentlyAddedHabits.length > 0) {
+      console.log("Suggest New Habit: User recently added habits, returning early.");
       return new Response(JSON.stringify({ suggestion: "You've recently added new habits. Let's focus on building consistency with those before adding more!" }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
@@ -77,8 +81,9 @@ serve(async (req: Request) => {
       .lte('log_date', format(today, 'yyyy-MM-dd'));
 
     if (logsError) throw logsError;
+    console.log("Suggest New Habit: Fetched logs:", logs);
 
-    // Calculate completion rates
+    // Calculate completion rates (moved this section up)
     const habitCompletionData: { [habitId: string]: { completedDays: number; totalDays: number } } = {};
     activeHabitIds.forEach(id => {
       habitCompletionData[id] = { completedDays: 0, totalDays: 0 };
@@ -105,6 +110,7 @@ serve(async (req: Request) => {
     }
 
     const averageCompletionRate = totalHabitsWithData > 0 ? (totalCompletionRate / totalHabitsWithData) * 100 : 0;
+    console.log("Suggest New Habit: Calculated average completion rate:", averageCompletionRate);
 
     let prompt;
     if (activeHabitIds.length === 0) {
@@ -116,6 +122,7 @@ serve(async (req: Request) => {
     } else {
       prompt = `The user has ${activeHabitIds.length} active habits with an average completion rate of ${averageCompletionRate.toFixed(0)}% over the last 30 days. Suggest a supportive message to focus on simplifying and strengthening their current habits.`;
     }
+    console.log("Suggest New Habit: Generated prompt:", prompt);
 
     const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
 
@@ -137,6 +144,7 @@ serve(async (req: Request) => {
 
     const geminiData = await geminiResponse.json();
     const suggestionText = geminiData.candidates[0].content.parts[0].text;
+    console.log("Suggest New Habit: Gemini suggestion received.");
 
     return new Response(JSON.stringify({ suggestion: suggestionText }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -144,7 +152,7 @@ serve(async (req: Request) => {
     });
 
   } catch (error: any) {
-    console.error("Error in Edge Function 'suggest-new-habit':", error);
+    console.error("Error in Edge Function 'suggest-new-habit' (outer catch):", error);
     return new Response(JSON.stringify({ error: error.message || 'An unexpected error occurred in the Edge Function.' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
