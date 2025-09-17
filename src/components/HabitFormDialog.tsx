@@ -83,7 +83,7 @@ const HabitFormDialog: React.FC<HabitFormDialogProps> = ({
         setColor(initialData.color);
         setTargetValue(initialData.target_value ?? '');
         setUnit(initialData.unit || null); // Set to null if initialData.unit is falsy
-        setFrequency(initialData.frequency);
+        setFrequency(initialData.frequency as 'daily' | 'weekly' | 'monthly'); // Cast to correct type
         setStartDate(parseISO(initialData.start_date));
         setIsActive(initialData.is_active);
       } else {
