@@ -10,13 +10,13 @@ import DateNavigator from '@/components/DateNavigator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { addDays, startOfMonth } from 'date-fns';
 import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
-import HabitSuggestionCard from '@/components/HabitSuggestionCard';
 import { getNewHabitSuggestion } from '@/integrations/supabase/habit-api';
 import { useAuth } from '@/context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import HabitAnalyticsDashboard from '@/components/HabitAnalyticsDashboard';
 import { DateRange } from 'react-day-picker';
 import { Label } from '@/components/ui/label';
+import HabitSuggestionDialog from '@/components/HabitSuggestionDialog'; // Import the new dialog
 
 interface HabitTrackerPageProps {
   isDemo?: boolean;
@@ -47,23 +47,23 @@ const HabitTrackerPage: React.FC<HabitTrackerPageProps> = ({ isDemo = false, dem
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingHabit, setEditingHabit] = useState<HabitWithLogs | null>(null);
   const [isSavingHabit, setIsSavingHabit] = useState(false);
+  
   const [habitSuggestion, setHabitSuggestion] = useState<string | null>(null);
   const [isLoadingSuggestion, setIsLoadingSuggestion] = useState(false);
+  const [isSuggestionDialogOpen, setIsSuggestionDialogOpen] = useState(false); // New state for dialog
 
-  useEffect(() => {
-    const fetchSuggestion = async () => {
-      if (!userId || isDemo) {
-        setHabitSuggestion(null);
-        return;
-      }
-      setIsLoadingSuggestion(true);
-      const suggestion = await getNewHabitSuggestion(userId);
-      setHabitSuggestion(suggestion);
-      setIsLoadingSuggestion(false);
-    };
-
-    fetchSuggestion();
-  }, [userId, isDemo, habits]);
+  const handleFetchSuggestion = async () => {
+    if (!userId || isDemo) {
+      setHabitSuggestion(null);
+      setIsSuggestionDialogOpen(true); // Open dialog even if no suggestion in demo
+      return;
+    }
+    setIsLoadingSuggestion(true);
+    setIsSuggestionDialogOpen(true); // Open dialog immediately to show loading state
+    const suggestion = await getNewHabitSuggestion(userId);
+    setHabitSuggestion(suggestion);
+    setIsLoadingSuggestion(false);
+  };
 
   const handleOpenForm = (habit: HabitWithLogs | null) => {
     setEditingHabit(habit);
@@ -141,6 +141,9 @@ const HabitTrackerPage: React.FC<HabitTrackerPageProps> = ({ isDemo = false, dem
                   <Button onClick={() => handleOpenForm(null)} disabled={isDemo} className="h-9 w-full sm:w-auto">
                     <Plus className="mr-2 h-4 w-4" /> Add New Habit
                   </Button>
+                  <Button onClick={handleFetchSuggestion} disabled={isDemo || isLoadingSuggestion} className="h-9 w-full sm:w-auto">
+                    <Sparkles className="mr-2 h-4 w-4" /> Get Habit Suggestion
+                  </Button>
                   <div className="flex items-center gap-2 w-full sm:w-auto">
                     <Label htmlFor="filter-status" className="sr-only">Filter by status</Label>
                     <Select value={filterStatus} onValueChange={(value) => setFilterStatus(value as 'all' | 'active' | 'inactive')}>
@@ -166,10 +169,6 @@ const HabitTrackerPage: React.FC<HabitTrackerPageProps> = ({ isDemo = false, dem
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-
-                <div className="mb-6">
-                  <HabitSuggestionCard suggestion={habitSuggestion} isLoading={isLoadingSuggestion} isDemo={isDemo} />
                 </div>
 
                 {loading ? (
@@ -215,6 +214,13 @@ const HabitTrackerPage: React.FC<HabitTrackerPageProps> = ({ isDemo = false, dem
         onDelete={handleDeleteHabit}
         initialData={editingHabit}
         isSaving={isSavingHabit}
+      />
+
+      <HabitSuggestionDialog
+        isOpen={isSuggestionDialogOpen}
+        onClose={() => setIsSuggestionDialogOpen(false)}
+        suggestion={habitSuggestion}
+        isLoading={isLoadingSuggestion}
       />
     </div>
   );
