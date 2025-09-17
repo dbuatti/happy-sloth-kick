@@ -50,13 +50,13 @@ const HabitHistoryGrid: React.FC<HabitHistoryGridProps> = ({
   }, [habitLogs, habitStartDate, currentDate, daysToShow]);
 
   return (
-    <div className="grid grid-cols-15 gap-0.5 mt-3 w-full"> {/* Adjusted to grid-cols-15 and smaller gap */}
+    <div className="flex flex-row-reverse gap-0.5 mt-3 overflow-x-auto pb-1"> {/* Changed to flex-row-reverse with overflow-x-auto */}
       {historyDays.map((day, index) => (
         <Tooltip key={index}>
           <TooltipTrigger asChild>
             <div
               className={cn(
-                "h-3 w-3 rounded-sm transition-colors duration-100", // Small rounded squares
+                "h-3 w-3 rounded-sm transition-colors duration-100 flex-shrink-0", // Small rounded squares, flex-shrink-0 to prevent shrinking
                 day.isFutureDay ? "bg-muted/20" : (day.isCompleted ? "" : "bg-muted/40") // Lighter for future, muted for incomplete
               )}
               style={{ backgroundColor: day.isCompleted ? habitColor : undefined, opacity: day.isCompleted ? 0.8 : undefined }} // Use habitColor for completed, slightly transparent
