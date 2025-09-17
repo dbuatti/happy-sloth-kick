@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { format, eachDayOfInterval, isSameDay, parseISO, subDays, isBefore, startOfDay } from 'date-fns';
+import { format, eachDayOfInterval, parseISO, subDays, isBefore, startOfDay, isSameDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { HabitLog } from '@/integrations/supabase/habit-api';
 

@@ -218,6 +218,7 @@ export const useHabits = ({ userId: propUserId, currentDate, startDate, endDate 
           log_date: formattedDate,
           is_completed: isCompleted,
           value_recorded: valueRecorded,
+          user_id: userId, // Ensure user_id is passed for new logs
         });
       }
       queryClient.invalidateQueries({ queryKey: ['habitLogs', userId] });
