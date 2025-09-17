@@ -92,20 +92,18 @@ export async function getHabitLogForDay(userId: string, habitId: string, date: D
     .select('*')
     .eq('user_id', userId)
     .eq('habit_id', habitId)
-    .eq('log_date', formattedDate)
-    .single();
-  if (error && error.code !== 'PGRST116') throw error; // PGRST116 means no rows found
-  return data;
+    .eq('log_date', formattedDate); // Removed .single()
+  if (error) throw error;
+  return data && data.length > 0 ? data[0] : null; // Return first element or null
 }
 
 export async function upsertHabitLog(userId: string, log: Omit<HabitLog, 'id' | 'created_at'>): Promise<HabitLog | null> {
   const { data, error } = await supabase
     .from('habit_logs')
     .upsert({ ...log, user_id: userId }, { onConflict: 'user_id, habit_id, log_date' })
-    .select()
-    .single();
+    .select(); // Removed .single()
   if (error) throw error;
-  return data;
+  return data && data.length > 0 ? data[0] : null; // Return first element or null
 }
 
 export async function getHabitLogsForHabit(userId: string, habitId: string): Promise<HabitLog[] | null> {
