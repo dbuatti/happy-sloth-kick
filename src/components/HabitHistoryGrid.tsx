@@ -34,9 +34,6 @@ const HabitHistoryGrid: React.FC<HabitHistoryGridProps> = ({
     // Calculate the start of the display window (e.g., 365 days ending today)
     const displayWindowStart = subDays(today, daysToShow - 1);
 
-    // Determine the earliest date to actually show, considering habit start date
-    const actualDisplayStart = isBefore(displayWindowStart, habitStartActualDate) ? displayWindowStart : habitStartActualDate;
-
     // Generate all days in the interval from actualDisplayStart to today
     let daysInInterval = eachDayOfInterval({
         start: displayWindowStart, // Always start from the beginning of the 365-day window
@@ -95,41 +92,10 @@ const HabitHistoryGrid: React.FC<HabitHistoryGridProps> = ({
     return weeks.reverse(); // Reverse weeks so most recent week is on the right
   }, [habitLogs, habitStartDate, currentDate, daysToShow]);
 
-  const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
   return (
     <div className="flex flex-row-reverse gap-0.5 mt-3 overflow-x-auto pb-1">
-      {/* Day of Week Labels (Fixed Left) */}
-      <div className="flex-shrink-0 w-8 text-xs text-muted-foreground flex flex-col justify-around pr-1">
-        {dayLabels.map(label => (
-          <div key={label} className="h-3 text-right">{label}</div>
-        ))}
-      </div>
-
       {/* Scrollable Grid Container */}
       <div className="flex-1 overflow-x-auto">
-        {/* Month Headers */}
-        <div className="flex flex-row-reverse gap-0.5 mb-1">
-            {historyWeeks.map((week, weekIndex) => {
-                const firstDayOfThisWeek = week[0]?.date; // The actual first day of the 7-day block
-
-                let monthLabel = '';
-                if (firstDayOfThisWeek) {
-                    // Show month label if it's the first day of the month, or the first week in the entire history
-                    // Also, ensure it's not a padded day (i.e., the actual habit history starts here)
-                    if (firstDayOfThisWeek.getDate() === 1 || weekIndex === historyWeeks.length - 1) {
-                        monthLabel = format(firstDayOfThisWeek, 'MMM');
-                    }
-                }
-
-                return (
-                    <div key={weekIndex} className="w-3.5 flex-shrink-0 text-xs text-muted-foreground text-center">
-                        {monthLabel}
-                    </div>
-                );
-            })}
-        </div>
-
         {/* Actual Grid of Days */}
         <div className="flex flex-row-reverse gap-0.5"> {/* Each item is a week column */}
             {historyWeeks.map((week, weekIndex) => (
