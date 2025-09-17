@@ -1,17 +1,18 @@
-import React, { useState } from 'react';
-import { Card, CardTitle } from "@/components/ui/card";
+import React, { useState, useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Plus, MoreHorizontal, Edit, Sparkles } from 'lucide-react';
+import { CheckCircle2, X, MoreHorizontal, Edit, Flame, CalendarDays, Clock, Target, Input as InputIcon, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { HabitWithLogs } from '@/hooks/useHabits';
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { format } from 'date-fns';
+import { format, parseISO, eachDayOfInterval, subDays, isSameDay, isBefore, startOfDay } from 'date-fns';
 import { useSound } from '@/context/SoundContext';
 import { Input } from '@/components/ui/input';
-import { getHabitChallengeSuggestion } from '@/integrations/supabase/habit-challenge-api';
+import { getHabitChallengeSuggestion } from '@/integrations/supabase/habit-api';
 import { useAuth } from '@/context/AuthContext';
-import { showLoading, dismissToast, showError } from '@/utils/toast';
-import HabitChallengeDialog from './HabitChallengeDialog';
+import { showLoading, dismissToast, showError, showSuccess } from '@/utils/toast';
+import HabitChallengeDialog from './HabitChallengeDialog'; // Import the new dialog component
 import HabitIconDisplay from './HabitIconDisplay'; // Import new component
 import HabitHistoryGrid from './HabitHistoryGrid'; // Import new component
 
@@ -34,25 +35,45 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
     return log?.value_recorded ?? '';
   });
   const [isRecordingValue, setIsRecordingValue] = useState(false);
-  const [isChallengeDialogOpen, setIsChallengeDialogOpen] = useState(false);
-  const [challengeSuggestion, setChallengeSuggestion] = useState<string | null>(null);
+  const [isChallengeDialogOpen, setIsChallengeDialogOpen] = useState(false); // State for the new dialog
+  const [challengeSuggestion, setChallengeSuggestion] = useState<string | null>(null); // State for the suggestion text
 
-  const handleToggle = async () => {
-    if (isDemo) return;
-
-    // If habit has a target value and is not completed, prompt for value
-    if (habit.target_value && !habit.completedToday) {
-      setIsRecordingValue(true);
-      return;
+  const getUnitDisplay = (value: number | null, unit: string | null) => {
+    if (value === null || unit === null || unit === '') return '';
+    
+    let formattedUnit = unit;
+    if (value > 1 && !unit.endsWith('s') && unit !== 'reps' && unit !== 'times') {
+      formattedUnit += 's';
     }
 
+    switch (unit.toLowerCase()) {
+      case 'minutes': return `${value} min`;
+      case 'kilometers': return `${value} km`;
+      case 'miles': return `${value} mi`;
+      case 'liters': return `${value} L`;
+      case 'milliliters': return `${value} ml`;
+      case 'glasses': return `${value} glasses`;
+      case 'reps': return `${value} reps`;
+      case 'pages': return `${value} pages`;
+      case 'times': return `${value} times`;
+      case 'steps': return `${value} steps`;
+      default: return `${value} ${formattedUnit}`;
+    }
+  };
+
+  const currentDayLog = habit.logs.find(l => l.log_date === format(currentDate, 'yyyy-MM-dd'));
+  const completedToday = currentDayLog?.is_completed ?? false;
+  const displayedRecordedValue = currentDayLog?.value_recorded ?? null;
+
+  const handleToggleCompletionForDay = async (date: Date, isCompleted: boolean, value: number | null = null) => {
+    if (isDemo) return;
     setIsSaving(true);
-    const success = await onToggleCompletion(habit.id, currentDate, !habit.completedToday, recordedValue === '' ? null : Number(recordedValue));
-    if (success && !habit.completedToday) {
+    const success = await onToggleCompletion(habit.id, date, isCompleted, value);
+    if (success && isSameDay(date, currentDate) && isCompleted) {
       playSound('success');
       setShowCompletionEffect(true);
       setTimeout(() => setShowCompletionEffect(false), 600);
-    } else if (success && habit.completedToday) {
+    } else if (success && isSameDay(date, currentDate) && !isCompleted) {
       playSound('reset');
       setRecordedValue('');
     }
@@ -60,17 +81,21 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
     setIsRecordingValue(false);
   };
 
+  const handleMainCompletionButtonClick = () => {
+    if (isDemo) return;
+
+    // If habit has a target value and is not completed for currentDate, prompt for value
+    if (habit.target_value && !completedToday) {
+      setIsRecordingValue(true);
+      return;
+    }
+
+    handleToggleCompletionForDay(currentDate, !completedToday, recordedValue === '' ? null : Number(recordedValue));
+  };
+
   const handleRecordValueAndComplete = async () => {
     if (isDemo) return;
-    setIsSaving(true);
-    const success = await onToggleCompletion(habit.id, currentDate, true, recordedValue === '' ? null : Number(recordedValue));
-    if (success) {
-      playSound('success');
-      setShowCompletionEffect(true);
-      setTimeout(() => setShowCompletionEffect(false), 600);
-    }
-    setIsSaving(false);
-    setIsRecordingValue(false);
+    await handleToggleCompletionForDay(currentDate, true, recordedValue === '' ? null : Number(recordedValue));
   };
 
   const handleSuggestChallenge = async () => {
@@ -83,111 +108,196 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
     dismissToast(loadingToastId);
     if (suggestion) {
       setChallengeSuggestion(suggestion);
-      setIsChallengeDialogOpen(true);
+      setIsChallengeDialogOpen(true); // Open the dialog with the suggestion
     } else {
       showError('Failed to get challenge suggestion. Please try again.');
     }
   };
 
+  const last7Days = useMemo(() => {
+    const days = eachDayOfInterval({
+      start: subDays(currentDate, 6),
+      end: currentDate,
+    });
+    const logsMap = new Map<string, boolean>();
+    habit.logs.forEach(log => {
+      logsMap.set(format(parseISO(log.log_date), 'yyyy-MM-dd'), log.is_completed);
+    });
+
+    return days.map(day => {
+      const formattedDay = format(day, 'yyyy-MM-dd');
+      const isCompleted = logsMap.get(formattedDay) === true;
+      const isFutureDay = isBefore(startOfDay(currentDate), startOfDay(day)); // Check if the day is in the future relative to currentDate
+      const isHabitStarted = !isBefore(day, parseISO(habit.start_date));
+
+      return {
+        date: day,
+        isCompleted,
+        isFutureDay,
+        isHabitStarted,
+      };
+    });
+  }, [habit.logs, currentDate, habit.start_date]);
+
   return (
     <>
       <Card className={cn(
         "relative group shadow-lg rounded-xl transition-all duration-200 ease-in-out overflow-hidden p-4", // Added padding
-        habit.completedToday ? "bg-green-500/10 border-green-500/30" : "bg-card border-border hover:shadow-xl",
+        completedToday ? "bg-green-500/10 border-green-500/30" : "bg-card border-border hover:shadow-xl",
         isDemo && "opacity-70 cursor-not-allowed"
       )}>
-        <div className="flex items-center justify-between mb-3"> {/* Flex container for top row */}
-          <HabitIconDisplay iconName={habit.icon} color={habit.color} />
-          <div className="flex-1 ml-4 min-w-0"> {/* Text content */}
-            <CardTitle className="text-lg font-semibold truncate">{habit.name}</CardTitle>
-            {habit.description && <p className="text-sm text-muted-foreground truncate">{habit.description}</p>}
-          </div>
-          {!isDemo && (
-            <div className="flex-shrink-0 ml-4"> {/* Completion button */}
-              {isRecordingValue && !habit.completedToday ? (
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    value={recordedValue}
-                    onChange={(e) => setRecordedValue(e.target.value === '' ? '' : Number(e.target.value))}
-                    placeholder="Value"
-                    className="w-24 h-10 text-base"
-                    min="0"
-                    autoFocus
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        handleRecordValueAndComplete();
-                      }
-                    }}
-                  />
-                  <Button
-                    onClick={handleRecordValueAndComplete}
-                    disabled={isSaving || isDemo || recordedValue === ''}
-                    className="h-10 w-10 rounded-full flex-shrink-0"
-                    size="icon"
-                  >
-                    {isSaving ? (
-                      <span className="animate-spin h-4 w-4 border-b-2 border-white rounded-full" />
-                    ) : (
-                      <CheckCircle2 className="h-5 w-5" />
-                    )}
+        <div className="absolute inset-0 rounded-xl" style={{ backgroundColor: habit.color, opacity: completedToday ? 0.1 : 0.05 }} />
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+          <CardTitle className="text-lg font-semibold flex items-center gap-2">
+            <HabitIconDisplay iconName={habit.icon} color={habit.color} className="h-6 w-6" />
+            {habit.name}
+          </CardTitle>
+          <div className="flex items-center gap-1">
+            {habit.currentStreak > 0 && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="flex items-center text-sm font-medium text-muted-foreground">
+                    <Flame className="h-4 w-4 mr-1 text-orange-500" /> {habit.currentStreak}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Current Streak: {habit.currentStreak} days
+                </TooltipContent>
+              </Tooltip>
+            )}
+            {!isDemo && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <MoreHorizontal className="h-4 w-4" />
                   </Button>
-                </div>
-              ) : (
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onSelect={() => onEdit(habit)}>
+                    <Edit className="mr-2 h-4 w-4" /> Edit Habit
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={handleSuggestChallenge}>
+                    <Sparkles className="mr-2 h-4 w-4" /> Suggest Challenge
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={() => handleToggleCompletionForDay(currentDate, true, recordedValue === '' ? null : Number(recordedValue))} disabled={completedToday}>
+                    <CheckCircle2 className="mr-2 h-4 w-4" /> Mark Complete (Today)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => handleToggleCompletionForDay(currentDate, false)} disabled={!completedToday}>
+                    <X className="mr-2 h-4 w-4" /> Mark Incomplete (Today)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="relative z-10 pt-0 flex flex-col">
+          <div className="space-y-1 text-sm text-muted-foreground mb-3">
+            {habit.description && <p className="line-clamp-2">{habit.description}</p>}
+            {habit.target_value && habit.unit && (
+              <p className="flex items-center gap-1">
+                <Target className="h-3.5 w-3.5" /> Target: {getUnitDisplay(habit.target_value, habit.unit)}
+              </p>
+            )}
+            {completedToday && displayedRecordedValue !== null && (
+              <p className="flex items-center gap-1 text-green-600 dark:text-green-400 font-medium">
+                <Clock className="h-3.5 w-3.5" /> Logged: {getUnitDisplay(displayedRecordedValue, habit.unit)}
+              </p>
+            )}
+            <p className="flex items-center gap-1">
+              <CalendarDays className="h-3.5 w-3.5" /> Started: {format(parseISO(habit.start_date), 'MMM d, yyyy')}
+            </p>
+            {habit.longestStreak > 0 && (
+              <p className="flex items-center gap-1">
+                <Flame className="h-3.5 w-3.5 text-orange-500" /> Longest Streak: {habit.longestStreak} days
+              </p>
+            )}
+          </div>
+
+          {/* Interactive 7-day history grid */}
+          <div className="flex items-center justify-between mt-2">
+            <div className="flex gap-1">
+              {last7Days.map((day, index) => (
+                <Tooltip key={index}>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className={cn(
+                        "h-8 w-8 rounded-full text-xs font-semibold",
+                        day.isFutureDay && "opacity-50 cursor-not-allowed",
+                        !day.isHabitStarted && "opacity-30 cursor-not-allowed",
+                        isSameDay(day.date, currentDate) && "ring-2 ring-primary ring-offset-2",
+                        day.isCompleted ? "bg-green-500 text-white hover:bg-green-600" : "bg-muted/50 text-muted-foreground hover:bg-muted/70"
+                      )}
+                      onClick={() => !day.isFutureDay && day.isHabitStarted && handleToggleCompletionForDay(day.date, !day.isCompleted)}
+                      disabled={isDemo || day.isFutureDay || !day.isHabitStarted}
+                    >
+                      {format(day.date, 'dd')}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {format(day.date, 'EEE, MMM d')} - {day.isFutureDay ? 'Future' : (day.isHabitStarted ? (day.isCompleted ? 'Completed' : 'Incomplete') : 'Not started')}
+                  </TooltipContent>
+                </Tooltip>
+              ))}
+            </div>
+            {isRecordingValue && !completedToday ? (
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  value={recordedValue}
+                  onChange={(e) => setRecordedValue(e.target.value === '' ? '' : Number(e.target.value))}
+                  placeholder="Value"
+                  className="w-24 h-9 text-base"
+                  min="0"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleRecordValueAndComplete();
+                    }
+                  }}
+                />
                 <Button
-                  onClick={handleToggle}
-                  disabled={isSaving || isDemo}
-                  className={cn(
-                    "h-14 w-14 rounded-full flex-shrink-0", // Larger button
-                    habit.completedToday ? "bg-green-500 hover:bg-green-600 text-white" : "bg-primary/10 hover:bg-primary/20 text-primary border-2 border-primary" // Outlined for incomplete
-                  )}
+                  onClick={handleRecordValueAndComplete}
+                  disabled={isSaving || isDemo || recordedValue === ''}
+                  className="h-9 w-9 rounded-full flex-shrink-0"
                   size="icon"
                 >
                   {isSaving ? (
-                    <span className="animate-spin h-6 w-6 border-b-2 border-white rounded-full" />
-                  ) : habit.completedToday ? (
-                    <CheckCircle2 className="h-8 w-8" /> // Larger icon
+                    <span className="animate-spin h-4 w-4 border-b-2 border-white rounded-full" />
                   ) : (
-                    <Plus className="h-8 w-8" /> // Larger icon
+                    <CheckCircle2 className="h-5 w-5" />
                   )}
                 </Button>
-              )}
-            </div>
-          )}
-        </div>
-
-        <HabitHistoryGrid
-          habitLogs={habit.logs}
-          habitStartDate={habit.start_date}
-          habitColor={habit.color}
-          currentDate={currentDate}
-        />
-
+              </div>
+            ) : (
+              <Button
+                onClick={handleMainCompletionButtonClick}
+                disabled={isSaving || isDemo}
+                className={cn(
+                  "h-10 w-10 rounded-full flex-shrink-0",
+                  completedToday ? "bg-green-500 hover:bg-green-600 text-white" : "bg-primary hover:bg-primary/90 text-primary-foreground"
+                )}
+                size="icon"
+              >
+                {isSaving ? (
+                  <span className="animate-spin h-4 w-4 border-b-2 border-white rounded-full" />
+                ) : completedToday ? (
+                  <CheckCircle2 className="h-5 w-5" />
+                ) : habit.target_value && !completedToday ? (
+                  <InputIcon className="h-5 w-5" />
+                ) : (
+                  <CheckCircle2 className="h-5 w-5" />
+                )}
+              </Button>
+            )}
+          </div>
+        </CardContent>
         {showCompletionEffect && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
             <CheckCircle2 className="h-16 w-16 text-green-500 animate-task-complete" />
-          </div>
-        )}
-
-        {/* Dropdown menu for additional actions */}
-        {!isDemo && (
-          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-30">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={() => onEdit(habit)}>
-                  <Edit className="mr-2 h-4 w-4" /> Edit Habit
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={handleSuggestChallenge}>
-                  <Sparkles className="mr-2 h-4 w-4" /> Suggest Challenge
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
         )}
       </Card>
