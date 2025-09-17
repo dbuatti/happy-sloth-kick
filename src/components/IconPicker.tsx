@@ -1,10 +1,10 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 import * as LucideIcons from 'lucide-react';
-import { Search, X } from 'lucide-react';
+import { X } from 'lucide-react';
 
 // Curated list of Lucide icons suitable for habits
 const curatedIcons = [
@@ -14,11 +14,10 @@ const curatedIcons = [
 interface IconPickerProps {
   value: string | null;
   onChange: (iconName: string) => void;
-  habitName: string; // Used for initial suggestions
   disabled?: boolean;
 }
 
-const IconPicker: React.FC<IconPickerProps> = ({ value, onChange, habitName, disabled }) => {
+const IconPicker: React.FC<IconPickerProps> = ({ value, onChange, disabled }) => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
 
