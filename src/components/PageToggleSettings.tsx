@@ -16,7 +16,6 @@ const PageToggleSettings: React.FC = () => {
     { name: "Schedule", path: "/schedule", icon: LayoutDashboard, toggleable: true },
     { name: "Projects", path: "/projects", icon: LayoutDashboard, toggleable: true },
     { name: "Sleep", path: "/sleep", icon: LayoutDashboard, toggleable: true },
-    { name: "Habits", path: "/habits", icon: LayoutDashboard, toggleable: true }, // New item
     { name: "Dev Space", path: "/dev-space", icon: LayoutDashboard, toggleable: true },
     { name: "Settings", path: "/settings", icon: LayoutDashboard, toggleable: true },
     { name: "Analytics", path: "/analytics", icon: LayoutDashboard, toggleable: true },

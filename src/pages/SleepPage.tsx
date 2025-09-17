@@ -32,7 +32,7 @@ const SleepPage: React.FC<SleepPageProps> = ({ isDemo = false, demoUserId }) => 
           </CardHeader>
           <CardContent className="pt-0">
             <Tabs defaultValue="tracker" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="tracker">
                   <Bed className="h-4 w-4 mr-2" /> Tracker
                 </TabsTrigger>
@@ -41,9 +41,6 @@ const SleepPage: React.FC<SleepPageProps> = ({ isDemo = false, demoUserId }) => 
                 </TabsTrigger>
                 <TabsTrigger value="diary">
                   <BookOpen className="h-4 w-4 mr-2" /> Diary
-                </TabsTrigger>
-                <TabsTrigger value="resources">
-                  <BookText className="h-4 w-4 mr-2" /> Resources
                 </TabsTrigger>
               </TabsList>
 

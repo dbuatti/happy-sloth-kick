@@ -29,7 +29,6 @@ const defaultSettings: Omit<UserSettings, 'user_id'> = {
     schedule: true,
     projects: true,
     sleep: true,
-    habits: true, // Default to visible
     devSpace: true,
     settings: true,
     analytics: true,
