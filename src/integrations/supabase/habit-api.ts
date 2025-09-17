@@ -14,7 +14,7 @@ export interface Habit {
   start_date: string; // YYYY-MM-DD
   target_value: number | null;
   unit: string | null;
-  icon: string | null; // New: Lucide icon name
+  icon: string | null; // Added icon property
 }
 
 export interface HabitLog {
@@ -30,9 +30,7 @@ export interface HabitLog {
 export type NewHabitData = Omit<Habit, 'id' | 'user_id' | 'created_at' | 'updated_at'>;
 export type UpdateHabitData = Partial<NewHabitData>;
 
-// --- Habit API Functions ---
-
-export const getHabits = async (userId: string): Promise<Habit[] | null> => {
+export async function getHabits(userId: string): Promise<Habit[] | null> {
   const { data, error } = await supabase
     .from('habits')
     .select('*')
@@ -40,9 +38,9 @@ export const getHabits = async (userId: string): Promise<Habit[] | null> => {
     .order('created_at', { ascending: true });
   if (error) throw error;
   return data;
-};
+}
 
-export const addHabit = async (userId: string, newHabit: NewHabitData): Promise<Habit | null> => {
+export async function addHabit(userId: string, newHabit: NewHabitData): Promise<Habit | null> {
   const { data, error } = await supabase
     .from('habits')
     .insert({ ...newHabit, user_id: userId })
@@ -50,9 +48,9 @@ export const addHabit = async (userId: string, newHabit: NewHabitData): Promise<
     .single();
   if (error) throw error;
   return data;
-};
+}
 
-export const updateHabit = async (habitId: string, updates: UpdateHabitData): Promise<Habit | null> => {
+export async function updateHabit(habitId: string, updates: UpdateHabitData): Promise<Habit | null> {
   const { data, error } = await supabase
     .from('habits')
     .update(updates)
@@ -61,54 +59,56 @@ export const updateHabit = async (habitId: string, updates: UpdateHabitData): Pr
     .single();
   if (error) throw error;
   return data;
-};
+}
 
-export const deleteHabit = async (habitId: string): Promise<boolean> => {
+export async function deleteHabit(habitId: string): Promise<boolean> {
   const { error } = await supabase
     .from('habits')
     .delete()
     .eq('id', habitId);
   if (error) throw error;
   return true;
-};
+}
 
-// --- Habit Log API Functions ---
+export async function getHabitLogs(userId: string, startDate: Date, endDate: Date): Promise<HabitLog[] | null> {
+  const formattedStartDate = format(startOfDay(startDate), 'yyyy-MM-dd');
+  const formattedEndDate = format(endOfDay(endDate), 'yyyy-MM-dd');
 
-export const getHabitLogs = async (userId: string, startDate: Date, endDate: Date): Promise<HabitLog[] | null> => {
   const { data, error } = await supabase
     .from('habit_logs')
     .select('*')
     .eq('user_id', userId)
-    .gte('log_date', format(startOfDay(startDate), 'yyyy-MM-dd'))
-    .lte('log_date', format(endOfDay(endDate), 'yyyy-MM-dd'))
+    .gte('log_date', formattedStartDate)
+    .lte('log_date', formattedEndDate)
     .order('log_date', { ascending: true });
   if (error) throw error;
   return data;
-};
+}
 
-export const getHabitLogForDay = async (userId: string, habitId: string, date: Date): Promise<HabitLog | null> => {
+export async function getHabitLogForDay(userId: string, habitId: string, date: Date): Promise<HabitLog | null> {
+  const formattedDate = format(date, 'yyyy-MM-dd');
   const { data, error } = await supabase
     .from('habit_logs')
     .select('*')
     .eq('user_id', userId)
     .eq('habit_id', habitId)
-    .eq('log_date', format(date, 'yyyy-MM-dd'))
-    .maybeSingle();
-  if (error) throw error;
+    .eq('log_date', formattedDate)
+    .single();
+  if (error && error.code !== 'PGRST116') throw error; // PGRST116 means no rows found
   return data;
-};
+}
 
-export const upsertHabitLog = async (userId: string, logData: Omit<HabitLog, 'id' | 'created_at'>): Promise<HabitLog | null> => {
+export async function upsertHabitLog(userId: string, log: Omit<HabitLog, 'id' | 'created_at'>): Promise<HabitLog | null> {
   const { data, error } = await supabase
     .from('habit_logs')
-    .upsert({ ...logData, user_id: userId }, { onConflict: 'user_id, habit_id, log_date' })
+    .upsert({ ...log, user_id: userId }, { onConflict: 'user_id, habit_id, log_date' })
     .select()
     .single();
   if (error) throw error;
   return data;
-};
+}
 
-export const getHabitLogsForHabit = async (userId: string, habitId: string): Promise<HabitLog[] | null> => {
+export async function getHabitLogsForHabit(userId: string, habitId: string): Promise<HabitLog[] | null> {
   const { data, error } = await supabase
     .from('habit_logs')
     .select('*')
@@ -117,4 +117,4 @@ export const getHabitLogsForHabit = async (userId: string, habitId: string): Pro
     .order('log_date', { ascending: true });
   if (error) throw error;
   return data;
-};
+}
