@@ -1,17 +1,17 @@
 // @ts-ignore
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 // @ts-ignore
-import { format, parseISO, differenceInDays, startOfDay, subDays, isAfter } from 'https://esm.sh/date-fns@3.6.0';
+import { format, parseISO, differenceInDays, startOfDay, subDays, isAfter } from "https://esm.sh/date-fns@3.6.0";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 Deno.serve(async (req: Request) => {
   console.log("Suggest New Habit: Edge Function started.");
   // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
@@ -21,8 +21,8 @@ Deno.serve(async (req: Request) => {
 
     if (!userId) {
       console.error("Suggest New Habit: User ID is missing.");
-      return new Response(JSON.stringify({ error: 'User ID is required.' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      return new Response(JSON.stringify({ error: "User ID is required." }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
       });
     }
@@ -36,8 +36,8 @@ Deno.serve(async (req: Request) => {
 
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !GEMINI_API_KEY) {
       console.error("Suggest New Habit: Missing Supabase or Gemini API environment variables.");
-      return new Response(JSON.stringify({ error: 'Missing Supabase or Gemini API environment variables.' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      return new Response(JSON.stringify({ error: "Missing Supabase or Gemini API environment variables." }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
       });
     }
@@ -56,10 +56,10 @@ Deno.serve(async (req: Request) => {
     // Fetch active habits
     console.log("Suggest New Habit: Fetching active habits for user:", userId);
     const { data: habits, error: habitsError } = await supabaseAdmin
-      .from('habits')
-      .select('id, name, created_at')
-      .eq('user_id', userId)
-      .eq('is_active', true);
+      .from("habits")
+      .select("id, name, created_at")
+      .eq("user_id", userId)
+      .eq("is_active", true);
 
     if (habitsError) {
       console.error("Suggest New Habit: Error fetching habits:", habitsError);
@@ -67,14 +67,14 @@ Deno.serve(async (req: Request) => {
     }
     console.log("Suggest New Habit: Fetched habits count:", habits.length);
 
-    const activeHabitIds = habits.map(h => h.id);
-    const recentlyAddedHabits = habits.filter(h => isAfter(parseISO(h.created_at), fourteenDaysAgo));
+    const activeHabitIds = habits.map((h) => h.id);
+    const recentlyAddedHabits = habits.filter((h) => isAfter(parseISO(h.created_at), fourteenDaysAgo));
 
     // If a habit was added recently, don't suggest another one immediately
     if (recentlyAddedHabits.length > 0) {
       console.log("Suggest New Habit: User recently added habits, returning early.");
       return new Response(JSON.stringify({ suggestion: "You've recently added new habits. Let's focus on building consistency with those before adding more!" }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
     }
@@ -82,11 +82,11 @@ Deno.serve(async (req: Request) => {
     // Fetch habit logs for the last 30 days for active habits
     console.log("Suggest New Habit: Fetching habit logs for active habits.");
     const { data: logs, error: logsError } = await supabaseAdmin
-      .from('habit_logs')
-      .select('habit_id, log_date, is_completed')
-      .in('habit_id', activeHabitIds)
-      .gte('log_date', format(thirtyDaysAgo, 'yyyy-MM-dd'))
-      .lte('log_date', format(today, 'yyyy-MM-dd'));
+      .from("habit_logs")
+      .select("habit_id, log_date, is_completed")
+      .in("habit_id", activeHabitIds)
+      .gte("log_date", format(thirtyDaysAgo, "yyyy-MM-dd"))
+      .lte("log_date", format(today, "yyyy-MM-dd"));
 
     if (logsError) {
       console.error("Suggest New Habit: Error fetching logs:", logsError);
@@ -96,11 +96,11 @@ Deno.serve(async (req: Request) => {
 
     // Calculate completion rates
     const habitCompletionData: { [habitId: string]: { completedDays: number; totalDays: number } } = {};
-    activeHabitIds.forEach(id => {
+    activeHabitIds.forEach((id) => {
       habitCompletionData[id] = { completedDays: 0, totalDays: 0 };
     });
 
-    logs.forEach(log => {
+    logs.forEach((log) => {
       if (habitCompletionData[log.habit_id]) {
         habitCompletionData[log.habit_id].totalDays++;
         if (log.is_completed) {
@@ -115,7 +115,7 @@ Deno.serve(async (req: Request) => {
     for (const habitId in habitCompletionData) {
       const data = habitCompletionData[habitId];
       if (data.totalDays > 0) {
-        totalCompletionRate += (data.completedDays / data.totalDays);
+        totalCompletionRate += data.completedDays / data.totalDays;
         totalHabitsWithData++;
       }
     }
@@ -139,9 +139,9 @@ Deno.serve(async (req: Request) => {
 
     console.log("Suggest New Habit: Calling Gemini API at:", API_URL);
     const geminiResponse = await fetch(API_URL, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
@@ -162,14 +162,20 @@ Deno.serve(async (req: Request) => {
       console.log("Suggest New Habit: Gemini raw response data:", JSON.stringify(geminiData));
     } catch (jsonError) {
       console.error("Suggest New Habit: Failed to parse Gemini JSON response:", jsonError);
-      throw new Error("Failed to parse Gemini API response.");
+      throw new Error("Failed to parse Gemini API response as JSON.");
     }
-    
+
     let suggestionText;
     // Safely access the suggestion text, checking for existence of properties
-    if (geminiData && geminiData.candidates && geminiData.candidates.length > 0 &&
-        geminiData.candidates[0].content && geminiData.candidates[0].content.parts &&
-        geminiData.candidates[0].content.parts.length > 0 && geminiData.candidates[0].content.parts[0].text) {
+    if (
+      geminiData &&
+      geminiData.candidates &&
+      geminiData.candidates.length > 0 &&
+      geminiData.candidates[0].content &&
+      geminiData.candidates[0].content.parts &&
+      geminiData.candidates[0].content.parts.length > 0 &&
+      geminiData.candidates[0].content.parts[0].text
+    ) {
       suggestionText = geminiData.candidates[0].content.parts[0].text;
       console.log("Suggest New Habit: Gemini suggestion extracted.");
     } else {
@@ -180,15 +186,14 @@ Deno.serve(async (req: Request) => {
     console.log("Suggest New Habit: Successfully generated suggestion.");
     // Return the generated briefing
     return new Response(JSON.stringify({ suggestion: suggestionText }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
-
   } catch (error: any) {
     // Catch and log any errors during the function execution
     console.error("Error in Edge Function 'suggest-new-habit' (outer catch):", JSON.stringify(error, Object.getOwnPropertyNames(error)));
-    return new Response(JSON.stringify({ error: error.message || 'An unexpected error occurred in the Edge Function.' }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    return new Response(JSON.stringify({ error: error.message || "An unexpected error occurred in the Edge Function." }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });
   }
