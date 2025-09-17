@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import HabitAnalyticsDashboard from '@/components/HabitAnalyticsDashboard';
 import { DateRange } from 'react-day-picker';
 import { Label } from '@/components/ui/label';
-import HabitSuggestionDialog from '@/components/HabitSuggestionDialog'; // Import the new dialog
+import HabitSuggestionDialog from '@/components/HabitSuggestionDialog';
 
 interface HabitTrackerPageProps {
   isDemo?: boolean;
@@ -50,16 +50,16 @@ const HabitTrackerPage: React.FC<HabitTrackerPageProps> = ({ isDemo = false, dem
   
   const [habitSuggestion, setHabitSuggestion] = useState<string | null>(null);
   const [isLoadingSuggestion, setIsLoadingSuggestion] = useState(false);
-  const [isSuggestionDialogOpen, setIsSuggestionDialogOpen] = useState(false); // New state for dialog
+  const [isSuggestionDialogOpen, setIsSuggestionDialogOpen] = useState(false);
 
   const handleFetchSuggestion = async () => {
     if (!userId || isDemo) {
       setHabitSuggestion(null);
-      setIsSuggestionDialogOpen(true); // Open dialog even if no suggestion in demo
+      setIsSuggestionDialogOpen(true);
       return;
     }
     setIsLoadingSuggestion(true);
-    setIsSuggestionDialogOpen(true); // Open dialog immediately to show loading state
+    setIsSuggestionDialogOpen(true);
     const suggestion = await getNewHabitSuggestion(userId);
     setHabitSuggestion(suggestion);
     setIsLoadingSuggestion(false);
@@ -172,9 +172,9 @@ const HabitTrackerPage: React.FC<HabitTrackerPageProps> = ({ isDemo = false, dem
                 </div>
 
                 {loading ? (
-                  <div className="grid grid-cols-1 gap-4"> {/* Changed to grid-cols-1 */}
+                  <div className="grid grid-cols-1 gap-4">
                     {[...Array(3)].map((_, i) => (
-                      <Skeleton key={i} className="h-48 w-full rounded-xl" />
+                      <Skeleton key={i} className="h-64 w-full rounded-xl" /> {/* Adjusted height for new card size */}
                     ))}
                   </div>
                 ) : habits.length === 0 ? (
@@ -184,7 +184,7 @@ const HabitTrackerPage: React.FC<HabitTrackerPageProps> = ({ isDemo = false, dem
                     <p className="text-sm">Click "Add New Habit" to start building your routine.</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 gap-4"> {/* Changed to grid-cols-1 */}
+                  <div className="grid grid-cols-1 gap-4">
                     {habits.map((habit: HabitWithLogs) => (
                       <HabitCard
                         key={habit.id}
