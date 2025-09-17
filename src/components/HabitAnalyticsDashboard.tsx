@@ -18,6 +18,15 @@ interface HabitAnalyticsDashboardProps {
   demoUserId?: string;
 }
 
+interface HabitAnalyticsSummary {
+  totalCompleted: number;
+  totalTracked: number;
+  overallCompletionRate: number;
+  avgDailyCompletionRate: number;
+  longestStreak: number;
+  currentStreak: number;
+}
+
 const HabitAnalyticsDashboard: React.FC<HabitAnalyticsDashboardProps> = ({ dateRange, setDateRange, demoUserId }) => {
   const { habits, loading } = useHabits({
     userId: demoUserId,
@@ -61,7 +70,7 @@ const HabitAnalyticsDashboard: React.FC<HabitAnalyticsDashboardProps> = ({ dateR
     });
   }, [habits, dateRange]);
 
-  const { totalCompleted, totalTracked, overallCompletionRate, avgDailyCompletionRate, longestStreak, currentStreak } = useMemo(() => {
+  const { totalCompleted, totalTracked, overallCompletionRate, avgDailyCompletionRate, longestStreak, currentStreak } = useMemo<HabitAnalyticsSummary>(() => {
     if (analyticsData.length === 0) {
       return {
         totalCompleted: 0,
@@ -99,6 +108,7 @@ const HabitAnalyticsDashboard: React.FC<HabitAnalyticsDashboardProps> = ({ dateR
     longestStreak = Math.max(longestStreak, tempStreak);
 
     // Calculate current streak up to today
+    let currentStreak = 0; // Declared as let
     tempStreak = 0;
     lastDate = null;
     const today = startOfDay(new Date()); // Corrected to startOfDay for accurate daily comparison
