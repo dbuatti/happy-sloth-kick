@@ -7,11 +7,11 @@ export interface Habit {
   name: string;
   description: string | null;
   color: string;
-  target_value: number | null;
-  unit: string | null;
-  frequency: string;
-  start_date: string;
+  frequency: 'daily' | 'weekly' | 'monthly';
+  start_date: string; // YYYY-MM-DD
   is_active: boolean;
+  target_value: number | null; // Added
+  unit: string | null; // Added
   created_at: string;
   updated_at: string;
 }
@@ -28,10 +28,11 @@ export interface HabitLog {
 
 export type NewHabitData = Omit<Habit, 'id' | 'user_id' | 'created_at' | 'updated_at'>;
 export type UpdateHabitData = Partial<NewHabitData>;
-export type NewHabitLogData = Omit<HabitLog, 'id' | 'user_id' | 'created_at'>;
-export type UpdateHabitLogData = Partial<NewHabitLogData>;
 
-// --- Habit API Functions ---
+// Type for the log payload when user_id is passed separately
+type HabitLogPayload = Omit<HabitLog, 'id' | 'user_id' | 'created_at'>;
+
+// --- Habit API Calls ---
 
 export const getHabits = async (userId: string): Promise<Habit[] | null> => {
   const { data, error } = await supabase
@@ -43,10 +44,10 @@ export const getHabits = async (userId: string): Promise<Habit[] | null> => {
   return data;
 };
 
-export const addHabit = async (userId: string, habit: NewHabitData): Promise<Habit | null> => {
+export const addHabit = async (userId: string, newHabit: NewHabitData): Promise<Habit | null> => {
   const { data, error } = await supabase
     .from('habits')
-    .insert({ ...habit, user_id: userId })
+    .insert({ ...newHabit, user_id: userId })
     .select()
     .single();
   if (error) throw error;
@@ -73,48 +74,33 @@ export const deleteHabit = async (habitId: string): Promise<boolean> => {
   return true;
 };
 
-// --- Habit Log API Functions ---
+// --- Habit Log API Calls ---
 
 export const getHabitLogs = async (userId: string, startDate: Date, endDate: Date): Promise<HabitLog[] | null> => {
-  const formattedStartDate = format(startDate, 'yyyy-MM-dd');
-  const formattedEndDate = format(endDate, 'yyyy-MM-dd');
-
   const { data, error } = await supabase
     .from('habit_logs')
     .select('*')
     .eq('user_id', userId)
-    .gte('log_date', formattedStartDate)
-    .lte('log_date', formattedEndDate)
-    .order('log_date', { ascending: true });
-  if (error) throw error;
-  return data;
-};
-
-export const getHabitLogsForHabit = async (userId: string, habitId: string): Promise<HabitLog[] | null> => {
-  const { data, error } = await supabase
-    .from('habit_logs')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('habit_id', habitId)
+    .gte('log_date', format(startDate, 'yyyy-MM-dd'))
+    .lte('log_date', format(endDate, 'yyyy-MM-dd'))
     .order('log_date', { ascending: true });
   if (error) throw error;
   return data;
 };
 
 export const getHabitLogForDay = async (userId: string, habitId: string, date: Date): Promise<HabitLog | null> => {
-  const formattedDate = format(date, 'yyyy-MM-dd');
   const { data, error } = await supabase
     .from('habit_logs')
     .select('*')
     .eq('user_id', userId)
     .eq('habit_id', habitId)
-    .eq('log_date', formattedDate)
-    .single();
+    .eq('log_date', format(date, 'yyyy-MM-dd'))
+    .maybeSingle();
   if (error && error.code !== 'PGRST116') throw error; // PGRST116 means no rows found
   return data;
 };
 
-export const upsertHabitLog = async (userId: string, log: NewHabitLogData): Promise<HabitLog | null> => {
+export const upsertHabitLog = async (userId: string, log: HabitLogPayload): Promise<HabitLog | null> => {
   const { data, error } = await supabase
     .from('habit_logs')
     .upsert({ ...log, user_id: userId }, { onConflict: 'user_id, habit_id, log_date' })
@@ -124,39 +110,12 @@ export const upsertHabitLog = async (userId: string, log: NewHabitLogData): Prom
   return data;
 };
 
-export const deleteHabitLog = async (logId: string): Promise<boolean> => {
-  const { error } = await supabase
+export const getHabitLogsForHabit = async (habitId: string): Promise<HabitLog[] | null> => {
+  const { data, error } = await supabase
     .from('habit_logs')
-    .delete()
-    .eq('id', logId);
+    .select('*')
+    .eq('habit_id', habitId)
+    .order('log_date', { ascending: true });
   if (error) throw error;
-  return true;
-};
-
-// --- AI Suggestion API Functions ---
-
-export const getNewHabitSuggestion = async (userId: string): Promise<string | null> => {
-  try {
-    const { data, error } = await supabase.functions.invoke('suggest-new-habit', {
-      body: { userId },
-    });
-    if (error) throw error;
-    return data.suggestion;
-  } catch (error) {
-    console.error('Error fetching new habit suggestion:', error);
-    return null;
-  }
-};
-
-export const getHabitChallengeSuggestion = async (userId: string, habitId: string): Promise<string | null> => {
-  try {
-    const { data, error } = await supabase.functions.invoke('suggest-habit-challenge', {
-      body: { userId, habitId },
-    });
-    if (error) throw error;
-    return data.suggestion;
-  } catch (error) {
-    console.error('Error fetching habit challenge suggestion:', error);
-    return null;
-  }
+  return data;
 };
