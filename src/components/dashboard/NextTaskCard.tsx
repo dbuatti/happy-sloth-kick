@@ -13,13 +13,14 @@ interface NextTaskCardProps {
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   onOpenOverview: (task: Task) => void;
   loading: boolean;
-  onOpenFocusView: () => void; // New prop added
+  onOpenFocusView: () => void;
+  onFocusViewOpen: () => void; // Added this prop
   isDoToday: boolean; // New prop
   toggleDoToday: (task: Task) => void; // New prop
   isDemo?: boolean; // New prop
 }
 
-const NextTaskCard: React.FC<NextTaskCardProps> = ({ nextAvailableTask, updateTask, onOpenOverview, loading, onOpenFocusView, isDoToday, toggleDoToday, isDemo = false }) => {
+const NextTaskCard: React.FC<NextTaskCardProps> = ({ nextAvailableTask, updateTask, onOpenOverview, loading, onOpenFocusView, onFocusViewOpen, isDoToday, toggleDoToday, isDemo = false }) => {
   const getPriorityDotColor = (priority: string) => {
     switch (priority) {
       case 'urgent': return 'bg-priority-urgent';
