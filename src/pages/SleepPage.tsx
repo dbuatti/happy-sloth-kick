@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Moon, BarChart3, Bed, BookOpen, BookText } from 'lucide-react';
+import { Moon, BarChart3, Bed, BookOpen } from 'lucide-react';
 import SleepTracker from './SleepTracker';
 import SleepDashboard from './SleepDashboard';
 import SleepDiaryView from './SleepDiaryView';

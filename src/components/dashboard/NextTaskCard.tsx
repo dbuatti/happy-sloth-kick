@@ -13,13 +13,13 @@ interface NextTaskCardProps {
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   onOpenOverview: (task: Task) => void;
   loading: boolean;
-  onFocusViewOpen: () => void;
+  onOpenFocusView: () => void; // New prop added
   isDoToday: boolean; // New prop
   toggleDoToday: (task: Task) => void; // New prop
   isDemo?: boolean; // New prop
 }
 
-const NextTaskCard: React.FC<NextTaskCardProps> = ({ nextAvailableTask, updateTask, onOpenOverview, loading, onFocusViewOpen, isDoToday, toggleDoToday, isDemo = false }) => {
+const NextTaskCard: React.FC<NextTaskCardProps> = ({ nextAvailableTask, updateTask, onOpenOverview, loading, onOpenFocusView, isDoToday, toggleDoToday, isDemo = false }) => {
   const getPriorityDotColor = (priority: string) => {
     switch (priority) {
       case 'urgent': return 'bg-priority-urgent';
@@ -87,7 +87,7 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ nextAvailableTask, updateTa
           </div>
           <p
             className="text-xl sm:text-2xl font-bold leading-tight text-foreground line-clamp-2 cursor-pointer hover:text-primary transition-colors" // Added cursor-pointer and hover effect here
-            onClick={onFocusViewOpen}
+            onClick={onOpenFocusView}
           >
             {nextAvailableTask.description}
           </p>
