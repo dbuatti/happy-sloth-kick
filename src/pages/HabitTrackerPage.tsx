@@ -1,17 +1,20 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Flame } from 'lucide-react';
+import { Plus, Flame, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useHabits, HabitWithLogs } from '@/hooks/useHabits';
 import HabitCard from '@/components/HabitCard';
 import HabitFormDialog from '@/components/HabitFormDialog';
 import DateNavigator from '@/components/DateNavigator';
 import { Skeleton } from '@/components/ui/skeleton';
-import { addDays } from 'date-fns';
+import { addDays, startOfMonth } from 'date-fns';
 import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
-import HabitSuggestionCard from '@/components/HabitSuggestionCard'; // Import the new component
-import { getNewHabitSuggestion } from '@/integrations/supabase/habit-suggestions-api'; // Import the API call
-import { useAuth } from '@/context/AuthContext'; // Import useAuth
+import HabitSuggestionCard from '@/components/HabitSuggestionCard';
+import { getNewHabitSuggestion } from '@/integrations/supabase/habit-api'; // Corrected import path
+import { useAuth } from '@/context/AuthContext';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; // Import Tabs components
+import HabitAnalyticsDashboard from '@/components/HabitAnalyticsDashboard'; // Import the new analytics dashboard
+import { DateRange } from 'react-day-picker'; // Import DateRange
 
 interface HabitTrackerPageProps {
   isDemo?: boolean;
@@ -23,6 +26,11 @@ const HabitTrackerPage: React.FC<HabitTrackerPageProps> = ({ isDemo = false, dem
   const userId = demoUserId || user?.id;
 
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [analyticsDateRange, setAnalyticsDateRange] = useState<DateRange | undefined>(() => ({
+    from: startOfMonth(new Date()),
+    to: new Date(),
+  }));
+
   const {
     habits,
     loading,
@@ -109,50 +117,67 @@ const HabitTrackerPage: React.FC<HabitTrackerPageProps> = ({ isDemo = false, dem
             </p>
           </CardHeader>
           <CardContent className="pt-0">
-            <DateNavigator
-              currentDate={currentDate}
-              setCurrentDate={setCurrentDate}
-              onPreviousDay={handlePreviousDay}
-              onNextDay={handleNextDay}
-              onGoToToday={handleGoToToday}
-            />
+            <Tabs defaultValue="tracker" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="tracker">
+                  <Flame className="h-4 w-4 mr-2" /> Tracker
+                </TabsTrigger>
+                <TabsTrigger value="analytics">
+                  <BarChart3 className="h-4 w-4 mr-2" /> Analytics
+                </TabsTrigger>
+              </TabsList>
 
-            <div className="flex justify-end mb-4">
-              <Button onClick={() => handleOpenForm(null)} disabled={isDemo} className="h-9">
-                <Plus className="mr-2 h-4 w-4" /> Add New Habit
-              </Button>
-            </div>
+              <TabsContent value="tracker" className="mt-4">
+                <DateNavigator
+                  currentDate={currentDate}
+                  setCurrentDate={setCurrentDate}
+                  onPreviousDay={handlePreviousDay}
+                  onNextDay={handleNextDay}
+                  onGoToToday={handleGoToToday}
+                />
 
-            <div className="mb-6">
-              <HabitSuggestionCard suggestion={habitSuggestion} isLoading={isLoadingSuggestion} isDemo={isDemo} />
-            </div>
+                <div className="flex justify-end mb-4">
+                  <Button onClick={() => handleOpenForm(null)} disabled={isDemo} className="h-9">
+                    <Plus className="mr-2 h-4 w-4" /> Add New Habit
+                  </Button>
+                </div>
 
-            {loading ? (
-              <div className="space-y-4">
-                {[...Array(3)].map((_, i) => (
-                  <Skeleton key={i} className="h-32 w-full rounded-xl" />
-                ))}
-              </div>
-            ) : activeHabits.length === 0 ? (
-              <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
-                <Flame className="h-12 w-12 text-muted-foreground" />
-                <p className="text-lg font-medium mb-2">No active habits yet!</p>
-                <p className="text-sm">Start building your routine by adding your first habit.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {activeHabits.map((habit: HabitWithLogs) => (
-                  <HabitCard
-                    key={habit.id}
-                    habit={habit}
-                    onToggleCompletion={toggleHabitCompletion}
-                    onEdit={handleOpenForm}
-                    currentDate={currentDate}
-                    isDemo={isDemo}
-                  />
-                ))}
-              </div>
-            )}
+                <div className="mb-6">
+                  <HabitSuggestionCard suggestion={habitSuggestion} isLoading={isLoadingSuggestion} isDemo={isDemo} />
+                </div>
+
+                {loading ? (
+                  <div className="space-y-4">
+                    {[...Array(3)].map((_, i) => (
+                      <Skeleton key={i} className="h-32 w-full rounded-xl" />
+                    ))}
+                  </div>
+                ) : activeHabits.length === 0 ? (
+                  <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
+                    <Flame className="h-12 w-12 text-muted-foreground" />
+                    <p className="text-lg font-medium mb-2">No active habits yet!</p>
+                    <p className="text-sm">Start building your routine by adding your first habit.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {activeHabits.map((habit: HabitWithLogs) => (
+                      <HabitCard
+                        key={habit.id}
+                        habit={habit}
+                        onToggleCompletion={toggleHabitCompletion}
+                        onEdit={handleOpenForm}
+                        currentDate={currentDate}
+                        isDemo={isDemo}
+                      />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="analytics" className="mt-4">
+                <HabitAnalyticsDashboard dateRange={analyticsDateRange} setDateRange={setAnalyticsDateRange} isDemo={isDemo} demoUserId={demoUserId} />
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
       </main>

@@ -17,7 +17,7 @@ import {
   getHabitLogsForHabit,
 } from '@/integrations/supabase/habit-api';
 import { format, differenceInDays, parseISO, isSameDay, startOfDay, endOfDay, isValid, addDays, isBefore, isAfter } from 'date-fns';
-import { useAuth } from '@/context/AuthContext'; // Added missing import
+import { useAuth } from '@/context/AuthContext';
 
 export interface HabitWithLogs extends Habit {
   logs: HabitLog[];
