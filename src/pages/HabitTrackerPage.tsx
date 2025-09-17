@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Flame, BarChart3, Filter, ArrowUpNarrowWide } from 'lucide-react';
+import { Plus, Flame, BarChart3, Filter, ArrowUpNarrowWide, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useHabits, HabitWithLogs } from '@/hooks/useHabits';

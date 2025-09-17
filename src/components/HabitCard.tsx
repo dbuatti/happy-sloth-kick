@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, X, MoreHorizontal, Edit, Flame, Info, Pencil as PencilIcon, Sparkles } from 'lucide-react';
+import { CheckCircle2, X, MoreHorizontal, Edit, CalendarDays, Pencil as PencilIcon, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { HabitWithLogs } from '@/hooks/useHabits';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { isSameDay } from 'date-fns';
+import { format, parseISO, isSameDay } from 'date-fns';
 import { useSound } from '@/context/SoundContext';
 import { Input } from '@/components/ui/input';
 import { getHabitChallengeSuggestion } from '@/integrations/supabase/habit-api';
@@ -133,8 +133,32 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
           <CardTitle className="text-xl font-bold text-center flex items-center gap-2">
             {habit.name}
           </CardTitle>
+          {habit.currentStreak > 0 && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="flex items-center text-sm font-medium text-muted-foreground">
+                  <Flame className="h-4 w-4 mr-1 text-orange-500" /> {habit.currentStreak} days streak
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                Current Streak: {habit.currentStreak} days
+              </TooltipContent>
+            </Tooltip>
+          )}
         </CardHeader>
         <CardContent className="relative z-10 pt-0 flex flex-col">
+          <div className="space-y-1 text-sm text-muted-foreground mb-3 text-center">
+            {habit.description && <p className="line-clamp-2">{habit.description}</p>}
+            <p className="flex items-center justify-center gap-1">
+              <CalendarDays className="h-3.5 w-3.5" /> Started: {format(parseISO(habit.start_date), 'MMM d, yyyy')}
+            </p>
+            {habit.longestStreak > 0 && (
+              <p className="flex items-center justify-center gap-1">
+                <Flame className="h-3.5 w-3.5 text-orange-500" /> Longest Streak: {habit.longestStreak} days
+              </p>
+            )}
+          </div>
+
           {showProgressSection && (
             <div className="mb-4 space-y-2">
               <div className="flex items-center justify-between text-sm font-medium">
@@ -158,6 +182,7 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
               habitStartDate={habit.start_date}
               habitColor={habit.color}
               currentDate={currentDate}
+              daysToShow={90} // Display 90 days of history
             />
           </div>
 
