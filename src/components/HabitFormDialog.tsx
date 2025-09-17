@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,8 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Trash2, Sparkles } from 'lucide-react'; // Added Sparkles for icon suggestion
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover';
+import { CalendarIcon, Trash2 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { format, parseISO } from 'date-fns';
 import { Habit, NewHabitData, UpdateHabitData } from '@/integrations/supabase/habit-api';
@@ -21,7 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import * as LucideIcons from 'lucide-react'; // Import all Lucide icons
+import IconPicker from './IconPicker'; // Import the new IconPicker
 
 interface HabitFormDialogProps {
   isOpen: boolean;
@@ -57,20 +57,6 @@ const unitOptions = [
   { value: 'steps', label: 'Steps' },
 ];
 
-const iconSuggestions: { [key: string]: string[] } = {
-  walk: ['Walk', 'Footprints', 'PersonWalking'],
-  learn: ['BookOpen', 'GraduationCap', 'Languages'],
-  eat: ['Apple', 'Carrot', 'Salad'],
-  stretch: ['YinYang', 'Stretch', 'Yoga'],
-  breathe: ['Leaf', 'Wind', 'Cloud'],
-  meditate: ['Lotus', 'Leaf', 'Brain'],
-  read: ['BookOpen', 'Library', 'Scroll'],
-  exercise: ['Dumbbell', 'Run', 'Bike'],
-  water: ['Droplet', 'GlassWater'],
-  journal: ['NotebookPen', 'Feather'],
-  code: ['Code', 'Laptop'],
-};
-
 const HabitFormDialog: React.FC<HabitFormDialogProps> = ({
   isOpen,
   onClose,
@@ -87,7 +73,7 @@ const HabitFormDialog: React.FC<HabitFormDialogProps> = ({
   const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [startDate, setStartDate] = useState<Date | undefined>(new Date());
   const [isActive, setIsActive] = useState(true);
-  const [icon, setIcon] = useState<string | null>(null); // New state for icon
+  const [icon, setIcon] = useState<string | null>(null);
 
   const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
 
@@ -102,7 +88,7 @@ const HabitFormDialog: React.FC<HabitFormDialogProps> = ({
         setFrequency(initialData.frequency as 'daily' | 'weekly' | 'monthly');
         setStartDate(parseISO(initialData.start_date));
         setIsActive(initialData.is_active);
-        setIcon(initialData.icon || null); // Set icon from initial data
+        setIcon(initialData.icon || null);
       } else {
         setName('');
         setDescription('');
@@ -112,7 +98,7 @@ const HabitFormDialog: React.FC<HabitFormDialogProps> = ({
         setFrequency('daily');
         setStartDate(new Date());
         setIsActive(true);
-        setIcon(null); // Default to null for new habits
+        setIcon(null);
       }
     }
   }, [isOpen, initialData]);
@@ -129,7 +115,7 @@ const HabitFormDialog: React.FC<HabitFormDialogProps> = ({
       frequency,
       start_date: startDate ? format(startDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
       is_active: isActive,
-      icon: icon || null, // Include icon in data to save
+      icon: icon || null,
     };
 
     await onSave(dataToSave);
@@ -147,19 +133,6 @@ const HabitFormDialog: React.FC<HabitFormDialogProps> = ({
       onClose();
     }
   };
-
-  const handleSuggestIcon = () => {
-    const lowerCaseName = name.toLowerCase();
-    for (const keyword in iconSuggestions) {
-      if (lowerCaseName.includes(keyword)) {
-        setIcon(iconSuggestions[keyword][0]); // Take the first suggestion
-        return;
-      }
-    }
-    setIcon('Sparkles'); // Default if no keyword match
-  };
-
-  const DynamicIcon = icon ? (LucideIcons as any)[icon] : null;
 
   return (
     <>
@@ -235,25 +208,13 @@ const HabitFormDialog: React.FC<HabitFormDialogProps> = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="icon">Icon (Lucide Icon Name)</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="icon"
-                  value={icon || ''}
-                  onChange={(e) => setIcon(e.target.value)}
-                  placeholder="e.g., Apple, Run, BookOpen"
-                  disabled={isSaving}
-                  className="flex-1 h-9 text-base"
-                />
-                <Button type="button" variant="outline" size="icon" onClick={handleSuggestIcon} disabled={isSaving || !name.trim()} className="h-9 w-9">
-                  <Sparkles className="h-4 w-4" />
-                </Button>
-                {DynamicIcon && (
-                  <div className="h-9 w-9 flex items-center justify-center border rounded-md">
-                    <DynamicIcon className="h-5 w-5" />
-                  </div>
-                )}
-              </div>
+              <Label htmlFor="icon">Icon</Label>
+              <IconPicker
+                value={icon}
+                onChange={setIcon}
+                habitName={name}
+                disabled={isSaving}
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
