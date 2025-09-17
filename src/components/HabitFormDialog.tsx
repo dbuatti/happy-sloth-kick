@@ -189,7 +189,7 @@ const HabitFormDialog: React.FC<HabitFormDialogProps> = ({
               </div>
               <div className="space-y-2">
                 <Label>Frequency</Label>
-                <Select value={frequency} onValueChange={setFrequency} disabled={isSaving}>
+                <Select value={frequency} onValueChange={(value) => setFrequency(value as 'daily' | 'weekly' | 'monthly')} disabled={isSaving}>
                   <SelectTrigger className="h-9 text-base">
                     <SelectValue placeholder="Select frequency" />
                   </SelectTrigger>

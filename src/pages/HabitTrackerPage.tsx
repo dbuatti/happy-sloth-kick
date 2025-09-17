@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { addDays } from 'date-fns';
 import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
 import HabitSuggestionCard from '@/components/HabitSuggestionCard'; // Import the new component
-import { getNewHabitSuggestion } from '@/integrations/supabase/habit-api'; // Import the API call
+import { getNewHabitSuggestion } from '@/integrations/supabase/habit-suggestions-api'; // Import the API call
 import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 interface HabitTrackerPageProps {

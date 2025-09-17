@@ -214,6 +214,7 @@ export const useHabits = ({ userId: propUserId, currentDate, startDate, endDate 
       } else {
         // Create new log
         await upsertHabitLog(userId, {
+          user_id: userId, // Added user_id here
           habit_id: habitId,
           log_date: formattedDate,
           is_completed: isCompleted,
