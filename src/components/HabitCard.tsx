@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2, Plus, MoreHorizontal, Edit, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { HabitWithLogs } from '@/hooks/useHabits';
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { format } from 'date-fns';
 import { useSound } from '@/context/SoundContext';
