@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover';
 import { CalendarIcon, Trash2 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { format, parseISO } from 'date-fns';
@@ -137,7 +137,7 @@ const HabitFormDialog: React.FC<HabitFormDialogProps> = ({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-[425px] md:max-w-lg">
+        <DialogContent className="sm:max-w-[425px] md:max-w-lg rounded-3xl"> {/* Increased roundedness */}
           <DialogHeader>
             <DialogTitle>{initialData ? 'Edit Habit' : 'Add New Habit'}</DialogTitle>
             <DialogDescription className="sr-only">
@@ -154,7 +154,7 @@ const HabitFormDialog: React.FC<HabitFormDialogProps> = ({
                 placeholder="e.g., Meditate, Drink Water"
                 disabled={isSaving}
                 autoFocus
-                className="h-9 text-base"
+                className="h-9 text-base rounded-xl" // Increased roundedness
               />
             </div>
 
@@ -167,7 +167,7 @@ const HabitFormDialog: React.FC<HabitFormDialogProps> = ({
                 placeholder="Why is this habit important? What's your cue?"
                 rows={2}
                 disabled={isSaving}
-                className="text-base"
+                className="text-base rounded-xl" // Increased roundedness
               />
             </div>
 
@@ -195,10 +195,10 @@ const HabitFormDialog: React.FC<HabitFormDialogProps> = ({
               <div className="space-y-2">
                 <Label>Frequency</Label>
                 <Select value={frequency} onValueChange={(value) => setFrequency(value as 'daily' | 'weekly' | 'monthly')} disabled={isSaving}>
-                  <SelectTrigger className="h-9 text-base">
+                  <SelectTrigger className="h-9 text-base rounded-xl"> {/* Increased roundedness */}
                     <SelectValue placeholder="Select frequency" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="rounded-xl"> {/* Increased roundedness */}
                     <SelectItem value="daily">Daily</SelectItem>
                     <SelectItem value="weekly">Weekly</SelectItem>
                     <SelectItem value="monthly">Monthly</SelectItem>
@@ -212,6 +212,7 @@ const HabitFormDialog: React.FC<HabitFormDialogProps> = ({
               <IconPicker
                 value={icon}
                 onChange={setIcon}
+                habitName={name}
                 disabled={isSaving}
               />
             </div>
@@ -227,7 +228,7 @@ const HabitFormDialog: React.FC<HabitFormDialogProps> = ({
                   placeholder="e.g., 10, 5"
                   min="0"
                   disabled={isSaving}
-                  className="h-9 text-base"
+                  className="h-9 text-base rounded-xl" // Increased roundedness
                 />
               </div>
               <div className="space-y-2">
@@ -237,10 +238,10 @@ const HabitFormDialog: React.FC<HabitFormDialogProps> = ({
                   onValueChange={(value) => setUnit(value === 'none-unit' ? null : value)}
                   disabled={isSaving}
                 >
-                  <SelectTrigger className="h-9 text-base">
+                  <SelectTrigger className="h-9 text-base rounded-xl"> {/* Increased roundedness */}
                     <SelectValue placeholder="Select unit" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="rounded-xl"> {/* Increased roundedness */}
                     {unitOptions.map(option => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
@@ -259,7 +260,7 @@ const HabitFormDialog: React.FC<HabitFormDialogProps> = ({
                     <Button
                       variant="outline"
                       className={cn(
-                        "w-full justify-start text-left font-normal h-9 text-base",
+                        "w-full justify-start text-left font-normal h-9 text-base rounded-xl", // Increased roundedness
                         !startDate && "text-muted-foreground"
                       )}
                       disabled={isSaving}
@@ -268,7 +269,7 @@ const HabitFormDialog: React.FC<HabitFormDialogProps> = ({
                       {startDate ? format(startDate, "PPP") : <span>Pick a date</span>}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
+                  <PopoverContent className="w-auto p-0 rounded-xl"> {/* Increased roundedness */}
                     <CalendarComponent
                       mode="single"
                       selected={startDate}
@@ -281,10 +282,10 @@ const HabitFormDialog: React.FC<HabitFormDialogProps> = ({
               <div className="space-y-2">
                 <Label htmlFor="is-active">Status</Label>
                 <Select value={isActive ? 'active' : 'inactive'} onValueChange={(value) => setIsActive(value === 'active')} disabled={isSaving}>
-                  <SelectTrigger className="h-9 text-base">
+                  <SelectTrigger className="h-9 text-base rounded-xl"> {/* Increased roundedness */}
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="rounded-xl"> {/* Increased roundedness */}
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="inactive">Inactive</SelectItem>
                   </SelectContent>
@@ -294,15 +295,15 @@ const HabitFormDialog: React.FC<HabitFormDialogProps> = ({
           </div>
           <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2 pt-4">
             {initialData && onDelete && (
-              <Button type="button" variant="destructive" onClick={handleDeleteClick} disabled={isSaving} className="w-full sm:w-auto mt-2 sm:mt-0 h-9 text-base">
+              <Button type="button" variant="destructive" onClick={handleDeleteClick} disabled={isSaving} className="w-full sm:w-auto mt-2 sm:mt-0 h-9 text-base rounded-xl"> {/* Increased roundedness */}
                 <Trash2 className="mr-2 h-4 w-4" /> Delete Habit
               </Button>
             )}
             <div className="flex space-x-2 w-full sm:w-auto">
-              <Button type="button" variant="outline" onClick={onClose} disabled={isSaving} className="flex-1 h-9 text-base">
+              <Button type="button" variant="outline" onClick={onClose} disabled={isSaving} className="flex-1 h-9 text-base rounded-xl"> {/* Increased roundedness */}
                 Cancel
               </Button>
-              <Button type="submit" onClick={handleSubmit} disabled={isSaving || !name.trim()} className="flex-1 h-9 text-base">
+              <Button type="submit" onClick={handleSubmit} disabled={isSaving || !name.trim()} className="flex-1 h-9 text-base rounded-xl"> {/* Increased roundedness */}
                 {isSaving ? 'Saving...' : (initialData ? 'Save Changes' : 'Add Habit')}
               </Button>
             </div>
@@ -311,7 +312,7 @@ const HabitFormDialog: React.FC<HabitFormDialogProps> = ({
       </Dialog>
 
       <AlertDialog open={showConfirmDeleteDialog} onOpenChange={setShowConfirmDeleteDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="rounded-3xl"> {/* Increased roundedness */}
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -319,8 +320,8 @@ const HabitFormDialog: React.FC<HabitFormDialogProps> = ({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSaving}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteHabit} disabled={isSaving}>
+            <AlertDialogCancel disabled={isSaving} className="rounded-xl">Cancel</AlertDialogCancel> {/* Increased roundedness */}
+            <AlertDialogAction onClick={confirmDeleteHabit} disabled={isSaving} className="rounded-xl"> {/* Increased roundedness */}
               {isSaving ? 'Deleting...' : 'Continue'}
             </AlertDialogAction>
           </AlertDialogFooter>

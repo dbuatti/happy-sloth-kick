@@ -82,6 +82,8 @@ export default {
         sm: "var(--radius-sm)",
         xl: "var(--radius-xl)",
         '2xl': 'var(--radius-2xl)',
+        '3xl': 'var(--radius-3xl)', // Added for more roundness
+        '4xl': 'var(--radius-4xl)', // Added for even more roundness
       },
       keyframes: {
         "accordion-down": {
