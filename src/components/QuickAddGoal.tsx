@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
-import { Plus, Sparkles } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { GoalType, Category } from '@/hooks/useResonanceGoals';
-import { suggestGoalDetails } from '@/integrations/supabase/api'; // Assuming this API function exists or will be created
-import { dismissToast, showError, showLoading } from '@/utils/toast';
+import { showError } from '@/utils/toast'; // Keep showError for basic validation
 
 interface QuickAddGoalProps {
   goalType: GoalType;
@@ -19,7 +18,7 @@ interface QuickAddGoalProps {
   allCategories: Category[];
   isDemo?: boolean;
   parentGoalId?: string | null;
-  onAddCategory: (name: string, color: string) => Promise<Category | null>; // New prop for adding categories
+  onAddCategory: (name: string, color: string) => Promise<Category | null>;
 }
 
 const QuickAddGoal: React.FC<QuickAddGoalProps> = ({
@@ -28,85 +27,43 @@ const QuickAddGoal: React.FC<QuickAddGoalProps> = ({
   allCategories,
   isDemo = false,
   parentGoalId = null,
-  onAddCategory, // Destructure new prop
+  // onAddCategory is no longer directly used for AI-driven category creation, but kept if needed elsewhere
 }) => {
   const [title, setTitle] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  const [isSuggesting, setIsSuggesting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim()) {
+      showError('Goal title cannot be empty.');
+      return;
+    }
+    if (isDemo) return;
 
     setIsSaving(true);
-    setIsSuggesting(true);
-    const loadingToastId = showLoading('Getting AI suggestions...');
 
     try {
-      const categoriesForAI = allCategories.map(cat => ({ id: cat.id, name: cat.name }));
-      const suggestions = await suggestGoalDetails(title.trim(), categoriesForAI, new Date());
-      dismissToast(loadingToastId);
-      setIsSuggesting(false);
+      // Use the first available category as a default if no specific category is chosen
+      const defaultCategoryId = allCategories[0]?.id || null;
 
-      let goalDataToSend: Parameters<typeof onAddGoal>[0];
-      let finalCategoryId: string | null = null;
-
-      if (suggestions) {
-        const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-        let effectiveCategoryName = suggestions.category;
-
-        if (uuidRegex.test(suggestions.category)) {
-          console.warn("AI suggested category name looks like a UUID. Attempting to use 'General' category instead.");
-          showError("AI suggested an invalid category name. Attempting to use 'General' category.");
-          effectiveCategoryName = "General";
-        }
-
-        let existingCategory = allCategories.find(cat => cat.name.toLowerCase() === effectiveCategoryName.toLowerCase());
-        
-        if (existingCategory) {
-          finalCategoryId = existingCategory.id;
-        } else {
-          // Category does not exist, try to create it
-          const newCategory = await onAddCategory(effectiveCategoryName, '#6b7280'); // Default color for new AI-created categories
-          if (newCategory) {
-            finalCategoryId = newCategory.id;
-          } else {
-            showError(`Failed to create category "${effectiveCategoryName}". Using first available category.`);
-            finalCategoryId = allCategories[0]?.id || null;
-          }
-        }
-        
-        goalDataToSend = {
-          title: suggestions.cleanedDescription,
-          description: suggestions.notes,
-          category_id: finalCategoryId,
-          type: goalType,
-          due_date: suggestions.dueDate,
-          parent_goal_id: parentGoalId,
-        };
-      } else {
-        showError('AI suggestions failed. Adding goal with default details.');
-        goalDataToSend = {
-          title: title.trim(),
-          description: null,
-          category_id: allCategories[0]?.id || null,
-          type: goalType,
-          due_date: null,
-          parent_goal_id: parentGoalId,
-        };
-      }
+      const goalDataToSend: Parameters<typeof onAddGoal>[0] = {
+        title: title.trim(),
+        description: null, // No AI suggestions, so description is null by default
+        category_id: defaultCategoryId,
+        type: goalType,
+        due_date: null, // No AI suggestions, so due_date is null by default
+        parent_goal_id: parentGoalId,
+      };
 
       const success = await onAddGoal(goalDataToSend);
       if (success) {
         setTitle('');
       }
     } catch (error) {
-      dismissToast(loadingToastId);
       showError('An error occurred while adding the goal.');
       console.error('QuickAddGoal error:', error);
     } finally {
       setIsSaving(false);
-      setIsSuggesting(false);
     }
   };
 
@@ -114,7 +71,7 @@ const QuickAddGoal: React.FC<QuickAddGoalProps> = ({
     <form onSubmit={handleSubmit} className="flex items-center gap-2 px-2 py-1">
       <Plus className="h-4 w-4 text-muted-foreground flex-shrink-0" />
       <Input
-        placeholder={`Add a ${goalType} goal (AI-powered) and press Enter...`}
+        placeholder={`Add a ${goalType} goal and press Enter...`}
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         className="h-8 border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 text-sm"
@@ -127,7 +84,7 @@ const QuickAddGoal: React.FC<QuickAddGoalProps> = ({
         }}
       />
       <Button type="submit" size="icon" variant="ghost" className="h-8 w-8" disabled={isSaving || isDemo || !title.trim()}>
-        {isSuggesting ? <span className="animate-spin h-3.5 w-3.5 border-b-2 border-primary rounded-full" /> : <Sparkles className="h-3.5 w-3.5" />}
+        {isSaving ? <span className="animate-spin h-3.5 w-3.5 border-b-2 border-primary rounded-full" /> : <Plus className="h-3.5 w-3.5" />}
       </Button>
     </form>
   );
