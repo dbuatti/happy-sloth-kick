@@ -1,36 +1,34 @@
-import React, { useState, useCallback } from 'react';
-import { Goal, GoalType, NewGoalData, useResonanceGoals } from '@/hooks/useResonanceGoals';
+"use client";
+
+import React, { useState, useEffect, useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Settings } from 'lucide-react';
+import { Plus, Target, LayoutGrid, Settings, Tag, Sparkles } from 'lucide-react';
+import { useResonanceGoals, Goal, GoalType, Category } from '@/hooks/useResonanceGoals';
+import { useAuth } from '@/context/AuthContext';
+import { Skeleton } from '@/components/ui/skeleton';
 import ResonanceGoalTimelineSection from '@/components/ResonanceGoalTimelineSection';
 import FloatingAddGoalButton from '@/components/FloatingAddGoalButton';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import GoalForm from '@/components/GoalForm';
-import ManageCategoriesDialog from '@/components/ManageCategoriesDialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { getRandomCategoryColor } from '@/lib/categoryColors';
 import { showError, showSuccess } from '@/utils/toast';
+import ManageCategoriesDialog from '@/components/ManageCategoriesDialog';
+import { invokeGoalRollover } from '@/integrations/supabase/api'; // Import the new function
 
 interface ResonanceGoalsPageProps {
   isDemo?: boolean;
   demoUserId?: string;
 }
 
+const goalTypeOrder: GoalType[] = [
+  'daily', 'weekly', 'monthly', '3-month', '6-month', '9-month', 'yearly', '3-year', '5-year', '7-year', '10-year'
+];
+
 const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false, demoUserId }) => {
+  const { user } = useAuth();
+  const userId = demoUserId || user?.id;
+
   const {
     goals,
     categories,
@@ -39,142 +37,179 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
     updateGoal,
     deleteGoal,
     addCategory,
-  } = useResonanceGoals({ userId: demoUserId });
+    deleteCategory,
+  } = useResonanceGoals({ userId });
 
   const [isGoalFormOpen, setIsGoalFormOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [preselectedGoalType, setPreselectedGoalType] = useState<GoalType>('monthly');
-  const [parentGoalIdForNew, setParentGoalIdForNew] = useState<string | null>(null);
-
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [goalToDeleteId, setGoalToDeleteId] = useState<string | null>(null);
-  const [goalToDeleteTitle, setGoalToDeleteTitle] = useState<string | null>(null);
+  const [parentGoalForSubGoal, setParentGoalForSubGoal] = useState<string | null>(null);
 
   const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
 
   const [expandedGoals, setExpandedGoals] = useState<Record<string, boolean>>({});
 
-  const toggleExpandGoal = useCallback((goalId: string) => {
-    setExpandedGoals(prev => ({
-      ...prev,
-      [goalId]: !prev[goalId],
-    }));
-  }, []);
+  // Invoke goal rollover on page load
+  useEffect(() => {
+    if (!isDemo && userId) {
+      invokeGoalRollover();
+    }
+  }, [isDemo, userId]);
 
-  const [isSaving, setIsSaving] = useState(false);
+  const handleOpenGoalForm = (goal: Goal | null, type: GoalType = 'monthly', parentId: string | null = null) => {
+    setEditingGoal(goal);
+    setPreselectedGoalType(type);
+    setParentGoalForSubGoal(parentId);
+    setIsGoalFormOpen(true);
+  };
 
-  const handleSaveGoal = async (goalData: NewGoalData) => {
+  const handleSaveGoal = async (goalData: Parameters<typeof GoalForm>['0']['onSave'] extends (data: infer T) => any ? T : never) => {
+    if (editingGoal) {
+      await updateGoal({ id: editingGoal.id, updates: goalData });
+    } else {
+      await addGoal(goalData);
+    }
+    return true;
+  };
+
+  const handleDeleteGoal = async (goalId: string) => {
     if (isDemo) {
-      showError('Cannot save goals in demo mode.');
-      return false;
+      showError('Goal deletion is disabled in demo mode.');
+      return;
     }
-    setIsSaving(true);
-    try {
-      if (editingGoal) {
-        await updateGoal({ id: editingGoal.id, updates: goalData });
-      } else {
-        await addGoal(goalData);
-      }
-      showSuccess('Goal saved successfully!');
-      return true;
-    } catch (error) {
-      console.error('Error saving goal:', error);
-      showError('Failed to save goal.');
-      return false;
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleDeleteClick = (goalId: string) => {
-    const goal = goals.find(g => g.id === goalId);
-    if (goal) {
-      setGoalToDeleteId(goalId);
-      setGoalToDeleteTitle(goal.title);
-      setIsDeleteDialogOpen(true);
-    }
-  };
-
-  const confirmDeleteGoal = async () => {
-    if (goalToDeleteId) {
-      setIsSaving(true);
-      await deleteGoal(goalToDeleteId);
-      setIsSaving(false);
-      setIsDeleteDialogOpen(false);
-      setGoalToDeleteId(null);
-      setGoalToDeleteTitle(null);
-    }
+    await deleteGoal(goalId);
   };
 
   const handleToggleCompleteGoal = async (goalId: string, completed: boolean) => {
     if (isDemo) {
-      showError('Cannot update goals in demo mode.');
+      showError('Goal completion is disabled in demo mode.');
       return;
     }
     await updateGoal({ id: goalId, updates: { completed } });
   };
 
+  const handleAddSubGoal = (parentGoalId: string) => {
+    const parentGoal = goals.find(g => g.id === parentGoalId);
+    if (parentGoal) {
+      handleOpenGoalForm(null, parentGoal.type, parentGoalId);
+    } else {
+      showError('Parent goal not found.');
+    }
+  };
+
   const handleAddCategory = async (name: string, color: string) => {
     if (isDemo) {
-      showError('Cannot add categories in demo mode.');
+      showError('Category creation is disabled in demo mode.');
       return null;
     }
-    return await addCategory({ name, color });
+    try {
+      const newCategory = await addCategory({ name, color });
+      showSuccess('Category created!');
+      return newCategory;
+    } catch (error) {
+      console.error('Error adding category:', error);
+      showError('Failed to add category.');
+      return null;
+    }
   };
 
-  const handleOpenGoalForm = (goal: Goal | null, type: GoalType, parentId: string | null = null) => {
-    setEditingGoal(goal);
-    setPreselectedGoalType(type);
-    setParentGoalIdForNew(parentId);
-    setIsGoalFormOpen(true);
+  const handleCategoryCreated = () => {
+    // Categories hook will automatically refetch due to real-time subscription
   };
 
-  const goalTypes: GoalType[] = ['daily', 'weekly', 'monthly', '3-month', '6-month', '9-month', 'yearly', '3-year', '5-year', '7-year', '10-year'];
+  const handleCategoryDeleted = async (deletedId: string) => {
+    if (isDemo) {
+      showError('Category deletion is disabled in demo mode.');
+      return;
+    }
+    try {
+      await deleteCategory(deletedId);
+      showSuccess('Category deleted!');
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      showError('Failed to delete category.');
+    }
+  };
+
+  const toggleExpandGoal = (goalId: string) => {
+    setExpandedGoals(prev => ({
+      ...prev,
+      [goalId]: !prev[goalId],
+    }));
+  };
+
+  const goalsByTimeframe = useMemo(() => {
+    const grouped = new Map<GoalType, Goal[]>();
+    goalTypeOrder.forEach(type => grouped.set(type, [])); // Initialize all types
+
+    goals.forEach(goal => {
+      if (goal.parent_goal_id === null) { // Only consider top-level goals for grouping
+        const type = goal.type;
+        if (grouped.has(type)) {
+          grouped.get(type)?.push(goal);
+        } else {
+          grouped.set(type, [goal]);
+        }
+      }
+    });
+    return grouped;
+  }, [goals]);
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
-    <main className="flex-1 overflow-auto p-4 lg:p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">Resonance Goals</h1>
-        <div className="flex gap-2">
-          <Button onClick={() => setIsManageCategoriesOpen(true)} variant="outline">
-            <Settings className="mr-2 h-4 w-4" /> Manage Categories
+    <div className="flex-1 overflow-auto p-4 lg:p-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <div>
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Resonance Goals</h1>
+          <p className="text-lg text-muted-foreground">Align your actions with your long-term vision.</p>
+        </div>
+        <div className="flex items-center gap-2 self-end sm:self-auto">
+          <Button variant="outline" onClick={() => setIsManageCategoriesOpen(true)} disabled={isDemo}>
+            <Tag className="mr-2 h-4 w-4" /> Manage Categories
           </Button>
-          <Button onClick={() => handleOpenGoalForm(null, 'monthly')} disabled={isDemo}>
+          <Button onClick={() => handleOpenGoalForm(null)} disabled={isDemo}>
             <Plus className="mr-2 h-4 w-4" /> Add Goal
           </Button>
         </div>
       </div>
 
       <div className="grid gap-6">
-        {goalTypes.map(type => (
-          <ResonanceGoalTimelineSection
-            key={type}
-            goalType={type}
-            goals={goals.filter(g => g.type === type)}
-            allCategories={categories}
-            onAddGoal={handleSaveGoal}
-            onEditGoal={(goal) => handleOpenGoalForm(goal, goal.type)}
-            onDeleteGoal={handleDeleteClick}
-            onToggleCompleteGoal={handleToggleCompleteGoal}
-            onAddSubGoal={(parentGoalId) => handleOpenGoalForm(null, 'daily', parentGoalId)}
-            isDemo={isDemo}
-            loading={loading}
-            expandedGoals={expandedGoals}
-            toggleExpandGoal={toggleExpandGoal}
-            onAddCategory={handleAddCategory}
-          />
-        ))}
+        {goalTypeOrder.map(type => {
+          const goalsForType = goalsByTimeframe.get(type) || [];
+          return (
+            <ResonanceGoalTimelineSection
+              key={type}
+              goalType={type}
+              goals={goalsForType}
+              allCategories={categories}
+              onAddGoal={addGoal}
+              onEditGoal={handleOpenGoalForm}
+              onDeleteGoal={handleDeleteGoal}
+              onToggleCompleteGoal={handleToggleCompleteGoal}
+              onAddSubGoal={handleAddSubGoal}
+              isDemo={isDemo}
+              loading={loading}
+              expandedGoals={expandedGoals}
+              toggleExpandGoal={toggleExpandGoal}
+              onAddCategory={handleAddCategory}
+            />
+          );
+        })}
       </div>
 
-      <FloatingAddGoalButton onClick={() => handleOpenGoalForm(null, 'monthly')} isDemo={isDemo} />
+      <FloatingAddGoalButton onClick={() => handleOpenGoalForm(null)} isDemo={isDemo} />
 
       <Dialog open={isGoalFormOpen} onOpenChange={setIsGoalFormOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{editingGoal ? 'Edit Goal' : 'Add New Goal'}</DialogTitle>
-            <DialogDescription className="sr-only">
-              {editingGoal ? 'Edit the details of your goal.' : 'Fill in the details to add a new goal.'}
-            </DialogDescription>
           </DialogHeader>
           <GoalForm
             initialData={editingGoal}
@@ -183,36 +218,19 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
             allCategories={categories}
             autoFocus
             preselectedType={preselectedGoalType}
-            parentGoalId={parentGoalIdForNew}
+            parentGoalId={parentGoalForSubGoal}
           />
         </DialogContent>
       </Dialog>
-
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the goal "{goalToDeleteTitle}" and any sub-goals associated with it.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSaving}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteGoal} disabled={isSaving}>
-              {isSaving ? 'Deleting...' : 'Continue'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       <ManageCategoriesDialog
         isOpen={isManageCategoriesOpen}
         onClose={() => setIsManageCategoriesOpen(false)}
         categories={categories}
-        onCategoryCreated={() => {}} // Handled by react-query invalidation
-        onCategoryDeleted={() => {}} // Handled by react-query invalidation
+        onCategoryCreated={handleCategoryCreated}
+        onCategoryDeleted={handleCategoryDeleted}
       />
-    </main>
+    </div>
   );
 };
 
