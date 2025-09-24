@@ -36,7 +36,7 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
   sections,
   currentDate,
 }) => {
-  const { user } = useAuth();
+  // Removed unused 'user' variable: const { user } = useAuth();
   const [description, setDescription] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);

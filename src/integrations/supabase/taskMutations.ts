@@ -108,7 +108,7 @@ export const updateTaskMutation = async (
       parent_task_id: virtualTaskTemplate.parent_task_id,
       link: virtualTaskTemplate.link,
       image_url: virtualTaskTemplate.image_url,
-      created_at: new Date().toISOString(), // Set created_at to now for the new instance
+      // created_at and updated_at are handled by DB defaults
     };
 
     const newRealTask = await addTaskMutation(newRealTaskData, context);
@@ -395,7 +395,7 @@ export const updateTaskParentAndOrderMutation = async (
       parent_task_id: virtualTaskTemplate.parent_task_id,
       link: virtualTaskTemplate.link,
       image_url: virtualTaskTemplate.image_url,
-      created_at: new Date().toISOString(),
+      // created_at and updated_at are handled by DB defaults
     };
 
     const newRealTask = await addTaskMutation(newRealTaskData, context);
