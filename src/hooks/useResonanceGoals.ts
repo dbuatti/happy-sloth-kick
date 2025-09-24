@@ -132,13 +132,15 @@ export const useResonanceGoals = (props?: UseResonanceGoalsProps) => {
         .update(updates)
         .eq('id', id)
         .eq('user_id', userId)
-        .select()
-        .single();
+        .select(); // Removed .single()
       if (error) {
         console.error('Supabase update error:', error); // Log Supabase specific error
         throw error;
       }
-      return data;
+      if (!data || data.length === 0) {
+        throw new Error('Goal not found or not authorized to update.'); // Handle case where no row was updated
+      }
+      return data[0]; // Return the first updated goal
     },
     onSuccess: () => {
       showSuccess('Goal updated successfully!');
