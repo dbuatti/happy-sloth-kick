@@ -52,28 +52,28 @@ const QuickAddGoal: React.FC<QuickAddGoalProps> = ({
           calculatedDueDate = lastDayOfMonth(today); // Last day of current month
           break;
         case '3-month':
-          calculatedDueDate = lastDayOfMonth(addMonths(today, 2)); // Last day of 3 months from creation (current month + 2 full months)
+          calculatedDueDate = lastDayOfMonth(addMonths(today, 3)); // Last day of 3 months from today
           break;
         case '6-month':
-          calculatedDueDate = addMonths(today, 6);
+          calculatedDueDate = lastDayOfMonth(addMonths(today, 6)); // Last day of 6 months from today
           break;
         case '9-month':
-          calculatedDueDate = addMonths(today, 9);
+          calculatedDueDate = lastDayOfMonth(addMonths(today, 9)); // Last day of 9 months from today
           break;
         case 'yearly':
-          calculatedDueDate = addYears(today, 1);
+          calculatedDueDate = lastDayOfMonth(addYears(today, 1)); // Last day of 1 year from today
           break;
         case '3-year':
-          calculatedDueDate = addYears(today, 3);
+          calculatedDueDate = lastDayOfMonth(addYears(today, 3)); // Last day of 3 years from today
           break;
         case '5-year':
-          calculatedDueDate = addYears(today, 5);
+          calculatedDueDate = lastDayOfMonth(addYears(today, 5)); // Last day of 5 years from today
           break;
         case '7-year':
-          calculatedDueDate = addYears(today, 7);
+          calculatedDueDate = lastDayOfMonth(addYears(today, 7)); // Last day of 7 years from today
           break;
         case '10-year':
-          calculatedDueDate = addYears(today, 10);
+          calculatedDueDate = lastDayOfMonth(addYears(today, 10)); // Last day of 10 years from today
           break;
         default:
           calculatedDueDate = null;
