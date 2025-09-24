@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Target, Sparkles, LayoutGrid, Trash2 } from 'lucide-react'; // Imported Trash2
+import { Target, Sparkles, LayoutGrid, Trash2 } from 'lucide-react'; // Removed Plus
 import { Button } from '@/components/ui/button';
 import { useResonanceGoals, Goal, GoalType } from '@/hooks/useResonanceGoals'; // Removed unused Category import
 import ResonanceGoalCard from '@/components/ResonanceGoalCard';
