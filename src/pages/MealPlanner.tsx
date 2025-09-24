@@ -1,9 +1,11 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { UtensilsCrossed } from 'lucide-react';
+import { UtensilsCrossed, ShoppingCart } from 'lucide-react'; // Added ShoppingCart icon
 import { useMeals, Meal } from '@/hooks/useMeals';
 import MealItem from '@/components/MealItem';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; // Import Tabs components
+import StaplesInventory from '@/components/StaplesInventory'; // Import new component
 
 interface MealPlannerProps {
   isDemo?: boolean;
@@ -46,25 +48,41 @@ const MealPlanner: React.FC<MealPlannerProps> = ({ isDemo = false, demoUserId })
             <p className="text-sm text-muted-foreground text-center">Plan your next 9 meals (3 days) and track ingredients.</p>
           </CardHeader>
           <CardContent className="pt-0">
-            {loading ? (
-              <div className="space-y-4">
-                {[...Array(9)].map((_, i) => (
-                  <Skeleton key={i} className="h-32 w-full rounded-xl" />
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {upcomingMeals.map(meal => (
-                  <MealItem
-                    key={meal.id}
-                    meal={meal}
-                    currentDate={currentDate}
-                    onUpdate={handleUpdateMeal}
-                    isDemo={isDemo}
-                  />
-                ))}
-              </div>
-            )}
+            <Tabs defaultValue="meals" className="w-full">
+              <TabsList className="grid w-full grid-cols-2"> {/* Adjusted grid-cols */}
+                <TabsTrigger value="meals">
+                  <UtensilsCrossed className="h-4 w-4 mr-2" /> Meals
+                </TabsTrigger>
+                <TabsTrigger value="staples">
+                  <ShoppingCart className="h-4 w-4 mr-2" /> Staples
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="meals" className="mt-4">
+                {loading ? (
+                  <div className="space-y-4">
+                    {[...Array(9)].map((_, i) => (
+                      <Skeleton key={i} className="h-32 w-full rounded-xl" />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {upcomingMeals.map(meal => (
+                      <MealItem
+                        key={meal.id}
+                        meal={meal}
+                        currentDate={currentDate}
+                        onUpdate={handleUpdateMeal}
+                        isDemo={isDemo}
+                      />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+              <TabsContent value="staples" className="mt-4">
+                <StaplesInventory isDemo={isDemo} demoUserId={demoUserId} />
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
       </main>
