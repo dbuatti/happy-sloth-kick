@@ -11,12 +11,13 @@ export interface MealStaple {
   target_quantity: number;
   current_quantity: number;
   unit: string | null;
+  item_order: number; // Added for sorting
   created_at: string;
   updated_at: string;
 }
 
-export type NewMealStapleData = Omit<MealStaple, 'id' | 'user_id' | 'created_at' | 'updated_at'>;
-export type UpdateMealStapleData = Partial<NewMealStapleData>;
+export type NewMealStapleData = Omit<MealStaple, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'item_order'>;
+export type UpdateMealStapleData = Partial<NewMealStapleData & { item_order: number }>; // Allow updating item_order
 
 interface UseMealStaplesProps {
   userId?: string;
@@ -35,7 +36,8 @@ export const useMealStaples = (props?: UseMealStaplesProps) => {
         .from('meal_staples')
         .select('*')
         .eq('user_id', userId)
-        .order('name', { ascending: true });
+        .order('item_order', { ascending: true }) // Order by new column
+        .order('name', { ascending: true }); // Secondary sort by name
 
       if (error) throw error;
       return data || [];
@@ -56,7 +58,7 @@ export const useMealStaples = (props?: UseMealStaplesProps) => {
       if (!userId) throw new Error('User not authenticated.');
       const { data, error } = await supabase
         .from('meal_staples')
-        .insert({ ...newStaple, user_id: userId })
+        .insert({ ...newStaple, user_id: userId, item_order: staples.length }) // Assign initial order
         .select()
         .single();
       if (error) throw error;
@@ -116,6 +118,30 @@ export const useMealStaples = (props?: UseMealStaplesProps) => {
     },
   });
 
+  const reorderStaplesMutation = useMutation<boolean, Error, string[]>({
+    mutationFn: async (orderedStapleIds) => {
+      if (!userId) throw new Error('User not authenticated.');
+      const updates = orderedStapleIds.map((id, index) => ({
+        id,
+        item_order: index,
+        user_id: userId,
+      }));
+
+      const { error } = await supabase
+        .from('meal_staples')
+        .upsert(updates, { onConflict: 'id' });
+      if (error) throw error;
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['mealStaples', userId] });
+    },
+    onError: (err) => {
+      showError('Failed to reorder staples.');
+      console.error('Error reordering staples:', err.message);
+    },
+  });
+
   // Real-time subscription
   useEffect(() => {
     if (!userId) return;
@@ -142,5 +168,6 @@ export const useMealStaples = (props?: UseMealStaplesProps) => {
     addStaple: addStapleMutation.mutateAsync,
     updateStaple: updateStapleMutation.mutateAsync,
     deleteStaple: deleteStapleMutation.mutateAsync,
+    reorderStaples: reorderStaplesMutation.mutateAsync, // Expose reorder mutation
   };
 };

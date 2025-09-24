@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Plus, UtensilsCrossed, Edit, Trash2, Minus, ChevronDown, ShoppingCart } from 'lucide-react'; // Added ShoppingCart for quick add icon
+import { Plus, UtensilsCrossed, Edit, Trash2, Minus, ChevronDown, ShoppingCart, GripVertical } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMealStaples, MealStaple, NewMealStapleData } from '@/hooks/useMealStaples';
 import {
@@ -27,6 +27,27 @@ import { cn } from '@/lib/utils';
 import { useDebounce } from '@/hooks/useDebounce';
 import { showError } from '@/utils/toast'; // Import showError
 
+import {
+  DndContext,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
+  UniqueIdentifier,
+  PointerSensor,
+  closestCorners,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  sortableKeyboardCoordinates,
+  arrayMove,
+} from '@dnd-kit/sortable';
+import { createPortal } from 'react-dom';
+import SortableStapleItem from './SortableStapleItem'; // Import the new sortable item
+
 interface StaplesInventoryProps {
   isDemo?: boolean;
   demoUserId?: string;
@@ -35,7 +56,7 @@ interface StaplesInventoryProps {
 const commonUnits = ['unit', 'g', 'kg', 'ml', 'L', 'cans', 'bags', 'boxes', 'bottles', 'pieces', 'packs'];
 
 const StaplesInventory: React.FC<StaplesInventoryProps> = ({ isDemo = false, demoUserId }) => {
-  const { staples, loading, addStaple, updateStaple, deleteStaple } = useMealStaples({ userId: demoUserId });
+  const { staples, loading, addStaple, updateStaple, deleteStaple, reorderStaples } = useMealStaples({ userId: demoUserId });
 
   const [isAddEditDialogOpen, setIsAddEditDialogOpen] = useState(false);
   const [editingStaple, setEditingStaple] = useState<MealStaple | null>(null);
@@ -48,8 +69,26 @@ const StaplesInventory: React.FC<StaplesInventoryProps> = ({ isDemo = false, dem
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [stapleToDelete, setStapleToDelete] = useState<MealStaple | null>(null);
 
-  const [quickAddStapleName, setQuickAddStapleName] = useState(''); // New state for quick add input
-  const [isQuickAdding, setIsQuickAdding] = useState(false); // New state for quick add loading
+  const [quickAddStapleName, setQuickAddStapleName] = useState('');
+  const [isQuickAdding, setIsQuickAdding] = useState(false);
+
+  // DND state
+  const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
+  const [activeStaple, setActiveStaple] = useState<MealStaple | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+      enabled: !isDemo,
+    })
+  );
+
+  const stapleIds = staples.map(s => s.id);
 
   useEffect(() => {
     if (isAddEditDialogOpen) {
@@ -137,7 +176,32 @@ const StaplesInventory: React.FC<StaplesInventoryProps> = ({ isDemo = false, dem
     }
   };
 
-  const StapleItem: React.FC<{ staple: MealStaple }> = ({ staple }) => {
+  // DND Handlers
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id);
+    const activeStaple = staples.find(s => s.id === event.active.id);
+    setActiveStaple(activeStaple || null);
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+    setActiveStaple(null);
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const oldIndex = stapleIds.indexOf(String(active.id));
+    const newIndex = stapleIds.indexOf(String(over.id));
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const newOrder = arrayMove(stapleIds, oldIndex, newIndex);
+    await reorderStaples(newOrder);
+  };
+
+  const StapleItemContent: React.FC<{ staple: MealStaple }> = ({ staple }) => {
     const [localCurrentQuantity, setLocalCurrentQuantity] = useState(staple.current_quantity);
     const debouncedCurrentQuantity = useDebounce(localCurrentQuantity, 500);
 
@@ -148,7 +212,7 @@ const StaplesInventory: React.FC<StaplesInventoryProps> = ({ isDemo = false, dem
     useEffect(() => {
       if (isDemo || debouncedCurrentQuantity === staple.current_quantity) return;
       handleQuantityChange(staple.id, debouncedCurrentQuantity);
-    }, [debouncedCurrentQuantity, staple.current_quantity, staple.id]);
+    }, [debouncedCurrentQuantity, staple.current_quantity, staple.id, isDemo]);
 
     const isLow = localCurrentQuantity < staple.target_quantity;
     const isCritical = localCurrentQuantity === 0 && staple.target_quantity > 0;
@@ -161,7 +225,7 @@ const StaplesInventory: React.FC<StaplesInventoryProps> = ({ isDemo = false, dem
     );
 
     return (
-      <li
+      <div
         className={cn(
           "flex items-center justify-between p-3 rounded-xl shadow-sm bg-card border-l-4",
           isCritical && "border-destructive",
@@ -217,7 +281,7 @@ const StaplesInventory: React.FC<StaplesInventoryProps> = ({ isDemo = false, dem
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      </li>
+      </div>
     );
   };
 
@@ -257,11 +321,38 @@ const StaplesInventory: React.FC<StaplesInventoryProps> = ({ isDemo = false, dem
             <p className="text-sm">Add your essential ingredients to keep track of your pantry.</p>
           </div>
         ) : (
-          <ul className="space-y-3">
-            {staples.map(staple => (
-              <StapleItem key={staple.id} staple={staple} />
-            ))}
-          </ul>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCorners}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext items={stapleIds} strategy={verticalListSortingStrategy}>
+              <ul className="space-y-3">
+                {staples.map(staple => (
+                  <SortableStapleItem
+                    key={staple.id}
+                    staple={staple}
+                    onUpdate={updateStaple}
+                    isDemo={isDemo}
+                  />
+                ))}
+              </ul>
+            </SortableContext>
+            {createPortal(
+              <DragOverlay dropAnimation={null}>
+                {activeStaple ? (
+                  <SortableStapleItem
+                    staple={activeStaple}
+                    onUpdate={updateStaple}
+                    isDemo={isDemo}
+                    isOverlay={true}
+                  />
+                ) : null}
+              </DragOverlay>,
+              document.body
+            )}
+          </DndContext>
         )}
       </div>
 
