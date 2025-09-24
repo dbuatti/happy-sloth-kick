@@ -12,8 +12,31 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, categories, currentDate } = await req.json();
-    console.log("Received request:", { prompt, categories, currentDate }); // Log received data
+    console.log("Incoming request headers:", req.headers); // Log all incoming headers
+    const rawBody = await req.text(); // Read the raw request body as text
+    console.log("Raw request body:", rawBody); // Log the raw body
+
+    if (!rawBody) {
+      console.error("Error: Request body is empty.");
+      return new Response(JSON.stringify({ error: 'Request body is empty.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
+    }
+
+    let requestBody;
+    try {
+      requestBody = JSON.parse(rawBody); // Attempt to parse the raw body as JSON
+    } catch (parseError) {
+      console.error("Error parsing request body as JSON:", parseError);
+      return new Response(JSON.stringify({ error: 'Invalid JSON in request body.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
+    }
+
+    const { prompt, categories, currentDate } = requestBody;
+    console.log("Received request body (parsed):", requestBody); // Log the parsed body
 
     if (!prompt) {
       console.error("Error: Prompt is required");
@@ -31,7 +54,7 @@ serve(async (req) => {
         status: 500,
       });
     }
-    console.log("GEMINI_API_KEY successfully retrieved."); // Confirm API key retrieval
+    console.log("GEMINI_API_KEY successfully retrieved.");
 
     const genAI = new GoogleGenerativeAI(geminiApiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-pro" });
@@ -60,18 +83,17 @@ serve(async (req) => {
     If the goal is very short-term or ongoing, suggest 'daily' or 'weekly'. For longer-term, use appropriate 'X-month' or 'X-year' types.
     Ensure 'cleanedDescription' is always present.`;
 
-    console.log("Sending AI prompt:", aiPrompt); // Log the AI prompt
+    console.log("Sending AI prompt:", aiPrompt);
 
     const result = await model.generateContent(aiPrompt);
     const response = await result.response;
     const text = response.text();
-    console.log("Raw AI response:", text); // Log raw AI response
+    console.log("Raw AI response:", text);
 
-    // Attempt to parse the JSON, handle cases where AI might wrap it in markdown
     let parsedData;
     try {
       parsedData = JSON.parse(text.replace(/```json\n|\n```/g, ''));
-      console.log("Parsed AI data:", parsedData); // Log parsed data
+      console.log("Parsed AI data:", parsedData);
     } catch (parseError) {
       console.error("Failed to parse AI response as JSON:", text, parseError);
       return new Response(JSON.stringify({ error: 'Failed to parse AI response.' }), {
@@ -85,7 +107,7 @@ serve(async (req) => {
       status: 200,
     });
   } catch (error) {
-    console.error('Error processing request in Edge Function:', error); // More specific error log
+    console.error('Error processing request in Edge Function:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
