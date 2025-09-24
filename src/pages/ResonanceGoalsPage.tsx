@@ -1,34 +1,28 @@
-"use client";
-
 import React, { useState, useEffect, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Target, LayoutGrid, Settings, Tag, Sparkles } from 'lucide-react';
-import { useResonanceGoals, Goal, GoalType, Category } from '@/hooks/useResonanceGoals';
+import { Plus, Tag } from 'lucide-react'; 
+import { useResonanceGoals, Goal, GoalType } from '@/hooks/useResonanceGoals'; 
 import { useAuth } from '@/context/AuthContext';
-import { Skeleton } from '@/components/ui/skeleton';
 import ResonanceGoalTimelineSection from '@/components/ResonanceGoalTimelineSection';
-import FloatingAddGoalButton from '@/components/FloatingAddGoalButton';
 import GoalForm from '@/components/GoalForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { getRandomCategoryColor } from '@/lib/categoryColors';
+import { getRandomCategoryColor } from '@/lib/categoryColors'; 
 import { showError, showSuccess } from '@/utils/toast';
-import ManageCategoriesDialog from '@/components/ManageCategoriesDialog';
-import { invokeGoalRollover } from '@/integrations/supabase/api'; // Import the new function
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import ManageCategoriesDialog from '@/components/ManageCategoriesDialog'; 
 
-interface ResonanceGoalsPageProps {
-  isDemo?: boolean;
-  demoUserId?: string;
-}
-
-const goalTypeOrder: GoalType[] = [
-  'daily', 'weekly', 'monthly', '3-month', '6-month', '9-month', 'yearly', '3-year', '5-year', '7-year', '10-year'
-];
-
-const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false, demoUserId }) => {
+const ResonanceGoalsPage: React.FC<{ isDemo?: boolean; demoUserId?: string }> = ({ isDemo = false, demoUserId }) => {
   const { user } = useAuth();
   const userId = demoUserId || user?.id;
-
   const {
     goals,
     categories,
@@ -37,26 +31,35 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
     updateGoal,
     deleteGoal,
     addCategory,
+    updateCategory,
     deleteCategory,
   } = useResonanceGoals({ userId });
 
   const [isGoalFormOpen, setIsGoalFormOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
-  const [preselectedGoalType, setPreselectedGoalType] = useState<GoalType>('monthly');
   const [parentGoalForSubGoal, setParentGoalForSubGoal] = useState<string | null>(null);
+  const [preselectedGoalType, setPreselectedGoalType] = useState<GoalType>('monthly');
+
+  const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
+  const [goalToDeleteId, setGoalToDeleteId] = useState<string | null>(null);
+  const [goalToDeleteTitle, setGoalToDeleteTitle] = useState<string | null>(null);
 
   const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
+  const [categoryToDeleteId, setCategoryToDeleteId] = useState<string | null>(null);
+  const [categoryToDeleteName, setCategoryToDeleteName] = useState<string | null>(null);
+  const [showConfirmDeleteCategoryDialog, setShowConfirmDeleteCategoryDialog] = useState(false);
 
   const [expandedGoals, setExpandedGoals] = useState<Record<string, boolean>>({});
 
-  // Invoke goal rollover on page load
-  useEffect(() => {
-    if (!isDemo && userId) {
-      invokeGoalRollover();
-    }
-  }, [isDemo, userId]);
+  const toggleExpandGoal = (goalId: string) => {
+    setExpandedGoals(prev => ({ ...prev, [goalId]: !prev[goalId] }));
+  };
 
   const handleOpenGoalForm = (goal: Goal | null, type: GoalType = 'monthly', parentId: string | null = null) => {
+    if (isDemo) {
+      showError('Goal management is not available in demo mode.');
+      return;
+    }
     setEditingGoal(goal);
     setPreselectedGoalType(type);
     setParentGoalForSubGoal(parentId);
@@ -64,47 +67,47 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
   };
 
   const handleSaveGoal = async (goalData: Parameters<typeof GoalForm>['0']['onSave'] extends (data: infer T) => any ? T : never) => {
-    if (editingGoal) {
-      await updateGoal({ id: editingGoal.id, updates: goalData });
-    } else {
-      await addGoal(goalData);
+    try {
+      if (editingGoal) {
+        await updateGoal({ id: editingGoal.id, updates: goalData });
+      } else {
+        await addGoal(goalData);
+      }
+      setIsGoalFormOpen(false);
+      showSuccess('Goal saved successfully!');
+    } catch (error: any) {
+      console.error('Error saving goal:', error);
+      showError('Failed to save goal.');
     }
-    return true;
   };
 
-  const handleDeleteGoal = async (goalId: string) => {
+  const handleDeleteGoalClick = (goalId: string, goalTitle: string) => {
     if (isDemo) {
-      showError('Goal deletion is disabled in demo mode.');
+      showError('Goal management is not available in demo mode.');
       return;
     }
-    await deleteGoal(goalId);
+    setGoalToDeleteId(goalId);
+    setGoalToDeleteTitle(goalTitle);
+    setShowConfirmDeleteDialog(true);
   };
 
-  const handleToggleCompleteGoal = async (goalId: string, completed: boolean) => {
-    if (isDemo) {
-      showError('Goal completion is disabled in demo mode.');
-      return;
-    }
-    await updateGoal({ id: goalId, updates: { completed } });
-  };
-
-  const handleAddSubGoal = (parentGoalId: string) => {
-    const parentGoal = goals.find(g => g.id === parentGoalId);
-    if (parentGoal) {
-      handleOpenGoalForm(null, parentGoal.type, parentGoalId);
-    } else {
-      showError('Parent goal not found.');
+  const confirmDeleteGoal = async () => {
+    if (goalToDeleteId) {
+      await deleteGoal(goalToDeleteId);
+      setShowConfirmDeleteDialog(false);
+      setGoalToDeleteId(null);
+      setGoalToDeleteTitle(null);
     }
   };
 
   const handleAddCategory = async (name: string, color: string) => {
     if (isDemo) {
-      showError('Category creation is disabled in demo mode.');
+      showError('Category management is not available in demo mode.');
       return null;
     }
     try {
       const newCategory = await addCategory({ name, color });
-      showSuccess('Category created!');
+      showSuccess('Category added!');
       return newCategory;
     } catch (error) {
       console.error('Error adding category:', error);
@@ -114,97 +117,85 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
   };
 
   const handleCategoryCreated = () => {
-    // Categories hook will automatically refetch due to real-time subscription
+    // Categories are automatically refetched by react-query due to real-time subscription
+    // No explicit action needed here other than potentially closing a form if it existed
   };
 
-  const handleCategoryDeleted = async (deletedId: string) => {
-    if (isDemo) {
-      showError('Category deletion is disabled in demo mode.');
-      return;
-    }
-    try {
-      await deleteCategory(deletedId);
-      showSuccess('Category deleted!');
-    } catch (error) {
-      console.error('Error deleting category:', error);
-      showError('Failed to delete category.');
-    }
+  const handleCategoryDeleted = (deletedId: string) => {
+    // Categories are automatically refetched by react-query due to real-time subscription
+    // If any goals were using this category, their category_id will be set to null by the RLS policy.
   };
 
-  const toggleExpandGoal = (goalId: string) => {
-    setExpandedGoals(prev => ({
-      ...prev,
-      [goalId]: !prev[goalId],
-    }));
-  };
+  const goalTypes: GoalType[] = useMemo(() => [
+    'daily', 'weekly', 'monthly', '3-month', '6-month', '9-month', 'yearly', '3-year', '5-year', '7-year', '10-year'
+  ], []);
 
-  const goalsByTimeframe = useMemo(() => {
-    const grouped = new Map<GoalType, Goal[]>();
-    goalTypeOrder.forEach(type => grouped.set(type, [])); // Initialize all types
-
+  const groupedGoals = useMemo(() => {
+    const groups: Record<GoalType, Goal[]> = goalTypes.reduce((acc, type) => ({ ...acc, [type]: [] }), {} as Record<GoalType, Goal[]>);
     goals.forEach(goal => {
-      if (goal.parent_goal_id === null) { // Only consider top-level goals for grouping
-        const type = goal.type;
-        if (grouped.has(type)) {
-          grouped.get(type)?.push(goal);
-        } else {
-          grouped.set(type, [goal]);
-        }
+      if (goal.parent_goal_id === null) { // Only group top-level goals
+        groups[goal.type]?.push(goal);
       }
     });
-    return grouped;
-  }, [goals]);
-
-  if (loading) {
-    return (
-      <div className="flex-1 flex items-center justify-center p-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
+    return groups;
+  }, [goals, goalTypes]);
 
   return (
-    <div className="flex-1 overflow-auto p-4 lg:p-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-        <div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Resonance Goals</h1>
-          <p className="text-lg text-muted-foreground">Align your actions with your long-term vision.</p>
+    <div className="flex-1 overflow-auto p-4">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Resonance Goals</h1>
+            <p className="text-lg text-muted-foreground">Align your actions with your long-term vision.</p>
+          </div>
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            <Button onClick={() => handleOpenGoalForm(null)} disabled={isDemo}>
+              <Plus className="mr-2 h-4 w-4" /> Add Goal
+            </Button>
+            <Button variant="outline" onClick={() => setIsManageCategoriesOpen(true)} disabled={isDemo}>
+              <Tag className="mr-2 h-4 w-4" /> Manage Categories
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-2 self-end sm:self-auto">
-          <Button variant="outline" onClick={() => setIsManageCategoriesOpen(true)} disabled={isDemo}>
-            <Tag className="mr-2 h-4 w-4" /> Manage Categories
-          </Button>
-          <Button onClick={() => handleOpenGoalForm(null)} disabled={isDemo}>
-            <Plus className="mr-2 h-4 w-4" /> Add Goal
-          </Button>
-        </div>
-      </div>
 
-      <div className="grid gap-6">
-        {goalTypeOrder.map(type => {
-          const goalsForType = goalsByTimeframe.get(type) || [];
-          return (
-            <ResonanceGoalTimelineSection
-              key={type}
-              goalType={type}
-              goals={goalsForType}
-              allCategories={categories}
-              onAddGoal={addGoal}
-              onEditGoal={handleOpenGoalForm}
-              onDeleteGoal={handleDeleteGoal}
-              onToggleCompleteGoal={handleToggleCompleteGoal}
-              onAddSubGoal={handleAddSubGoal}
-              isDemo={isDemo}
-              loading={loading}
-              expandedGoals={expandedGoals}
-              toggleExpandGoal={toggleExpandGoal}
-              onAddCategory={handleAddCategory}
-            />
-          );
-        })}
+        {loading ? (
+          <div className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="space-y-2 border-b pb-4 mb-4">
+                <div className="h-6 w-48 bg-muted rounded-md" />
+                <div className="h-20 w-full bg-muted rounded-lg" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {goalTypes.map(type => (
+              <ResonanceGoalTimelineSection
+                key={type}
+                goalType={type}
+                goals={groupedGoals[type]}
+                allCategories={categories}
+                onAddGoal={addGoal}
+                onEditGoal={(goal) => handleOpenGoalForm(goal, goal.type)}
+                onDeleteGoal={handleDeleteGoalClick}
+                onToggleCompleteGoal={async (goalId, completed) => {
+                  if (isDemo) {
+                    showError('Goal management is not available in demo mode.');
+                    return;
+                  }
+                  await updateGoal({ id: goalId, updates: { completed } });
+                }}
+                onAddSubGoal={(parentGoalId) => handleOpenGoalForm(null, 'daily', parentGoalId)}
+                isDemo={isDemo}
+                loading={loading}
+                expandedGoals={expandedGoals}
+                toggleExpandGoal={toggleExpandGoal}
+                onAddCategory={handleAddCategory}
+              />
+            ))}
+          </div>
+        )}
       </div>
-
-      <FloatingAddGoalButton onClick={() => handleOpenGoalForm(null)} isDemo={isDemo} />
 
       <Dialog open={isGoalFormOpen} onOpenChange={setIsGoalFormOpen}>
         <DialogContent className="sm:max-w-md">
@@ -222,6 +213,23 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
           />
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={showConfirmDeleteDialog} onOpenChange={setShowConfirmDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the goal "{goalToDeleteTitle}" and all its sub-goals.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteGoal}>
+              Delete
+            </AlertDialogAction>
+          </DialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <ManageCategoriesDialog
         isOpen={isManageCategoriesOpen}

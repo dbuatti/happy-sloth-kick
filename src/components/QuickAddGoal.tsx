@@ -4,7 +4,7 @@ import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { GoalType, Category, NewGoalData } from '@/hooks/useResonanceGoals';
 import { showError } from '@/utils/toast';
-import { format, addDays, addWeeks, addMonths, addYears, endOfWeek, lastDayOfMonth } from 'date-fns'; // Import necessary date-fns utilities
+import { format, addMonths, addYears, endOfWeek, lastDayOfMonth } from 'date-fns'; // Removed addDays, addWeeks
 
 interface QuickAddGoalProps {
   goalType: GoalType;

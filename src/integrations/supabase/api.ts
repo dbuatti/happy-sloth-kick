@@ -1,96 +1,43 @@
-import { supabase } from './client';
 import { format } from 'date-fns';
 import { AICategory } from '@/types/ai'; // Assuming AICategory is defined here or in a similar types file
 
-// Define AICategory if it's not already defined in a shared types file
-// If it's already in '@/types/ai', then this can be removed.
-export interface AICategory {
-  id: string;
-  name: string;
-}
+// Placeholder functions for AI integration
+export const suggestTaskDetails = async (
+  description: string,
+  categories: AICategory[],
+  currentDate: Date
+) => {
+  // In a real scenario, this would call an AI service
+  console.log('AI Suggestion for task:', description, 'with categories:', categories.map(c => c.name), 'on date:', format(currentDate, 'yyyy-MM-dd'));
+  return {
+    cleanedDescription: description,
+    category: categories.length > 0 ? categories[0].name : 'General',
+    priority: 'medium',
+    dueDate: null,
+    notes: null,
+    remindAt: null,
+    section: null,
+    link: null,
+  };
+};
 
-export async function suggestTaskDetails(description: string, categories: AICategory[], currentDate: Date) {
-  try {
-    const { data, error } = await supabase.functions.invoke('suggest-task-details', {
-      body: { description, categories, currentDate: format(currentDate, 'yyyy-MM-dd') },
-    });
+export const getDailyBriefing = async (userId: string, date: Date) => {
+  console.log('Getting daily briefing for user:', userId, 'on date:', format(date, 'yyyy-MM-dd'));
+  return "This is a placeholder daily briefing from AI.";
+};
 
-    if (error) {
-      console.error('Error invoking suggest-task-details:', error);
-      return null;
-    }
-    return data;
-  } catch (error) {
-    console.error('Unexpected error in suggestTaskDetails:', error);
-    return null;
-  }
-}
+export const getHabitChallengeSuggestion = async (userId: string, habitId: string) => {
+  console.log('Getting habit challenge suggestion for user:', userId, 'habit:', habitId);
+  return "Try to complete your habit for 7 consecutive days!";
+};
 
-export async function getDailyBriefing(userId: string, date: Date) {
-  try {
-    const { data, error } = await supabase.functions.invoke('daily-briefing', {
-      body: { userId, date: format(date, 'yyyy-MM-dd') },
-    });
-
-    if (error) {
-      console.error('Error invoking daily-briefing:', error);
-      return null;
-    }
-    return data;
-  } catch (error) {
-    console.error('Unexpected error in getDailyBriefing:', error);
-    return null;
-  }
-}
-
-export async function getHabitChallengeSuggestion(userId: string, habitId: string) {
-  try {
-    const { data, error } = await supabase.functions.invoke('habit-challenge-suggestion', {
-      body: { userId, habitId },
-    });
-
-    if (error) {
-      console.error('Error invoking habit-challenge-suggestion:', error);
-      return null;
-    }
-    return data;
-  } catch (error) {
-    console.error('Unexpected error in getHabitChallengeSuggestion:', error);
-    return null;
-  }
-}
-
-export async function parseAppointmentText(text: string, date: Date) {
-  try {
-    const { data, error } = await supabase.functions.invoke('parse-appointment-text', {
-      body: { text, date: format(date, 'yyyy-MM-dd') },
-    });
-
-    if (error) {
-      console.error('Error invoking parse-appointment-text:', error);
-      return null;
-    }
-    return data;
-  } catch (error) {
-    console.error('Unexpected error in parseAppointmentText:', error);
-    return null;
-  }
-}
-
-export async function invokeGoalRollover() {
-  try {
-    const { data, error } = await supabase.functions.invoke('rollover-goals', {
-      body: {}, // No specific body needed for this function
-    });
-
-    if (error) {
-      console.error('Error invoking rollover-goals:', error);
-      return null;
-    }
-    console.log('Goal rollover function invoked:', data);
-    return data;
-  } catch (error) {
-    console.error('Unexpected error in invokeGoalRollover:', error);
-    return null;
-  }
-}
+export const parseAppointmentText = async (text: string, date: Date) => {
+  console.log('Parsing appointment text:', text, 'for date:', format(date, 'yyyy-MM-dd'));
+  return {
+    title: "Parsed Appointment",
+    description: "Details from text",
+    date: format(date, 'yyyy-MM-dd'),
+    startTime: "09:00",
+    endTime: "10:00",
+  };
+};

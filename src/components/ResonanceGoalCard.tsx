@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { format, parseISO, isPast, isSameDay, isValid } from 'date-fns';
 import { cn, getContrastTextColor } from '@/lib/utils'; // Import getContrastTextColor
-import { Edit, Trash2, CalendarDays, ChevronRight, Plus } from 'lucide-react';
+import { Edit, Trash2, ChevronRight, Plus } from 'lucide-react'; 
 import {
   ContextMenu,
   ContextMenuContent,
