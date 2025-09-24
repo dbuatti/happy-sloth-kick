@@ -17,7 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { showError } from '@/utils/toast';
 
@@ -274,6 +274,9 @@ const StaplesInventory: React.FC<StaplesInventoryProps> = ({ isDemo = false, dem
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{editingStaple ? 'Edit Staple' : 'Add New Staple'}</DialogTitle>
+            <DialogDescription>
+              {editingStaple ? 'Edit the details of your meal staple.' : 'Fill in the details to add a new meal staple.'}
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div>
