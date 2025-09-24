@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.15.0";
 import { format, parseISO, addDays } from 'https://esm.sh/date-fns@2.30.0';
 
@@ -23,7 +22,15 @@ serve(async (req) => {
       });
     }
 
-    const genAI = new GoogleGenerativeAI(Deno.env.get("GEMINI_API_KEY")!);
+    const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
+    if (!geminiApiKey) {
+      return new Response(JSON.stringify({ error: 'GEMINI_API_KEY is not set in Supabase secrets.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
+    }
+
+    const genAI = new GoogleGenerativeAI(geminiApiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
     const categoryNames = existingCategories.map((c: { name: string }) => c.name);
@@ -63,7 +70,16 @@ serve(async (req) => {
       jsonString = jsonString.substring(7, jsonString.lastIndexOf('```')).trim();
     }
 
-    const parsed = JSON.parse(jsonString);
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonString);
+    } catch (jsonError) {
+      console.error('JSON parsing error:', jsonError);
+      return new Response(JSON.stringify({ error: 'Failed to parse AI response as JSON.', rawResponse: text }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
+    }
 
     // Map category name back to ID
     const suggestedCategoryName = parsed.category;
@@ -86,7 +102,7 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error('Error in suggest_goal_details Edge Function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: error.message || 'An unknown error occurred in the Edge Function.' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
     });
