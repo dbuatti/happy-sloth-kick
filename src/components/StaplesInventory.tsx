@@ -4,9 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Plus, UtensilsCrossed, ShoppingCart, ListFilter } from 'lucide-react';
+import { Plus, UtensilsCrossed, ShoppingCart, ListFilter, SortAsc } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useMealStaples, MealStaple, NewMealStapleData } from '@/hooks/useMealStaples';
+import { useMealStaples, MealStaple, NewMealStapleData, StapleSortOption } from '@/hooks/useMealStaples';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch"; // Import Switch component
+import { Switch } from "@/components/ui/switch";
 import { showError } from '@/utils/toast';
 
 import {
@@ -51,7 +51,8 @@ interface StaplesInventoryProps {
 const commonUnits = ['unit', 'g', 'kg', 'ml', 'L', 'cans', 'bags', 'boxes', 'bottles', 'pieces', 'packs'];
 
 const StaplesInventory: React.FC<StaplesInventoryProps> = ({ isDemo = false, demoUserId }) => {
-  const { staples, loading, addStaple, updateStaple, deleteStaple, reorderStaples } = useMealStaples({ userId: demoUserId });
+  const [sortOption, setSortOption] = useState<StapleSortOption>('item_order_asc'); // State for sort option
+  const { staples, loading, addStaple, updateStaple, deleteStaple, reorderStaples } = useMealStaples({ userId: demoUserId, sortOption });
 
   const [isAddEditDialogOpen, setIsAddEditDialogOpen] = useState(false);
   const [editingStaple, setEditingStaple] = useState<MealStaple | null>(null);
@@ -67,7 +68,7 @@ const StaplesInventory: React.FC<StaplesInventoryProps> = ({ isDemo = false, dem
   const [quickAddStapleName, setQuickAddStapleName] = useState('');
   const [isQuickAdding, setIsQuickAdding] = useState(false);
 
-  const [showShoppingList, setShowShoppingList] = useState(false); // New state for shopping list mode
+  const [showShoppingList, setShowShoppingList] = useState(false);
 
   // DND state
   const [activeStaple, setActiveStaple] = useState<MealStaple | null>(null);
@@ -80,7 +81,7 @@ const StaplesInventory: React.FC<StaplesInventoryProps> = ({ isDemo = false, dem
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-      enabled: !isDemo,
+      enabled: !isDemo && sortOption === 'item_order_asc', // Enable DND only for custom order
     })
   );
 
@@ -225,16 +226,36 @@ const StaplesInventory: React.FC<StaplesInventoryProps> = ({ isDemo = false, dem
           </Button>
         </form>
 
-        <div className="flex items-center justify-between p-2 rounded-md bg-muted/30">
-          <Label htmlFor="shopping-list-mode" className="flex items-center gap-2 text-sm font-medium">
-            <ListFilter className="h-4 w-4" /> Shopping List Mode
-          </Label>
-          <Switch
-            id="shopping-list-mode"
-            checked={showShoppingList}
-            onCheckedChange={setShowShoppingList}
-            disabled={isDemo}
-          />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-2 rounded-md bg-muted/30">
+          <div className="flex items-center gap-2">
+            <Label htmlFor="shopping-list-mode" className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+              <ListFilter className="h-4 w-4" /> Shopping List Mode
+            </Label>
+            <Switch
+              id="shopping-list-mode"
+              checked={showShoppingList}
+              onCheckedChange={setShowShoppingList}
+              disabled={isDemo}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="sort-by" className="flex items-center gap-2 text-sm font-medium">
+              <SortAsc className="h-4 w-4" /> Sort by:
+            </Label>
+            <Select value={sortOption} onValueChange={(value: StapleSortOption) => setSortOption(value)} disabled={isDemo}>
+              <SelectTrigger className="w-[180px] h-9">
+                <SelectValue placeholder="Sort staples" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="item_order_asc">Custom Order</SelectItem>
+                <SelectItem value="name_asc">Name (A-Z)</SelectItem>
+                <SelectItem value="current_quantity_asc">Current Qty (Low to High)</SelectItem>
+                <SelectItem value="current_quantity_desc">Current Qty (High to Low)</SelectItem>
+                <SelectItem value="target_quantity_asc">Target Qty (Low to High)</SelectItem>
+                <SelectItem value="target_quantity_desc">Target Qty (High to Low)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {loading ? (

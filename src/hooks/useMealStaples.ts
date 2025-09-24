@@ -19,27 +19,52 @@ export interface MealStaple {
 export type NewMealStapleData = Omit<MealStaple, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'item_order'>;
 export type UpdateMealStapleData = Partial<NewMealStapleData & { item_order: number }>; // Allow updating item_order
 
+export type StapleSortOption = 'name_asc' | 'current_quantity_asc' | 'current_quantity_desc' | 'target_quantity_asc' | 'target_quantity_desc' | 'item_order_asc';
+
 interface UseMealStaplesProps {
   userId?: string;
+  sortOption?: StapleSortOption; // New prop for sorting
 }
 
 export const useMealStaples = (props?: UseMealStaplesProps) => {
   const { user } = useAuth();
   const userId = props?.userId || user?.id;
+  const sortOption = props?.sortOption || 'item_order_asc'; // Default sort option
   const queryClient = useQueryClient();
 
   const { data: staples = [], isLoading: loading, error } = useQuery<MealStaple[], Error>({
-    queryKey: ['mealStaples', userId],
+    queryKey: ['mealStaples', userId, sortOption], // Include sortOption in query key
     queryFn: async () => {
       if (!userId) return [];
-      const { data, error } = await supabase
+      let query = supabase
         .from('meal_staples')
         .select('*')
-        .eq('user_id', userId)
-        .order('current_quantity', { ascending: true }) // Sort by current quantity (lowest first)
-        .order('target_quantity', { ascending: false }) // Then by target quantity (higher target first for 0 current)
-        .order('item_order', { ascending: true }) // Then by user-defined order
-        .order('name', { ascending: true }); // Finally by name as a tie-breaker
+        .eq('user_id', userId);
+
+      // Apply sorting based on sortOption
+      switch (sortOption) {
+        case 'name_asc':
+          query = query.order('name', { ascending: true });
+          break;
+        case 'current_quantity_asc':
+          query = query.order('current_quantity', { ascending: true }).order('name', { ascending: true });
+          break;
+        case 'current_quantity_desc':
+          query = query.order('current_quantity', { ascending: false }).order('name', { ascending: true });
+          break;
+        case 'target_quantity_asc':
+          query = query.order('target_quantity', { ascending: true }).order('name', { ascending: true });
+          break;
+        case 'target_quantity_desc':
+          query = query.order('target_quantity', { ascending: false }).order('name', { ascending: true });
+          break;
+        case 'item_order_asc':
+        default:
+          query = query.order('item_order', { ascending: true }).order('name', { ascending: true });
+          break;
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       return data || [];
@@ -125,7 +150,7 @@ export const useMealStaples = (props?: UseMealStaplesProps) => {
       if (!userId) throw new Error('User not authenticated.');
       
       // Fetch current staples to get their names and other non-nullable fields
-      const currentStaples = queryClient.getQueryData<MealStaple[]>(['mealStaples', userId]) || [];
+      const currentStaples = queryClient.getQueryData<MealStaple[]>(['mealStaples', userId, sortOption]) || [];
 
       const updates = orderedStapleIds.map((id, index) => {
         const existingStaple = currentStaples.find(s => s.id === id);
