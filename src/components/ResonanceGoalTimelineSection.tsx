@@ -69,11 +69,11 @@ const ResonanceGoalTimelineSection: React.FC<ResonanceGoalTimelineSectionProps> 
               goal={goal}
               onEdit={onEditGoal}
               onDelete={onDeleteGoal}
-              onToggleCompleteGoal={onToggleCompleteGoal}
+              onToggleComplete={onToggleCompleteGoal}
               onAddSubGoal={onAddSubGoal}
               subGoals={getSubGoals(goal.id)}
               isExpanded={expandedGoals[goal.id] !== false}
-              toggleExpandGoal={toggleExpandGoal}
+              toggleExpand={toggleExpandGoal}
               isDemo={isDemo}
               level={0}
             />
