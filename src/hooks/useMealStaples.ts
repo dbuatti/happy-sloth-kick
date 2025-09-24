@@ -36,8 +36,10 @@ export const useMealStaples = (props?: UseMealStaplesProps) => {
         .from('meal_staples')
         .select('*')
         .eq('user_id', userId)
-        .order('item_order', { ascending: true }) // Order by new column
-        .order('name', { ascending: true }); // Secondary sort by name
+        .order('current_quantity', { ascending: true }) // Sort by current quantity (lowest first)
+        .order('target_quantity', { ascending: false }) // Then by target quantity (higher target first for 0 current)
+        .order('item_order', { ascending: true }) // Then by user-defined order
+        .order('name', { ascending: true }); // Finally by name as a tie-breaker
 
       if (error) throw error;
       return data || [];
