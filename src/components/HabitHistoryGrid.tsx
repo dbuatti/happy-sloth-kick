@@ -1,7 +1,7 @@
 import React from 'react';
 import { format, parseISO, isSameDay, eachDayOfInterval, startOfWeek, addWeeks, isBefore, addDays } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { HabitLog } from '@/integrations/supabase/habit-api';
+import { HabitLog } from '@/types/habit'; // Import HabitLog from types
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface HabitHistoryGridProps {
@@ -9,7 +9,7 @@ interface HabitHistoryGridProps {
   habitStartDate: string;
   habitColor: string;
   currentDate: Date;
-  onToggleCompletionForDay: (habitId: string, date: Date, isCompleted: boolean, valueRecorded?: number | null) => Promise<boolean>;
+  onToggleCompletionForDay: (date: Date, isCompleted: boolean, valueRecorded?: number | null) => Promise<boolean>;
   isDemo?: boolean;
   weeksToShow?: number;
 }
@@ -65,7 +65,7 @@ const HabitHistoryGrid: React.FC<HabitHistoryGridProps> = ({
                   isDemo && "cursor-not-allowed"
                 )}
                 style={{ backgroundColor: isCompleted && !isFutureDay && !isBeforeHabitStart ? habitColor : undefined }}
-                onClick={() => !isDemo && !isFutureDay && !isBeforeHabitStart && onToggleCompletionForDay(log?.habit_id || '', day, !isCompleted, log?.value_recorded)}
+                onClick={() => !isDemo && !isFutureDay && !isBeforeHabitStart && onToggleCompletionForDay(day, !isCompleted, log?.value_recorded)}
                 disabled={isDemo || isFutureDay || isBeforeHabitStart}
               >
                 {isCompleted && !isFutureDay && !isBeforeHabitStart ? '✓' : ''}

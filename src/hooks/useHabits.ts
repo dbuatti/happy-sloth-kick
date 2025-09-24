@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess } from '@/utils/toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, parseISO, isSameDay, startOfDay, addDays, isBefore } from 'date-fns';
-import { HabitLog } from '@/integrations/supabase/habit-api'; // Import HabitLog
+import { HabitLog } from '@/types/habit'; // Import HabitLog from types
 
 export interface Habit {
   id: string;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardTitle } from "@/components/ui/card"; // Removed unused CardHeader
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, X, MoreHorizontal, Edit, Flame, CalendarDays, Pencil as PencilIcon, Sparkles, Info, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -9,7 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { format, parseISO, isSameDay } from 'date-fns';
 import { useSound } from '@/context/SoundContext';
 import { Input } from '@/components/ui/input';
-import { getHabitChallengeSuggestion } from '@/integrations/supabase/habit-api';
+import { getHabitChallengeSuggestion } from '@/integrations/supabase/habit-api'; // Corrected import path
 import { useAuth } from '@/context/AuthContext';
 import { showLoading, dismissToast, showError } from '@/utils/toast';
 import HabitChallengeDialog from './HabitChallengeDialog';
