@@ -33,7 +33,7 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
 
   const [currentDate] = useState(new Date()); // Archive view doesn't change date
   const {
-    tasks: rawTasks, // Renamed to rawTasks to distinguish from processedTasks
+    // Removed tasks: rawTasks as it was unused
     processedTasks, // Use processedTasks for TaskItem
     filteredTasks,
     loading,
@@ -57,7 +57,7 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
+  const [selectedTaskIds, setSelectedTaskIds] = new Set<string>(); // Changed to useState<Set<string>>(new Set());
   const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   // Removed isBulkUpdating as it was unused
