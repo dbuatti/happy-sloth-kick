@@ -1,12 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LayoutGrid } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Plus, LayoutGrid, RefreshCcw } from 'lucide-react';
 import { useProjects, Project } from '@/hooks/useProjects';
-import { useAuth } from '@/context/AuthContext';
-import ProjectNotesDialog from '@/components/ProjectNotesDialog';
-
-// Import new modular components
-import ProjectActionsBar from '@/components/project-tracker/ProjectActionsBar';
 import AddProjectDialog from '@/components/project-tracker/AddProjectDialog';
 import ProjectList from '@/components/project-tracker/ProjectList';
 import ProjectCelebrationBanner from '@/components/project-tracker/ProjectCelebrationBanner';
@@ -14,6 +10,8 @@ import ProjectRecommendationBanner from '@/components/project-tracker/ProjectRec
 import ConfirmDeleteProjectDialog from '@/components/project-tracker/ConfirmDeleteProjectDialog';
 import ConfirmResetIndividualProjectDialog from '@/components/project-tracker/ConfirmResetIndividualProjectDialog';
 import ConfirmResetAllProjectsDialog from '@/components/project-tracker/ConfirmResetAllProjectsDialog';
+import ProjectNotesDialog from '@/components/project-tracker/ProjectNotesDialog';
+import ProjectActionsBar from '@/components/project-tracker/ProjectActionsBar';
 
 interface ProjectBalanceTrackerProps {
   isDemo?: boolean;
@@ -21,8 +19,6 @@ interface ProjectBalanceTrackerProps {
 }
 
 const ProjectBalanceTracker: React.FC<ProjectBalanceTrackerProps> = ({ isDemo = false, demoUserId }) => {
-  useAuth();
-
   const {
     projects,
     loading,
@@ -33,75 +29,49 @@ const ProjectBalanceTracker: React.FC<ProjectBalanceTrackerProps> = ({ isDemo = 
     incrementProjectCount,
     decrementProjectCount,
     resetAllProjectCounts,
+    updateProjectTrackerTitle,
     sortOption,
     setSortOption,
   } = useProjects({ userId: demoUserId });
 
-  const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
-  const [isSavingProject, setIsSavingProject] = useState(false); // Used for add/edit/delete operations
-
+  const [isAddProjectDialogOpen, setIsAddProjectDialogOpen] = useState(false);
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
-
-  const [showCelebration, setShowCelebration] = useState(false);
+  const [isSavingProject, setIsSavingProject] = useState(false);
 
   const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
   const [projectToDeleteId, setProjectToDeleteId] = useState<string | null>(null);
+
   const [showConfirmResetIndividualDialog, setShowConfirmResetIndividualDialog] = useState(false);
-  const [projectToResetId, setProjectToResetId] = useState<string | null>(null);
+  const [projectToResetIndividualId, setProjectToResetIndividualId] = useState<string | null>(null);
+
   const [showConfirmResetAllDialog, setShowConfirmResetAllDialog] = useState(false);
-  const [isResettingAll, setIsResettingAll] = useState(false); // Specific for reset all
+  const [isResettingAll, setIsResettingAll] = useState(false);
 
-  const [isNotesOpen, setIsNotesOpen] = useState(false);
-  const [selectedProjectForNotes, setSelectedProjectForNotes] = useState<Project | null>(null);
+  const [isNotesDialogOpen, setIsNotesDialogOpen] = useState(false);
+  const [projectForNotes, setProjectForNotes] = useState<Project | null>(null);
 
+  const allProjectsBalanced = useMemo(() => projects.length > 0 && projects.every(p => p.current_count === 10), [projects]);
   const leastWorkedOnProject = useMemo(() => {
     if (projects.length === 0) return null;
-    return projects.reduce((prev, current) =>
-      prev.current_count <= current.current_count ? prev : current
-    );
+    return projects.reduce((prev, current) => (prev.current_count < current.current_count ? prev : current));
   }, [projects]);
-
-  const allProjectsMaxed = useMemo(() => {
-    if (projects.length === 0) return false;
-    return projects.every(p => p.current_count === 10);
-  }, [projects]);
-
-  React.useEffect(() => {
-    if (allProjectsMaxed && projects.length > 0) {
-      setShowCelebration(true);
-    } else {
-      setShowCelebration(false);
-    }
-  }, [allProjectsMaxed, projects.length]);
 
   const handleAddProject = async (name: string, description: string, link: string) => {
-    if (name.trim()) {
-      setIsSavingProject(true);
-      const success = await addProject({ name, description: description || null, link: link || null });
-      if (success) {
-        setIsAddProjectOpen(false);
-      }
-      setIsSavingProject(false);
-    }
+    setIsSavingProject(true);
+    await addProject({ name, description, link });
+    setIsSavingProject(false);
+    setIsAddProjectDialogOpen(false);
   };
 
   const handleEditProject = (project: Project) => {
     setEditingProjectId(project.id);
   };
 
-  const handleSaveProjectEdit = async (projectId: string, name: string, description: string, link: string) => {
-    if (projectId && name.trim()) {
-      setIsSavingProject(true);
-      const success = await updateProject({ projectId, updates: {
-        name,
-        description: description || null,
-        link: link || null,
-      }});
-      if (success) {
-        setEditingProjectId(null);
-      }
-      setIsSavingProject(false);
-    }
+  const handleSaveEditedProject = async (projectId: string, name: string, description: string, link: string) => {
+    setIsSavingProject(true);
+    await updateProject({ projectId, updates: { name, description, link } });
+    setIsSavingProject(false);
+    setEditingProjectId(null);
   };
 
   const handleCancelEdit = () => {
@@ -117,110 +87,107 @@ const ProjectBalanceTracker: React.FC<ProjectBalanceTrackerProps> = ({ isDemo = 
     if (projectToDeleteId) {
       setIsSavingProject(true);
       await deleteProject(projectToDeleteId);
-      setProjectToDeleteId(null);
-      setShowConfirmDeleteDialog(false);
       setIsSavingProject(false);
+      setShowConfirmDeleteDialog(false);
+      setProjectToDeleteId(null);
     }
   };
 
-  const handleIncrement = async (projectId: string) => {
-    await incrementProjectCount(projectId);
-  };
-
-  const handleDecrement = async (projectId: string) => {
-    await decrementProjectCount(projectId);
-  };
-
   const handleResetIndividualProjectClick = (projectId: string) => {
-    setProjectToResetId(projectId);
+    setProjectToResetIndividualId(projectId);
     setShowConfirmResetIndividualDialog(true);
   };
 
   const confirmResetIndividualProject = async () => {
-    if (projectToResetId) {
+    if (projectToResetIndividualId) {
       setIsSavingProject(true);
-      await updateProject({ projectId: projectToResetId, updates: { current_count: 0 } });
-      setProjectToResetId(null);
-      setShowConfirmResetIndividualDialog(false);
+      await updateProject({ projectId: projectToResetIndividualId, updates: { current_count: 0 } });
       setIsSavingProject(false);
+      setShowConfirmResetIndividualDialog(false);
+      setProjectToResetIndividualId(null);
     }
   };
 
-  const handleResetAllClick = () => {
+  const handleResetAllProjectsClick = () => {
     setShowConfirmResetAllDialog(true);
   };
 
-  const confirmResetAll = async () => {
+  const confirmResetAllProjects = async () => {
     setIsResettingAll(true);
-    const success = await resetAllProjectCounts();
-    if (success) {
-      setShowCelebration(false);
-    }
+    await resetAllProjectCounts();
     setIsResettingAll(false);
     setShowConfirmResetAllDialog(false);
   };
 
   const handleOpenNotes = (project: Project) => {
-    setSelectedProjectForNotes(project);
-    setIsNotesOpen(true);
+    setProjectForNotes(project);
+    setIsNotesDialogOpen(true);
   };
 
   const handleSaveNotes = async (projectId: string, notes: string) => {
+    setIsSavingProject(true);
     await updateProject({ projectId, updates: { notes } });
+    setIsSavingProject(false);
   };
 
   return (
-    <div className="flex-1 flex flex-col">
-      <main className="flex-grow p-4">
-        <Card className="w-full max-w-4xl mx-auto shadow-lg rounded-xl p-4">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-3xl font-bold flex items-center justify-center gap-2">
-              <LayoutGrid className="h-7 w-7" /> {sectionTitle}
-            </CardTitle>
-            <ProjectActionsBar
-              onAddProjectClick={() => setIsAddProjectOpen(true)}
-              sortOption={sortOption}
-              onSortChange={setSortOption}
-              isSavingProject={isSavingProject}
-              isDemo={isDemo}
-            />
-          </CardHeader>
-          <CardContent className="pt-0">
-            {showCelebration && (
-              <ProjectCelebrationBanner
-                onResetAllClick={handleResetAllClick}
-                isResettingAll={isResettingAll}
-                isDemo={isDemo}
-              />
-            )}
+    <main className="flex-1 overflow-y-auto p-4 lg:p-6 container mx-auto max-w-4xl">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold flex items-center gap-3">
+          <LayoutGrid className="h-7 w-7 text-primary" /> {sectionTitle}
+        </h1>
+        <Button onClick={handleResetAllProjectsClick} variant="outline" disabled={isResettingAll || isDemo || projects.length === 0}>
+          <RefreshCcw className="mr-2 h-4 w-4" /> Reset All
+        </Button>
+      </div>
 
-            {projects.length > 0 && !loading && (
-              <ProjectRecommendationBanner project={leastWorkedOnProject} />
-            )}
+      {allProjectsBalanced && projects.length > 0 && (
+        <ProjectCelebrationBanner
+          onResetAllClick={handleResetAllProjectsClick}
+          isResettingAll={isResettingAll}
+          isDemo={isDemo}
+        />
+      )}
 
-            <ProjectList
-              projects={projects}
-              loading={loading}
-              leastWorkedOnProject={leastWorkedOnProject}
-              onIncrement={handleIncrement}
-              onDecrement={handleDecrement}
-              onEdit={handleEditProject}
-              onSaveEdit={handleSaveProjectEdit}
-              onCancelEdit={handleCancelEdit}
-              onDelete={handleDeleteProjectClick}
-              onResetIndividual={handleResetIndividualProjectClick}
-              onOpenNotes={handleOpenNotes}
-              editingProjectId={editingProjectId}
-              isSavingProject={isSavingProject}
-              isDemo={isDemo}
-            />
-          </CardContent>
-        </Card>
-      </main>
+      {!allProjectsBalanced && projects.length > 0 && (
+        <ProjectRecommendationBanner project={leastWorkedOnProject} />
+      )}
+
+      <ProjectActionsBar
+        onAddProjectClick={() => setIsAddProjectDialogOpen(true)}
+        sortOption={sortOption}
+        onSortChange={setSortOption}
+        isSavingProject={isSavingProject}
+        isDemo={isDemo}
+      />
+
+      <Card className="mt-6 shadow-lg rounded-xl">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-xl font-bold">Your Projects</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <ProjectList
+            projects={projects}
+            loading={loading}
+            leastWorkedOnProject={leastWorkedOnProject}
+            onIncrement={incrementProjectCount}
+            onDecrement={decrementProjectCount}
+            onEdit={handleEditProject}
+            onSaveEdit={handleSaveEditedProject}
+            onCancelEdit={handleCancelEdit}
+            onDelete={handleDeleteProjectClick}
+            onResetIndividual={handleResetIndividualProjectClick}
+            onOpenNotes={handleOpenNotes}
+            editingProjectId={editingProjectId}
+            isSavingProject={isSavingProject}
+            isDemo={isDemo}
+          />
+        </CardContent>
+      </Card>
 
       <AddProjectDialog
-        isOpen={isAddProjectOpen}
-        onClose={() => setIsAddProjectOpen(false)}
+        isOpen={isAddProjectDialogOpen}
+        onClose={() => setIsAddProjectDialogOpen(false)}
         onSave={handleAddProject}
         isSaving={isSavingProject}
       />
@@ -242,17 +209,17 @@ const ProjectBalanceTracker: React.FC<ProjectBalanceTrackerProps> = ({ isDemo = 
       <ConfirmResetAllProjectsDialog
         isOpen={showConfirmResetAllDialog}
         onClose={() => setShowConfirmResetAllDialog(false)}
-        onConfirm={confirmResetAll}
+        onConfirm={confirmResetAllProjects}
         isResetting={isResettingAll}
       />
 
       <ProjectNotesDialog
-        project={selectedProjectForNotes}
-        isOpen={isNotesOpen}
-        onClose={() => setIsNotesOpen(false)}
+        project={projectForNotes}
+        isOpen={isNotesDialogOpen}
+        onClose={() => setIsNotesDialogOpen(false)}
         onSave={handleSaveNotes}
       />
-    </div>
+    </main>
   );
 };
 

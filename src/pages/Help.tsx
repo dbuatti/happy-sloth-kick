@@ -1,109 +1,97 @@
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Lightbulb, Keyboard, Palette, Settings, ChevronLeft, ChevronRight, Edit, User, BarChart3 } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { HelpCircle, Lightbulb, Bug, Mail } from 'lucide-react';
 
-const Help = () => {
+const Help: React.FC = () => {
   return (
-    <div className="flex-1 flex flex-col">
-      <main className="flex-grow p-4 flex justify-center">
-        <Card className="w-full max-w-4xl shadow-lg p-6 rounded-xl">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-4xl font-bold text-center text-primary">TaskMaster Help Center</CardTitle>
+    <main className="flex-1 overflow-y-auto p-4 lg:p-6 container mx-auto max-w-4xl">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold flex items-center gap-3">
+          <HelpCircle className="h-7 w-7 text-primary" /> Help & Support
+        </h1>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6">
+        <Card className="shadow-lg rounded-xl">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xl font-bold flex items-center gap-2">
+              <Lightbulb className="h-5 w-5 text-primary" /> Frequently Asked Questions
+            </CardTitle>
           </CardHeader>
-          <CardContent className="pt-0 space-y-8">
-            <section>
-              <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2 text-foreground">
-                <Lightbulb className="h-6 w-6 text-primary" /> Core Task Functionality
-              </h2>
-              <ul className="list-disc list-inside space-y-3 text-muted-foreground text-base leading-relaxed">
-                <li><strong>Adding Tasks:</strong> Use the <kbd className="font-mono text-sm bg-muted px-1 py-0.5 rounded">Cmd/Ctrl + K</kbd> shortcut to open the Command Palette, then select "Add New Task".</li>
-                <li><strong>Editing Tasks:</strong> Click the <Edit className="inline-block h-4 w-4 text-muted-foreground" /> icon on a task or use the dropdown menu to edit its details.</li>
-                <li><strong>Deleting Tasks:</strong> Tasks can be deleted individually via the dropdown menu or in bulk using the "Bulk Actions" bar.</li>
-                <li><strong>Task Status:</strong> Mark tasks as 'To-Do', 'Completed', 'Skipped', or 'Archived' using the checkbox or the task's dropdown menu.</li>
-                <li><strong>Recurring Tasks:</strong> Set tasks to repeat 'Daily', 'Weekly', or 'Monthly' when adding or editing. Daily recurring tasks will automatically appear on subsequent days.</li>
-                <li><strong>Due Dates & Reminders:</strong> Assign specific due dates and set reminders with a time for important tasks.</li>
-                <li><strong>Notes:</strong> Add detailed notes to any task for extra context.</li>
-                <li><strong>Categories:</strong> Organize tasks into custom categories (e.g., Work, Personal, Shopping) with distinct colors. Manage categories via the task edit form.</li>
-                <li><strong>Priorities:</strong> Assign 'Low', 'Medium', 'High', or 'Urgent' priorities to tasks.</li>
-                <li><strong>Sections:</strong> Group tasks into custom sections (e.g., Today, This Week, Backlog) for better organization. Manage sections via the <Settings className="inline-block h-4 w-4 text-muted-foreground" /> icon next to "Your Tasks".</li>
-                <li><strong>Bulk Actions:</strong> Select multiple tasks using their checkboxes to perform actions like 'Complete', 'Archive', 'Delete', or change 'Priority' for all selected tasks at once.</li>
-              </ul>
-            </section>
-
-            <Separator />
-
-            <section>
-              <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2 text-foreground">
-                <Keyboard className="h-6 w-6 text-primary" /> Keyboard Shortcuts
-              </h2>
-              <ul className="list-disc list-inside space-y-3 text-muted-foreground text-base leading-relaxed">
-                <li><kbd className="font-mono text-sm bg-muted px-1 py-0.5 rounded">Cmd/Ctrl + K</kbd>: Open the **Command Palette** for quick access to all actions.</li>
-                <li><kbd className="font-mono text-sm bg-muted px-1 py-0.5 rounded">N</kbd>: (Within Command Palette) Quickly open the "Add New Task" form.</li>
-                <li><kbd className="font-mono text-sm bg-muted px-1 py-0.5 rounded">ArrowLeft</kbd>: Navigate to the **Previous Day** in the Daily Tasks view.</li>
-                <li><kbd className="font-mono text-sm bg-muted px-1 py-0.5 rounded">ArrowRight</kbd>: Navigate to the **Next Day** in the Daily Tasks view.</li>
-                <li><kbd className="font-mono text-sm bg-muted px-1 py-0.5 rounded">T</kbd>: Jump to **Today** in the Daily Tasks view.</li>
-                <li><kbd className="font-mono text-sm bg-muted px-1 py-0.5 rounded">F</kbd>: Focus on the **Search Tasks** input field.</li>
-              </ul>
-            </section>
-
-            <Separator />
-
-            <section>
-              <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2 text-foreground">
-                <Palette className="h-6 w-6 text-primary" /> Customization & Themes
-              </h2>
-              <ul className="list-disc list-inside space-y-3 text-muted-foreground text-base leading-relaxed">
-                <li><strong>Dark Mode Toggle:</strong> Switch between light and dark modes using the <span className="inline-flex items-center"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M6.34 17.66l-1.41 1.41"/><path d="M19.07 4.93l-1.41 1.41"/></svg> / <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-moon"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg></span> icon in the sidebar.</li>
-                <li><strong>Color Themes:</strong> Choose from a variety of pre-defined color themes (e.g., ADHD-Friendly, Calm Mist, Cosmic Dusk) using the <Palette className="inline-block h-4 w-4 text-muted-foreground" /> icon in the sidebar.</li>
-                <li><strong>Responsive Design:</strong> The app is designed to adapt seamlessly to different screen sizes, from mobile to desktop.</li>
-              </ul>
-            </section>
-
-            <Separator />
-
-            <section>
-              <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2 text-foreground">
-                <Lightbulb className="h-6 w-6 text-primary" /> Advanced Features
-              </h2>
-              <ul className="list-disc list-inside space-y-3 text-muted-foreground text-base leading-relaxed">
-                <li><strong>AI-Powered Suggestions:</strong> When adding a new task, the app intelligently suggests a category and priority based on your description.</li>
-                <li><strong>Daily Progress:</strong> The "Today's Progress" card on the Daily Tasks page provides a quick overview of your completed tasks for the day.</li>
-                <li><strong>Visual Urgency Cues:</strong> Tasks that are overdue are highlighted with a red border, and tasks due today have an orange border, making prioritization intuitive.</li>
-                <li><strong>Drag-and-Drop Reordering:</strong> Easily reorder **top-level tasks** within sections or move them between sections using intuitive drag-and-drop functionality. You can also reorder sections themselves. Sub-tasks are not currently draggable.</li>
-                <li><strong>Task Completion Animation:</strong> A subtle animation plays when you mark a task as complete, providing satisfying visual feedback.</li>
-                <li><strong>Analytics Page:</strong> Visit the <BarChart3 className="inline-block h-4 w-4 text-muted-foreground" /> Analytics page to view your task completion trends, category breakdown, and priority distribution over time.</li>
-              </ul>
-            </section>
-
-            <Separator />
-
-            <section>
-              <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2 text-foreground">
-                <User className="h-6 w-6 text-primary" /> Account & Settings
-              </h2>
-              <ul className="list-disc list-inside space-y-3 text-muted-foreground text-base leading-relaxed">
-                <li><strong>Authentication:</strong> Sign in or create an account using email/password or Google authentication.</li>
-                <li><strong>Profile Settings:</strong> Update your first and last name on the <Settings className="inline-block h-4 w-4 text-muted-foreground" /> Settings page.</li>
-                <li><strong>Sign Out:</strong> Securely log out of your account from the Settings page.</li>
-              </ul>
-            </section>
-
-            <Separator />
-
-            <section>
-              <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2 text-foreground">
-                <Lightbulb className="h-6 w-6 text-primary" /> Navigation
-              </h2>
-              <ul className="list-disc list-inside space-y-3 text-muted-foreground text-base leading-relaxed">
-                <li><strong>Sidebar:</strong> Use the navigation links on the left to switch between Daily Tasks, Analytics, Settings, and this Help page.</li>
-                <li><strong>Date Navigator:</strong> On the Daily Tasks page, use the <ChevronLeft className="inline-block h-4 w-4 text-muted-foreground" /> and <ChevronRight className="inline-block h-4 w-4 text-muted-foreground" /> buttons to navigate between days.</li>
-              </ul>
-            </section>
-
+          <CardContent className="pt-0">
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="item-1">
+                <AccordionTrigger>How do I add a new task?</AccordionTrigger>
+                <AccordionContent>
+                  You can add a new task by clicking the floating "+" button at the bottom right of the Daily Tasks page, or by using the "Add New Task" command in the Command Palette (Cmd/Ctrl + K).
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="item-2">
+                <AccordionTrigger>What is "Focus Mode"?</AccordionTrigger>
+                <AccordionContent>
+                  Focus Mode is designed to help you concentrate on your most important tasks. It filters your task list to only show tasks from sections you've marked as "Include in Focus Mode". You can access it from the sidebar or by clicking on the next available task in your Daily Overview.
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="item-3">
+                <AccordionTrigger>How can I customize my dashboard?</AccordionTrigger>
+                <AccordionContent>
+                  On the Dashboard page, click the "Settings" icon (gear icon) in the top right. This will open a dialog where you can toggle the visibility of built-in cards and your custom cards.
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="item-4">
+                <AccordionTrigger>Can I create recurring tasks?</AccordionTrigger>
+                <AccordionContent>
+                  Yes! When adding or editing a task, you can set its recurrence to daily, weekly, or monthly. Recurring tasks will automatically appear as "to-do" on their scheduled days.
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="item-5">
+                <AccordionTrigger>How does the Project Balance Tracker work?</AccordionTrigger>
+                <AccordionContent>
+                  The Project Balance Tracker helps you keep track of how much attention you're giving to different projects or areas of your life. You can increment a counter for each project, aiming for a balance (e.g., 10 points per project). It helps ensure you don't neglect important areas.
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </CardContent>
         </Card>
-      </main>
-    </div>
+
+        <Card className="shadow-lg rounded-xl">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xl font-bold flex items-center gap-2">
+              <Bug className="h-5 w-5 text-primary" /> Report an Issue
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <p className="text-muted-foreground mb-4">
+              If you encounter any bugs or unexpected behavior, please let us know!
+            </p>
+            <Button asChild>
+              <a href="mailto:support@example.com?subject=Bug Report - TaskMaster" target="_blank" rel="noopener noreferrer">
+                <Mail className="mr-2 h-4 w-4" /> Email Support
+              </a>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-lg rounded-xl">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xl font-bold flex items-center gap-2">
+              <Mail className="h-5 w-5 text-primary" /> Contact Us
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <p className="text-muted-foreground mb-4">
+              Have a question, suggestion, or just want to say hello? We'd love to hear from you!
+            </p>
+            <Button asChild>
+              <a href="mailto:hello@example.com?subject=Hello from TaskMaster User" target="_blank" rel="noopener noreferrer">
+                <Mail className="mr-2 h-4 w-4" /> Send us an Email
+              </a>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    </main>
   );
 };
 
