@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UtensilsCrossed } from 'lucide-react';
-import { useMeals } from '@/hooks/useMeals';
+import { useMeals, Meal } from '@/hooks/useMeals';
 import MealItem from '@/components/MealItem';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
@@ -12,7 +12,7 @@ interface MealPlannerProps {
 }
 
 const MealPlanner: React.FC<MealPlannerProps> = ({ isDemo = false, demoUserId }) => {
-  const { upcomingMeals, loading, addMeal, updateMeal, deleteMeal, currentDate } = useMeals({ userId: demoUserId });
+  const { upcomingMeals, loading, addMeal, updateMeal, currentDate } = useMeals({ userId: demoUserId });
 
   const handleUpdateMeal = async (id: string, updates: Partial<Meal>) => {
     if (id.startsWith('placeholder-')) {
