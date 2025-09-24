@@ -38,10 +38,42 @@ serve(async (req) => {
       });
     }
 
-    const { prompt, categories, currentDate } = await req.json();
+    let requestBody;
+    try {
+      const bodyText = await req.text(); // Read as text
+      if (!bodyText) {
+        return new Response(JSON.stringify({ error: 'Request body is empty.' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      requestBody = JSON.parse(bodyText); // Manually parse
+    } catch (jsonParseError) {
+      console.error('Failed to parse request body as JSON:', jsonParseError);
+      return new Response(JSON.stringify({ error: 'Invalid JSON in request body.' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const prompt = requestBody?.prompt;
+    const categories = requestBody?.categories;
+    const currentDate = requestBody?.currentDate;
 
     if (!prompt) {
       return new Response('Missing prompt in request body', {
+        status: 400,
+        headers: corsHeaders,
+      });
+    }
+    if (!categories || !Array.isArray(categories)) {
+      return new Response('Missing or invalid categories in request body', {
+        status: 400,
+        headers: corsHeaders,
+      });
+    }
+    if (!currentDate) {
+      return new Response('Missing currentDate in request body', {
         status: 400,
         headers: corsHeaders,
       });
