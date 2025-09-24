@@ -9,9 +9,8 @@ import { showError, showSuccess } from "@/utils/toast";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import TaskForm, { TaskFormData } from './TaskForm'; // Updated import
+import TaskForm from './TaskForm';
 import { useSound } from '@/context/SoundContext';
-import { format, setHours, setMinutes } from 'date-fns';
 import { NewTaskData } from '@/hooks/useTasks';
 
 
