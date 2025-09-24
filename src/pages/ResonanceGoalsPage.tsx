@@ -318,7 +318,15 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
                         loading={loading}
                         expandedGoals={expandedGoals}
                         toggleExpandGoal={toggleExpandGoal}
-                        onAddCategory={addCategory} // Pass addCategory to the section
+                        onAddCategory={async (name, color) => {
+                          try {
+                            const newCategory = await addCategory({ name, color });
+                            return newCategory;
+                          } catch (error) {
+                            console.error("Error adding category from timeline section:", error);
+                            return null;
+                          }
+                        }}
                       />
                     );
                   }
