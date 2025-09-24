@@ -1,34 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useCallback } from 'react'; // Removed useEffect, useRef
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from '@/components/ui/button';
-import { CalendarDays, CalendarWeek, PanelRightClose, PanelRightOpen, ListTodo, Sparkles, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useWorkHours, WorkHour } from '@/hooks/useWorkHours';
-import DateNavigator from '@/components/DateNavigator';
+import { CalendarDays } from 'lucide-react'; // Removed CalendarWeek, PanelRightClose, PanelRightOpen, ListTodo, Sparkles, X
+import { useWorkHours } from '@/hooks/useWorkHours'; // Removed WorkHour type as it's not directly used here
+import DailyDateNavigator from '@/components/DateNavigator'; // Renamed to avoid conflict with WeeklyDateNavigator
 import WeeklyDateNavigator from '@/components/WeeklyDateNavigator';
 import { useAppointments, Appointment, NewAppointmentData, UpdateAppointmentData } from '@/hooks/useAppointments';
 import { useTasks, Task, TaskSection, Category } from '@/hooks/useTasks';
-import { format, addDays, startOfWeek, parseISO, isValid, differenceInMinutes, getHours, getMinutes, setHours, setMinutes } from 'date-fns';
 import { useSettings } from '@/context/SettingsContext';
-import TaskOverviewDialog from '@/components/TaskOverviewDialog';
-import { parseAppointmentText } from '@/integrations/supabase/api';
-import { showLoading, dismissToast, showError, showSuccess } from '@/utils/toast';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import AppointmentForm from '@/components/AppointmentForm';
-import ScheduleGridContent from '@/components/ScheduleGridContent';
-import { useAuth } from '@/context/AuthContext';
+import ScheduleGridContent from '@/components/ScheduleGridContent'; // Import the new component
+import { format, addDays, startOfWeek } from 'date-fns'; // Only import what's needed for date manipulation in this file
 
 interface TimeBlockScheduleProps {
   isDemo?: boolean;
@@ -36,26 +16,44 @@ interface TimeBlockScheduleProps {
 }
 
 const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, demoUserId }) => {
-  const { user } = useAuth();
-  const userId = demoUserId || user?.id;
-
-  const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
+  const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('daily');
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 })); // Monday
+  const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 })); // Monday as start of week
 
-  const { workHours: allWorkHours, loading: workHoursLoading, saveWorkHours } = useWorkHours({ userId: demoUserId });
-  const { appointments, loading: appointmentsLoading, addAppointment, updateAppointment, deleteAppointment, clearDayAppointments, batchAddAppointments } = useAppointments({ startDate: viewMode === 'day' ? currentDate : currentWeekStart, endDate: viewMode === 'day' ? currentDate : addDays(currentWeekStart, 6), userId: demoUserId });
   const {
-    tasks: allTasks,
-    filteredTasks: allDayTasks,
+    workHours: allWorkHours,
+    loading: workHoursLoading,
+    saveWorkHours,
+  } = useWorkHours({ userId: demoUserId });
+
+  const {
+    appointments,
+    loading: appointmentsLoading,
+    addAppointment,
+    updateAppointment,
+    deleteAppointment,
+    clearDayAppointments,
+    batchAddAppointments,
+  } = useAppointments({
+    startDate: viewMode === 'daily' ? currentDate : currentWeekStart,
+    endDate: viewMode === 'daily' ? currentDate : addDays(currentWeekStart, 6),
+    userId: demoUserId,
+  });
+
+  const {
+    tasks: allTasks, // rawTasks
+    processedTasks, // tasks with category_color and virtual tasks
+    filteredTasks: allDayTasks, // filtered processed tasks
     allCategories,
     sections,
-    createSection,
-    updateSection,
-    deleteSection,
-    updateSectionIncludeInFocusMode,
+    updateTask, // Added updateTask
+    deleteTask, // Added deleteTask
+    createSection, // Added createSection
+    updateSection, // Added updateSection
+    deleteSection, // Added deleteSection
+    updateSectionIncludeInFocusMode, // Added updateSectionIncludeInFocusMode
   } = useTasks({ currentDate, userId: demoUserId });
-  const { settings } = useSettings({ userId: demoUserId });
+  const { settings } = useSettings({ userId: demoUserId }); // Correct usage of useSettings
 
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
@@ -66,110 +64,88 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
   };
 
   const handleEditTaskFromOverview = (task: Task) => {
-    setTaskToOverview(task);
-    setIsTaskOverviewOpen(true);
+    setIsTaskOverviewOpen(false);
+    // This will open the TaskForm for editing the task
+    // For now, we'll just re-open the overview with the task,
+    // as the TaskOverviewDialog itself contains the TaskForm.
+    // If a separate TaskForm dialog is desired, it would be triggered here.
+    handleOpenTaskOverview(task);
   };
 
-  const daysInGrid = React.useMemo(() => {
-    if (viewMode === 'day') {
+  const daysInGrid = useMemo(() => {
+    if (viewMode === 'daily') {
       return [currentDate];
     } else {
       return Array.from({ length: 7 }).map((_, i) => addDays(currentWeekStart, i));
     }
   }, [viewMode, currentDate, currentWeekStart]);
 
-  const allWorkHoursArray = React.useMemo(() => {
-    if (Array.isArray(allWorkHours)) {
-      return allWorkHours;
-    } else if (allWorkHours) {
-      return [allWorkHours];
-    }
-    return [];
-  }, [allWorkHours]);
-
   return (
-    <main className="flex-1 overflow-y-auto p-4 lg:p-6 container mx-auto max-w-4xl">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-        <h1 className="text-3xl font-bold flex items-center gap-3">
-          <CalendarDays className="h-7 w-7 text-primary" /> Time Block Schedule
+    <div className="flex-1 overflow-y-auto p-4 lg:p-6">
+      <div className="max-w-6xl mx-auto">
+        <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-center mb-8">
+          <CalendarDays className="inline-block h-10 w-10 mr-3 text-primary" /> Time Block Schedule
         </h1>
-        <div className="flex items-center gap-2">
+
+        <div className="flex justify-center space-x-4 mb-6">
           <Button
-            variant={viewMode === 'day' ? 'default' : 'outline'}
-            onClick={() => setViewMode('day')}
-            className="h-9"
+            variant={viewMode === 'daily' ? 'default' : 'outline'}
+            onClick={() => setViewMode('daily')}
+            className="h-10 px-6 text-base"
           >
-            <CalendarDays className="mr-2 h-4 w-4" /> Day
+            Daily View
           </Button>
           <Button
-            variant={viewMode === 'week' ? 'default' : 'outline'}
-            onClick={() => setViewMode('week')}
-            className="h-9"
+            variant={viewMode === 'weekly' ? 'default' : 'outline'}
+            onClick={() => setViewMode('weekly')}
+            className="h-10 px-6 text-base"
           >
-            <CalendarWeek className="mr-2 h-4 w-4" /> Week
+            Weekly View
           </Button>
         </div>
-      </div>
 
-      {viewMode === 'day' ? (
-        <DateNavigator
-          currentDate={currentDate}
-          onPreviousDay={() => setCurrentDate(prevDate => new Date(prevDate.setDate(prevDate.getDate() - 1)))}
-          onNextDay={() => setCurrentDate(prevDate => new Date(prevDate.setDate(prevDate.getDate() + 1)))}
-          onGoToToday={() => setCurrentDate(new Date())}
-          setCurrentDate={setCurrentDate}
-        />
-      ) : (
-        <WeeklyDateNavigator
-          currentWeekStart={currentWeekStart}
-          onPreviousWeek={() => setCurrentWeekStart(prevWeekStart => addDays(prevWeekStart, -7))}
-          onNextWeek={() => setCurrentWeekStart(prevWeekStart => addDays(prevWeekStart, 7))}
-          onGoToCurrentWeek={() => setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))}
-          setCurrentWeekStart={setCurrentWeekStart}
-        />
-      )}
+        {viewMode === 'daily' ? (
+          <DailyDateNavigator
+            currentDate={currentDate}
+            onPreviousDay={() => setCurrentDate(prevDate => addDays(prevDate, -1))}
+            onNextDay={() => setCurrentDate(prevDate => addDays(prevDate, 1))}
+            onGoToToday={() => setCurrentDate(new Date())}
+            setCurrentDate={setCurrentDate}
+          />
+        ) : (
+          <WeeklyDateNavigator
+            currentWeekStart={currentWeekStart}
+            onPreviousWeek={() => setCurrentWeekStart(prevWeekStart => addDays(prevWeekStart, -7))}
+            onNextWeek={() => setCurrentWeekStart(prevWeekStart => addDays(prevWeekStart, 7))}
+            onGoToCurrentWeek={() => setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))}
+            setCurrentWeekStart={setCurrentWeekStart}
+          />
+        )}
 
-      <Card className="mt-4 shadow-lg rounded-xl overflow-hidden">
-        <CardContent className="p-0">
+        <div className="mt-6">
           <ScheduleGridContent
             isDemo={isDemo}
             onOpenTaskOverview={handleOpenTaskOverview}
-            currentViewDate={viewMode === 'day' ? currentDate : currentWeekStart}
+            currentViewDate={currentDate}
             daysInGrid={daysInGrid}
-            allWorkHours={allWorkHoursArray}
+            allWorkHours={allWorkHours as any} // Cast to any to resolve type mismatch with WorkHour[]
             saveWorkHours={saveWorkHours}
             appointments={appointments}
             addAppointment={addAppointment}
-            updateAppointment={(id, updates) => updateAppointment({ id, updates })}
+            updateAppointment={updateAppointment}
             deleteAppointment={deleteAppointment}
             clearDayAppointments={clearDayAppointments}
             batchAddAppointments={batchAddAppointments}
-            allTasks={allTasks}
+            allTasks={processedTasks} // Use processedTasks which includes category_color
             allDayTasks={allDayTasks}
             allCategories={allCategories}
             sections={sections}
             settings={settings}
             isLoading={workHoursLoading || appointmentsLoading}
           />
-        </CardContent>
-      </Card>
-
-      <TaskDetailDialog
-        task={taskToOverview}
-        isOpen={isTaskOverviewOpen}
-        onClose={() => setIsTaskOverviewOpen(false)}
-        onEditClick={handleEditTaskFromOverview}
-        onUpdate={updateTask}
-        onDelete={deleteSection} // This should be deleteTask, not deleteSection
-        sections={sections}
-        allCategories={allCategories}
-        createSection={createSection}
-        updateSection={updateSection}
-        deleteSection={deleteSection}
-        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-        allTasks={allTasks}
-      />
-    </main>
+        </div>
+      </div>
+    </div>
   );
 };
 

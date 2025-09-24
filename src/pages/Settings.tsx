@@ -1,11 +1,11 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings as SettingsIcon, User, BellRing, LayoutDashboard, ListTodo, CalendarDays, Moon, Code, UtensilsCrossed, Sparkles } from 'lucide-react';
+import { Settings as SettingsIcon } from 'lucide-react'; // Removed many unused icons
 import WorkHoursSettings from '@/components/WorkHoursSettings';
 import ProjectTrackerSettings from '@/components/ProjectTrackerSettings';
 import TaskSettings from '@/components/TaskSettings';
 import ScheduleSettings from '@/components/ScheduleSettings';
 import PageToggleSettings from '@/components/PageToggleSettings';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'; // Added Card imports
 
 interface SettingsProps {
   isDemo?: boolean;
@@ -14,22 +14,32 @@ interface SettingsProps {
 
 const Settings: React.FC<SettingsProps> = ({ isDemo = false, demoUserId }) => {
   return (
-    <main className="flex-1 overflow-y-auto p-4 lg:p-6 container mx-auto max-w-4xl">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold flex items-center gap-3">
-          <SettingsIcon className="h-7 w-7 text-primary" /> Settings
+    <div className="flex-1 overflow-y-auto p-4 lg:p-6">
+      <div className="max-w-4xl mx-auto space-y-6">
+        <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-center mb-8">
+          <SettingsIcon className="inline-block h-10 w-10 mr-3 text-primary" /> Settings
         </h1>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card className="w-full shadow-lg rounded-xl">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-2xl font-bold flex items-center gap-2">
+              <SettingsIcon className="h-6 w-6 text-primary" /> General Settings
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">Manage your application preferences.</p>
+          </CardHeader>
+          <CardContent className="pt-0">
+            {/* General settings content can go here if any */}
+            <p className="text-sm text-muted-foreground">No general settings yet.</p>
+          </CardContent>
+        </Card>
+
         <PageToggleSettings />
         <WorkHoursSettings />
         <ProjectTrackerSettings />
         <TaskSettings />
         <ScheduleSettings />
-        {/* Add other settings components here as needed */}
       </div>
-    </main>
+    </div>
   );
 };
 

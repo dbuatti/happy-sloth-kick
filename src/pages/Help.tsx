@@ -1,73 +1,65 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { HelpCircle, Lightbulb, Bug, Mail } from 'lucide-react';
+import { LifeBuoy, Mail } from 'lucide-react';
+import { Button } from "@/components/ui/button"; // Added import
 
-const Help: React.FC = () => {
+interface HelpProps {
+  isDemo?: boolean;
+}
+
+const Help: React.FC<HelpProps> = ({ isDemo = false }) => {
   return (
-    <main className="flex-1 overflow-y-auto p-4 lg:p-6 container mx-auto max-w-4xl">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold flex items-center gap-3">
-          <HelpCircle className="h-7 w-7 text-primary" /> Help & Support
-        </h1>
-      </div>
+    <div className="flex-1 overflow-y-auto p-4 lg:p-6">
+      <div className="max-w-3xl mx-auto space-y-6">
+        <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-center mb-8">Help & Support</h1>
 
-      <div className="grid grid-cols-1 gap-6">
         <Card className="shadow-lg rounded-xl">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xl font-bold flex items-center gap-2">
-              <Lightbulb className="h-5 w-5 text-primary" /> Frequently Asked Questions
+            <CardTitle className="text-2xl font-bold flex items-center gap-2">
+              <LifeBuoy className="h-6 w-6 text-primary" /> FAQ
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-0">
-            <Accordion type="single" collapsible className="w-full">
-              <AccordionItem value="item-1">
-                <AccordionTrigger>How do I add a new task?</AccordionTrigger>
-                <AccordionContent>
-                  You can add a new task by clicking the floating "+" button at the bottom right of the Daily Tasks page, or by using the "Add New Task" command in the Command Palette (Cmd/Ctrl + K).
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="item-2">
-                <AccordionTrigger>What is "Focus Mode"?</AccordionTrigger>
-                <AccordionContent>
-                  Focus Mode is designed to help you concentrate on your most important tasks. It filters your task list to only show tasks from sections you've marked as "Include in Focus Mode". You can access it from the sidebar or by clicking on the next available task in your Daily Overview.
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="item-3">
-                <AccordionTrigger>How can I customize my dashboard?</AccordionTrigger>
-                <AccordionContent>
-                  On the Dashboard page, click the "Settings" icon (gear icon) in the top right. This will open a dialog where you can toggle the visibility of built-in cards and your custom cards.
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="item-4">
-                <AccordionTrigger>Can I create recurring tasks?</AccordionTrigger>
-                <AccordionContent>
-                  Yes! When adding or editing a task, you can set its recurrence to daily, weekly, or monthly. Recurring tasks will automatically appear as "to-do" on their scheduled days.
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="item-5">
-                <AccordionTrigger>How does the Project Balance Tracker work?</AccordionTrigger>
-                <AccordionContent>
-                  The Project Balance Tracker helps you keep track of how much attention you're giving to different projects or areas of your life. You can increment a counter for each project, aiming for a balance (e.g., 10 points per project). It helps ensure you don't neglect important areas.
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+          <CardContent className="pt-0 space-y-4 text-muted-foreground">
+            <p>
+              <strong>Q: How do I add a new task?</strong><br />
+              A: You can add a new task by clicking the floating '+' button in the bottom right corner of the Daily Tasks page, or by using the "Quick Add Task" input at the bottom of each section.
+            </p>
+            <p>
+              <strong>Q: Can I create sub-tasks?</strong><br />
+              A: Yes! When viewing a task's details, you'll find an option to add sub-tasks.
+            </p>
+            <p>
+              <strong>Q: How do I organize my tasks into sections?</strong><br />
+              A: On the Daily Tasks page, you can create new sections and drag-and-drop tasks into them. You can also assign a section when creating or editing a task.
+            </p>
+            <p>
+              <strong>Q: What is "Focus Mode"?</strong><br />
+              A: Focus Mode helps you concentrate on your most important tasks. It filters your task list to only show tasks from sections you've marked as "Include in Focus Mode" and provides tools like a Pomodoro timer and breathing exercises.
+            </p>
+            <p>
+              <strong>Q: How does the Project Balance Tracker work?</strong><br />
+              A: The Project Balance Tracker helps you ensure you're dedicating enough time to different areas of your life or work. You set a target (e.g., 10 units of effort) for each project and increment/decrement a counter as you work on them.
+            </p>
+            <p>
+              <strong>Q: Is my data private?</strong><br />
+              A: Yes, your data is stored securely using Supabase, and Row Level Security (RLS) is enabled on all tables to ensure only you can access your data.
+            </p>
           </CardContent>
         </Card>
 
         <Card className="shadow-lg rounded-xl">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xl font-bold flex items-center gap-2">
-              <Bug className="h-5 w-5 text-primary" /> Report an Issue
+            <CardTitle className="text-2xl font-bold flex items-center gap-2">
+              <Mail className="h-6 w-6 text-primary" /> Contact Support
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-0">
-            <p className="text-muted-foreground mb-4">
-              If you encounter any bugs or unexpected behavior, please let us know!
+          <CardContent className="pt-0 space-y-4 text-muted-foreground">
+            <p>
+              If you encounter any bugs, have feature requests, or need further assistance, please don't hesitate to reach out!
             </p>
             <Button asChild>
               <a href="mailto:support@example.com?subject=Bug Report - TaskMaster" target="_blank" rel="noopener noreferrer">
-                <Mail className="mr-2 h-4 w-4" /> Email Support
+                Report a Bug
               </a>
             </Button>
           </CardContent>
@@ -75,23 +67,23 @@ const Help: React.FC = () => {
 
         <Card className="shadow-lg rounded-xl">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xl font-bold flex items-center gap-2">
-              <Mail className="h-5 w-5 text-primary" /> Contact Us
+            <CardTitle className="text-2xl font-bold flex items-center gap-2">
+              <LifeBuoy className="h-6 w-6 text-primary" /> General Inquiry
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-0">
-            <p className="text-muted-foreground mb-4">
-              Have a question, suggestion, or just want to say hello? We'd love to hear from you!
+          <CardContent className="pt-0 space-y-4 text-muted-foreground">
+            <p>
+              For general questions or feedback, you can also send us an email. We'd love to hear from you!
             </p>
             <Button asChild>
               <a href="mailto:hello@example.com?subject=Hello from TaskMaster User" target="_blank" rel="noopener noreferrer">
-                <Mail className="mr-2 h-4 w-4" /> Send us an Email
+                Send a Message
               </a>
             </Button>
           </CardContent>
         </Card>
       </div>
-    </main>
+    </div>
   );
 };
 
