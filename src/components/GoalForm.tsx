@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +9,7 @@ import { Calendar as CalendarUI } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon } from 'lucide-react';
 import { cn } from "@/lib/utils";
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, addMonths, addYears, addWeeks, addDays } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Goal, GoalType, Category, NewGoalData } from '@/hooks/useResonanceGoals';
 import { useForm, Controller } from 'react-hook-form';
@@ -61,7 +63,10 @@ const GoalForm: React.FC<GoalFormProps> = ({
     },
   });
 
-  const { register, handleSubmit, control, reset, formState: { errors } } = form;
+  const { register, handleSubmit, control, reset, watch, setValue, formState: { errors } } = form;
+
+  const goalType = watch('type');
+  const currentDueDate = watch('dueDate');
 
   useEffect(() => {
     const defaultCategoryId = allCategories[0]?.id || null;
@@ -89,6 +94,63 @@ const GoalForm: React.FC<GoalFormProps> = ({
       reset(defaultValues);
     }
   }, [initialData, preselectedType, parentGoalId, allCategories, reset]);
+
+  // Effect to update dueDate based on goalType
+  useEffect(() => {
+    if (initialData && initialData.due_date) {
+      // If editing an existing goal with a due date, don't override it automatically
+      return;
+    }
+
+    const today = new Date();
+    let newDueDate: Date | null = null;
+
+    switch (goalType) {
+      case 'daily':
+        newDueDate = addDays(today, 1); // Tomorrow
+        break;
+      case 'weekly':
+        newDueDate = addWeeks(today, 1);
+        break;
+      case 'monthly':
+        newDueDate = addMonths(today, 1);
+        break;
+      case '3-month':
+        newDueDate = addMonths(today, 3);
+        break;
+      case '6-month':
+        newDueDate = addMonths(today, 6);
+        break;
+      case '9-month':
+        newDueDate = addMonths(today, 9);
+        break;
+      case 'yearly':
+        newDueDate = addYears(today, 1);
+        break;
+      case '3-year':
+        newDueDate = addYears(today, 3);
+        break;
+      case '5-year':
+        newDueDate = addYears(today, 5);
+        break;
+      case '7-year':
+        newDueDate = addYears(today, 7);
+        break;
+      case '10-year':
+        newDueDate = addYears(today, 10);
+        break;
+      default:
+        newDueDate = null;
+        break;
+    }
+    
+    // Only update if the current dueDate is null or if the type has changed and it's a new goal
+    // This prevents overriding a manually set date on an existing goal.
+    if (!currentDueDate || !initialData) {
+      setValue('dueDate', newDueDate);
+    }
+  }, [goalType, initialData, currentDueDate, setValue]);
+
 
   const onSubmit = async (data: GoalFormData) => {
     setIsSaving(true);
