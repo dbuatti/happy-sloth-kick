@@ -111,8 +111,9 @@ const MealItem: React.FC<MealItemProps> = ({ meal, currentDate, onUpdate, isDemo
   };
 
   const mealDate = parseISO(meal.meal_date);
-  const isToday = isSameDay(mealDate, currentDate);
-  const isTomorrow = isSameDay(mealDate, addDays(currentDate, 1));
+  // Removed unused isToday and isTomorrow variables
+  // const isToday = isSameDay(mealDate, currentDate);
+  // const isTomorrow = isSameDay(mealDate, addDays(currentDate, 1));
 
   const mealTime = MEAL_TIMES[meal.meal_type];
   const mealDateTime = setMinutes(setHours(mealDate, mealTime.hour), mealTime.minute);
