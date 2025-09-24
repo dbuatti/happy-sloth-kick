@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -343,7 +345,7 @@ const StaplesInventory: React.FC<StaplesInventoryProps> = ({ isDemo = false, dem
             <AlertDialogAction onClick={confirmDeleteStaple} disabled={isSaving || isDemo}>
               {isSaving ? 'Deleting...' : 'Delete'}
             </AlertDialogAction>
-          </DialogFooter>
+          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </>
