@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster } from "react-hot-toast"; // Corrected import to react-hot-toast
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
@@ -19,7 +19,7 @@ import { Sidebar } from "./components/Sidebar";
 import AuthPage from "./pages/AuthPage";
 import FloatingTimer from "./components/FloatingTimer";
 import DevSpace from "./pages/DevSpace";
-import { TimerProvider } from "./context/TimerContext";
+import { TimerProvider } => "./context/TimerContext";
 import { SettingsProvider } from "./context/SettingsContext";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
@@ -134,7 +134,7 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Sonner position="top-center" />
+        <Toaster position="top-center" /> {/* Replaced Sonner with react-hot-toast Toaster */}
         <AuthProvider>
           <SoundProvider>
             <TimerProvider>
