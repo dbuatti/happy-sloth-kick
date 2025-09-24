@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardTitle } from "@/components/ui/card"; // Removed unused CardHeader
+import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, X, MoreHorizontal, Edit, Flame, CalendarDays, Pencil as PencilIcon, Sparkles, Info, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { HabitWithLogs } from '@/hooks/useHabits';
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { format, parseISO, isSameDay } from 'date-fns';
 import { useSound } from '@/context/SoundContext';
 import { Input } from '@/components/ui/input';
-import { getHabitChallengeSuggestion } from '@/integrations/supabase/habit-api'; // Corrected import path
+import { getHabitChallengeSuggestion } from '@/integrations/supabase/habit-api';
 import { useAuth } from '@/context/AuthContext';
 import { showLoading, dismissToast, showError } from '@/utils/toast';
 import HabitChallengeDialog from './HabitChallengeDialog';

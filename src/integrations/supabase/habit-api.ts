@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { showError } from '@/utils/toast';
-import { HabitLog } from '@/types/habit'; // Import HabitLog from types
+
 
 export const getHabitChallengeSuggestion = async (userId: string, habitId: string): Promise<string | null> => {
   try {
