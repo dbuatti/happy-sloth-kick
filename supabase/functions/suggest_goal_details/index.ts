@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.15.0";
-import { format, parseISO, addDays } from 'https://esm.sh/date-fns@2.30.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,99 +8,116 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  // Handle CORS preflight request
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { title, existingCategories, currentDate } = await req.json();
-
-    if (!title || !existingCategories || !currentDate) {
-      return new Response(JSON.stringify({ error: 'Missing required fields: title, existingCategories, currentDate' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
+    // Authenticate the request
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response('Unauthorized: Missing Authorization header', {
+        status: 401,
+        headers: corsHeaders,
       });
     }
 
-    const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
-    console.log('GEMINI_API_KEY status:', geminiApiKey ? 'set' : 'NOT SET');
+    const token = authHeader.replace('Bearer ', '');
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: `Bearer ${token}` } } }
+    );
+
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) {
+      return new Response('Unauthorized: Invalid or expired token', {
+        status: 401,
+        headers: corsHeaders,
+      });
+    }
+
+    const { prompt, categories, currentDate } = await req.json();
+
+    if (!prompt) {
+      return new Response('Missing prompt in request body', {
+        status: 400,
+        headers: corsHeaders,
+      });
+    }
+
+    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
     if (!geminiApiKey) {
-      return new Response(JSON.stringify({ error: 'GEMINI_API_KEY is not set in Supabase secrets. Please configure it in your Supabase dashboard under Edge Functions -> Manage Secrets.' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      return new Response('Missing GEMINI_API_KEY environment variable', {
         status: 500,
+        headers: corsHeaders,
       });
     }
 
     const genAI = new GoogleGenerativeAI(geminiApiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro" }); // Updated model name
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
-    const categoryNames = existingCategories.map((c: { name: string }) => c.name);
-    const formattedCategories = categoryNames.length > 0 ? `(Choose from: ${categoryNames.join(', ')})` : '';
+    const categoryNames = categories.map((c: { name: string }) => c.name).join(', ');
 
-    const prompt = `
-      Analyze the following goal title and extract relevant details.
-      Provide the output in a JSON format with the following keys:
-      - cleanedDescription: The main goal title, cleaned of any date, time, priority, or category keywords.
-      - category: The most relevant category from the provided list. If no strong match, default to 'General' or 'Personal'.
-      - priority: 'low', 'medium', 'high', or 'urgent'. Default to 'medium'.
-      - dueDate: The due date in YYYY-MM-DD format, or null if not specified. Assume dates relative to ${currentDate}.
-      - notes: Any additional notes or context from the description, or null.
-      - remindAt: The reminder date and time in ISO 8601 format (e.g., 2023-10-27T10:00:00Z), or null. Assume times relative to ${currentDate}.
-      - section: A suggested section name, or null.
-      - link: A URL or local file path, or null.
+    const aiPrompt = `You are an AI assistant that helps users quickly create goals.
+Given a user's natural language input, extract the following information:
+- cleanedDescription: The main title of the goal, concise.
+- description: A more detailed description if available, otherwise null.
+- category: The most relevant category from the provided list. If no category is suitable, suggest 'General'.
+- dueDate: The due date in YYYY-MM-DD format. If no specific date is mentioned, infer a reasonable future date (e.g., end of month, end of quarter, end of year) based on the goal's scope, or null if it's an ongoing goal.
+- notes: Any additional notes or context, otherwise null.
 
-      Existing Categories: ${formattedCategories}
+Current Date: ${currentDate}
+Available Categories: ${categoryNames}
 
-      Goal Title: "${title}"
+User Input: "${prompt}"
 
-      Ensure the output is ONLY the JSON object.
-    `;
+Respond with a JSON object only, like this:
+{
+  "cleanedDescription": "Extracted goal title",
+  "description": "Detailed description or null",
+  "category": "Suggested Category Name",
+  "dueDate": "YYYY-MM-DD or null",
+  "notes": "Additional notes or null"
+}`;
 
-    const result = await model.generateContent(prompt);
-    const response = result.response;
+    const result = await model.generateContent(aiPrompt);
+    const response = await result.response;
     const text = response.text();
 
-    // Attempt to parse the JSON, handling potential markdown code blocks
-    let jsonString = text.trim();
-    if (jsonString.startsWith('```json')) {
-      jsonString = jsonString.substring(7, jsonString.lastIndexOf('```')).trim();
-    }
-
-    let parsed;
+    // Attempt to parse the JSON response
+    let parsedResponse;
     try {
-      parsed = JSON.parse(jsonString);
+      parsedResponse = JSON.parse(text);
     } catch (jsonError) {
-      console.error('JSON parsing error:', jsonError);
-      return new Response(JSON.stringify({ error: 'Failed to parse AI response as JSON. This might indicate an issue with the AI model\'s output format or an invalid API key. Please check the raw response.', rawResponse: text }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      console.error('Failed to parse AI response as JSON:', text, jsonError);
+      return new Response(JSON.stringify({ error: 'Failed to parse AI response.' }), {
         status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Map category name back to ID
-    const suggestedCategoryName = parsed.category;
-    const categoryObject = existingCategories.find((c: { name: string }) => c.name.toLowerCase() === suggestedCategoryName.toLowerCase());
-    parsed.category = categoryObject ? categoryObject.name : 'General'; // Return name, client will map to ID
-
-    // Basic date parsing for relative dates
-    if (parsed.dueDate && typeof parsed.dueDate === 'string') {
-      const lowerCaseDueDate = parsed.dueDate.toLowerCase();
-      if (lowerCaseDueDate.includes('tomorrow')) {
-        parsed.dueDate = format(addDays(parseISO(currentDate), 1), 'yyyy-MM-dd');
-      } else if (lowerCaseDueDate.includes('next week')) {
-        parsed.dueDate = format(addDays(parseISO(currentDate), 7), 'yyyy-MM-dd');
-      }
+    // Validate and sanitize the category
+    const suggestedCategoryName = parsedResponse.category;
+    const existingCategory = categories.find((c: { name: string }) => c.name.toLowerCase() === suggestedCategoryName.toLowerCase());
+    if (!existingCategory) {
+      // If the suggested category doesn't exist, default to 'General' or the first available category
+      const generalCategory = categories.find((c: { name: string }) => c.name.toLowerCase() === 'general');
+      parsedResponse.category = generalCategory ? generalCategory.name : categories[0]?.name || 'General';
+    } else {
+      parsedResponse.category = existingCategory.name; // Use the exact name from the list
     }
 
-    return new Response(JSON.stringify(parsed), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    return new Response(JSON.stringify(parsedResponse), {
       status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('Error in suggest_goal_details Edge Function:', error);
-    return new Response(JSON.stringify({ error: error.message || 'An unknown error occurred in the Edge Function.' }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    console.error('Error in suggest_goal_details function:', error);
+    return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });
