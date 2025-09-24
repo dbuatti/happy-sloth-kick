@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Meal, MealType } from '@/hooks/useMeals';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -118,17 +120,17 @@ const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isP
 
   const getMealIcon = (type: MealType) => {
     switch (type) {
-      case 'breakfast': return <Coffee className="h-5 w-5 text-muted-foreground" />; // Increased size
-      case 'lunch': return <Soup className="h-5 w-5 text-muted-foreground" />; // Increased size
-      case 'dinner': return <UtensilsCrossed className="h-5 w-5 text-muted-foreground" />; // Increased size
+      case 'breakfast': return <Coffee className="h-4 w-4 text-muted-foreground" />; // Reduced size
+      case 'lunch': return <Soup className="h-4 w-4 text-muted-foreground" />; // Reduced size
+      case 'dinner': return <UtensilsCrossed className="h-4 w-4 text-muted-foreground" />; // Reduced size
     }
   };
 
   const getIngredientStatusIcon = () => {
     if (hasIngredients) {
-      return <CheckCircle2 className="h-5 w-5 text-green-500" />;
+      return <CheckCircle2 className="h-4 w-4 text-green-500" />; // Reduced size
     } else {
-      return <ShoppingCart className="h-5 w-5 text-red-500" />;
+      return <ShoppingCart className="h-4 w-4 text-red-500" />; // Reduced size
     }
   };
 
@@ -143,7 +145,7 @@ const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isP
   return (
     <div
       className={cn(
-        "relative flex flex-col gap-2 p-4 rounded-xl shadow-sm transition-all duration-200 ease-in-out",
+        "relative flex flex-col gap-1 p-3 rounded-xl shadow-sm transition-all duration-200 ease-in-out", // Reduced vertical padding and gap
         "border-l-4",
         isCompleted ? "opacity-70 bg-muted/30 border-muted-foreground/20" : "bg-card border-primary/20 hover:shadow-md",
         !isCompleted && getIngredientStatusClasses(),
@@ -154,7 +156,7 @@ const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isP
         <div className="flex items-center gap-2">
           {getMealIcon(meal.meal_type)}
           <span className={cn(
-            "text-base font-semibold", // Increased font size
+            "text-sm font-semibold", // Reduced font size
             isPlaceholder ? "text-muted-foreground/70" : "text-foreground"
           )}>
             {meal.meal_type.charAt(0).toUpperCase() + meal.meal_type.slice(1)} ({formattedTime})
@@ -166,7 +168,7 @@ const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isP
               <Button
                 variant="ghost"
                 size="icon"
-                className={cn("h-8 w-8", isDemo && "cursor-not-allowed")}
+                className={cn("h-7 w-7", isDemo && "cursor-not-allowed")} // Reduced button size
                 onClick={() => handleHasIngredientsChange(!hasIngredients)}
                 disabled={isDemo || isCompleted}
               >
@@ -182,7 +184,7 @@ const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isP
             checked={isCompleted}
             onCheckedChange={handleIsCompletedChange}
             disabled={isDemo}
-            className="h-5 w-5"
+            className="h-4 w-4" // Reduced checkbox size
           />
           <label htmlFor={`completed-${meal.id}`} className="sr-only">Mark as completed</label>
         </div>
@@ -193,7 +195,7 @@ const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isP
         onChange={handleNameChange}
         placeholder={`Add ${meal.meal_type} meal name...`}
         className={cn(
-          "text-lg font-bold border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto",
+          "text-base font-bold border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto", // Reduced font size
           "hover:border-b hover:border-input focus-visible:border-b focus-visible:border-primary", // Improved affordance
           isCompleted && "line-through text-muted-foreground",
           isPlaceholder && "placeholder:text-muted-foreground/50"
@@ -204,9 +206,9 @@ const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isP
         value={notes}
         onChange={handleNotesChange}
         placeholder="Add notes or short description..."
-        rows={2}
+        rows={1} // Reduced rows
         className={cn(
-          "text-sm border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto resize-none",
+          "text-xs border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto resize-none", // Reduced font size
           "hover:border-b hover:border-input focus-visible:border-b focus-visible:border-primary", // Improved affordance
           isCompleted && "line-through text-muted-foreground",
           isPlaceholder && "placeholder:text-muted-foreground/50"
