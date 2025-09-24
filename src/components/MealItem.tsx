@@ -8,7 +8,6 @@ import { format, parseISO, isSameDay, setHours, setMinutes, addDays } from 'date
 import { cn } from '@/lib/utils';
 import { ShoppingCart, CheckCircle2, UtensilsCrossed, Coffee, Soup } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { useDebounce } from '@/hooks/useDebounce';
 
 interface MealItemProps {
   meal: Meal;
