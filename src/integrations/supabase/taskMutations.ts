@@ -1,6 +1,6 @@
 import { QueryClient } from '@tanstack/react-query';
-import { Task, TaskSection } from '@/hooks/useTasks'; // Removed Category, NewTaskData
-import { format, startOfDay, parseISO, isValid } from 'date-fns';
+import { Task, TaskSection } from '@/hooks/useTasks';
+import { format, parseISO, isValid } from 'date-fns'; // Removed startOfDay
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { arrayMove } from '@dnd-kit/sortable';
@@ -38,7 +38,7 @@ export const addTaskMutation = async (
   newTaskData: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'completed_at' | 'category_color'> & { order?: number | null },
   context: MutationContext,
 ): Promise<Task | null> => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, categoriesMap } = context;
+  const { userId, inFlightUpdatesRef, invalidateTasksQueries, categoriesMap } = context; // Removed queryClient
   if (!userId) {
     showError('User not authenticated.');
     return null;
@@ -73,7 +73,7 @@ export const updateTaskMutation = async (
   updates: Partial<Omit<Task, 'id' | 'user_id' | 'created_at' | 'category_color'>>,
   context: MutationContext,
 ): Promise<string | null> => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, categoriesMap } = context;
+  const { userId, inFlightUpdatesRef, invalidateTasksQueries, categoriesMap } = context; // Removed queryClient
   if (!userId) {
     showError('User not authenticated.');
     return null;
@@ -113,7 +113,7 @@ export const deleteTaskMutation = async (
   taskId: string,
   context: MutationContext,
 ): Promise<void> => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries } = context;
+  const { userId, inFlightUpdatesRef, invalidateTasksQueries } = context; // Removed queryClient
   if (!userId) {
     showError('User not authenticated.');
     return;
@@ -154,7 +154,7 @@ export const bulkUpdateTasksMutation = async (
   ids: string[],
   context: MutationContext,
 ): Promise<void> => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries } = context;
+  const { userId, inFlightUpdatesRef, invalidateTasksQueries } = context; // Removed queryClient
   if (!userId) {
     showError('User not authenticated.');
     return;
@@ -199,7 +199,7 @@ export const bulkDeleteTasksMutation = async (
   ids: string[],
   context: MutationContext,
 ): Promise<boolean> => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries } = context;
+  const { userId, inFlightUpdatesRef, invalidateTasksQueries } = context; // Removed queryClient
   if (!userId) {
     showError('User not authenticated.');
     return false;
@@ -240,7 +240,7 @@ export const bulkDeleteTasksMutation = async (
 export const archiveAllCompletedTasksMutation = async (
   context: MutationContext,
 ): Promise<void> => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries } = context;
+  const { userId, inFlightUpdatesRef, invalidateTasksQueries } = context; // Removed queryClient
   if (!userId) {
     showError('User not authenticated.');
     return;
@@ -270,7 +270,7 @@ export const markAllTasksInSectionCompletedMutation = async (
   sectionId: string | null,
   context: MutationContext,
 ): Promise<void> => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries } = context;
+  const { userId, inFlightUpdatesRef, invalidateTasksQueries } = context; // Removed queryClient
   if (!userId) {
     showError('User not authenticated.');
     return;
@@ -312,7 +312,7 @@ export const updateTaskParentAndOrderMutation = async (
   isDraggingDown: boolean,
   context: MutationContext,
 ): Promise<void> => { // Explicitly set return type to Promise<void>
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, processedTasks } = context;
+  const { userId, inFlightUpdatesRef, invalidateTasksQueries, processedTasks } = context; // Removed queryClient
   if (!userId) {
     showError('User not authenticated.');
     return;
@@ -338,9 +338,9 @@ export const updateTaskParentAndOrderMutation = async (
         if (oldIndex !== -1 && newIndex !== -1) {
           const reorderedIds = arrayMove(currentOrderIds, oldIndex, newIndex);
           // Calculate new order based on reorderedIds
-          const updatedSiblings = reorderedIds.map((id, index) => ({
+          const updatedSiblings = reorderedIds.map(id => ({
             id,
-            order: index,
+            order: reorderedIds.indexOf(id),
           }));
 
           // Find the new order for the active task
@@ -398,7 +398,7 @@ export const toggleDoTodayMutation = async (
   doTodayOffIds: Set<string>,
   context: MutationContext,
 ): Promise<void> => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries } = context;
+  const { userId, inFlightUpdatesRef, invalidateTasksQueries } = context; // Removed queryClient
   if (!userId) {
     showError('User not authenticated.');
     return;
@@ -435,7 +435,7 @@ export const toggleDoTodayMutation = async (
       showSuccess('Task added to "Do Today".');
     }
     invalidateTasksQueries();
-    queryClient.invalidateQueries({ queryKey: ['do_today_off_log', userId, formattedDate] });
+    context.queryClient.invalidateQueries({ queryKey: ['do_today_off_log', userId, formattedDate] });
   } catch (err: any) {
     console.error('Error toggling "Do Today" status:', err.message);
     showError('Failed to toggle "Do Today" status.');
@@ -445,12 +445,12 @@ export const toggleDoTodayMutation = async (
 };
 
 export const toggleAllDoTodayMutation = async (
-  tasksToToggle: Task[], // Added missing parameter
+  tasksToToggle: Task[],
   effectiveCurrentDate: Date,
   doTodayOffIds: Set<string>,
   context: MutationContext,
 ): Promise<void> => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries } = context;
+  const { userId, inFlightUpdatesRef, invalidateTasksQueries } = context; // Removed queryClient
   if (!userId) {
     showError('User not authenticated.');
     return;
@@ -521,7 +521,7 @@ export const toggleAllDoTodayMutation = async (
 
     showSuccess('All "Do Today" statuses toggled!');
     invalidateTasksQueries(); // Invalidate tasks to reflect changes
-    queryClient.invalidateQueries({ queryKey: ['do_today_off_log', userId, formattedDate] });
+    context.queryClient.invalidateQueries({ queryKey: ['do_today_off_log', userId, formattedDate] });
   } catch (err: any) {
     console.error('Error toggling all "Do Today" statuses:', err.message);
     showError('Failed to toggle all "Do Today" statuses.');
