@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Toaster } from "react-hot-toast"; // Corrected import to react-hot-toast
+import { Toaster } from "react-hot-toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
@@ -19,7 +19,7 @@ import { Sidebar } from "./components/Sidebar";
 import AuthPage from "./pages/AuthPage";
 import FloatingTimer from "./components/FloatingTimer";
 import DevSpace from "./pages/DevSpace";
-import { TimerProvider } => "./context/TimerContext";
+import { TimerProvider } from "./context/TimerContext"; // Corrected syntax
 import { SettingsProvider } from "./context/SettingsContext";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
@@ -28,7 +28,7 @@ import Archive from "./pages/Archive";
 import SleepPage from "./pages/SleepPage";
 import CommandPalette from "./components/CommandPalette";
 import MealPlanner from "./pages/MealPlanner";
-import ResonanceGoalsPage from "./pages/ResonanceGoalsPage"; // Import the new ResonanceGoalsPage
+import ResonanceGoalsPage from "./pages/ResonanceGoalsPage";
 
 const queryClient = new QueryClient();
 
@@ -75,7 +75,7 @@ const AppContent = () => {
               <Route path="/demo/analytics" element={<Analytics isDemo={true} demoUserId={demoUserId} />} />
               <Route path="/demo/archive" element={<Archive isDemo={true} demoUserId={demoUserId} />} />
               <Route path="/demo/meal-planner" element={<MealPlanner isDemo={true} demoUserId={demoUserId} />} />
-              <Route path="/demo/resonance-goals" element={<ResonanceGoalsPage isDemo={true} demoUserId={demoUserId} />} /> {/* New Demo Route */}
+              <Route path="/demo/resonance-goals" element={<ResonanceGoalsPage isDemo={true} demoUserId={demoUserId} />} />
               <Route path="*" element={<Navigate to="/demo" replace />} />
             </Routes>
           </Sidebar>
@@ -108,7 +108,7 @@ const AppContent = () => {
                 <Route path="/analytics" element={<Analytics />} />
                 <Route path="/archive" element={<Archive />} />
                 <Route path="/meal-planner" element={<MealPlanner />} />
-                <Route path="/resonance-goals" element={<ResonanceGoalsPage />} /> {/* New User Route */}
+                <Route path="/resonance-goals" element={<ResonanceGoalsPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Sidebar>
@@ -134,7 +134,7 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster position="top-center" /> {/* Replaced Sonner with react-hot-toast Toaster */}
+        <Toaster position="top-center" />
         <AuthProvider>
           <SoundProvider>
             <TimerProvider>
