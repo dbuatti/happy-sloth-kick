@@ -1,15 +1,11 @@
-import React, { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useMemo, useCallback } from 'react';
+import { Goal, GoalType, Category, useResonanceGoals } from '@/hooks/useResonanceGoals';
 import { Button } from '@/components/ui/button';
-import { Plus, Settings, Trash2 } from 'lucide-react';
-import { useResonanceGoals, Goal, GoalType, NewGoalData, Category } from '@/hooks/useResonanceGoals';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from '@/components/ui/drawer';
-import ManageCategoriesDialog from '@/components/ManageCategoriesDialog'; // Reusing task categories dialog
-import { useAuth } from '@/context/AuthContext';
-import GoalForm from '@/components/GoalForm';
+import { Plus, Settings, LayoutGrid, Target } from 'lucide-react';
 import ResonanceGoalTimelineSection from '@/components/ResonanceGoalTimelineSection';
+import FloatingAddGoalButton from '@/components/FloatingAddGoalButton';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import GoalForm from '@/components/GoalForm';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,7 +16,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Skeleton } from '@/components/ui/skeleton';
+import ManageCategoriesDialog from '@/components/ManageCategoriesDialog';
+import { getRandomCategoryColor } from '@/lib/categoryColors'; // Assuming this utility exists
 
 interface ResonanceGoalsPageProps {
   isDemo?: boolean;
@@ -28,34 +25,36 @@ interface ResonanceGoalsPageProps {
 }
 
 const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false, demoUserId }) => {
-  const { user } = useAuth();
-  const userId = demoUserId || user?.id;
-
-  const { goals, categories, loading, addGoal, updateGoal, deleteGoal, addCategory } = useResonanceGoals({ userId });
-  // Dummy usage to satisfy TS6133 for Category type
-  type _CategoryUsed = Category;
-
-  const isMobile = useIsMobile();
+  const {
+    goals,
+    categories,
+    loading,
+    addGoal,
+    updateGoal,
+    deleteGoal,
+    addCategory,
+    deleteCategory,
+  } = useResonanceGoals({ userId: demoUserId });
 
   const [isGoalFormOpen, setIsGoalFormOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [preselectedGoalType, setPreselectedGoalType] = useState<GoalType>('monthly');
   const [parentGoalIdForNew, setParentGoalIdForNew] = useState<string | null>(null);
 
-  const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
-
   const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
   const [goalToDeleteId, setGoalToDeleteId] = useState<string | null>(null);
   const [goalToDeleteTitle, setGoalToDeleteTitle] = useState<string | null>(null);
 
+  const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
+
   const [expandedGoals, setExpandedGoals] = useState<Record<string, boolean>>({});
 
-  const toggleExpandGoal = (goalId: string) => {
+  const toggleExpandGoal = useCallback((goalId: string) => {
     setExpandedGoals(prev => ({
       ...prev,
-      [goalId]: !prev[goalId],
+      [goalId]: prev[goalId] === false ? true : false, // Toggle between true/false, default to true if undefined
     }));
-  };
+  }, []);
 
   const handleOpenGoalForm = (goal: Goal | null, type: GoalType = 'monthly', parentId: string | null = null) => {
     setEditingGoal(goal);
@@ -64,14 +63,17 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
     setIsGoalFormOpen(true);
   };
 
-  const handleSaveGoal = async (goalData: NewGoalData) => {
+  const handleSaveGoal = async (goalData: Parameters<typeof GoalForm>['0']['onSave']) => {
     if (editingGoal) {
       await updateGoal({ id: editingGoal.id, updates: goalData });
     } else {
       await addGoal(goalData);
     }
-    setIsGoalFormOpen(false);
     return true;
+  };
+
+  const handleToggleCompleteGoal = async (goalId: string, completed: boolean) => {
+    await updateGoal({ id: goalId, updates: { completed } });
   };
 
   const handleDeleteClick = (goalId: string) => {
@@ -92,94 +94,85 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
     }
   };
 
-  const handleAddSubGoal = (parentGoalId: string) => {
-    const parentGoal = goals.find(g => g.id === parentGoalId);
-    if (parentGoal) {
-      handleOpenGoalForm(null, parentGoal.type, parentGoalId);
-    }
-  };
-
-  const handleToggleCompleteGoal = async (goalId: string, completed: boolean) => {
-    await updateGoal({ id: goalId, updates: { completed } });
-  };
-
   const handleAddCategory = async (name: string, color: string) => {
-    return await addCategory({ name, color });
+    return addCategory({ name, color });
+  };
+
+  const handleCategoryCreated = () => {
+    // Categories are refetched by useResonanceGoals's real-time subscription
+  };
+
+  const handleCategoryDeleted = (deletedId: string) => {
+    // Categories are refetched by useResonanceGoals's real-time subscription
+    // Also, goals associated with this category will have their category_id set to null by the RLS policy
   };
 
   const goalTypes: GoalType[] = useMemo(() => [
     'daily', 'weekly', 'monthly', '3-month', '6-month', '9-month', 'yearly', '3-year', '5-year', '7-year', '10-year'
   ], []);
 
-  const renderContent = () => (
-    <div className="space-y-6">
-      {goalTypes.map(type => (
-        <ResonanceGoalTimelineSection
-          key={type}
-          goalType={type}
-          goals={goals.filter(g => g.type === type)}
-          allCategories={categories}
-          onAddGoal={handleSaveGoal}
-          onEditGoal={(goal) => handleOpenGoalForm(goal, goal.type, goal.parent_goal_id)}
-          onDeleteGoal={handleDeleteClick}
-          onToggleCompleteGoal={handleToggleCompleteGoal}
-          onAddSubGoal={handleAddSubGoal}
-          isDemo={isDemo}
-          loading={loading}
-          expandedGoals={expandedGoals}
-          toggleExpandGoal={toggleExpandGoal}
-          onAddCategory={handleAddCategory}
-        />
-      ))}
-    </div>
-  );
+  const goalsGroupedByType = useMemo(() => {
+    const grouped = new Map<GoalType, Goal[]>();
+    goalTypes.forEach(type => grouped.set(type, []));
 
-  const DialogComponent = isMobile ? Drawer : Dialog;
-  const DialogContentComponent = isMobile ? DrawerContent : DialogContent;
-  const DialogHeaderComponent = isMobile ? DrawerHeader : DialogHeader;
-  const DialogTitleComponent = isMobile ? DrawerTitle : DialogTitle;
-  const DialogDescriptionComponent = isMobile ? DrawerDescription : DialogDescription;
+    goals.forEach(goal => {
+      if (goal.parent_goal_id === null) { // Only group top-level goals by type
+        grouped.get(goal.type)?.push(goal);
+      }
+    });
+    return grouped;
+  }, [goals, goalTypes]);
 
   return (
-    <div className="flex-1 overflow-auto p-4 lg:p-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-        <div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Resonance Goals</h1>
-          <p className="text-lg text-muted-foreground">Align your actions with your long-term vision.</p>
+    <div className="flex-1 overflow-auto p-4 lg:p-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Resonance Goals</h1>
+            <p className="text-lg text-muted-foreground">Align your actions with your long-term vision.</p>
+          </div>
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            <Button variant="outline" size="sm" onClick={() => setIsManageCategoriesOpen(true)} disabled={isDemo}>
+              <LayoutGrid className="mr-2 h-4 w-4" /> Manage Categories
+            </Button>
+            <Button onClick={() => handleOpenGoalForm(null)} disabled={isDemo}>
+              <Plus className="mr-2 h-4 w-4" /> Add Goal
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-2 self-end sm:self-auto">
-          <Button onClick={() => handleOpenGoalForm(null)} disabled={isDemo}>
-            <Plus className="mr-2 h-4 w-4" /> Add Goal
-          </Button>
-          <Button variant="outline" size="icon" onClick={() => setIsManageCategoriesOpen(true)}>
-            <Settings className="h-4 w-4" />
-          </Button>
+
+        <div className="space-y-8">
+          {goalTypes.map(type => (
+            <ResonanceGoalTimelineSection
+              key={type}
+              goalType={type}
+              goals={goals.filter(g => g.type === type)} // Pass all goals of this type for sub-goal filtering
+              allCategories={categories}
+              onAddGoal={(goalData) => addGoal(goalData)}
+              onEditGoal={(goal) => handleOpenGoalForm(goal)}
+              onDeleteGoal={handleDeleteClick}
+              onToggleCompleteGoal={handleToggleCompleteGoal}
+              onAddSubGoal={(parentId) => handleOpenGoalForm(null, type, parentId)}
+              isDemo={isDemo}
+              loading={loading}
+              expandedGoals={expandedGoals}
+              toggleExpandGoal={toggleExpandGoal}
+              onAddCategory={handleAddCategory}
+            />
+          ))}
         </div>
       </div>
 
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Card className="w-full shadow-lg rounded-xl">
-            <CardHeader><CardTitle><Skeleton className="h-6 w-1/3" /></CardTitle></CardHeader>
-            <CardContent className="space-y-2"><Skeleton className="h-16 w-full" /><Skeleton className="h-16 w-full" /></CardContent>
-          </Card>
-          <Card className="w-full shadow-lg rounded-xl">
-            <CardHeader><CardTitle><Skeleton className="h-6 w-1/3" /></CardTitle></CardHeader>
-            <CardContent className="space-y-2"><Skeleton className="h-16 w-full" /><Skeleton className="h-16 w-full" /></CardContent>
-          </Card>
-        </div>
-      ) : (
-        renderContent()
-      )}
+      <FloatingAddGoalButton onClick={() => handleOpenGoalForm(null)} isDemo={isDemo} />
 
-      <DialogComponent open={isGoalFormOpen} onOpenChange={setIsGoalFormOpen}>
-        <DialogContentComponent className="sm:max-w-md">
-          <DialogHeaderComponent>
-            <DialogTitleComponent>{editingGoal ? 'Edit Goal' : 'Add New Goal'}</DialogTitleComponent>
-            <DialogDescriptionComponent className="sr-only">
+      <Dialog open={isGoalFormOpen} onOpenChange={setIsGoalFormOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editingGoal ? 'Edit Goal' : 'Add New Goal'}</DialogTitle>
+            <DialogDescription className="sr-only">
               {editingGoal ? 'Edit the details of your goal.' : 'Fill in the details to add a new goal.'}
-            </DialogDescriptionComponent>
-          </DialogHeaderComponent>
+            </DialogDescription>
+          </DialogHeader>
           <GoalForm
             initialData={editingGoal}
             onSave={handleSaveGoal}
@@ -189,16 +182,8 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
             preselectedType={preselectedGoalType}
             parentGoalId={parentGoalIdForNew}
           />
-        </DialogContentComponent>
-      </DialogComponent>
-
-      <ManageCategoriesDialog
-        isOpen={isManageCategoriesOpen}
-        onClose={() => setIsManageCategoriesOpen(false)}
-        categories={categories}
-        onCategoryCreated={() => {}} // useResonanceGoals handles invalidation
-        onCategoryDeleted={() => {}} // useResonanceGoals handles invalidation
-      />
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={showConfirmDeleteDialog} onOpenChange={setShowConfirmDeleteDialog}>
         <AlertDialogContent>
@@ -211,11 +196,19 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDeleteGoal}>
-              <Trash2 className="mr-2 h-4 w-4" /> Delete Goal
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ManageCategoriesDialog
+        isOpen={isManageCategoriesOpen}
+        onClose={() => setIsManageCategoriesOpen(false)}
+        categories={categories}
+        onCategoryCreated={handleCategoryCreated}
+        onCategoryDeleted={handleCategoryDeleted}
+      />
     </div>
   );
 };
