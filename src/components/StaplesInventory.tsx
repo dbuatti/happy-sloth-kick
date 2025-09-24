@@ -27,7 +27,6 @@ import {
   DragEndEvent,
   DragStartEvent,
   DragOverlay,
-  UniqueIdentifier,
   PointerSensor,
   closestCorners,
 } from '@dnd-kit/core';
