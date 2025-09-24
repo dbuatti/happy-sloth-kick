@@ -84,7 +84,6 @@ export const updateTaskMutation = async (
 
   if (taskId.startsWith('virtual-')) {
     // This is a virtual task, we need to materialize it first
-    const originalTaskId = taskId.split('-')[1]; // Assuming format 'virtual-{originalId}-{date}'
     const virtualTaskTemplate = processedTasks.find(t => t.id === taskId);
 
     if (!virtualTaskTemplate) {
@@ -104,7 +103,7 @@ export const updateTaskMutation = async (
       remind_at: virtualTaskTemplate.remind_at,
       section_id: virtualTaskTemplate.section_id,
       order: virtualTaskTemplate.order,
-      original_task_id: originalTaskId, // Link to the original recurring task
+      original_task_id: virtualTaskTemplate.original_task_id || virtualTaskTemplate.id, // Correctly use the original_task_id or id
       parent_task_id: virtualTaskTemplate.parent_task_id,
       link: virtualTaskTemplate.link,
       image_url: virtualTaskTemplate.image_url,
@@ -372,7 +371,6 @@ export const updateTaskParentAndOrderMutation = async (
 
   if (activeId.startsWith('virtual-')) {
     // Materialize the virtual task first
-    const originalTaskId = activeId.split('-')[1];
     const virtualTaskTemplate = processedTasks.find(t => t.id === activeId);
 
     if (!virtualTaskTemplate) {
@@ -391,7 +389,7 @@ export const updateTaskParentAndOrderMutation = async (
       remind_at: virtualTaskTemplate.remind_at,
       section_id: virtualTaskTemplate.section_id,
       order: virtualTaskTemplate.order,
-      original_task_id: originalTaskId,
+      original_task_id: virtualTaskTemplate.original_task_id || virtualTaskTemplate.id, // Correctly use the original_task_id or id
       parent_task_id: virtualTaskTemplate.parent_task_id,
       link: virtualTaskTemplate.link,
       image_url: virtualTaskTemplate.image_url,
