@@ -6,7 +6,7 @@ import MealItem from '@/components/MealItem';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StaplesInventory from '@/components/StaplesInventory';
-import { format, isSameDay, addDays } from 'date-fns';
+import { format, isSameDay, addDays, parseISO } from 'date-fns'; // Added parseISO
 
 interface MealPlannerProps {
   isDemo?: boolean;
