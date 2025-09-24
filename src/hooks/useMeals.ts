@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess } from '@/utils/toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { addDays, format, isPast, setHours, setMinutes, parseISO, isSameDay, addHours } from 'date-fns';
+import { addDays, format, isPast, setHours, setMinutes, parseISO, addHours } from 'date-fns';
 
 export type MealType = 'breakfast' | 'lunch' | 'dinner';
 

@@ -4,7 +4,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { format, parseISO, isSameDay, isPast, setHours, setMinutes, addHours, addDays } from 'date-fns';
+import { format, parseISO, isSameDay, setHours, setMinutes, addDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ShoppingCart, CheckCircle2, UtensilsCrossed, Coffee, Soup } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';

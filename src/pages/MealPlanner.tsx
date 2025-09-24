@@ -4,7 +4,6 @@ import { UtensilsCrossed } from 'lucide-react';
 import { useMeals, Meal } from '@/hooks/useMeals';
 import MealItem from '@/components/MealItem';
 import { Skeleton } from '@/components/ui/skeleton';
-import { format } from 'date-fns';
 
 interface MealPlannerProps {
   isDemo?: boolean;
