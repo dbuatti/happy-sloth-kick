@@ -74,6 +74,8 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
     <li
       ref={setNodeRef}
       style={style}
+      {...attributes} // Apply attributes here
+      {...listeners}   // Apply listeners here
       className={cn(
         "relative last:border-b-0 group select-none",
         isOverlay ? "shadow-xl ring-2 ring-primary bg-card rounded-lg" : "",
@@ -96,8 +98,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           scheduledTasksMap={scheduledTasksMap}
           isDemo={isDemo}
           level={level}
-          attributes={attributes} // Pass attributes for drag handle
-          listeners={listeners}   // Pass listeners for drag handle
+          // Removed attributes and listeners from here
         />
         {isExpanded && directSubtasks.length > 0 && (
           <ul className="list-none mt-1.5 space-y-1.5">

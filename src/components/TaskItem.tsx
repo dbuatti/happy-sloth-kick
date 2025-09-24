@@ -13,13 +13,12 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock, ChevronRight, GripVertical } from 'lucide-react';
+import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock, ChevronRight, GripVertical, CheckCircle2 } from 'lucide-react'; // Corrected CheckCircle2 import
 import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { CheckCircle2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import DoTodaySwitch from '@/components/DoTodaySwitch';
 import { showSuccess, showError } from '@/utils/toast';
@@ -45,10 +44,10 @@ interface TaskItemProps {
   setFocusTask: (taskId: string | null) => Promise<void>;
   isDoToday: boolean;
   toggleDoToday: (task: Task) => void;
+  doTodayOffIds: Set<string>;
   scheduledTasksMap: Map<string, Appointment>;
   isDemo?: boolean;
-  attributes?: React.HTMLAttributes<HTMLDivElement>; // Added for drag handle
-  listeners?: React.HTMLAttributes<HTMLDivElement>; // Added for drag handle
+  // Removed attributes and listeners from here
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -69,8 +68,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   toggleDoToday,
   scheduledTasksMap,
   isDemo = false,
-  attributes, // Destructure
-  listeners, // Destructure
+  // Removed attributes and listeners from here
 }) => {
   const { playSound } = useSound();
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
@@ -198,7 +196,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
       {/* Drag Handle */}
       {!isOverlay && !task.parent_task_id && ( // Only show drag handle for top-level tasks
-        <div className="flex-shrink-0 pr-2 -ml-3" {...listeners} {...attributes} onPointerDown={(e) => e.stopPropagation()}>
+        <div className="flex-shrink-0 pr-2 -ml-3" onPointerDown={(e) => e.stopPropagation()}>
           <Button variant="ghost" size="icon" className="h-8 w-8 cursor-grab touch-none text-muted-foreground hover:bg-transparent">
             <GripVertical className="h-4 w-4" />
           </Button>
@@ -429,25 +427,23 @@ const TaskItem: React.FC<TaskItemProps> = ({
                         {section.name}
                       </DropdownMenuItem>
                     ))}
-                  </>
-                )}
-              </DropdownMenuSubContent>
-            </DropdownMenuSub>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => { onDelete(task.id); playSound('alert'); }} className="text-destructive focus:text-destructive">
-              <Trash2 className="mr-2 h-4 w-4" /> Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => { onDelete(task.id); playSound('alert'); }} className="text-destructive focus:text-destructive">
+                  <Trash2 className="mr-2 h-4 w-4" /> Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
 
-      {showCompletionEffect && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-          <CheckCircle2 className="h-16 w-16 text-primary animate-task-complete" />
+          {showCompletionEffect && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+              <CheckCircle2 className="h-16 w-16 text-primary animate-task-complete" />
+            </div>
+          )}
         </div>
-      )}
-    </div>
-  );
-};
+      );
+    };
 
 export default TaskItem;
