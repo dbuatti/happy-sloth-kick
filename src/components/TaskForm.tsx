@@ -16,7 +16,7 @@ import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks'; // 
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { suggestTaskDetails, AICategory } from '@/integrations/supabase/api'; // Import AICategory
+import { suggestTaskDetails, AICategory, AISuggestionResult } from '@/integrations/supabase/api'; // Import AISuggestionResult
 import { showError } from '@/utils/toast';
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
@@ -195,7 +195,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
     setIsSuggesting(true);
     try {
       const categoriesForAI: AICategory[] = allCategories.map(cat => ({ id: cat.id, name: cat.name })); // Use AICategory
-      const suggestions = await suggestTaskDetails(description, categoriesForAI, currentDate);
+      const suggestions: AISuggestionResult | null = await suggestTaskDetails(description, categoriesForAI, currentDate);
 
       if (suggestions) {
         setValue('description', suggestions.cleanedDescription);
@@ -216,7 +216,8 @@ const TaskForm: React.FC<TaskFormProps> = ({
           }
         }
 
-        const suggestedSection = sections.find(s => s.name.toLowerCase() === suggestions.section?.toLowerCase());
+        // Fix: Ensure suggestions.section is a string before comparison
+        const suggestedSection = sections.find(s => s.name.toLowerCase() === (suggestions.section?.toLowerCase() || ''));
         if (suggestedSection) {
           setValue('sectionId', suggestedSection.id);
         } else {

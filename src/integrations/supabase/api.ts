@@ -5,22 +5,38 @@ export interface AICategory {
   name: string;
 }
 
+// Define the expected structure of the AI suggestion result
+export interface AISuggestionResult {
+  cleanedDescription: string;
+  category: string; // The name of the suggested category
+  priority: 'low' | 'medium' | 'high' | 'urgent'; // Explicit priority types
+  dueDate: string | null; // YYYY-MM-DD
+  notes: string | null;
+  remindAt: string | null; // ISO string
+  section: string | null; // The name of the suggested section
+  link: string | null;
+}
+
 // Placeholder functions for AI integration
 export const suggestTaskDetails = async (
   description: string,
   categories: AICategory[],
   currentDate: Date
-) => {
+): Promise<AISuggestionResult | null> => { // Explicit return type
   // In a real scenario, this would call an AI service
   console.log('AI Suggestion for task:', description, 'with categories:', categories.map(c => c.name), 'on date:', format(currentDate, 'yyyy-MM-dd'));
+  
+  // Simulate AI response
+  const defaultCategoryName = categories.length > 0 ? categories[0].name : 'General';
+
   return {
     cleanedDescription: description,
-    category: categories.length > 0 ? categories[0].name : 'General',
-    priority: 'medium',
+    category: defaultCategoryName,
+    priority: 'medium', // Default priority
     dueDate: null,
     notes: null,
     remindAt: null,
-    section: null as string | null, // Explicitly type as string | null
+    section: null,
     link: null,
   };
 };

@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import TaskOverviewDialog from './TaskOverviewDialog';
 import { Input } from './ui/input';
-import { suggestTaskDetails, AICategory } from '@/integrations/supabase/api'; // Import AICategory
+import { suggestTaskDetails, AICategory, AISuggestionResult } from '@/integrations/supabase/api'; // Import AISuggestionResult
 import { dismissToast, showError, showLoading } from '@/utils/toast';
 import { useNavigate } from 'react-router-dom';
 import PomodoroTimer from './PomodoroTimer';
@@ -90,7 +90,7 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
     setIsAddingQuickTask(true);
     const loadingToastId = showLoading('Getting AI suggestions...');
     const categoriesForAI: AICategory[] = allCategories.map(cat => ({ id: cat.id, name: cat.name })); // Use AICategory
-    const suggestions = await suggestTaskDetails(quickAddTaskDescription.trim(), categoriesForAI, currentDate);
+    const suggestions: AISuggestionResult | null = await suggestTaskDetails(quickAddTaskDescription.trim(), categoriesForAI, currentDate);
     dismissToast(loadingToastId);
     if (!suggestions) {
       showError('Failed to get AI suggestions. Please try again.');
@@ -99,7 +99,8 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
       return;
     }
     const suggestedCategoryId = allCategories.find(cat => cat.name.toLowerCase() === suggestions.category.toLowerCase())?.id || allCategories.find(cat => cat.name.toLowerCase() === 'general')?.id || allCategories[0]?.id || '';
-    const suggestedSectionId = sections.find(sec => sec.name.toLowerCase() === suggestions.section?.toLowerCase())?.id || null;
+    // Fix: Ensure suggestions.section is a string before comparison
+    const suggestedSectionId = sections.find(sec => sec.name.toLowerCase() === (suggestions.section?.toLowerCase() || ''))?.id || null;
     const success = await handleAddTask({
       description: suggestions.cleanedDescription,
       category: suggestedCategoryId,

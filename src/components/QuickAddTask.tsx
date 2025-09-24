@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Plus, Sparkles } from 'lucide-react';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
-import { suggestTaskDetails, AICategory } from '@/integrations/supabase/api'; // Import AICategory
+import { suggestTaskDetails, AICategory, AISuggestionResult } from '@/integrations/supabase/api'; // Import AISuggestionResult
 import { dismissToast, showError, showLoading } from '@/utils/toast';
 import { Button } from '@/components/ui/button'; // Added Button import
 
@@ -48,7 +48,7 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
 
     try {
       const categoriesForAI: AICategory[] = allCategories.map(cat => ({ id: cat.id, name: cat.name })); // Use AICategory
-      const suggestions = await suggestTaskDetails(description.trim(), categoriesForAI, currentDate);
+      const suggestions: AISuggestionResult | null = await suggestTaskDetails(description.trim(), categoriesForAI, currentDate);
       dismissToast(loadingToastId);
       setIsSuggesting(false);
 
@@ -56,7 +56,8 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
 
       if (suggestions) {
         const suggestedCategoryId = allCategories.find(cat => cat.name.toLowerCase() === suggestions.category.toLowerCase())?.id || defaultCategoryId;
-        const suggestedSectionId = sections.find(sec => sec.name.toLowerCase() === suggestions.section?.toLowerCase())?.id || sectionId;
+        // Fix: Ensure suggestions.section is a string before comparison
+        const suggestedSectionId = sections.find(sec => sec.name.toLowerCase() === (suggestions.section?.toLowerCase() || ''))?.id || sectionId;
 
         taskDataToSend = {
           description: suggestions.cleanedDescription,
