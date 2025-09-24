@@ -7,7 +7,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 interface ResonanceGoalTimelineSectionProps {
   goalType: GoalType;
-  goals: Goal[]; // This now contains ALL goals of this type, including sub-goals
   allGoals: Goal[]; // All goals from the page, for filtering
   allCategories: Category[];
   onAddGoal: (goalData: NewGoalData) => Promise<any>;
@@ -24,7 +23,6 @@ interface ResonanceGoalTimelineSectionProps {
 
 const ResonanceGoalTimelineSection: React.FC<ResonanceGoalTimelineSectionProps> = ({
   goalType,
-  goals: allGoalsOfType, // Renamed to clarify it's all goals of this type
   allGoals, // Use this for filtering
   allCategories,
   onAddGoal,
