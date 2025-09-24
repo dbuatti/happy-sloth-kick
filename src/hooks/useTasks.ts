@@ -74,7 +74,7 @@ export interface Category {
 // Omit category_color from TaskUpdate as it's a derived client-side property, not a database column
 type TaskUpdate = Partial<Omit<Task, 'id' | 'user_id' | 'created_at' | 'category_color'>>;
 
-interface NewTaskData {
+export interface NewTaskData {
   description: string;
   status?: Task['status'];
   recurring_type?: Task['recurring_type'];

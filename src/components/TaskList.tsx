@@ -25,12 +25,11 @@ import {
 import { createPortal } from 'react-dom';
 import SortableTaskItem from './SortableTaskItem';
 import SortableSectionHeader from './SortableSectionHeader';
-import TaskForm, { TaskFormData } from './TaskForm';
+import TaskForm from './TaskForm';
 import { cn } from '@/lib/utils';
 import TaskItem from './TaskItem';
 import QuickAddTask from './QuickAddTask';
 import { Appointment } from '@/hooks/useAppointments';
-import { format, setHours, setMinutes } from 'date-fns';
 
 
 interface TaskListProps {
