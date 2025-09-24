@@ -161,6 +161,9 @@ const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isP
           )}>
             {meal.meal_type.charAt(0).toUpperCase() + meal.meal_type.slice(1)} ({formattedTime})
           </span>
+          {name.trim() !== '' && ( // Conditionally render icon if name is not empty
+            <UtensilsCrossed className="h-3.5 w-3.5 text-primary/70 ml-1" />
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Tooltip>
@@ -195,7 +198,7 @@ const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isP
         onChange={handleNameChange}
         placeholder={`Add ${meal.meal_type} meal name...`}
         className={cn(
-          "text-lg font-bold border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto", // Reverted font size to lg
+          "text-lg font-bold border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto",
           "hover:border-b hover:border-input focus-visible:border-b focus-visible:border-primary",
           isCompleted && "line-through text-muted-foreground",
           isPlaceholder && "placeholder:text-muted-foreground/50"
@@ -208,7 +211,7 @@ const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isP
         placeholder="Add notes or short description..."
         rows={1}
         className={cn(
-          "text-sm border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto resize-none", // Reverted font size to sm
+          "text-sm border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto resize-none",
           "hover:border-b hover:border-input focus-visible:border-b focus-visible:border-primary",
           isCompleted && "line-through text-muted-foreground",
           isPlaceholder && "placeholder:text-muted-foreground/50"
