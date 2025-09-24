@@ -30,6 +30,8 @@ import { cn } from '@/lib/utils';
 import TaskItem from './TaskItem';
 import QuickAddTask from './QuickAddTask';
 import { Appointment } from '@/hooks/useAppointments';
+import { format, setHours, setMinutes, parseISO, isValid } from 'date-fns';
+
 
 interface TaskListProps {
   tasks: Task[];
@@ -417,9 +419,24 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
           </DialogHeader>
           <TaskForm
             onSave={async (taskData: TaskFormData) => {
+              let finalRemindAt: Date | null = null;
+              if (taskData.remindAtDate && taskData.remindAtTime && taskData.remindAtTime.trim() !== "") {
+                const [hours, minutes] = taskData.remindAtTime.split(':').map(Number);
+                finalRemindAt = setMinutes(setHours(taskData.remindAtDate, hours), minutes);
+              }
+
               const success = await handleAddTask({
-                ...taskData,
+                description: taskData.description.trim(),
+                category: taskData.category,
+                priority: taskData.priority,
+                due_date: taskData.dueDate ? format(taskData.dueDate, 'yyyy-MM-dd') : null,
+                notes: taskData.notes,
+                remind_at: finalRemindAt ? finalRemindAt.toISOString() : null,
                 section_id: preselectedSectionId ?? null,
+                recurring_type: taskData.recurringType,
+                parent_task_id: taskData.parentTaskId,
+                link: taskData.link,
+                image_url: taskData.image_url,
               });
               if (success) setIsAddTaskOpenLocal(false);
               return success;

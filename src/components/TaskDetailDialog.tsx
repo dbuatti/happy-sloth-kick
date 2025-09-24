@@ -19,7 +19,7 @@ import TaskForm from './TaskForm';
 import { cn } from '@/lib/utils';
 import { Checkbox } from "@/components/ui/checkbox";
 import { useIsMobile } from '@/hooks/use-mobile';
-import { format, parseISO, isValid } from 'date-fns';
+
 
 interface TaskDetailDialogProps {
   task: Task | null;
@@ -73,7 +73,6 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
     setIsSaving(true);
     // Since handleAddTask is not directly available here, we'll call onUpdate with parent_task_id
     // This assumes onUpdate can handle creating a new task if the ID is new or a virtual ID.
-    // For a proper add, a dedicated `onAddSubtask` prop would be better.
     // For now, I'll simulate it by calling onUpdate with a new ID and parent_task_id.
     // This is a temporary workaround and should ideally be handled by a dedicated `onAddSubtask` prop.
     await onUpdate('new-subtask-id-' + Date.now(), {

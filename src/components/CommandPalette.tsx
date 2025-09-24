@@ -11,6 +11,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import TaskForm, { TaskFormData } from './TaskForm'; // Updated import
 import { useSound } from '@/context/SoundContext';
+import { format, setHours, setMinutes, parseISO, isValid } from 'date-fns';
+
 
 interface CommandPaletteProps {
   isCommandPaletteOpen: boolean;
@@ -55,7 +57,25 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
   };
 
   const handleNewTaskSubmit = async (taskData: TaskFormData) => {
-    const success = await handleAddTask(taskData);
+    let finalRemindAt: Date | null = null;
+    if (taskData.remindAtDate && taskData.remindAtTime && taskData.remindAtTime.trim() !== "") {
+      const [hours, minutes] = taskData.remindAtTime.split(':').map(Number);
+      finalRemindAt = setMinutes(setHours(taskData.remindAtDate, hours), minutes);
+    }
+
+    const success = await handleAddTask({
+      description: taskData.description.trim(),
+      category: taskData.category,
+      priority: taskData.priority,
+      due_date: taskData.dueDate ? format(taskData.dueDate, 'yyyy-MM-dd') : null,
+      notes: taskData.notes,
+      remind_at: finalRemindAt ? finalRemindAt.toISOString() : null,
+      section_id: taskData.sectionId,
+      recurring_type: taskData.recurringType,
+      parent_task_id: taskData.parentTaskId,
+      link: taskData.link,
+      image_url: taskData.image_url,
+    });
     if (success) {
       setIsAddTaskDialogOpen(false);
       playSound('success');
