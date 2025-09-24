@@ -78,7 +78,7 @@ export type TaskFormData = z.infer<typeof taskFormSchema>;
 
 interface TaskFormProps {
   initialData?: Partial<Task> | null;
-  onSave: (taskData: TaskFormData) => Promise<any>; // Changed from NewTaskData to TaskFormData
+  onSave: (taskData: NewTaskData) => Promise<any>; // Changed from TaskFormData to NewTaskData
   onCancel: () => void;
   sections: TaskSection[];
   allCategories: Category[];
