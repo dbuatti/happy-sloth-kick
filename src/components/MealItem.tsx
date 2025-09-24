@@ -4,7 +4,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { format, parseISO, isSameDay, setHours, setMinutes, addDays } from 'date-fns';
+import { format, parseISO, setHours, setMinutes } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ShoppingCart, CheckCircle2, UtensilsCrossed, Coffee, Soup } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -12,7 +12,7 @@ import { useSound } from '@/context/SoundContext'; // Import useSound
 
 interface MealItemProps {
   meal: Meal;
-  currentDate: Date;
+  // currentDate: Date; // Removed as it's no longer used directly in this component
   onUpdate: (id: string, updates: Partial<Meal>) => Promise<any>;
   isDemo?: boolean;
   isPlaceholder: boolean; // New prop
@@ -24,7 +24,7 @@ const MEAL_TIMES: Record<MealType, { hour: number; minute: number }> = {
   dinner: { hour: 18, minute: 0 },
 };
 
-const MealItem: React.FC<MealItemProps> = ({ meal, currentDate, onUpdate, isDemo = false, isPlaceholder }) => {
+const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isPlaceholder }) => {
   const { playSound } = useSound(); // Initialize useSound
   const [name, setName] = useState(meal.name);
   const [notes, setNotes] = useState(meal.notes || '');
@@ -111,9 +111,6 @@ const MealItem: React.FC<MealItemProps> = ({ meal, currentDate, onUpdate, isDemo
   };
 
   const mealDate = parseISO(meal.meal_date);
-  // Removed unused isToday and isTomorrow variables
-  // const isToday = isSameDay(mealDate, currentDate);
-  // const isTomorrow = isSameDay(mealDate, addDays(currentDate, 1));
 
   const mealTime = MEAL_TIMES[meal.meal_type];
   const mealDateTime = setMinutes(setHours(mealDate, mealTime.hour), mealTime.minute);
