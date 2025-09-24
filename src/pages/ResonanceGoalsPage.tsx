@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Target, Settings, Trash2 } from 'lucide-react';
+import { Plus, Settings, Trash2 } from 'lucide-react';
 import { useResonanceGoals, Goal, GoalType, NewGoalData, Category } from '@/hooks/useResonanceGoals';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
