@@ -16,7 +16,8 @@ import {
   Palette,
   Sun,
   Monitor,
-  UtensilsCrossed, // Import the new icon
+  UtensilsCrossed,
+  Sparkles, // Import Sparkles icon for Resonance Goals
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -72,10 +73,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false }) =>
       visible: settings?.visible_pages?.projects !== false,
     },
     {
-      name: "Meal Planner", // New Nav Item
+      name: "Meal Planner",
       href: isDemo ? "/demo/meal-planner" : "/meal-planner",
       icon: UtensilsCrossed,
-      visible: settings?.visible_pages?.mealPlanner !== false, // New setting for visibility
+      visible: settings?.visible_pages?.mealPlanner !== false,
+    },
+    {
+      name: "Resonance Goals", // New Nav Item
+      href: isDemo ? "/demo/resonance-goals" : "/resonance-goals",
+      icon: Sparkles, // Using Sparkles for Resonance Goals
+      visible: settings?.visible_pages?.resonanceGoals !== false, // New setting for visibility
     },
     {
       name: "Sleep",

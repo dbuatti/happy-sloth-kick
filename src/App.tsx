@@ -27,7 +27,8 @@ import Analytics from "./pages/Analytics";
 import Archive from "./pages/Archive";
 import SleepPage from "./pages/SleepPage";
 import CommandPalette from "./components/CommandPalette";
-import MealPlanner from "./pages/MealPlanner"; // Import the new MealPlanner page
+import MealPlanner from "./pages/MealPlanner";
+import ResonanceGoalsPage from "./pages/ResonanceGoalsPage"; // Import the new ResonanceGoalsPage
 
 const queryClient = new QueryClient();
 
@@ -73,7 +74,8 @@ const AppContent = () => {
               <Route path="/demo/settings" element={<Settings isDemo={true} demoUserId={demoUserId} />} />
               <Route path="/demo/analytics" element={<Analytics isDemo={true} demoUserId={demoUserId} />} />
               <Route path="/demo/archive" element={<Archive isDemo={true} demoUserId={demoUserId} />} />
-              <Route path="/demo/meal-planner" element={<MealPlanner isDemo={true} demoUserId={demoUserId} />} /> {/* New Demo Route */}
+              <Route path="/demo/meal-planner" element={<MealPlanner isDemo={true} demoUserId={demoUserId} />} />
+              <Route path="/demo/resonance-goals" element={<ResonanceGoalsPage isDemo={true} demoUserId={demoUserId} />} /> {/* New Demo Route */}
               <Route path="*" element={<Navigate to="/demo" replace />} />
             </Routes>
           </Sidebar>
@@ -105,7 +107,8 @@ const AppContent = () => {
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/analytics" element={<Analytics />} />
                 <Route path="/archive" element={<Archive />} />
-                <Route path="/meal-planner" element={<MealPlanner />} /> {/* New User Route */}
+                <Route path="/meal-planner" element={<MealPlanner />} />
+                <Route path="/resonance-goals" element={<ResonanceGoalsPage />} /> {/* New User Route */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Sidebar>
