@@ -43,26 +43,26 @@ const ResonanceGoalTimelineSection: React.FC<ResonanceGoalTimelineSectionProps> 
   };
 
   return (
-    <div className="space-y-3 border-b pb-4 mb-4 last:border-b-0 last:pb-0 last:mb-0"> {/* Adjusted vertical spacing */}
-      <h3 className="text-lg font-bold text-foreground flex items-center gap-2"> {/* Reduced font size */}
-        <Target className="h-4 w-4 text-primary" /> {(goalType as string).charAt(0).toUpperCase() + (goalType as string).slice(1).replace('-', ' ')} Goals {/* Reduced icon size */}
+    <div className="space-y-3 border-b pb-4 mb-4 last:border-b-0 last:pb-0 last:mb-0">
+      <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+        <Target className="h-4 w-4 text-primary" /> {(goalType as string).charAt(0).toUpperCase() + (goalType as string).slice(1).replace('-', ' ')} Goals
       </h3>
       <div className="relative">
         <div className="absolute left-0 top-1/2 w-full border-t border-dashed border-muted-foreground/30" />
-        <div className="relative z-10 bg-background px-2 py-0.5 inline-block -translate-y-1/2"> {/* Adjusted vertical padding */}
-          <span className="text-xs text-muted-foreground">{(goalType as string).replace('-', ' ')}</span> {/* Reduced font size */}
+        <div className="relative z-10 bg-background px-2 py-0.5 inline-block -translate-y-1/2">
+          <span className="text-xs text-muted-foreground">{(goalType as string).replace('-', ' ')}</span>
         </div>
       </div>
 
       {loading ? (
-        <div className="space-y-2"> {/* Adjusted vertical spacing */}
-          <Skeleton className="h-20 w-full rounded-lg" /> {/* Reduced height, rounded */}
-          <Skeleton className="h-20 w-full rounded-lg" /> {/* Reduced height, rounded */}
+        <div className="space-y-2">
+          <Skeleton className="h-20 w-full rounded-lg" />
+          <Skeleton className="h-20 w-full rounded-lg" />
         </div>
       ) : topLevelGoals.length === 0 ? (
         <p className="text-muted-foreground text-xs text-center py-3">No {(goalType as string).replace('-', ' ')} goals set yet.</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3"> {/* Adjusted gap */}
+        <div className="space-y-3"> {/* Changed from grid to space-y for single column */}
           {topLevelGoals.map(goal => (
             <ResonanceGoalCard
               key={goal.id}
@@ -80,7 +80,7 @@ const ResonanceGoalTimelineSection: React.FC<ResonanceGoalTimelineSectionProps> 
           ))}
         </div>
       )}
-      <div className="mt-3"> {/* Adjusted top margin */}
+      <div className="mt-3">
         <QuickAddGoal
           goalType={goalType}
           onAddGoal={onAddGoal}
