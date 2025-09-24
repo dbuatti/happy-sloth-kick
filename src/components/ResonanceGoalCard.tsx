@@ -108,6 +108,7 @@ const ResonanceGoalCard: React.FC<ResonanceGoalCardProps> = ({
                     <div className="flex items-center gap-1 text-xs">
                       <CalendarDays className="h-3 w-3" />
                       <span className={cn(
+                        "font-bold uppercase", // Added font-bold and uppercase
                         isOverdue && "text-destructive", // Keep destructive for overdue
                         isDueToday && "text-orange-500" // Keep orange for due today
                       )}>
