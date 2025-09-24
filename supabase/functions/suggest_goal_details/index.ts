@@ -38,19 +38,12 @@ serve(async (req) => {
       });
     }
 
-    let requestBody;
+    let requestBody: any;
     try {
-      const bodyText = await req.text(); // Read as text
-      if (!bodyText) {
-        return new Response(JSON.stringify({ error: 'Request body is empty.' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      requestBody = JSON.parse(bodyText); // Manually parse
+      requestBody = await req.json(); // Use req.json() directly
     } catch (jsonParseError) {
       console.error('Failed to parse request body as JSON:', jsonParseError);
-      return new Response(JSON.stringify({ error: 'Invalid JSON in request body.' }), {
+      return new Response(JSON.stringify({ error: 'Invalid JSON in request body.', rawError: jsonParseError.message }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -60,30 +53,31 @@ serve(async (req) => {
     const categories = requestBody?.categories;
     const currentDate = requestBody?.currentDate;
 
+    // Enhanced error responses for debugging
     if (!prompt) {
-      return new Response('Missing prompt in request body', {
+      return new Response(JSON.stringify({ error: 'Missing prompt in request body.', receivedBody: requestBody }), {
         status: 400,
-        headers: corsHeaders,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
     if (!categories || !Array.isArray(categories)) {
-      return new Response('Missing or invalid categories in request body', {
+      return new Response(JSON.stringify({ error: 'Missing or invalid categories in request body.', receivedBody: requestBody }), {
         status: 400,
-        headers: corsHeaders,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
     if (!currentDate) {
-      return new Response('Missing currentDate in request body', {
+      return new Response(JSON.stringify({ error: 'Missing currentDate in request body.', receivedBody: requestBody }), {
         status: 400,
-        headers: corsHeaders,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
     if (!geminiApiKey) {
-      return new Response('Missing GEMINI_API_KEY environment variable', {
+      return new Response(JSON.stringify({ error: 'Missing GEMINI_API_KEY environment variable.' }), {
         status: 500,
-        headers: corsHeaders,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
