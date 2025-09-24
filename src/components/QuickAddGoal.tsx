@@ -2,21 +2,12 @@ import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { GoalType, Category } from '@/hooks/useResonanceGoals';
+import { GoalType, Category, NewGoalData } from '@/hooks/useResonanceGoals';
 import { showError } from '@/utils/toast'; // Keep showError for basic validation
 
 interface QuickAddGoalProps {
   goalType: GoalType;
-  onAddGoal: (goalData: {
-    title: string;
-    description: string | null;
-    category_id: string | null;
-    type: GoalType;
-    due_date: string | null;
-    parent_goal_id: string | null;
-    order?: number | null; // Added order
-    completed?: boolean; // Added completed
-  }) => Promise<any>;
+  onAddGoal: (goalData: NewGoalData) => Promise<any>;
   allCategories: Category[];
   isDemo?: boolean;
   parentGoalId?: string | null;
@@ -48,7 +39,7 @@ const QuickAddGoal: React.FC<QuickAddGoalProps> = ({
       // Use the first available category as a default if no specific category is chosen
       const defaultCategoryId = allCategories[0]?.id || null;
 
-      const goalDataToSend: Parameters<typeof onAddGoal>[0] = {
+      const goalDataToSend: NewGoalData = {
         title: title.trim(),
         description: null, // No AI suggestions, so description is null by default
         category_id: defaultCategoryId,
