@@ -32,7 +32,7 @@ serve(async (req) => {
     }
 
     const genAI = new GoogleGenerativeAI(geminiApiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro" }); // Updated model name
 
     const categoryNames = existingCategories.map((c: { name: string }) => c.name);
     const formattedCategories = categoryNames.length > 0 ? `(Choose from: ${categoryNames.join(', ')})` : '';
@@ -50,11 +50,6 @@ serve(async (req) => {
       - link: A URL or local file path, or null.
 
       Existing Categories: ${formattedCategories}
-
-      Examples for category matching:
-      - "Go to the shops" -> "Personal" or "Errands"
-      - "Prepare Q3 report" -> "Career"
-      - "Practice guitar scales" -> "Music"
 
       Goal Title: "${title}"
 
