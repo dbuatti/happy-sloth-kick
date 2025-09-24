@@ -33,8 +33,8 @@ export interface Goal {
 
 // NewGoalData should allow 'order' and 'completed' to be optional as they might not be provided on creation
 export type NewGoalData = Omit<Goal, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'category_name' | 'category_color'> & {
-  order?: number | null;
-  completed?: boolean;
+  order: number | null; // Made non-optional
+  completed: boolean; // Made non-optional
 };
 export type UpdateGoalData = Partial<NewGoalData>;
 
