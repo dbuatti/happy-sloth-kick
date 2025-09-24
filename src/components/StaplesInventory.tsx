@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Plus, UtensilsCrossed, Edit, Trash2, Minus, ChevronDown } from 'lucide-react';
+import { Plus, UtensilsCrossed, Edit, Trash2, Minus, ChevronDown, ShoppingCart } from 'lucide-react'; // Added ShoppingCart for quick add icon
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMealStaples, MealStaple, NewMealStapleData } from '@/hooks/useMealStaples';
 import {
@@ -22,9 +22,10 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"; // Added DropdownMenu imports
+} from "@/components/ui/dropdown-menu";
 import { cn } from '@/lib/utils';
 import { useDebounce } from '@/hooks/useDebounce';
+import { showError } from '@/utils/toast'; // Import showError
 
 interface StaplesInventoryProps {
   isDemo?: boolean;
@@ -46,6 +47,9 @@ const StaplesInventory: React.FC<StaplesInventoryProps> = ({ isDemo = false, dem
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [stapleToDelete, setStapleToDelete] = useState<MealStaple | null>(null);
+
+  const [quickAddStapleName, setQuickAddStapleName] = useState(''); // New state for quick add input
+  const [isQuickAdding, setIsQuickAdding] = useState(false); // New state for quick add loading
 
   useEffect(() => {
     if (isAddEditDialogOpen) {
@@ -106,6 +110,31 @@ const StaplesInventory: React.FC<StaplesInventoryProps> = ({ isDemo = false, dem
   const handleQuantityChange = async (stapleId: string, newQuantity: number) => {
     if (isDemo) return;
     await updateStaple({ id: stapleId, updates: { current_quantity: newQuantity } });
+  };
+
+  const handleQuickAddStaple = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickAddStapleName.trim()) {
+      showError('Staple name cannot be empty.');
+      return;
+    }
+    if (isDemo) return;
+
+    setIsQuickAdding(true);
+    try {
+      await addStaple({
+        name: quickAddStapleName.trim(),
+        target_quantity: 0,
+        current_quantity: 0,
+        unit: null,
+      });
+      setQuickAddStapleName('');
+    } catch (error) {
+      console.error('Error quick adding staple:', error);
+      showError('Failed to add staple.');
+    } finally {
+      setIsQuickAdding(false);
+    }
   };
 
   const StapleItem: React.FC<{ staple: MealStaple }> = ({ staple }) => {
@@ -195,11 +224,25 @@ const StaplesInventory: React.FC<StaplesInventoryProps> = ({ isDemo = false, dem
   return (
     <>
       <div className="space-y-4">
-        <div className="flex justify-end">
-          <Button onClick={() => handleOpenAddEditDialog(null)} disabled={isDemo}>
-            <Plus className="mr-2 h-4 w-4" /> Add Staple
+        <form onSubmit={handleQuickAddStaple} className="flex items-center gap-2">
+          <ShoppingCart className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+          <Input
+            placeholder="Add a staple (e.g., 'Canned Tomatoes') and press Enter..."
+            value={quickAddStapleName}
+            onChange={(e) => setQuickAddStapleName(e.target.value)}
+            className="flex-1 h-9 border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 text-sm"
+            disabled={isQuickAdding || isDemo}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleQuickAddStaple(e as any);
+              }
+            }}
+          />
+          <Button type="submit" size="icon" variant="ghost" className="h-8 w-8" disabled={isQuickAdding || isDemo || !quickAddStapleName.trim()}>
+            {isQuickAdding ? <span className="animate-spin h-3.5 w-3.5 border-b-2 border-primary rounded-full" /> : <Plus className="h-3.5 w-3.5" />}
           </Button>
-        </div>
+        </form>
 
         {loading ? (
           <div className="space-y-3">
