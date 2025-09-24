@@ -5,6 +5,8 @@ import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import { suggestTaskDetails, AICategory, AISuggestionResult } from '@/integrations/supabase/api'; // Import AISuggestionResult
 import { dismissToast, showError, showLoading } from '@/utils/toast';
 import { Button } from '@/components/ui/button'; // Added Button import
+import { useAuth } from '@/context/AuthContext';
+
 
 interface QuickAddTaskProps {
   sectionId: string | null;
@@ -34,6 +36,7 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
   sections,
   currentDate,
 }) => {
+  const { user } = useAuth();
   const [description, setDescription] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);

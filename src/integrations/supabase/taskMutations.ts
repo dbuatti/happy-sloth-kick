@@ -73,13 +73,62 @@ export const updateTaskMutation = async (
   updates: Partial<Omit<Task, 'id' | 'user_id' | 'created_at' | 'category_color'>>,
   context: MutationContext,
 ): Promise<string | null> => {
-  const { userId, inFlightUpdatesRef, invalidateTasksQueries, categoriesMap } = context;
+  const { userId, inFlightUpdatesRef, invalidateTasksQueries, categoriesMap, processedTasks } = context;
   if (!userId) {
     showError('User not authenticated.');
     return null;
   }
 
-  inFlightUpdatesRef.current.add(taskId);
+  let finalTaskId = taskId;
+  let taskToUpdate: Task | undefined;
+
+  if (taskId.startsWith('virtual-')) {
+    // This is a virtual task, we need to materialize it first
+    const originalTaskId = taskId.split('-')[1]; // Assuming format 'virtual-{originalId}-{date}'
+    const virtualTaskTemplate = processedTasks.find(t => t.id === taskId);
+
+    if (!virtualTaskTemplate) {
+      showError('Virtual task template not found.');
+      return null;
+    }
+
+    // Create a new real task based on the virtual task's properties
+    const newRealTaskData: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'completed_at' | 'category_color'> & { order?: number | null } = {
+      description: virtualTaskTemplate.description,
+      status: virtualTaskTemplate.status,
+      recurring_type: virtualTaskTemplate.recurring_type,
+      category: virtualTaskTemplate.category,
+      priority: virtualTaskTemplate.priority,
+      due_date: virtualTaskTemplate.due_date,
+      notes: virtualTaskTemplate.notes,
+      remind_at: virtualTaskTemplate.remind_at,
+      section_id: virtualTaskTemplate.section_id,
+      order: virtualTaskTemplate.order,
+      original_task_id: originalTaskId, // Link to the original recurring task
+      parent_task_id: virtualTaskTemplate.parent_task_id,
+      link: virtualTaskTemplate.link,
+      image_url: virtualTaskTemplate.image_url,
+      created_at: new Date().toISOString(), // Set created_at to now for the new instance
+    };
+
+    const newRealTask = await addTaskMutation(newRealTaskData, context);
+    if (!newRealTask) {
+      showError('Failed to materialize virtual task.');
+      return null;
+    }
+    finalTaskId = newRealTask.id;
+    taskToUpdate = newRealTask; // Now we have a real task to update
+  } else {
+    // This is an existing real task
+    taskToUpdate = processedTasks.find(t => t.id === taskId);
+    if (!taskToUpdate) {
+      showError('Task not found for update.');
+      return null;
+    }
+    finalTaskId = taskId;
+  }
+
+  inFlightUpdatesRef.current.add(finalTaskId);
   try {
     const { data, error } = await supabase
       .from('tasks')
@@ -88,7 +137,7 @@ export const updateTaskMutation = async (
         ...(updates.status === 'completed' && { completed_at: new Date().toISOString() }),
         ...(updates.status !== 'completed' && { completed_at: null }),
       })
-      .eq('id', taskId)
+      .eq('id', finalTaskId)
       .eq('user_id', userId)
       .select()
       .single();
@@ -105,7 +154,7 @@ export const updateTaskMutation = async (
     showError('Failed to update task.');
     return null;
   } finally {
-    inFlightUpdatesRef.current.delete(taskId);
+    inFlightUpdatesRef.current.delete(finalTaskId);
   }
 };
 
@@ -318,13 +367,53 @@ export const updateTaskParentAndOrderMutation = async (
     return;
   }
 
-  inFlightUpdatesRef.current.add(activeId);
-  try {
-    const activeTask = processedTasks.find(t => t.id === activeId);
-    if (!activeTask) {
-      throw new Error('Active task not found.');
+  let finalActiveId = activeId;
+  let activeTask: Task | undefined = processedTasks.find(t => t.id === activeId);
+
+  if (activeId.startsWith('virtual-')) {
+    // Materialize the virtual task first
+    const originalTaskId = activeId.split('-')[1];
+    const virtualTaskTemplate = processedTasks.find(t => t.id === activeId);
+
+    if (!virtualTaskTemplate) {
+      showError('Virtual task template not found for drag operation.');
+      return;
     }
 
+    const newRealTaskData: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'completed_at' | 'category_color'> & { order?: number | null } = {
+      description: virtualTaskTemplate.description,
+      status: virtualTaskTemplate.status,
+      recurring_type: virtualTaskTemplate.recurring_type,
+      category: virtualTaskTemplate.category,
+      priority: virtualTaskTemplate.priority,
+      due_date: virtualTaskTemplate.due_date,
+      notes: virtualTaskTemplate.notes,
+      remind_at: virtualTaskTemplate.remind_at,
+      section_id: virtualTaskTemplate.section_id,
+      order: virtualTaskTemplate.order,
+      original_task_id: originalTaskId,
+      parent_task_id: virtualTaskTemplate.parent_task_id,
+      link: virtualTaskTemplate.link,
+      image_url: virtualTaskTemplate.image_url,
+      created_at: new Date().toISOString(),
+    };
+
+    const newRealTask = await addTaskMutation(newRealTaskData, context);
+    if (!newRealTask) {
+      showError('Failed to materialize virtual task during drag operation.');
+      return;
+    }
+    finalActiveId = newRealTask.id;
+    activeTask = newRealTask; // Update activeTask to the real one
+  }
+
+  if (!activeTask) {
+    showError('Active task not found after materialization attempt.');
+    return;
+  }
+
+  inFlightUpdatesRef.current.add(finalActiveId);
+  try {
     let newOrder: number | null = null;
 
     if (overId) {
@@ -332,40 +421,35 @@ export const updateTaskParentAndOrderMutation = async (
       if (overTask) {
         const siblings = processedTasks.filter(t => t.parent_task_id === newParentId && t.section_id === newSectionId);
         const currentOrderIds = siblings.sort((a, b) => (a.order || 0) - (b.order || 0)).map(t => t.id);
-        const oldIndex = currentOrderIds.indexOf(activeId);
+        const oldIndex = currentOrderIds.indexOf(finalActiveId);
         const newIndex = currentOrderIds.indexOf(overId);
 
         if (oldIndex !== -1 && newIndex !== -1) {
           const reorderedIds = arrayMove(currentOrderIds, oldIndex, newIndex);
-          // Calculate new order based on reorderedIds
           const updatedSiblings = reorderedIds.map(id => ({
             id,
             order: reorderedIds.indexOf(id),
           }));
 
-          // Find the new order for the active task
-          const activeTaskNewOrder = updatedSiblings.find(item => item.id === activeId)?.order;
+          const activeTaskNewOrder = updatedSiblings.find(item => item.id === finalActiveId)?.order;
           if (activeTaskNewOrder !== undefined) {
             newOrder = activeTaskNewOrder;
           }
 
-          // Batch update orders for all affected siblings
           const { error: batchUpdateError } = await supabase
             .from('tasks')
             .upsert(updatedSiblings.map(item => ({
               id: item.id,
               order: item.order,
-              user_id: userId, // Ensure user_id is included for RLS
+              user_id: userId,
             })), { onConflict: 'id' });
 
           if (batchUpdateError) throw batchUpdateError;
         } else {
-          // Fallback if active/over not found in siblings (e.g., moving to empty section)
           newOrder = (overTask.order || 0) + (isDraggingDown ? 0.5 : -0.5);
         }
       }
     } else {
-      // Moving to an empty section or as the last item
       const siblingsInNewLocation = processedTasks.filter(t => t.parent_task_id === newParentId && t.section_id === newSectionId);
       newOrder = siblingsInNewLocation.length > 0 ? Math.max(...siblingsInNewLocation.map(t => t.order || 0)) + 1 : 0;
     }
@@ -377,7 +461,7 @@ export const updateTaskParentAndOrderMutation = async (
         section_id: newSectionId,
         order: newOrder,
       })
-      .eq('id', activeId)
+      .eq('id', finalActiveId)
       .eq('user_id', userId);
 
     if (error) throw error;
@@ -388,7 +472,7 @@ export const updateTaskParentAndOrderMutation = async (
     console.error('Error updating task parent and order:', err.message);
     showError('Failed to reorder task.');
   } finally {
-    inFlightUpdatesRef.current.delete(activeId);
+    inFlightUpdatesRef.current.delete(finalActiveId);
   }
 };
 
@@ -513,14 +597,14 @@ export const toggleAllDoTodayMutation = async (
       const { error } = await supabase.from('tasks').upsert(tasksToUpdateStatus.map(t => ({
         id: t.id,
         status: t.status,
-        user_id: userId, // Ensure user_id is included for RLS
-        completed_at: t.status === 'skipped' ? new Date().toISOString() : null, // Set completed_at for skipped
+        user_id: userId,
+        completed_at: t.status === 'skipped' ? new Date().toISOString() : null,
       })), { onConflict: 'id' });
       if (error) throw error;
     }
 
     showSuccess('All "Do Today" statuses toggled!');
-    invalidateTasksQueries(); // Invalidate tasks to reflect changes
+    invalidateTasksQueries();
     context.queryClient.invalidateQueries({ queryKey: ['do_today_off_log', userId, formattedDate] });
   } catch (err: any) {
     console.error('Error toggling all "Do Today" statuses:', err.message);
