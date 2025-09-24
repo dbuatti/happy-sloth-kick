@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Meal, MealType } from '@/hooks/useMeals';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -29,30 +29,71 @@ const MealItem: React.FC<MealItemProps> = ({ meal, currentDate, onUpdate, isDemo
   const [hasIngredients, setHasIngredients] = useState(meal.has_ingredients);
   const [isCompleted, setIsCompleted] = useState(meal.is_completed);
 
-  const debouncedName = useDebounce(name, 500);
-  const debouncedNotes = useDebounce(notes, 500);
-
   const isPlaceholder = meal.id.startsWith('placeholder-');
 
-  // Effect to initialize local state when the meal prop changes
-  useEffect(() => {
-    setName(meal.name);
-    setNotes(meal.notes || '');
-    setHasIngredients(meal.has_ingredients);
-    setIsCompleted(meal.is_completed);
-  }, [meal]);
+  // Ref to store the last known "saved" state from props
+  const lastCommittedMealRef = useRef(meal);
 
-  // Effect for debounced name changes
+  // Effect to synchronize local state with prop changes
+  // This runs when the 'meal' prop changes (e.g., after a save operation completes and new data comes from DB)
   useEffect(() => {
-    if (isDemo || debouncedName === meal.name) return;
-    onUpdate(meal.id, { name: debouncedName });
-  }, [debouncedName, meal.name, meal.id, onUpdate, isDemo]);
+    // Only update local state if the incoming meal prop is genuinely different from the last committed state
+    // This prevents local state from being overwritten by stale prop data during a save cycle
+    // or from re-initializing if the prop object reference changes but content is same.
+    if (meal.id !== lastCommittedMealRef.current.id ||
+        name !== meal.name ||
+        notes !== (lastCommittedMealRef.current.notes || '') || // Compare against ref's notes
+        hasIngredients !== meal.has_ingredients ||
+        isCompleted !== meal.is_completed) {
+      setName(meal.name);
+      setNotes(meal.notes || '');
+      setHasIngredients(meal.has_ingredients);
+      setIsCompleted(meal.is_completed);
+    }
+    lastCommittedMealRef.current = meal; // Always update the ref with the latest prop
+  }, [meal]); // Only re-run when the meal prop itself changes
 
-  // Effect for debounced notes changes
+  // Debounced effect for saving changes
   useEffect(() => {
-    if (isDemo || debouncedNotes === (meal.notes || '')) return;
-    onUpdate(meal.id, { notes: debouncedNotes });
-  }, [debouncedNotes, meal.notes, meal.id, onUpdate, isDemo]);
+    if (isDemo) return;
+
+    const timer = setTimeout(async () => {
+      // Compare current local state with the last committed state from props
+      const hasNameChanged = name !== lastCommittedMealRef.current.name;
+      const hasNotesChanged = notes !== (lastCommittedMealRef.current.notes || '');
+      const hasIngredientsChanged = hasIngredients !== lastCommittedMealRef.current.has_ingredients;
+      const hasCompletedChanged = isCompleted !== lastCommittedMealRef.current.is_completed;
+
+      if (hasNameChanged || hasNotesChanged || hasIngredientsChanged || hasCompletedChanged) {
+        const updates: Partial<Meal> = {
+          name: name,
+          notes: notes,
+          has_ingredients: hasIngredients,
+          is_completed: isCompleted,
+        };
+
+        if (isPlaceholder) {
+          // For placeholders, create the meal. MealPlanner's onUpdate handles this.
+          // We pass the placeholder ID, but the handler will create a new entry.
+          await onUpdate(meal.id, { // meal.id here is the placeholder ID
+            ...meal, // Pass existing meal data (like meal_date, meal_type)
+            ...updates, // Overlay with current local state
+          });
+        } else {
+          // For existing meals, just send the specific updates
+          await onUpdate(meal.id, updates);
+        }
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [
+    name, notes, hasIngredients, isCompleted, // Local state changes trigger this effect
+    onUpdate, isDemo, isPlaceholder, meal.id // meal.id is needed for placeholder conversion
+    // IMPORTANT: lastCommittedMealRef.current is NOT a a direct dependency here.
+    // We are intentionally comparing against the *value* of the ref at the time of effect definition.
+    // The ref itself is stable.
+  ]);
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setName(e.target.value);
@@ -65,23 +106,13 @@ const MealItem: React.FC<MealItemProps> = ({ meal, currentDate, onUpdate, isDemo
   const handleHasIngredientsChange = async (checked: boolean) => {
     if (isDemo) return;
     setHasIngredients(checked);
-    const updates: Partial<Meal> = { has_ingredients: checked };
-    if (isPlaceholder) {
-      updates.name = name;
-      updates.notes = notes;
-    }
-    await onUpdate(meal.id, updates);
+    // The debounced effect will handle saving this change
   };
 
   const handleIsCompletedChange = async (checked: boolean) => {
     if (isDemo) return;
     setIsCompleted(checked);
-    const updates: Partial<Meal> = { is_completed: checked };
-    if (isPlaceholder) {
-      updates.name = name;
-      updates.notes = notes;
-    }
-    await onUpdate(meal.id, updates);
+    // The debounced effect will handle saving this change
   };
 
   const mealDate = parseISO(meal.meal_date);
