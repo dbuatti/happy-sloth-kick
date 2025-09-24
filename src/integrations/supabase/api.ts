@@ -1,5 +1,9 @@
 import { format } from 'date-fns';
-import { AICategory } from '@/types/ai'; // Assuming AICategory is defined here or in a similar types file
+
+export interface AICategory {
+  id: string;
+  name: string;
+}
 
 // Placeholder functions for AI integration
 export const suggestTaskDetails = async (
@@ -16,7 +20,7 @@ export const suggestTaskDetails = async (
     dueDate: null,
     notes: null,
     remindAt: null,
-    section: null,
+    section: null as string | null, // Explicitly type as string | null
     link: null,
   };
 };

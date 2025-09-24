@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, Tag } from 'lucide-react'; 
 import { useResonanceGoals, Goal, GoalType } from '@/hooks/useResonanceGoals'; 
@@ -31,8 +31,6 @@ const ResonanceGoalsPage: React.FC<{ isDemo?: boolean; demoUserId?: string }> = 
     updateGoal,
     deleteGoal,
     addCategory,
-    updateCategory,
-    deleteCategory,
   } = useResonanceGoals({ userId });
 
   const [isGoalFormOpen, setIsGoalFormOpen] = useState(false);
@@ -45,9 +43,6 @@ const ResonanceGoalsPage: React.FC<{ isDemo?: boolean; demoUserId?: string }> = 
   const [goalToDeleteTitle, setGoalToDeleteTitle] = useState<string | null>(null);
 
   const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
-  const [categoryToDeleteId, setCategoryToDeleteId] = useState<string | null>(null);
-  const [categoryToDeleteName, setCategoryToDeleteName] = useState<string | null>(null);
-  const [showConfirmDeleteCategoryDialog, setShowConfirmDeleteCategoryDialog] = useState(false);
 
   const [expandedGoals, setExpandedGoals] = useState<Record<string, boolean>>({});
 
@@ -121,7 +116,7 @@ const ResonanceGoalsPage: React.FC<{ isDemo?: boolean; demoUserId?: string }> = 
     // No explicit action needed here other than potentially closing a form if it existed
   };
 
-  const handleCategoryDeleted = (deletedId: string) => {
+  const handleCategoryDeleted = (_deletedId: string) => { // Mark as unused with _
     // Categories are automatically refetched by react-query due to real-time subscription
     // If any goals were using this category, their category_id will be set to null by the RLS policy.
   };
@@ -177,7 +172,7 @@ const ResonanceGoalsPage: React.FC<{ isDemo?: boolean; demoUserId?: string }> = 
                 allCategories={categories}
                 onAddGoal={addGoal}
                 onEditGoal={(goal) => handleOpenGoalForm(goal, goal.type)}
-                onDeleteGoal={handleDeleteGoalClick}
+                onDeleteGoal={(goalId) => handleDeleteGoalClick(goalId, goals.find(g => g.id === goalId)?.title || 'Unknown Goal')}
                 onToggleCompleteGoal={async (goalId, completed) => {
                   if (isDemo) {
                     showError('Goal management is not available in demo mode.');
@@ -227,7 +222,7 @@ const ResonanceGoalsPage: React.FC<{ isDemo?: boolean; demoUserId?: string }> = 
             <AlertDialogAction onClick={confirmDeleteGoal}>
               Delete
             </AlertDialogAction>
-          </DialogFooter>
+          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 

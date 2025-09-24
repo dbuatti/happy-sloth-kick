@@ -1,4 +1,4 @@
-import { cn } from './utils'; // Assuming utils.ts is available for cn
+// Assuming utils.ts is available for cn
 
 export type CategoryColorKey = 'gray' | 'blue' | 'green' | 'purple' | 'yellow' | 'red' | 'indigo' | 'pink' | 'teal';
 
